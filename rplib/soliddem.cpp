@@ -6,9 +6,12 @@ SolidDEM::SolidDEM(const Solid                         * solid,
                    const Solid                         * solid_inc,
                    const std::vector<double>           & inclusion_spectrum,
                    const std::vector<double>           & inclusion_concentration,
-                   double                                porosity)
+                   double                                porosity,
+                   const std::vector<double>           & u)
 : Solid()
 {
+  u_ = u; // u contains independent samples used in quantiles of (inclusion_spectrum,inclusion_concentration)
+
   // Deep copy of solid and solid_inc:
   solid_ = solid->Clone();
   solid_inc_ = solid_inc->Clone();
@@ -91,7 +94,8 @@ SolidDEM::Evolve(const std::vector<int>                & delta_time,
                                     solid_inc_new,
                                     inclusion_spectrum,
                                     inclusion_concentration,
-                                    porosity);
+                                    porosity,
+                                    u_);
 
   // Deep copy taken by constructor of SolidDEM, hence delete
   // solid_new and solid_inc_new here:

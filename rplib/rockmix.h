@@ -15,6 +15,7 @@ public:
 
   RockMixOfRock(const std::vector<Rock*>  &   rock,
                 const std::vector<double> &   volume_fraction,
+                const std::vector<double> &   u,
                 DEMTools::MixMethod           mix_method);
 
   virtual ~RockMixOfRock();
@@ -54,6 +55,7 @@ public:
                          const std::vector<Fluid*> &   fluid,
                          const std::vector<double> &   volume_fraction_solid,
                          const std::vector<double> &   volume_fraction_fluid,
+                         const std::vector<double> &   u,
                          DEMTools::MixMethod           mix_method);
 
   virtual ~RockMixOfSolidAndFluid();

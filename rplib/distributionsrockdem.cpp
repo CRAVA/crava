@@ -39,12 +39,16 @@ DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) c
   std::vector<double> inclusion_spectrum(n_incl);
   std::vector<double> inclusion_concentration(n_incl);
 
+  std::vector<double> u(n_incl+n_incl+1);
+  for(size_t i=0; i<n_incl+n_incl; i++)
+    u[i] = NRLib::Random::Unif01();
+
   for (size_t i = 0; i < n_incl; ++i) {
-    inclusion_spectrum[i] = distr_incl_spectrum_[i]->ReSample(trend_params[0], trend_params[1]);
-    inclusion_concentration[i] = distr_incl_concentration_[i]->ReSample(trend_params[0], trend_params[1]);
+    inclusion_spectrum[i] = distr_incl_spectrum_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
+    inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
   }
   double porosity = distr_porosity_->ReSample(trend_params[0], trend_params[1]);
-  Rock * new_rock = new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity);
+  Rock * new_rock = new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity, u);
 
   // Deep copy taken by constructor of RockInclusion, hence delete
   // solid and fluid here:

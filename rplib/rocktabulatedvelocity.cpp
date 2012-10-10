@@ -9,7 +9,7 @@ RockTabulatedVelocity::RockTabulatedVelocity(double               vp,
   vp_    = vp;
   vs_    = vs;
   rho_   = density;
-  u_     = u;
+  u_     = u;       // u contains correlated samples used in quantiles of (vp,vs,rho)
 }
 
 RockTabulatedVelocity::RockTabulatedVelocity()

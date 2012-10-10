@@ -18,10 +18,14 @@ DistributionsFluidBatzleWang::~DistributionsFluidBatzleWang(){}
 Fluid *
 DistributionsFluidBatzleWang::GenerateSample(const std::vector<double> & trend_params) const
 {
-  double  salinity      = distr_salinity_->ReSample(trend_params[0], trend_params[1]);
-  double  temperature   = distr_temperature_->ReSample(trend_params[0], trend_params[1]);
-  double  pore_pressure = distr_pore_pressure_->ReSample(trend_params[0], trend_params[1]);
-  Fluid * fluid         = new FluidBatzleWang(salinity, temperature, pore_pressure);
+  std::vector<double> u(3);
+  for(int i=0; i<3; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  double  salinity      = distr_salinity_->GetQuantileValue(u[0], trend_params[0], trend_params[1]);
+  double  temperature   = distr_temperature_->GetQuantileValue(u[1], trend_params[0], trend_params[1]);
+  double  pore_pressure = distr_pore_pressure_->GetQuantileValue(u[2], trend_params[0], trend_params[1]);
+  Fluid * fluid         = new FluidBatzleWang(salinity, temperature, pore_pressure, u);
 
   return  fluid;
 }

@@ -572,7 +572,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 
   double brine_salinity          = 0.05; // 100*//
 
-  FluidBatzleWang brine(brine_salinity, temperature, porepressure);
+  FluidBatzleWang brine(brine_salinity, temperature, porepressure, dummy_u);
 
   CO2 co2(temperature, porepressure);
   ////
@@ -595,7 +595,9 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   mineral[0] = &clay;
   mineral[1] = &quartz;
 
-  SolidMix solidmixed(mineral, volume_fraction, DEMTools::Hill);
+  std::vector<double> dummy_u_solid(2,0);
+
+  SolidMix solidmixed(mineral, volume_fraction, dummy_u_solid, DEMTools::Hill);
 
   double brine_k;
   double brine_rho;
@@ -614,7 +616,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   fluid[1] = &co2;
 
 
-  FluidMix fluid_mix(fluid, volume_fraction2, DEMTools::Reuss);
+  FluidMix fluid_mix(fluid, volume_fraction2, dummy_u_solid, DEMTools::Reuss);
   ////
 
 
@@ -649,7 +651,10 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
     inclusion_concentration.push_back(5.0000e-005);
   }
 
-  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, porosity);
+  size_t n_var = inclusion_spectrum.size() + inclusion_concentration.size();
+  std::vector<double> dummy_u_dem(n_var, 0.0);
+
+  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, porosity, dummy_u_dem);
   rock_inclusion.GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 }

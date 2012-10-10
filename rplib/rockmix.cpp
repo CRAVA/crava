@@ -13,9 +13,12 @@
 
 RockMixOfRock::RockMixOfRock(const std::vector<Rock*>      & rock,
                              const std::vector<double>     & volume_fraction,
+                             const std::vector<double>     & u,
                              DEMTools::MixMethod             mix_method)
 : Rock()
 {
+  u_ = u; // u contains independent samples used in quantiles of volume_fraction. Use RMISSING for fraction to be calculated from other fractions
+
   // Deep copy of rock:
   rock_.resize(rock.size());
   for (size_t i = 0; i < rock.size(); ++i) {
@@ -124,7 +127,7 @@ RockMixOfRock::Evolve(const std::vector<int>          & delta_time,
     rock_new[i] = rock_[i]->Evolve(delta_time, rock);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Rock * rock_mixed_new = new RockMixOfRock(rock_new, volume_fraction, mix_method_);
+  Rock * rock_mixed_new = new RockMixOfRock(rock_new, volume_fraction, u_, mix_method_);
 
   // Deep copy taken by constructor of RockMixOfRock, hence delete rock_new here:
   for (size_t i = 0; i < n_rocks; ++i)
@@ -151,9 +154,11 @@ RockMixOfSolidAndFluid::RockMixOfSolidAndFluid(const std::vector<Solid*> &  soli
                                                const std::vector<Fluid*> &  fluid,
                                                const std::vector<double> &  volume_fraction_solid,
                                                const std::vector<double> &  volume_fraction_fluid,
+                                               const std::vector<double> &  u,
                                                DEMTools::MixMethod          mix_method)
 : Rock()
 {
+  u_ = u; // u contains independent samples used in quantiles of (volume_fraction_solid,volume_fraction_fluid). Use RMISSING for fraction to be calculated from other fractions
 
   // Deep copy of solid:
   solid_.resize(solid.size());
@@ -263,7 +268,7 @@ RockMixOfSolidAndFluid::Evolve(const std::vector<int>          & delta_time,
 
   std::vector<double> volume_fraction_solid = volume_fraction_solid_; // Evolve when model is defined.
   std::vector<double> volume_fraction_fluid = volume_fraction_fluid_; // Evolve when model is defined.
-  Rock * rock_mixed_new = new RockMixOfSolidAndFluid(solid_new, fluid_new, volume_fraction_solid, volume_fraction_fluid, mix_method_);
+  Rock * rock_mixed_new = new RockMixOfSolidAndFluid(solid_new, fluid_new, volume_fraction_solid, volume_fraction_fluid, u_, mix_method_);
 
   // Deep copy taken by constructor of RockMixOfSolidAndFluid, hence delete solid_new, fluid_new here:
   for (size_t i = 0; i < n_solids; ++i)

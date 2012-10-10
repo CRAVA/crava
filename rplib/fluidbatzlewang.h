@@ -8,7 +8,8 @@ public:
 
   FluidBatzleWang(double                        salinity,
                   double                        temp,
-                  double                        pore_pressure);
+                  double                        pore_pressure,
+                  const std::vector<double>   & u);
 
   // Copy constructor
   FluidBatzleWang(const FluidBatzleWang & rhs);

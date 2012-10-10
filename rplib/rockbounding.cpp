@@ -14,7 +14,7 @@ RockBounding::RockBounding(const Rock          * upper_rock,
   porosity_   = porosity;
   K_weight_   = K_weight;
   M_weight_   = M_weight;
-  u_          = u;
+  u_          = u;               // u contains correlated samples used in quantiles of (porosity, K_weight, M_weight)
 
   ComputeSeismicVariables();
 }

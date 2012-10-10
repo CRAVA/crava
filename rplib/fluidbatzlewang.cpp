@@ -6,10 +6,13 @@
 
 FluidBatzleWang::FluidBatzleWang(double                        salinity,
                                  double                        temp,
-                                 double                        pore_pressure)
+                                 double                        pore_pressure,
+                                 const std::vector<double>   & u)
 : Fluid()
 {
   salinity_        = salinity;
+  u_               = u; //u contains independent samples used in quantiles of (salinity,temp,pore_pressure)
+
   ComputeElasticParams(temp, pore_pressure);
 }
 

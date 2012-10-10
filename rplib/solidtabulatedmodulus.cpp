@@ -9,7 +9,7 @@ SolidTabulatedModulus::SolidTabulatedModulus(const double                    k,
   k_               = k;
   mu_              = mu;
   rho_             = rho;
-  u_               = u;
+  u_               = u;   // u contains correlated samples used in quantiles of (k,mu,rho)
 }
 
 SolidTabulatedModulus::SolidTabulatedModulus(const SolidTabulatedModulus & rhs)

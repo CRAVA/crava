@@ -6,9 +6,12 @@
 
 SolidMix::SolidMix(const std::vector<Solid*>      & solid,
                    const std::vector<double>      & volume_fraction,
+                   const std::vector<double>      & u,
                    DEMTools::MixMethod              mix_method)
 : Solid()
 {
+  u_ = u;  // u contains independent samples used in quantiles of volume_fraction. Use RMISSING for fraction to be calculated from other fractions
+
   // Deep copy of solid:
   solid_.resize(solid.size());
   for (size_t i = 0; i < solid.size(); ++i) {
@@ -102,7 +105,7 @@ SolidMix::Evolve(const std::vector<int>             & delta_time,
     solid_new[i] = solid_[i]->Evolve(delta_time, solid);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Solid * solid_mixed_new = new SolidMix(solid_new, volume_fraction, mix_method_);
+  Solid * solid_mixed_new = new SolidMix(solid_new, volume_fraction, u_, mix_method_);
 
   // Deep copy taken by constructor of SolidMix, hence delete solid_new here:
   for (size_t i = 0; i < n_solids; ++i)

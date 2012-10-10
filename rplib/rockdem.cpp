@@ -7,9 +7,12 @@ RockDEM::RockDEM(const Solid                         * solid,
                  const Fluid                         * fluid,
                  const std::vector<double>           & inclusion_spectrum,
                  const std::vector<double>           & inclusion_concentration,
-                 double                                porosity)
+                 double                                porosity,
+                 const std::vector<double>           & u)
 : Rock()
 {
+  u_ = u; // u contains independent samples used in quantiles of (inclusion_spectrum,inclusion_concentration)
+
   // Deep copy of solid and fluid:
   solid_ = solid->Clone();
   fluid_ = fluid->Clone();
@@ -103,7 +106,8 @@ RockDEM::Evolve(const std::vector<int>         & delta_time,
                                       fluid_new,
                                       inclusion_spectrum,
                                       inclusion_concentration,
-                                      porosity);
+                                      porosity,
+                                      u_);
 
   // Deep copy taken by constructor of RockDEM, hence delete
   // solid_new and fluid_new here:

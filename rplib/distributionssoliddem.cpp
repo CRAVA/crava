@@ -28,15 +28,19 @@ DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params) 
   Solid * solid_inc = distr_solid_inc_->GenerateSample(trend_params);
   size_t  n_incl    = distr_incl_spectrum_.size();
 
+  std::vector<double> u(n_incl+n_incl+1);
+  for(size_t i=0; i<n_incl+n_incl; i++)
+    u[i] = NRLib::Random::Unif01();
+
   std::vector<double> inclusion_spectrum(n_incl);
   std::vector<double> inclusion_concentration(n_incl);
 
   for (size_t i = 0; i < n_incl; ++i) {
-    inclusion_spectrum[i]      = distr_incl_spectrum_[i]->ReSample(trend_params[0], trend_params[1]);
-    inclusion_concentration[i] = distr_incl_concentration_[i]->ReSample(trend_params[0], trend_params[1]);
+    inclusion_spectrum[i]      = distr_incl_spectrum_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
+    inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
   }
   double  porosity  = distr_porosity_->ReSample(trend_params[0], trend_params[1]);
-  Solid * new_solid = new SolidDEM(solid, solid_inc, inclusion_spectrum, inclusion_concentration, porosity);
+  Solid * new_solid = new SolidDEM(solid, solid_inc, inclusion_spectrum, inclusion_concentration, porosity, u);
 
   // Deep copy taken by constructor of SolidDEM, hence delete
   // solid and solid_inc here:

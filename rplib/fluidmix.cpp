@@ -4,9 +4,11 @@
 
 FluidMix::FluidMix(const std::vector<Fluid*>      & fluid,
                    const std::vector<double>      & volume_fraction,
+                   const std::vector<double>      & u,
                    DEMTools::MixMethod              mix_method)
 : Fluid()
 {
+  u_ = u; // u contains independent samples used in quantiles of volume_fraction. Use RMISSING for fraction to be calculated from other fractions
 
   // Deep copy of fluid:
   fluid_.resize(fluid.size());
@@ -100,7 +102,7 @@ FluidMix::Evolve(const std::vector<int>             & delta_time,
     fluid_new[i] = fluid_[i]->Evolve(delta_time, fluid);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Fluid * fluid_mixed_new = new FluidMix(fluid_new, volume_fraction, mix_method_);
+  Fluid * fluid_mixed_new = new FluidMix(fluid_new, volume_fraction, u_, mix_method_);
 
   // Deep copy taken by constructor of FluidMix, hence delete fluid_new here:
   for (size_t i = 0; i < n_fluids; ++i)

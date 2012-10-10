@@ -8,7 +8,7 @@ FluidTabulatedModulus::FluidTabulatedModulus(const double                    k,
 {
   k_               = k;
   rho_             = rho;
-  u_               = u;
+  u_               = u;  // u contains correlated samples used in quantiles of (k,mu,rho)
 }
 
 FluidTabulatedModulus::FluidTabulatedModulus(const FluidTabulatedModulus & rhs)

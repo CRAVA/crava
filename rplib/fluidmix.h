@@ -13,6 +13,7 @@ public:
 
   FluidMix(const std::vector<Fluid*>      & fluid,
            const std::vector<double>      & volume_fraction,
+           const std::vector<double>      & u,
            DEMTools::MixMethod              mix_method);
 
   virtual ~FluidMix();

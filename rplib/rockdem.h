@@ -16,7 +16,8 @@ RockDEM(const Solid                         * solid,
         const Fluid                         * fluid,
         const std::vector<double>           & inclusion_spectrum,
         const std::vector<double>           & inclusion_concentration,
-        double                                porosity);
+        double                                porosity,
+        const std::vector<double>           & u);
 
 RockDEM();
 

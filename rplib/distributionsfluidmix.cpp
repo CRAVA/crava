@@ -6,6 +6,8 @@
 
 #include "rplib/distributionwithtrend.h"
 
+#include "src/definitions.h"
+
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method)
@@ -24,14 +26,21 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
 {
 
   size_t n_fluids = distr_fluid_.size();
+
+  std::vector<double> u(n_fluids, RMISSING);
+  for(size_t i=0; i<n_fluids; i++) {
+    if(distr_vol_frac_[i] != NULL)
+      u[i] = NRLib::Random::Unif01();
+  }
+
   std::vector<Fluid*> fluid(n_fluids);
   std::vector<double> volume_fraction(n_fluids);
 
   for(size_t i = 0; i < n_fluids; ++i) {
     fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
-    volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
+    volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
   }
-  Fluid * fluid_mixed = new FluidMix(fluid, volume_fraction, mix_method_);
+  Fluid * fluid_mixed = new FluidMix(fluid, volume_fraction, u, mix_method_);
 
   // Deep copy taken by constructor of FluidMixed, hence delete fluid here:
   for(size_t i = 0; i < n_fluids; ++i)
