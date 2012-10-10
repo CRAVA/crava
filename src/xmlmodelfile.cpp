@@ -2361,23 +2361,32 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
   legalCommands.push_back("bulk-modulus-weight");
   legalCommands.push_back("p-wave-modulus-weight");
   legalCommands.push_back("correlation-weights");
+  legalCommands.push_back("porosity");
 
   std::string upper_bound;
-  parseUpperBound(root, upper_bound, errTxt);
+  if(parseUpperBound(root, upper_bound, errTxt) == false)
+    errTxt += "<upper-bound> needs to be given in <rock><bounding>\n";
 
   std::string lower_bound;
-  parseLowerBound(root, lower_bound, errTxt);
+  if(parseLowerBound(root, lower_bound, errTxt) == false)
+    errTxt += "<lower-bound> needs to be given in <rock><bounding>\n";
 
   std::string dummy;
   DistributionWithTrendStorage * bulk_weight  = NULL;
-  parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true);
+  if(parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true) == false)
+    errTxt += "<bulk-modulus-weight> needs to be given in <rock><bounding>\n";
 
   DistributionWithTrendStorage * p_wave_weight = NULL;
-  parseDistributionWithTrend(root, "p-wave-modulus-weight", p_wave_weight, dummy, false, errTxt, true);
+  if(parseDistributionWithTrend(root, "p-wave-modulus-weight", p_wave_weight, dummy, false, errTxt, true) == false)
+    errTxt += "<p-wave-weight> needs to be given in <rock><bounding>\n";
 
   double correlation;
   if(parseValue(root, "correlation-weights", correlation, errTxt) == false)
     correlation = 0;
+
+  DistributionWithTrendStorage * porosity = NULL;
+  if(parseDistributionWithTrend(root, "porosity", porosity, dummy, false, errTxt, true) == false)
+    errTxt += "<porosity> needs to be given in <rock><bounding>\n";
 
   if(constituent == ModelSettings::FLUID) {
     errTxt += "Implementation error: The Bounding model can not be used to make a fluid\n";
@@ -2389,7 +2398,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, bulk_weight, p_wave_weight, correlation);
+    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, p_wave_weight, correlation);
     modelSettings_->addRock(label, rock);
   }
 

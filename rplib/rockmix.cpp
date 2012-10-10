@@ -289,10 +289,10 @@ void
 RockMixOfSolidAndFluid::SetPorosity(double porosity)
 {
   double poro_old = 0;
-  for(size_t i=0; i<volume_fraction_solid_.size(); i++)
+  for(size_t i=0; i<volume_fraction_fluid_.size(); i++)
     poro_old += volume_fraction_fluid_[i];
 
-  for(size_t i=0; i<volume_fraction_solid_.size(); i++)
+  for(size_t i=0; i<volume_fraction_fluid_.size(); i++)
     volume_fraction_fluid_[i] = porosity * volume_fraction_fluid_[i] / poro_old;
 
   for(size_t i=0; i<volume_fraction_solid_.size(); i++)

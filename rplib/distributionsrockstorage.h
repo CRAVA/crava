@@ -30,7 +30,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & /*errTxt*/)                    const = 0;
 
 protected:
@@ -43,7 +42,6 @@ protected:
                                                  const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
                                                  const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
                                                  const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-                                                 std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                  std::map<std::string, DistributionsRock *>                 & rock_distribution,
                                                  std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                  std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
@@ -75,7 +73,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -110,7 +107,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -141,7 +137,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -168,7 +163,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -195,7 +189,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -226,7 +219,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -257,7 +249,6 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -270,6 +261,7 @@ class BoundingRockStorage : public DistributionsRockStorage {
 public:
   BoundingRockStorage(std::string                    upper_rock,
                       std::string                    lower_rock,
+                      DistributionWithTrendStorage * porosity,
                       DistributionWithTrendStorage * bulk_weight,
                       DistributionWithTrendStorage * p_wave_weight,
                       double                         correlation_weights);
@@ -287,12 +279,12 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
   std::string                    upper_rock_;
   std::string                    lower_rock_;
+  DistributionWithTrendStorage * porosity_;
   DistributionWithTrendStorage * bulk_weight_;
   DistributionWithTrendStorage * p_wave_weight_;
   double                         correlation_weights_;

@@ -100,7 +100,6 @@ ReadRock(const std::string                                          & target_roc
          std::map<std::string, DistributionsSolid *>                & solid_distribution,
          std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-         std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
          std::string                                                & errTxt)
 {
   DistributionsRock * final_rock = NULL;
@@ -124,7 +123,6 @@ ReadRock(const std::string                                          & target_roc
                                                                                       solid_distribution,
                                                                                       dry_rock_distribution,
                                                                                       fluid_distribution,
-                                                                                      reservoir_variables,
                                                                                       errTxt);
       rock_distribution[m_all->first]            = rock;
       final_rock                                 = rock;

@@ -211,13 +211,13 @@ DistributionsRockMixOfSolidAndFluid::HasDistribution() const
   for(size_t i=0; i<n_fluids; i++) {
     if(distr_fluid_[i]->HasDistribution() == true)
       has_distribution = true;
-    else if(distr_vol_frac_fluid_[i]->GetIsDistribution() == true)
+    else if(distr_vol_frac_fluid_[i] != NULL && distr_vol_frac_fluid_[i]->GetIsDistribution() == true)
       has_distribution = true;
   }
   for(size_t i=0; i<n_solids; i++) {
     if(distr_solid_[i]->HasDistribution() == true)
       has_distribution = true;
-    else if(distr_vol_frac_solid_[i]->GetIsDistribution() == true)
+    else if(distr_vol_frac_solid_[i] != NULL && distr_vol_frac_solid_[i]->GetIsDistribution() == true)
       has_distribution = true;
   }
 
@@ -236,8 +236,11 @@ DistributionsRockMixOfSolidAndFluid::HasTrend() const
   size_t n_fluids = distr_fluid_.size();
 
   for(size_t i=0; i<n_fluids; i++) {
-    std::vector<bool> fluid_trend  = distr_fluid_[i]         ->HasTrend();
-    std::vector<bool> volume_trend = distr_vol_frac_fluid_[i]->GetUseTrendCube();
+    std::vector<bool> fluid_trend  = distr_fluid_[i]->HasTrend();
+
+    std::vector<bool> volume_trend(2,false);
+    if(distr_vol_frac_fluid_[i] != NULL)
+       volume_trend = distr_vol_frac_fluid_[i]->GetUseTrendCube();
 
     for(int j=0; j<2; j++) {
       if(fluid_trend[j] == true)
@@ -250,8 +253,11 @@ DistributionsRockMixOfSolidAndFluid::HasTrend() const
   size_t n_solids = distr_solid_.size();
 
   for(size_t i=0; i<n_solids; i++) {
-    std::vector<bool> solid_trend  = distr_solid_[i]         ->HasTrend();
-    std::vector<bool> volume_trend = distr_vol_frac_solid_[i]->GetUseTrendCube();
+    std::vector<bool> solid_trend  = distr_solid_[i]->HasTrend();
+
+    std::vector<bool> volume_trend(2,false);
+    if(distr_vol_frac_solid_[i] != NULL)
+       volume_trend = distr_vol_frac_solid_[i]->GetUseTrendCube();
 
     for(int j=0; j<2; j++) {
       if(solid_trend[j] == true)

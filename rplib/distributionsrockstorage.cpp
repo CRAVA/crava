@@ -43,7 +43,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                                      const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
                                                      const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
                                                      const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-                                                     std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                      std::map<std::string, DistributionsRock *>                 & rock_distribution,
                                                      std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                      std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
@@ -102,7 +101,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                solid_distribution,
                                dry_rock_distribution,
                                fluid_distribution,
-                               reservoir_variables,
                                tmpErrTxt);
     }
 
@@ -192,7 +190,6 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const std::string       
                                                         std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
                                                         std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
                                                         std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                                        std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
                                                         std::string                                                & errTxt) const
 {
   const DistributionWithTrend * vp_dist_with_trend              = vp_                    ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
@@ -244,7 +241,6 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string        
                                                        std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
                                                        std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
                                                        std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                                       std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
                                                        std::string                                                & errTxt) const
 {
 
@@ -289,7 +285,6 @@ ReussRockStorage::GenerateDistributionsRock(const std::string                   
                                             std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                             std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                             std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                             std::string                                                & errTxt) const
 {
 
@@ -306,7 +301,6 @@ ReussRockStorage::GenerateDistributionsRock(const std::string                   
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      reservoir_variables,
                                       rock_distribution,
                                       solid_distribution,
                                       dry_rock_distribution,
@@ -350,7 +344,6 @@ VoigtRockStorage::GenerateDistributionsRock(const std::string                   
                                             std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                             std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                             std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                             std::string                                                & errTxt) const
 {
 
@@ -367,7 +360,6 @@ VoigtRockStorage::GenerateDistributionsRock(const std::string                   
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      reservoir_variables,
                                       rock_distribution,
                                       solid_distribution,
                                       dry_rock_distribution,
@@ -412,7 +404,6 @@ HillRockStorage::GenerateDistributionsRock(const std::string                    
                                             std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                             std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                             std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                             std::string                                                & errTxt) const
 {
 
@@ -429,7 +420,6 @@ HillRockStorage::GenerateDistributionsRock(const std::string                    
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      reservoir_variables,
                                       rock_distribution,
                                       solid_distribution,
                                       dry_rock_distribution,
@@ -492,7 +482,6 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
                                           std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
                                           std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
                                           std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                          std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
                                           std::string                                                & errTxt) const
 {
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
@@ -537,7 +526,6 @@ GassmannRockStorage::GenerateDistributionsRock(const std::string                
                                                std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
                                                std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
                                                std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                               std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
                                                std::string                                                & errTxt) const
 {
   DistributionsRock * rock = NULL; //new DistributionsRockGassmann();
@@ -551,11 +539,13 @@ GassmannRockStorage::GenerateDistributionsRock(const std::string                
 //----------------------------------------------------------------------------------//
 BoundingRockStorage::BoundingRockStorage(std::string                    upper_rock,
                                          std::string                    lower_rock,
+                                         DistributionWithTrendStorage * porosity,
                                          DistributionWithTrendStorage * bulk_weight,
                                          DistributionWithTrendStorage * p_wave_weight,
                                          double                         correlation_weights)
 : upper_rock_(upper_rock),
   lower_rock_(lower_rock),
+  porosity_(porosity),
   bulk_weight_(bulk_weight),
   p_wave_weight_(p_wave_weight),
   correlation_weights_(correlation_weights)
@@ -582,7 +572,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                                                std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-                                               std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                std::string                                                & errTxt) const
 {
   std::string tmpErrTxt = "";
@@ -601,7 +590,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               solid_distribution,
                               dry_rock_distribution,
                               fluid_distribution,
-                              reservoir_variables,
                               tmpErrTxt);
 
   if(distr_upper_rock->GetIsOkForBounding() == false) {
@@ -623,7 +611,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               solid_distribution,
                               dry_rock_distribution,
                               fluid_distribution,
-                              reservoir_variables,
                               tmpErrTxt);
 
   if(distr_lower_rock->GetIsOkForBounding() == false) {
@@ -631,23 +618,19 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
     tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
-  std::string upper_type = typeid(distr_upper_rock).name(); //Marit: Denne testn fungerer ikke
+  std::string upper_type = typeid(distr_upper_rock).name(); //Marit: Denne testen fungerer ikke
   if(upper_type != "class DistributionsRock *")
-    tmpErrTxt += "The upper bound in the Bounding rock physics model needs follow a Voigt model\n";
+    tmpErrTxt += "The upper bound in the Bounding rock physics model needs to follow a Voigt model\n";
 
-  std::string lower_type = typeid(distr_lower_rock).name(); //Marit: Denne testen fungerer ikke
+  std::string lower_type = typeid(distr_lower_rock).name(); //Marit: Denne testen fungerer ikke.
   if(lower_type != "class DistributionsRock *")
-    tmpErrTxt += "The lower bound in the Bounding rock physics model needs follow a Reuss model\n";
+    tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
 
-  // Check that the porosities in upper_rock and lower_rock are the same, and given in reservoir_variables
-  //std::map<std::string, DistributionsRock *>::iterator m = rock_distribution.find(target_rock);
-  //if (m == rock_distribution.end()) { // label not found in rock_distribution map
-  //DistributionWithTrend * porosity = NULL; //Denne må settes og være den fra reservoir
-
+  DistributionWithTrend * distr_porosity      = porosity_     ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   DistributionWithTrend * distr_bulk_weight   = bulk_weight_  ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   DistributionWithTrend * distr_p_wave_weight = p_wave_weight_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  DistributionsRock * rock = new DistributionsRockBounding(distr_upper_rock, distr_lower_rock, NULL, distr_bulk_weight, distr_p_wave_weight, correlation_weights_);
+  DistributionsRock * rock = new DistributionsRockBounding(distr_upper_rock, distr_lower_rock, distr_porosity, distr_bulk_weight, distr_p_wave_weight, correlation_weights_);
 
 
   if(tmpErrTxt != "") {

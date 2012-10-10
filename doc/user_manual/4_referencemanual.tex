@@ -3265,6 +3265,55 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default
  \elist
 
+\paragraph{\hbracket{bounding}}\newkw{bounding}
+ \slist
+   \item \Description The Bounding model is a rock physics model describing the stiffness of a rock as a weighting between a Voigt and a Reuss model. High weights in the bounding model indicate a stiff rock, while low weights indicate a soft rock.
+   \item \Argument Two rocks, being generated using the Voigt and Reuss models, respectively. Both these models need to be mixed from a solid and an fluid. 
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{upper-bound}}\newkw{upper-bound}
+ \slist
+   \item \Description The upper bound of the Bounding model needs to be a <rock> mixed from a tabulated solid and a tabulated fluid using the Voigt model. The variables in the tabulated models can not use distributions nor trends.
+   \item \Argument <rock>
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{lower-bound}}\newkw{lower-bound}
+ \slist
+   \item \Description The lower bound of the Bounding model needs to be a <rock> mixed from a tabulated solid and a tabulated fluid using the Reuss model. The variables in the tabulated models can not use distributions nor trends.
+   \item \Argument <rock>
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{porosity}}\newkw{porosity}
+ \slist
+   \item \Description The porosity of the Bounding model should be the same variable as <volume-fraction> of the fluid in the Reuss and Voigt models where a solid and fluid are mixed, and it should be declared in \kw{reservoir}. If the porosity is not the same variable as the volume fractions, <porosity> overrides the volume fractions. The porosity is uncorrelated with the weights.
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{bulk-modulus-weight}}\newkw{bulk-modulus-weight}
+ \slist
+   \item \Description The bulk modulus is calculated using the weights and upper/lower bounds from the relation $K=W_k*$upper-bound$+(1-W_k)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{p-wave-modulus-weight}}\newkw{p-wave-modulus-weight}
+ \slist
+   \item \Description The p-wave modulus is often termed $M$, and calculated from the relation $M=\rho*\vp^2$. The p-wave modulus is calculated using the weights and upper/lower bounds from the relation $M=W_m*$upper-bound$+(1-W_m)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{correlation-weights}}\newkw{correlation-weights}
+ \slist
+   \item \Description The correlation between the bulk-modulus weight and p-wave-modulus-weight.
+   \item \Argument Value
+   \item \Default 0
+ \elist
+
 \subsubsection{\hbracket{trend-cube}}\newkw{trend-cube}
  \slist
    \item \Description Repeated command; one for each trend cube. There can be no more than two trend cubes
