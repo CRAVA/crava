@@ -1988,6 +1988,9 @@ XmlModelFile::parseReuss(TiXmlNode * node, int constituent, std::string label, D
     constituent_fraction.push_back(volume_fraction);
   }
 
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Reuss rock physics model for "+label+"\n";
+
   if(constituent == ModelSettings::FLUID) {
     DistributionsFluidStorage * fluid = new ReussFluidStorage(constituent_label, constituent_fraction);
     modelSettings_->addFluid(label, fluid);
@@ -2029,6 +2032,9 @@ XmlModelFile::parseVoigt(TiXmlNode * node, int constituent, std::string label, D
     constituent_fraction.push_back(volume_fraction);
   }
 
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Voigt rock physics model for "+label+"\n";
+
   if(constituent == ModelSettings::FLUID) {
     DistributionsFluidStorage * fluid = new VoigtFluidStorage(constituent_label, constituent_fraction);
     modelSettings_->addFluid(label, fluid);
@@ -2069,6 +2075,9 @@ XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, Di
     constituent_label.push_back(this_label);
     constituent_fraction.push_back(volume_fraction);
   }
+
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Hill rock physics model for "+label+"\n";
 
   if(constituent == ModelSettings::FLUID) {
     DistributionsFluidStorage * fluid = new HillFluidStorage(constituent_label, constituent_fraction);
@@ -2185,7 +2194,8 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
   DistributionWithTrendStorage * host_aspect = NULL;
   std::string                    host_label  = "";
 
-  parseDEMHost(root, host_label, host_aspect, host_volume, errTxt);
+  if(parseDEMHost(root, host_label, host_aspect, host_volume, errTxt) == false)
+    errTxt += "The host must be given in the DEM rock physics model for "+label+"\n";
 
   std::vector<std::string>                    inclusion_label;
   std::vector<DistributionWithTrendStorage *> inclusion_volume;
@@ -2200,6 +2210,9 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
     inclusion_volume.push_back(volume);
     aspect_ratio.push_back(aspect);
   }
+
+  if(inclusion_label.size() < 2)
+    errTxt += "At least one inclusion must be given in the DEM rock physics model for "+label+"\n";
 
   if(constituent == ModelSettings::FLUID) {
     errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
