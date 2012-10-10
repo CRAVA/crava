@@ -6325,7 +6325,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\solidmixed.cpp"
+					RelativePath=".\rplib\solidmix.cpp"
 					>
 				</File>
 				<File
@@ -7073,11 +7073,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7442,10 +7442,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionssolidmixevolution.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionssolidstorage.h"
 					>
 				</File>
@@ -7538,7 +7534,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\solidmixed.h"
+					RelativePath=".\rplib\solidmix.h"
 					>
 				</File>
 				<File
