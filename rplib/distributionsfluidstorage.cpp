@@ -217,16 +217,14 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
   const DistributionWithTrend * temperature_distr    = temperature_  ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * salinity_distr       = salinity_     ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  DistributionsBrineEvolution * distr_evolve         = NULL;
-  DistributionsCO2Evolution   * distr_evolve_co2     = NULL;
 
   //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
   bool is_co2 = false;
 
   if (is_co2)
-    fluid       = new DistributionsCO2(temperature_distr, pore_pressure_distr, distr_evolve_co2);
+    fluid       = new DistributionsCO2(temperature_distr, pore_pressure_distr);
   else
-    fluid       = new DistributionsBrine(temperature_distr, pore_pressure_distr, salinity_distr, distr_evolve);
+    fluid       = new DistributionsBrine(temperature_distr, pore_pressure_distr, salinity_distr);
 
   return(fluid);
 }

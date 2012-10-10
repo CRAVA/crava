@@ -2,17 +2,12 @@
 #define RPLIB_CO2_H
 
 #include "rplib/fluid.h"
-#include "rplib/distributionsco2evolution.h"
-#include "rplib/demmodelling.h"
-
-#include <cassert>
 
 class CO2 : public Fluid {
 public:
 
                               CO2(double                      temp,
-                                  double                      pore_pressure,
-                                  DistributionsCO2Evolution * distr_evolution = NULL);
+                                  double                      pore_pressure);
 
                               // Copy constructor
                               CO2(const CO2 & rhs);
@@ -28,9 +23,6 @@ public:
 
   virtual Fluid *             Evolve(const std::vector<int>             & /*delta_time*/,
                                      const std::vector< const Fluid * > & /*fluid*/)                const;
-
-private:
-  DistributionsCO2Evolution * distr_evolution_; // Pointer to external object.
 
 };
 

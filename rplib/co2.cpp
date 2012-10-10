@@ -1,17 +1,18 @@
 #include "rplib/co2.h"
 
+#include "rplib/demmodelling.h"
+
+#include <cassert>
+
 CO2::CO2(double                      temp,
-         double                      pore_pressure,
-         DistributionsCO2Evolution * distr_evolution)
+         double                      pore_pressure)
 : Fluid()
 {
-  distr_evolution_ = distr_evolution;
   ComputeElasticParams(temp, pore_pressure);
 }
 
 CO2::CO2(const CO2 & rhs) : Fluid(rhs)
 {
-  distr_evolution_ = rhs.distr_evolution_;
 }
 
 CO2::~CO2(){}

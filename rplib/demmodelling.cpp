@@ -13,8 +13,6 @@
 #include "rplib/distributionsrockdem.h"
 #include "rplib/distributionssolidmix.h"
 #include "rplib/distributionsfluidmix.h"
-#include "rplib/distributionsbrineevolution.h"
-#include "rplib/distributionsco2evolution.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/deltadistributionwithtrend.h"
 
@@ -694,10 +692,8 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  NRLib::Delta distr_pore_pressure(20.0);
 //  NRLib::Delta distr_temperature(50.0);
 //  NRLib::Delta distr_salinity(0.05);
-//  DistributionsBrineEvolution * distr_brine_evolution = NULL;
-//  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
-//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
-//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
+//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity);
+//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure);
 //  //Fluid * brine = distr_brine->GenerateSample();
 //  //Fluid * co2   = distr_co2->GenerateSample();
 //
@@ -847,10 +843,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_salinity          = new NRLib::TrendConstant(0.05);
   DistributionWithTrend * distr_salinity = new DeltaDistributionWithTrend(trend_salinity, false);
 
-  DistributionsBrineEvolution * distr_brine_evolution = NULL;
-  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
-  DistributionsFluid * distr_brine  = new DistributionsBrine(distr_temperature, distr_pore_pressure, distr_salinity, distr_brine_evolution);
-  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure, distr_co2_evolution);
+  DistributionsFluid * distr_brine  = new DistributionsBrine(distr_temperature, distr_pore_pressure, distr_salinity);
+  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure);
   //Fluid * brine = distr_brine->GenerateSample();
   //Fluid * co2   = distr_co2->GenerateSample();
 
@@ -991,10 +985,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  NRLib::Delta distr_pore_pressure(20.0);
 //  NRLib::Delta distr_temperature(50.0);
 //  NRLib::Delta distr_salinity(0.05);
-//  DistributionsBrineEvolution * distr_brine_evolution = NULL;
-//  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
-//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
-//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
+//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity);
+//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure);
 //
 //  //// Mixing, effective fluid properties. Distribution functions.
 //  std::vector< DistributionsFluid * > distr_fluid;

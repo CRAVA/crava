@@ -7,8 +7,7 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
                                              DistributionsSolid                           * distr_solid_inc,
                                              std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
                                              std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                                             DistributionWithTrend                        * distr_porosity,
-                                             DistributionsSolidDEMEvolution               * distr_evolution)
+                                             DistributionWithTrend                        * distr_porosity)
 : DistributionsSolid()
 {
   assert( distr_incl_spectrum.size() == distr_incl_concentration.size() );
@@ -18,9 +17,6 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
   distr_porosity_           = distr_porosity;
-  distr_evolution_          = distr_evolution;
-
-
 }
 
 DistributionsSolidDEM::~DistributionsSolidDEM(){}
@@ -40,7 +36,7 @@ DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params) 
     inclusion_concentration[i] = distr_incl_concentration_[i]->ReSample(trend_params[0], trend_params[1]);
   }
   double  porosity  = distr_porosity_->ReSample(trend_params[0], trend_params[1]);
-  Solid * new_solid = new SolidDEM(solid, solid_inc, inclusion_spectrum, inclusion_concentration, porosity, distr_evolution_);
+  Solid * new_solid = new SolidDEM(solid, solid_inc, inclusion_spectrum, inclusion_concentration, porosity);
 
   // Deep copy taken by constructor of SolidDEM, hence delete
   // solid and solid_inc here:

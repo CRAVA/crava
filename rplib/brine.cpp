@@ -1,20 +1,21 @@
 #include "rplib/brine.h"
 
+#include "rplib/demmodelling.h"
+
+#include <cassert>
+
 Brine::Brine(double                        salinity,
              double                        temp,
-             double                        pore_pressure,
-             DistributionsBrineEvolution * distr_evolution)
+             double                        pore_pressure)
 : Fluid()
 {
   salinity_        = salinity;
-  distr_evolution_ = distr_evolution;
   ComputeElasticParams(temp, pore_pressure);
 }
 
 Brine::Brine(const Brine & rhs) : Fluid(rhs)
 {
   salinity_ = rhs.salinity_;
-  distr_evolution_ = rhs.distr_evolution_;
 }
 
 Brine::~Brine(){}

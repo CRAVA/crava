@@ -5,14 +5,12 @@
 #include "rplib/co2.h"
 
 class DistributionWithTrend;
-class DistributionsCO2Evolution;
 
 class DistributionsCO2 : public DistributionsFluid {
 public:
 
                                       DistributionsCO2(const DistributionWithTrend       * distr_temperature,
-                                                     const DistributionWithTrend       * distr_pore_pressure,
-                                                     DistributionsCO2Evolution   * distr_evolution = NULL);
+                                                     const DistributionWithTrend       * distr_pore_pressure);
 
   virtual                             ~DistributionsCO2();
 
@@ -29,7 +27,6 @@ protected:
 private:
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
   const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
-        DistributionsCO2Evolution   * distr_evolution_;     // Pointer to external object.
 };
 
 #endif

@@ -5,17 +5,15 @@
 #include "rplib/brine.h"
 
 class DistributionWithTrend;
-class DistributionsBrineEvolution;
 
 class DistributionsBrine : public DistributionsFluid {
 public:
 
-                                      DistributionsBrine(const DistributionWithTrend * distr_temperature,
-                                                         const DistributionWithTrend * distr_pore_pressure,
-                                                         const DistributionWithTrend * distr_salinity,
-                                                               DistributionsBrineEvolution * distr_evolution = NULL);
+  DistributionsBrine(const DistributionWithTrend * distr_temperature,
+                     const DistributionWithTrend * distr_pore_pressure,
+                     const DistributionWithTrend * distr_salinity);
 
-  virtual                             ~DistributionsBrine();
+  virtual ~DistributionsBrine();
 
   virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
 
@@ -31,7 +29,6 @@ private:
   const DistributionWithTrend       * distr_salinity_;      // Pointer to external object.
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
   const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
-        DistributionsBrineEvolution * distr_evolution_;     // Pointer to external object.
 
 };
 

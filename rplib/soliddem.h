@@ -8,8 +8,6 @@
 
 #include <vector>
 
-class DistributionsSolidDEMEvolution;
-
 class SolidDEM : public Solid {
 public:
 
@@ -17,8 +15,7 @@ public:
            const Solid                         * solid_inc,
            const std::vector<double>           & inclusion_spectrum,
            const std::vector<double>           & inclusion_concentration,
-           double                                porosity,
-           DistributionsSolidDEMEvolution      * distr_evolution = NULL);
+           double                                porosity);
 
   SolidDEM();
 
@@ -50,7 +47,6 @@ private:
   std::vector<double>                   inclusion_spectrum_;
   std::vector<double>                   inclusion_concentration_;
   double                                porosity_;
-  DistributionsSolidDEMEvolution      * distr_evolution_; // Pointer to external object.
 };
 
 #endif

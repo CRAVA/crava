@@ -6,17 +6,15 @@
 #include "nrlib/random/distribution.hpp"
 
 class DistributionWithTrend;
-class DistributionsSolidDEMEvolution;
 
 class DistributionsSolidDEM : public DistributionsSolid {
 public:
 
-                                DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
-                                                      DistributionsSolid                           * distr_solid_inc,
-                                                      std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                                      std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                                                      DistributionWithTrend                        * distr_porosity,
-                                                      DistributionsSolidDEMEvolution               * distr_evolution = NULL);
+  DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
+                        DistributionsSolid                           * distr_solid_inc,
+                        std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
+                        std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                        DistributionWithTrend                        * distr_porosity);
 
   virtual                       ~DistributionsSolidDEM();
 
@@ -37,8 +35,6 @@ private:
   std::vector< DistributionWithTrend * >         distr_incl_spectrum_;      // Pointers to external objects.
   std::vector< DistributionWithTrend * >         distr_incl_concentration_; // Pointers to external objects.
   DistributionWithTrend                        * distr_porosity_;           // Pointer to external object.
-  DistributionsSolidDEMEvolution               * distr_evolution_;          // Pointer to external object.
-
 };
 
 #endif

@@ -6,8 +6,7 @@ SolidDEM::SolidDEM(const Solid                         * solid,
                    const Solid                         * solid_inc,
                    const std::vector<double>           & inclusion_spectrum,
                    const std::vector<double>           & inclusion_concentration,
-                   double                                porosity,
-                   DistributionsSolidDEMEvolution      * distr_evolution)
+                   double                                porosity)
 : Solid()
 {
   // Deep copy of solid and solid_inc:
@@ -17,7 +16,6 @@ SolidDEM::SolidDEM(const Solid                         * solid,
   inclusion_spectrum_      = inclusion_spectrum;
   inclusion_concentration_ = inclusion_concentration;
   porosity_                = porosity;
-  distr_evolution_         = distr_evolution;
 
   ComputeElasticParams();
 
@@ -42,7 +40,6 @@ SolidDEM& SolidDEM::operator=(const SolidDEM& rhs)
     inclusion_spectrum_      = rhs.inclusion_spectrum_;
     inclusion_concentration_ = rhs.inclusion_concentration_;
     porosity_                = rhs.porosity_;
-    distr_evolution_         = rhs.distr_evolution_;
 
     delete solid_;
     delete solid_inc_;
@@ -64,7 +61,6 @@ SolidDEM::Clone() const {
   r->inclusion_spectrum_      = this->inclusion_spectrum_;
   r->inclusion_concentration_ = this->inclusion_concentration_;
   r->porosity_                = this->porosity_;
-  r->distr_evolution_         = this->distr_evolution_;         // Not deep copy.
 
   return r;
 }
@@ -95,8 +91,7 @@ SolidDEM::Evolve(const std::vector<int>                & delta_time,
                                     solid_inc_new,
                                     inclusion_spectrum,
                                     inclusion_concentration,
-                                    porosity,
-                                    distr_evolution_);
+                                    porosity);
 
   // Deep copy taken by constructor of SolidDEM, hence delete
   // solid_new and solid_inc_new here:

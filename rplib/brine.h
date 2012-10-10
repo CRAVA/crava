@@ -2,21 +2,16 @@
 #define RPLIB_BRINE_H
 
 #include "rplib/fluid.h"
-#include "rplib/distributionsbrineevolution.h"
-#include "rplib/demmodelling.h"
-
-#include <cassert>
 
 class Brine : public Fluid {
 public:
 
-                                  Brine(double                        salinity,
-                                        double                        temp,
-                                        double                        pore_pressure,
-                                        DistributionsBrineEvolution * distr_evolution = NULL);
+  Brine(double                        salinity,
+        double                        temp,
+        double                        pore_pressure);
 
-                                  // Copy constructor
-                                  Brine(const Brine & rhs);
+  // Copy constructor
+  Brine(const Brine & rhs);
 
   virtual                         ~Brine();
 
@@ -36,7 +31,6 @@ private:
   double                          ComputeDensityOfBrineFromTPS(double temp, double pore_pressure, double salinity) const;
 
   double                          salinity_;
-  DistributionsBrineEvolution *   distr_evolution_; // Pointer to external object.
 
 };
 

@@ -359,13 +359,11 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   //CheckVolumeConsistency(distr_porosity, errTxt); //Fix when questions are solved
 
   if (errTxt == "") {
-    DistributionsSolidDEMEvolution * distr_evolution = NULL;
     solid = new DistributionsSolidDEM(final_distr_solid,
                                       final_distr_solid_inc[0],         //tmp solution only single inclusion supported
                                       inclusion_aspect_ratio_distr,
                                       inclusion_volume_fraction_distr,
-                                      distr_porosity,
-                                      distr_evolution);
+                                      distr_porosity);
   }
 
   return(solid);

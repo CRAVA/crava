@@ -1,18 +1,15 @@
 #include "rplib/distributionsbrine.h"
 
 #include "rplib/distributionwithtrend.h"
-#include "rplib/distributionsbrineevolution.h"
 
 DistributionsBrine::DistributionsBrine(const DistributionWithTrend        * distr_temperature,
                                        const DistributionWithTrend        * distr_pore_pressure,
-                                       const DistributionWithTrend        * distr_salinity,
-                                             DistributionsBrineEvolution  * distr_evolution)
+                                       const DistributionWithTrend        * distr_salinity)
 : DistributionsFluid()
 {
   distr_salinity_      = distr_salinity;
   distr_temperature_   = distr_temperature;
   distr_pore_pressure_ = distr_pore_pressure;
-  distr_evolution_     = distr_evolution;
 }
 
 DistributionsBrine::~DistributionsBrine(){}
@@ -23,7 +20,7 @@ DistributionsBrine::GenerateSample(const std::vector<double> & trend_params) con
   double  salinity      = distr_salinity_->ReSample(trend_params[0], trend_params[1]);
   double  temperature   = distr_temperature_->ReSample(trend_params[0], trend_params[1]);
   double  pore_pressure = distr_pore_pressure_->ReSample(trend_params[0], trend_params[1]);
-  Fluid * fluid         = new Brine(salinity, temperature, pore_pressure, distr_evolution_);
+  Fluid * fluid         = new Brine(salinity, temperature, pore_pressure);
 
   return  fluid;
 }
