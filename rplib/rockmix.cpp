@@ -17,57 +17,28 @@ RockMixOfRock::RockMixOfRock(const std::vector<Rock*>      & rock,
                              DEMTools::MixMethod             mix_method)
 : Rock()
 {
-  u_ = u; // u contains independent samples used in quantiles of volume_fraction. Use RMISSING for fraction to be calculated from other fractions
+
+  size_t n_rocks = rock.size();
 
   // Deep copy of rock:
-  rock_.resize(rock.size());
-  for (size_t i = 0; i < rock.size(); ++i) {
+  rock_.resize(n_rocks);
+  for (size_t i = 0; i < n_rocks; ++i) {
     rock_[i] = rock[i]->Clone();
   }
 
   volume_fraction_ = volume_fraction;
+  u_               = u; // u contains independent samples used in quantiles of volume_fraction. Use RMISSING for fraction to be calculated from other fractions
   mix_method_      = mix_method;
 
-  vp_   = vs_ = rho_ = porosity_ = 0;
-
-  if (rock.size() != volume_fraction.size())
+  if (n_rocks != volume_fraction_.size())
     throw NRLib::Exception("Invalid arguments:Number of properties are different from number of volume fractions.");
-  else if (std::accumulate(volume_fraction.begin(), volume_fraction.end(), 0.0) > 1.0) //NBNB fjellvoll possible to give warning to user and then rescale
+
+  else if (std::accumulate(volume_fraction_.begin(), volume_fraction_.end(), 0.0) > 1.0) //NBNB fjellvoll possible to give warning to user and then rescale
     throw NRLib::Exception("Invalid arguments:Sum of volume fractions > 1.0");
-  else {
-    std::vector<double> rho(rock.size()), porosity(rock.size()), k(rock.size()), mu(rock.size());
 
-    for (size_t i = 0; i < rock.size(); i++) {
-      double vp, vs;
-      rock[i]->GetSeismicParams(vp, vs, rho[i]);
-      DEMTools::CalcElasticParamsFromSeismicParams(vs, vp, rho[i], k[i], mu[i]);
-      porosity[i] = rock[i]->GetPorosity();
-    }
 
-    double k_eff = 0, mu_eff = 0;
+  ComputeSeismicVariables();
 
-    switch (mix_method_) {
-      case DEMTools::Hill :
-        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction);
-        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingHill(mu, volume_fraction);
-        break;
-      case DEMTools::Reuss :
-        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction);     // homogeneous
-        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingReuss(mu, volume_fraction);
-        break;
-      case DEMTools::Voigt :
-        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction);
-        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mu, volume_fraction);
-        break;
-      default :
-        throw NRLib::Exception("Invalid rock mixing algorithm specified.");
-    }
-
-    rho_        = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
-    porosity_   = DEMTools::CalcEffectivePorosity(porosity, volume_fraction);
-
-    DEMTools::CalcSeismicParamsFromElasticParams(k_eff, mu_eff, rho_, vp_, vs_);
-  }
 }
 
 
@@ -86,7 +57,6 @@ RockMixOfRock::Clone() const
   // Provide variables specific to RockMixOfRock.
   s->volume_fraction_ = this->volume_fraction_;
   s->mix_method_      = this->mix_method_;
-  s->porosity_        = this->porosity_;
 
   size_t n_rocks = this->rock_.size();
   s->rock_.resize(n_rocks);
@@ -103,7 +73,6 @@ RockMixOfRock& RockMixOfRock::operator=(const RockMixOfRock& rhs)
 
     volume_fraction_ = rhs.volume_fraction_;
     mix_method_      = rhs.mix_method_;
-    porosity_        = rhs.porosity_;
 
     size_t n_rocks_old = rock_.size();
     for (size_t i = 0; i < n_rocks_old; ++i)
@@ -136,16 +105,63 @@ RockMixOfRock::Evolve(const std::vector<int>          & delta_time,
   return rock_mixed_new;
 }
 
-double
-RockMixOfRock::GetPorosity() const
+void
+RockMixOfRock::ComputeSeismicVariables()
 {
-  return porosity_;
+  size_t n_rocks = rock_.size();
+
+  std::vector<double> k(n_rocks);
+  std::vector<double> mu(n_rocks);
+  std::vector<double> rho(n_rocks);
+
+  for (size_t i = 0; i < n_rocks; i++) {
+    double vp;
+    double vs;
+
+    rock_[i]->GetSeismicParams(vp, vs, rho[i]);
+
+    DEMTools::CalcElasticParamsFromSeismicParams(vs, vp, rho[i], k[i], mu[i]);
+  }
+
+  double k_eff  = 0;
+  double mu_eff = 0;
+
+  switch (mix_method_) {
+
+      case DEMTools::Hill :
+        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction_);
+        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingHill(mu, volume_fraction_);
+        break;
+
+      case DEMTools::Reuss :
+        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction_);     // homogeneous
+        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingReuss(mu, volume_fraction_);
+        break;
+
+      case DEMTools::Voigt :
+        k_eff     = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction_);
+        mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mu, volume_fraction_);
+        break;
+
+      default :
+        throw NRLib::Exception("Invalid rock mixing algorithm specified.");
+  }
+
+  rho_ = DEMTools::CalcEffectiveDensity(rho, volume_fraction_);
+
+  DEMTools::CalcSeismicParamsFromElasticParams(k_eff, mu_eff, rho_, vp_, vs_);
+
 }
 
 void
 RockMixOfRock::SetPorosity(double porosity)
 {
-  porosity_ = porosity;
+  size_t n_rocks = rock_.size();
+
+  for(size_t i=0; i<n_rocks; i++)
+    rock_[i]->SetPorosity(porosity);
+
+  ComputeSeismicVariables();
 }
 
 //----------------------------------- RockMixOfSolidAndFluid -------------------------------------------------
@@ -158,8 +174,6 @@ RockMixOfSolidAndFluid::RockMixOfSolidAndFluid(const std::vector<Solid*> &  soli
                                                DEMTools::MixMethod          mix_method)
 : Rock()
 {
-  u_ = u; // u contains independent samples used in quantiles of (volume_fraction_solid,volume_fraction_fluid). Use RMISSING for fraction to be calculated from other fractions
-
   // Deep copy of solid:
   solid_.resize(solid.size());
   for (size_t i = 0; i < solid.size(); ++i) {
@@ -174,11 +188,15 @@ RockMixOfSolidAndFluid::RockMixOfSolidAndFluid(const std::vector<Solid*> &  soli
 
   volume_fraction_solid_ = volume_fraction_solid;
   volume_fraction_fluid_ = volume_fraction_fluid;
+  u_                     = u; // u contains independent samples used in quantiles of (volume_fraction_solid,volume_fraction_fluid). Use RMISSING for fraction to be calculated from other fractions
   mix_method_            = mix_method;
 
-  vp_  = 0;
-  vs_  = 0;
-  rho_ = 0;
+  if (solid_.size() != volume_fraction_solid_.size())
+    throw NRLib::Exception("Invalid arguments: Number of solid properties are different from number of volume fractions.");
+
+  else if (fluid_.size() != volume_fraction_fluid_.size())
+    throw NRLib::Exception("Invalid arguments: Number of fluid properties are different from number of volume fractions.");
+
 
   ComputeSeismicVariables();
 }
@@ -280,16 +298,6 @@ RockMixOfSolidAndFluid::Evolve(const std::vector<int>          & delta_time,
   return rock_mixed_new;
 }
 
-double
-RockMixOfSolidAndFluid::GetPorosity() const
-{
-  double porosity = 0;
-  for(size_t i=0; i<volume_fraction_fluid_.size(); i++)
-    porosity += volume_fraction_fluid_[i];
-
-  return porosity;
-}
-
 void
 RockMixOfSolidAndFluid::SetPorosity(double porosity)
 {
@@ -312,51 +320,47 @@ RockMixOfSolidAndFluid::ComputeSeismicVariables()
 {
   size_t size = solid_.size() + fluid_.size();
 
-  if (solid_.size() != volume_fraction_solid_.size())
-    throw NRLib::Exception("Invalid arguments: Number of solid properties are different from number of volume fractions.");
-  else if (fluid_.size() != volume_fraction_fluid_.size())
-    throw NRLib::Exception("Invalid arguments: Number of fluid properties are different from number of volume fractions.");
-  else {
+  std::vector<double> volume_fraction(size);
+  std::vector<double> k(size);
+  std::vector<double> mu(size);
+  std::vector<double> rho(size);
 
-    std::vector<double> volume_fraction(size);
-    std::vector<double> k(size);
-    std::vector<double> mu(size);
-    std::vector<double> rho(size);
+  size_t solid_size = solid_.size();
+  for (size_t i = 0; i < solid_size; i++) {
+    solid_[i]->GetElasticParams(k[i], mu[i], rho[i]);
+    volume_fraction[i] = volume_fraction_solid_[i];
+  }
 
-    size_t solid_size = solid_.size();
-    for (size_t i = 0; i < solid_size; i++) {
-      solid_[i]->GetElasticParams(k[i], mu[i], rho[i]);
-      volume_fraction[i] = volume_fraction_solid_[i];
-    }
+  for (size_t i = solid_.size(); i < size; i++) {
+    fluid_[i - solid_size]->GetElasticParams(k[i], rho[i]);
+    mu[i] = 0;
+    volume_fraction[i] = volume_fraction_fluid_[i - solid_size];
+  }
 
-    for (size_t i = solid_.size(); i < size; i++) {
-      fluid_[i - solid_size]->GetElasticParams(k[i], rho[i]);
-      mu[i] = 0;
-      volume_fraction[i] = volume_fraction_fluid_[i - solid_size];
-    }
+  double k_eff  = 0;
+  double mu_eff = 0;
 
-    double k_eff  = 0;
-    double mu_eff = 0;
-
-    switch (mix_method_) {
+  switch (mix_method_) {
       case DEMTools::Hill :
         k_eff     = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction);
         mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingHill(mu, volume_fraction);
         break;
+
       case DEMTools::Reuss :
         k_eff     = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction);     // homogeneous
         mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingReuss(mu, volume_fraction);
         break;
+
       case DEMTools::Voigt :
         k_eff     = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction);
         mu_eff    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mu, volume_fraction);
         break;
+
       default :
         throw NRLib::Exception("Invalid rock mixing algorithm specified.");
-    }
-
-    rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
-
-    DEMTools::CalcSeismicParamsFromElasticParams(k_eff, mu_eff, rho_, vp_, vs_);
   }
+
+  rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
+
+  DEMTools::CalcSeismicParamsFromElasticParams(k_eff, mu_eff, rho_, vp_, vs_);
 }

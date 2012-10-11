@@ -30,6 +30,9 @@ RockBounding::RockBounding(const RockBounding & old_rock)
   porosity_ = old_rock.porosity_;
   K_weight_ = old_rock.K_weight_;
   M_weight_ = old_rock.M_weight_;
+  vp_       = old_rock.vp_;
+  vs_       = old_rock.vs_;
+  rho_      = old_rock.rho_;
   u_        = old_rock.u_;
 
   delete upper_rock_;

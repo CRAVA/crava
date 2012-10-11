@@ -28,8 +28,6 @@ public:
   virtual Rock *              Evolve(const std::vector<int>              & delta_time,
                                      const std::vector< Rock * >         & rock)                         const;
 
-  virtual double              GetPorosity()                                                              const;
-
   virtual void                SetPorosity(double porosity);
 
 
@@ -37,10 +35,11 @@ private:
   //Copy constructor for getting base class variables , used by Clone:
   RockMixOfRock(const RockMixOfRock & rhs) : Rock(rhs) {}
 
+  void                        ComputeSeismicVariables();
+
   std::vector<Rock*>          rock_;           // Owned and deleted by this class.
   std::vector<double>         volume_fraction_;
   DEMTools::MixMethod         mix_method_;
-  double                      porosity_;
 };
 
 //----------------------------------- RockMixOfSolidAndFluid -------------------------------------------------
@@ -66,15 +65,9 @@ public:
   virtual Rock                        * Clone()                                                                    const;
 
   virtual Rock *                        Evolve(const std::vector<int>              & delta_time,
-                                               const std::vector< Rock * >         & /*rock*/)                         const;
-
-  virtual double                        GetPorosity()                                                              const;
+                                               const std::vector< Rock * >         & /*rock*/)                     const;
 
   virtual void                          SetPorosity(double porosity);
-
-  //const std::vector< Solid* >         & GetSolid()                                                                 const { return solid_; }
-
-  //const std::vector< Fluid* >         & GetFluid()                                                                 const { return fluid_; }
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
