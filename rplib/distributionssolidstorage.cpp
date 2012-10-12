@@ -349,12 +349,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   }
 
   //Questions //NBNB fjellvoll //NBNB marit
-  //1.Porosity taken from where: distr_porosity
-  //2.Do we support more than one inclusion?
-
-  //Dummy "porosity"
-  NRLib::Trend * trend_porosity          = new NRLib::TrendConstant(1.0);
-  DistributionWithTrend * distr_porosity = new DeltaDistributionWithTrend(trend_porosity, false);
+  //1.Do we support more than one inclusion?
 
   //CheckVolumeConsistency(distr_porosity, errTxt); //Fix when questions are solved
 
@@ -362,8 +357,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
     solid = new DistributionsSolidDEM(final_distr_solid,
                                       final_distr_solid_inc[0],         //tmp solution only single inclusion supported
                                       inclusion_aspect_ratio_distr,
-                                      inclusion_volume_fraction_distr,
-                                      distr_porosity);
+                                      inclusion_volume_fraction_distr);
   }
 
   return(solid);

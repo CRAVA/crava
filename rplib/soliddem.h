@@ -15,7 +15,6 @@ public:
            const Solid                         * solid_inc,
            const std::vector<double>           & inclusion_spectrum,
            const std::vector<double>           & inclusion_concentration,
-           double                                porosity,
            const std::vector<double>           & u);
 
   SolidDEM();
@@ -33,8 +32,6 @@ public:
   virtual Solid * Evolve(const std::vector<int>               & delta_time,
                          const std::vector< const Solid * >   & solids) const;
 
-  virtual void    SetPorosity(double porosity);
-
 private:
   //Copy constructor for getting base class variables , used by Clone:
   SolidDEM(const SolidDEM & rhs) : Solid(rhs) {}
@@ -47,7 +44,6 @@ private:
   Solid                               * solid_inc_; // Owned and deleted by this class.
   std::vector<double>                   inclusion_spectrum_;
   std::vector<double>                   inclusion_concentration_;
-  double                                porosity_;
 };
 
 #endif

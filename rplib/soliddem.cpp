@@ -6,7 +6,6 @@ SolidDEM::SolidDEM(const Solid                         * solid,
                    const Solid                         * solid_inc,
                    const std::vector<double>           & inclusion_spectrum,
                    const std::vector<double>           & inclusion_concentration,
-                   double                                porosity,
                    const std::vector<double>           & u)
 : Solid()
 {
@@ -18,7 +17,6 @@ SolidDEM::SolidDEM(const Solid                         * solid,
 
   inclusion_spectrum_      = inclusion_spectrum;
   inclusion_concentration_ = inclusion_concentration;
-  porosity_                = porosity;
 
   ComputeElasticParams();
 
@@ -42,7 +40,6 @@ SolidDEM& SolidDEM::operator=(const SolidDEM& rhs)
 
     inclusion_spectrum_      = rhs.inclusion_spectrum_;
     inclusion_concentration_ = rhs.inclusion_concentration_;
-    porosity_                = rhs.porosity_;
 
     delete solid_;
     delete solid_inc_;
@@ -63,7 +60,6 @@ SolidDEM::Clone() const {
   r->solid_inc_                   = this->solid_inc_->Clone();          // Deep copy.
   r->inclusion_spectrum_      = this->inclusion_spectrum_;
   r->inclusion_concentration_ = this->inclusion_concentration_;
-  r->porosity_                = this->porosity_;
 
   return r;
 }
@@ -88,13 +84,11 @@ SolidDEM::Evolve(const std::vector<int>                & delta_time,
   // Change the assignment of the following three variables when a time develop model has been defined.
   std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
   std::vector<double> inclusion_concentration = inclusion_concentration_;
-  double  porosity                            = porosity_;
 
   Solid * solid_new2 = new SolidDEM(solid_new,
                                     solid_inc_new,
                                     inclusion_spectrum,
                                     inclusion_concentration,
-                                    porosity,
                                     u_);
 
   // Deep copy taken by constructor of SolidDEM, hence delete
@@ -106,12 +100,6 @@ SolidDEM::Evolve(const std::vector<int>                & delta_time,
 }
 
 void
-SolidDEM::SetPorosity(double porosity) {
-  porosity_ = porosity;
-  ComputeElasticParams();
-}
-
-void
 SolidDEM::ComputeElasticParams() {
 
   double solid_inc_rho, solid_inc_k, solid_inc_mu;
@@ -120,24 +108,28 @@ SolidDEM::ComputeElasticParams() {
   double solid_rho, solid_k, solid_mu;
   solid_->GetElasticParams(solid_k, solid_mu, solid_rho);
 
-  std::vector<double> rho;
-  rho.push_back(solid_inc_rho);
-  rho.push_back(solid_rho);
-  std::vector<double> poro;
-  poro.push_back(porosity_);
-  poro.push_back(1.0 - porosity_);
-  rho_  = DEMTools::CalcEffectiveDensity(rho, poro);
+  { // calculation of effective density
+    std::vector<double> rho;
+    rho.push_back(solid_inc_rho);
+    rho.push_back(solid_rho);
+
+    std::vector<double> volume_fraction = inclusion_concentration_;
+
+    double host_vol_frac = 0;
+    for (size_t i = 0; i < inclusion_concentration_.size(); ++i)
+      host_vol_frac += inclusion_concentration_[i];
+
+    volume_fraction.push_back(host_vol_frac);
+    rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
+  }
 
   std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), solid_inc_k);
   std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), solid_inc_mu);
-  std::vector<double> conc = inclusion_concentration_; // inclusion concentration scaled by porosity
-  for (size_t i = 0; i < conc.size(); i++)
-   conc[i] *= porosity_;
 
   DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,
                                              inclusion_mu,
                                              inclusion_spectrum_,
-                                             conc,
+                                             inclusion_concentration_,
                                              solid_k,
                                              solid_mu,
                                              k_,
