@@ -36,26 +36,6 @@ DistributionsSolidTabulatedModulus::DistributionsSolidTabulatedModulus(const Dis
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
-  // Find has_distribution_
-  if(distr_k_->GetIsDistribution() == true || distr_mu_->GetIsDistribution() == true || distr_rho_->GetIsDistribution() == true) {
-    has_distribution_ = true;
-  }
-  else
-    has_distribution_ = false;
-
-  // Find has_trend_
-  std::vector<bool> k_trend       = distr_k_  ->GetUseTrendCube();
-  std::vector<bool> mu_trend      = distr_mu_ ->GetUseTrendCube();
-  std::vector<bool> density_trend = distr_rho_->GetUseTrendCube();
-
-  has_trend_.resize(2);
-  for(int i=0; i<2; i++) {
-    if(k_trend[i] == true || mu_trend[i] == true || density_trend[i] == true)
-      has_trend_[i] = true;
-    else
-      has_trend_[i] = false;
-  }
-
 }
 
 DistributionsSolidTabulatedModulus::~DistributionsSolidTabulatedModulus()
@@ -103,13 +83,29 @@ DistributionsSolidTabulatedModulus::GetSample(const std::vector<double> & u, con
 bool
 DistributionsSolidTabulatedModulus::HasDistribution() const
 {
-  return(has_distribution_);
+  bool has_distribution = false;
+
+  if(distr_k_->GetIsDistribution() == true || distr_mu_->GetIsDistribution() == true || distr_rho_->GetIsDistribution() == true)
+    has_distribution = true;
+
+  return has_distribution;
 }
 
 std::vector<bool>
 DistributionsSolidTabulatedModulus::HasTrend() const
 {
-  return(has_trend_);
+  std::vector<bool> has_trend(2, false);
+
+  std::vector<bool> k_trend       = distr_k_  ->GetUseTrendCube();
+  std::vector<bool> mu_trend      = distr_mu_ ->GetUseTrendCube();
+  std::vector<bool> density_trend = distr_rho_->GetUseTrendCube();
+
+  for(int i=0; i<2; i++) {
+    if(k_trend[i] == true || mu_trend[i] == true || density_trend[i] == true)
+      has_trend[i] = true;
+  }
+
+  return has_trend;
 }
 
 Solid *

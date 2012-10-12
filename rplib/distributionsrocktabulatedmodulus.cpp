@@ -39,25 +39,6 @@ DistributionsRockTabulatedModulus::DistributionsRockTabulatedModulus(const Distr
 
   tabulated_ = new Tabulated(seismic_variables, corr_matrix);
 
-   // Find has_distribution_
-  if(bulk_modulus_->GetIsDistribution() == true || shear_modulus_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
-    has_distribution_ = true;
-  else
-    has_distribution_ = false;
-
-  // Find has_trend_
-  std::vector<bool> bulk_trend    = bulk_modulus_ ->GetUseTrendCube();
-  std::vector<bool> shear_trend   = shear_modulus_->GetUseTrendCube();
-  std::vector<bool> density_trend = density_      ->GetUseTrendCube();
-
-  has_trend_.resize(2);
-  for(int i=0; i<2; i++) {
-    if(bulk_trend[i] == true || shear_trend[i] == true || density_trend[i] == true)
-      has_trend_[i] = true;
-    else
-      has_trend_[i] = false;
-  }
-
 }
 
 DistributionsRockTabulatedModulus::~DistributionsRockTabulatedModulus()
@@ -77,7 +58,6 @@ DistributionsRockTabulatedModulus::~DistributionsRockTabulatedModulus()
 Rock *
 DistributionsRockTabulatedModulus::GenerateSample(const std::vector<double> & trend_params) const
 {
-
   std::vector<double> u(3);
 
   for(int i=0; i<3; i++)
@@ -92,7 +72,6 @@ Rock *
 DistributionsRockTabulatedModulus::GetSample(const std::vector<double> & u,
                                              const std::vector<double> & trend_params) const
 {
-
   std::vector<double> sample;
 
   sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
@@ -135,24 +114,42 @@ DistributionsRockTabulatedModulus::GeneratePdf() const
 bool
 DistributionsRockTabulatedModulus::HasDistribution() const
 {
-  return(has_distribution_);
+  bool has_distribution = false;
+
+  if(bulk_modulus_->GetIsDistribution() == true || shear_modulus_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
+    has_distribution = true;
+
+  return has_distribution;
 }
 
 std::vector<bool>
 DistributionsRockTabulatedModulus::HasTrend() const
 {
-  return(has_trend_);
+  std::vector<bool> has_trend(2, false);
+
+  std::vector<bool> bulk_trend    = bulk_modulus_ ->GetUseTrendCube();
+  std::vector<bool> shear_trend   = shear_modulus_->GetUseTrendCube();
+  std::vector<bool> density_trend = density_      ->GetUseTrendCube();
+
+  for(int i=0; i<2; i++) {
+    if(bulk_trend[i] == true || shear_trend[i] == true || density_trend[i] == true)
+      has_trend[i] = true;
+  }
+
+  return has_trend;
+
 }
 
 bool
 DistributionsRockTabulatedModulus::GetIsOkForBounding() const
 {
-  bool is_ok_for_bounding;
+  bool is_ok_for_bounding = false;
 
-  if(has_distribution_ == false && has_trend_[0] == false && has_trend_[1] == false)
+  bool              has_distribution = HasDistribution();
+  std::vector<bool> has_trend        = HasTrend();
+
+  if(has_distribution == false && has_trend[0] == false && has_trend[1] == false)
     is_ok_for_bounding = true;
-  else
-    is_ok_for_bounding = false;
 
   return(is_ok_for_bounding);
 }

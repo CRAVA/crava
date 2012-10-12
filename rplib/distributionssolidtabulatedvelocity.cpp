@@ -36,26 +36,6 @@ DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const D
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
-   // Find has_distribution_
-  if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
-    has_distribution_ = true;
-  }
-  else
-    has_distribution_ = false;
-
-  // Find has_trend_
-  std::vector<bool> vp_trend      = vp_     ->GetUseTrendCube();
-  std::vector<bool> vs_trend      = vs_     ->GetUseTrendCube();
-  std::vector<bool> density_trend = density_->GetUseTrendCube();
-
-  has_trend_.resize(2);
-  for(int i=0; i<2; i++) {
-    if(vp_trend[i] == true || vs_trend[i] == true || density_trend[i] == true)
-      has_trend_[i] = true;
-    else
-      has_trend_[i] = false;
-  }
-
 }
 
 DistributionsSolidTabulatedVelocity::~DistributionsSolidTabulatedVelocity()
@@ -108,13 +88,30 @@ DistributionsSolidTabulatedVelocity::GetSample(const std::vector<double> & u, co
 bool
 DistributionsSolidTabulatedVelocity::HasDistribution() const
 {
-  return(has_distribution_);
+  bool has_distribution = false;
+
+  if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
+    has_distribution = true;
+
+  return has_distribution;
 }
+
 
 std::vector<bool>
 DistributionsSolidTabulatedVelocity::HasTrend() const
 {
-  return(has_trend_);
+  std::vector<bool> has_trend(2, false);
+
+  std::vector<bool> vp_trend      = vp_     ->GetUseTrendCube();
+  std::vector<bool> vs_trend      = vs_     ->GetUseTrendCube();
+  std::vector<bool> density_trend = density_->GetUseTrendCube();
+
+  for(int i=0; i<2; i++) {
+    if(vp_trend[i] == true || vs_trend[i] == true || density_trend[i] == true)
+      has_trend[i] = true;
+  }
+
+  return has_trend;
 }
 
 Solid *

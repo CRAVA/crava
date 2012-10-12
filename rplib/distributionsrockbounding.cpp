@@ -41,35 +41,6 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
 
   tabulated_ = new Tabulated(variables, corr_matrix);
 
-  // Find has_distribution_
-  if(upper_rock_->HasDistribution() == true || lower_rock_->HasDistribution() == true ||
-    porosity_->GetIsDistribution() == true || K_weight_->GetIsDistribution() == true || M_weight_->GetIsDistribution() == true) {
-      has_distribution_ = true;
-  }
-  else
-    has_distribution_ = false;
-
-  // Find has_trend_
-  std::vector<bool> upper_rock_trend = upper_rock_->HasTrend();
-  std::vector<bool> lower_rock_trend = lower_rock_->HasTrend();
-  std::vector<bool> poro_trend       = porosity_->GetUseTrendCube();
-  std::vector<bool> K_trend          = K_weight_->GetUseTrendCube();
-  std::vector<bool> M_trend          = M_weight_->GetUseTrendCube();
-
-  has_trend_.resize(2);
-  for(int i=0; i<2; i++) {
-    if(upper_rock_trend[i] == true || lower_rock_trend[i] == true ||
-      poro_trend[i] == true || K_trend[i] == true || M_trend[i] == true) {
-        has_trend_[i] = true;
-    }
-    else
-      has_trend_[i] = false;
-  }
-
-  // Find is_ok_for_bounding_
-  if(upper_rock_->GetIsOkForBounding() == true && lower_rock->GetIsOkForBounding() == true)
-    is_ok_for_bounding_ = true;
-
 }
 
 DistributionsRockBounding::~DistributionsRockBounding()
@@ -89,7 +60,6 @@ DistributionsRockBounding::~DistributionsRockBounding()
 Rock *
 DistributionsRockBounding::GenerateSample(const std::vector<double> & trend_params) const
 {
-
   Rock * sample_upper_rock = upper_rock_->GenerateSample(trend_params);
   Rock * sample_lower_rock = lower_rock_->GenerateSample(trend_params);
 
@@ -111,7 +81,6 @@ DistributionsRockBounding::GetSample(const std::vector<double> & u,
                                      const Rock                * sample_upper_rock,
                                      const Rock                * sample_lower_rock) const
 {
-
   std::vector<double> sample;
 
   sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
@@ -149,17 +118,45 @@ DistributionsRockBounding::GeneratePdf() const
 bool
 DistributionsRockBounding::HasDistribution() const
 {
-  return(has_distribution_);
+  bool has_distribution = false;
+
+  if(upper_rock_->HasDistribution() == true || lower_rock_->HasDistribution() == true ||
+    porosity_->GetIsDistribution() == true || K_weight_->GetIsDistribution() == true || M_weight_->GetIsDistribution() == true) {
+      has_distribution = true;
+  }
+
+  return has_distribution;
+
 }
 
 std::vector<bool>
 DistributionsRockBounding::HasTrend() const
 {
-  return(has_trend_);
+  std::vector<bool> has_trend(2, false);
+
+  std::vector<bool> upper_rock_trend = upper_rock_->HasTrend();
+  std::vector<bool> lower_rock_trend = lower_rock_->HasTrend();
+  std::vector<bool> poro_trend       = porosity_->GetUseTrendCube();
+  std::vector<bool> K_trend          = K_weight_->GetUseTrendCube();
+  std::vector<bool> M_trend          = M_weight_->GetUseTrendCube();
+
+  for(int i=0; i<2; i++) {
+    if(upper_rock_trend[i] == true || lower_rock_trend[i] == true ||
+      poro_trend[i] == true || K_trend[i] == true || M_trend[i] == true) {
+        has_trend[i] = true;
+    }
+  }
+
+  return has_trend;
 }
 
 bool
 DistributionsRockBounding::GetIsOkForBounding() const
 {
-  return(is_ok_for_bounding_);
+  bool is_ok_for_bounding = false;
+
+  if(upper_rock_->GetIsOkForBounding() == true && lower_rock_->GetIsOkForBounding() == true)
+    is_ok_for_bounding = true;
+
+  return is_ok_for_bounding;
 }

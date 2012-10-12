@@ -112,19 +112,45 @@ DistributionsRockMixOfRock::GeneratePdf() const
 bool
 DistributionsRockMixOfRock::HasDistribution() const
 {
-  bool dummy = false;
-  return(dummy);
+  bool has_distribution = false;
+
+  size_t n_rocks = distr_rock_.size();
+
+  for(size_t i=0; i<n_rocks; i++) {
+
+    if(distr_rock_[i]->HasDistribution() == true)
+      has_distribution = true;
+
+    else if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsDistribution() == true)
+      has_distribution = true;
+  }
+
+  return has_distribution;
 }
 
 std::vector<bool>
 DistributionsRockMixOfRock::HasTrend() const
 {
-  std::vector<bool> dummy(2);
 
-  for(int i=0; i<2; i++)
-    dummy[i] = false;
+  std::vector<bool> has_trend(2, false);
 
-  return(dummy);
+  size_t n_rocks = distr_rock_.size();
+
+  for(size_t i=0; i<n_rocks; i++) {
+    std::vector<bool> trend  = distr_rock_[i]->HasTrend();
+
+    std::vector<bool> volume_trend(2, false);
+
+    if(distr_vol_frac_[i] != NULL)
+       volume_trend = distr_vol_frac_[i]->GetUseTrendCube();
+
+    for(int j=0; j<2; j++) {
+      if(trend[j] == true)
+        has_trend[j] = true;
+    }
+  }
+
+  return has_trend;
 }
 
 //-------------------------------------- DistributionsRockMixOfSolidAndFluid ---------------------------------------------------------
@@ -145,7 +171,6 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
 
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()
 {
-
 }
 
 Rock *
@@ -267,14 +292,18 @@ DistributionsRockMixOfSolidAndFluid::HasDistribution() const
   size_t n_solids = distr_solid_.size();
 
   for(size_t i=0; i<n_fluids; i++) {
+
     if(distr_fluid_[i]->HasDistribution() == true)
       has_distribution = true;
+
     else if(distr_vol_frac_fluid_[i] != NULL && distr_vol_frac_fluid_[i]->GetIsDistribution() == true)
       has_distribution = true;
   }
   for(size_t i=0; i<n_solids; i++) {
+
     if(distr_solid_[i]->HasDistribution() == true)
       has_distribution = true;
+
     else if(distr_vol_frac_solid_[i] != NULL && distr_vol_frac_solid_[i]->GetIsDistribution() == true)
       has_distribution = true;
   }
@@ -286,23 +315,23 @@ DistributionsRockMixOfSolidAndFluid::HasDistribution() const
 std::vector<bool>
 DistributionsRockMixOfSolidAndFluid::HasTrend() const
 {
-  std::vector<bool> has_trend(2);
-
-  for(int i=0; i<2; i++)
-    has_trend[i] = false;
+  std::vector<bool> has_trend(2, false);
 
   size_t n_fluids = distr_fluid_.size();
 
   for(size_t i=0; i<n_fluids; i++) {
     std::vector<bool> fluid_trend  = distr_fluid_[i]->HasTrend();
 
-    std::vector<bool> volume_trend(2,false);
+    std::vector<bool> volume_trend(2, false);
+
     if(distr_vol_frac_fluid_[i] != NULL)
        volume_trend = distr_vol_frac_fluid_[i]->GetUseTrendCube();
 
     for(int j=0; j<2; j++) {
+
       if(fluid_trend[j] == true)
         has_trend[j] = true;
+
       else if(volume_trend[j] == true)
         has_trend[j] = true;
     }
@@ -314,12 +343,15 @@ DistributionsRockMixOfSolidAndFluid::HasTrend() const
     std::vector<bool> solid_trend  = distr_solid_[i]->HasTrend();
 
     std::vector<bool> volume_trend(2,false);
+
     if(distr_vol_frac_solid_[i] != NULL)
        volume_trend = distr_vol_frac_solid_[i]->GetUseTrendCube();
 
     for(int j=0; j<2; j++) {
+
       if(solid_trend[j] == true)
         has_trend[j] = true;
+
       else if(volume_trend[j] == true)
         has_trend[j] = true;
     }
@@ -334,11 +366,13 @@ DistributionsRockMixOfSolidAndFluid::GetIsOkForBounding() const
   bool is_ok_for_bounding = false;
 
   if(mix_method_ == DEMTools::Reuss || mix_method_ == DEMTools::Voigt) {
+
     if(distr_fluid_.size() == 1 && distr_solid_.size() == 1) {
       is_ok_for_bounding = true;
 
       bool fluid_distr = distr_fluid_[0]->HasDistribution();
       bool solid_distr = distr_solid_[0]->HasDistribution();
+
       if(fluid_distr == true || solid_distr == true)
         is_ok_for_bounding = false;
 

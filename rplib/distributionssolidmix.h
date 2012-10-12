@@ -17,7 +17,7 @@ public:
 
   virtual ~DistributionsSolidMix();
 
-  virtual                                         Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Solid                                 * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                                    HasDistribution() const;
 

@@ -23,7 +23,6 @@ DistributionsSolidMix::~DistributionsSolidMix(){}
 Solid *
 DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) const
 {
-
   size_t n_solids = distr_solid_.size();
 
   std::vector<double> u(n_solids, RMISSING);
@@ -51,7 +50,6 @@ DistributionsSolidMix::GetSample(const std::vector<double>  & u,
                                  const std::vector<double>  & trend_params,
                                  const std::vector<Solid *> & solid_samples) const
 {
-
   size_t n_solids = solid_samples.size();
 
   std::vector<double> volume_fraction(n_solids, 0.0);
@@ -83,19 +81,48 @@ DistributionsSolidMix::GetSample(const std::vector<double>  & u,
 bool
 DistributionsSolidMix::HasDistribution() const
 {
-  bool dummy = false;
-  return(dummy);
+  bool has_distribution = false;
+
+  size_t n_solids = distr_solid_.size();
+
+  for(size_t i=0; i<n_solids; i++) {
+
+    if(distr_solid_[i]->HasDistribution() == true)
+      has_distribution = true;
+
+    else if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsDistribution() == true)
+      has_distribution = true;
+  }
+
+  return has_distribution;
 }
 
 std::vector<bool>
 DistributionsSolidMix::HasTrend() const
 {
-  std::vector<bool> dummy(2);
+  std::vector<bool> has_trend(2, false);
 
-  for(int i=0; i<2; i++)
-    dummy[i] = false;
+  size_t n_solids = distr_solid_.size();
 
-  return(dummy);
+  for(size_t i=0; i<n_solids; i++) {
+    std::vector<bool> solid_trend  = distr_solid_[i]->HasTrend();
+
+    std::vector<bool> volume_trend(2,false);
+
+    if(distr_vol_frac_[i] != NULL)
+       volume_trend = distr_vol_frac_[i]->GetUseTrendCube();
+
+    for(int j=0; j<2; j++) {
+
+      if(solid_trend[j] == true)
+        has_trend[j] = true;
+
+      else if(volume_trend[j] == true)
+        has_trend[j] = true;
+    }
+  }
+
+  return has_trend;
 }
 
 Solid *

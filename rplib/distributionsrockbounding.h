@@ -51,9 +51,6 @@ private:
   const DistributionWithTrend * M_weight_;
   double                        correlation_weights_;
   Tabulated                   * tabulated_;
-  bool                          has_distribution_;
-  std::vector<bool>             has_trend_;
-  bool                          is_ok_for_bounding_;
 };
 
 #endif

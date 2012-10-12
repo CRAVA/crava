@@ -26,7 +26,6 @@ DistributionsFluidMix::~DistributionsFluidMix()
 Fluid *
 DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) const
 {
-
   size_t n_fluids = distr_fluid_.size();
 
   std::vector<double> u(n_fluids, RMISSING);
@@ -54,7 +53,6 @@ DistributionsFluidMix::GetSample(const std::vector<double>  & u,
                                  const std::vector<double>  & trend_params,
                                  const std::vector<Fluid *> & fluid_samples) const
 {
-
   size_t n_fluids = fluid_samples.size();
 
   std::vector<double> volume_fraction(n_fluids, 0.0);
@@ -85,19 +83,48 @@ DistributionsFluidMix::GetSample(const std::vector<double>  & u,
 bool
 DistributionsFluidMix::HasDistribution() const
 {
-  bool dummy = false;
-  return(dummy);
+  bool has_distribution = false;
+
+  size_t n_fluids = distr_fluid_.size();
+
+  for(size_t i=0; i<n_fluids; i++) {
+
+    if(distr_fluid_[i]->HasDistribution() == true)
+      has_distribution = true;
+
+    else if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsDistribution() == true)
+      has_distribution = true;
+  }
+
+  return has_distribution;
 }
 
 std::vector<bool>
 DistributionsFluidMix::HasTrend() const
 {
-  std::vector<bool> dummy(2);
+  std::vector<bool> has_trend(2, false);
 
-  for(int i=0; i<2; i++)
-    dummy[i] = false;
+  size_t n_fluids = distr_fluid_.size();
 
-  return(dummy);
+  for(size_t i=0; i<n_fluids; i++) {
+    std::vector<bool> fluid_trend  = distr_fluid_[i]->HasTrend();
+
+    std::vector<bool> volume_trend(2, false);
+
+    if(distr_vol_frac_[i] != NULL)
+       volume_trend = distr_vol_frac_[i]->GetUseTrendCube();
+
+    for(int j=0; j<2; j++) {
+
+      if(fluid_trend[j] == true)
+        has_trend[j] = true;
+
+      else if(volume_trend[j] == true)
+        has_trend[j] = true;
+    }
+  }
+
+  return has_trend;
 }
 
 Fluid *

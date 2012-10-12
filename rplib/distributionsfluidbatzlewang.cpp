@@ -33,7 +33,6 @@ Fluid *
 DistributionsFluidBatzleWang::GetSample(const std::vector<double> & u,
                                         const std::vector<double> & trend_params) const
 {
-
   double  salinity      = distr_salinity_     ->GetQuantileValue(u[0], trend_params[0], trend_params[1]);
   double  temperature   = distr_temperature_  ->GetQuantileValue(u[1], trend_params[0], trend_params[1]);
   double  pore_pressure = distr_pore_pressure_->GetQuantileValue(u[2], trend_params[0], trend_params[1]);
@@ -46,19 +45,29 @@ DistributionsFluidBatzleWang::GetSample(const std::vector<double> & u,
 bool
 DistributionsFluidBatzleWang::HasDistribution() const
 {
-  bool dummy = false;
-  return(dummy);
+  bool has_distribution = false;
+
+  if(distr_salinity_->GetIsDistribution() == true || distr_temperature_->GetIsDistribution() || distr_pore_pressure_->GetIsDistribution() == true)
+    has_distribution = true;
+
+  return(has_distribution);
 }
 
 std::vector<bool>
 DistributionsFluidBatzleWang::HasTrend() const
 {
-  std::vector<bool> dummy(2);
+  std::vector<bool> has_trend(2, false);
 
-  for(int i=0; i<2; i++)
-    dummy[i] = false;
+  std::vector<bool> salinity_trend    = distr_salinity_     ->GetUseTrendCube();
+  std::vector<bool> temperature_trend = distr_temperature_  ->GetUseTrendCube();
+  std::vector<bool> pressure_trend    = distr_pore_pressure_->GetUseTrendCube();
 
-  return(dummy);
+  for(int i=0; i<2; i++) {
+    if(salinity_trend[i] == true || temperature_trend[i] == true || pressure_trend[i] == true)
+      has_trend[i] = true;
+  }
+
+  return has_trend;
 }
 
 Fluid *

@@ -47,8 +47,6 @@ private:
   double                        corr_bulk_density_;
   double                        corr_shear_density_;
   Tabulated                   * tabulated_;
-  bool                          has_distribution_;
-  std::vector<bool>             has_trend_;
 };
 
 #endif

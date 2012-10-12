@@ -34,7 +34,6 @@ private:
   const DistributionWithTrend       * distr_salinity_;      // Pointer to external object.
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
   const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
-
 };
 
 #endif
