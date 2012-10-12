@@ -58,10 +58,23 @@ DistributionsFluidTabulatedModulus::~DistributionsFluidTabulatedModulus()
 Fluid *
 DistributionsFluidTabulatedModulus::GenerateSample(const std::vector<double> & trend_params) const
 {
-  std::vector<double> u;
+  std::vector<double> u(2);
+
+  for(int i=0; i<2; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  Fluid * fluid = GetSample(u, trend_params);
+
+  return fluid;
+}
+
+Fluid *
+DistributionsFluidTabulatedModulus::GetSample(const std::vector<double> & u,
+                                              const std::vector<double> & trend_params) const
+{
   std::vector<double> sample;
 
-  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
+  sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
   double bulk_sample    = sample[0];
   double density_sample = sample[1];

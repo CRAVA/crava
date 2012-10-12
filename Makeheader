@@ -51,7 +51,7 @@ MKLINCLUDE := /nr/prog/intel/Compiler/mkl/include
 MKLPATH    := /nr/prog/intel/Compiler/mkl/lib/intel64
 MKLLFLAGS  := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
 	$(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
-	-lpthread
+	-lpthread -ldl
 
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING) -I$(MKLINCLUDE) -DFLENS_FIRST_INDEX=0 -DMKL

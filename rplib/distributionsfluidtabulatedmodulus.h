@@ -19,7 +19,7 @@ public:
   virtual                       ~DistributionsFluidTabulatedModulus();
 
   // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Fluid               * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Fluid               * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;
 
@@ -30,6 +30,9 @@ protected:
                                              const Fluid                 & /*fluid*/) const;
 
 private:
+
+  Fluid                      * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+
   const DistributionWithTrend * bulk_modulus_;
   const DistributionWithTrend * density_;
   double                        corr_bulk_density_;

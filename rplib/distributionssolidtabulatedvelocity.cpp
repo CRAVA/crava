@@ -1,6 +1,7 @@
 #include "rplib/distributionssolidtabulatedvelocity.h"
 #include "rplib/solidtabulatedmodulus.h"
 #include "rplib/tabulated.h"
+#include "rplib/demmodelling.h"
 
 DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
                                                                          const DistributionWithTrend * vs,
@@ -72,17 +73,32 @@ DistributionsSolidTabulatedVelocity::~DistributionsSolidTabulatedVelocity()
 Solid *
 DistributionsSolidTabulatedVelocity::GenerateSample(const std::vector<double> & trend_params) const
 {
-  std::vector<double> u;
+  std::vector<double> u(3);
+
+  for(int i=0; i<3; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  Solid * solid = GetSample(u, trend_params);
+
+  return solid;
+}
+
+Solid *
+DistributionsSolidTabulatedVelocity::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const
+{
+
   std::vector<double> seismic_sample;
 
-  seismic_sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
+  seismic_sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
   double vp_sample      = seismic_sample[0];
   double vs_sample      = seismic_sample[1];
   double density_sample = seismic_sample[2];
 
-  double bulk_sample  = density_sample * (std::pow(vp_sample,2) - 4/3 * std::pow(vs_sample,2));
-  double shear_sample = density_sample *  std::pow(vs_sample,2);
+  double bulk_sample;
+  double shear_sample;
+
+  DEMTools::CalcElasticParamsFromSeismicParams(vp_sample, vs_sample, density_sample, bulk_sample, shear_sample);
 
   Solid * solid = new SolidTabulatedModulus(bulk_sample, shear_sample, density_sample, u);
 

@@ -59,10 +59,22 @@ DistributionsFluidTabulatedVelocity::~DistributionsFluidTabulatedVelocity()
 Fluid *
 DistributionsFluidTabulatedVelocity::GenerateSample(const std::vector<double> & trend_params) const
 {
-  std::vector<double> u;
+  std::vector<double> u(2);
+
+  for(int i=0; i<2; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  Fluid * fluid = GetSample(u, trend_params);
+
+  return fluid;
+}
+
+Fluid *
+DistributionsFluidTabulatedVelocity::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const
+{
   std::vector<double> seismic_sample;
 
-  seismic_sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
+  seismic_sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
   double vp_sample      = seismic_sample[0];
   double density_sample = seismic_sample[1];

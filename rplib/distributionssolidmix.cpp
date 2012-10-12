@@ -32,13 +32,35 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
       u[i] = NRLib::Random::Unif01();
   }
 
-  std::vector<Solid*> solid(n_solids);
+  std::vector<Solid *> solid_samples(n_solids);
+
+  for(size_t i = 0; i < n_solids; ++i)
+    solid_samples[i] = distr_solid_[i]->GenerateSample(trend_params);
+
+  Solid * solid_mixed = GetSample(u, trend_params, solid_samples);
+
+  // Deep copy taken by constructor of SolidMix, hence delete solid here:
+  for(size_t i = 0; i < n_solids; ++i)
+    delete solid_samples[i];
+
+  return solid_mixed;
+}
+
+Solid *
+DistributionsSolidMix::GetSample(const std::vector<double>  & u,
+                                 const std::vector<double>  & trend_params,
+                                 const std::vector<Solid *> & solid_samples) const
+{
+
+  size_t n_solids = solid_samples.size();
+
   std::vector<double> volume_fraction(n_solids, 0.0);
 
   size_t missing_index = n_solids;
+
   for(size_t i = 0; i < n_solids; ++i) {
-    solid[i] = distr_solid_[i]->GenerateSample(trend_params);
-    if (distr_vol_frac_[i])
+
+    if (u[i] == RMISSING)
       volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
     else
       missing_index    = i;
@@ -46,17 +68,14 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
 
   if (missing_index != n_solids) {
     double sum = 0.0;
-    for (size_t i = 0; i < volume_fraction.size(); ++i)
+
+    for (size_t i = 0; i < n_solids; ++i)
       sum += volume_fraction[i];
 
     volume_fraction[missing_index] = 1.0 - sum;
   }
 
-  Solid * solid_mixed = new SolidMix(solid, volume_fraction, u, mix_method_);
-
-  // Deep copy taken by constructor of SolidMix, hence delete solid here:
-  for(size_t i = 0; i < n_solids; ++i)
-    delete solid[i];
+  Solid * solid_mixed = new SolidMix(solid_samples, volume_fraction, u, mix_method_);
 
   return solid_mixed;
 }

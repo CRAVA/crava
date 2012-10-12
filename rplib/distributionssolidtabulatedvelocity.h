@@ -24,7 +24,7 @@ public:
   virtual                       ~DistributionsSolidTabulatedVelocity();
 
   // Solid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Solid               * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Solid               * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;
 
@@ -35,6 +35,8 @@ protected:
                                              const Solid                 & /*solid*/) const;
 
 private:
+  Solid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+
   const DistributionWithTrend   * vp_;
   const DistributionWithTrend   * vs_;
   const DistributionWithTrend   * density_;

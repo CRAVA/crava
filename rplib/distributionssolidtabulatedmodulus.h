@@ -30,6 +30,9 @@ protected:
                                                      const Solid                 & /*solid*/) const;
 
 private:
+
+  Solid                               * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+
   const DistributionWithTrend         * distr_k_;         // Pointer to external object.
   const DistributionWithTrend         * distr_mu_;        // Pointer to external object.
   const DistributionWithTrend         * distr_rho_;       // Pointer to external object.

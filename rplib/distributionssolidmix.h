@@ -28,6 +28,11 @@ protected:
                                                                const Solid                 & /*solid*/) const;
 
 private:
+
+  Solid                                         * GetSample(const std::vector<double>  & u,
+                                                            const std::vector<double>  & trend_params,
+                                                            const std::vector<Solid *> & solid_samples) const;
+
   std::vector< DistributionsSolid * >             distr_solid_;     // Pointers to external objects.
   std::vector< DistributionWithTrend * >          distr_vol_frac_;  // Pointers to external objects.
   DEMTools::MixMethod                             mix_method_;

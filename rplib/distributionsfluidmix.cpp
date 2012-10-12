@@ -19,7 +19,9 @@ DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >
   mix_method_       = mix_method;
 }
 
-DistributionsFluidMix::~DistributionsFluidMix(){}
+DistributionsFluidMix::~DistributionsFluidMix()
+{
+}
 
 Fluid *
 DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) const
@@ -33,18 +35,49 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
       u[i] = NRLib::Random::Unif01();
   }
 
-  std::vector<Fluid*> fluid(n_fluids);
-  std::vector<double> volume_fraction(n_fluids);
+  std::vector<Fluid*> fluid_samples(n_fluids);
 
-  for(size_t i = 0; i < n_fluids; ++i) {
-    fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
-    volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
-  }
-  Fluid * fluid_mixed = new FluidMix(fluid, volume_fraction, u, mix_method_);
+  for(size_t i = 0; i < n_fluids; ++i)
+    fluid_samples[i] = distr_fluid_[i]->GenerateSample(trend_params);
+
+  Fluid * fluid_mixed = GetSample(u, trend_params, fluid_samples);
 
   // Deep copy taken by constructor of FluidMixed, hence delete fluid here:
   for(size_t i = 0; i < n_fluids; ++i)
-    delete fluid[i];
+    delete fluid_samples[i];
+
+  return fluid_mixed;
+}
+
+Fluid *
+DistributionsFluidMix::GetSample(const std::vector<double>  & u,
+                                 const std::vector<double>  & trend_params,
+                                 const std::vector<Fluid *> & fluid_samples) const
+{
+
+  size_t n_fluids = fluid_samples.size();
+
+  std::vector<double> volume_fraction(n_fluids, 0.0);
+
+  size_t missing_index = n_fluids;
+
+  for(size_t i = 0; i < n_fluids; ++i) {
+    if(u[i] != RMISSING)
+      volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
+    else
+      missing_index = i;
+  }
+
+  if (missing_index != n_fluids) {
+    double sum = 0.0;
+
+    for (size_t i = 0; i < volume_fraction.size(); ++i)
+      sum += volume_fraction[i];
+
+    volume_fraction[missing_index] = 1.0 - sum;
+  }
+
+  Fluid * fluid_mixed = new FluidMix(fluid_samples, volume_fraction, u, mix_method_);
 
   return fluid_mixed;
 }

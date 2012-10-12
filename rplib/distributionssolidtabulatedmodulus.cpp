@@ -73,10 +73,23 @@ DistributionsSolidTabulatedModulus::~DistributionsSolidTabulatedModulus()
 Solid *
 DistributionsSolidTabulatedModulus::GenerateSample(const std::vector<double> & trend_params) const
 {
-  std::vector<double> u;
+  std::vector<double> u(3);
+
+  for(int i=0; i<3; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  Solid * solid = GetSample(u, trend_params);
+
+  return solid;
+}
+
+Solid *
+DistributionsSolidTabulatedModulus::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const
+{
+
   std::vector<double> sample;
 
-  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
+  sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
   double k   = sample[0];
   double mu  = sample[1];

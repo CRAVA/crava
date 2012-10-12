@@ -40,31 +40,50 @@ DistributionsRockMixOfRock::GenerateSample(const std::vector<double> & trend_par
       u[i] = NRLib::Random::Unif01();
   }
 
-  std::vector<Rock*>       rock(n_rocks);
-  std::vector<double>      volume_fraction(n_rocks, 0.0);
+  std::vector<Rock*> rock_sample(n_rocks);
+
+  for(size_t i = 0; i < n_rocks; ++i)
+    rock_sample[i] = distr_rock_[i]->GenerateSample(trend_params);
+
+  Rock * rock_mixed = GetSample(u, trend_params, rock_sample);
+
+  // Deep copy taken by constructor of RockMixOfRock, hence delete rock here:
+  for(size_t i = 0; i < n_rocks; ++i)
+    delete rock_sample[i];
+
+  return rock_mixed;
+}
+
+Rock *
+DistributionsRockMixOfRock::GetSample(const std::vector<double> & u,
+                                      const std::vector<double> & trend_params,
+                                      const std::vector<Rock *> & sample_rock) const
+{
+
+  size_t n_rocks      =    sample_rock.size();
+
+  std::vector<double>  volume_fraction(n_rocks, 0.0);
 
   size_t missing_index = n_rocks;
+
   for(size_t i = 0; i < n_rocks; ++i) {
-    rock[i] = distr_rock_[i]->GenerateSample(trend_params);
-    if (distr_vol_frac_[i])
+   if (u[i] != RMISSING)
       volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
     else
       missing_index    = i;
   }
 
   if (missing_index != n_rocks) {
+
     double sum = 0.0;
+
     for (size_t i = 0; i < volume_fraction.size(); ++i)
       sum += volume_fraction[i];
 
     volume_fraction[missing_index] = 1.0 - sum;
   }
 
-  Rock * rock_mixed = new RockMixOfRock(rock, volume_fraction, u, mix_method_);
-
-  // Deep copy taken by constructor of RockMixOfRock, hence delete rock here:
-  for(size_t i = 0; i < n_rocks; ++i)
-    delete rock[i];
+  Rock * rock_mixed = new RockMixOfRock(sample_rock, volume_fraction, u, mix_method_);
 
   return rock_mixed;
 }
@@ -135,38 +154,67 @@ DistributionsRockMixOfSolidAndFluid::GenerateSample(const std::vector<double> & 
   size_t n_fluids      =   distr_fluid_.size();
   size_t n_solids      =   distr_solid_.size();
 
-  std::vector<double>      u(n_solids + n_fluids);
-  for(size_t i=0; i<n_solids+n_fluids; i++)
-    u[i] = NRLib::Random::Unif01();
+  std::vector<double> u(n_solids + n_fluids, RMISSING);
 
-  std::vector<Solid*>      solid(n_solids);
-  std::vector<double>      volume_fraction_solid(n_solids, 0.0);
+  for(size_t i=0; i<n_solids; i++) {
+    if(distr_vol_frac_solid_[i] != NULL)
+      u[i] = NRLib::Random::Unif01();
+  }
+
+  for(size_t i=0; i<n_fluids; i++) {
+    if(distr_vol_frac_fluid_[i] != NULL)
+      u[i + n_solids] = NRLib::Random::Unif01();
+  }
+
+  std::vector<Solid *> solid_sample(n_solids);
+
+  for(size_t i = 0; i < n_solids; ++i)
+    solid_sample[i] = distr_solid_[i]->GenerateSample(trend_params);
+
+  std::vector<Fluid *> fluid_sample(n_fluids);
+
+  for(size_t i = 0; i < n_fluids; ++i)
+    fluid_sample[i] = distr_fluid_[i]->GenerateSample(trend_params);
+
+  Rock * rock_mixed = GetSample(u, trend_params, solid_sample, fluid_sample);
+
+  // Deep copy taken by constructor of RockMixOfSolidAndFluid, hence delete solid here:
+  for(size_t i = 0; i < n_solids; ++i)
+    delete solid_sample[i];
+
+  for(size_t i = 0; i < n_fluids; ++i)
+    delete fluid_sample[i];
+
+  return rock_mixed;
+}
+
+Rock *
+DistributionsRockMixOfSolidAndFluid::GetSample(const std::vector<double>  & u,
+                                               const std::vector<double>  & trend_params,
+                                               const std::vector<Solid *> & solid_sample,
+                                               const std::vector<Fluid *> & fluid_sample) const
+{
+  size_t n_fluids      =   fluid_sample.size();
+  size_t n_solids      =   solid_sample.size();
+
+  std::vector<double> volume_fraction_solid(n_solids, 0.0);
 
   size_t missing_index = n_solids + n_fluids;
 
-  for(size_t i = 0; i < n_solids; ++i) {
-    solid[i] = distr_solid_[i]->GenerateSample(trend_params);
-
-    if (distr_vol_frac_solid_[i])
+  for(size_t i = 0; i < n_solids; i++) {
+    if (u[i] != RMISSING)
       volume_fraction_solid[i] = distr_vol_frac_solid_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
-    else {
-      missing_index    = i;
-      u[i]             = RMISSING;
-    }
+    else
+      missing_index = i;
   }
 
-  std::vector<Fluid*>      fluid(n_fluids);
-  std::vector<double>      volume_fraction_fluid(n_fluids, 0.0);
+  std::vector<double> volume_fraction_fluid(n_fluids, 0.0);
 
-  for(size_t i = 0; i < n_fluids; ++i) {
-    fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
-
-    if (distr_vol_frac_fluid_[i])
+  for(size_t i = 0; i < n_fluids; i++) {
+    if (u[i + n_solids] != RMISSING)
       volume_fraction_fluid[i] = distr_vol_frac_fluid_[i]->GetQuantileValue(u[i + n_solids], trend_params[0], trend_params[1]);
-    else {
-      missing_index    = i + n_solids;
-      u[i+n_solids]    = RMISSING;
-    }
+    else
+      missing_index = i+n_solids;
   }
 
   if (missing_index != n_fluids + n_solids) {
@@ -184,14 +232,7 @@ DistributionsRockMixOfSolidAndFluid::GenerateSample(const std::vector<double> & 
     volume_fraction_fluid[missing_index - n_solids] = 1.0 - sum;
   }
 
-  Rock * rock_mixed = new RockMixOfSolidAndFluid(solid, fluid, volume_fraction_solid, volume_fraction_fluid, u, mix_method_);
-
-  // Deep copy taken by constructor of RockMixOfSolidAndFluid, hence delete solid here:
-  for(size_t i = 0; i < n_solids; ++i)
-    delete solid[i];
-
-  for(size_t i = 0; i < n_fluids; ++i)
-    delete fluid[i];
+  Rock * rock_mixed = new RockMixOfSolidAndFluid(solid_sample, fluid_sample, volume_fraction_solid, volume_fraction_fluid, u, mix_method_);
 
   return rock_mixed;
 }

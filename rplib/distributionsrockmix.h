@@ -39,6 +39,11 @@ public:
   virtual bool                            GetIsOkForBounding()                                     const { return false; }
 
 private:
+
+  Rock                                  * GetSample(const std::vector<double> & u,
+                                                    const std::vector<double> & trend_params,
+                                                    const std::vector<Rock *> & sample_rock) const;
+
   std::vector< DistributionsRock * >      distr_rock_;
   std::vector< DistributionWithTrend * >  distr_vol_frac_;
   DEMTools::MixMethod                     mix_method_;
@@ -48,6 +53,8 @@ private:
 
 class DistributionsSolid;
 class DistributionsFluid;
+class Solid;
+class Fluid;
 
 
 class DistributionsRockMixOfSolidAndFluid : public DistributionsRock {
@@ -80,6 +87,11 @@ public:
   virtual bool                            GetIsOkForBounding()                                     const;
 
 private:
+  Rock                                  * GetSample(const std::vector<double>  & u,
+                                                    const std::vector<double>  & trend_params,
+                                                    const std::vector<Solid *> & solid_sample,
+                                                    const std::vector<Fluid *> & fluid_sample) const;
+
   std::vector< DistributionsSolid * >     distr_solid_;
   std::vector< DistributionsFluid * >     distr_fluid_;
   std::vector< DistributionWithTrend * >  distr_vol_frac_solid_;

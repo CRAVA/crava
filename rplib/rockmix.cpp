@@ -301,15 +301,29 @@ RockMixOfSolidAndFluid::Evolve(const std::vector<int>          & delta_time,
 void
 RockMixOfSolidAndFluid::SetPorosity(double porosity)
 {
+  size_t n_fluid = volume_fraction_fluid_.size();
+  size_t n_solid = volume_fraction_solid_.size();
+
   double poro_old = 0;
-  for(size_t i=0; i<volume_fraction_fluid_.size(); i++)
+  for(size_t i=0; i<n_fluid; i++)
     poro_old += volume_fraction_fluid_[i];
 
-  for(size_t i=0; i<volume_fraction_fluid_.size(); i++)
+  double sum = 0;
+  for(size_t i=0; i<n_fluid; i++) {
     volume_fraction_fluid_[i] = porosity * volume_fraction_fluid_[i] / poro_old;
+    sum += volume_fraction_fluid_[i];
+  }
 
-  for(size_t i=0; i<volume_fraction_solid_.size(); i++)
-    volume_fraction_solid_[i] = (1-porosity) * volume_fraction_solid_[i] / (1-poro_old);
+  double solid_fraction = 0;
+  for(size_t i=0; i<n_solid; i++)
+    solid_fraction += volume_fraction_solid_[i];
+
+  for(size_t i=0; i<n_solid-1; i++) {
+    volume_fraction_solid_[i] = (1-porosity) * volume_fraction_solid_[i] / solid_fraction;
+    sum += volume_fraction_solid_[i];
+  }
+
+  volume_fraction_solid_[n_solid-1] = 1-sum; // To avoid numerical unstability
 
   ComputeSeismicVariables();
 

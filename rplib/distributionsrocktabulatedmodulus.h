@@ -37,6 +37,9 @@ public:
   virtual bool                       GetIsOkForBounding() const;
 
 private:
+
+  Rock                             * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+
   const DistributionWithTrend * bulk_modulus_;
   const DistributionWithTrend * shear_modulus_;
   const DistributionWithTrend * density_;

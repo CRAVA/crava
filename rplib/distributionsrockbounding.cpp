@@ -90,22 +90,37 @@ Rock *
 DistributionsRockBounding::GenerateSample(const std::vector<double> & trend_params) const
 {
 
-  std::vector<double> u;
+  Rock * sample_upper_rock = upper_rock_->GenerateSample(trend_params);
+  Rock * sample_lower_rock = lower_rock_->GenerateSample(trend_params);
+
+  std::vector<double> u(3);
+  for(int i=0; i<3; i++)
+    u[i] = NRLib::Random::Unif01();
+
+  Rock * sample_rock = GetSample(u, trend_params, sample_upper_rock, sample_lower_rock);
+
+  delete sample_upper_rock;
+  delete sample_lower_rock;
+
+  return sample_rock;
+}
+
+Rock *
+DistributionsRockBounding::GetSample(const std::vector<double> & u,
+                                     const std::vector<double> & trend_params,
+                                     const Rock                * sample_upper_rock,
+                                     const Rock                * sample_lower_rock) const
+{
+
   std::vector<double> sample;
 
-  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
+  sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
   double sample_porosity = sample[0];
   double sample_K_weight = sample[1];
   double sample_M_weight = sample[2];
 
-  Rock * sample_upper_rock = upper_rock_->GenerateSample(trend_params);
-  Rock * sample_lower_rock = lower_rock_->GenerateSample(trend_params);
-
   Rock * new_rock = new RockBounding(sample_upper_rock, sample_lower_rock, sample_porosity, sample_K_weight, sample_M_weight, u);
-
-  delete sample_upper_rock;
-  delete sample_lower_rock;
 
   return new_rock;
 }

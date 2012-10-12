@@ -230,13 +230,14 @@ DEMTools::CalcEffectiveElasticModuliUsingReuss(const std::vector<double> & prop,
     if (prop[i] == 0.0)
       found_zero = true;
   }
-  if (found_zero)
-    throw NRLib::Exception("Invalid arguments: One of the properties is zero.");
 
   double eff_prop = 0.0;
-  for (size_t i = 0; i < volumefraction.size(); ++i)
-    eff_prop += volumefraction[i] / prop[i];
-  eff_prop = 1.0 / eff_prop;
+
+  if (found_zero == false) {
+    for (size_t i = 0; i < volumefraction.size(); ++i)
+      eff_prop += volumefraction[i] / prop[i];
+    eff_prop = 1.0 / eff_prop;
+  }
 
   return eff_prop;
 }
@@ -380,11 +381,9 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double bulk_modulus,
                                              double & vs)
 {
   assert(density != 0.0);
-  vp = (bulk_modulus + 4.0 * shear_modulus / 3.0) / density;
-  assert(vp > 0.0);
+  vp = (bulk_modulus + 4.0/3.0 * shear_modulus) / density;
   vp = sqrt(vp);
   vs = shear_modulus / density;
-  assert(vs > 0.0);
   vs = sqrt(vs);
 
 }
