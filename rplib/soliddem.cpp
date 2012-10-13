@@ -119,6 +119,8 @@ SolidDEM::ComputeElasticParams() {
     for (size_t i = 0; i < inclusion_concentration_.size(); ++i)
       host_vol_frac += inclusion_concentration_[i];
 
+    host_vol_frac = 1.0 - host_vol_frac;
+
     volume_fraction.push_back(host_vol_frac);
     rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
   }
