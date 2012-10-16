@@ -26,7 +26,7 @@ DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params) 
   Solid * solid_inc = distr_solid_inc_->GenerateSample(trend_params);
   size_t  n_incl    = distr_incl_spectrum_.size();
 
-  std::vector<double> u(n_incl+n_incl+1);
+  std::vector<double> u(n_incl+n_incl);
   for(size_t i=0; i<n_incl+n_incl; i++)
     u[i] = NRLib::Random::Unif01();
 

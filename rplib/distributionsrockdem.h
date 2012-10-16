@@ -9,6 +9,8 @@
 class DistributionWithTrend;
 class DistributionsSolid;
 class DistributionsFluid;
+class Solid;
+class Fluid;
 
 //NBNB fjellvoll not finished yet
 //TODO:covariance and expectations functions and variables.
@@ -31,9 +33,9 @@ public:
 
   virtual Pdf3D                                * GeneratePdf(void) const; // Returns NULL.
 
-  virtual bool                                   HasDistribution() const; //dummy function that needs to be implemented
+  virtual bool                                   HasDistribution() const;
 
-  virtual std::vector<bool>                      HasTrend() const; //dummy function that needs to be implemented
+  virtual std::vector<bool>                      HasTrend() const;
 
   virtual bool                                   GetIsOkForBounding()                                                  const { return false; }
 
@@ -44,6 +46,11 @@ public:
 private:
   void                                           SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
                                                                                        NRLib::Grid2D<double> & covariance);
+
+  Rock                                         * GetSample(const std::vector<double>  & u,
+                                                           const std::vector<double>  & trend_params,
+                                                           const Solid                * solid,
+                                                           const Fluid                * fluid) const;
 
   DistributionsSolid                           * distr_solid_;              // Pointer to external object.
   DistributionsFluid                           * distr_fluid_;              // Pointer to external object.

@@ -11,7 +11,7 @@ RockDEM::RockDEM(const Solid                         * solid,
                  const std::vector<double>           & u)
 : Rock()
 {
-  u_ = u; // u contains independent samples used in quantiles of (inclusion_spectrum,inclusion_concentration)
+  u_ = u; // u contains independent samples used in quantiles of (inclusion_spectrum,inclusion_concentration), u.back() is for porosity.
 
   // Deep copy of solid and fluid:
   solid_ = solid->Clone();
