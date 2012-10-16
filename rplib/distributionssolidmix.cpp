@@ -58,7 +58,7 @@ DistributionsSolidMix::GetSample(const std::vector<double>  & u,
 
   for(size_t i = 0; i < n_solids; ++i) {
 
-    if (u[i] == RMISSING)
+    if (u[i] != RMISSING)
       volume_fraction[i] = distr_vol_frac_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
     else
       missing_index    = i;
@@ -87,11 +87,15 @@ DistributionsSolidMix::HasDistribution() const
 
   for(size_t i=0; i<n_solids; i++) {
 
-    if(distr_solid_[i]->HasDistribution() == true)
+    if(distr_solid_[i]->HasDistribution() == true) {
       has_distribution = true;
+      break;
+    }
 
-    else if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsDistribution() == true)
+    else if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsDistribution() == true) {
       has_distribution = true;
+      break;
+    }
   }
 
   return has_distribution;

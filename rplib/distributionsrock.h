@@ -57,7 +57,6 @@ protected:
   std::vector<double>                   s_min_;
   std::vector<double>                   s_max_;
 
-private:
   std::vector<double>                   alpha_;
 
 };

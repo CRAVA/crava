@@ -19,15 +19,19 @@ public:
 
   virtual Solid               * GenerateSample(const std::vector<double> & trend_params) const;
 
-  virtual bool                  HasDistribution() const; //dummy function that needs to be implemented
+  virtual bool                  HasDistribution() const;
 
-  virtual std::vector<bool>     HasTrend() const; //dummy function that needs to be implemented
+  virtual std::vector<bool>     HasTrend() const;
 
 protected:
   virtual Solid               * UpdateSample(const std::vector< double > & /*corr*/,
                                              const Solid                 & /*solid*/)            const;
 
 private:
+  Solid                       * GetSample(const std::vector<double>  & u,
+                                          const std::vector<double>  & trend_params,
+                                          const Solid                * solid,
+                                          const Solid                * solid_inc) const;
 
   DistributionsSolid                           * distr_solid_;              // Pointer to external object.
   DistributionsSolid                           * distr_solid_inc_;          // Pointer to external object.
