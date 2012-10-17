@@ -1,6 +1,7 @@
 #include "rplib/distributionsfluidtabulatedvelocity.h"
 #include "rplib/fluidtabulatedmodulus.h"
 #include "rplib/tabulated.h"
+#include "rplib/demmodelling.h"
 
 DistributionsFluidTabulatedVelocity::DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
                                                                          const DistributionWithTrend * density,
@@ -95,8 +96,14 @@ DistributionsFluidTabulatedVelocity::HasTrend() const
 }
 
 Fluid *
-DistributionsFluidTabulatedVelocity::UpdateSample(const std::vector< double > & /*corr*/,
-                                                  const Fluid                 & /*fluid*/) const {
+DistributionsFluidTabulatedVelocity::UpdateSample(double                      corr_param,
+                                                  bool                        param_is_time,
+                                                  const std::vector<double> & trend,
+                                                  const Fluid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Fluid * updated_sample = GetSample(u, trend);
 
-  return NULL;
+  return updated_sample;
 }

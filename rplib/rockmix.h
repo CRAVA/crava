@@ -30,6 +30,7 @@ public:
 
   virtual void                SetPorosity(double porosity);
 
+  Rock                      * GetSubRock(size_t i) const { return rock_[i]; }
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
@@ -68,6 +69,9 @@ public:
                                                const std::vector< Rock * >         & /*rock*/)                     const;
 
   virtual void                          SetPorosity(double porosity);
+
+  Solid                               * GetSubSolid(size_t i) const { return solid_[i]; }
+  Fluid                               * GetSubFluid(size_t i) const { return fluid_[i]; }
 
 private:
   //Copy constructor for getting base class variables , used by Clone:

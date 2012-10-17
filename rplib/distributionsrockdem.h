@@ -28,8 +28,10 @@ public:
 
   virtual Rock                                 * GenerateSample(const std::vector<double> & trend_params) const;
 
-  virtual Rock                                 * UpdateSample(const std::vector<double> & /*corr*/,
-                                                              const Rock                & /*rock*/)                    const { return NULL; }
+  virtual Rock                                 * UpdateSample(double                      corr_param,
+                                                              bool                        param_is_time,
+                                                              const std::vector<double> & trend,
+                                                              const Rock                * sample) const;
 
   virtual Pdf3D                                * GeneratePdf(void) const; // Returns NULL.
 

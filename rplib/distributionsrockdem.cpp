@@ -7,8 +7,11 @@
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionsfluid.h"
 #include "rplib/rockdem.h"
+#include "rplib/demmodelling.h"
 
 #include "nrlib/random/distribution.hpp"
+
+#include <cassert>
 
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                                            DistributionsFluid                           * distr_fluid,
@@ -142,4 +145,30 @@ DistributionsRockDEM::GetSample(const std::vector<double>  & u,
   double porosity = distr_porosity_->GetQuantileValue(u.back(), trend_params[0], trend_params[1]);
 
   return new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity, u);
+}
+
+Rock *
+DistributionsRockDEM::UpdateSample(double                      corr_param,
+                                   bool                        param_is_time,
+                                   const std::vector<double> & trend,
+                                   const Rock                * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+
+  assert(typeid(sample) == typeid(RockDEM));
+  const RockDEM * core_sample = dynamic_cast<const RockDEM *>(sample);
+
+  Solid * updated_solid = distr_solid_->UpdateSample(corr_param,
+                                                     param_is_time,
+                                                     trend,
+                                                     core_sample->GetSolid());
+  Fluid * updated_fluid = distr_fluid_->UpdateSample(corr_param,
+                                                     param_is_time,
+                                                     trend,
+                                                     core_sample->GetFluid());
+
+  Rock * updated_sample = GetSample(u, trend, updated_solid, updated_fluid);
+
+  return updated_sample;
 }

@@ -2,6 +2,7 @@
 
 #include "rplib/solidmix.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/demmodelling.h"
 
 #include <cassert>
 
@@ -130,8 +131,25 @@ DistributionsSolidMix::HasTrend() const
 }
 
 Solid *
-DistributionsSolidMix::UpdateSample(const std::vector< double > &/*corr*/,
-                                    const Solid                 & /*solid*/) const {
+DistributionsSolidMix::UpdateSample(double                      corr_param,
+                                    bool                        param_is_time,
+                                    const std::vector<double> & trend,
+                                    const Solid               * sample) const {
 
-  return NULL;
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+
+  const SolidMix * core_sample = dynamic_cast<const SolidMix *>(sample);
+
+  std::vector<Solid *> updated_sub_solids(distr_solid_.size());
+  for(size_t i = 0; i<distr_solid_.size(); i++){
+     updated_sub_solids[i] = distr_solid_[i]->UpdateSample(corr_param,
+                                                           param_is_time,
+                                                           trend,
+                                                           core_sample->GetSubSolid(i));
+  }
+
+  Solid * updated_sample = GetSample(u, trend, updated_sub_solids);
+
+  return updated_sample;
 }

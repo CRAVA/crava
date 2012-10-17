@@ -31,8 +31,10 @@ public:
   virtual std::vector<bool>     HasTrend() const;
 
 protected:
-  virtual Solid *               UpdateSample(const std::vector< double > & /*corr*/,
-                                             const Solid                 & /*solid*/) const;
+  virtual Solid *               UpdateSample(double                      corr_param,
+                                             bool                        param_is_time,
+                                             const std::vector<double> & trend,
+                                             const Solid               * sample) const;
 
 private:
   Solid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;

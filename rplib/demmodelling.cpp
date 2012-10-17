@@ -1178,3 +1178,10 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  delete distr_quartz;
 //
 //}
+
+void
+DEMTools::UpdateU(std::vector<double> & u,
+                  double                corr_param,
+                  bool                  param_is_time)
+{
+}

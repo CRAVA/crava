@@ -23,7 +23,11 @@ public:
                                                            double corr)                                   const    ;
 
   Rock                                * EvolveSample(double       time,
-                                                     const Rock & rock)                                   const    ;
+                                                     const Rock & rock)                                   const
+  {
+    const std::vector<double> trend(2);
+    return UpdateSample(time, true, trend, &rock);
+  }
 
   virtual Pdf3D                       * GeneratePdf(void)                                                 const = 0;
 
@@ -42,10 +46,12 @@ public:
 
   virtual NRLib::Grid2D<double>         GetCovariance(const std::vector<double> & /*trend_params*/)       const = 0;
 
-protected:
-  virtual Rock                        * UpdateSample(const std::vector<double> & /*corr*/,
-                                                     const Rock                & /*rock*/)                const = 0;
+  virtual Rock                        * UpdateSample(double                      corr_param,
+                                                     bool                        param_is_time,
+                                                     const std::vector<double> & trend,
+                                                     const Rock                * sample)    const = 0;
 
+protected:
                                         //This function should be called last step in constructor
                                         //for all children classes.
   void                                  SetupExpectationAndCovariances(const std::vector<double> & s_min,

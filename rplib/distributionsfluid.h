@@ -22,13 +22,19 @@ public:
 
   virtual std::vector<bool>     HasTrend()                                                    const = 0;
 
+  virtual Fluid *               UpdateSample(double                      corr_param,
+                                             bool                        param_is_time,
+                                             const std::vector<double> & trend,
+                                             const Fluid               * sample)             const = 0;
+
   Fluid *                       EvolveSample(double         time,
-                                             const Fluid &  fluid)                            const;
+                                             const Fluid &  fluid)                            const
+  {
+    const std::vector<double> trend(2);
+    return UpdateSample(time, true, trend, &fluid);
+  }
 
 protected:
-  virtual Fluid *               UpdateSample(const std::vector< double > & corr,
-                                             const Fluid                 & fluid)             const = 0;
-
   std::vector< double >         alpha_;
 
 };

@@ -1,6 +1,7 @@
 #include "rplib/distributionsco2.h"
 
 #include "rplib/distributionwithtrend.h"
+#include "rplib/demmodelling.h"
 
 DistributionsCO2::DistributionsCO2(const DistributionWithTrend       * distr_temperature,
                                    const DistributionWithTrend       * distr_pore_pressure)
@@ -41,8 +42,14 @@ DistributionsCO2::HasTrend() const
 }
 
 Fluid *
-DistributionsCO2::UpdateSample(const std::vector< double > & /*corr*/,
-                               const Fluid                 & /*fluid*/) const {
+DistributionsCO2::UpdateSample(double                      corr_param,
+                               bool                        param_is_time,
+                               const std::vector<double> & trend,
+                               const Fluid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Fluid * updated_sample = NULL; // = GetSample();
 
-  return NULL;
+  return updated_sample;
 }

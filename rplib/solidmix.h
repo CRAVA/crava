@@ -25,6 +25,8 @@ public:
   virtual Solid                   * Evolve(const std::vector<int>             & delta_time,
                                            const std::vector< const Solid * > & solid) const;
 
+  Solid                           * GetSubSolid(size_t i) const { return solid_[i]; }
+
 private:
   //Copy constructor for getting base class variables , used by Clone:
   SolidMix(const SolidMix & rhs) : Solid(rhs) {}

@@ -4,7 +4,9 @@
 #include "rplib/rock.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/tabulated.h"
+#include "rplib/demmodelling.h"
 
+#include <cassert>
 
 DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock     * upper_rock,
                                                      const DistributionsRock     * lower_rock,
@@ -159,4 +161,30 @@ DistributionsRockBounding::GetIsOkForBounding() const
     is_ok_for_bounding = true;
 
   return is_ok_for_bounding;
+}
+
+Rock *
+DistributionsRockBounding::UpdateSample(double                      corr_param,
+                                        bool                        param_is_time,
+                                        const std::vector<double> & trend,
+                                        const Rock                * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+
+  assert(typeid(sample) == typeid(RockBounding));
+  const RockBounding * core_sample = dynamic_cast<const RockBounding *>(sample);
+
+  Rock * updated_upper_rock = upper_rock_->UpdateSample(corr_param,
+                                                        param_is_time,
+                                                        trend,
+                                                        core_sample->GetUpperRock());
+  Rock * updated_lower_rock = lower_rock_->UpdateSample(corr_param,
+                                                        param_is_time,
+                                                        trend,
+                                                        core_sample->GetLowerRock());
+
+  Rock * updated_sample     = GetSample(u, trend, updated_upper_rock, updated_lower_rock);
+
+  return updated_sample;
 }

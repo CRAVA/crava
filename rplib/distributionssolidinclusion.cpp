@@ -44,8 +44,10 @@ DistributionsSolidInclusion::GenerateSample(const std::vector<double> & /*trend_
 }
 
 Solid *
-DistributionsSolidInclusion::UpdateSample(const std::vector< double > &/*corr*/,
-                                          const Solid                 & /*solid*/) const {
+DistributionsSolidInclusion::UpdateSample(double                      corr_param,
+                                          bool                        param_is_time,
+                                          const std::vector<double> & trend,
+                                          const Solid               * sample) const {
 
   return NULL;
 }

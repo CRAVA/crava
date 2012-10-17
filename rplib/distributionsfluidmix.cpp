@@ -5,8 +5,11 @@
 #include "rplib/distributionsfluidmix.h"
 
 #include "rplib/distributionwithtrend.h"
+#include "rplib/demmodelling.h"
 
 #include "src/definitions.h"
+
+#include <cassert>
 
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
@@ -128,8 +131,27 @@ DistributionsFluidMix::HasTrend() const
 }
 
 Fluid *
-DistributionsFluidMix::UpdateSample(const std::vector< double > & /*corr*/,
-                                    const Fluid                 & /*fluid*/) const {
+DistributionsFluidMix::UpdateSample(double                      corr_param,
+                                    bool                        param_is_time,
+                                    const std::vector<double> & trend,
+                                    const Fluid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
 
-  return NULL;
+  assert(typeid(sample) == typeid(FluidMix));
+  const FluidMix * core_sample = dynamic_cast<const FluidMix *>(sample);
+
+  std::vector<Fluid *> updated_sub_fluids(distr_fluid_.size());
+  for(size_t i = 0; i<distr_fluid_.size(); i++){
+    updated_sub_fluids[i] = distr_fluid_[i]->UpdateSample(corr_param,
+                                                          param_is_time,
+                                                          trend,
+                                                          core_sample->GetSubFluid(i));
+  }
+  Fluid * updated_sample = GetSample(u, trend, updated_sub_fluids);
+
+  return updated_sample;
+
 }
+

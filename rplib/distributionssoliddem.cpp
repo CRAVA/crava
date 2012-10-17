@@ -2,6 +2,9 @@
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/soliddem.h"
+#include "rplib/demmodelling.h"
+
+#include <cassert>
 
 DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
                                              DistributionsSolid                           * distr_solid_inc,
@@ -79,10 +82,29 @@ DistributionsSolidDEM::HasTrend() const
 }
 
 Solid *
-DistributionsSolidDEM::UpdateSample(const std::vector< double > & /*corr*/,
-                                    const Solid                 & /*solid*/) const {
+DistributionsSolidDEM::UpdateSample(double                      corr_param,
+                                    bool                        param_is_time,
+                                    const std::vector<double> & trend,
+                                    const Solid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
 
-  return NULL;
+  assert(typeid(sample) == typeid(SolidDEM));
+  const SolidDEM * core_sample = dynamic_cast<const SolidDEM *>(sample);
+
+  Solid * updated_solid_host = distr_solid_->UpdateSample(corr_param,
+                                                          param_is_time,
+                                                          trend,
+                                                          core_sample->GetSolidHost());
+  Solid * updated_solid_inc = distr_solid_inc_->UpdateSample(corr_param,
+                                                             param_is_time,
+                                                             trend,
+                                                             core_sample->GetSolidInclusion());
+
+  Solid * updated_sample = GetSample(u, trend, updated_solid_host, updated_solid_inc);
+
+  return updated_sample;
 }
 
 Solid *
@@ -101,5 +123,4 @@ DistributionsSolidDEM::GetSample(const std::vector<double>  & u,
   }
 
   return new SolidDEM(solid, solid_inc, inclusion_spectrum, inclusion_concentration, u);
-
 }

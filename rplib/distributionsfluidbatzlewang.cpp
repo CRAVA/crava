@@ -2,6 +2,7 @@
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/fluidbatzlewang.h"
+#include "rplib/demmodelling.h"
 
 DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWithTrend        * distr_temperature,
                                                            const DistributionWithTrend        * distr_pore_pressure,
@@ -71,8 +72,14 @@ DistributionsFluidBatzleWang::HasTrend() const
 }
 
 Fluid *
-DistributionsFluidBatzleWang::UpdateSample(const std::vector< double > & /*corr*/,
-                                           const Fluid                 & /*fluid*/) const {
+DistributionsFluidBatzleWang::UpdateSample(double                      corr_param,
+                                           bool                        param_is_time,
+                                           const std::vector<double> & trend,
+                                           const Fluid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Fluid * updated_sample = GetSample(u, trend);
 
-  return NULL;
+  return updated_sample;
 }

@@ -88,6 +88,8 @@ namespace DEMTools {
 
   // not working because Distribution->DistributionWithTrend
   //void DebugTestDeletionAndCopying();
+
+  void UpdateU(std::vector<double> & u, double corr_param, bool param_is_time);
 }
 #endif
 

@@ -115,8 +115,14 @@ DistributionsSolidTabulatedVelocity::HasTrend() const
 }
 
 Solid *
-DistributionsSolidTabulatedVelocity::UpdateSample(const std::vector< double > &/*corr*/,
-                                                  const Solid                 & /*solid*/) const {
+DistributionsSolidTabulatedVelocity::UpdateSample(double                      corr_param,
+                                                  bool                        param_is_time,
+                                                  const std::vector<double> & trend,
+                                                  const Solid               * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Solid * updated_sample = GetSample(u, trend);
 
-  return NULL;
+  return updated_sample;
 }

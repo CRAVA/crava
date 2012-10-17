@@ -153,3 +153,16 @@ DistributionsRockTabulatedModulus::GetIsOkForBounding() const
 
   return(is_ok_for_bounding);
 }
+
+Rock *
+DistributionsRockTabulatedModulus::UpdateSample(double                      corr_param,
+                                                bool                        param_is_time,
+                                                const std::vector<double> & trend,
+                                                const Rock                * sample)       const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Rock * updated_sample = GetSample(u, trend);
+
+  return updated_sample;
+}

@@ -1,6 +1,7 @@
 #include "rplib/distributionsrocktabulatedvelocity.h"
 #include "rplib/rocktabulatedvelocity.h"
 #include "rplib/pdf3d.h"
+#include "rplib/demmodelling.h"
 
 #include "nrlib/grid/grid2d.hpp"
 
@@ -146,4 +147,17 @@ DistributionsRockTabulatedVelocity::GetIsOkForBounding() const
     is_ok_for_bounding = true;
 
   return(is_ok_for_bounding);
+}
+
+Rock *
+DistributionsRockTabulatedVelocity::UpdateSample(double                      corr_param,
+                                                 bool                        param_is_time,
+                                                 const std::vector<double> & trend,
+                                                 const Rock                * sample) const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+  Rock * updated_sample = GetSample(u, trend);
+
+  return updated_sample;
 }

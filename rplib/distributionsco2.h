@@ -20,9 +20,11 @@ public:
 
   virtual std::vector<bool>           HasTrend() const;
 
+  virtual Fluid *                     UpdateSample(double                      corr_param,
+                                                   bool                        param_is_time,
+                                                   const std::vector<double> & trend,
+                                                   const Fluid               * sample) const;
 protected:
-  virtual Fluid *                     UpdateSample(const std::vector< double > & /*corr*/,
-                                                   const Fluid                 & /*fluid*/) const;
 
 private:
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.

@@ -28,6 +28,9 @@ public:
 
   virtual void                          SetPorosity(double porosity);
 
+  Rock                                * GetUpperRock() const { return upper_rock_; }
+  Rock                                * GetLowerRock() const { return lower_rock_; }
+
 private:
 
   void                                  ComputeSeismicVariables();

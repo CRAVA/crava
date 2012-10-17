@@ -6,6 +6,9 @@
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionsfluid.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/demmodelling.h"
+
+#include <cassert>
 
 #include "src/definitions.h"
 
@@ -151,6 +154,31 @@ DistributionsRockMixOfRock::HasTrend() const
   }
 
   return has_trend;
+}
+
+Rock *
+DistributionsRockMixOfRock::UpdateSample(double                      corr_param,
+                                         bool                        param_is_time,
+                                         const std::vector<double> & trend,
+                                         const Rock                * sample)       const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+
+  assert(typeid(sample) == typeid(RockMixOfRock));
+  const RockMixOfRock * core_sample = dynamic_cast<const RockMixOfRock *>(sample);
+
+  std::vector<Rock *> updated_sub_rocks(distr_rock_.size());
+  for(size_t i = 0; i<distr_rock_.size(); i++)
+  {
+    updated_sub_rocks[i] = distr_rock_[i]->UpdateSample(corr_param,
+                                                        param_is_time,
+                                                        trend,
+                                                        core_sample->GetSubRock(i));
+  }
+  Rock * updated_sample = GetSample(u, trend, updated_sub_rocks);
+
+  return updated_sample;
 }
 
 //-------------------------------------- DistributionsRockMixOfSolidAndFluid ---------------------------------------------------------
@@ -389,3 +417,37 @@ DistributionsRockMixOfSolidAndFluid::GetIsOkForBounding() const
   return(is_ok_for_bounding);
 }
 
+Rock *
+DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      corr_param,
+                                                  bool                        param_is_time,
+                                                  const std::vector<double> & trend,
+                                                  const Rock                * sample)    const
+{
+  std::vector<double> u = sample->GetU();
+  DEMTools::UpdateU(u, corr_param, param_is_time);
+
+  assert(typeid(sample) == typeid(RockMixOfSolidAndFluid));
+  const RockMixOfSolidAndFluid * core_sample = dynamic_cast<const RockMixOfSolidAndFluid *>(sample);
+
+  std::vector<Solid *> updated_solids(distr_solid_.size());
+  std::vector<Fluid *> updated_fluids(distr_fluid_.size());
+
+  for(size_t i = 0; i < distr_solid_.size(); i++)
+  {
+    updated_solids[i] = distr_solid_[i]->UpdateSample(corr_param,
+                                                      param_is_time,
+                                                      trend,
+                                                      core_sample->GetSubSolid(i));
+  }
+  for(size_t i = 0; i < distr_fluid_.size(); i++)
+  {
+    updated_fluids[i] = distr_fluid_[i]->UpdateSample(corr_param,
+                                                      param_is_time,
+                                                      trend,
+                                                      core_sample->GetSubFluid(i));
+  }
+
+  Rock * updated_sample = GetSample(u, trend, updated_solids, updated_fluids);
+
+  return updated_sample;
+}
