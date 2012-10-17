@@ -6304,6 +6304,10 @@
 					Name="Rock"
 					>
 					<File
+						RelativePath=".\rplib\distributionsrock.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\distributionsrockbounding.cpp"
 						>
 					</File>
@@ -7089,11 +7093,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File

@@ -19,8 +19,11 @@ public:
 
   virtual Rock                        * GenerateSample(const std::vector<double> & trend_params)          const = 0;
 
-  std::vector< Rock* >                  GenerateWellSample(const  std::vector<double> & trend_params,
-                                                           double corr)                                   const    ;
+  void                                  GenerateWellSample(double                 corr,
+                                                           std::vector<double> &  vp,
+                                                           std::vector<double> &  vs,
+                                                           std::vector<double> &  rho,
+                                                           std::vector<double> &  trend_params)           const;
 
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock)                                   const
