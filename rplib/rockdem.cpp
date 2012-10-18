@@ -7,7 +7,6 @@ RockDEM::RockDEM(const Solid                         * solid,
                  const Fluid                         * fluid,
                  const std::vector<double>           & inclusion_spectrum,
                  const std::vector<double>           & inclusion_concentration,
-                 double                                porosity,
                  const std::vector<double>           & u)
 : Rock()
 {
@@ -19,7 +18,6 @@ RockDEM::RockDEM(const Solid                         * solid,
 
   inclusion_spectrum_      = inclusion_spectrum;
   inclusion_concentration_ = inclusion_concentration;
-  porosity_                = porosity;
 
   ComputeSeismicAndElasticParams();
 
@@ -45,7 +43,6 @@ RockDEM& RockDEM::operator=(const RockDEM& rhs)
     mu_                      = rhs.mu_;
     inclusion_spectrum_      = rhs.inclusion_spectrum_;
     inclusion_concentration_ = rhs.inclusion_concentration_;
-    porosity_                = rhs.porosity_;
 
     delete solid_;
     delete fluid_;
@@ -66,7 +63,6 @@ RockDEM::Clone() const {
   r->fluid_                   = this->fluid_->Clone();          // Deep copy.
   r->inclusion_spectrum_      = this->inclusion_spectrum_;
   r->inclusion_concentration_ = this->inclusion_concentration_;
-  r->porosity_                = this->porosity_;
   r->k_                       = this->k_;
   r->mu_                      = this->mu_;
 
@@ -100,13 +96,11 @@ RockDEM::Evolve(const std::vector<int>         & delta_time,
   // Change the assignment of the following three variables when a time develop model has been defined.
   std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
   std::vector<double> inclusion_concentration = inclusion_concentration_;
-  double  porosity                            = porosity_;
 
   Rock * rock_new = new RockDEM(solid_new,
                                       fluid_new,
                                       inclusion_spectrum,
                                       inclusion_concentration,
-                                      porosity,
                                       u_);
 
   // Deep copy taken by constructor of RockDEM, hence delete
@@ -119,7 +113,16 @@ RockDEM::Evolve(const std::vector<int>         & delta_time,
 
 void
 RockDEM::SetPorosity(double porosity) {
-  porosity_ = porosity;
+  // the following assumes inclusions are fluids
+  double poro_old = 1.0 - inclusion_concentration_[0];
+  double new_volume_fraction_fluid = porosity;
+  double new_volume_fraction_solid = 1.0 - new_volume_fraction_fluid;
+
+  inclusion_concentration_[0] = new_volume_fraction_solid;
+
+  for (size_t i = 1; i < inclusion_concentration_.size(); ++i)
+    inclusion_concentration_[i] = (porosity * inclusion_concentration_[i]) / poro_old;
+
   ComputeSeismicAndElasticParams();
 }
 
@@ -136,20 +139,19 @@ RockDEM::ComputeSeismicAndElasticParams() {
   rho.push_back(fluid_rho);
   rho.push_back(solid_rho);
   std::vector<double> poro;
-  poro.push_back(porosity_);
-  poro.push_back(1.0 - porosity_);
+
+  double porosity = 1.0 - inclusion_concentration_[0]; // assumes inclusions are fluids
+  poro.push_back(porosity);
+  poro.push_back(1.0 - porosity);
   rho_  = DEMTools::CalcEffectiveDensity(rho, poro);
 
   std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), fluid_k);
   std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), 0.0);
-  std::vector<double> conc = inclusion_concentration_; // inclusion concentration scaled by porosity
-  for (size_t i = 0; i < conc.size(); i++)
-   conc[i] *= porosity_;
 
   DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,
                                              inclusion_mu,
                                              inclusion_spectrum_,
-                                             conc,
+                                             inclusion_concentration_,
                                              solid_k,
                                              solid_mu,
                                              k_,

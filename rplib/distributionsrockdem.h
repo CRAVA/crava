@@ -21,8 +21,7 @@ public:
  DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                       DistributionsFluid                           * distr_fluid,
                       std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                      std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                      DistributionWithTrend                        * distr_porosity);
+                      std::vector< DistributionWithTrend * >       & distr_incl_concentration);
 
   virtual                                        ~DistributionsRockDEM();
 
@@ -58,7 +57,6 @@ private:
   DistributionsFluid                           * distr_fluid_;              // Pointer to external object.
   std::vector< DistributionWithTrend * >         distr_incl_spectrum_;      // Pointers to external objects.
   std::vector< DistributionWithTrend * >         distr_incl_concentration_; // Pointers to external objects.
-  DistributionWithTrend                        * distr_porosity_;           // Pointer to external object.
 
   //NBNB fjellvoll dummy to be removed soon
   std::vector<double>                            expectation_old_;

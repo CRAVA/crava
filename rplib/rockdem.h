@@ -16,7 +16,6 @@ RockDEM(const Solid                         * solid,
         const Fluid                         * fluid,
         const std::vector<double>           & inclusion_spectrum,
         const std::vector<double>           & inclusion_concentration,
-        double                                porosity,
         const std::vector<double>           & u);
 
 RockDEM();
@@ -50,7 +49,6 @@ private:
   Fluid                               * fluid_; // Owned and deleted by this class.
   std::vector<double>                   inclusion_spectrum_;
   std::vector<double>                   inclusion_concentration_;
-  double                                porosity_;
 
   double k_, mu_;
 };

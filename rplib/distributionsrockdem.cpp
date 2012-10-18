@@ -16,8 +16,7 @@
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                                            DistributionsFluid                           * distr_fluid,
                                            std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                           std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                                           DistributionWithTrend                        * distr_porosity)
+                                           std::vector< DistributionWithTrend * >       & distr_incl_concentration)
 : DistributionsRock()
 {
   assert( distr_incl_spectrum.size() == distr_incl_concentration.size() );
@@ -26,7 +25,6 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   distr_fluid_              = distr_fluid;
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
-  distr_porosity_           = distr_porosity;
 
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 }
@@ -40,8 +38,8 @@ DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) c
   Fluid * fluid = distr_fluid_->GenerateSample(trend_params);
   size_t n_incl = distr_incl_spectrum_.size();
 
-  std::vector<double> u(n_incl+n_incl+1);
-  for(size_t i=0; i<n_incl+n_incl+1; i++)
+  std::vector<double> u(n_incl+n_incl);
+  for(size_t i=0; i<n_incl+n_incl; i++)
     u[i] = NRLib::Random::Unif01();
 
   Rock * new_rock = GetSample(u, trend_params, solid, fluid);
@@ -64,7 +62,7 @@ DistributionsRockDEM::GeneratePdf(void) const
 bool
 DistributionsRockDEM::HasDistribution() const
 {
-  if (distr_solid_->HasDistribution() || distr_fluid_->HasDistribution() || distr_porosity_->GetIsDistribution())
+  if (distr_solid_->HasDistribution() || distr_fluid_->HasDistribution())
       return true;
 
   // loop over inclusion and spectrum
@@ -83,14 +81,13 @@ DistributionsRockDEM::HasTrend() const
 
   std::vector<bool> solid_trend     = distr_solid_->HasTrend();
   std::vector<bool> fluid_trend     = distr_fluid_->HasTrend();
-  std::vector<bool> poro_trend      = distr_porosity_->GetUseTrendCube();
 
   for (size_t i = 0; i < distr_incl_spectrum_.size(); ++i) {
     std::vector<bool> incl_trend = distr_incl_spectrum_[i]->GetUseTrendCube();
     std::vector<bool> incl_conc  = distr_incl_concentration_[i]->GetUseTrendCube();
 
     for(size_t j = 0; j < 2; ++j) {
-      if (solid_trend[j] || fluid_trend[j] || poro_trend[j] || incl_trend[j] || incl_conc[j])
+      if (solid_trend[j] || fluid_trend[j] || incl_trend[j] || incl_conc[j])
         has_trend[j] = true;
     }
   }
@@ -142,9 +139,8 @@ DistributionsRockDEM::GetSample(const std::vector<double>  & u,
     inclusion_spectrum[i] = distr_incl_spectrum_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
     inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
   }
-  double porosity = distr_porosity_->GetQuantileValue(u.back(), trend_params[0], trend_params[1]);
 
-  return new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity, u);
+  return new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, u);
 }
 
 Rock *

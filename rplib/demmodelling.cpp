@@ -642,18 +642,18 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
     inclusion_spectrum.push_back(0.0100);
     inclusion_spectrum.push_back(1.0000e-003);
     inclusion_spectrum.push_back(1.0000e-004);
-    inclusion_concentration.push_back(0.6419);
-    inclusion_concentration.push_back(0.3205);
-    inclusion_concentration.push_back(0.0321);
-    inclusion_concentration.push_back(0.0050);
-    inclusion_concentration.push_back(5.0000e-004);
-    inclusion_concentration.push_back(5.0000e-005);
+    inclusion_concentration.push_back(0.6419*porosity);
+    inclusion_concentration.push_back(0.3205*porosity);
+    inclusion_concentration.push_back(0.0321*porosity);
+    inclusion_concentration.push_back(0.0050*porosity);
+    inclusion_concentration.push_back(5.0000e-004*porosity);
+    inclusion_concentration.push_back(5.0000e-005*porosity);
   }
 
   size_t n_var = inclusion_spectrum.size() + inclusion_concentration.size();
   std::vector<double> dummy_u_dem(n_var, 0.0);
 
-  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, porosity, dummy_u_dem);
+  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, dummy_u_dem);
   rock_inclusion.GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 }
@@ -891,16 +891,12 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-005), false));
   }
 
-  NRLib::Trend * trend_porosity          = new NRLib::TrendConstant(0.2);
-  DistributionWithTrend * distr_porosity = new DeltaDistributionWithTrend(trend_porosity, false);
-
 
   //// Rock, distribution functions.
   DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
                                                                         distr_fluid_mixed,
                                                                         distr_incl_spectrum,
-                                                                        distr_incl_concentration,
-                                                                        distr_porosity);
+                                                                        distr_incl_concentration);
 
 
   //// Generating a sample of the rock.
@@ -950,8 +946,6 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   delete distr_temperature;
 
   delete distr_salinity;
-
-  delete distr_porosity;
 }
 
 //void
@@ -1180,8 +1174,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //}
 
 void
-DEMTools::UpdateU(std::vector<double> & u,
-                  double                corr_param,
-                  bool                  param_is_time)
+DEMTools::UpdateU(std::vector<double> & /*u*/,
+                  double                /*corr_param*/,
+                  bool                  /*param_is_time*/)
 {
 }

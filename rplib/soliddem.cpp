@@ -57,7 +57,7 @@ SolidDEM::Clone() const {
 
   // Provide variables specific to SolidDEM.
   r->solid_                   = this->solid_->Clone();          // Deep copy.
-  r->solid_inc_                   = this->solid_inc_->Clone();          // Deep copy.
+  r->solid_inc_               = this->solid_inc_->Clone();      // Deep copy.
   r->inclusion_spectrum_      = this->inclusion_spectrum_;
   r->inclusion_concentration_ = this->inclusion_concentration_;
 
@@ -108,24 +108,20 @@ SolidDEM::ComputeElasticParams() {
   double solid_rho, solid_k, solid_mu;
   solid_->GetElasticParams(solid_k, solid_mu, solid_rho);
 
-  { // calculation of effective density
+  { //Calculation of effective density if inclusion_concentration_ is filled with inclusions AND host.
     std::vector<double> rho;
-    rho.push_back(solid_inc_rho);
     rho.push_back(solid_rho);
+    rho.push_back(solid_inc_rho);
 
-    std::vector<double> volume_fraction = inclusion_concentration_;
-
-    double host_vol_frac = 0;
-    for (size_t i = 0; i < inclusion_concentration_.size(); ++i)
-      host_vol_frac += inclusion_concentration_[i];
-
-    host_vol_frac = 1.0 - host_vol_frac;
-
+    std::vector<double> volume_fraction;
+    double host_vol_frac = inclusion_concentration_[0];
     volume_fraction.push_back(host_vol_frac);
+    volume_fraction.push_back(1.0 - host_vol_frac);
+
     rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
   }
 
-  std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), solid_inc_k);
+  std::vector<double> inclusion_k   = std::vector<double>(inclusion_spectrum_.size(), solid_inc_k);
   std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), solid_inc_mu);
 
   DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,

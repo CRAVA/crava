@@ -16,6 +16,7 @@
 #include "rplib/distributionsrocktabulatedmodulus.h"
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/distributionsrockmix.h"
+#include "rplib/distributionsrockdem.h"
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionwithtrendstorage.h"
@@ -471,19 +472,20 @@ DEMRockStorage::~DEMRockStorage()
 }
 
 DistributionsRock *
-DEMRockStorage::GenerateDistributionsRock(const std::string                                          & /*path*/,
-                                          const std::vector<std::string>                             & /*trend_cube_parameters*/,
-                                          const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
+DEMRockStorage::GenerateDistributionsRock(const std::string                                          & path,
+                                          const std::vector<std::string>                             & trend_cube_parameters,
+                                          const std::vector<std::vector<double> >                    & trend_cube_sampling,
                                           const std::map<std::string, DistributionsRockStorage *>    & /*model_rock_storage*/,
-                                          const std::map<std::string, DistributionsSolidStorage *>   & /*model_solid_storage*/,
+                                          const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
                                           const std::map<std::string, DistributionsDryRockStorage *> & /*model_dry_rock_storage*/,
-                                          const std::map<std::string, DistributionsFluidStorage *>   & /*model_fluid_storage*/,
+                                          const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
                                           std::map<std::string, DistributionsRock *>                 & /*rock_distribution*/,
-                                          std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
+                                          std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                           std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
-                                          std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
+                                          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
                                           std::string                                                & errTxt) const
 {
+  // Remember: Host info is included first in inclusion vectors
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
 
   std::vector<DistributionWithTrendStorage *> volume_fractions(n_inclusions + 1);
@@ -492,12 +494,44 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  //CheckVolumeConsistency(volume_fractions, errTxt);
+  DistributionsRock * rock = NULL;
 
-  DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
+  std::vector< DistributionWithTrend *> inclusion_volume_fraction_distr(inclusion_volume_fraction_.size()+1, NULL);
+  std::vector< DistributionWithTrend *> inclusion_aspect_ratio_distr(inclusion_aspect_ratio_.size()+1, NULL);
 
-  if(rock == NULL)
-    errTxt += "The DEM model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  inclusion_volume_fraction_distr[0]  = host_volume_fraction_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  inclusion_aspect_ratio_distr[0]     = host_aspect_ratio_   ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt); //NBNB fjellvoll host har altså aspect ratio.
+
+  for (size_t i = 1; i < inclusion_volume_fraction_.size(); ++i)
+    inclusion_volume_fraction_distr[i] = inclusion_volume_fraction_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+  for (size_t i = 1; i < inclusion_aspect_ratio_.size(); ++i)
+    inclusion_aspect_ratio_distr[i] = inclusion_aspect_ratio_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+  //Read host label
+  DistributionsSolid  * final_distr_solid = NULL;
+  final_distr_solid = ReadSolid(host_label_,path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+
+  //Read inclusion label
+  std::vector< DistributionsFluid* > final_distr_fluid_inc;
+  size_t s;
+  for (s = 0; s != inclusion_label_.size(); ++s) {
+    DistributionsFluid * incl_fluid;
+    incl_fluid = ReadFluid(inclusion_label_[s],path, trend_cube_parameters, trend_cube_sampling, model_fluid_storage, fluid_distribution, errTxt);
+    final_distr_fluid_inc.push_back(incl_fluid);
+  }
+
+  //Questions //NBNB fjellvoll //NBNB marit
+  //1.Do we support more than one inclusion?
+
+  //CheckVolumeConsistency(distr_porosity, errTxt); //Fix when questions are solved
+
+  if (errTxt == "") {
+    rock = new DistributionsRockDEM(final_distr_solid,
+                                    final_distr_fluid_inc[0],         //tmp solution only single inclusion supported
+                                    inclusion_aspect_ratio_distr,
+                                    inclusion_volume_fraction_distr);
+  }
 
   return(rock);
 }
