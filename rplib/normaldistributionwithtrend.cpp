@@ -60,7 +60,9 @@ NormalDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) co
 
   double dummy = 0;
 
-  double y = mean_->GetValue(s1, s2, dummy) + u * std::sqrt(var_->GetValue(s1, s2, dummy));
+  double z = gaussian_->Quantile(u);
+
+  double y = mean_->GetValue(s1, s2, dummy) + z * std::sqrt(var_->GetValue(s1, s2, dummy));
 
   return y;
 }
