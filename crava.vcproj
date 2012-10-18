@@ -6224,6 +6224,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\rplib\distributionsfluid.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\distributionsfluidbatzlewang.cpp"
 						>
 					</File>
@@ -6259,6 +6263,10 @@
 				<Filter
 					Name="Solid"
 					>
+					<File
+						RelativePath=".\rplib\distributionssolid.cpp"
+						>
+					</File>
 					<File
 						RelativePath=".\rplib\distributionssoliddem.cpp"
 						>
@@ -7093,11 +7101,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File

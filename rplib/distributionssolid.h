@@ -23,11 +23,7 @@ public:
   virtual std::vector<bool>     HasTrend()                                                   const = 0;
 
   Solid *                       EvolveSample(double         time,
-                                             const Solid &  solid)                           const
-  {
-    const std::vector<double> trend(2);
-    return UpdateSample(time, true, trend, &solid);
-  }
+                                             const Solid &  solid)                           const;
 
   virtual Solid *               UpdateSample(double                      corr_param,
                                              bool                        param_is_time,

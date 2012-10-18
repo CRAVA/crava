@@ -28,11 +28,7 @@ public:
                                              const Fluid               * sample)             const = 0;
 
   Fluid *                       EvolveSample(double         time,
-                                             const Fluid &  fluid)                            const
-  {
-    const std::vector<double> trend(2);
-    return UpdateSample(time, true, trend, &fluid);
-  }
+                                             const Fluid &  fluid)                            const;
 
 protected:
   std::vector< double >         alpha_;

@@ -19,3 +19,10 @@ void DistributionsRock::GenerateWellSample(double                 corr,
   }
   delete rock;
 }
+
+Rock * DistributionsRock::EvolveSample(double       time,
+                                       const Rock & rock) const
+{
+    const std::vector<double> trend(2);
+    return UpdateSample(time, true, trend, &rock);
+}

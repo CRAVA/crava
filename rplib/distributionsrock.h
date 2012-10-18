@@ -26,11 +26,7 @@ public:
                                                            std::vector<double> &  trend_params)           const;
 
   Rock                                * EvolveSample(double       time,
-                                                     const Rock & rock)                                   const
-  {
-    const std::vector<double> trend(2);
-    return UpdateSample(time, true, trend, &rock);
-  }
+                                                     const Rock & rock)                                   const;
 
   virtual Pdf3D                       * GeneratePdf(void)                                                 const = 0;
 
