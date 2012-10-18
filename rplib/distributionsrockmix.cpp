@@ -91,6 +91,8 @@ DistributionsRockMixOfRock::GetSample(const std::vector<double> & u,
   return rock_mixed;
 }
 
+
+
 std::vector<double>
 DistributionsRockMixOfRock::GetExpectation(const std::vector<double> & /*trend_params*/) const
 {
@@ -163,7 +165,7 @@ DistributionsRockMixOfRock::UpdateSample(double                      corr_param,
                                          const Rock                * sample)       const
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, sample->GetAlpha());
 
   assert(typeid(sample) == typeid(RockMixOfRock));
   const RockMixOfRock * core_sample = dynamic_cast<const RockMixOfRock *>(sample);
@@ -424,7 +426,7 @@ DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      co
                                                   const Rock                * sample)    const
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, sample->GetAlpha());
 
   assert(typeid(sample) == typeid(RockMixOfSolidAndFluid));
   const RockMixOfSolidAndFluid * core_sample = dynamic_cast<const RockMixOfSolidAndFluid *>(sample);
