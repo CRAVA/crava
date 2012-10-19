@@ -272,13 +272,11 @@ HillSolidStorage::GenerateDistributionsSolid(const std::string                  
 
 DEMSolidStorage::DEMSolidStorage(std::string                                 host_label,
                                  DistributionWithTrendStorage *              host_volume_fraction,
-                                 DistributionWithTrendStorage *              host_aspect_ratio,
                                  std::vector<std::string>                    inclusion_label,
                                  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
                                  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
-  host_aspect_ratio_(host_aspect_ratio),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
   inclusion_aspect_ratio_(inclusion_aspect_ratio)
@@ -289,9 +287,6 @@ DEMSolidStorage::~DEMSolidStorage()
 {
   if(host_volume_fraction_->GetIsShared() == false)
     delete host_volume_fraction_;
-
-  if(host_aspect_ratio_->GetIsShared() == false)
-    delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
     if(inclusion_volume_fraction_[i] && inclusion_volume_fraction_[i]->GetIsShared() == false)
@@ -324,15 +319,14 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   DistributionsSolid * solid = NULL;
 
   std::vector< DistributionWithTrend *> inclusion_volume_fraction_distr(inclusion_volume_fraction_.size()+1, NULL);
-  std::vector< DistributionWithTrend *> inclusion_aspect_ratio_distr(inclusion_aspect_ratio_.size()+1, NULL);
+  std::vector< DistributionWithTrend *> inclusion_aspect_ratio_distr(inclusion_aspect_ratio_.size(), NULL);
 
   inclusion_volume_fraction_distr[0]  = host_volume_fraction_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  inclusion_aspect_ratio_distr[0]     = host_aspect_ratio_   ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt); //NBNB fjellvoll host har altså aspect ratio.
 
   for (size_t i = 1; i < inclusion_volume_fraction_.size(); ++i)
     inclusion_volume_fraction_distr[i] = inclusion_volume_fraction_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  for (size_t i = 1; i < inclusion_aspect_ratio_.size(); ++i)
+  for (size_t i = 0; i < inclusion_aspect_ratio_.size(); ++i)
     inclusion_aspect_ratio_distr[i] = inclusion_aspect_ratio_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   //Read host label

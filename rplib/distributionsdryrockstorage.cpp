@@ -220,7 +220,6 @@ HillDryRockStorage::GenerateDistributionsDryRock(const std::string              
 
 DEMDryRockStorage::DEMDryRockStorage(std::string                                 host_label,
                                      DistributionWithTrendStorage *              host_volume_fraction,
-                                     DistributionWithTrendStorage *              host_aspect_ratio,
                                      std::vector<std::string>                    inclusion_label,
                                      std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
                                      std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio,
@@ -228,7 +227,6 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
                                      std::string                                 moduli)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
-  host_aspect_ratio_(host_aspect_ratio),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
   inclusion_aspect_ratio_(inclusion_aspect_ratio),
@@ -241,9 +239,6 @@ DEMDryRockStorage::~DEMDryRockStorage()
 {
   if(host_volume_fraction_->GetIsShared() == false)
     delete host_volume_fraction_;
-
-  if(host_aspect_ratio_->GetIsShared() == false)
-    delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
     if(inclusion_volume_fraction_[i]->GetIsShared() == false)

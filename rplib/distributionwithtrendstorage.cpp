@@ -181,8 +181,8 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
   std::string tmpErrTxt = "";
 
   std::vector<int> trend_size = mean->GetTrendSize();
-  for(int i=0; i<trend_size[0]+1; i++) {
-    for(int j=0; j<trend_size[1]+1; j++) {
+  for(int i=0; i<trend_size[0]; i++) {
+    for(int j=0; j<trend_size[1]; j++) {
       if(tmpErrTxt == "") {
         double mean_value = mean    ->GetTrendElement(i,j,0);
         double var_value  = variance->GetTrendElement(i,j,0);

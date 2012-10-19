@@ -73,7 +73,7 @@ private:
   bool parseConstituent(TiXmlNode * node, std::string & constituent_label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEM(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& aspect_ratio, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
+  bool parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
   bool parseDEMInclusion(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& aspect_ratio, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
   bool parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);

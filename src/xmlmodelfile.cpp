@@ -2191,10 +2191,9 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
   legalCommands.push_back("inclusion");
 
   DistributionWithTrendStorage * host_volume = NULL;
-  DistributionWithTrendStorage * host_aspect = NULL;
   std::string                    host_label  = "";
 
-  if(parseDEMHost(root, host_label, host_aspect, host_volume, errTxt) == false)
+  if(parseDEMHost(root, host_label, host_volume, errTxt) == false)
     errTxt += "The host must be given in the DEM rock physics model for "+label+"\n";
 
   std::vector<std::string>                    inclusion_label;
@@ -2211,22 +2210,22 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
     aspect_ratio.push_back(aspect);
   }
 
-  if(inclusion_label.size() < 2)
+  if(inclusion_label.size() < 1)
     errTxt += "At least one inclusion must be given in the DEM rock physics model for "+label+"\n";
 
   if(constituent == ModelSettings::FLUID) {
     errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
   }
   else if(constituent == ModelSettings::SOLID) {
-    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addRock(label, rock);
   }
 
@@ -2237,7 +2236,6 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
 bool
 XmlModelFile::parseDEMHost(TiXmlNode                     * node,
                            std::string                   & label,
-                           DistributionWithTrendStorage *& aspect_ratio,
                            DistributionWithTrendStorage *& volume_fraction,
                            std::string                   & errTxt)
 {
@@ -2251,7 +2249,6 @@ XmlModelFile::parseDEMHost(TiXmlNode                     * node,
   legalCommands.push_back("fluid");
   legalCommands.push_back("dry-rock");
   legalCommands.push_back("volume-fraction");
-  legalCommands.push_back("aspect-ratio");
 
   int host_given = 0;
   while(parseSolid(root, label, errTxt) == true)
@@ -2267,9 +2264,6 @@ XmlModelFile::parseDEMHost(TiXmlNode                     * node,
   std::string dummy;
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
     errTxt += "The volume fraction must be given for the host of the DEM model\n";
-
-  if(parseDistributionWithTrend(root, "aspect-ratio", aspect_ratio, dummy, false, errTxt) == false)
-    errTxt += "The aspect ratio must be given for the host of the DEM model\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

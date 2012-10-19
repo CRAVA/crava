@@ -2191,22 +2191,22 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsubsection{\hbracket{reservoir}}\newkw{reservoir}
  \slist
-   \item \Description <reservoir> contains reservoir properties, such as various pressures, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword <reservoir> are parameters that are common for all fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements <reservoir> are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. After <reservoir>, the command \kw{reservoir-variable} follows.
+   \item \Description <reservoir> contains reservoir properties, such as various pressures, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword <reservoir> are parameters that are common for fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements <reservoir> are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. After <reservoir>, the command \kw{variable} follows.
    \item \Argument 
    \item \Default 
  \elist
 
 \paragraph{\hbracket{variable}}\rnewkw{variable}{reservoir-variable}
  \slist
-   \item \Description Repeated command, one for each reservoir variable
+   \item \Description Repeated command, one for each reservoir variable. The variable is defined by <label>, followed by a variable, trend or distribution. 
    \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subparagraph{\hbracket{label}}\newkw{label}
  \slist
-   \item \Description Repeated command, one for each reservoir variable
-   \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
+   \item \Description Unique label identifying the reservoir variable. 
+   \item \Argument
    \item \Default 
  \elist
 
@@ -2611,13 +2611,6 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default
  \elist
 
-\subsubsubparagraph{\hbracket{aspect-ratio}}\rnewkw{aspect-ratio}{aspect-ratio-dem-solid}
- \slist
-   \item \Description Aspect ratio of the host
-   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
-   \item \Default
- \elist
-
 \subsubparagraph{\hbracket{inclusion}}\rnewkw{inclusion}{inclusion-solid}
  \slist
    \item \Description Repeated command, one for each inclusion of the DEM model
@@ -2862,13 +2855,6 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
    \item \Argument Value
-   \item \Default
- \elist
-
-\subsubsubparagraph{\hbracket{aspect-ratio}}\rnewkw{aspect-ratio}{aspect-ratio-dem-dry-rock}
- \slist
-   \item \Description Aspect ratio of the host
-   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
@@ -3192,13 +3178,6 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
    \item \Argument Value
-   \item \Default
- \elist
-
-\subsubparagraph{\hbracket{aspect-ratio}}\rnewkw{aspect-ratio}{aspect-ratio-dem-rock}
- \slist
-   \item \Description Aspect ratio of the host
-   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
