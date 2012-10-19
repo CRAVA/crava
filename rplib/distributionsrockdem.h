@@ -19,7 +19,7 @@ class DistributionsRockDEM : public DistributionsRock {
 public:
 
  DistributionsRockDEM(DistributionsSolid                           * distr_solid,
-                      DistributionsFluid                           * distr_fluid,
+                      std::vector< DistributionsFluid *>           & distr_fluid,
                       std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
                       std::vector< DistributionWithTrend * >       & distr_incl_concentration);
 
@@ -51,10 +51,10 @@ private:
   Rock                                         * GetSample(const std::vector<double>  & u,
                                                            const std::vector<double>  & trend_params,
                                                            const Solid                * solid,
-                                                           const Fluid                * fluid) const;
+                                                           const std::vector< Fluid *>& fluid) const;
 
   DistributionsSolid                           * distr_solid_;              // Pointer to external object.
-  DistributionsFluid                           * distr_fluid_;              // Pointer to external object.
+  std::vector< DistributionsFluid *>             distr_fluid_;              // Pointer to external object.
   std::vector< DistributionWithTrend * >         distr_incl_spectrum_;      // Pointers to external objects.
   std::vector< DistributionWithTrend * >         distr_incl_concentration_; // Pointers to external objects.
 

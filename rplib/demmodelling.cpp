@@ -653,7 +653,11 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   size_t n_var = inclusion_spectrum.size() + inclusion_concentration.size();
   std::vector<double> dummy_u_dem(n_var, 0.0);
 
-  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, dummy_u_dem);
+  std::vector<Fluid*> fluid_mix2(inclusion_concentration.size());
+  for (size_t i = 0; i < fluid_mix2.size(); ++i)
+    fluid_mix2[i] = fluid_mix.Clone();
+
+  RockDEM rock_inclusion(&solidmixed, fluid_mix2, inclusion_spectrum, inclusion_concentration, dummy_u_dem);
   rock_inclusion.GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 }
@@ -891,12 +895,14 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-005), false));
   }
 
-
+  std::vector<DistributionsFluid*> distr_fluid_mixed2(distr_incl_concentration.size());
+  for (size_t i = 0; i < distr_fluid_mixed2.size(); ++i)
+    distr_fluid_mixed2[i] = distr_fluid_mixed;
   //// Rock, distribution functions.
   DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
-                                                                        distr_fluid_mixed,
-                                                                        distr_incl_spectrum,
-                                                                        distr_incl_concentration);
+                                                                  distr_fluid_mixed2,
+                                                                  distr_incl_spectrum,
+                                                                  distr_incl_concentration);
 
 
   //// Generating a sample of the rock.

@@ -14,12 +14,12 @@
 #include <cassert>
 
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
-                                           DistributionsFluid                           * distr_fluid,
+                                           std::vector< DistributionsFluid *>           & distr_fluid,
                                            std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
                                            std::vector< DistributionWithTrend * >       & distr_incl_concentration)
 : DistributionsRock()
 {
-  assert( distr_incl_spectrum.size() == distr_incl_concentration.size() );
+  assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
 
   distr_solid_              = distr_solid;
   distr_fluid_              = distr_fluid;
@@ -35,11 +35,15 @@ Rock *
 DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) const
 {
   Solid * solid = distr_solid_->GenerateSample(trend_params);
-  Fluid * fluid = distr_fluid_->GenerateSample(trend_params);
+
+  std::vector< Fluid* > fluid(distr_fluid_.size());
+  for (size_t i = 0; i < fluid.size(); ++i)
+    fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
+
   size_t n_incl = distr_incl_spectrum_.size();
 
-  std::vector<double> u(n_incl+n_incl);
-  for(size_t i=0; i<n_incl+n_incl; i++)
+  std::vector<double> u(n_incl+n_incl+1);
+  for(size_t i=0; i<n_incl+n_incl+1; i++)
     u[i] = NRLib::Random::Unif01();
 
   Rock * new_rock = GetSample(u, trend_params, solid, fluid);
@@ -47,7 +51,8 @@ DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) c
   // Deep copy taken by constructor of RockInclusion, hence delete
   // solid and fluid here:
   delete solid;
-  delete fluid;
+  for (size_t i = 0; i < fluid.size(); ++i)
+    delete fluid[i];
 
   return new_rock;
 }
@@ -62,8 +67,13 @@ DistributionsRockDEM::GeneratePdf(void) const
 bool
 DistributionsRockDEM::HasDistribution() const
 {
-  if (distr_solid_->HasDistribution() || distr_fluid_->HasDistribution())
+  if (distr_solid_->HasDistribution())
       return true;
+
+  for (size_t i = 0; i < distr_fluid_.size(); ++i) {
+    if (distr_fluid_[i]->HasDistribution())
+      return true;
+  }
 
   // loop over inclusion and spectrum
   for (size_t i = 0; i < distr_incl_spectrum_.size(); ++i) {
@@ -71,25 +81,37 @@ DistributionsRockDEM::HasDistribution() const
       return true;
   }
 
+  // check last element
+  if (distr_incl_concentration_.back()->GetIsDistribution())
+    return true;
+
   return false;
 }
 
 std::vector<bool>
 DistributionsRockDEM::HasTrend() const
 {
+
   std::vector<bool> has_trend(2, false);
 
   std::vector<bool> solid_trend     = distr_solid_->HasTrend();
-  std::vector<bool> fluid_trend     = distr_fluid_->HasTrend();
 
   for (size_t i = 0; i < distr_incl_spectrum_.size(); ++i) {
-    std::vector<bool> incl_trend = distr_incl_spectrum_[i]->GetUseTrendCube();
-    std::vector<bool> incl_conc  = distr_incl_concentration_[i]->GetUseTrendCube();
+    const std::vector<bool>& incl_trend         = distr_incl_spectrum_[i]->GetUseTrendCube();
+    const std::vector<bool>& incl_conc          = distr_incl_concentration_[i]->GetUseTrendCube();
+    const std::vector<bool>& fluid_trend_inc    = distr_fluid_[i]->HasTrend();
 
     for(size_t j = 0; j < 2; ++j) {
-      if (solid_trend[j] || fluid_trend[j] || incl_trend[j] || incl_conc[j])
+      if (solid_trend[j] || fluid_trend_inc[j] || incl_trend[j] || incl_conc[j])
         has_trend[j] = true;
     }
+  }
+
+  //check last element
+  const std::vector<bool>& incl_conc  = distr_incl_concentration_.back()->GetUseTrendCube();
+  for(size_t j = 0; j < 2; ++j) {
+    if (incl_conc[j])
+      has_trend[j] = true;
   }
 
   return has_trend;
@@ -129,16 +151,18 @@ Rock *
 DistributionsRockDEM::GetSample(const std::vector<double>  & u,
                                 const std::vector<double>  & trend_params,
                                 const Solid                * solid,
-                                const Fluid                * fluid) const
+                                const std::vector< Fluid *>& fluid) const
 {
   size_t n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);
-  std::vector<double> inclusion_concentration(n_incl);
+  std::vector<double> inclusion_concentration(n_incl + 1);
 
   for (size_t i = 0; i < n_incl; ++i) {
     inclusion_spectrum[i] = distr_incl_spectrum_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
     inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
   }
+
+  inclusion_concentration.back() = distr_incl_concentration_.back()->GetQuantileValue(u.back(), trend_params[0], trend_params[1]);
 
   return new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, u);
 }
@@ -159,10 +183,14 @@ DistributionsRockDEM::UpdateSample(double                      corr_param,
                                                      param_is_time,
                                                      trend,
                                                      core_sample->GetSolid());
-  Fluid * updated_fluid = distr_fluid_->UpdateSample(corr_param,
-                                                     param_is_time,
-                                                     trend,
-                                                     core_sample->GetFluid());
+
+  std::vector<Fluid *> updated_fluid(distr_fluid_.size());
+  for (size_t i = 0; i < updated_fluid.size(); ++i) {
+  updated_fluid[i]      = distr_fluid_[i]->UpdateSample(corr_param,
+                                                        param_is_time,
+                                                        trend,
+                                                        core_sample->GetFluid(i));
+  }
 
   Rock * updated_sample = GetSample(u, trend, updated_solid, updated_fluid);
 

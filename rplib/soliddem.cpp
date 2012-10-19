@@ -130,7 +130,7 @@ SolidDEM::ComputeElasticParams() {
 
   //remove host from inclusion vector
   std::vector<double> inc_conc(solid_inc_.size());
-  std::copy(inclusion_concentration_.begin(), inclusion_concentration_.end() - 1, inc_conc.begin());
+  std::copy(inclusion_concentration_.begin()+1, inclusion_concentration_.end(), inc_conc.begin());
 
   DEMTools::CalcEffectiveBulkAndShearModulus(solid_inc_k,
                                              solid_inc_mu,

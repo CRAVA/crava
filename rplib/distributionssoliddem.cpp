@@ -119,7 +119,7 @@ DistributionsSolidDEM::UpdateSample(double                      corr_param,
                                                           trend,
                                                           core_sample->GetSolidHost());
   std::vector<Solid *> updated_solid_inc(distr_solid_inc_.size());
-  for (size_t i = 0; i < distr_solid_inc_.size(); ++i) {
+  for (size_t i = 0; i < updated_solid_inc.size(); ++i) {
     updated_solid_inc[i] = distr_solid_inc_[i]->UpdateSample(corr_param,
                                                              param_is_time,
                                                              trend,
