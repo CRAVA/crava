@@ -342,14 +342,11 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
     final_distr_solid_inc.push_back(incl_solid);
   }
 
-  //Questions //NBNB fjellvoll //NBNB marit
-  //1.Do we support more than one inclusion?
-
   //CheckVolumeConsistency(distr_porosity, errTxt); //Fix when questions are solved
 
   if (errTxt == "") {
     solid = new DistributionsSolidDEM(final_distr_solid,
-                                      final_distr_solid_inc[0],         //tmp solution only single inclusion supported
+                                      final_distr_solid_inc,
                                       inclusion_aspect_ratio_distr,
                                       inclusion_volume_fraction_distr);
   }

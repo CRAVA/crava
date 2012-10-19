@@ -12,9 +12,9 @@ class SolidDEM : public Solid {
 public:
 
   SolidDEM(const Solid                         * solid,
-           const Solid                         * solid_inc,
+           const std::vector< Solid* >         & solid_inc,
            const std::vector<double>           & inclusion_spectrum,
-           const std::vector<double>           & inclusion_concentration,
+           const std::vector<double>           & inclusion_concentration, // the first element is the concentration of the host
            const std::vector<double>           & u);
 
   SolidDEM();
@@ -22,15 +22,17 @@ public:
   virtual         ~SolidDEM();
 
   // Assignment operator.
-  SolidDEM      & operator=(const SolidDEM& rhs);
+  SolidDEM                            & operator=(const SolidDEM& rhs);
 
-  virtual Solid * Clone() const;
+  virtual Solid                       * Clone() const;
 
-  const   Solid * GetSolidHost()      const {return solid_;}
-  const   Solid * GetSolidInclusion() const {return solid_inc_;}
+  const Solid                         * GetSolidHost()      const {return solid_;}
 
-  virtual Solid * Evolve(const std::vector<int>               & delta_time,
-                         const std::vector< const Solid * >   & solids) const;
+  const std::vector<Solid*>           & GetSolidInclusion() const {return solid_inc_;}
+  const Solid                         * GetSolidInclusion(size_t i) const { return solid_inc_[i]; } // no error checking on valid index range
+
+  virtual Solid                       * Evolve(const std::vector<int>               & delta_time,
+                                               const std::vector< const Solid * >   & solids) const;
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
@@ -38,12 +40,15 @@ private:
 
   // Calculate elastic and seismic parameters, to be
   // used whenever new information is sent to class.
-  void ComputeElasticParams();
+  void                                  ComputeElasticParams();
+  void                                  Clone(const std::vector< Solid* > & solid_in);
+  void                                  DeleteInclusion();
 
-  Solid                               * solid_; // Owned and deleted by this class.
-  Solid                               * solid_inc_; // Owned and deleted by this class.
+
+  Solid                               * solid_;                 // Owned and deleted by this class.
+  std::vector< Solid* >                 solid_inc_;             // Owned and deleted by this class.
   std::vector<double>                   inclusion_spectrum_;
-  std::vector<double>                   inclusion_concentration_;
+  std::vector<double>                   inclusion_concentration_; // the first element is the concentration of the host
 };
 
 #endif
