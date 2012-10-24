@@ -15,11 +15,15 @@ class NormalDistributionWithTrend : public DistributionWithTrend {
                                const NRLib::Trend * var,
                                bool                 shared);
 
+   NormalDistributionWithTrend(const NormalDistributionWithTrend & dist);
+
    virtual ~NormalDistributionWithTrend();
 
-   virtual bool                       GetIsShared() const                     { return(is_shared_)                          ;}
-   virtual bool                       GetIsDistribution() const               { return(true)                                ;}
-   virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                     ;}
+   virtual DistributionWithTrend    * Clone() const                           { return new NormalDistributionWithTrend(*this) ;}
+
+   virtual bool                       GetIsShared() const                     { return(is_shared_)                            ;}
+   virtual bool                       GetIsDistribution() const               { return(true)                                  ;}
+   virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                       ;}
 
    virtual double                     ReSample(double s1, double s2) const;
    virtual double                     GetQuantileValue(double u, double s1, double s2) const;

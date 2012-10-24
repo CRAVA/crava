@@ -1758,18 +1758,18 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & label, std::string & err
   }
   int constituent_type = ModelSettings::ROCK;
 
-  DistributionWithTrendStorage * porosity = NULL;
-  std::string                    moduli   = "";
+  std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
+  std::string                                 dummy_moduli   = "";
 
-  if(parseTabulated(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseDEM(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseDEM(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
   if(parseGassmann(root, constituent_type, label, errTxt) == true)
     given++;
@@ -1820,18 +1820,18 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
 
   int constituent_type = ModelSettings::SOLID;
 
-  DistributionWithTrendStorage * porosity = NULL;
-  std::string                    moduli = "";
+  std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
+  std::string                                 dummy_moduli = "";
 
-  if(parseTabulated(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseDEM(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseDEM(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
 
   if(given == 0)
@@ -1878,8 +1878,9 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
     given++;
   }
 
-  std::string                    dummy          = "";
-  DistributionWithTrendStorage * total_porosity = NULL;
+  std::string                                 dummy = "";
+  std::vector<DistributionWithTrendStorage *> total_porosity;
+
   if(parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
       errTxt += "The total porosity must be given for the dry-rock\n";
 
@@ -1944,16 +1945,16 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
 
   int constituent_type = ModelSettings::FLUID;
 
-  DistributionWithTrendStorage * porosity = NULL;
-  std::string                    moduli = "";
+  std::vector<DistributionWithTrendStorage *> dummy_porosity;
+  std::string                                 dummy_moduli = "";
 
   if(parseTabulatedFluid(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, porosity, moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
   if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
     given++;
@@ -1968,7 +1969,12 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
 }
 
 bool
-XmlModelFile::parseReuss(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+XmlModelFile::parseReuss(TiXmlNode                                   * node,
+                         int                                           constituent,
+                         std::string                                   label,
+                         std::vector<DistributionWithTrendStorage *>   total_porosity,
+                         std::string                                   moduli,
+                         std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("reuss");
   if(root == 0)
@@ -1977,11 +1983,11 @@ XmlModelFile::parseReuss(TiXmlNode * node, int constituent, std::string label, D
   std::vector<std::string> legalCommands;
   legalCommands.push_back("constituent");
 
-  std::vector<std::string>                    constituent_label;
-  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
 
-  std::string                    this_label;
-  DistributionWithTrendStorage * volume_fraction   = NULL;
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
 
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
@@ -2012,7 +2018,12 @@ XmlModelFile::parseReuss(TiXmlNode * node, int constituent, std::string label, D
   return(true);
 }
 bool
-XmlModelFile::parseVoigt(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+XmlModelFile::parseVoigt(TiXmlNode                                   * node,
+                         int                                           constituent,
+                         std::string                                   label,
+                         std::vector<DistributionWithTrendStorage *>   total_porosity,
+                         std::string                                   moduli,
+                         std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("voigt");
   if(root == 0)
@@ -2021,11 +2032,11 @@ XmlModelFile::parseVoigt(TiXmlNode * node, int constituent, std::string label, D
   std::vector<std::string> legalCommands;
   legalCommands.push_back("constituent");
 
-  std::vector<std::string>                    constituent_label;
-  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
 
-  std::string                    this_label;
-  DistributionWithTrendStorage * volume_fraction   = NULL;
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
 
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
@@ -2056,7 +2067,12 @@ XmlModelFile::parseVoigt(TiXmlNode * node, int constituent, std::string label, D
   return(true);
 }
 bool
-XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+XmlModelFile::parseHill(TiXmlNode                                   * node,
+                        int                                           constituent,
+                        std::string                                   label,
+                        std::vector<DistributionWithTrendStorage *>   total_porosity,
+                        std::string                                   moduli,
+                        std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("hill");
   if(root == 0)
@@ -2065,11 +2081,11 @@ XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, Di
   std::vector<std::string> legalCommands;
   legalCommands.push_back("constituent");
 
-  std::vector<std::string>                    constituent_label;
-  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
 
-  std::string                    this_label;
-  DistributionWithTrendStorage * volume_fraction   = NULL;
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
 
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
@@ -2101,7 +2117,10 @@ XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, Di
 }
 
 bool
-XmlModelFile::parseConstituent(TiXmlNode * node, std::string & constituent_label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt)
+XmlModelFile::parseConstituent(TiXmlNode                                   * node,
+                               std::string                                 & constituent_label,
+                               std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                               std::string                                 & errTxt)
 {
 
   TiXmlNode * root = node->FirstChildElement("constituent");
@@ -2129,7 +2148,7 @@ XmlModelFile::parseConstituent(TiXmlNode * node, std::string & constituent_label
 
   std::string volume_label = "";
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, volume_label, false, errTxt) == false)
-    volume_fraction = NULL;
+    volume_fraction.push_back(NULL);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -2149,15 +2168,15 @@ XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::strin
 
   std::string dummy;
 
-  DistributionWithTrendStorage * pore_pressure;
+  std::vector<DistributionWithTrendStorage *> pore_pressure;
   if(parseDistributionWithTrend(root, "pore-pressure", pore_pressure, dummy, false, errTxt) == false)
     errTxt += "The pore pressure must be given in the Batzle-Wang brine model\n";
 
-  DistributionWithTrendStorage * temperature;
+  std::vector<DistributionWithTrendStorage *> temperature;
   if(parseDistributionWithTrend(root, "temperature", temperature, dummy, false, errTxt) == false)
     errTxt += "The temperature must be given in the Batzle-Wang brine model\n";
 
-  DistributionWithTrendStorage * salinity;
+  std::vector<DistributionWithTrendStorage *> salinity;
   if(parseDistributionWithTrend(root, "salinity", salinity, dummy, false, errTxt) == false)
     errTxt += "The salinity must be given in the Batzle-Wang brine model\n";
 
@@ -2180,7 +2199,12 @@ XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::strin
 }
 
 bool
-XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+XmlModelFile::parseDEM(TiXmlNode                                  * node,
+                       int                                          constituent,
+                       std::string                                  label,
+                       std::vector<DistributionWithTrendStorage *>  total_porosity,
+                       std::string                                  moduli,
+                       std::string                                & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("dem");
   if(root == 0)
@@ -2190,19 +2214,19 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
   legalCommands.push_back("host");
   legalCommands.push_back("inclusion");
 
-  DistributionWithTrendStorage * host_volume = NULL;
-  std::string                    host_label  = "";
+  std::vector<DistributionWithTrendStorage *> host_volume;
+  std::string                                 host_label  = "";
 
   if(parseDEMHost(root, host_label, host_volume, errTxt) == false)
     errTxt += "The host must be given in the DEM rock physics model for "+label+"\n";
 
-  std::vector<std::string>                    inclusion_label;
-  std::vector<DistributionWithTrendStorage *> inclusion_volume;
-  std::vector<DistributionWithTrendStorage *> aspect_ratio;
+  std::vector<std::string>                                  inclusion_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume;
+  std::vector<std::vector<DistributionWithTrendStorage *> > aspect_ratio;
 
-  DistributionWithTrendStorage * volume     = NULL;
-  DistributionWithTrendStorage * aspect     = NULL;
-  std::string                    this_label = "";
+  std::vector<DistributionWithTrendStorage *> volume;
+  std::vector<DistributionWithTrendStorage *> aspect;
+  std::string                                 this_label = "";
 
   while(parseDEMInclusion(root, this_label, aspect, volume, errTxt) == true) {
     inclusion_label.push_back(this_label);
@@ -2234,10 +2258,10 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
 }
 
 bool
-XmlModelFile::parseDEMHost(TiXmlNode                     * node,
-                           std::string                   & label,
-                           DistributionWithTrendStorage *& volume_fraction,
-                           std::string                   & errTxt)
+XmlModelFile::parseDEMHost(TiXmlNode                                   * node,
+                           std::string                                 & label,
+                           std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                           std::string                                 & errTxt)
 {
 
   TiXmlNode * root = node->FirstChildElement("host");
@@ -2270,7 +2294,11 @@ XmlModelFile::parseDEMHost(TiXmlNode                     * node,
 }
 
 bool
-XmlModelFile::parseDEMInclusion(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& aspect_ratio, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt)
+XmlModelFile::parseDEMInclusion(TiXmlNode                                   * node,
+                                std::string                                 & label,
+                                std::vector<DistributionWithTrendStorage *> & aspect_ratio,
+                                std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                                std::string                                 & errTxt)
 {
 
   TiXmlNode * root = node->FirstChildElement("inclusion");
@@ -2379,11 +2407,11 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
     errTxt += "<lower-bound> needs to be given in <rock><bounding>\n";
 
   std::string dummy;
-  DistributionWithTrendStorage * bulk_weight  = NULL;
+  std::vector<DistributionWithTrendStorage *> bulk_weight;
   if(parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true) == false)
     errTxt += "<bulk-modulus-weight> needs to be given in <rock><bounding>\n";
 
-  DistributionWithTrendStorage * p_wave_weight = NULL;
+  std::vector<DistributionWithTrendStorage *> p_wave_weight;
   if(parseDistributionWithTrend(root, "p-wave-modulus-weight", p_wave_weight, dummy, false, errTxt, true) == false)
     errTxt += "<p-wave-weight> needs to be given in <rock><bounding>\n";
 
@@ -2391,7 +2419,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
   if(parseValue(root, "correlation-weights", correlation, errTxt) == false)
     correlation = 0;
 
-  DistributionWithTrendStorage * porosity = NULL;
+  std::vector<DistributionWithTrendStorage *> porosity;
   if(parseDistributionWithTrend(root, "porosity", porosity, dummy, false, errTxt, true) == false)
     errTxt += "<porosity> needs to be given in <rock><bounding>\n";
 
@@ -2479,7 +2507,12 @@ XmlModelFile::parseMineralModuli(TiXmlNode * node, std::string & moduli, std::st
 }
 
 bool
-XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+XmlModelFile::parseTabulated(TiXmlNode                                   * node,
+                             int                                           constituent,
+                             std::string                                   label,
+                             std::vector<DistributionWithTrendStorage *>   total_porosity,
+                             std::string                                   moduli,
+                             std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("tabulated");
   if(root == 0)
@@ -2503,19 +2536,19 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   bool use_vp      = false;
   bool use_modulus = false;
 
-  DistributionWithTrendStorage * vp;
+  std::vector<DistributionWithTrendStorage *> vp;
   if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
     use_vp = true;
 
-  DistributionWithTrendStorage * vs;
+  std::vector<DistributionWithTrendStorage *> vs;
   if(parseDistributionWithTrend(root, "vs", vs, dummy, false, errTxt, true) == false && use_vp == true)
     errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
 
-  DistributionWithTrendStorage * bulk_modulus;
+  std::vector<DistributionWithTrendStorage *> bulk_modulus;
   if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
     use_modulus = true;
 
-  DistributionWithTrendStorage * shear_modulus;
+  std::vector<DistributionWithTrendStorage *> shear_modulus;
   if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, false, errTxt, true) == false && use_modulus == true)
     errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
 
@@ -2524,7 +2557,7 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   else if(use_vp == false && use_modulus == false)
     errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
 
-  DistributionWithTrendStorage * density;
+  std::vector<DistributionWithTrendStorage *> density;
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <solid><tabulated>\n";
 
@@ -2641,11 +2674,11 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   bool use_vp      = false;
   bool use_modulus = false;
 
-  DistributionWithTrendStorage * vp;
+  std::vector<DistributionWithTrendStorage *> vp;
   if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
     use_vp = true;
 
-  DistributionWithTrendStorage * bulk_modulus;
+  std::vector<DistributionWithTrendStorage *> bulk_modulus;
   if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
     use_modulus = true;
 
@@ -2654,7 +2687,7 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   else if(use_vp == false && use_modulus == false)
     errTxt += "One of <vp> or <bulk-modulus> must be used in <fluid><tabulated>\n";
 
-  DistributionWithTrendStorage * density;
+  std::vector<DistributionWithTrendStorage *> density;
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
 
@@ -2708,28 +2741,112 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("variable");
 
-  std::string                    label;
-  DistributionWithTrendStorage * distributionWithTrend; //Deleted in ~Modelsettings
-
-  while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, true, errTxt) == true) {
-    if(label == "")
-      errTxt += "All reservoir variables need to be defined using <label>\n";
-
-    modelSettings_->addReservoirVariable(label, distributionWithTrend);
-  }
+  while(parseReservoirVariable(root, errTxt));
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
-                                         const std::string             & keyword,
-                                         DistributionWithTrendStorage *& storage,
-                                         std::string                   & label,
-                                         bool                            is_shared,       //True for the variables in reservoir
-                                         std::string                   & errTxt,
-                                         bool                            allowDistribution)
+XmlModelFile::parseReservoirVariable(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("variable");
+
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("one-year-correlation");
+  legalCommands.push_back("evolve");
+
+  std::string                                 label;
+  std::vector<DistributionWithTrendStorage *> storage; //Deleted in ~Modelsettings
+
+  if(parseDistributionWithTrend(root, "variable", storage, label, true, errTxt) == true) {
+    if(label == "")
+      errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
+  }
+  else
+    errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
+
+  double correlation = 1;
+  if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
+    if(correlation <= -1 || correlation >= 1)
+      errTxt += "The <one-year-correlation> of reservoir variable "+label+" should be in the interval (-1,1)\n";
+  }
+
+  while(parseEvolveReservoirVariable(root, storage, errTxt) == true);
+
+  storage[0]->SetOneYearCorrelation(correlation); //The one-year-correlation is the same for all elements in the vector; sufficient to give it for the first element
+
+  size_t storage_size = storage.size();
+  std::vector<int> vintage_number(storage_size);
+  for(size_t i=0; i<storage_size; i++)
+    vintage_number[i] = storage[i]->GetVintageNumber();
+
+  std::string tmpTxt = "";
+  if(storage_size > 1) {
+    if(vintage_number[0] < 1)
+      tmpTxt += "The vintage numbers need to be larger than zero in <reservoir><variable> in the rock physics model\n";
+
+    int compare = vintage_number[0];
+    for(size_t i=1; i<storage_size; i++) {
+      if(vintage_number[i] <= compare) {
+        tmpTxt += "The vintage numbers need to be given in ascending order in <reservoir><variable> in the rock physics model\n";
+        break;
+      }
+      else
+        compare = vintage_number[i];
+    }
+  }
+
+  if(tmpTxt != "")
+    tmpTxt += "Remember that the first vintage given under <reservoir><variable> is given vintage number 1\n";
+
+  errTxt += tmpTxt;
+
+  modelSettings_->addReservoirVariable(label, storage);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseEvolveReservoirVariable(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> evolveStorage, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("evolve");
+
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("vintage-number");
+
+  std::string                    label;
+
+  if(parseDistributionWithTrend(root, "evolve", evolveStorage, label, true, errTxt) == false)
+    errTxt += "The <evolve> keyword needs to be followed by a distribution\n";
+
+  int vintage_number;
+  if(parseValue(root, "vintage-number", vintage_number, errTxt) == false)
+    errTxt += "A unique integer vintage number needs to be defined for each <evolve> in <reservoir> \n";
+
+  size_t size = evolveStorage.size();
+  evolveStorage[size]->SetVintageNumber(vintage_number);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDistributionWithTrend(TiXmlNode                                   * node,
+                                         const std::string                           & keyword,
+                                         std::vector<DistributionWithTrendStorage *> & storage,
+                                         std::string                                 & label,
+                                         bool                                          is_shared,       //True for the variables in reservoir
+                                         std::string                                 & errTxt,
+                                         bool                                          allowDistribution)
 {
   TiXmlNode * root = node->FirstChildElement(keyword);
   if(root == 0)
@@ -2750,29 +2867,35 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
   label = "";
   parseValue(root, "label", label, errTxt);
 
+  DistributionWithTrendStorage * distWithTrend = NULL;
+
   int trendGiven = 0;
 
   double value;
   if(root->FirstChildElement() == NULL) { //We have an explicit value
     parseValue(node, keyword, value, errTxt);
-    storage = new DeltaDistributionWithTrendStorage(value, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    storage.push_back(distWithTrend);
     trendGiven++;
     return(true);
   }
 
   if(parseValue(root, "value", value, errTxt) == true) {
-    storage = new DeltaDistributionWithTrendStorage(value, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    storage.push_back(distWithTrend);
     trendGiven++;
   }
 
   NRLib::TrendStorage * trend;
   if(parse1DTrend(root, "trend-1d", trend, errTxt) == true) {
-    storage = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    storage.push_back(distWithTrend);
     trendGiven++;
   }
 
   if(parse2DTrend(root, "trend-2d", trend, errTxt) == true) {
-    storage = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    storage.push_back(distWithTrend);
     trendGiven++;
   }
 
@@ -2791,7 +2914,7 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
 
   std::string variable;
   if(parseValue(root, "reservoir-variable", variable, errTxt) == true) {
-    typedef std::map<std::string, DistributionWithTrendStorage *> my_map;
+    typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
     my_map reservoir_variable = modelSettings_->getReservoirVariable();
     my_map::iterator it = reservoir_variable.find(variable);
     if(it != reservoir_variable.end()) {
@@ -2815,10 +2938,10 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
 }
 
 bool
-XmlModelFile::parseGaussianWithTrend(TiXmlNode                     * node,
-                                     DistributionWithTrendStorage *& storage,
-                                     bool                            is_shared,
-                                     std::string                   & errTxt)
+XmlModelFile::parseGaussianWithTrend(TiXmlNode                                   * node,
+                                     std::vector<DistributionWithTrendStorage *> & storage,
+                                     bool                                          is_shared,
+                                     std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("gaussian");
   if(root == 0)
@@ -2828,32 +2951,34 @@ XmlModelFile::parseGaussianWithTrend(TiXmlNode                     * node,
   legalCommands.push_back("mean");
   legalCommands.push_back("variance");
 
-  DistributionWithTrendStorage * mean_storage;
+  std::vector<DistributionWithTrendStorage *> mean_storage;
   std::string label;
   if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
 
-  DistributionWithTrendStorage * variance_storage;
+  std::vector<DistributionWithTrendStorage *> variance_storage;
   if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
 
-  const NRLib::TrendStorage         * mean     = mean_storage    ->CloneMean();
-  const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
+  const NRLib::TrendStorage         * mean     = mean_storage[0]    ->CloneMean();
+  const NRLib::TrendStorage         * variance = variance_storage[0]->CloneMean();
 
-  delete mean_storage;
-  delete variance_storage;
+  delete mean_storage[0];
+  delete variance_storage[0];
 
-  storage = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+  DistributionWithTrendStorage * dist = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+
+  storage.push_back(dist);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parseBetaWithTrend(TiXmlNode                     * node,
-                                 DistributionWithTrendStorage *& storage,
-                                 bool                            is_shared,
-                                 std::string                   & errTxt)
+XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * node,
+                                 std::vector<DistributionWithTrendStorage *> & storage,
+                                 bool                                          is_shared,
+                                 std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("beta");
   if(root == 0)
@@ -2863,22 +2988,24 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                     * node,
   legalCommands.push_back("mean");
   legalCommands.push_back("variance");
 
-  DistributionWithTrendStorage * mean_storage;
+  std::vector<DistributionWithTrendStorage *> mean_storage;
   std::string label;
   if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
 
-  DistributionWithTrendStorage * variance_storage;
+  std::vector<DistributionWithTrendStorage *> variance_storage;
   if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
 
-  const NRLib::TrendStorage * mean     = mean_storage    ->CloneMean();
-  const NRLib::TrendStorage * variance = variance_storage->CloneMean();
+  const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
+  const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
 
-  delete mean_storage;
-  delete variance_storage;
+  delete mean_storage[0];
+  delete variance_storage[0];
 
-  storage = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
+  DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
+
+  storage.push_back(dist);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

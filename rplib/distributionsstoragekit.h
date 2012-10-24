@@ -62,4 +62,7 @@ ReadFluid(const std::string                                          & target_fl
           std::map<std::string, DistributionsFluid *>                & fluid_distribution,
           std::string                                                & errTxt);
 
+void
+CheckVintageConsistency(const std::vector<int> & vintage_number,
+                        std::string            & errTxt);
 #endif

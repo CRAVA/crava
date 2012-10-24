@@ -8,14 +8,18 @@ DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const D
                                                                          const DistributionWithTrend * density,
                                                                          double                        corr_vp_vs,
                                                                          double                        corr_vp_density,
-                                                                         double                        corr_vs_density)
-: vp_(vp),
-  vs_(vs),
-  density_(density),
-  corr_vp_vs_(corr_vp_vs),
-  corr_vp_density_(corr_vp_density),
-  corr_vs_density_(corr_vs_density)
+                                                                         double                        corr_vs_density,
+                                                                         std::vector<double>         & alpha)
+: DistributionsSolid()
 {
+  vp_               = vp;
+  vs_               = vs;
+  density_          = density;
+  corr_vp_vs_       = corr_vp_vs;
+  corr_vp_density_  = corr_vp_density;
+  corr_vs_density_  = corr_vs_density;
+  alpha_            = alpha;
+
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = vp_;

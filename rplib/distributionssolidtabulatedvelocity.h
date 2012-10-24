@@ -19,7 +19,8 @@ public:
                                       const DistributionWithTrend * density,
                                       double                        corr_vp_vs,
                                       double                        corr_vp_density,
-                                      double                        corr_vs_density);
+                                      double                        corr_vs_density,
+                                      std::vector<double>         & alpha);
 
   virtual                       ~DistributionsSolidTabulatedVelocity();
 

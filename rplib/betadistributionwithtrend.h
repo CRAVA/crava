@@ -16,7 +16,11 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
                              const NRLib::Trend * var,
                              bool                 shared);
 
+   BetaDistributionWithTrend(const BetaDistributionWithTrend & dist);
+
    virtual ~BetaDistributionWithTrend();
+
+   virtual DistributionWithTrend    * Clone() const                           { return new BetaDistributionWithTrend(*this) ;}
 
    virtual bool                       GetIsShared() const                     { return(is_shared_)                          ;}
    virtual bool                       GetIsDistribution() const               { return(true)                                ;}

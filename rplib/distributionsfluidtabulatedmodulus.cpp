@@ -5,7 +5,8 @@
 
 DistributionsFluidTabulatedModulus::DistributionsFluidTabulatedModulus(const DistributionWithTrend * bulk_modulus,
                                                                        const DistributionWithTrend * density,
-                                                                       double                        corr_bulk_density)
+                                                                       double                        corr_bulk_density,
+                                                                       const std::vector<double>   & alpha)
 : bulk_modulus_(bulk_modulus),
   density_(density),
   corr_bulk_density_(corr_bulk_density)

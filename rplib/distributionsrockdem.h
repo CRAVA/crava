@@ -21,7 +21,8 @@ public:
  DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                       std::vector< DistributionsFluid *>           & distr_fluid,
                       std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                      std::vector< DistributionWithTrend * >       & distr_incl_concentration);
+                      std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                      std::vector<double>                          & alpha);
 
   virtual                                        ~DistributionsRockDEM();
 

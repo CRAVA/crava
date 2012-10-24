@@ -10,7 +10,8 @@ DistributionsRockTabulatedModulus::DistributionsRockTabulatedModulus(const Distr
                                                                      const DistributionWithTrend * density,
                                                                      double                        corr_bulk_shear,
                                                                      double                        corr_bulk_density,
-                                                                     double                        corr_shear_density)
+                                                                     double                        corr_shear_density,
+                                                                     std::vector<double>         & alpha)
 : bulk_modulus_(bulk_modulus),
   shear_modulus_(shear_modulus),
   density_(density),
@@ -18,6 +19,8 @@ DistributionsRockTabulatedModulus::DistributionsRockTabulatedModulus(const Distr
   corr_bulk_density_(corr_bulk_density),
   corr_shear_density_(corr_shear_density)
 {
+
+  alpha_ = alpha;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> seismic_variables(3);

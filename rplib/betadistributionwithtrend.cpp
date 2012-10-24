@@ -91,7 +91,22 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 
     }
   }
+}
 
+BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
+: beta_distribution_(dist.beta_distribution_),
+  mean_(dist.mean_),
+  var_(dist.var_),
+  uniform_distribution_(dist.uniform_distribution_),
+  is_shared_(dist.is_shared_),
+  use_trend_cube_(dist.use_trend_cube_),
+  ni_(dist.ni_),
+  nj_(dist.nj_),
+  mean_sampling_(dist.mean_sampling_),
+  var_sampling_(dist.var_sampling_),
+  n_samples_mean_(dist.n_samples_mean_),
+  n_samples_var_(dist.n_samples_var_)
+{
 }
 
 BetaDistributionWithTrend::~BetaDistributionWithTrend()

@@ -22,9 +22,9 @@ public:
 
 class TabulatedVelocityFluidStorage : public DistributionsFluidStorage {
 public:
-  TabulatedVelocityFluidStorage(DistributionWithTrendStorage * vp,
-                                DistributionWithTrendStorage * density,
-                                double                         correlation_vp_density);
+  TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
+                                std::vector<DistributionWithTrendStorage *> density,
+                                double                                      correlation_vp_density);
 
   virtual ~TabulatedVelocityFluidStorage();
 
@@ -34,17 +34,17 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  DistributionWithTrendStorage * vp_;
-  DistributionWithTrendStorage * density_;
-  double                         correlation_vp_density_;
+  std::vector<DistributionWithTrendStorage *> vp_;
+  std::vector<DistributionWithTrendStorage *> density_;
+  double                                      correlation_vp_density_;
 };
 
 //----------------------------------------------------------------------------------//
 class TabulatedModulusFluidStorage : public DistributionsFluidStorage {
 public:
-  TabulatedModulusFluidStorage(DistributionWithTrendStorage * bulk_modulus,
-                               DistributionWithTrendStorage * density,
-                               double                         correlation_bulk_density);
+  TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
+                               std::vector<DistributionWithTrendStorage *> density,
+                               double                                      correlation_bulk_density);
 
   virtual ~TabulatedModulusFluidStorage();
 
@@ -54,16 +54,16 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  DistributionWithTrendStorage * bulk_modulus_;
-  DistributionWithTrendStorage * density_;
-  double                         correlation_bulk_density_;
+  std::vector<DistributionWithTrendStorage *> bulk_modulus_;
+  std::vector<DistributionWithTrendStorage *> density_;
+  double                                      correlation_bulk_density_;
 };
 
 //----------------------------------------------------------------------------------//
 class ReussFluidStorage : public DistributionsFluidStorage {
 public:
-  ReussFluidStorage(std::vector<std::string>                    constituent_label,
-                    std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+  ReussFluidStorage(std::vector<std::string>                                  constituent_label,
+                    std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~ReussFluidStorage();
 
@@ -73,15 +73,15 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                    constituent_label_;
-  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+  std::vector<std::string>                                  constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
 };
 
 //----------------------------------------------------------------------------------//
 class VoigtFluidStorage : public DistributionsFluidStorage {
 public:
-  VoigtFluidStorage(std::vector<std::string>                    constituent_label,
-                    std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+  VoigtFluidStorage(std::vector<std::string>                                  constituent_label,
+                    std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~VoigtFluidStorage();
 
@@ -91,15 +91,15 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                    constituent_label_;
-  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+  std::vector<std::string>                                  constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
 };
 
 //----------------------------------------------------------------------------------//
 class HillFluidStorage : public DistributionsFluidStorage {
 public:
-  HillFluidStorage(std::vector<std::string>                    constituent_label,
-                    std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+  HillFluidStorage(std::vector<std::string>                                  constituent_label,
+                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~HillFluidStorage();
 
@@ -109,16 +109,16 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                    constituent_label_;
-  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+  std::vector<std::string>                                  constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
 };
 
 //----------------------------------------------------------------------------------//
 class BatzleWangFluidStorage : public DistributionsFluidStorage {
 public:
-  BatzleWangFluidStorage(DistributionWithTrendStorage * pore_pressure,
-                         DistributionWithTrendStorage * temperature,
-                         DistributionWithTrendStorage * salinity);
+  BatzleWangFluidStorage(std::vector<DistributionWithTrendStorage *> pore_pressure,
+                         std::vector<DistributionWithTrendStorage *> temperature,
+                         std::vector<DistributionWithTrendStorage *> salinity);
 
   virtual ~BatzleWangFluidStorage();
 
@@ -128,9 +128,9 @@ public:
                                                           std::string                             & errTxt) const;
 
 private:
-  DistributionWithTrendStorage * pore_pressure_;
-  DistributionWithTrendStorage * temperature_;
-  DistributionWithTrendStorage * salinity_;
+  std::vector<DistributionWithTrendStorage *> pore_pressure_;
+  std::vector<DistributionWithTrendStorage *> temperature_;
+  std::vector<DistributionWithTrendStorage *> salinity_;
 };
 
 #endif

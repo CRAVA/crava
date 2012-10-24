@@ -14,7 +14,8 @@ public:
 
   DistributionsFluidTabulatedModulus(const DistributionWithTrend * bulk_modulus,
                                      const DistributionWithTrend * density,
-                                     double                        corr_bulk_density);
+                                     double                        corr_bulk_density,
+                                     const std::vector<double>   & alpha);
 
   virtual                       ~DistributionsFluidTabulatedModulus();
 
@@ -29,8 +30,6 @@ public:
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
                                              const Fluid               * sample) const;
-
-protected:
 
 private:
 

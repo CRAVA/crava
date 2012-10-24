@@ -243,9 +243,10 @@ ModelGeneral::~ModelGeneral(void)
     delete fluid;
   }
 
-  for(std::map<std::string, const DistributionWithTrend *>::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    const DistributionWithTrend * variable = it->second;
-    delete variable;
+  for(std::map<std::string, std::vector<const DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    std::vector<const DistributionWithTrend *> variable = it->second;
+    for(size_t i=0; i<variable.size(); i++)
+      delete variable[i];
   }
 
   delete randomGen_;
@@ -2282,11 +2283,15 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
 
-    std::map<std::string, DistributionWithTrendStorage *> reservoir_variable = modelSettings->getReservoirVariable();
-    for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
-      DistributionWithTrendStorage * storage     = it->second;
-      const DistributionWithTrend  * dist        = storage->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-      reservoir_variables_[it->first]            = dist;
+    std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoir_variable = modelSettings->getReservoirVariable();
+    for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+      std::vector<DistributionWithTrendStorage *> storage = it->second;
+      std::vector<const DistributionWithTrend *> dist_vector;
+      for(size_t i=0; i<storage.size(); i++) {
+        const DistributionWithTrend  * dist               = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        dist_vector.push_back(dist);
+      }
+      reservoir_variables_[it->first]                     = dist_vector;
     }
 
     std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();

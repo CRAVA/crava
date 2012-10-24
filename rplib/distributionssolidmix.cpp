@@ -10,13 +10,15 @@
 
 DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >          & distr_solid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                                             DEMTools::MixMethod                            mix_method)
+                                             DEMTools::MixMethod                            mix_method,
+                                             std::vector<double>                          & alpha)
 : DistributionsSolid()
 {
   assert(distr_solid.size() == distr_vol_frac.size());
   distr_solid_      = distr_solid;
   distr_vol_frac_   = distr_vol_frac;
   mix_method_       = mix_method;
+  alpha_            = alpha;
 }
 
 DistributionsSolidMix::~DistributionsSolidMix(){}

@@ -9,7 +9,8 @@
 DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
                                              std::vector<DistributionsSolid*>             & distr_solid_inc,
                                              std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                             std::vector< DistributionWithTrend * >       & distr_incl_concentration)
+                                             std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                                             std::vector<double>                          & alpha)
 : DistributionsSolid()
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
@@ -18,6 +19,8 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
   distr_solid_inc_          = distr_solid_inc;
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
+  alpha_                    = alpha;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
+
 }
 
 DistributionsSolidDEM::~DistributionsSolidDEM(){}

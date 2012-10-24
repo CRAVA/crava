@@ -16,7 +16,8 @@ public:
 
   DistributionsRockMixOfRock(const std::vector< DistributionsRock * >           & distr_rock,
                              const std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                             DEMTools::MixMethod                                  mix_method);
+                             DEMTools::MixMethod                                  mix_method,
+                             std::vector<double>                                & alpha);
 
   virtual ~DistributionsRockMixOfRock();
 
@@ -66,7 +67,8 @@ public:
                                       const std::vector< DistributionsFluid * >           & distr_fluid,
                                       const std::vector< DistributionWithTrend * >        & distr_vol_frac_solid,
                                       const std::vector< DistributionWithTrend * >        & distr_vol_frac_fluid,
-                                      DEMTools::MixMethod                                   mix_method);
+                                      DEMTools::MixMethod                                   mix_method,
+                                      std::vector<double>                                 & alpha);
 
   virtual ~DistributionsRockMixOfSolidAndFluid();
 

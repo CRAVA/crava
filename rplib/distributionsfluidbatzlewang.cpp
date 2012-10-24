@@ -6,12 +6,14 @@
 
 DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWithTrend        * distr_temperature,
                                                            const DistributionWithTrend        * distr_pore_pressure,
-                                                           const DistributionWithTrend        * distr_salinity)
+                                                           const DistributionWithTrend        * distr_salinity,
+                                                           std::vector<double>                & alpha)
 : DistributionsFluid()
 {
   distr_salinity_      = distr_salinity;
   distr_temperature_   = distr_temperature;
   distr_pore_pressure_ = distr_pore_pressure;
+  alpha_               = alpha;
 }
 
 DistributionsFluidBatzleWang::~DistributionsFluidBatzleWang()

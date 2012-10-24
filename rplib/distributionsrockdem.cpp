@@ -16,7 +16,8 @@
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                                            std::vector< DistributionsFluid *>           & distr_fluid,
                                            std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                           std::vector< DistributionWithTrend * >       & distr_incl_concentration)
+                                           std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                                           std::vector<double>                          & alpha)
 : DistributionsRock()
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
@@ -25,6 +26,7 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   distr_fluid_              = distr_fluid;
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
+  alpha_                    = alpha;
 
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 }

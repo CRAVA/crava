@@ -192,7 +192,7 @@ public:
   int                              getEstimateNumberOfWavelets(int t)   const;
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
-  std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_            ;}
+  std::map<std::string, std::vector<DistributionWithTrendStorage *> > getReservoirVariable() const { return reservoirVariable_ ;}
   std::map<std::string, DistributionsRockStorage *>     getRockStorage()       const { return rockStorage_                  ;}
   std::map<std::string, DistributionsDryRockStorage *>  getDryRockStorage()    const { return dryRockStorage_               ;}
   std::map<std::string, DistributionsSolidStorage *>    getSolidStorage()      const { return solidStorage_                 ;}
@@ -242,7 +242,7 @@ public:
   void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
-  void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist              ;}
+  void addReservoirVariable(std::string variable, std::vector<DistributionWithTrendStorage *> dist) { reservoirVariable_[variable] = dist ;}
   void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]    = rock                    ;}
   void addDryRock(std::string label,  DistributionsDryRockStorage  * dry_rock)         { dryRockStorage_[label] = dry_rock                ;}
   void addSolid(std::string label, DistributionsSolidStorage * solid)                  { solidStorage_[label]   = solid                   ;}
@@ -662,7 +662,7 @@ private:
 
   std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
 
-  std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
+  std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
   std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions
   std::map<std::string, DistributionsDryRockStorage *>    dryRockStorage_;              // Rock physics dry rocks defined in predefinitions
   std::map<std::string, DistributionsSolidStorage *>      solidStorage_;                // Rock physics solids defined in predefinitions

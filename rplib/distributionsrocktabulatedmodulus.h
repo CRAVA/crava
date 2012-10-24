@@ -14,7 +14,8 @@ public:
                                     const DistributionWithTrend * density,
                                     double                        corr_bulk_shear,
                                     double                        corr_bulk_density,
-                                    double                        corr_shear_density);
+                                    double                        corr_shear_density,
+                                    std::vector<double>         & alpha);
 
   virtual ~DistributionsRockTabulatedModulus();
 

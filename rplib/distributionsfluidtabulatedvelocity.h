@@ -14,7 +14,8 @@ public:
 
   DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
                                       const DistributionWithTrend * density,
-                                      double                        corr_vp_density);
+                                      double                        corr_vp_density,
+                                      std::vector<double>         & alpha);
 
   virtual                       ~DistributionsFluidTabulatedVelocity();
 
@@ -29,8 +30,6 @@ public:
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
                                              const Fluid               * sample) const;
-
-protected:
 
 private:
 

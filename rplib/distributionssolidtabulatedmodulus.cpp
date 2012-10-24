@@ -8,7 +8,8 @@ DistributionsSolidTabulatedModulus::DistributionsSolidTabulatedModulus(const Dis
                                                                        const DistributionWithTrend         * distr_rho,
                                                                        const double                          corr_k_mu,
                                                                        const double                          corr_k_rho,
-                                                                       const double                          corr_mu_rho)
+                                                                       const double                          corr_mu_rho,
+                                                                       std::vector<double>                 & alpha)
 : DistributionsSolid(),
   distr_k_(distr_k),
   distr_mu_(distr_mu),
@@ -17,6 +18,8 @@ DistributionsSolidTabulatedModulus::DistributionsSolidTabulatedModulus(const Dis
   corr_k_rho_(corr_k_rho),
   corr_mu_rho_(corr_mu_rho)
 {
+  alpha_ = alpha;
+
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = distr_k_;

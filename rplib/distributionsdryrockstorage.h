@@ -22,14 +22,14 @@ public:
 
 class TabulatedVelocityDryRockStorage : public DistributionsDryRockStorage {
 public:
-  TabulatedVelocityDryRockStorage(DistributionWithTrendStorage * vp,
-                                  DistributionWithTrendStorage * vs,
-                                  DistributionWithTrendStorage * density,
-                                  double                         correlation_vp_vs,
-                                  double                         correlation_vp_density,
-                                  double                         correlation_vs_density,
-                                  DistributionWithTrendStorage * total_porosity,
-                                  std::string                    moduli);
+  TabulatedVelocityDryRockStorage(std::vector<DistributionWithTrendStorage *> vp,
+                                  std::vector<DistributionWithTrendStorage *> vs,
+                                  std::vector<DistributionWithTrendStorage *> density,
+                                  double                                      correlation_vp_vs,
+                                  double                                      correlation_vp_density,
+                                  double                                      correlation_vs_density,
+                                  std::vector<DistributionWithTrendStorage *> total_porosity,
+                                  std::string                                 moduli);
 
   virtual ~TabulatedVelocityDryRockStorage();
 
@@ -39,27 +39,27 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  DistributionWithTrendStorage * vp_;
-  DistributionWithTrendStorage * vs_;
-  DistributionWithTrendStorage * density_;
-  double                         correlation_vp_vs_;
-  double                         correlation_vp_density_;
-  double                         correlation_vs_density_;
-  DistributionWithTrendStorage * total_porosity_;
-  std::string                    mineral_moduli_;
+  std::vector<DistributionWithTrendStorage *> vp_;
+  std::vector<DistributionWithTrendStorage *> vs_;
+  std::vector<DistributionWithTrendStorage *> density_;
+  double                                      correlation_vp_vs_;
+  double                                      correlation_vp_density_;
+  double                                      correlation_vs_density_;
+  std::vector<DistributionWithTrendStorage *> total_porosity_;
+  std::string                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class TabulatedModulusDryRockStorage : public DistributionsDryRockStorage {
 public:
-  TabulatedModulusDryRockStorage(DistributionWithTrendStorage * bulk_modulus,
-                                 DistributionWithTrendStorage * shear_modulus,
-                                 DistributionWithTrendStorage * density,
-                                 double                         correlation_bulk_shear,
-                                 double                         correlation_bulk_density,
-                                 double                         correlation_shear_density,
-                                 DistributionWithTrendStorage * total_porosity,
-                                 std::string                    moduli);
+  TabulatedModulusDryRockStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
+                                 std::vector<DistributionWithTrendStorage *> shear_modulus,
+                                 std::vector<DistributionWithTrendStorage *> density,
+                                 double                                      correlation_bulk_shear,
+                                 double                                      correlation_bulk_density,
+                                 double                                      correlation_shear_density,
+                                 std::vector<DistributionWithTrendStorage *> total_porosity,
+                                 std::string                                 moduli);
 
   virtual ~TabulatedModulusDryRockStorage();
 
@@ -69,23 +69,23 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  DistributionWithTrendStorage * bulk_modulus_;
-  DistributionWithTrendStorage * shear_modulus_;
-  DistributionWithTrendStorage * density_;
-  double                         correlation_bulk_shear_;
-  double                         correlation_bulk_density_;
-  double                         correlation_shear_density_;
-  DistributionWithTrendStorage * total_porosity_;
-  std::string                    mineral_moduli_;
+  std::vector<DistributionWithTrendStorage *> bulk_modulus_;
+  std::vector<DistributionWithTrendStorage *> shear_modulus_;
+  std::vector<DistributionWithTrendStorage *> density_;
+  double                                      correlation_bulk_shear_;
+  double                                      correlation_bulk_density_;
+  double                                      correlation_shear_density_;
+  std::vector<DistributionWithTrendStorage *> total_porosity_;
+  std::string                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class ReussDryRockStorage : public DistributionsDryRockStorage {
 public:
-  ReussDryRockStorage(std::vector<std::string>                    constituent_label,
-                      std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                      DistributionWithTrendStorage *              total_porosity,
-                      std::string                                 moduli);
+  ReussDryRockStorage(std::vector<std::string>                                  constituent_label,
+                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                      std::vector<DistributionWithTrendStorage *>               total_porosity,
+                      std::string                                               moduli);
 
   virtual ~ReussDryRockStorage();
 
@@ -95,19 +95,19 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                      constituent_label_;
-  std::vector<DistributionWithTrendStorage *>   constituent_volume_fraction_;
-  DistributionWithTrendStorage                * total_porosity_;
-  std::string                                   mineral_moduli_;
+  std::vector<std::string>                                    constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
+  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
+  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class VoigtDryRockStorage : public DistributionsDryRockStorage {
 public:
-  VoigtDryRockStorage(std::vector<std::string>                    constituent_label,
-                      std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                      DistributionWithTrendStorage *              total_porosity,
-                      std::string                                 moduli);
+  VoigtDryRockStorage(std::vector<std::string>                                  constituent_label,
+                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                      std::vector<DistributionWithTrendStorage *>               total_porosity,
+                      std::string                                               moduli);
 
   virtual ~VoigtDryRockStorage();
 
@@ -117,19 +117,19 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                      constituent_label_;
-  std::vector<DistributionWithTrendStorage *>   constituent_volume_fraction_;
-  DistributionWithTrendStorage                * total_porosity_;
-  std::string                                   mineral_moduli_;
+  std::vector<std::string>                                    constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
+  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
+  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class HillDryRockStorage : public DistributionsDryRockStorage {
 public:
-  HillDryRockStorage(std::vector<std::string>                    constituent_label,
-                     std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                     DistributionWithTrendStorage *              total_porosity,
-                     std::string                                 moduli);
+  HillDryRockStorage(std::vector<std::string>                                  constituent_label,
+                     std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                     std::vector<DistributionWithTrendStorage *>               total_porosity,
+                     std::string                                               moduli);
 
   virtual ~HillDryRockStorage();
 
@@ -139,23 +139,23 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  std::vector<std::string>                      constituent_label_;
-  std::vector<DistributionWithTrendStorage *>   constituent_volume_fraction_;
-  DistributionWithTrendStorage                * total_porosity_;
-  std::string                                   mineral_moduli_;
+  std::vector<std::string >                                   constituent_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
+  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
+  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 
 class DEMDryRockStorage : public DistributionsDryRockStorage {
 public:
-  DEMDryRockStorage(std::string                                 host_label,
-                    DistributionWithTrendStorage *              host_volume_fraction,
-                    std::vector<std::string>                    inclusion_label,
-                    std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
-                    std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio,
-                    DistributionWithTrendStorage *              total_porosity,
-                    std::string                                 moduli);
+  DEMDryRockStorage(std::string                                               host_label,
+                    std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
+                    std::vector<std::string>                                  inclusion_label,
+                    std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
+                    std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
+                    std::vector<DistributionWithTrendStorage *>               total_porosity,
+                    std::string                                               moduli);
 
   virtual ~DEMDryRockStorage();
 
@@ -165,13 +165,13 @@ public:
                                                               std::string                             & errTxt) const;
 
 private:
-  std::string                                 host_label_;
-  DistributionWithTrendStorage *              host_volume_fraction_;
-  std::vector<std::string>                    inclusion_label_;
-  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
-  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio_;
-  DistributionWithTrendStorage              * total_porosity_;
-  std::string                                 mineral_moduli_;
+  std::string                                               host_label_;
+  std::vector<DistributionWithTrendStorage *>               host_volume_fraction_;
+  std::vector<std::string>                                  inclusion_label_;
+  std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction_;
+  std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio_;
+  std::vector<DistributionWithTrendStorage *>               total_porosity_;
+  std::string                                               mineral_moduli_;
 };
 
 #endif

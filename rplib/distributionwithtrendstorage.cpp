@@ -20,7 +20,9 @@ DistributionWithTrendStorage::~DistributionWithTrendStorage()
 //--------------------------------------------------------------//
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
-: is_shared_(false)
+: is_shared_(false),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
 }
 
@@ -75,7 +77,9 @@ DeltaDistributionWithTrendStorage::CloneMean() const
 //--------------------------------------------------------------//
 
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
-: is_shared_(false)
+: is_shared_(false),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
 }
 
@@ -122,7 +126,9 @@ NormalDistributionWithTrendStorage::CloneMean() const
 //--------------------------------------------------------------//
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
-: is_shared_(false)
+: is_shared_(false),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
 }
 

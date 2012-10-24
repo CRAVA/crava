@@ -5,11 +5,14 @@
 
 DistributionsFluidTabulatedVelocity::DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
                                                                          const DistributionWithTrend * density,
-                                                                         double                        corr_vp_density)
-: vp_(vp),
-  density_(density),
-  corr_vp_density_(corr_vp_density)
+                                                                         double                        corr_vp_density,
+                                                                         std::vector<double>         & alpha)
+: DistributionsFluid()
 {
+  vp_              = vp;
+  density_         = density;
+  corr_vp_density_ = corr_vp_density;
+  alpha_           = alpha;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(2);

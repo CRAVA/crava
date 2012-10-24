@@ -19,11 +19,14 @@
 
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< DistributionsRock * >           & distr_rock,
                                                        const std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                                                       DEMTools::MixMethod                                  mix_method)
-: distr_rock_(distr_rock),
+                                                       DEMTools::MixMethod                                  mix_method,
+                                                       std::vector<double>                                & alpha)
+: DistributionsRock(),
+  distr_rock_(distr_rock),
   distr_vol_frac_(distr_vol_frac),
   mix_method_(mix_method)
 {
+  alpha_ = alpha;
 }
 
 DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
@@ -190,13 +193,16 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
                                                                          const std::vector< DistributionsFluid * >           & distr_fluid,
                                                                          const std::vector< DistributionWithTrend * >        & distr_vol_frac_solid,
                                                                          const std::vector< DistributionWithTrend * >        & distr_vol_frac_fluid,
-                                                                         DEMTools::MixMethod                                   mix_method)
-: distr_solid_(distr_solid),
+                                                                         DEMTools::MixMethod                                   mix_method,
+                                                                         std::vector<double>                                 & alpha)
+: DistributionsRock(),
+  distr_solid_(distr_solid),
   distr_fluid_(distr_fluid),
   distr_vol_frac_solid_(distr_vol_frac_solid),
   distr_vol_frac_fluid_(distr_vol_frac_fluid),
   mix_method_(mix_method)
 {
+  alpha_ = alpha;
 }
 
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()

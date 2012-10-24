@@ -10,6 +10,8 @@ class DistributionWithTrend {
 
    virtual ~DistributionWithTrend();
 
+   virtual DistributionWithTrend    * Clone()                                             const = 0;
+
    virtual bool                       GetIsShared()                                       const = 0;
    virtual bool                       GetIsDistribution()                                 const = 0;
    virtual std::vector<bool>          GetUseTrendCube()                                   const = 0;

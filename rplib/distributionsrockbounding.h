@@ -15,7 +15,8 @@ public:
                             const DistributionWithTrend * porosity,
                             const DistributionWithTrend * bulk_weight,
                             const DistributionWithTrend * p_wave_weight,
-                            double                        correlation_weights);
+                            double                        correlation_weights,
+                            std::vector<double>         & alpha);
 
   virtual ~DistributionsRockBounding();
 

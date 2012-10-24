@@ -810,7 +810,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_quartz_rho          = new NRLib::TrendConstant(2.65);
   DistributionWithTrend * distr_quartz_rho = new DeltaDistributionWithTrend(trend_quartz_rho, false);
 
-  DistributionsSolid * distr_quartz = new DistributionsSolidTabulatedModulus(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0);
+  std::vector<double> dummy_alpha(3,1);
+  DistributionsSolid * distr_quartz = new DistributionsSolidTabulatedModulus(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0, dummy_alpha);
 
   NRLib::Trend * trend_clay_k          = new NRLib::TrendConstant(21.0);
   DistributionWithTrend * distr_clay_k = new DeltaDistributionWithTrend(trend_clay_k, false);
@@ -821,7 +822,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_clay_rho          = new NRLib::TrendConstant(2.6);
   DistributionWithTrend * distr_clay_rho = new DeltaDistributionWithTrend(trend_clay_rho, false);
 
-  DistributionsSolid * distr_clay = new DistributionsSolidTabulatedModulus(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0);
+  DistributionsSolid * distr_clay = new DistributionsSolidTabulatedModulus(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0, dummy_alpha);
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;
@@ -836,7 +837,9 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_frac, false));
   distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_fracbg, false));
 
-  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill);
+  std::vector<double> dummy_alpha_short(2,1);
+
+  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, dummy_alpha_short);
   //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
 
   //// Fluid properties
@@ -851,8 +854,10 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_salinity          = new NRLib::TrendConstant(0.05);
   DistributionWithTrend * distr_salinity = new DeltaDistributionWithTrend(trend_salinity, false);
 
-  DistributionsFluid * distr_brine  = new DistributionsFluidBatzleWang(distr_temperature, distr_pore_pressure, distr_salinity);
-  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure);
+  std::vector<double> dummy_alpha_bw(3,1);
+  std::vector<double> dummy_alpha_co2(2,1);
+  DistributionsFluid * distr_brine  = new DistributionsFluidBatzleWang(distr_temperature, distr_pore_pressure, distr_salinity, dummy_alpha_bw);
+  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure, dummy_alpha_co2);
   //Fluid * brine = distr_brine->GenerateSample();
   //Fluid * co2   = distr_co2->GenerateSample();
 
@@ -875,10 +880,13 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 
   std::vector< DistributionWithTrend * > distr_incl_spectrum;
   std::vector< DistributionWithTrend * > distr_incl_concentration;
+  std::vector<double> dummy_alpha_dem(1,1);
 
   if (my_geo_type == Spherical) {
     distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
+    dummy_alpha_dem.push_back(1);
+    dummy_alpha_dem.push_back(1);
   }
   else if (my_geo_type == Mixed) {
     distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
@@ -893,6 +901,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.0050), false));
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-004), false));
     distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-005), false));
+    dummy_alpha_dem.push_back(1);
+    dummy_alpha_dem.push_back(1);
   }
 
   std::vector<DistributionsFluid*> distr_fluid_mixed2(distr_incl_concentration.size());
@@ -902,7 +912,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
                                                                   distr_fluid_mixed2,
                                                                   distr_incl_spectrum,
-                                                                  distr_incl_concentration);
+                                                                  distr_incl_concentration,
+                                                                  dummy_alpha_dem);
 
 
   //// Generating a sample of the rock.

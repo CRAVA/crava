@@ -2210,6 +2210,27 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 
  \elist
 
+\subparagraph{\hbracket{one-year-correlation}}\newkw{one-year-correlation}
+ \slist
+   \item \Description 
+   \item \Argument
+   \item \Default 1
+ \elist
+
+\subparagraph{\hbracket{evolve}}\newkw{evolve}
+ \slist
+   \item \Description Repeated
+   \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{vintage-number}}\newkw{vintage-number}
+ \slist
+   \item \Description Unique number of the vintage. Must be given in ascending order, where the first variable given under \kw{variable} has number 1
+   \item \Argument Integer value
+   \item \Default 
+ \elist
+
 \subsubsection{\hbracket{predefinitions}}\newkw{predefinitions}
  \slist
    \item \Description <predefinitions> is used for specifying and calculating the elastic properties of basic building blocks, being \kw{fluid}, \kw{solid} and \kw{solid}, or elements and mixtures of these. It will typically use properties specified under \kw{reservoir}. Under the keyword <predefinitions>, fluids, solids and dry rocks are defined for later use, to make the xml-file more readable. Each time a building block is defined, it is given a unique identifying name using the <label> keyword. This is followed by a keyword specifying which theory we use for building this constituent. However, if we want to use a constituent that is already defined, we use the keyword <use> instead of <label>, followed by the unique name of the element. Thus, constituents can easily be used over and over once they are defined. 

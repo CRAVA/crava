@@ -204,9 +204,10 @@ ModelSettings::~ModelSettings(void)
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
 
-  for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
-    DistributionWithTrendStorage * storage = it->second;
-    delete storage;
+  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
+    std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
+    for(size_t i=0; i<vintageStorage.size(); i++)
+      delete vintageStorage[i];
   }
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;

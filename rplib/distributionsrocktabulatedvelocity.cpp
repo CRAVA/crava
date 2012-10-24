@@ -10,7 +10,8 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
                                                                        const DistributionWithTrend * density,
                                                                        double                        corr_vp_vs,
                                                                        double                        corr_vp_density,
-                                                                       double                        corr_vs_density)
+                                                                       double                        corr_vs_density,
+                                                                       std::vector<double>         & alpha)
 : vp_(vp),
   vs_(vs),
   density_(density),
@@ -18,6 +19,7 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
   corr_vp_density_(corr_vp_density),
   corr_vs_density_(corr_vs_density)
 {
+  alpha_ = alpha;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);

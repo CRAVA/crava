@@ -13,7 +13,8 @@ public:
   DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
                         std::vector<DistributionsSolid*>             & distr_solid_inc,
                         std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                        std::vector< DistributionWithTrend * >       & distr_incl_concentration);
+                        std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                        std::vector<double>                          & alpha);
 
   virtual                       ~DistributionsSolidDEM();
 

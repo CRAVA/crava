@@ -13,7 +13,8 @@ public:
 
   DistributionsSolidMix(std::vector< DistributionsSolid * >          & distr_solid,
                         std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                        DEMTools::MixMethod                            mix_method);
+                        DEMTools::MixMethod                            mix_method,
+                        std::vector<double>                          & alpha);
 
   virtual ~DistributionsSolidMix();
 

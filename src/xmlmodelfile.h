@@ -65,16 +65,16 @@ private:
   bool parseSolid(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parseDryRock(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parseFluid(TiXmlNode * node, std::string & label, std::string & errTxt);
-  bool parseTabulated(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
+  bool parseTabulated(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
   bool parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
-  bool parseReuss(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseVoigt(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseHill(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseConstituent(TiXmlNode * node, std::string & constituent_label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
+  bool parseReuss(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
+  bool parseVoigt(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
+  bool parseHill(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
+  bool parseConstituent(TiXmlNode * node, std::string & constituent_label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
-  bool parseDEM(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
-  bool parseDEMInclusion(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& aspect_ratio, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
+  bool parseDEM(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
+  bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
+  bool parseDEMInclusion(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & aspect_ratio, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
   bool parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseUpperBound(TiXmlNode * node, std::string & label, std::string & errTxt);
@@ -82,8 +82,10 @@ private:
   bool parseMineralModuli(TiXmlNode * node, std::string & moduli, std::string & errTxt);
   bool parseInclusion(TiXmlNode * node, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
-  bool parseGaussianWithTrend(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_shared, std::string & errTxt);
-  bool parseBetaWithTrend(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_shared, std::string & errTxt);
+  bool parseReservoirVariable(TiXmlNode * node, std::string & errTxt);
+  bool parseEvolveReservoirVariable(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> evolveStorage, std::string & errTxt);
+  bool parseGaussianWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
+  bool parseBetaWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
@@ -116,13 +118,13 @@ private:
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
-  bool parseDistributionWithTrend(TiXmlNode                     * node,
-                                  const std::string             & keyword,
-                                  DistributionWithTrendStorage *& storage,
-                                  std::string                   & label,
-                                  bool                            is_shared,
-                                  std::string                   & errTxt,
-                                  bool                            allowDistribution = true);
+  bool parseDistributionWithTrend(TiXmlNode                                   * node,
+                                  const std::string                           & keyword,
+                                  std::vector<DistributionWithTrendStorage *> & storage,
+                                  std::string                                 & label,
+                                  bool                                          is_shared,
+                                  std::string                                 & errTxt,
+                                  bool                                          allowDistribution = true);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);

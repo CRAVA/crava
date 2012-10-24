@@ -210,3 +210,28 @@ ReadFluid(const std::string                                          & target_fl
 
   return(final_fluid);
 }
+
+void
+CheckVintageConsistency(const std::vector<int> & vintage_number,
+                        std::string            & errTxt)
+{
+  int n_vintages = static_cast<int>(vintage_number.size());
+
+  if(n_vintages > 1) {
+    if(vintage_number[0] < 1)
+      errTxt += "The vintage numbers need to be larger than zero in the rock physics model\n";
+
+    int compare = vintage_number[0];
+    for(int i=1; i<n_vintages; i++) {
+      if(vintage_number[i] <= compare) {
+        errTxt += "The vintage numbers need to be given in ascending order\n";
+        break;
+      }
+      else
+        compare = vintage_number[i];
+    }
+  }
+
+  if(errTxt != "")
+    errTxt += "Remember that the first vintage given under <reservoir><variable> is given vinage number 1\n";
+}

@@ -18,14 +18,14 @@ DistributionsDryRockStorage::~DistributionsDryRockStorage()
 }
 //----------------------------------------------------------------------------------//
 
-TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(DistributionWithTrendStorage * vp,
-                                                                 DistributionWithTrendStorage * vs,
-                                                                 DistributionWithTrendStorage * density,
-                                                                 double                         correlation_vp_vs,
-                                                                 double                         correlation_vp_density,
-                                                                 double                         correlation_vs_density,
-                                                                 DistributionWithTrendStorage * total_porosity,
-                                                                 std::string                    moduli)
+TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(std::vector<DistributionWithTrendStorage *> vp,
+                                                                 std::vector<DistributionWithTrendStorage *> vs,
+                                                                 std::vector<DistributionWithTrendStorage *> density,
+                                                                 double                                      correlation_vp_vs,
+                                                                 double                                      correlation_vp_density,
+                                                                 double                                      correlation_vs_density,
+                                                                 std::vector<DistributionWithTrendStorage *> total_porosity,
+                                                                 std::string                                 moduli)
 : vp_(vp),
   vs_(vs),
   density_(density),
@@ -39,12 +39,17 @@ TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(DistributionWit
 
 TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
 {
-  delete vp_;
-  delete vs_;
-  delete density_;
+  if(vp_[0]->GetIsShared() == false)
+    delete vp_[0];
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+  if(vs_[0]->GetIsShared() == false)
+    delete vs_[0];
+
+  if(density_[0]->GetIsShared() == false)
+    delete density_[0];
+
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -62,14 +67,14 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const std::string 
 }
 
 //----------------------------------------------------------------------------------//
-TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(DistributionWithTrendStorage * bulk_modulus,
-                                                               DistributionWithTrendStorage * shear_modulus,
-                                                               DistributionWithTrendStorage * density,
-                                                               double                         correlation_bulk_shear,
-                                                               double                         correlation_bulk_density,
-                                                               double                         correlation_shear_density,
-                                                               DistributionWithTrendStorage * total_porosity,
-                                                               std::string                    moduli)
+TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
+                                                               std::vector<DistributionWithTrendStorage *> shear_modulus,
+                                                               std::vector<DistributionWithTrendStorage *> density,
+                                                               double                                      correlation_bulk_shear,
+                                                               double                                      correlation_bulk_density,
+                                                               double                                      correlation_shear_density,
+                                                               std::vector<DistributionWithTrendStorage *> total_porosity,
+                                                               std::string                                 moduli)
 : bulk_modulus_(bulk_modulus),
   shear_modulus_(shear_modulus),
   density_(density),
@@ -83,12 +88,18 @@ TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(DistributionWithT
 
 TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
 {
-  delete bulk_modulus_;
-  delete shear_modulus_;
-  delete density_;
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+ if(bulk_modulus_[0]->GetIsShared() == false)
+    delete bulk_modulus_[0];
+
+  if(shear_modulus_[0]->GetIsShared() == false)
+    delete shear_modulus_[0];
+
+  if(density_[0]->GetIsShared() == false)
+    delete density_[0];
+
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -106,10 +117,10 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const std::string  
 }
 
 //----------------------------------------------------------------------------------//
-ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string>                    constituent_label,
-                                         std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                                         DistributionWithTrendStorage *              total_porosity,
-                                         std::string                                 moduli)
+ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string >                                 constituent_label,
+                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                         std::vector<DistributionWithTrendStorage *>               total_porosity,
+                                         std::string                                               moduli)
 : constituent_label_(constituent_label),
   constituent_volume_fraction_(constituent_volume_fraction),
   total_porosity_(total_porosity),
@@ -119,11 +130,11 @@ ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string>               
 
 ReussDryRockStorage::~ReussDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
-    delete constituent_volume_fraction_[i];
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
+    delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -143,10 +154,10 @@ ReussDryRockStorage::GenerateDistributionsDryRock(const std::string             
 }
 
 //----------------------------------------------------------------------------------//
-VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>                    constituent_label,
-                                         std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                                         DistributionWithTrendStorage *              total_porosity,
-                                         std::string                                 moduli)
+VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>                                  constituent_label,
+                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                         std::vector<DistributionWithTrendStorage *>               total_porosity,
+                                         std::string                                               moduli)
 : constituent_label_(constituent_label),
   constituent_volume_fraction_(constituent_volume_fraction),
   total_porosity_(total_porosity),
@@ -156,11 +167,11 @@ VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>               
 
 VoigtDryRockStorage::~VoigtDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
-    delete constituent_volume_fraction_[i];
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
+    delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -180,10 +191,10 @@ VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string             
 }
 
 //----------------------------------------------------------------------------------//
-HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                    constituent_label,
-                                       std::vector<DistributionWithTrendStorage *> constituent_volume_fraction,
-                                       DistributionWithTrendStorage *              total_porosity,
-                                       std::string                                 moduli)
+HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                                  constituent_label,
+                                       std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                       std::vector<DistributionWithTrendStorage *>               total_porosity,
+                                       std::string                                               moduli)
 : constituent_label_(constituent_label),
   constituent_volume_fraction_(constituent_volume_fraction),
   total_porosity_(total_porosity),
@@ -193,11 +204,11 @@ HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                 
 
 HillDryRockStorage::~HillDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
-    delete constituent_volume_fraction_[i];
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
+    delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -218,13 +229,13 @@ HillDryRockStorage::GenerateDistributionsDryRock(const std::string              
 
 //----------------------------------------------------------------------------------//
 
-DEMDryRockStorage::DEMDryRockStorage(std::string                                 host_label,
-                                     DistributionWithTrendStorage *              host_volume_fraction,
-                                     std::vector<std::string>                    inclusion_label,
-                                     std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
-                                     std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio,
-                                     DistributionWithTrendStorage *              total_porosity,
-                                     std::string                                 moduli)
+DEMDryRockStorage::DEMDryRockStorage(std::string                                               host_label,
+                                     std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
+                                     std::vector<std::string>                                  inclusion_label,
+                                     std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
+                                     std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
+                                     std::vector<DistributionWithTrendStorage *>               total_porosity,
+                                     std::string                                               moduli)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
   inclusion_label_(inclusion_label),
@@ -237,21 +248,21 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
 
 DEMDryRockStorage::~DEMDryRockStorage()
 {
-  if(host_volume_fraction_->GetIsShared() == false)
-    delete host_volume_fraction_;
+  if(host_volume_fraction_[0]->GetIsShared() == false)
+    delete host_volume_fraction_[0];
 
-  for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
-    if(inclusion_volume_fraction_[i]->GetIsShared() == false)
-      delete inclusion_volume_fraction_[i];
+  for(int i=0; i<static_cast<int>(inclusion_volume_fraction_[0].size()); i++) {
+    if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
+      delete inclusion_volume_fraction_[0][i];
   }
 
-  for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_.size()); i++) {
-    if(inclusion_aspect_ratio_[i]->GetIsShared() == false)
-      delete inclusion_aspect_ratio_[i];
+  for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_[0].size()); i++) {
+    if(inclusion_aspect_ratio_[0][i]->GetIsShared() == false)
+      delete inclusion_aspect_ratio_[0][i];
   }
 
-  if(total_porosity_->GetIsShared() == false)
-    delete total_porosity_;
+  if(total_porosity_[0]->GetIsShared() == false)
+    delete total_porosity_[0];
 }
 
 DistributionsDryRock *
@@ -260,13 +271,6 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const std::string               
                                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                 std::string                             & errTxt) const
 {
-  int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
-
-  std::vector<DistributionWithTrendStorage *> volume_fractions(n_inclusions + 1);
-  volume_fractions[0] = host_volume_fraction_;
-
-  for(int i=1; i<n_inclusions+1; i++)
-    volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
   //CheckVolumeConsistency(volume_fractions, errTxt);
 

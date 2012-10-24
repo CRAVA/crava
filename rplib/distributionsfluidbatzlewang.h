@@ -12,7 +12,8 @@ public:
 
   DistributionsFluidBatzleWang(const DistributionWithTrend * distr_temperature,
                                const DistributionWithTrend * distr_pore_pressure,
-                               const DistributionWithTrend * distr_salinity);
+                               const DistributionWithTrend * distr_salinity,
+                               std::vector<double>         & alpha);
 
   virtual ~DistributionsFluidBatzleWang();
 

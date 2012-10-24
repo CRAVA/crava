@@ -23,6 +23,14 @@ public:
 
   virtual bool                           GetIsShared() const = 0;
 
+  virtual void                           SetVintageNumber(int number) = 0;
+
+  virtual void                           SetOneYearCorrelation(double correlation) = 0;
+
+  virtual int                            GetVintageNumber() = 0;
+
+  virtual double                         GetOneYearCorrelation() = 0;
+
 };
 
 //--------------------------------------------------------------//
@@ -48,12 +56,23 @@ public:
 
   virtual NRLib::TrendStorage            * CloneMean() const;
 
-  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
+  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+
+  virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
+
+  virtual bool                             GetIsShared() const                      { return is_shared_                    ;}
+
+  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+
+  virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
 private:
   const NRLib::TrendStorage            * mean_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+  int                                    vintage_number_;
+  double                                 one_year_correlation_;
+
 };
 
 //--------------------------------------------------------------//
@@ -77,13 +96,23 @@ public:
 
   virtual NRLib::TrendStorage            * CloneMean() const;
 
-  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
+  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+
+  virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
+
+  virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
+
+  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+
+  virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
 private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+  int                                    vintage_number_;
+  double                                 one_year_correlation_;
 };
 
 //--------------------------------------------------------------//
@@ -107,7 +136,15 @@ public:
 
   virtual NRLib::TrendStorage            * CloneMean() const;
 
-  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
+  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+
+  virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
+
+  virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
+
+  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+
+  virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
 private:
   void                                     CheckBetaConsistency(NRLib::Trend * mean,
@@ -118,5 +155,7 @@ private:
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+  int                                    vintage_number_;
+  double                                 one_year_correlation_;
 };
 #endif

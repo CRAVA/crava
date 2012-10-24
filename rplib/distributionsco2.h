@@ -10,7 +10,8 @@ class DistributionsCO2 : public DistributionsFluid {
 public:
 
                                       DistributionsCO2(const DistributionWithTrend       * distr_temperature,
-                                                     const DistributionWithTrend       * distr_pore_pressure);
+                                                       const DistributionWithTrend       * distr_pore_pressure,
+                                                       std::vector<double>               & alpha);
 
   virtual                             ~DistributionsCO2();
 
@@ -24,7 +25,6 @@ public:
                                                    bool                        param_is_time,
                                                    const std::vector<double> & trend,
                                                    const Fluid               * sample) const;
-protected:
 
 private:
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.

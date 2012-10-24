@@ -26,6 +26,14 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean
 
 }
 
+DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWithTrend & dist)
+: dirac_(dist.dirac_),
+  mean_(dist.mean_),
+  is_shared_(dist.is_shared_),
+  use_trend_cube_(dist.use_trend_cube_)
+{
+}
+
 DeltaDistributionWithTrend::~DeltaDistributionWithTrend()
 {
   delete dirac_;

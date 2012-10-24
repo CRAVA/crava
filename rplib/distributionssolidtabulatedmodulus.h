@@ -15,7 +15,8 @@ public:
                                      const DistributionWithTrend         * distr_rho,
                                      const double                          corr_k_mu,
                                      const double                          corr_k_rho,
-                                     const double                          corr_mu_rho);
+                                     const double                          corr_mu_rho,
+                                     std::vector<double>                 & alpha);
 
   virtual                               ~DistributionsSolidTabulatedModulus();
 

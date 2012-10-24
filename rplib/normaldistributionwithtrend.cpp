@@ -31,6 +31,16 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 
 }
 
+NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
+: gaussian_(dist.gaussian_),
+  uniform_(dist.uniform_),
+  mean_(dist.mean_),
+  var_(dist.var_),
+  is_shared_(dist.is_shared_),
+  use_trend_cube_(dist.use_trend_cube_)
+{
+}
+
 NormalDistributionWithTrend::~NormalDistributionWithTrend()
 {
   delete gaussian_;
