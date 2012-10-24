@@ -2316,7 +2316,6 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       DistributionsDryRock         * dry_rock   = storage->GenerateDistributionsDryRock(path,trend_cube_parameters,trend_cube_sampling,errTxt);
       dry_rock_distributions_[it->first]        = dry_rock;
     }
-
     std::map<std::string, DistributionsRockStorage *>      rock_storage = modelSettings->getRockStorage();
     for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
       DistributionsRockStorage     * storage    = it     ->second;

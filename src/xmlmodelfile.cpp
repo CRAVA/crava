@@ -2148,7 +2148,7 @@ XmlModelFile::parseConstituent(TiXmlNode                                   * nod
 
   std::string volume_label = "";
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, volume_label, false, errTxt) == false)
-    volume_fraction.push_back(NULL);
+    volume_fraction[0] = NULL;
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -2741,7 +2741,15 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("variable");
 
-  while(parseReservoirVariable(root, errTxt));
+  std::string                    label;
+  std::vector<DistributionWithTrendStorage *> distributionWithTrend; //Deleted in ~Modelsettings
+
+  while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, true, errTxt) == true) {
+    if(label == "")
+      errTxt += "All reservoir variables need to be defined using <label>\n";
+
+    modelSettings_->addReservoirVariable(label, distributionWithTrend);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2763,18 +2771,20 @@ XmlModelFile::parseReservoirVariable(TiXmlNode * node, std::string & errTxt)
   std::string                                 label;
   std::vector<DistributionWithTrendStorage *> storage; //Deleted in ~Modelsettings
 
-  if(parseDistributionWithTrend(root, "variable", storage, label, true, errTxt) == true) {
+  if(parseDistributionWithTrend(node, "variable", storage, label, true, errTxt) == true) { //Marit: Triks som må fikses
     if(label == "")
       errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
   }
   else
     errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
 
-  double correlation = 1;
+  double correlation;
   if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
     if(correlation <= -1 || correlation >= 1)
       errTxt += "The <one-year-correlation> of reservoir variable "+label+" should be in the interval (-1,1)\n";
   }
+  else
+    correlation = 1.0;
 
   while(parseEvolveReservoirVariable(root, storage, errTxt) == true);
 
@@ -2918,7 +2928,8 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     my_map reservoir_variable = modelSettings_->getReservoirVariable();
     my_map::iterator it = reservoir_variable.find(variable);
     if(it != reservoir_variable.end()) {
-      storage = it->second;
+      std::vector<DistributionWithTrendStorage *> store = it->second;
+      storage.push_back(store[0]); //Marit: Legg inn riktig element
       label   = variable;
       trendGiven++;
     }

@@ -55,11 +55,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
 
   int n_constituents = static_cast<int>(constituent_label.size());
 
-  std::vector<double> alpha(n_constituents);
-  for(int i=0; i<n_constituents; i++) {
-    alpha[i] = constituent_volume_fraction[0][i]->GetOneYearCorrelation();
-  }
-
   std::vector<int> n_vintages(n_constituents);
   for(int i=0; i<n_constituents; i++)
     n_vintages[i] = static_cast<int>(constituent_volume_fraction[i].size());
@@ -88,6 +83,14 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
     }
 
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+  }
+
+  std::vector<double> alpha(n_constituents);
+  for(int i=0; i<n_constituents; i++) {
+    if(constituent_volume_fraction[i][0] != NULL)
+      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i] = 1;
   }
 
   std::vector<DistributionsRock *> distributions_rock(n_constituents);
@@ -595,7 +598,10 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
     alpha[i] = inclusion_aspect_ratio_[i][0]->GetOneYearCorrelation();
 
   for(int i=0; i<n_constituents; i++) {
-    alpha[i+n_inclusions] = volume_fractions[0][i]->GetOneYearCorrelation();
+    if(volume_fractions[i][0] != NULL)
+      alpha[i+n_inclusions] = volume_fractions[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i+n_inclusions] = 1;
   }
 
   std::vector<int> n_vintages_aspect(n_constituents);

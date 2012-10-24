@@ -39,7 +39,10 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
 
   std::vector<double> alpha(n_constituents);
   for(int i=0; i<n_constituents; i++) {
-    alpha[i] = constituent_volume_fraction[0][i]->GetOneYearCorrelation();
+    if(constituent_volume_fraction[i][0] != NULL)
+      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i] = 1;
   }
 
   std::vector<int> n_vintages(n_constituents);
@@ -60,7 +63,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
   //Marit: Denne skal også utvikles etterhvert
   std::vector<DistributionsSolid *> distr_solid(n_constituents, NULL);
   for (int s = 0; s < n_constituents; s++)
-      distr_solid[s] = ReadSolid(constituent_label[s], path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+    distr_solid[s] = ReadSolid(constituent_label[s], path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
 
 
   for(int i=0; i<max_vintage; i++) {
@@ -407,16 +410,6 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   for(int i=0; i<n_inclusions; i++)
     volume_fractions[i+1] = inclusion_volume_fraction_[i];
 
-  // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
-  std::vector<double> alpha(n_inclusions + n_constituents);
-
-  for(int i=0; i<n_inclusions; i++)
-    alpha[i] = inclusion_aspect_ratio_[i][0]->GetOneYearCorrelation();
-
-  for(int i=0; i<n_constituents; i++) {
-    alpha[i+n_inclusions] = volume_fractions[0][i]->GetOneYearCorrelation();
-  }
-
   std::vector<int> n_vintages_aspect(n_constituents);
   for(int i=0; i<n_inclusions; i++)
     n_vintages_aspect[i] = static_cast<int>(inclusion_aspect_ratio_[i].size());
@@ -477,6 +470,22 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
 
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
 
+  }
+
+  // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
+  std::vector<double> alpha(n_inclusions + n_constituents);
+
+  for(int i=0; i<n_inclusions; i++)
+    alpha[i] = inclusion_aspect_ratio_[i][0]->GetOneYearCorrelation();
+
+  for(int i=0; i<n_constituents; i++) {
+    if(volume_fractions[0][i] != NULL)
+      alpha[i+n_inclusions] = volume_fractions[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i+n_inclusions] = 1;
+  }
+
+  for(int i=0; i<max_vintage; i++) {
     if (errTxt == "")
       final_dist_solid[i] = new DistributionsSolidDEM(final_distr_solid,
                                                       final_distr_solid_inc,
