@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include "lib/systemcall.h"
 #include "nrlib/iotools/logkit.hpp"
 

@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <stdio.h>

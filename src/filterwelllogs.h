@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef FILTERWELLLOGS_H
 #define FILTERWELLLOGS_H
 #include "fftw.h"

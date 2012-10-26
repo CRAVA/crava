@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 
 #ifndef KRIGINGDATA2D_H
 #define KRIGINGDATA2D_H
