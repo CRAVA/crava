@@ -53,6 +53,22 @@ public:
                                      int                        rnt,
                                      int                        cmt,
                                      int                        rmt);
+
+  double               InterpolateTrilinear(double  x_min,
+                                   double           x_max,
+                                   double           y_min,
+                                   double           y_max,
+                                   double           z_min,
+                                   double           z_max,
+                                   double           x,
+                                   double           y,
+                                   double           z);
+
+ /*double               InterpolateBilinear(double x_min,
+                                           double x_max,
+                                           double z_min,
+                                           double z_max);*/
+
   void                 interpolateGridValues(std::vector<float> & grid_trace,
                                              float                z0_grid,
                                              float                dz_grid,

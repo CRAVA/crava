@@ -414,6 +414,78 @@ FFTGrid::resampleTrace(const std::vector<float> & data_trace,
   }
 }
 
+
+// Trilinear interpolation
+double FFTGrid::InterpolateTrilinear(double x_min,
+                                     double x_max,
+                                     double y_min,
+                                     double y_max,
+                                     double z_min,
+                                     double z_max,
+                                     double x,
+                                     double y,
+                                     double z)
+{
+  int i1,j1,k1,i2,j2,k2;
+
+  double dx = (x_max - x_min)/nx_;
+  double dy = (y_max - y_min)/ny_;
+  double dz = (z_max - z_min)/nz_;
+
+  // If values are outside definition area return MISSING
+  if(x < x_min || x > x_max || y < y_min || y > y_max  || z<z_min || z> z_max){
+    return RMISSING;
+  // Can only interpolate from x_min+dx/2 to x_max-dx/2 etc.
+  } /*else if (x<x_min+dx/2 || x>x_max-dx/2 || y<y_min+dy/2 || y>y_max-dy/2 || z<z_min+dz/2 || z>z_max-dz/2 ){
+    return 0;
+  }*/
+  else{
+    // i1,j1,k1 can take values in the interval [0,nx],[0,ny],[0,nz]
+    i1 = static_cast<int>(floor((x-x_min-dx/2)/dx));
+    j1 = static_cast<int>(floor((y-y_min-dy/2)/dy));
+    k1 = static_cast<int>(floor((z-z_min-dz/2)/dz));
+    // i2,j2,k2 can take values in the interval [1,nx+1],[1,ny+1],[1,nz+1]
+    i2 = i1+1;
+    j2 = j1+1;
+    k2 = k1+1;
+  }
+  // TRILINEAR INTERPOLATION
+  double wi = (x - i1*dx-x_min-dx/2)/dx;
+  double wj = (y - j1*dy-y_min-dy/2)/dy;
+  double wk = (z - k1*dz-z_min-dz/2)/dz;
+
+
+  double *value = new double[8];
+
+
+  value[0] = std::max<double>(0,this->getRealValue(i1,j1,k1));
+  value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
+  value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
+  value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+  value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
+  value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+  value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+  value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+
+  //float value=0;
+  double returnvalue = 0;
+  returnvalue += (1.0f-wi)*(1.0f-wj)*(1.0f-wk)*value[0];
+  returnvalue += (1.0f-wi)*(1.0f-wj)*(     wk)*value[1];
+  returnvalue += (1.0f-wi)*(     wj)*(1.0f-wk)*value[2];
+  returnvalue += (1.0f-wi)*(     wj)*(     wk)*value[3];
+  returnvalue += (     wi)*(1.0f-wj)*(1.0f-wk)*value[4];
+  returnvalue += (     wi)*(1.0f-wj)*(     wk)*value[5];
+  returnvalue += (     wi)*(     wj)*(1.0f-wk)*value[6];
+  returnvalue += (     wi)*(     wj)*(     wk)*value[7];
+
+  return returnvalue;
+}
+
+/*double        FFTGrid::InterpolateBilinear(double x_min,
+                                           double x_max,
+                                           double z_min,
+                                           double z_max);*/
+
 void
 FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
                                float                z0_grid,

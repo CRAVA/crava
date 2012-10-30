@@ -817,6 +817,22 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\posteriorelasticpdf.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf2d.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf3d.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf4d.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\program.cpp"
 					>
 				</File>
@@ -6826,6 +6842,22 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\posteriorelasticpdf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf2d.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf3d.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\posteriorelasticpdf4d.h"
+					>
+				</File>
+				<File
 					RelativePath=".\src\program.h"
 					>
 				</File>
@@ -7101,11 +7133,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
