@@ -33,8 +33,6 @@ public:
                                                               const std::vector<double> & trend,
                                                               const Rock                * sample) const;
 
-  virtual Pdf3D                                * GeneratePdf(void) const; // Returns NULL.
-
   virtual bool                                   HasDistribution() const;
 
   virtual std::vector<bool>                      HasTrend() const;

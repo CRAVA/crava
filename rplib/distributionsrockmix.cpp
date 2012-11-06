@@ -110,13 +110,6 @@ DistributionsRockMixOfRock::GetCovariance(const std::vector<double> & /*trend_pa
   return(dummy);
 }
 
-Pdf3D *
-DistributionsRockMixOfRock::GeneratePdf() const
-{
-  Pdf3D * dummy = NULL;
-  return(dummy);
-}
-
 bool
 DistributionsRockMixOfRock::HasDistribution() const
 {
@@ -309,13 +302,6 @@ NRLib::Grid2D<double>
 DistributionsRockMixOfSolidAndFluid::GetCovariance(const std::vector<double> & /*trend_params*/) const
 {
   NRLib::Grid2D<double> dummy;
-  return(dummy);
-}
-
-Pdf3D *
-DistributionsRockMixOfSolidAndFluid::GeneratePdf() const
-{
-  Pdf3D * dummy = NULL;
   return(dummy);
 }
 

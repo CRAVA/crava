@@ -2,7 +2,6 @@
 #define DISTRIBUTIONSROCK_H
 
 #include "rplib/rock.h"
-#include "rplib/pdf3d.h"
 #include <nrlib/flens/nrlib_flens.hpp>
 #include "nrlib/grid/grid2d.hpp"
 
@@ -27,8 +26,6 @@ public:
 
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock)                                   const;
-
-  virtual Pdf3D                       * GeneratePdf(void)                                                 const = 0;
 
   virtual bool                          HasDistribution()                                                 const = 0;
 

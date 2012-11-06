@@ -80,16 +80,6 @@ public:
              bool                                                 relative = false);
 
 
-  FaciesProb(FFTGrid                                           * alpha,
-             FFTGrid                                           * beta,
-             FFTGrid                                           * rho,
-             int                                                 nFac,
-             float                                               p_undef,
-             FFTGrid                                           * seismicLH,
-             ModelGeneral                                      * modelGeneral,
-             const std::map<std::string, DistributionsRock *>    rock_distributions,
-             const CravaTrend                                  & trend_cubes);
-
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
@@ -269,15 +259,6 @@ private:
                                              std::vector<FFTGrid *>       & priorFaciesCubes,
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
-
-  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                                          * alphagrid,
-                                                                 FFTGrid                                          * betagrid,
-                                                                 FFTGrid                                          * rhogrid,
-                                                                 float                                              p_undef,
-                                                                 FFTGrid                                          * seismicLH,
-                                                                 ModelGeneral                                     * modelGeneral,
-                                                                 const std::map<std::string, DistributionsRock *> & rock_distributions,
-                                                                 const CravaTrend                                 & trend_cubes);
 
   // This function draws random facies length following a geometric distribution with mean 10.0 ms, i.e. dz/10.0 bins
   void                   GenerateSyntWellData(std::vector<std::vector<float> >                        & syntWellData,

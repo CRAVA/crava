@@ -31,8 +31,6 @@ public:
 
   virtual NRLib::Grid2D<double>      GetCovariance(const std::vector<double> & trend_params)  const;
 
-  virtual Pdf3D                    * GeneratePdf() const;
-
   virtual bool                       HasDistribution() const;
 
   virtual std::vector<bool>          HasTrend() const;

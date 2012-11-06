@@ -59,13 +59,6 @@ DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) c
   return new_rock;
 }
 
-Pdf3D *
-DistributionsRockDEM::GeneratePdf(void) const
-{
-  Pdf3D * pdf3D = NULL;
-  return pdf3D;
-}
-
 bool
 DistributionsRockDEM::HasDistribution() const
 {

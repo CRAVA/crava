@@ -1,6 +1,5 @@
 #include "rplib/distributionsrocktabulatedvelocity.h"
 #include "rplib/rocktabulatedvelocity.h"
-#include "rplib/pdf3d.h"
 #include "rplib/demmodelling.h"
 
 #include "nrlib/grid/grid2d.hpp"
@@ -98,13 +97,6 @@ NRLib::Grid2D<double>
 DistributionsRockTabulatedVelocity::GetCovariance(const std::vector<double> & /*trend_params*/) const
 {
   NRLib::Grid2D<double> dummy;
-  return(dummy);
-}
-
-Pdf3D *
-DistributionsRockTabulatedVelocity::GeneratePdf() const
-{
-  Pdf3D * dummy = NULL;
   return(dummy);
 }
 

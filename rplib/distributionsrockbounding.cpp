@@ -113,13 +113,6 @@ DistributionsRockBounding::GetCovariance(const std::vector<double> & /*trend_par
   return(dummy);
 }
 
-Pdf3D *
-DistributionsRockBounding::GeneratePdf() const
-{
-  Pdf3D * dummy = NULL;
-  return(dummy);
-}
-
 bool
 DistributionsRockBounding::HasDistribution() const
 {
