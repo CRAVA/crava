@@ -12,8 +12,7 @@
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 
-#include "rplib/distributionsrocktabulatedvelocity.h"
-#include "rplib/distributionsrocktabulatedmodulus.h"
+#include "rplib/distributionsrocktabulated.h"
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/distributionsrockmix.h"
 #include "rplib/distributionsrockdem.h"
@@ -258,13 +257,14 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const std::string       
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsRock * rock = new DistributionsRockTabulatedVelocity(vp_dist_with_trend[i],
-                                                                      vs_dist_with_trend[i],
-                                                                      density_dist_with_trend[i],
-                                                                      correlation_vp_vs_,
-                                                                      correlation_vp_density_,
-                                                                      correlation_vs_density_,
-                                                                      alpha);
+    DistributionsRock * rock = new DistributionsRockTabulated(vp_dist_with_trend[i],
+                                                              vs_dist_with_trend[i],
+                                                              density_dist_with_trend[i],
+                                                              correlation_vp_vs_,
+                                                              correlation_vp_density_,
+                                                              correlation_vs_density_,
+                                                              DEMTools::Velocity,
+                                                              alpha);
 
     dist_rock[i] = rock;
 
@@ -348,13 +348,14 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string        
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsRock * rock = new DistributionsRockTabulatedModulus(bulk_dist_with_trend[i],
-                                                                     shear_dist_with_trend[i],
-                                                                     density_dist_with_trend[i],
-                                                                     correlation_bulk_shear_,
-                                                                     correlation_bulk_density_,
-                                                                     correlation_shear_density_,
-                                                                     alpha);
+    DistributionsRock * rock = new DistributionsRockTabulated(bulk_dist_with_trend[i],
+                                                              shear_dist_with_trend[i],
+                                                              density_dist_with_trend[i],
+                                                              correlation_bulk_shear_,
+                                                              correlation_bulk_density_,
+                                                              correlation_shear_density_,
+                                                              DEMTools::Modulus,
+                                                              alpha);
 
     dist_rock[i] = rock;
   }

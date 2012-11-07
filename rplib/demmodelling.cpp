@@ -7,7 +7,7 @@
 #include "rplib/solidmix.h"
 #include "rplib/fluidmix.h"
 #include "rplib/rockdem.h"
-#include "rplib/distributionssolidtabulatedmodulus.h"
+#include "rplib/distributionssolidtabulated.h"
 #include "rplib/distributionsfluidbatzlewang.h"
 #include "rplib/distributionsco2.h"
 #include "rplib/distributionsrockdem.h"
@@ -811,7 +811,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   DistributionWithTrend * distr_quartz_rho = new DeltaDistributionWithTrend(trend_quartz_rho, false);
 
   std::vector<double> dummy_alpha(3,1);
-  DistributionsSolid * distr_quartz = new DistributionsSolidTabulatedModulus(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0, dummy_alpha);
+  DistributionsSolid * distr_quartz = new DistributionsSolidTabulated(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0, DEMTools::Modulus, dummy_alpha);
 
   NRLib::Trend * trend_clay_k          = new NRLib::TrendConstant(21.0);
   DistributionWithTrend * distr_clay_k = new DeltaDistributionWithTrend(trend_clay_k, false);
@@ -822,7 +822,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_clay_rho          = new NRLib::TrendConstant(2.6);
   DistributionWithTrend * distr_clay_rho = new DeltaDistributionWithTrend(trend_clay_rho, false);
 
-  DistributionsSolid * distr_clay = new DistributionsSolidTabulatedModulus(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0, dummy_alpha);
+  DistributionsSolid * distr_clay = new DistributionsSolidTabulated(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0, DEMTools::Modulus, dummy_alpha);
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;

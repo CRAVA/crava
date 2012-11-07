@@ -5,12 +5,12 @@
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsfluid.h"
 #include "rplib/distributionsfluidstorage.h"
-#include "rplib/distributionsfluidtabulatedvelocity.h"
-#include "rplib/distributionsfluidtabulatedmodulus.h"
+#include "rplib/distributionsfluidtabulated.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsfluidbatzlewang.h"
 #include "rplib/distributionsco2.h"
+#include "rplib/demmodelling.h"
 
 
 DistributionsFluidStorage::DistributionsFluidStorage()
@@ -69,10 +69,11 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsFluid * fluid = new DistributionsFluidTabulatedVelocity(vp_dist_with_trend[i],
-                                                                         density_dist_with_trend[i],
-                                                                         correlation_vp_density_,
-                                                                         alpha);
+    DistributionsFluid * fluid = new DistributionsFluidTabulated(vp_dist_with_trend[i],
+                                                                 density_dist_with_trend[i],
+                                                                 correlation_vp_density_,
+                                                                 DEMTools::Velocity,
+                                                                 alpha);
 
     dist_fluid[i] = fluid;
 
@@ -130,10 +131,11 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsFluid * fluid = new DistributionsFluidTabulatedModulus(bulk_dist_with_trend[i],
-                                                                        density_dist_with_trend[i],
-                                                                        correlation_bulk_density_,
-                                                                        alpha);
+    DistributionsFluid * fluid = new DistributionsFluidTabulated(bulk_dist_with_trend[i],
+                                                                 density_dist_with_trend[i],
+                                                                 correlation_bulk_density_,
+                                                                 DEMTools::Modulus,
+                                                                 alpha);
 
     dist_fluid[i] = fluid;
 

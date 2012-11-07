@@ -6,13 +6,11 @@
 #include "rplib/deltadistributionwithtrend.h"
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionssolidstorage.h"
-#include "rplib/distributionssolidtabulatedvelocity.h"
+#include "rplib/distributionssolidtabulated.h"
 #include "rplib/distributionssoliddem.h"
 #include "rplib/distributionssolidmix.h"
 #include "rplib/distributionwithtrendstorage.h"
-
 #include "rplib/distributionsstoragekit.h"
-#include "rplib/distributionssolidtabulatedmodulus.h"
 
 
 DistributionsSolidStorage::DistributionsSolidStorage()
@@ -157,13 +155,14 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsSolid * solid = new DistributionsSolidTabulatedVelocity(vp_dist_with_trend[i],
-                                                                         vs_dist_with_trend[i],
-                                                                         density_dist_with_trend[i],
-                                                                         correlation_vp_vs_,
-                                                                         correlation_vp_density_,
-                                                                         correlation_vs_density_,
-                                                                         alpha);
+    DistributionsSolid * solid = new DistributionsSolidTabulated(vp_dist_with_trend[i],
+                                                                 vs_dist_with_trend[i],
+                                                                 density_dist_with_trend[i],
+                                                                 correlation_vp_vs_,
+                                                                 correlation_vp_density_,
+                                                                 correlation_vs_density_,
+                                                                 DEMTools::Velocity,
+                                                                 alpha);
 
     dist_solid[i] = solid;
 
@@ -241,13 +240,14 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    DistributionsSolid * solid = new DistributionsSolidTabulatedModulus(bulk_dist_with_trend[i],
-                                                                        shear_dist_with_trend[i],
-                                                                        density_dist_with_trend[i],
-                                                                        correlation_bulk_shear_,
-                                                                        correlation_bulk_density_,
-                                                                        correlation_shear_density_,
-                                                                        alpha);
+    DistributionsSolid * solid = new DistributionsSolidTabulated(bulk_dist_with_trend[i],
+                                                                 shear_dist_with_trend[i],
+                                                                 density_dist_with_trend[i],
+                                                                 correlation_bulk_shear_,
+                                                                 correlation_bulk_density_,
+                                                                 correlation_shear_density_,
+                                                                 DEMTools::Modulus,
+                                                                 alpha);
 
     dist_solid[i] = solid;
   }
