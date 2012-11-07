@@ -6348,10 +6348,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\rplib\multinormalrock.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\rplib\rock.cpp"
 						>
 					</File>
@@ -7562,10 +7558,6 @@
 					</File>
 					<File
 						RelativePath=".\rplib\distributionsrocktabulatedvelocity.h"
-						>
-					</File>
-					<File
-						RelativePath=".\rplib\multinormalrock.h"
 						>
 					</File>
 					<File
