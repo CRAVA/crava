@@ -82,8 +82,8 @@ private:
   bool parseMineralModuli(TiXmlNode * node, std::string & moduli, std::string & errTxt);
   bool parseInclusion(TiXmlNode * node, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
-  bool parseReservoirVariable(TiXmlNode * node, std::string & errTxt);
-  bool parseEvolveReservoirVariable(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> evolveStorage, std::string & errTxt);
+  bool parseEvolve(TiXmlNode * node, std::string & errTxt);
+  bool parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & reservoir_variable, std::string & errTxt);
   bool parseGaussianWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
   bool parseBetaWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);

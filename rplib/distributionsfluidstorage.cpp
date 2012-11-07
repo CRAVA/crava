@@ -59,12 +59,12 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
   std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
 
   for(int i=0; i<max_vintage; i++) {
-    if(i <= n_vintages_vp)
+    if(i < n_vintages_vp)
       vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_density)
+    if(i < n_vintages_density)
       density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
@@ -120,12 +120,12 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
   std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
 
   for(int i=0; i<max_vintage; i++) {
-    if(i <= n_vintages_bulk)
+    if(i < n_vintages_bulk)
       bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_density)
+    if(i < n_vintages_density)
       density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
@@ -287,12 +287,12 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
   std::vector<DistributionWithTrend *> salinity_dist_with_trend(max_vintage, NULL);
 
   for(int i=0; i<max_vintage; i++) {
-    if(i <= n_vintages_pressure)
+    if(i < n_vintages_pressure)
       pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_temperature)
+    if(i < n_vintages_temperature)
       temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();

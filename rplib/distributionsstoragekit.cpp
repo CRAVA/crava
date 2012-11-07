@@ -33,7 +33,7 @@ void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_
   }
 
   if(n_missing == 0)
-    errTxt += "One of the volume frations must be unspecified in the rock physics models where elements with corresponding volume frations are given\n";
+    errTxt += "One of the volume fracions must be unspecified in the rock physics models where elements with corresponding volume frations are given\n";
   else if(n_missing > 1)
     errTxt += "All but one of the volume frations must be defined in the rock physics models where elements with corresponding volume frations are given\n";
 }

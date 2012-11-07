@@ -1677,12 +1677,14 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("rock");
   legalCommands.push_back("reservoir");
+  legalCommands.push_back("evolve");
   legalCommands.push_back("predefinitions");
+  legalCommands.push_back("rock");
   legalCommands.push_back("trend-cube");
 
   parseReservoir(root, errTxt);
+  while(parseEvolve(root, errTxt));
   parsePredefinitions(root, errTxt);
   std::string dummy;
   while(parseRock(root, dummy, errTxt));
@@ -1992,6 +1994,7 @@ XmlModelFile::parseReuss(TiXmlNode                                   * node,
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
     constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
   }
 
   if(constituent_label.size() < 2)
@@ -2041,6 +2044,7 @@ XmlModelFile::parseVoigt(TiXmlNode                                   * node,
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
     constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
   }
 
   if(constituent_label.size() < 2)
@@ -2090,6 +2094,7 @@ XmlModelFile::parseHill(TiXmlNode                                   * node,
   while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
     constituent_label.push_back(this_label);
     constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
   }
 
   if(constituent_label.size() < 2)
@@ -2148,7 +2153,7 @@ XmlModelFile::parseConstituent(TiXmlNode                                   * nod
 
   std::string volume_label = "";
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, volume_label, false, errTxt) == false)
-    volume_fraction[0] = NULL;
+    volume_fraction.push_back(NULL);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -2741,7 +2746,7 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("variable");
 
-  std::string                    label;
+  std::string label;
   std::vector<DistributionWithTrendStorage *> distributionWithTrend; //Deleted in ~Modelsettings
 
   while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, true, errTxt) == true) {
@@ -2756,54 +2761,67 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
-XmlModelFile::parseReservoirVariable(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("variable");
-
+  TiXmlNode * root = node->FirstChildElement("evolve");
   if(root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("label");
+  legalCommands.push_back("reservoir-variable");
   legalCommands.push_back("one-year-correlation");
-  legalCommands.push_back("evolve");
+  legalCommands.push_back("vintage");
 
-  std::string                                 label;
-  std::vector<DistributionWithTrendStorage *> storage; //Deleted in ~Modelsettings
+  std::string variable;
+  if(parseValue(root, "reservoir-variable", variable, errTxt) == false)
+    errTxt += "The keyword <reservoir-variable> telling which variable to be evolved needs to be given in evlove.\n";
 
-  if(parseDistributionWithTrend(node, "variable", storage, label, true, errTxt) == true) { //Marit: Triks som må fikses
-    if(label == "")
-      errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
+  typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
+  my_map reservoir_variable = modelSettings_->getReservoirVariable();
+  my_map::iterator it = reservoir_variable.find(variable);
+
+  std::vector<DistributionWithTrendStorage *> evolving_variable;
+
+  if(it != reservoir_variable.end())
+    evolving_variable = it->second;
+  else {
+    errTxt += "The variable "+variable+" used in <evolve> is not defined in <reservoir>.\n";
+    errTxt += "  Note that <reservoir> needs to be given before <evolve> in <rock-physics>\n";
   }
-  else
-    errTxt += "All reservoir variables need to be defined using <label> as the first keyword\n";
+
+  while(parseEvolveVintage(root, evolving_variable, errTxt) == true);
 
   double correlation;
   if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
     if(correlation <= -1 || correlation >= 1)
-      errTxt += "The <one-year-correlation> of reservoir variable "+label+" should be in the interval (-1,1)\n";
+      errTxt += "The <one-year-correlation> of the <reservoir-variable> should be in the interval (-1,1) in <evolve>\n";
   }
   else
     correlation = 1.0;
 
-  while(parseEvolveReservoirVariable(root, storage, errTxt) == true);
 
-  storage[0]->SetOneYearCorrelation(correlation); //The one-year-correlation is the same for all elements in the vector; sufficient to give it for the first element
+  for(size_t i=0; i<evolving_variable.size(); i++)
+    evolving_variable[i]->SetOneYearCorrelation(correlation);
 
-  size_t storage_size = storage.size();
-  std::vector<int> vintage_number(storage_size);
-  for(size_t i=0; i<storage_size; i++)
-    vintage_number[i] = storage[i]->GetVintageNumber();
+  modelSettings_->addReservoirVariable(variable, evolving_variable); //Replace the variable
+
+
+  // Check consistency
+  int evolve_size = static_cast<int>(evolving_variable.size());
+
+  std::vector<int> vintage_number(evolve_size);
+  for(int i=0; i<evolve_size; i++)
+    vintage_number[i] = evolving_variable[i]->GetVintageNumber();
 
   std::string tmpTxt = "";
-  if(storage_size > 1) {
+  if(evolve_size > 1) {
     if(vintage_number[0] < 1)
-      tmpTxt += "The vintage numbers need to be larger than zero in <reservoir><variable> in the rock physics model\n";
+      tmpTxt += "The vintage numbers need to be larger than zero in <evolve><vintage><vintage-number> in the rock physics model\n";
 
     int compare = vintage_number[0];
-    for(size_t i=1; i<storage_size; i++) {
+    for(int i=1; i<evolve_size; i++) {
       if(vintage_number[i] <= compare) {
-        tmpTxt += "The vintage numbers need to be given in ascending order in <reservoir><variable> in the rock physics model\n";
+        tmpTxt += "The vintage numbers need to be given in ascending order in <evolve><vintage><vintage-number> in the rock physics model\n";
         break;
       }
       else
@@ -2812,42 +2830,45 @@ XmlModelFile::parseReservoirVariable(TiXmlNode * node, std::string & errTxt)
   }
 
   if(tmpTxt != "")
-    tmpTxt += "Remember that the first vintage given under <reservoir><variable> is given vintage number 1\n";
+    tmpTxt += "Remember that the first vintage of the reservoir variable given under <evolve> is given vintage number 1\n";
 
   errTxt += tmpTxt;
 
-  modelSettings_->addReservoirVariable(label, storage);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
+
 bool
-XmlModelFile::parseEvolveReservoirVariable(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> evolveStorage, std::string & errTxt)
+XmlModelFile::parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & reservoir_variable, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("evolve");
+  TiXmlNode * root = node->FirstChildElement("vintage");
 
   if(root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("distribution");
   legalCommands.push_back("vintage-number");
 
-  std::string                    label;
+  std::string dummy_label;
+  if(parseDistributionWithTrend(root, "distribution", reservoir_variable, dummy_label, true, errTxt) == false)
+    errTxt += "<distribution> needs to be given in <evolve><vintage>.\n";
 
-  if(parseDistributionWithTrend(root, "evolve", evolveStorage, label, true, errTxt) == false)
-    errTxt += "The <evolve> keyword needs to be followed by a distribution\n";
+  size_t variable_size = reservoir_variable.size();
 
   int vintage_number;
   if(parseValue(root, "vintage-number", vintage_number, errTxt) == false)
-    errTxt += "A unique integer vintage number needs to be defined for each <evolve> in <reservoir> \n";
+    errTxt += "A unique integer vintage number needs to be defined for each <evolve><vintage>\n";
 
-  size_t size = evolveStorage.size();
-  evolveStorage[size]->SetVintageNumber(vintage_number);
+  reservoir_variable[variable_size-1]->SetVintageNumber(vintage_number);
+
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
+
 
 bool
 XmlModelFile::parseDistributionWithTrend(TiXmlNode                                   * node,
@@ -2929,13 +2950,14 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     my_map::iterator it = reservoir_variable.find(variable);
     if(it != reservoir_variable.end()) {
       std::vector<DistributionWithTrendStorage *> store = it->second;
-      storage.push_back(store[0]); //Marit: Legg inn riktig element
-      label   = variable;
+      for(size_t i=0; i<store.size(); i++)
+        storage.push_back(store[i]);
+      label = variable;
       trendGiven++;
     }
     else {
-      errTxt += "The variable "+variable+" is not defined in <reservoir-variable>.\n";
-      errTxt += "  <reservoir-variable> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
+      errTxt += "The variable "+variable+" is not defined in <reservoir>.\n";
+      errTxt += "  Note that <reservoir> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
     }
   }
 

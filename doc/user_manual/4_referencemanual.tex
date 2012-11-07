@@ -2210,21 +2210,42 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{one-year-correlation}}\newkw{one-year-correlation}
+\subsubsection{\hbracket{evolve}}\newkw{evolve}
  \slist
-   \item \Description 
-   \item \Argument
-   \item \Default 1
- \elist
-
-\subparagraph{\hbracket{evolve}}\newkw{evolve}
- \slist
-   \item \Description Repeated
-   \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
+   \item \Description Repeated command, one for each reservoir variable that is to be evolved. <evolve> needs to come after \kw{reservoir}, and before \kw{predefinitions}
+   \item \Argument 
    \item \Default 
  \elist
 
-\subsubparagraph{\hbracket{vintage-number}}\newkw{vintage-number}
+\paragraph{\hbracket{reservoir-variable}}\rnewkw{reservoir-variable}{reservoir-variable-evolve}
+ \slist
+   \item \Description Name of the reservoir variable that is to be evolved. The variable needs to be specified in \kw{reservoir}.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{one-year-correlation}}\newkw{one-year-correlation}
+ \slist
+   \item \Description The correlation between the reservoir variables at two following years
+   \item \Argument Value
+   \item \Default 1
+ \elist
+
+\paragraph{\hbracket{vintage}}\rnewkw{vintage}{vintage-evolve}
+ \slist
+   \item \Description Repeated command, one for each vintage of the reservoir variable that is to be evolved. Whenever a reservoir variable is being evolved, it needs to be given for all vintages.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{distribution}}\rnewkw{distribution}{distribution-vintage}
+ \slist
+   \item \Description Distribution of the vintage variable. May also be given by a value or trend. Note that the keyword \kw{distribution} is used even though a value or trend is used.
+  \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{vintage-number}}\newkw{vintage-number}
  \slist
    \item \Description Unique number of the vintage. Must be given in ascending order, where the first variable given under \kw{variable} has number 1
    \item \Argument Integer value

@@ -51,8 +51,8 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
 
   int max_vintage = 0;
   for(int i=0; i<n_constituents; i++) {
-    if(static_cast<int>(constituent_volume_fraction[i].size()) > max_vintage)
-      max_vintage = static_cast<int>(constituent_volume_fraction[i].size());
+    if(n_vintages[i] > max_vintage)
+      max_vintage = n_vintages[i];
   }
 
   std::vector<DistributionsSolid *>                  final_dist_solid(max_vintage, NULL);
@@ -68,14 +68,16 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
 
   for(int i=0; i<max_vintage; i++) {
 
-    for (int s = 0; s < n_constituents; s++) {
+    for (int s=0; s<n_constituents; s++) {
 
-      if(i <= n_vintages[s]) {
+      if(i < n_vintages[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
           all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }
-      else
-        all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+      else {
+        if(all_volume_fractions[i-1][s] != NULL)
+          all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+      }
     }
 
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
@@ -140,17 +142,17 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
   std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
 
   for(int i=0; i<max_vintage; i++) {
-    if(i <= n_vintages_vp)
+    if(i < n_vintages_vp)
       vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_vs)
+    if(i < n_vintages_vs)
       vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_density)
+    if(i < n_vintages_density)
       density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
@@ -224,17 +226,17 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
   std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
 
   for(int i=0; i<max_vintage; i++) {
-    if(i <= n_vintages_bulk)
+    if(i < n_vintages_bulk)
       bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_shear)
+    if(i < n_vintages_shear)
       shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
-    if(i <= n_vintages_density)
+    if(i < n_vintages_density)
       density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
@@ -450,7 +452,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
 
     for (int s = 0; s < n_inclusions; s++) {
 
-      if(i <= n_vintages_aspect[s]) {
+      if(i < n_vintages_aspect[s]) {
         if(inclusion_aspect_ratio_[s][i] != NULL)
           all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }
@@ -460,7 +462,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
 
     for (int s = 0; s < n_constituents; s++) {
 
-      if(i <= n_vintages_volume[s]) {
+      if(i < n_vintages_volume[s]) {
         if(volume_fractions[s][i] != NULL)
           all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }

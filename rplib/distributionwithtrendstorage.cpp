@@ -28,7 +28,9 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
                                                                      bool   is_shared)
-: is_shared_(is_shared)
+: is_shared_(is_shared),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
   //Use this constructor when mean_ is a double
 
@@ -38,7 +40,9 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                      bool                        is_shared)
-: is_shared_(is_shared)
+: is_shared_(is_shared),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
   mean_                    = mean;
   distribution_with_trend_ = NULL;
@@ -86,7 +90,9 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                        const NRLib::TrendStorage * variance,
                                                                        bool                        is_shared)
-: is_shared_(is_shared)
+: is_shared_(is_shared),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
   mean_                     = mean;
   variance_                 = variance;
@@ -135,7 +141,9 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                    const NRLib::TrendStorage * variance,
                                                                    bool                        is_shared)
-: is_shared_(is_shared)
+: is_shared_(is_shared),
+  vintage_number_(1),
+  one_year_correlation_(1.0)
 {
   mean_                     = mean;
   variance_                 = variance;
