@@ -1193,23 +1193,29 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 void DEMTools::UpdateU(std::vector<double> & u,
                   double                corr_param,
                   bool                  param_is_time,
-                  double                alpha)
+                  std::vector<double>   alpha)
 
 {
-  double corr = 0.0;
+  std::vector<double> corr(u.size());
   std::vector<double> normal0(u.size()), normal1(u.size());
   NRLib::Normal std(0,1);
+  std::vector<double> eps(u.size());
 
   if(param_is_time)
-    corr = pow(alpha,corr_param);
-  else
-    corr = corr_param;
+    assert(u.size()==alpha.size());
 
-  double eps = sqrt(1-pow(corr,2));
+  for(size_t i=0; i<u.size(); i++){
+    if(param_is_time)
+      corr[i] = pow(alpha[i],corr_param);
+    else
+      corr[i] = corr_param;
+
+    eps[i] = sqrt(1-pow(corr[i],2));
+  }
 
   for(size_t i=0; i<u.size(); i++){
     normal0[i] = std.Quantile01(u[i]);
-    normal1[i] = corr*normal0[i] + eps*NRLib::Random::Unif01();
+    normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Unif01();
     u[i] = std.Cdf(normal1[i]);
   }
 }

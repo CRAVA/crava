@@ -166,7 +166,7 @@ DistributionsRockBounding::UpdateSample(double                      corr_param,
                                         const Rock                * sample) const
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time, sample->GetAlpha());
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
   assert(typeid(sample) == typeid(RockBounding));
   const RockBounding * core_sample = dynamic_cast<const RockBounding *>(sample);

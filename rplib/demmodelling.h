@@ -93,7 +93,7 @@ namespace DEMTools {
   void UpdateU(std::vector<double> & u,
                double                corr_param,
                bool                  param_is_time,
-               double                alpha=0);
+               std::vector<double>   alpha = std::vector<double>(0));
 }
 #endif
 

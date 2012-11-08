@@ -30,14 +30,12 @@ public:
 
   const std::vector<double>       & GetU()                                                        const { return u_; }
 
-  const double                      GetAlpha()                                                    const { return alpha_; }
 
 protected:
   double                            vp_;
   double                            vs_;
   double                            rho_;
   std::vector<double>               u_;
-  double                            alpha_;
 
 };
 
