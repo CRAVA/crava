@@ -30,8 +30,6 @@ public:
                                              const std::vector<double> & trend,
                                              const Solid               * sample)            const = 0;
 
-  const std::vector<double>     GetAlpha()                                                  const { return alpha_; }
-
 protected:
   std::vector< double >         alpha_;
 };

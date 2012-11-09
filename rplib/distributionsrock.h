@@ -47,8 +47,6 @@ public:
                                                      const std::vector<double> & trend,
                                                      const Rock                * sample)    const = 0;
 
-  const std::vector<double>             GetAlpha()                                          const { return alpha_; }
-
 protected:
                                         //This function should be called last step in constructor
                                         //for all children classes.

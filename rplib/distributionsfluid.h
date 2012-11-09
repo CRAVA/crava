@@ -30,8 +30,6 @@ public:
   Fluid *                       EvolveSample(double         time,
                                              const Fluid &  fluid)                            const;
 
-  const std::vector<double>     GetAlpha()                                                    const { return alpha_; }
-
 protected:
   std::vector< double >         alpha_;
 
