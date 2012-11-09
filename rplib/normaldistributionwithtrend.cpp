@@ -20,7 +20,6 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 {
 
   gaussian_ = new NRLib::Normal();
-  uniform_  = new NRLib::Uniform();
 
   use_trend_cube_.resize(2);
   for(int i=0; i<2; i++)
@@ -33,7 +32,6 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
 : gaussian_(dist.gaussian_),
-  uniform_(dist.uniform_),
   mean_(dist.mean_),
   var_(dist.var_),
   is_shared_(dist.is_shared_),
@@ -44,7 +42,6 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributio
 NormalDistributionWithTrend::~NormalDistributionWithTrend()
 {
   delete gaussian_;
-  delete uniform_;
   delete mean_;
   delete var_;
 }
@@ -53,7 +50,7 @@ double
 NormalDistributionWithTrend::ReSample(double s1, double s2) const
 {
 
-  double u = uniform_->Draw();
+  double u = NRLib::Random::Unif01();
 
   double probability = GetQuantileValue(u, s1, s2);
 

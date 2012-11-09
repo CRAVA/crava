@@ -21,8 +21,6 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
   var_(var),
   is_shared_(shared)
 {
-  uniform_distribution_ = new NRLib::Uniform();
-
   use_trend_cube_.resize(2);
   for(int i=0; i<2; i++)
     use_trend_cube_[i] = false;
@@ -97,7 +95,6 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithT
 : beta_distribution_(dist.beta_distribution_),
   mean_(dist.mean_),
   var_(dist.var_),
-  uniform_distribution_(dist.uniform_distribution_),
   is_shared_(dist.is_shared_),
   use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
@@ -117,8 +114,6 @@ BetaDistributionWithTrend::~BetaDistributionWithTrend()
   }
   delete beta_distribution_;
 
-  delete uniform_distribution_;
-
   delete mean_;
   delete var_;
 }
@@ -126,7 +121,7 @@ BetaDistributionWithTrend::~BetaDistributionWithTrend()
 double
 BetaDistributionWithTrend::ReSample(double s1, double s2) const
 {
-  double uniform     = uniform_distribution_->Draw();
+  double uniform     = NRLib::Random::Unif01();
   double probability = GetQuantileValue(uniform, s1, s2);
 
   return(probability);

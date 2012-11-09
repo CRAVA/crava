@@ -36,7 +36,6 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
   NRLib::Grid2D<NRLib::Distribution<double> *>              * beta_distribution_;
   const NRLib::Trend                                        * mean_;
   const NRLib::Trend                                        * var_;
-  NRLib::Distribution<double>                               * uniform_distribution_;
   const bool                                                  is_shared_;       // Use is_shared_ like in DistributionWithTrendStorage to know if we have a reservoir variable.
   std::vector<bool>                                           use_trend_cube_;   // First element true if first trend cube is used, second true if second is used, and both true if both are used
   int                                                         ni_;
