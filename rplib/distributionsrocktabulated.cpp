@@ -79,9 +79,9 @@ DistributionsRockTabulated::GetSample(const std::vector<double> & u,
 
   sample = tabulated_->GetQuantileValues(u, trend_params[0], trend_params[1]);
 
-  double sample_elastic1      = sample[0];
-  double sample_elastic2      = sample[1];
-  double sample_density = sample[2];
+  double sample_elastic1 = sample[0];
+  double sample_elastic2 = sample[1];
+  double sample_density  = sample[2];
 
   double sample_vp;
   double sample_vs;

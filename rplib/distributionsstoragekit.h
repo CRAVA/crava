@@ -29,37 +29,37 @@ void FindMixTypesForRock(std::vector<std::string> constituent_label,
                          std::vector<int> & constituent_type,
                          std::string & tmpErrTxt);
 
-DistributionsRock *
-ReadRock(const std::string                                          & target_rock,
-         const std::string                                          & path,
-         const std::vector<std::string>                             & trend_cube_parameters,
-         const std::vector<std::vector<double> >                    & trend_cube_sampling,
-         const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
-         const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
-         const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
-         const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-         std::map<std::string, DistributionsRock *>                 & rock_distribution,
-         std::map<std::string, DistributionsSolid *>                & solid_distribution,
-         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
-         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-         std::string                                                & errTxt);
+std::vector<DistributionsRock *>
+ReadRock(const std::string                                           & target_rock,
+         const std::string                                           & path,
+         const std::vector<std::string>                              & trend_cube_parameters,
+         const std::vector<std::vector<double> >                     & trend_cube_sampling,
+         const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
+         const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
+         const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
+         const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+         std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
+         std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
+         std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
+         std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
+         std::string                                                 & errTxt);
 
-DistributionsSolid *
+std::vector<DistributionsSolid *>
 ReadSolid(const std::string                                          & target_solid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
-          std::map<std::string, DistributionsSolid *>                & solid_distribution,
+          std::map<std::string, std::vector<DistributionsSolid *> >  & solid_distribution,
           std::string                                                & errTxt);
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 ReadFluid(const std::string                                          & target_fluid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+          std::map<std::string, std::vector<DistributionsFluid *> >  & fluid_distribution,
           std::string                                                & errTxt);
 
 void

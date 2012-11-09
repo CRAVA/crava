@@ -12,10 +12,10 @@ public:
 
   virtual ~DistributionsDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & /*path*/,
-                                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                              std::string                             & /*errTxt*/)                    const = 0;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                                           const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                                           const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                                           std::string                             & /*errTxt*/)                    const = 0;
 };
 
 //----------------------------------------------------------------------------------//
@@ -33,10 +33,10 @@ public:
 
   virtual ~TabulatedVelocityDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::vector<DistributionWithTrendStorage *> vp_;
@@ -63,10 +63,10 @@ public:
 
   virtual ~TabulatedModulusDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
@@ -89,10 +89,10 @@ public:
 
   virtual ~ReussDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::vector<std::string>                                    constituent_label_;
@@ -111,10 +111,10 @@ public:
 
   virtual ~VoigtDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::vector<std::string>                                    constituent_label_;
@@ -133,10 +133,10 @@ public:
 
   virtual ~HillDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::vector<std::string >                                   constituent_label_;
@@ -159,10 +159,10 @@ public:
 
   virtual ~DEMDryRockStorage();
 
-  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
-                                                              const std::vector<std::string>          & trend_cube_parameters,
-                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                              std::string                             & errTxt) const;
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const std::string                       & path,
+                                                                           const std::vector<std::string>          & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                           std::string                             & errTxt) const;
 
 private:
   std::string                                               host_label_;

@@ -87,25 +87,25 @@ void FindMixTypesForRock(std::vector<std::string>  constituent_label,
 }
 
 
-DistributionsRock *
-ReadRock(const std::string                                          & target_rock,
-         const std::string                                          & path,
-         const std::vector<std::string>                             & trend_cube_parameters,
-         const std::vector<std::vector<double> >                    & trend_cube_sampling,
-         const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
-         const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
-         const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
-         const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-         std::map<std::string, DistributionsRock *>                 & rock_distribution,
-         std::map<std::string, DistributionsSolid *>                & solid_distribution,
-         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
-         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
-         std::string                                                & errTxt)
+std::vector<DistributionsRock *>
+ReadRock(const std::string                                           & target_rock,
+         const std::string                                           & path,
+         const std::vector<std::string>                              & trend_cube_parameters,
+         const std::vector<std::vector<double> >                     & trend_cube_sampling,
+         const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
+         const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
+         const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
+         const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+         std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
+         std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
+         std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
+         std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
+         std::string                                                 & errTxt)
 {
-  DistributionsRock * final_rock = NULL;
-  DistributionsRock * rock       = NULL;
+  std::vector<DistributionsRock *> final_rock;
+  std::vector<DistributionsRock *> rock;
 
-  std::map<std::string, DistributionsRock *>::iterator m = rock_distribution.find(target_rock);
+  std::map<std::string, std::vector<DistributionsRock *> >::iterator m = rock_distribution.find(target_rock);
   if (m == rock_distribution.end()) { // label not found in rock_distribution map
     std::map<std::string, DistributionsRockStorage *>::const_iterator m_all = model_rock_storage.find(target_rock);
     if (m_all == model_rock_storage.end()) // fatal error
@@ -135,20 +135,20 @@ ReadRock(const std::string                                          & target_roc
 
 }
 
-DistributionsSolid *
+std::vector<DistributionsSolid *>
 ReadSolid(const std::string                                          & target_solid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
-          std::map<std::string, DistributionsSolid *>                & solid_distribution,
+          std::map<std::string, std::vector<DistributionsSolid *> >  & solid_distribution,
           std::string                                                & errTxt)
 {
 
-  DistributionsSolid * final_solid = NULL;
-  DistributionsSolid * solid       = NULL;
+  std::vector<DistributionsSolid *> final_solid;
+  std::vector<DistributionsSolid *> solid;
 
-  std::map<std::string, DistributionsSolid *>::iterator m = solid_distribution.find(target_solid);
+  std::map<std::string, std::vector<DistributionsSolid *> >::iterator m = solid_distribution.find(target_solid);
 
   if (m == solid_distribution.end()) { // label not found in solid_distribution map
     std::map<std::string, DistributionsSolidStorage *>::const_iterator m_all = model_solid_storage.find(target_solid);
@@ -174,20 +174,20 @@ ReadSolid(const std::string                                          & target_so
   return(final_solid);
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 ReadFluid(const std::string                                          & target_fluid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+          std::map<std::string, std::vector<DistributionsFluid *> >  & fluid_distribution,
           std::string                                                & errTxt)
 {
 
-  DistributionsFluid * final_fluid = NULL;
-  DistributionsFluid * fluid       = NULL;
+  std::vector<DistributionsFluid *> final_fluid;
+  std::vector<DistributionsFluid *> fluid;
 
-  std::map<std::string, DistributionsFluid *>::iterator m = fluid_distribution.find(target_fluid);
+  std::map<std::string, std::vector<DistributionsFluid *> >::iterator m = fluid_distribution.find(target_fluid);
 
   if (m == fluid_distribution.end()) { // label not found in fluid_distribution map
     std::map<std::string, DistributionsFluidStorage *>::const_iterator m_all = model_fluid_storage.find(target_fluid);

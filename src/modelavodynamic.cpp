@@ -657,7 +657,7 @@ ModelAVODynamic::processBackground(Background           *& background,
 
       double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
       // filling in the backModel in Background
-      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributions(),priorProbability,
+      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributionTime0(),priorProbability,
         *backModel[0], *backModel[1], *backModel[2],
         varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
 

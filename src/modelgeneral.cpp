@@ -223,24 +223,28 @@ ModelGeneral::~ModelGeneral(void)
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
 
-  for(std::map<std::string, DistributionsDryRock *>::iterator it = dry_rock_distributions_.begin(); it != dry_rock_distributions_.end(); it++) {
-    DistributionsDryRock * dry_rock = it->second;
-    delete dry_rock;
+  for(std::map<std::string, std::vector<DistributionsDryRock *> >::iterator it = dry_rock_distributions_.begin(); it != dry_rock_distributions_.end(); it++) {
+    std::vector<DistributionsDryRock *> dry_rock = it->second;
+    for(size_t i=0; i<dry_rock.size(); i++)
+      delete dry_rock[i];
   }
 
-  for(std::map<std::string, DistributionsRock *>::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-    DistributionsRock * rock = it->second;
-    delete rock;
+  for(std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    std::vector<DistributionsRock *> rock = it->second;
+    for(size_t i=0; i<rock.size(); i++)
+      delete rock[i];
   }
 
-  for(std::map<std::string, DistributionsSolid *>::iterator it = solid_distributions_.begin(); it != solid_distributions_.end(); it++) {
-    DistributionsSolid * solid = it->second;
-    delete solid;
+  for(std::map<std::string, std::vector<DistributionsSolid *> >::iterator it = solid_distributions_.begin(); it != solid_distributions_.end(); it++) {
+    std::vector<DistributionsSolid *> solid = it->second;
+    for(size_t i=0; i<solid.size(); i++)
+      delete solid[i];
   }
 
-  for(std::map<std::string, DistributionsFluid *>::iterator it = fluid_distributions_.begin(); it != fluid_distributions_.end(); it++) {
-    DistributionsFluid * fluid = it->second;
-    delete fluid;
+  for(std::map<std::string, std::vector<DistributionsFluid *> >::iterator it = fluid_distributions_.begin(); it != fluid_distributions_.end(); it++) {
+    std::vector<DistributionsFluid *> fluid = it->second;
+    for(size_t i=0; i<fluid.size(); i++)
+      delete fluid[i];
   }
 
   for(std::map<std::string, std::vector<const DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
@@ -2288,50 +2292,62 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       std::vector<DistributionWithTrendStorage *> storage = it->second;
       std::vector<const DistributionWithTrend *> dist_vector;
       for(size_t i=0; i<storage.size(); i++) {
-        const DistributionWithTrend  * dist               = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        const DistributionWithTrend  * dist = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
         dist_vector.push_back(dist);
       }
-      reservoir_variables_[it->first]                     = dist_vector;
+      reservoir_variables_[it->first] = dist_vector;
     }
 
     std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();
     for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluid_storage.begin(); it != fluid_storage.end(); it++) {
-      DistributionsFluidStorage     * storage    = it     ->second;
-      DistributionsFluid            * fluid      = storage->GenerateDistributionsFluid(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-      fluid_distributions_[it->first]            = fluid;
+      DistributionsFluidStorage * storage     = it     ->second;
+      std::vector<DistributionsFluid *> fluid = storage->GenerateDistributionsFluid(path,
+                                                                                    trend_cube_parameters,
+                                                                                    trend_cube_sampling,
+                                                                                    errTxt);
+      fluid_distributions_[it->first] = fluid;
     }
 
-    std::map<std::string, DistributionsSolidStorage *>      solid_storage = modelSettings->getSolidStorage();
+    std::map<std::string, DistributionsSolidStorage *> solid_storage = modelSettings->getSolidStorage();
     for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solid_storage.begin(); it != solid_storage.end(); it++) {
       if (solid_distributions_.count(it->first) == 0) {
-        DistributionsSolidStorage     * storage    = it     ->second;
-        DistributionsSolid            * solid      = storage->GenerateDistributionsSolid(path,trend_cube_parameters,trend_cube_sampling,solid_storage,solid_distributions_, errTxt);
-        solid_distributions_[it->first]            = solid;
+        DistributionsSolidStorage * storage      = it->second;
+        std::vector<DistributionsSolid *> solid  = storage->GenerateDistributionsSolid(path,
+                                                                                       trend_cube_parameters,
+                                                                                       trend_cube_sampling,
+                                                                                       solid_storage,
+                                                                                       solid_distributions_,
+                                                                                       errTxt);
+        solid_distributions_[it->first] = solid;
       }
     }
 
-    std::map<std::string, DistributionsDryRockStorage *>      dry_rock_storage = modelSettings->getDryRockStorage();
+    std::map<std::string, DistributionsDryRockStorage *> dry_rock_storage = modelSettings->getDryRockStorage();
     for(std::map<std::string, DistributionsDryRockStorage *>::iterator it = dry_rock_storage.begin(); it != dry_rock_storage.end(); it++) {
-      DistributionsDryRockStorage  * storage    = it     ->second;
-      DistributionsDryRock         * dry_rock   = storage->GenerateDistributionsDryRock(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-      dry_rock_distributions_[it->first]        = dry_rock;
+      DistributionsDryRockStorage * storage         = it     ->second;
+      std::vector<DistributionsDryRock *>  dry_rock = storage->GenerateDistributionsDryRock(path,
+                                                                                            trend_cube_parameters,
+                                                                                            trend_cube_sampling,
+                                                                                            errTxt);
+      dry_rock_distributions_[it->first] = dry_rock;
     }
-    std::map<std::string, DistributionsRockStorage *>      rock_storage = modelSettings->getRockStorage();
+
+    std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings->getRockStorage();
     for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
-      DistributionsRockStorage     * storage    = it     ->second;
-      DistributionsRock            * rock       = storage->GenerateDistributionsRock(path,
-                                                                                     trend_cube_parameters,
-                                                                                     trend_cube_sampling,
-                                                                                     rock_storage,
-                                                                                     solid_storage,
-                                                                                     dry_rock_storage,
-                                                                                     fluid_storage,
-                                                                                     rock_distributions_,
-                                                                                     solid_distributions_,
-                                                                                     dry_rock_distributions_,
-                                                                                     fluid_distributions_,
-                                                                                     errTxt);
-      rock_distributions_[it->first]            = rock;
+      DistributionsRockStorage * storage    = it     ->second;
+      std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(path,
+                                                                                 trend_cube_parameters,
+                                                                                 trend_cube_sampling,
+                                                                                 rock_storage,
+                                                                                 solid_storage,
+                                                                                 dry_rock_storage,
+                                                                                 fluid_storage,
+                                                                                 rock_distributions_,
+                                                                                 solid_distributions_,
+                                                                                 dry_rock_distributions_,
+                                                                                 fluid_distributions_,
+                                                                                 errTxt);
+      rock_distributions_[it->first] = rock;
     }
 
     if(errTxt != "")
@@ -2616,6 +2632,20 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
     delete stormgrid;
 
   return(geometry);
+}
+
+std::map<std::string, DistributionsRock *>
+ModelGeneral::getRockDistributionTime0() const
+{
+  std::map<std::string, DistributionsRock *> rock_dist_t0;
+
+  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    std::string name = it->first;
+    std::vector<DistributionsRock *> rock_dist = it->second;
+    rock_dist_t0[name] = rock_dist[0];
+  }
+
+  return(rock_dist_t0);
 }
 
 FFTGrid*
@@ -3382,7 +3412,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       for(int i=0;i<3;i++) {
         paramCorr[i] = new float[3];
         for(int j=i;j<3;j++) {
-          paramCorr[i][j] = variancesFromRockPhysics[index];
+          paramCorr[i][j] = static_cast<float>(variancesFromRockPhysics[index]);
           index++;
         }
       }
@@ -3627,7 +3657,7 @@ ModelGeneral::setFaciesNamesFromRockPhysics()
   typedef std::map<std::string, DistributionsRock *> mapType;
 
   int i = 0;
-  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     faciesNames_.push_back(it->first);
     faciesLabels_.push_back(i);
     i++;
@@ -3999,7 +4029,7 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
   std::vector<double> dummyVector;
   processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
                            seisCube, inputFiles, dummyVector, errText, failedPriorCorr);
-  generateRockPhysics4DBackground(rock_distributions_, priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D);
+  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D);
   // Add more handling of possible failing situations
   failed = failedPriorCorr; // || failedRockPhysics4DBackground
 

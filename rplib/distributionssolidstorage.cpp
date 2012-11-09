@@ -21,27 +21,19 @@ DistributionsSolidStorage::~DistributionsSolidStorage()
 {
 }
 
-DistributionsSolid *
+std::vector<DistributionsSolid *>
 DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string                                               & path,
                                                        const std::vector<std::string>                                  & trend_cube_parameters,
                                                        const std::vector<std::vector<double> >                         & trend_cube_sampling,
                                                        const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
                                                        const std::vector<std::string>                                  & constituent_label,
                                                        const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
-                                                       std::map<std::string, DistributionsSolid *>                     & solid_distribution,
+                                                       std::map<std::string, std::vector<DistributionsSolid *> >       & solid_distribution,
                                                        DEMTools::MixMethod                                               mix_method,
                                                        std::string                                                     & errTxt) const
 {
 
   int n_constituents = static_cast<int>(constituent_label.size());
-
-  std::vector<double> alpha(n_constituents);
-  for(int i=0; i<n_constituents; i++) {
-    if(constituent_volume_fraction[i][0] != NULL)
-      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
-    else
-      alpha[i] = 1;
-  }
 
   std::vector<int> n_vintages(n_constituents);
   for(int i=0; i<n_constituents; i++)
@@ -53,16 +45,40 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
       max_vintage = n_vintages[i];
   }
 
+  std::vector<double> alpha(n_constituents);
+  for(int i=0; i<n_constituents; i++) {
+    if(constituent_volume_fraction[i][0] != NULL)
+      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i] = 1;
+  }
+
+  std::vector<std::vector<DistributionsSolid *> > distr_solid(max_vintage);
+  for(int i=0; i<max_vintage; i++)
+    distr_solid[i].resize(n_constituents, NULL);
+
+  for (int s = 0; s < n_constituents; s++) {
+    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(constituent_label[s],
+                                                                           path,
+                                                                           trend_cube_parameters,
+                                                                           trend_cube_sampling,
+                                                                           model_solid_storage,
+                                                                           solid_distribution,
+                                                                           errTxt);
+
+    for(int i=0; i<max_vintage; i++) {
+      if(i < static_cast<int>(distr_solid_all_vintages.size()))
+        distr_solid[i][s] = distr_solid_all_vintages[i];
+      else
+        distr_solid[i][s] = distr_solid[i-1][s];
+    }
+  }
+
   std::vector<DistributionsSolid *>                  final_dist_solid(max_vintage, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(max_vintage);
+
   for(int i=0; i<max_vintage; i++)
     all_volume_fractions[i].resize(n_constituents, NULL);
-
-  //Marit: Denne skal også utvikles etterhvert
-  std::vector<DistributionsSolid *> distr_solid(n_constituents, NULL);
-  for (int s = 0; s < n_constituents; s++)
-    distr_solid[s] = ReadSolid(constituent_label[s], path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
-
 
   for(int i=0; i<max_vintage; i++) {
 
@@ -81,10 +97,10 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
 
     if (errTxt == "")
-      final_dist_solid[i] = new DistributionsSolidMix(distr_solid, all_volume_fractions[i], mix_method, alpha);
+      final_dist_solid[i] = new DistributionsSolidMix(distr_solid[i], all_volume_fractions[i], mix_method, alpha);
   }
 
-  return(final_dist_solid[0]);
+  return(final_dist_solid);
 
 }
 
@@ -114,13 +130,13 @@ TabulatedVelocitySolidStorage::~TabulatedVelocitySolidStorage()
     delete density_[0];
 }
 
-DistributionsSolid *
-TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                                          const std::vector<std::string>                           & trend_cube_parameters,
-                                                          const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                                          const std::map<std::string, DistributionsSolidStorage *> & /*model_solid_storage*/,
-                                                          std::map<std::string, DistributionsSolid *>              & /*solid_distribution*/,
-                                                          std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                                          const std::vector<std::string>                            & trend_cube_parameters,
+                                                          const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                                          const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
+                                                          std::map<std::string, std::vector<DistributionsSolid *> > & /*solid_distribution*/,
+                                                          std::string                                               & errTxt) const
 {
   std::vector<double> alpha(3);
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
@@ -169,7 +185,7 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
 
   }
 
-  return(dist_solid[0]);
+  return(dist_solid);
 
 }
 
@@ -199,13 +215,13 @@ TabulatedModulusSolidStorage::~TabulatedModulusSolidStorage()
     delete density_[0];
 }
 
-DistributionsSolid *
-TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                                         const std::vector<std::string>                           & trend_cube_parameters,
-                                                         const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                                         const std::map<std::string, DistributionsSolidStorage *> & /*model_solid_storage*/,
-                                                         std::map<std::string, DistributionsSolid *>              & /*solid_distribution*/,
-                                                         std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                                         const std::vector<std::string>                            & trend_cube_parameters,
+                                                         const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                                         const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
+                                                         std::map<std::string, std::vector<DistributionsSolid *> > & /*solid_distribution*/,
+                                                         std::string                                               & errTxt) const
 {
   std::vector<double> alpha(3);
   alpha[0] = bulk_modulus_[0] ->GetOneYearCorrelation();
@@ -252,7 +268,7 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
     dist_solid[i] = solid;
   }
 
-  return(dist_solid[0]);
+  return(dist_solid);
 }
 
 //----------------------------------------------------------------------------------//
@@ -271,23 +287,23 @@ ReussSolidStorage::~ReussSolidStorage()
   }
 }
 
-DistributionsSolid *
-ReussSolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                              const std::vector<std::string>                           & trend_cube_parameters,
-                                              const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                              const std::map<std::string, DistributionsSolidStorage *> & model_solid_storage,
-                                              std::map<std::string, DistributionsSolid *>              & solid_distribution,
-                                              std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+ReussSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                              const std::vector<std::string>                            & trend_cube_parameters,
+                                              const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                              const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                              std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
+                                              std::string                                               & errTxt) const
 {
-  DistributionsSolid * solid = CreateDistributionsSolidMix(path,
-                                                           trend_cube_parameters,
-                                                           trend_cube_sampling,
-                                                           model_solid_storage,
-                                                           constituent_label_,
-                                                           constituent_volume_fraction_,
-                                                           solid_distribution,
-                                                           DEMTools::Reuss,
-                                                           errTxt);
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_solid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        solid_distribution,
+                                                                        DEMTools::Reuss,
+                                                                        errTxt);
   return(solid);
 }
 
@@ -307,23 +323,23 @@ VoigtSolidStorage::~VoigtSolidStorage()
   }
 }
 
-DistributionsSolid *
-VoigtSolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                              const std::vector<std::string>                           & trend_cube_parameters,
-                                              const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                              const std::map<std::string, DistributionsSolidStorage *> & model_solid_storage,
-                                              std::map<std::string, DistributionsSolid *>              & solid_distribution,
-                                              std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+VoigtSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                              const std::vector<std::string>                            & trend_cube_parameters,
+                                              const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                              const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                              std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
+                                              std::string                                               & errTxt) const
 {
-  DistributionsSolid * solid = CreateDistributionsSolidMix(path,
-                                                           trend_cube_parameters,
-                                                           trend_cube_sampling,
-                                                           model_solid_storage,
-                                                           constituent_label_,
-                                                           constituent_volume_fraction_,
-                                                           solid_distribution,
-                                                           DEMTools::Voigt,
-                                                           errTxt);
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_solid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        solid_distribution,
+                                                                        DEMTools::Voigt,
+                                                                        errTxt);
   return(solid);
 }
 
@@ -343,23 +359,23 @@ HillSolidStorage::~HillSolidStorage()
   }
 }
 
-DistributionsSolid *
-HillSolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                             const std::vector<std::string>                           & trend_cube_parameters,
-                                             const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                             const std::map<std::string, DistributionsSolidStorage *> & model_solid_storage,
-                                             std::map<std::string, DistributionsSolid *>              & solid_distribution,
-                                             std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+HillSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                             const std::vector<std::string>                            & trend_cube_parameters,
+                                             const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                             const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                             std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
+                                             std::string                                               & errTxt) const
 {
-  DistributionsSolid * solid = CreateDistributionsSolidMix(path,
-                                                           trend_cube_parameters,
-                                                           trend_cube_sampling,
-                                                           model_solid_storage,
-                                                           constituent_label_,
-                                                           constituent_volume_fraction_,
-                                                           solid_distribution,
-                                                           DEMTools::Hill,
-                                                           errTxt);
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_solid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        solid_distribution,
+                                                                        DEMTools::Hill,
+                                                                        errTxt);
   return(solid);
 }
 
@@ -394,13 +410,13 @@ DEMSolidStorage::~DEMSolidStorage()
   }
 }
 
-DistributionsSolid *
-DEMSolidStorage::GenerateDistributionsSolid(const std::string                                        & path,
-                                            const std::vector<std::string>                           & trend_cube_parameters,
-                                            const std::vector<std::vector<double> >                  & trend_cube_sampling,
-                                            const std::map<std::string, DistributionsSolidStorage *> & model_solid_storage,
-                                            std::map<std::string, DistributionsSolid *>              & solid_distribution,
-                                            std::string                                              & errTxt) const
+std::vector<DistributionsSolid *>
+DEMSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+                                            const std::vector<std::string>                            & trend_cube_parameters,
+                                            const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                            const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                            std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
+                                            std::string                                               & errTxt) const
 {
   // Remember: Host info is included first in constituent vectors
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
@@ -430,18 +446,64 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
       max_vintage = static_cast<int>(volume_fractions[i].size());
   }
 
+  // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
+  std::vector<double> alpha(n_inclusions + n_constituents);
+
+  for(int i=0; i<n_inclusions; i++)
+    alpha[i] = inclusion_aspect_ratio_[i][0]->GetOneYearCorrelation();
+
+  for(int i=0; i<n_constituents; i++) {
+    if(volume_fractions[0][i] != NULL)
+      alpha[i+n_inclusions] = volume_fractions[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i+n_inclusions] = 1;
+  }
+
   //Read host label
-  DistributionsSolid  * final_distr_solid = ReadSolid(host_label_, path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+  std::vector<DistributionsSolid *> final_distr_solid (max_vintage);
+  std::vector<DistributionsSolid *> distr_solid;
+
+  distr_solid = ReadSolid(host_label_,
+                          path,
+                          trend_cube_parameters,
+                          trend_cube_sampling,
+                          model_solid_storage,
+                          solid_distribution,
+                          errTxt);
+
+  for(int i=0; i<max_vintage; i++) {
+    if(i < static_cast<int>(distr_solid.size()))
+      final_distr_solid[i] = distr_solid[i];
+    else
+      final_distr_solid[i] = final_distr_solid[i-1];
+  }
 
   //Read inclusion label
-  std::vector<DistributionsSolid *> final_distr_solid_inc(n_inclusions);
-  for (int s = 0; s<n_inclusions; s++)
-    final_distr_solid_inc[s] = ReadSolid(inclusion_label_[s],path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+  std::vector<std::vector<DistributionsSolid *> > final_distr_solid_inc(max_vintage);
+  for(int i=0; i<max_vintage; i++)
+    final_distr_solid_inc[i].resize(n_inclusions, NULL);
 
+  for (int s = 0; s < n_inclusions; s++) {
+    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(inclusion_label_[s],
+                                                                           path,
+                                                                           trend_cube_parameters,
+                                                                           trend_cube_sampling,
+                                                                           model_solid_storage,
+                                                                           solid_distribution,
+                                                                           errTxt);
+
+    for(int i=0; i<max_vintage; i++) {
+      if(i < static_cast<int>(distr_solid_all_vintages.size()))
+        final_distr_solid_inc[i][s] = distr_solid_all_vintages[i];
+      else
+        final_distr_solid_inc[i][s] = final_distr_solid_inc[i-1][s];
+    }
+  }
 
   std::vector<DistributionsSolid *>                  final_dist_solid(max_vintage, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(max_vintage);
   std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(max_vintage);
+
   for(int i=0; i<max_vintage; i++) {
     all_volume_fractions[i].resize(n_constituents, NULL);
     all_aspect_ratios[i].resize(n_inclusions, NULL);
@@ -474,28 +536,15 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
 
   }
 
-  // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
-  std::vector<double> alpha(n_inclusions + n_constituents);
-
-  for(int i=0; i<n_inclusions; i++)
-    alpha[i] = inclusion_aspect_ratio_[i][0]->GetOneYearCorrelation();
-
-  for(int i=0; i<n_constituents; i++) {
-    if(volume_fractions[0][i] != NULL)
-      alpha[i+n_inclusions] = volume_fractions[i][0]->GetOneYearCorrelation();
-    else
-      alpha[i+n_inclusions] = 1;
-  }
-
   for(int i=0; i<max_vintage; i++) {
     if (errTxt == "")
-      final_dist_solid[i] = new DistributionsSolidDEM(final_distr_solid,
-                                                      final_distr_solid_inc,
+      final_dist_solid[i] = new DistributionsSolidDEM(final_distr_solid[i],
+                                                      final_distr_solid_inc[i],
                                                       all_aspect_ratios[i],
                                                       all_volume_fractions[i],
                                                       alpha);
   }
 
-  return(final_dist_solid[0]);
+  return(final_dist_solid);
 
 }

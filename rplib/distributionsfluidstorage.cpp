@@ -39,7 +39,7 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
     delete density_[0];
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
                                                           const std::vector<std::string>          & trend_cube_parameters,
                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
@@ -80,7 +80,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
 
   }
 
-  return(dist_fluid[0]);
+  return(dist_fluid);
 }
 
 //----------------------------------------------------------------------------------//
@@ -101,7 +101,7 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
     delete density_[0];
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
@@ -142,7 +142,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
 
   }
 
-  return(dist_fluid[0]);
+  return(dist_fluid);
 }
 
 //----------------------------------------------------------------------------------//
@@ -161,19 +161,16 @@ ReussFluidStorage::~ReussFluidStorage()
   }
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 ReussFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  std::vector<DistributionsFluid *> fluid(1, NULL);
 
-  //Make new DistributionsFluidReuss(constituent_label, volume);
-  DistributionsFluid * fluid = NULL; //new DistributionsFluidReuss(constituent_label, volume);
-
-  if(fluid == NULL)
-    errTxt += "The Reuss model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(fluid[0] == NULL)
+    errTxt += "The Reuss model has not been implemented yet for fluids\n";
 
   return(fluid);
 }
@@ -194,18 +191,16 @@ VoigtFluidStorage::~VoigtFluidStorage()
   }
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 VoigtFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  std::vector<DistributionsFluid *> fluid(1, NULL);
 
-  DistributionsFluid * fluid = NULL; //new DistributionsFluidVoigt();
-
-  if(fluid == NULL)
-    errTxt += "The Voigt model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(fluid[0] == NULL)
+    errTxt += "The Voigt model has not been implemented yet for fluids\n";
 
   return(fluid);
 }
@@ -226,18 +221,16 @@ HillFluidStorage::~HillFluidStorage()
   }
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 HillFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                              std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  std::vector<DistributionsFluid *> fluid(1, NULL);
 
-  DistributionsFluid * fluid = NULL; //new DistributionsFluidHill();
-
-  if(fluid == NULL)
-    errTxt += "The Hill model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(fluid[0] == NULL)
+    errTxt += "The Hill model has not been implemented yet for fluids\n";
 
   return(fluid);
 }
@@ -264,7 +257,7 @@ BatzleWangFluidStorage::~BatzleWangFluidStorage()
     delete salinity_[0];
 }
 
-DistributionsFluid *
+std::vector<DistributionsFluid *>
 BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
                                                    const std::vector<std::string>          & trend_cube_parameters,
                                                    const std::vector<std::vector<double> > & trend_cube_sampling,
@@ -316,8 +309,5 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
 
   }
 
-
-  DistributionsFluid * dummy = NULL;
-  return(dummy);
-
+  return(dist_fluid);
 }

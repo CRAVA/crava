@@ -52,16 +52,16 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                               std::string                             & errTxt) const
 {
-  DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
 
-  if(dry_rock == NULL)
-    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(dry_rock[0] == NULL)
+    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n";
 
   return(dry_rock);
 }
@@ -102,16 +102,16 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                              std::string                             & errTxt) const
 {
-  DistributionsDryRock * dry_rock = NULL;
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
 
-  if(dry_rock == NULL)
-    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(dry_rock[0] == NULL)
+    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n";
 
   return(dry_rock);
 }
@@ -137,18 +137,16 @@ ReussDryRockStorage::~ReussDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 ReussDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                   const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                   const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
 
-  DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockReuss();
-
-  if(dry_rock == NULL)
-    errTxt += "The Reuss model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(dry_rock[0] == NULL)
+    errTxt += "The Reuss model has not been implemented yet for dry-rocks\n";
 
   return(dry_rock);
 }
@@ -174,18 +172,16 @@ VoigtDryRockStorage::~VoigtDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                   const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                   const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
 
-  DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockVoigt();
-
-  if(dry_rock == NULL)
-    errTxt += "The Voigt model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  if(dry_rock[0] == NULL)
+    errTxt += "The Voigt model has not been implemented yet for dry-rocks\n";
 
   return(dry_rock);
 }
@@ -211,18 +207,15 @@ HillDryRockStorage::~HillDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 HillDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                  std::string                             & errTxt) const
 {
-  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
-
-  DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockHill();
-
-  if(dry_rock == NULL)
-    errTxt += "The Hill model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
+  if(dry_rock[0] == NULL)
+    errTxt += "The Hill model has not been implemented yet for dry-rocks\n";
 
   return(dry_rock);
 }
@@ -265,19 +258,16 @@ DEMDryRockStorage::~DEMDryRockStorage()
     delete total_porosity_[0];
 }
 
-DistributionsDryRock *
+std::vector<DistributionsDryRock *>
 DEMDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                 std::string                             & errTxt) const
 {
 
-  //CheckVolumeConsistency(volume_fractions, errTxt);
+  std::vector<DistributionsDryRock *> dry_rock(1, NULL);
 
-  DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
-
-  if(dry_rock == NULL)
-    errTxt += "The DEM model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
-
+  if(dry_rock[0] == NULL)
+    errTxt += "The DEM model has not been implemented yet for dry-rocks\n";
   return(dry_rock);
 }

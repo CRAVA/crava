@@ -55,7 +55,7 @@ public:
   TimeLine                    * getTimeLine()                  const {return(timeLine_) ;}
   std::vector<WellData *>     & getWells()                 /*const*/ { return wells_    ;}
 
-  std::map<std::string, DistributionsRock *> getRockDistributions(void)  const { return rock_distributions_;}
+  std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_            ;}
   const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_   ;}
@@ -294,10 +294,10 @@ private:
 
 
   CravaTrend                                                         trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
-  std::map<std::string, DistributionsDryRock *>                      dry_rock_distributions_; ///< Dry rocks used in rock physics model
-  std::map<std::string, DistributionsRock    *>                      rock_distributions_;     ///< Rocks used in rock physics model
-  std::map<std::string, DistributionsSolid   *>                      solid_distributions_;    ///< Fluids used in rock physics model
-  std::map<std::string, DistributionsFluid   *>                      fluid_distributions_;    ///< Fluids used in rock physics model
+  std::map<std::string, std::vector<DistributionsDryRock *> >        dry_rock_distributions_; ///< Dry rocks used in rock physics model
+  std::map<std::string, std::vector<DistributionsRock *> >           rock_distributions_;     ///< Rocks used in rock physics model
+  std::map<std::string, std::vector<DistributionsSolid *> >          solid_distributions_;    ///< Fluids used in rock physics model
+  std::map<std::string, std::vector<DistributionsFluid *> >          fluid_distributions_;    ///< Fluids used in rock physics model
   std::map<std::string, std::vector<const DistributionWithTrend *> > reservoir_variables_;   ///< Reservoir variables used in the rock physics model
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
