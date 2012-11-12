@@ -50,7 +50,23 @@ DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
   alpha_ = dist.alpha_;
 }
 
-DistributionsRockDEM::~DistributionsRockDEM(){}
+DistributionsRockDEM::~DistributionsRockDEM()
+{
+  delete distr_solid_;
+
+  for(size_t i=0; i<distr_fluid_.size(); i++)
+    delete distr_fluid_[i];
+
+  for(size_t i=0; i<distr_incl_spectrum_.size(); i++) {
+    if(distr_incl_spectrum_[i]->GetIsShared() == false)
+      delete distr_incl_spectrum_[i];
+  }
+
+  for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
+    if(distr_incl_concentration_[i]->GetIsShared() == false)
+      delete distr_incl_concentration_[i];
+  }
+}
 
 DistributionsRock *
 DistributionsRockDEM::Clone() const

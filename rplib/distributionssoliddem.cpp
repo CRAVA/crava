@@ -43,6 +43,20 @@ DistributionsSolidDEM::DistributionsSolidDEM(const DistributionsSolidDEM & dist)
 
 DistributionsSolidDEM::~DistributionsSolidDEM()
 {
+  delete distr_solid_;
+
+  for(size_t i=0; i<distr_solid_inc_.size(); i++)
+    delete distr_solid_inc_[i];
+
+  for(size_t i=0; i<distr_incl_spectrum_.size(); i++) {
+    if(distr_incl_spectrum_[i]->GetIsShared() == false)
+      delete distr_incl_spectrum_[i];
+  }
+
+  for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
+    if(distr_incl_concentration_[i]->GetIsShared() == false)
+      delete distr_incl_concentration_[i];
+  }
 }
 
 DistributionsSolid *

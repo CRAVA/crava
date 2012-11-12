@@ -19,14 +19,22 @@ DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWit
 DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionsFluidBatzleWang & dist)
 : DistributionsFluid(dist)
 {
-  distr_salinity_      = dist.distr_salinity_->Clone();
-  distr_temperature_   = dist.distr_temperature_->Clone();
+  distr_salinity_      = dist.distr_salinity_     ->Clone();
+  distr_temperature_   = dist.distr_temperature_  ->Clone();
   distr_pore_pressure_ = dist.distr_pore_pressure_->Clone();
   alpha_               = dist.alpha_;
 }
 
 DistributionsFluidBatzleWang::~DistributionsFluidBatzleWang()
 {
+  if(distr_salinity_->GetIsShared() == false)
+    delete distr_salinity_;
+
+  if(distr_temperature_->GetIsShared() == false)
+    delete distr_temperature_;
+
+  if(distr_pore_pressure_->GetIsShared() == false)
+    delete distr_pore_pressure_;
 }
 
 DistributionsFluid *

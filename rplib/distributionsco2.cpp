@@ -23,6 +23,11 @@ DistributionsCO2::DistributionsCO2(const DistributionsCO2 & dist)
 
 DistributionsCO2::~DistributionsCO2()
 {
+  if(distr_temperature_->GetIsShared() == false)
+    delete distr_temperature_;
+
+  if(distr_pore_pressure_->GetIsShared() == false)
+    delete distr_pore_pressure_;
 }
 
 DistributionsFluid *

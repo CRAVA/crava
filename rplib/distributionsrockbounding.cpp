@@ -55,14 +55,17 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBoun
 {
   upper_rock_ = dist.upper_rock_->Clone();
   lower_rock_ = dist.lower_rock_->Clone();
-  porosity_   = dist.porosity_->Clone();
-  K_weight_   = dist.K_weight_->Clone();
-  M_weight_   = dist.M_weight_->Clone();
+  porosity_   = dist.porosity_  ->Clone();
+  K_weight_   = dist.K_weight_  ->Clone();
+  M_weight_   = dist.M_weight_  ->Clone();
   alpha_      = dist.alpha_;
 }
 
 DistributionsRockBounding::~DistributionsRockBounding()
 {
+  delete upper_rock_;
+  delete lower_rock_;
+
   if(porosity_->GetIsShared() == false)
     delete porosity_;
 

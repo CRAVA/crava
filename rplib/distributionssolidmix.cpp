@@ -40,6 +40,13 @@ DistributionsSolidMix::DistributionsSolidMix(const DistributionsSolidMix & dist)
 
 DistributionsSolidMix::~DistributionsSolidMix()
 {
+  for(size_t i=0; i<distr_solid_.size(); i++)
+    delete distr_solid_[i];
+
+  for(size_t i=0; i<distr_vol_frac_.size(); i++) {
+    if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsShared() == false)
+      delete distr_vol_frac_[i];
+  }
 }
 
 DistributionsSolid *

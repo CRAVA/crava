@@ -31,7 +31,6 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
 
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist)
 : DistributionsRock(dist),
-  distr_vol_frac_(dist.distr_vol_frac_),
   mix_method_(dist.mix_method_)
 {
   for(size_t i=0; i<dist.distr_rock_.size(); i++)
@@ -49,6 +48,14 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMi
 
 DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
 {
+  for(size_t i=0; i<distr_rock_.size(); i++)
+    delete distr_rock_[i];
+
+  for(size_t i=0; i<distr_vol_frac_.size(); i++) {
+    if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsShared() == false)
+      delete distr_vol_frac_[i];
+  }
+
 }
 
 DistributionsRock *
@@ -249,6 +256,21 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const D
 
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()
 {
+  for(size_t i=0; i<distr_solid_.size(); i++)
+    delete distr_solid_[i];
+
+  for(size_t i=0; i<distr_fluid_.size(); i++)
+    delete distr_fluid_[i];
+
+  for(size_t i=0; i<distr_vol_frac_solid_.size(); i++) {
+    if(distr_vol_frac_solid_[i] != NULL && distr_vol_frac_solid_[i]->GetIsShared() == false)
+      delete distr_vol_frac_solid_[i];
+  }
+
+  for(size_t i=0; i<distr_vol_frac_fluid_.size(); i++) {
+    if(distr_vol_frac_fluid_[i] != NULL && distr_vol_frac_fluid_[i]->GetIsShared() == false)
+      delete distr_vol_frac_fluid_[i];
+  }
 }
 
 DistributionsRock *

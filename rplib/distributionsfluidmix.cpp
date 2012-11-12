@@ -39,6 +39,13 @@ DistributionsFluidMix::DistributionsFluidMix(const DistributionsFluidMix & dist)
 
 DistributionsFluidMix::~DistributionsFluidMix()
 {
+  for(size_t i=0; i<distr_fluid_.size(); i++)
+    delete distr_fluid_[i];
+
+  for(size_t i=0; i<distr_vol_frac_.size(); i++) {
+    if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsShared() == false)
+      delete distr_vol_frac_[i];
+  }
 }
 
 DistributionsFluid *
