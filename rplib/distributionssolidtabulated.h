@@ -24,9 +24,14 @@ public:
                               DEMTools::TabulatedMethod     method,
                               std::vector<double>         & alpha);
 
+  DistributionsSolidTabulated(const DistributionsSolidTabulated & dist);
+
   virtual ~DistributionsSolidTabulated();
 
   // Solid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
+
+  virtual DistributionsSolid  * Clone() const;
+
   virtual Solid               * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;

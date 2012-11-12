@@ -13,6 +13,8 @@ public:
 
   virtual                       ~DistributionsSolid(){}
 
+  virtual DistributionsSolid  * Clone()                                                      const = 0;
+
   virtual Solid *               GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
 
   std::vector< Solid* >         GenerateWellSample(const  std::vector<double> & trend_params,

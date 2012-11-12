@@ -15,7 +15,11 @@ public:
                                const DistributionWithTrend * distr_salinity,
                                std::vector<double>         & alpha);
 
+  DistributionsFluidBatzleWang(const DistributionsFluidBatzleWang & dist);
+
   virtual ~DistributionsFluidBatzleWang();
+
+  virtual DistributionsFluid        * Clone() const;
 
   virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
 

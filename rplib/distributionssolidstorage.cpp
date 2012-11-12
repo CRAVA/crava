@@ -70,7 +70,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
       if(i < static_cast<int>(distr_solid_all_vintages.size()))
         distr_solid[i][s] = distr_solid_all_vintages[i];
       else
-        distr_solid[i][s] = distr_solid[i-1][s];
+        distr_solid[i][s] = distr_solid[i-1][s]->Clone();
     }
   }
 
@@ -475,7 +475,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
     if(i < static_cast<int>(distr_solid.size()))
       final_distr_solid[i] = distr_solid[i];
     else
-      final_distr_solid[i] = final_distr_solid[i-1];
+      final_distr_solid[i] = final_distr_solid[i-1]->Clone();
   }
 
   //Read inclusion label
@@ -496,7 +496,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
       if(i < static_cast<int>(distr_solid_all_vintages.size()))
         final_distr_solid_inc[i][s] = distr_solid_all_vintages[i];
       else
-        final_distr_solid_inc[i][s] = final_distr_solid_inc[i-1][s];
+        final_distr_solid_inc[i][s] = final_distr_solid_inc[i-1][s]->Clone();
     }
   }
 

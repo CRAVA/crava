@@ -13,7 +13,23 @@ DistributionsCO2::DistributionsCO2(const DistributionWithTrend       * distr_tem
   alpha_               = alpha;
 }
 
-DistributionsCO2::~DistributionsCO2(){}
+DistributionsCO2::DistributionsCO2(const DistributionsCO2 & dist)
+: DistributionsFluid(dist)
+{
+  distr_temperature_   = dist.distr_temperature_->Clone();
+  distr_pore_pressure_ = dist.distr_pore_pressure_->Clone();
+  alpha_               = dist.alpha_;
+}
+
+DistributionsCO2::~DistributionsCO2()
+{
+}
+
+DistributionsFluid *
+DistributionsCO2::Clone() const
+{
+  return new DistributionsCO2(*this);
+}
 
 Fluid *
 DistributionsCO2::GenerateSample(const std::vector<double> & trend_params) const

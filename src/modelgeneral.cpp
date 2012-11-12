@@ -223,6 +223,12 @@ ModelGeneral::~ModelGeneral(void)
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
 
+  for(std::map<std::string, std::vector<const DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    std::vector<const DistributionWithTrend *> variable = it->second;
+    for(size_t i=0; i<variable.size(); i++)
+      delete variable[i];
+  }
+
   for(std::map<std::string, std::vector<DistributionsDryRock *> >::iterator it = dry_rock_distributions_.begin(); it != dry_rock_distributions_.end(); it++) {
     std::vector<DistributionsDryRock *> dry_rock = it->second;
     for(size_t i=0; i<dry_rock.size(); i++)
@@ -245,12 +251,6 @@ ModelGeneral::~ModelGeneral(void)
     std::vector<DistributionsFluid *> fluid = it->second;
     for(size_t i=0; i<fluid.size(); i++)
       delete fluid[i];
-  }
-
-  for(std::map<std::string, std::vector<const DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    std::vector<const DistributionWithTrend *> variable = it->second;
-    for(size_t i=0; i<variable.size(); i++)
-      delete variable[i];
   }
 
   delete randomGen_;

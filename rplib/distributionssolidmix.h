@@ -16,7 +16,11 @@ public:
                         DEMTools::MixMethod                            mix_method,
                         std::vector<double>                          & alpha);
 
+  DistributionsSolidMix(const DistributionsSolidMix & dist);
+
   virtual ~DistributionsSolidMix();
+
+  virtual DistributionsSolid                    * Clone() const;
 
   virtual Solid                                 * GenerateSample(const std::vector<double> & trend_params) const;
 

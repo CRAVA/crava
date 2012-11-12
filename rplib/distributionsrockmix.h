@@ -19,7 +19,11 @@ public:
                              DEMTools::MixMethod                                  mix_method,
                              std::vector<double>                                & alpha);
 
+  DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist);
+
   virtual ~DistributionsRockMixOfRock();
+
+  virtual DistributionsRock             * Clone() const;
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Rock                          * GenerateSample(const std::vector<double> & trend_params) const;
@@ -68,7 +72,11 @@ public:
                                       DEMTools::MixMethod                                   mix_method,
                                       std::vector<double>                                 & alpha);
 
+  DistributionsRockMixOfSolidAndFluid(const DistributionsRockMixOfSolidAndFluid & dist);
+
   virtual ~DistributionsRockMixOfSolidAndFluid();
+
+  virtual DistributionsRock             * Clone() const;
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Rock                          * GenerateSample(const std::vector<double> & trend_params) const;

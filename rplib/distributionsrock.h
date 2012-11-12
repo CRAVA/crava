@@ -16,6 +16,8 @@ public:
 
   virtual                               ~DistributionsRock(){}
 
+  virtual DistributionsRock           * Clone()                                                           const = 0;
+
   virtual Rock                        * GenerateSample(const std::vector<double> & trend_params)          const = 0;
 
   void                                  GenerateWellSample(double                 corr,

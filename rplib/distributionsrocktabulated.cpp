@@ -12,7 +12,8 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
                                                        double                        corr_elastic2_density,
                                                        DEMTools::TabulatedMethod     method,
                                                        std::vector<double>         & alpha)
-: elastic1_(elastic1),
+: DistributionsRock(),
+  elastic1_(elastic1),
   elastic2_(elastic2),
   density_(density),
   corr_elastic1_elastic2_(corr_elastic1_elastic2),
@@ -44,6 +45,40 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
 
 }
 
+DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTabulated & dist)
+: DistributionsRock(dist),
+  corr_elastic1_elastic2_(dist.corr_elastic1_elastic2_),
+  corr_elastic1_density_(dist.corr_elastic1_density_),
+  corr_elastic2_density_(dist.corr_elastic2_density_),
+  tabulated_method_(dist.tabulated_method_)
+{
+  elastic1_ = dist.elastic1_->Clone();
+  elastic2_ = dist.elastic1_->Clone();
+  density_  = dist.density_ ->Clone();
+
+  // Generate tabulated_
+  std::vector<const DistributionWithTrend *> elastic_variables(3);
+  elastic_variables[0] = elastic1_;
+  elastic_variables[1] = elastic2_;
+  elastic_variables[2] = density_;
+
+  NRLib::Grid2D<double> corr_matrix(3,3,0);
+
+  for(int i=0; i<3; i++)
+    corr_matrix(i,i) = 1;
+
+  corr_matrix(0,1) = corr_elastic1_elastic2_;
+  corr_matrix(1,0) = corr_elastic1_elastic2_;
+  corr_matrix(0,2) = corr_elastic1_density_;
+  corr_matrix(2,0) = corr_elastic1_density_;
+  corr_matrix(1,2) = corr_elastic2_density_;
+  corr_matrix(2,1) = corr_elastic2_density_;
+
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
+
+  alpha_ = dist.alpha_;
+}
+
 DistributionsRockTabulated::~DistributionsRockTabulated()
 {
   if(elastic1_->GetIsShared() == false)
@@ -56,6 +91,12 @@ DistributionsRockTabulated::~DistributionsRockTabulated()
     delete density_;
 
   delete tabulated_;
+}
+
+DistributionsRock *
+DistributionsRockTabulated::Clone() const
+{
+  return new DistributionsRockTabulated(*this);
 }
 
 Rock *

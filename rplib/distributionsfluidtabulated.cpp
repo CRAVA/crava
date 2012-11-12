@@ -33,6 +33,32 @@ DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithT
 
 }
 
+DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionsFluidTabulated & dist)
+: DistributionsFluid(dist),
+  corr_elastic_density_(dist.corr_elastic_density_),
+  tabulated_method_(dist.tabulated_method_)
+{
+  elastic_ = dist.elastic_->Clone();
+  density_ = dist.density_->Clone();
+
+  // Generate tabulated_
+  std::vector<const DistributionWithTrend *> elastic_variables(2);
+  elastic_variables[0] = elastic_;
+  elastic_variables[1] = density_;
+
+  NRLib::Grid2D<double> corr_matrix(2,2,0);
+
+  for(int i=0; i<2; i++)
+    corr_matrix(i,i) = 1;
+
+  corr_matrix(0,1) = corr_elastic_density_;
+  corr_matrix(1,0) = corr_elastic_density_;
+
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
+
+  alpha_ = dist.alpha_;
+}
+
 DistributionsFluidTabulated::~DistributionsFluidTabulated()
 {
   if(elastic_->GetIsShared() == false)
@@ -41,6 +67,12 @@ DistributionsFluidTabulated::~DistributionsFluidTabulated()
     delete density_;
 
   delete tabulated_;
+}
+
+DistributionsFluid *
+DistributionsFluidTabulated::Clone() const
+{
+  return new DistributionsFluidTabulated(*this);
 }
 
 Fluid *

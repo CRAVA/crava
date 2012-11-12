@@ -31,7 +31,33 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 }
 
+DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
+: DistributionsRock(dist),
+  expectation_old_(dist.expectation_old_),
+  covariance_old_(dist.covariance_old_)
+{
+  distr_solid_ = dist.distr_solid_->Clone();
+
+  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
+    distr_fluid_.push_back(dist.distr_fluid_[i]);
+
+  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
+    distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
+
+  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++)
+    distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+
+  alpha_ = dist.alpha_;
+}
+
 DistributionsRockDEM::~DistributionsRockDEM(){}
+
+DistributionsRock *
+DistributionsRockDEM::Clone() const
+{
+  return new DistributionsRockDEM(*this);
+}
+
 
 Rock *
 DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) const

@@ -23,7 +23,33 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
 
 }
 
-DistributionsSolidDEM::~DistributionsSolidDEM(){}
+DistributionsSolidDEM::DistributionsSolidDEM(const DistributionsSolidDEM & dist)
+: DistributionsSolid(dist)
+{
+  distr_solid_ = dist.distr_solid_->Clone();
+
+  for(size_t i=0; i<dist.distr_solid_inc_.size(); i++)
+    distr_solid_inc_.push_back(dist.distr_solid_inc_[i]->Clone());
+
+  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
+    distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
+
+  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++)
+    distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+
+  alpha_ = dist.alpha_;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
+
+}
+
+DistributionsSolidDEM::~DistributionsSolidDEM()
+{
+}
+
+DistributionsSolid *
+DistributionsSolidDEM::Clone() const
+{
+  return new DistributionsSolidDEM(*this);
+}
 
 Solid *
 DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params) const

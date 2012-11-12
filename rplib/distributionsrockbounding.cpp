@@ -48,6 +48,19 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
 
 }
 
+DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBounding & dist)
+: DistributionsRock(dist),
+  correlation_weights_(dist.correlation_weights_),
+  tabulated_(dist.tabulated_)
+{
+  upper_rock_ = dist.upper_rock_->Clone();
+  lower_rock_ = dist.lower_rock_->Clone();
+  porosity_   = dist.porosity_->Clone();
+  K_weight_   = dist.K_weight_->Clone();
+  M_weight_   = dist.M_weight_->Clone();
+  alpha_      = dist.alpha_;
+}
+
 DistributionsRockBounding::~DistributionsRockBounding()
 {
   if(porosity_->GetIsShared() == false)
@@ -60,6 +73,12 @@ DistributionsRockBounding::~DistributionsRockBounding()
     delete M_weight_;
 
   delete tabulated_;
+}
+
+DistributionsRock *
+DistributionsRockBounding::Clone() const
+{
+  return new DistributionsRockBounding(*this);
 }
 
 Rock *

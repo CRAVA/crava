@@ -19,7 +19,11 @@ public:
                              DEMTools::TabulatedMethod     method,
                              std::vector<double>         & alpha);
 
+  DistributionsRockTabulated(const DistributionsRockTabulated & dist);
+
   virtual ~DistributionsRockTabulated();
+
+  virtual DistributionsRock        * Clone() const;
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;

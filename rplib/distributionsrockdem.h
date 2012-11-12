@@ -24,7 +24,11 @@ public:
                       std::vector< DistributionWithTrend * >       & distr_incl_concentration,
                       std::vector<double>                          & alpha);
 
+ DistributionsRockDEM(const DistributionsRockDEM & dist);
+
   virtual                                        ~DistributionsRockDEM();
+
+  virtual DistributionsRock                    * Clone() const;
 
   virtual Rock                                 * GenerateSample(const std::vector<double> & trend_params) const;
 

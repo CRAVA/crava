@@ -17,7 +17,11 @@ public:
                         std::vector< DistributionWithTrend * >       & distr_vol_frac,
                         DEMTools::MixMethod                            mix_method);
 
+  DistributionsFluidMix(const DistributionsFluidMix & dist);
+
   virtual ~DistributionsFluidMix();
+
+  virtual DistributionsFluid                    * Clone() const;
 
   virtual Fluid                                 * GenerateSample(const std::vector<double> & trend_params) const;
 

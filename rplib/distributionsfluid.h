@@ -13,6 +13,8 @@ public:
 
   virtual                       ~DistributionsFluid(){}
 
+  virtual DistributionsFluid  * Clone()                                                       const = 0;
+
   virtual Fluid *               GenerateSample(const std::vector<double> & /*trend_params*/)  const = 0;
 
   std::vector< Fluid* >         GenerateWellSample(const  std::vector<double> & trend_params,

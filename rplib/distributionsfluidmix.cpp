@@ -14,16 +14,37 @@
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method)
-: DistributionsFluid()
+: DistributionsFluid(),
+  mix_method_(mix_method)
 {
   assert(distr_fluid.size() == distr_vol_frac.size());
   distr_fluid_      = distr_fluid;
   distr_vol_frac_   = distr_vol_frac;
-  mix_method_       = mix_method;
+}
+
+DistributionsFluidMix::DistributionsFluidMix(const DistributionsFluidMix & dist)
+: DistributionsFluid(dist),
+  mix_method_(dist.mix_method_)
+{
+  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
+    distr_fluid_.push_back(dist.distr_fluid_[i]);
+
+  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
+    if(dist.distr_vol_frac_[i] != NULL)
+      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
+    else
+      distr_vol_frac_.push_back(NULL);
+  }
 }
 
 DistributionsFluidMix::~DistributionsFluidMix()
 {
+}
+
+DistributionsFluid *
+DistributionsFluidMix::Clone() const
+{
+  return new DistributionsFluidMix(*this);
 }
 
 Fluid *

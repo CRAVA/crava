@@ -21,7 +21,32 @@ DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >
   alpha_            = alpha;
 }
 
-DistributionsSolidMix::~DistributionsSolidMix(){}
+DistributionsSolidMix::DistributionsSolidMix(const DistributionsSolidMix & dist)
+: DistributionsSolid(dist),
+  mix_method_(dist.mix_method_)
+{
+  for(size_t i=0; i<dist.distr_solid_.size(); i++)
+    distr_solid_.push_back(dist.distr_solid_[i]);
+
+  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
+    if(dist.distr_vol_frac_[i] != NULL)
+      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
+    else
+      distr_vol_frac_.push_back(NULL);
+  }
+
+  alpha_ = dist.alpha_;
+}
+
+DistributionsSolidMix::~DistributionsSolidMix()
+{
+}
+
+DistributionsSolid *
+DistributionsSolidMix::Clone() const
+{
+  return new DistributionsSolidMix(*this);
+}
 
 Solid *
 DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) const

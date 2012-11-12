@@ -9,11 +9,15 @@ class DistributionWithTrend;
 class DistributionsCO2 : public DistributionsFluid {
 public:
 
-                                      DistributionsCO2(const DistributionWithTrend       * distr_temperature,
-                                                       const DistributionWithTrend       * distr_pore_pressure,
-                                                       std::vector<double>               & alpha);
+  DistributionsCO2(const DistributionWithTrend       * distr_temperature,
+                   const DistributionWithTrend       * distr_pore_pressure,
+                   std::vector<double>               & alpha);
 
-  virtual                             ~DistributionsCO2();
+  DistributionsCO2(const DistributionsCO2 & dist);
+
+  virtual ~DistributionsCO2();
+
+  virtual DistributionsFluid        * Clone() const;
 
   virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
 

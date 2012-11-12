@@ -16,7 +16,11 @@ public:
                         std::vector< DistributionWithTrend * >       & distr_incl_concentration,
                         std::vector<double>                          & alpha);
 
+  DistributionsSolidDEM(const DistributionsSolidDEM & dist);
+
   virtual                       ~DistributionsSolidDEM();
+
+  virtual DistributionsSolid  * Clone() const;
 
   virtual Solid               * GenerateSample(const std::vector<double> & trend_params) const;
 

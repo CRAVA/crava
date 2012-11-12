@@ -19,9 +19,14 @@ public:
                               DEMTools::TabulatedMethod     method,
                               std::vector<double>         & alpha);
 
+  DistributionsFluidTabulated(const DistributionsFluidTabulated & dist);
+
   virtual ~DistributionsFluidTabulated();
 
   // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
+
+  virtual DistributionsFluid  * Clone() const;
+
   virtual Fluid               * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;

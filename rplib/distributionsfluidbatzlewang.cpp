@@ -16,8 +16,23 @@ DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWit
   alpha_               = alpha;
 }
 
+DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionsFluidBatzleWang & dist)
+: DistributionsFluid(dist)
+{
+  distr_salinity_      = dist.distr_salinity_->Clone();
+  distr_temperature_   = dist.distr_temperature_->Clone();
+  distr_pore_pressure_ = dist.distr_pore_pressure_->Clone();
+  alpha_               = dist.alpha_;
+}
+
 DistributionsFluidBatzleWang::~DistributionsFluidBatzleWang()
 {
+}
+
+DistributionsFluid *
+DistributionsFluidBatzleWang::Clone() const
+{
+  return new DistributionsFluidBatzleWang(*this);
 }
 
 Fluid *

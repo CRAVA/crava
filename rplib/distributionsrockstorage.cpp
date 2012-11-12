@@ -142,7 +142,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
         if(i < n_vintages_constit)
           distr_rock[i][s] = distr_rock_all_vintages[i];
         else
-          distr_rock[i][s] = distr_rock[i-1][s];
+          distr_rock[i][s] = distr_rock[i-1][s]->Clone();
       }
     }
 
@@ -180,7 +180,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
           if(i < n_vintages_constit)
             distr_fluid[i][n_fluids] = constit_fluid_all_vintages[i];
           else
-            distr_fluid[i][n_fluids] = distr_fluid[i-1][n_fluids];
+            distr_fluid[i][n_fluids] = distr_fluid[i-1][n_fluids]->Clone();
         }
 
         for(int i=0; i<max_vintage; i++)
@@ -210,7 +210,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
           if(i < n_vintages_constit)
             distr_solid[i][n_solids] = constit_solid_all_vintages[i];
           else
-            distr_solid[i][n_solids] = distr_solid[i-1][n_solids];
+            distr_solid[i][n_solids] = distr_solid[i-1][n_solids]->Clone();
         }
 
         for(int i=0; i<max_vintage; i++)
@@ -692,7 +692,7 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
     if(i < n_vintages_solid)
       final_distr_solid[i] = distr_solid[i];
     else
-      final_distr_solid[i] = final_distr_solid[i-1];
+      final_distr_solid[i] = final_distr_solid[i-1]->Clone();
   }
 
   //Read inclusion label
@@ -715,7 +715,7 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
       if(i < n_vintages_inc)
         final_distr_fluid_inc[i][s] = distr_fluid_all_vintages[i];
       else
-        final_distr_fluid_inc[i][s] = final_distr_fluid_inc[i-1][s];
+        final_distr_fluid_inc[i][s] = final_distr_fluid_inc[i-1][s]->Clone();
     }
   }
 
@@ -870,7 +870,7 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
     if(i < static_cast<int>(distr_upper_rock.size()))
       final_distr_upper_rock[i] = distr_upper_rock[i];
     else
-      final_distr_upper_rock[i] = final_distr_upper_rock[i-1];
+      final_distr_upper_rock[i] = final_distr_upper_rock[i-1]->Clone();
   }
 
   if(distr_upper_rock[0]->GetIsOkForBounding() == false) {
@@ -899,7 +899,7 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
     if(i < static_cast<int>(distr_lower_rock.size()))
       final_distr_lower_rock[i] = distr_lower_rock[i];
     else
-      final_distr_lower_rock[i] = final_distr_lower_rock[i-1];
+      final_distr_lower_rock[i] = final_distr_lower_rock[i-1]->Clone();
   }
 
   if(distr_lower_rock[0]->GetIsOkForBounding() == false) {

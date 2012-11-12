@@ -29,9 +29,32 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
   alpha_ = alpha;
 }
 
+DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist)
+: DistributionsRock(dist),
+  distr_vol_frac_(dist.distr_vol_frac_),
+  mix_method_(dist.mix_method_)
+{
+  for(size_t i=0; i<dist.distr_rock_.size(); i++)
+    distr_rock_.push_back(dist.distr_rock_[i]);
+
+  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
+    if(dist.distr_vol_frac_[i] != NULL)
+      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
+    else
+      distr_vol_frac_.push_back(NULL);
+  }
+
+  alpha_ = dist.alpha_;
+}
+
 DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
 {
+}
 
+DistributionsRock *
+DistributionsRockMixOfRock::Clone() const
+{
+  return new DistributionsRockMixOfRock(*this);
 }
 
 Rock *
@@ -198,8 +221,40 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   alpha_ = alpha;
 }
 
+DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const DistributionsRockMixOfSolidAndFluid & dist)
+: DistributionsRock(dist),
+  mix_method_(dist.mix_method_)
+{
+  for(size_t i=0; i<dist.distr_solid_.size(); i++)
+    distr_solid_.push_back(dist.distr_solid_[i]);
+
+  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
+    distr_fluid_.push_back(dist.distr_fluid_[i]);
+
+  for(size_t i=0; i<dist.distr_vol_frac_solid_.size(); i++) {
+    if(dist.distr_vol_frac_solid_[i] != NULL)
+      distr_vol_frac_solid_.push_back(dist.distr_vol_frac_solid_[i]->Clone());
+    else
+      distr_vol_frac_solid_.push_back(NULL);
+  }
+  for(size_t i=0; i<dist.distr_vol_frac_fluid_.size(); i++) {
+    if(dist.distr_vol_frac_fluid_[i] != NULL)
+      distr_vol_frac_fluid_.push_back(dist.distr_vol_frac_fluid_[i]->Clone());
+    else
+      distr_vol_frac_fluid_.push_back(NULL);
+  }
+
+  alpha_ = dist.alpha_;
+}
+
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()
 {
+}
+
+DistributionsRock *
+DistributionsRockMixOfSolidAndFluid::Clone() const
+{
+  return new DistributionsRockMixOfSolidAndFluid(*this);
 }
 
 Rock *

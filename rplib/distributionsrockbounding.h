@@ -18,7 +18,11 @@ public:
                             double                        correlation_weights,
                             std::vector<double>         & alpha);
 
+  DistributionsRockBounding(const DistributionsRockBounding & dist);
+
   virtual ~DistributionsRockBounding();
+
+  virtual DistributionsRock        * Clone() const;
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;
