@@ -43,10 +43,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                                      const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
                                                      const std::map<std::string, DistributionsDryRockStorage *>      & model_dry_rock_storage,
                                                      const std::map<std::string, DistributionsFluidStorage *>        & model_fluid_storage,
-                                                     std::map<std::string, std::vector<DistributionsRock *> >        & rock_distribution,
-                                                     std::map<std::string, std::vector<DistributionsSolid *> >       & solid_distribution,
-                                                     std::map<std::string, std::vector<DistributionsDryRock *> >     & dry_rock_distribution,
-                                                     std::map<std::string, std::vector<DistributionsFluid *> >       & fluid_distribution,
                                                      DEMTools::MixMethod                                               mix_method,
                                                      std::string                                                     & errTxt) const
 {
@@ -130,10 +126,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                                                           model_solid_storage,
                                                                           model_dry_rock_storage,
                                                                           model_fluid_storage,
-                                                                          rock_distribution,
-                                                                          solid_distribution,
-                                                                          dry_rock_distribution,
-                                                                          fluid_distribution,
                                                                           tmpErrTxt);
 
       int n_vintages_constit = static_cast<int>(distr_rock_all_vintages.size());
@@ -168,7 +160,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                                                                  trend_cube_parameters,
                                                                                  trend_cube_sampling,
                                                                                  model_fluid_storage,
-                                                                                 fluid_distribution,
                                                                                  errTxt);
 
         int n_vintages_constit = static_cast<int>(constit_fluid_all_vintages.size());
@@ -198,7 +189,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const std::string          
                                                                                  trend_cube_parameters,
                                                                                  trend_cube_sampling,
                                                                                  model_solid_storage,
-                                                                                 solid_distribution,
                                                                                  errTxt);
 
         int n_vintages_constit = static_cast<int>(constit_solid_all_vintages.size());
@@ -268,10 +258,6 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const std::string       
                                                         const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                         const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
                                                         const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
-                                                        std::map<std::string, std::vector<DistributionsRock *> >    & /*rock_distribution*/,
-                                                        std::map<std::string, std::vector<DistributionsSolid *> >   & /*solid_distribution*/,
-                                                        std::map<std::string, std::vector<DistributionsDryRock *> > & /*dry_rock_distribution*/,
-                                                        std::map<std::string, std::vector<DistributionsFluid *> >   & /*fluid_distribution*/,
                                                         std::string                                                 & errTxt) const
 {
   std::vector<double> alpha(3);
@@ -359,10 +345,6 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string        
                                                        const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
                                                        const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
-                                                       std::map<std::string, std::vector<DistributionsRock *> >    & /*rock_distribution*/,
-                                                       std::map<std::string, std::vector<DistributionsSolid *> >   & /*solid_distribution*/,
-                                                       std::map<std::string, std::vector<DistributionsDryRock *> > & /*dry_rock_distribution*/,
-                                                       std::map<std::string, std::vector<DistributionsFluid *> >   & /*fluid_distribution*/,
                                                        std::string                                                 & errTxt) const
 {
   std::vector<double> alpha(3);
@@ -436,10 +418,6 @@ ReussRockStorage::GenerateDistributionsRock(const std::string                   
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                            std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                            std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                             std::string                                                 & errTxt) const
 {
 
@@ -456,10 +434,6 @@ ReussRockStorage::GenerateDistributionsRock(const std::string                   
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      rock_distribution,
-                                      solid_distribution,
-                                      dry_rock_distribution,
-                                      fluid_distribution,
                                       DEMTools::Reuss,
                                       tmpErrTxt);
 
@@ -495,10 +469,6 @@ VoigtRockStorage::GenerateDistributionsRock(const std::string                   
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                            std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                            std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                             std::string                                                 & errTxt) const
 {
 
@@ -515,10 +485,6 @@ VoigtRockStorage::GenerateDistributionsRock(const std::string                   
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      rock_distribution,
-                                      solid_distribution,
-                                      dry_rock_distribution,
-                                      fluid_distribution,
                                       DEMTools::Voigt,
                                       tmpErrTxt);
 
@@ -555,10 +521,6 @@ HillRockStorage::GenerateDistributionsRock(const std::string                    
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                            std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                            std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                            std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                             std::string                                                 & errTxt) const
 {
 
@@ -575,10 +537,6 @@ HillRockStorage::GenerateDistributionsRock(const std::string                    
                                       model_solid_storage,
                                       model_dry_rock_storage,
                                       model_fluid_storage,
-                                      rock_distribution,
-                                      solid_distribution,
-                                      dry_rock_distribution,
-                                      fluid_distribution,
                                       DEMTools::Hill,
                                       tmpErrTxt);
 
@@ -628,10 +586,6 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
                                           const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                           const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
                                           const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                          std::map<std::string, std::vector<DistributionsRock *> >    & /*rock_distribution*/,
-                                          std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                          std::map<std::string, std::vector<DistributionsDryRock *> > & /*dry_rock_distribution*/,
-                                          std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                           std::string                                                 & errTxt) const
 {
     // Remember: Host info is included first in constituent vectors
@@ -683,7 +637,6 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
                                                             trend_cube_parameters,
                                                             trend_cube_sampling,
                                                             model_solid_storage,
-                                                            solid_distribution,
                                                             errTxt);
 
   int n_vintages_solid = static_cast<int>(distr_solid.size());
@@ -706,7 +659,6 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
                                                                            trend_cube_parameters,
                                                                            trend_cube_sampling,
                                                                            model_fluid_storage,
-                                                                           fluid_distribution,
                                                                            errTxt);
 
     int n_vintages_inc = static_cast<int>(distr_fluid_all_vintages.size());
@@ -783,10 +735,6 @@ GassmannRockStorage::GenerateDistributionsRock(const std::string                
                                                const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
                                                const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
-                                               std::map<std::string, std::vector<DistributionsRock *> >    & /*rock_distribution*/,
-                                               std::map<std::string, std::vector<DistributionsSolid *> >   & /*solid_distribution*/,
-                                               std::map<std::string, std::vector<DistributionsDryRock *> > & /*dry_rock_distribution*/,
-                                               std::map<std::string, std::vector<DistributionsFluid *> >   & /*fluid_distribution*/,
                                                std::string                                                 & errTxt) const
 {
   std::vector<DistributionsRock *> rock(1, NULL);
@@ -829,10 +777,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                                                const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                               std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                               std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                               std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                               std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                std::string                                                 & errTxt) const
 {
   std::string tmpErrTxt = "";
@@ -860,10 +804,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               model_solid_storage,
                               model_dry_rock_storage,
                               model_fluid_storage,
-                              rock_distribution,
-                              solid_distribution,
-                              dry_rock_distribution,
-                              fluid_distribution,
                               tmpErrTxt);
 
   for(int i=0; i<max_vintage; i++) {
@@ -889,10 +829,6 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               model_solid_storage,
                               model_dry_rock_storage,
                               model_fluid_storage,
-                              rock_distribution,
-                              solid_distribution,
-                              dry_rock_distribution,
-                              fluid_distribution,
                               tmpErrTxt);
 
   for(int i=0; i<max_vintage; i++) {

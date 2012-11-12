@@ -18,7 +18,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const = 0;
 protected:
   std::vector<DistributionsSolid *> CreateDistributionsSolidMix(const std::string                                               & path,
@@ -27,7 +26,6 @@ protected:
                                                                 const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
                                                                 const std::vector<std::string>                                  & constituent_label,
                                                                 const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
-                                                                std::map<std::string, std::vector<DistributionsSolid *> >       & solid_distribution,
                                                                 DEMTools::MixMethod                                               mix_method,
                                                                 std::string                                                     & errTxt) const;
 };
@@ -48,7 +46,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const;
 
 private:
@@ -76,7 +73,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const ;
 
 private:
@@ -100,7 +96,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const;
 
 private:
@@ -120,7 +115,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const;
 
 private:
@@ -140,7 +134,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const;
 
 private:
@@ -163,7 +156,6 @@ public:
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
-                                                                       std::map<std::string, std::vector<DistributionsSolid *> > & solid_distribution,
                                                                        std::string                                               & errTxt) const;
 
 private:

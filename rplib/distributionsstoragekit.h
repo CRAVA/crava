@@ -38,10 +38,6 @@ ReadRock(const std::string                                           & target_ro
          const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
          const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
          const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-         std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-         std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-         std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-         std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
          std::string                                                 & errTxt);
 
 std::vector<DistributionsSolid *>
@@ -50,7 +46,6 @@ ReadSolid(const std::string                                          & target_so
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
-          std::map<std::string, std::vector<DistributionsSolid *> >  & solid_distribution,
           std::string                                                & errTxt);
 
 std::vector<DistributionsFluid *>
@@ -59,7 +54,6 @@ ReadFluid(const std::string                                          & target_fl
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
-          std::map<std::string, std::vector<DistributionsFluid *> >  & fluid_distribution,
           std::string                                                & errTxt);
 
 void

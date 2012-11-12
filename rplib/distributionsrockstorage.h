@@ -26,10 +26,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt)            const = 0;
 
 protected:
@@ -42,10 +38,6 @@ protected:
                                                               const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
                                                               const std::map<std::string, DistributionsDryRockStorage *>      & model_dry_rock_storage,
                                                               const std::map<std::string, DistributionsFluidStorage *>        & model_fluid_storage,
-                                                              std::map<std::string, std::vector<DistributionsRock *> >        & rock_distribution,
-                                                              std::map<std::string, std::vector<DistributionsSolid *> >       & solid_distribution,
-                                                              std::map<std::string, std::vector<DistributionsDryRock *> >     & dry_rock_distribution,
-                                                              std::map<std::string, std::vector<DistributionsFluid *> >       & fluid_distribution,
                                                               DEMTools::MixMethod                                               mix_method,
                                                               std::string                                                     & errTxt) const;
 
@@ -69,10 +61,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -103,10 +91,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -133,10 +117,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -159,10 +139,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -185,10 +161,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -214,10 +186,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -243,10 +211,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -273,10 +237,6 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
-                                                                     std::map<std::string, std::vector<DistributionsRock *> >    & rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsSolid *> >   & solid_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsDryRock *> > & dry_rock_distribution,
-                                                                     std::map<std::string, std::vector<DistributionsFluid *> >   & fluid_distribution,
                                                                      std::string                                                 & errTxt) const;
 
 private:

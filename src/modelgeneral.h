@@ -294,10 +294,7 @@ private:
 
 
   CravaTrend                                                         trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
-  std::map<std::string, std::vector<DistributionsDryRock *> >        dry_rock_distributions_; ///< Dry rocks used in rock physics model
   std::map<std::string, std::vector<DistributionsRock *> >           rock_distributions_;     ///< Rocks used in rock physics model
-  std::map<std::string, std::vector<DistributionsSolid *> >          solid_distributions_;    ///< Fluids used in rock physics model
-  std::map<std::string, std::vector<DistributionsFluid *> >          fluid_distributions_;    ///< Fluids used in rock physics model
   std::map<std::string, std::vector<const DistributionWithTrend *> > reservoir_variables_;   ///< Reservoir variables used in the rock physics model
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
