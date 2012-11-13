@@ -31,12 +31,13 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
-: gaussian_(dist.gaussian_),
-  mean_(dist.mean_),
-  var_(dist.var_),
-  is_shared_(dist.is_shared_),
+// Constructor to be used with Clone()
+: is_shared_(false), //Set is_shared = false as the variable is cloned
   use_trend_cube_(dist.use_trend_cube_)
 {
+  gaussian_ = dist.gaussian_->Clone();
+  mean_     = dist.mean_    ->Clone();
+  var_      = dist.var_     ->Clone();
 }
 
 NormalDistributionWithTrend::~NormalDistributionWithTrend()

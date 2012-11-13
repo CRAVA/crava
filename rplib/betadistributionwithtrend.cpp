@@ -92,10 +92,8 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
-: beta_distribution_(dist.beta_distribution_),
-  mean_(dist.mean_),
-  var_(dist.var_),
-  is_shared_(dist.is_shared_),
+// Constructor to be used with Clone()
+: is_shared_(false), //Set is_shared = false as the variable is cloned
   use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
   nj_(dist.nj_),
@@ -104,6 +102,17 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithT
   n_samples_mean_(dist.n_samples_mean_),
   n_samples_var_(dist.n_samples_var_)
 {
+  beta_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
+
+  NRLib::Grid2D<NRLib::Distribution<double> *> * dist_beta = dist.beta_distribution_;
+
+  for(int i=0; i<n_samples_mean_; i++) {
+    for(int j=0; j<n_samples_var_; j++)
+      (*beta_distribution_)(i,j) = (*dist_beta)(i,j)->Clone();
+  }
+
+  mean_ = dist.mean_->Clone();
+  var_  = dist.var_ ->Clone();
 }
 
 BetaDistributionWithTrend::~BetaDistributionWithTrend()

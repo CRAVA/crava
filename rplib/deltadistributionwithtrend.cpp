@@ -27,11 +27,12 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWithTrend & dist)
-: dirac_(dist.dirac_),
-  mean_(dist.mean_),
-  is_shared_(dist.is_shared_),
+// Constructor to be used with Clone()
+: is_shared_(false), //Set is_shared = false as the variable is cloned
   use_trend_cube_(dist.use_trend_cube_)
 {
+  dirac_ = dist.dirac_->Clone();
+  mean_  = dist.mean_ ->Clone();
 }
 
 DeltaDistributionWithTrend::~DeltaDistributionWithTrend()

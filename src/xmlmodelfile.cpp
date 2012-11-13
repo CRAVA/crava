@@ -2754,6 +2754,10 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
       errTxt += "All reservoir variables need to be defined using <label>\n";
 
     modelSettings_->addReservoirVariable(label, distributionWithTrend);
+
+    for(size_t i=0; i<distributionWithTrend.size(); i++)
+      distributionWithTrend[i] = NULL;
+    distributionWithTrend.clear();
   }
 
   checkForJunk(root, errTxt, legalCommands);
