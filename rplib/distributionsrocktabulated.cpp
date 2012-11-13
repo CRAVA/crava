@@ -43,6 +43,8 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTabulated & dist)

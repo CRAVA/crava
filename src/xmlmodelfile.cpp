@@ -2990,22 +2990,26 @@ XmlModelFile::parseGaussianWithTrend(TiXmlNode                                  
 
   std::vector<DistributionWithTrendStorage *> mean_storage;
   std::string label;
-  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
-    errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
+  bool ok = true;
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
 
   std::vector<DistributionWithTrendStorage *> variance_storage;
-  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
-    errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
 
-  const NRLib::TrendStorage         * mean     = mean_storage[0]    ->CloneMean();
-  const NRLib::TrendStorage         * variance = variance_storage[0]->CloneMean();
-
-  delete mean_storage[0];
-  delete variance_storage[0];
-
-  DistributionWithTrendStorage * dist = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
-
-  storage.push_back(dist);
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+    delete mean_storage[0];
+    delete variance_storage[0];
+    DistributionWithTrendStorage * dist = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+    storage.push_back(dist);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -3027,22 +3031,45 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
 
   std::vector<DistributionWithTrendStorage *> mean_storage;
   std::string label;
-  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
-    errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
+  bool ok = true;
+
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for beta distribution.\n";
+    ok = false;
+  }
 
   std::vector<DistributionWithTrendStorage *> variance_storage;
-  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
-    errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
 
-  const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
-  const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
 
-  delete mean_storage[0];
-  delete variance_storage[0];
+    if (typeid(*mean) == typeid(NRLib::TrendConstantStorage)) {
+      const NRLib::TrendConstantStorage * m = dynamic_cast<const NRLib::TrendConstantStorage *>(mean);
+      if (m->GetMean() < 0.0 || m->GetMean() > 1.0) {
+        errTxt += "The expectation of the beta distribution ("+NRLib::ToString(m->GetMean(),2)+")";
+        errTxt += lineColumnText(root)+" must be between 0 and 1.\n";
+      }
+    }
+    if (typeid(*variance) == typeid(NRLib::TrendConstantStorage)) {
+      const NRLib::TrendConstantStorage * v = dynamic_cast<const NRLib::TrendConstantStorage *>(variance);
+      if (v->GetMean() < 0.0 || v->GetMean() > 1.0) {
+        errTxt += "The variance of the beta distribution ("+NRLib::ToString(v->GetMean(),2)+")";
+        errTxt += lineColumnText(root)+" must be between 0 and 1.\n";
+      }
+    }
 
-  DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
+    delete mean_storage[0];
+    delete variance_storage[0];
 
-  storage.push_back(dist);
+    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
+
+    storage.push_back(dist);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

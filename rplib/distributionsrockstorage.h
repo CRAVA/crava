@@ -27,7 +27,6 @@ public:
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                                      std::string                                                 & errTxt)            const = 0;
-
 protected:
   std::vector<DistributionsRock *> CreateDistributionsRockMix(const std::string                                               & path,
                                                               const std::vector<std::string>                                  & trend_cube_parameters,
@@ -62,6 +61,13 @@ public:
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                                      std::string                                                 & errTxt) const;
+
+  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution1() const { return vp_                     ;}
+  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution2() const { return vs_                     ;}
+  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution3() const { return density_                ;}
+  virtual const double                                        GetCorrelation12() const { return correlation_vp_vs_      ;}
+  virtual const double                                        GetCorrelation13() const { return correlation_vp_density_ ;}
+  virtual const double                                        GetCorrelation23() const { return correlation_vs_density_ ;}
 
 private:
   std::vector<DistributionWithTrendStorage *> vp_;

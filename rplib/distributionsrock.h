@@ -55,6 +55,13 @@ protected:
   void                                  SetupExpectationAndCovariances(const std::vector<double> & s_min,
                                                                        const std::vector<double> & s_max);
 
+  double                                FindExpectation(const std::vector<double> & p);
+
+  double                                FindCovariance(const std::vector<double> & p,
+                                                       const double                mup,
+                                                       const std::vector<double> & q,
+                                                       const double                muq);
+
   NRLib::Grid2D< std::vector<double> >  expectation_;
   NRLib::Grid2D< std::vector<double> >  covariance_;
 
