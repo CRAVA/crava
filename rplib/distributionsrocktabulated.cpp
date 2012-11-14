@@ -12,14 +12,14 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
                                                        double                        corr_elastic2_density,
                                                        DEMTools::TabulatedMethod     method,
                                                        std::vector<double>         & alpha)
-: DistributionsRock(),
-  elastic1_(elastic1),
-  elastic2_(elastic2),
-  density_(density),
-  corr_elastic1_elastic2_(corr_elastic1_elastic2),
-  corr_elastic1_density_(corr_elastic1_density),
-  corr_elastic2_density_(corr_elastic2_density),
-  tabulated_method_(method)
+  : DistributionsRock(),
+    elastic1_(elastic1),
+    elastic2_(elastic2),
+    density_(density),
+    corr_elastic1_elastic2_(corr_elastic1_elastic2),
+    corr_elastic1_density_(corr_elastic1_density),
+    corr_elastic2_density_(corr_elastic2_density),
+    tabulated_method_(method)
 {
   alpha_ = alpha;
 
@@ -43,16 +43,19 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
-  SetupExpectationAndCovariances(s_min_,
-                                 s_max_);
+  std::vector<double> s_min(2, 0.0);
+  std::vector<double> s_max(2, 0.0);
+
+  SetupExpectationAndCovariances(s_min,
+                                 s_max);
 }
 
 DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTabulated & dist)
-: DistributionsRock(dist),
-  corr_elastic1_elastic2_(dist.corr_elastic1_elastic2_),
-  corr_elastic1_density_(dist.corr_elastic1_density_),
-  corr_elastic2_density_(dist.corr_elastic2_density_),
-  tabulated_method_(dist.tabulated_method_)
+  : DistributionsRock(dist),
+    corr_elastic1_elastic2_(dist.corr_elastic1_elastic2_),
+    corr_elastic1_density_(dist.corr_elastic1_density_),
+    corr_elastic2_density_(dist.corr_elastic2_density_),
+    tabulated_method_(dist.tabulated_method_)
 {
   elastic1_ = dist.elastic1_->Clone();
   elastic2_ = dist.elastic1_->Clone();

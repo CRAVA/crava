@@ -55,6 +55,20 @@ protected:
   void                                  SetupExpectationAndCovariances(const std::vector<double> & s_min,
                                                                        const std::vector<double> & s_max);
 
+  void                                  FindTrendParams(NRLib::Grid2D<std::vector<double> > & trend_params,
+                                                        const std::vector<bool>             & has_trend,
+                                                        const std::vector<double>           & s_min,
+                                                        const std::vector<double>           & s_max,
+                                                        const size_t                          n);
+
+  void                                  SetupTrendMesh(NRLib::Grid2D<std::vector<double> > & trend_params,
+                                                       const std::vector<double>           & t1,
+                                                       const std::vector<double>           & t2);
+
+  void                                  SampleTrendValues(std::vector<double> & s,
+                                                          const double        & s_min,
+                                                          const double        & s_max);
+
   double                                FindExpectation(const std::vector<double> & p);
 
   double                                FindCovariance(const std::vector<double> & p,
@@ -62,14 +76,10 @@ protected:
                                                        const std::vector<double> & q,
                                                        const double                muq);
 
-  NRLib::Grid2D< std::vector<double> >  expectation_;
-  NRLib::Grid2D< std::vector<double> >  covariance_;
-
-  std::vector<double>                   s_min_;
-  std::vector<double>                   s_max_;
+  NRLib::Grid2D<std::vector<double> >   expectation_;
+  NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;
 
   std::vector<double>                   alpha_;
-
 };
 
 #endif
