@@ -2318,20 +2318,23 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                               errTxt,
                               inputFiles);
 
-    std::vector<std::string> trend_cube_parameters = modelSettings->getTrendCubeParameters();
+    int n_vintages = modelSettings->getNumberOfVintages();
 
-    std::string path = inputFiles->getInputDirectory();
-
-    std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+    std::string path                                      = inputFiles->getInputDirectory();
+    std::vector<std::string> trend_cube_parameters        = modelSettings->getTrendCubeParameters();
+    std::vector<std::vector<double> > trend_cube_sampling = trend_cubes_.GetTrendCubeSampling();
 
     std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+
       std::vector<DistributionWithTrendStorage *> storage = it->second;
-      std::vector<const DistributionWithTrend *> dist_vector;
+      std::vector<const DistributionWithTrend *> dist_vector(storage.size());
+
       for(size_t i=0; i<storage.size(); i++) {
         const DistributionWithTrend  * dist = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-        dist_vector.push_back(dist);
+        dist_vector[i]                      = dist;
       }
+
       reservoir_variables_[it->first] = dist_vector;
     }
 
@@ -2342,7 +2345,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
       DistributionsRockStorage * storage    = it     ->second;
-      std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(path,
+      std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
+                                                                                 path,
                                                                                  trend_cube_parameters,
                                                                                  trend_cube_sampling,
                                                                                  rock_storage,

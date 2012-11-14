@@ -21,7 +21,7 @@ DistributionWithTrendStorage::~DistributionWithTrendStorage()
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
 : is_shared_(false),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
 }
@@ -29,7 +29,7 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
                                                                      bool   is_shared)
 : is_shared_(is_shared),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
   //Use this constructor when mean_ is a double
@@ -41,11 +41,24 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                      bool                        is_shared)
 : is_shared_(is_shared),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
   mean_                    = mean;
   distribution_with_trend_ = NULL;
+}
+
+DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const DeltaDistributionWithTrendStorage & dist)
+: is_shared_(dist.is_shared_),
+  vintage_year_(dist.vintage_year_),
+  one_year_correlation_(dist.one_year_correlation_)
+{
+  mean_ = dist.mean_->Clone();
+
+ if(dist.distribution_with_trend_ != NULL)
+    distribution_with_trend_  = dist.distribution_with_trend_->Clone();
+  else
+    distribution_with_trend_ = NULL;
 }
 
 DeltaDistributionWithTrendStorage::~DeltaDistributionWithTrendStorage()
@@ -82,7 +95,7 @@ DeltaDistributionWithTrendStorage::CloneMean() const
 
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
 : is_shared_(false),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
 }
@@ -91,12 +104,26 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRL
                                                                        const NRLib::TrendStorage * variance,
                                                                        bool                        is_shared)
 : is_shared_(is_shared),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
   mean_                     = mean;
   variance_                 = variance;
   distribution_with_trend_  = NULL;
+}
+
+NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NormalDistributionWithTrendStorage & dist)
+: is_shared_(dist.is_shared_),
+  vintage_year_(dist.vintage_year_),
+  one_year_correlation_(dist.one_year_correlation_)
+{
+  mean_     = dist.mean_    ->Clone();
+  variance_ = dist.variance_->Clone();
+
+  if(dist.distribution_with_trend_ != NULL)
+    distribution_with_trend_  = dist.distribution_with_trend_->Clone();
+  else
+    distribution_with_trend_ = NULL;
 }
 
 NormalDistributionWithTrendStorage::~NormalDistributionWithTrendStorage()
@@ -133,7 +160,7 @@ NormalDistributionWithTrendStorage::CloneMean() const
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
 : is_shared_(false),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
 }
@@ -142,12 +169,26 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::
                                                                    const NRLib::TrendStorage * variance,
                                                                    bool                        is_shared)
 : is_shared_(is_shared),
-  vintage_number_(1),
+  vintage_year_(1),
   one_year_correlation_(1.0)
 {
   mean_                     = mean;
   variance_                 = variance;
   distribution_with_trend_  = NULL;
+}
+
+BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const BetaDistributionWithTrendStorage & dist)
+: is_shared_(dist.is_shared_),
+  vintage_year_(dist.vintage_year_),
+  one_year_correlation_(dist.one_year_correlation_)
+{
+  mean_     = dist.mean_    ->Clone();
+  variance_ = dist.variance_->Clone();
+
+ if(dist.distribution_with_trend_ != NULL)
+    distribution_with_trend_  = dist.distribution_with_trend_->Clone();
+  else
+    distribution_with_trend_ = NULL;
 }
 
 BetaDistributionWithTrendStorage::~BetaDistributionWithTrendStorage()

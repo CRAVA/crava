@@ -40,7 +40,8 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
+TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
+                                                          const std::string                       & path,
                                                           const std::vector<std::string>          & trend_cube_parameters,
                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
                                                           std::string                             & errTxt) const
@@ -52,13 +53,11 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
   int n_vintages_vp      = static_cast<int>(vp_.size());
   int n_vintages_density = static_cast<int>(density_.size());
 
-  int max_vintage = std::max(n_vintages_vp, n_vintages_density);
+  std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<DistributionsFluid *>    dist_fluid(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> vp_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
-
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
       vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
@@ -102,7 +101,8 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
+TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
+                                                         const std::string                       & path,
                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
                                                          std::string                             & errTxt) const
@@ -114,13 +114,11 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
   int n_vintages_bulk    = static_cast<int>(bulk_modulus_.size());
   int n_vintages_density = static_cast<int>(density_.size());
 
-  int max_vintage = std::max(n_vintages_bulk, n_vintages_density);
+  std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<DistributionsFluid *>    dist_fluid(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> bulk_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
-
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
       bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
@@ -162,7 +160,8 @@ ReussFluidStorage::~ReussFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-ReussFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+ReussFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
+                                              const std::string                       & /*path*/,
                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
@@ -192,7 +191,8 @@ VoigtFluidStorage::~VoigtFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-VoigtFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+VoigtFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
+                                              const std::string                       & /*path*/,
                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
@@ -222,7 +222,8 @@ HillFluidStorage::~HillFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-HillFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+HillFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
+                                             const std::string                       & /*path*/,
                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                              std::string                             & errTxt) const
@@ -258,7 +259,8 @@ BatzleWangFluidStorage::~BatzleWangFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
+BatzleWangFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
+                                                   const std::string                       & path,
                                                    const std::vector<std::string>          & trend_cube_parameters,
                                                    const std::vector<std::vector<double> > & trend_cube_sampling,
                                                    std::string                             & errTxt) const
@@ -272,16 +274,12 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
   int n_vintages_temperature = static_cast<int>(temperature_.size());
   int n_vintages_salinity    = static_cast<int>(salinity_.size());
 
-  int max_vintage;
-  max_vintage = std::max(n_vintages_pressure, n_vintages_temperature);
-  max_vintage = std::max(max_vintage, n_vintages_salinity);
+  std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> pressure_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> temperature_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> salinity_dist_with_trend(n_vintages, NULL);
 
-  std::vector<DistributionsFluid *>    dist_fluid(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> pressure_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> temperature_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> salinity_dist_with_trend(max_vintage, NULL);
-
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_pressure)
       pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
@@ -291,6 +289,11 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
       temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
+
+    if(i < n_vintages_salinity)
+      salinity_dist_with_trend[i] = salinity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      salinity_dist_with_trend[i] = salinity_dist_with_trend[i-1]->Clone();
 
     //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
     bool is_co2 = false;

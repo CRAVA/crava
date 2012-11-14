@@ -22,7 +22,8 @@ DistributionsSolidStorage::~DistributionsSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string                                               & path,
+DistributionsSolidStorage::CreateDistributionsSolidMix(const int                                                       & n_vintages,
+                                                       const std::string                                               & path,
                                                        const std::vector<std::string>                                  & trend_cube_parameters,
                                                        const std::vector<std::vector<double> >                         & trend_cube_sampling,
                                                        const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
@@ -34,15 +35,9 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
 
   int n_constituents = static_cast<int>(constituent_label.size());
 
-  std::vector<int> n_vintages(n_constituents);
+  std::vector<int> n_vintages_constit(n_constituents);
   for(int i=0; i<n_constituents; i++)
-    n_vintages[i] = static_cast<int>(constituent_volume_fraction[i].size());
-
-  int max_vintage = 0;
-  for(int i=0; i<n_constituents; i++) {
-    if(n_vintages[i] > max_vintage)
-      max_vintage = n_vintages[i];
-  }
+    n_vintages_constit[i] = static_cast<int>(constituent_volume_fraction[i].size());
 
   std::vector<double> alpha(n_constituents);
   for(int i=0; i<n_constituents; i++) {
@@ -52,19 +47,20 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
       alpha[i] = 1;
   }
 
-  std::vector<std::vector<DistributionsSolid *> > distr_solid(max_vintage);
-  for(int i=0; i<max_vintage; i++)
+  std::vector<std::vector<DistributionsSolid *> > distr_solid(n_vintages);
+  for(int i=0; i<n_vintages; i++)
     distr_solid[i].resize(n_constituents, NULL);
 
   for (int s = 0; s < n_constituents; s++) {
-    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(constituent_label[s],
+    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(n_vintages,
+                                                                           constituent_label[s],
                                                                            path,
                                                                            trend_cube_parameters,
                                                                            trend_cube_sampling,
                                                                            model_solid_storage,
                                                                            errTxt);
 
-    for(int i=0; i<max_vintage; i++) {
+    for(int i=0; i<n_vintages; i++) {
       if(i < static_cast<int>(distr_solid_all_vintages.size()))
         distr_solid[i][s] = distr_solid_all_vintages[i];
       else
@@ -72,17 +68,17 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
     }
   }
 
-  std::vector<DistributionsSolid *>                  final_dist_solid(max_vintage, NULL);
-  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(max_vintage);
+  std::vector<DistributionsSolid *>                  final_dist_solid(n_vintages, NULL);
+  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
 
-  for(int i=0; i<max_vintage; i++)
+  for(int i=0; i<n_vintages; i++)
     all_volume_fractions[i].resize(n_constituents, NULL);
 
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
 
     for (int s=0; s<n_constituents; s++) {
 
-      if(i < n_vintages[s]) {
+      if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
           all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }
@@ -129,7 +125,8 @@ TabulatedVelocitySolidStorage::~TabulatedVelocitySolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                          const std::string                                         & path,
                                                           const std::vector<std::string>                            & trend_cube_parameters,
                                                           const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                           const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
@@ -144,15 +141,12 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
   int n_vintages_vs      = static_cast<int>(vs_.size());
   int n_vintages_density = static_cast<int>(density_.size());
 
-  int max_vintage = std::max(n_vintages_vp, n_vintages_vs);
-  max_vintage     = std::max(max_vintage,   n_vintages_density);
+  std::vector<DistributionsSolid *>    dist_solid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> vs_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<DistributionsSolid *>    dist_solid(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> vp_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> vs_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
-
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
       vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
@@ -213,7 +207,8 @@ TabulatedModulusSolidStorage::~TabulatedModulusSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                         const std::string                                         & path,
                                                          const std::vector<std::string>                            & trend_cube_parameters,
                                                          const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                          const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
@@ -228,15 +223,12 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
   int n_vintages_shear   = static_cast<int>(shear_modulus_.size());
   int n_vintages_density = static_cast<int>(density_.size());
 
-  int max_vintage = std::max(n_vintages_bulk, n_vintages_shear);
-  max_vintage     = std::max(max_vintage,     n_vintages_density);
+  std::vector<DistributionsSolid *>    dist_solid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<DistributionsSolid *>    dist_solid(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> bulk_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> shear_dist_with_trend(max_vintage, NULL);
-  std::vector<DistributionWithTrend *> density_dist_with_trend(max_vintage, NULL);
-
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
       bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
@@ -284,13 +276,15 @@ ReussSolidStorage::~ReussSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-ReussSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+ReussSolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                              const std::string                                         & path,
                                               const std::vector<std::string>                            & trend_cube_parameters,
                                               const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                               const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
                                               std::string                                               & errTxt) const
 {
-  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(n_vintages,
+                                                                        path,
                                                                         trend_cube_parameters,
                                                                         trend_cube_sampling,
                                                                         model_solid_storage,
@@ -318,13 +312,15 @@ VoigtSolidStorage::~VoigtSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-VoigtSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+VoigtSolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                              const std::string                                         & path,
                                               const std::vector<std::string>                            & trend_cube_parameters,
                                               const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                               const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
                                               std::string                                               & errTxt) const
 {
-  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(n_vintages,
+                                                                        path,
                                                                         trend_cube_parameters,
                                                                         trend_cube_sampling,
                                                                         model_solid_storage,
@@ -352,13 +348,15 @@ HillSolidStorage::~HillSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-HillSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+HillSolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                             const std::string                                         & path,
                                              const std::vector<std::string>                            & trend_cube_parameters,
                                              const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                              const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
                                              std::string                                               & errTxt) const
 {
-  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(path,
+  std::vector<DistributionsSolid *> solid = CreateDistributionsSolidMix(n_vintages,
+                                                                        path,
                                                                         trend_cube_parameters,
                                                                         trend_cube_sampling,
                                                                         model_solid_storage,
@@ -401,7 +399,8 @@ DEMSolidStorage::~DEMSolidStorage()
 }
 
 std::vector<DistributionsSolid *>
-DEMSolidStorage::GenerateDistributionsSolid(const std::string                                         & path,
+DEMSolidStorage::GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                            const std::string                                         & path,
                                             const std::vector<std::string>                            & trend_cube_parameters,
                                             const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                             const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -425,16 +424,6 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   for(int i=0; i<n_constituents; i++)
     n_vintages_volume[i] = static_cast<int>(volume_fractions[i].size());
 
-  int max_vintage = 0;
-  for(int i=0; i<n_inclusions; i++) {
-    if(static_cast<int>(inclusion_aspect_ratio_[i].size()) > max_vintage)
-      max_vintage = static_cast<int>(inclusion_aspect_ratio_[i].size());
-  }
-  for(int i=0; i<n_constituents; i++) {
-    if(static_cast<int>(volume_fractions[i].size()) > max_vintage)
-      max_vintage = static_cast<int>(volume_fractions[i].size());
-  }
-
   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
   std::vector<double> alpha(n_inclusions + n_constituents);
 
@@ -449,17 +438,18 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   }
 
   //Read host label
-  std::vector<DistributionsSolid *> final_distr_solid (max_vintage);
+  std::vector<DistributionsSolid *> final_distr_solid (n_vintages);
   std::vector<DistributionsSolid *> distr_solid;
 
-  distr_solid = ReadSolid(host_label_,
+  distr_solid = ReadSolid(n_vintages,
+                          host_label_,
                           path,
                           trend_cube_parameters,
                           trend_cube_sampling,
                           model_solid_storage,
                           errTxt);
 
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if(i < static_cast<int>(distr_solid.size()))
       final_distr_solid[i] = distr_solid[i];
     else
@@ -467,19 +457,20 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   }
 
   //Read inclusion label
-  std::vector<std::vector<DistributionsSolid *> > final_distr_solid_inc(max_vintage);
-  for(int i=0; i<max_vintage; i++)
+  std::vector<std::vector<DistributionsSolid *> > final_distr_solid_inc(n_vintages);
+  for(int i=0; i<n_vintages; i++)
     final_distr_solid_inc[i].resize(n_inclusions, NULL);
 
   for (int s = 0; s < n_inclusions; s++) {
-    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(inclusion_label_[s],
+    std::vector<DistributionsSolid *> distr_solid_all_vintages = ReadSolid(n_vintages,
+                                                                           inclusion_label_[s],
                                                                            path,
                                                                            trend_cube_parameters,
                                                                            trend_cube_sampling,
                                                                            model_solid_storage,
                                                                            errTxt);
 
-    for(int i=0; i<max_vintage; i++) {
+    for(int i=0; i<n_vintages; i++) {
       if(i < static_cast<int>(distr_solid_all_vintages.size()))
         final_distr_solid_inc[i][s] = distr_solid_all_vintages[i];
       else
@@ -487,17 +478,17 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
     }
   }
 
-  std::vector<DistributionsSolid *>                  final_dist_solid(max_vintage, NULL);
-  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(max_vintage);
-  std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(max_vintage);
+  std::vector<DistributionsSolid *>                  final_dist_solid(n_vintages, NULL);
+  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+  std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(n_vintages);
 
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     all_volume_fractions[i].resize(n_constituents, NULL);
     all_aspect_ratios[i].resize(n_inclusions, NULL);
   }
 
 
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
 
     for (int s = 0; s < n_inclusions; s++) {
 
@@ -523,7 +514,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
 
   }
 
-  for(int i=0; i<max_vintage; i++) {
+  for(int i=0; i<n_vintages; i++) {
     if (errTxt == "")
       final_dist_solid[i] = new DistributionsSolidDEM(final_distr_solid[i],
                                                       final_distr_solid_inc[i],

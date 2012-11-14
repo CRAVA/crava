@@ -88,7 +88,8 @@ void FindMixTypesForRock(std::vector<std::string>  constituent_label,
 
 
 std::vector<DistributionsRock *>
-ReadRock(const std::string                                           & target_rock,
+ReadRock(const int                                                   & n_vintages,
+         const std::string                                           & target_rock,
          const std::string                                           & path,
          const std::vector<std::string>                              & trend_cube_parameters,
          const std::vector<std::vector<double> >                     & trend_cube_sampling,
@@ -106,7 +107,8 @@ ReadRock(const std::string                                           & target_ro
 
   else { //label found
     DistributionsRockStorage     * storage     = m_all->second;
-    rock                                       = storage->GenerateDistributionsRock(path,
+    rock                                       = storage->GenerateDistributionsRock(n_vintages,
+                                                                                    path,
                                                                                     trend_cube_parameters,
                                                                                     trend_cube_sampling,
                                                                                     model_rock_storage,
@@ -121,7 +123,8 @@ ReadRock(const std::string                                           & target_ro
 }
 
 std::vector<DistributionsSolid *>
-ReadSolid(const std::string                                          & target_solid,
+ReadSolid(const int                                                  & n_vintages,
+          const std::string                                          & target_solid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
@@ -137,7 +140,8 @@ ReadSolid(const std::string                                          & target_so
 
   else { //label found
     DistributionsSolidStorage  * storage = m_all->second;
-    solid                                = storage->GenerateDistributionsSolid(path,
+    solid                                = storage->GenerateDistributionsSolid(n_vintages,
+                                                                               path,
                                                                                trend_cube_parameters,
                                                                                trend_cube_sampling,
                                                                                model_solid_storage,
@@ -148,7 +152,8 @@ ReadSolid(const std::string                                          & target_so
 }
 
 std::vector<DistributionsFluid *>
-ReadFluid(const std::string                                          & target_fluid,
+ReadFluid(const int                                                  & n_vintages,
+          const std::string                                          & target_fluid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
@@ -165,36 +170,12 @@ ReadFluid(const std::string                                          & target_fl
 
   else { //label found
     DistributionsFluidStorage  * storage = m_all->second;
-    fluid                                = storage->GenerateDistributionsFluid(path,
+    fluid                                = storage->GenerateDistributionsFluid(n_vintages,
+                                                                               path,
                                                                                trend_cube_parameters,
                                                                                trend_cube_sampling,
                                                                                errTxt);
   }
 
   return(fluid);
-}
-
-void
-CheckVintageConsistency(const std::vector<int> & vintage_number,
-                        std::string            & errTxt)
-{
-  int n_vintages = static_cast<int>(vintage_number.size());
-
-  if(n_vintages > 1) {
-    if(vintage_number[0] < 1)
-      errTxt += "The vintage numbers need to be larger than zero in the rock physics model\n";
-
-    int compare = vintage_number[0];
-    for(int i=1; i<n_vintages; i++) {
-      if(vintage_number[i] <= compare) {
-        errTxt += "The vintage numbers need to be given in ascending order\n";
-        break;
-      }
-      else
-        compare = vintage_number[i];
-    }
-  }
-
-  if(errTxt != "")
-    errTxt += "Remember that the first vintage given under <reservoir><variable> is given vinage number 1\n";
 }

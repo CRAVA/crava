@@ -14,6 +14,8 @@ public:
 
   virtual ~DistributionWithTrendStorage();
 
+  virtual DistributionWithTrendStorage * Clone() const = 0;
+
   virtual DistributionWithTrend        * GenerateDistributionWithTrend(const std::string                       & /*path*/,
                                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
@@ -23,11 +25,11 @@ public:
 
   virtual bool                           GetIsShared() const = 0;
 
-  virtual void                           SetVintageNumber(int number) = 0;
+  virtual void                           SetVintageYear(int year) = 0;
 
   virtual void                           SetOneYearCorrelation(double correlation) = 0;
 
-  virtual int                            GetVintageNumber() = 0;
+  virtual int                            GetVintageYear() = 0;
 
   virtual double                         GetOneYearCorrelation() = 0;
 
@@ -47,7 +49,11 @@ public:
   DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                     bool                        is_shared);
 
+  DeltaDistributionWithTrendStorage(const DeltaDistributionWithTrendStorage & dist);
+
   virtual ~DeltaDistributionWithTrendStorage();
+
+  virtual DistributionWithTrendStorage   * Clone() const                             { return new DeltaDistributionWithTrendStorage(*this) ;}
 
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
@@ -58,13 +64,13 @@ public:
 
   virtual const NRLib::TrendStorage      * GetMean()   const { return mean_ ;}
 
-  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+  virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 
   virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
 
-  virtual bool                             GetIsShared() const                      { return is_shared_                    ;}
+  virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
 
-  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+  virtual int                              GetVintageYear()                          { return vintage_year_                ;}
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
@@ -72,7 +78,7 @@ private:
   const NRLib::TrendStorage            * mean_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
-  int                                    vintage_number_;
+  int                                    vintage_year_;
   double                                 one_year_correlation_;
 
 };
@@ -89,7 +95,11 @@ public:
                                      const NRLib::TrendStorage * variance,
                                      bool                        is_shared);
 
+  NormalDistributionWithTrendStorage(const NormalDistributionWithTrendStorage & dist);
+
   virtual ~NormalDistributionWithTrendStorage();
+
+  virtual DistributionWithTrendStorage   * Clone() const                             { return new NormalDistributionWithTrendStorage(*this) ;}
 
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
@@ -101,13 +111,13 @@ public:
   virtual const NRLib::TrendStorage      * GetMean()     const { return mean_     ;}
   virtual const NRLib::TrendStorage      * GetVariance() const { return variance_ ;}
 
-  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+  virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 
   virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
 
   virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
 
-  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+  virtual int                              GetVintageYear()                          { return vintage_year_                ;}
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
@@ -116,7 +126,7 @@ private:
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
-  int                                    vintage_number_;
+  int                                    vintage_year_;
   double                                 one_year_correlation_;
 };
 
@@ -132,7 +142,11 @@ public:
                                    const NRLib::TrendStorage * variance,
                                    bool                        is_shared);
 
+  BetaDistributionWithTrendStorage(const BetaDistributionWithTrendStorage & dist);
+
   virtual ~BetaDistributionWithTrendStorage();
+
+  virtual DistributionWithTrendStorage   * Clone() const                             { return new BetaDistributionWithTrendStorage(*this) ;}
 
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
@@ -144,13 +158,13 @@ public:
   virtual const NRLib::TrendStorage      * GetMean()     const { return mean_     ;}
   virtual const NRLib::TrendStorage      * GetVariance() const { return variance_ ;}
 
-  virtual void                             SetVintageNumber(int number)              { vintage_number_ = number            ;}
+  virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 
   virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
 
   virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
 
-  virtual int                              GetVintageNumber()                        { return vintage_number_              ;}
+  virtual int                              GetVintageYear()                          { return vintage_year_                ;}
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
@@ -163,7 +177,7 @@ private:
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
-  int                                    vintage_number_;
+  int                                    vintage_year_;
   double                                 one_year_correlation_;
 };
 #endif

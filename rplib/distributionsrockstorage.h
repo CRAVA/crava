@@ -19,7 +19,8 @@ public:
 
   virtual ~DistributionsRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -28,7 +29,8 @@ public:
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                                      std::string                                                 & errTxt)            const = 0;
 protected:
-  std::vector<DistributionsRock *> CreateDistributionsRockMix(const std::string                                               & path,
+  std::vector<DistributionsRock *> CreateDistributionsRockMix(const int                                                       & n_vintages,
+                                                              const std::string                                               & path,
                                                               const std::vector<std::string>                                  & trend_cube_parameters,
                                                               const std::vector<std::vector<double> >                         & trend_cube_sampling,
                                                               const std::vector<std::string>                                  & constituent_label,
@@ -53,7 +55,8 @@ public:
 
   virtual ~TabulatedVelocityRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -90,7 +93,8 @@ public:
 
   virtual ~TabulatedModulusRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -116,7 +120,8 @@ public:
 
   virtual ~ReussRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -138,7 +143,8 @@ public:
 
   virtual ~VoigtRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -160,7 +166,8 @@ public:
 
   virtual ~HillRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -185,7 +192,8 @@ public:
 
   virtual ~DEMRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -210,7 +218,8 @@ public:
 
   virtual ~GassmannRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
@@ -236,7 +245,8 @@ public:
 
   virtual ~BoundingRockStorage();
 
-  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const std::string                                           & path,
+  virtual std::vector<DistributionsRock *> GenerateDistributionsRock(const int                                                   & n_vintages,
+                                                                     const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,

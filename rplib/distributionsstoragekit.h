@@ -30,7 +30,8 @@ void FindMixTypesForRock(std::vector<std::string> constituent_label,
                          std::string & tmpErrTxt);
 
 std::vector<DistributionsRock *>
-ReadRock(const std::string                                           & target_rock,
+ReadRock(const int                                                   & n_vintages,
+         const std::string                                           & target_rock,
          const std::string                                           & path,
          const std::vector<std::string>                              & trend_cube_parameters,
          const std::vector<std::vector<double> >                     & trend_cube_sampling,
@@ -41,7 +42,8 @@ ReadRock(const std::string                                           & target_ro
          std::string                                                 & errTxt);
 
 std::vector<DistributionsSolid *>
-ReadSolid(const std::string                                          & target_solid,
+ReadSolid(const int                                                  & n_vintages,
+          const std::string                                          & target_solid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
@@ -49,14 +51,12 @@ ReadSolid(const std::string                                          & target_so
           std::string                                                & errTxt);
 
 std::vector<DistributionsFluid *>
-ReadFluid(const std::string                                          & target_fluid,
+ReadFluid(const int                                                  & n_vintages,
+          const std::string                                          & target_fluid,
           const std::string                                          & path,
           const std::vector<std::string>                             & trend_cube_parameters,
           const std::vector<std::vector<double> >                    & trend_cube_sampling,
           const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
           std::string                                                & errTxt);
 
-void
-CheckVintageConsistency(const std::vector<int> & vintage_number,
-                        std::string            & errTxt);
 #endif

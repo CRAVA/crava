@@ -2813,31 +2813,24 @@ XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
   // Check consistency
   int evolve_size = static_cast<int>(evolving_variable.size());
 
-  std::vector<int> vintage_number(evolve_size);
+  std::vector<int> vintage_year(evolve_size);
   for(int i=0; i<evolve_size; i++)
-    vintage_number[i] = evolving_variable[i]->GetVintageNumber();
+    vintage_year[i] = evolving_variable[i]->GetVintageYear();
 
-  std::string tmpTxt = "";
   if(evolve_size > 1) {
-    if(vintage_number[0] < 1)
-      tmpTxt += "The vintage numbers need to be larger than zero in <evolve><vintage><vintage-number> in the rock physics model\n";
+    if(vintage_year[0] < 1)
+      errTxt += "The vintage numbers need to be larger than zero in <evolve><vintage><vintage-year> in the rock physics model\n";
 
-    int compare = vintage_number[0];
+    int compare = vintage_year[0];
     for(int i=1; i<evolve_size; i++) {
-      if(vintage_number[i] <= compare) {
-        tmpTxt += "The vintage numbers need to be given in ascending order in <evolve><vintage><vintage-number> in the rock physics model\n";
+      if(vintage_year[i] <= compare) {
+        errTxt += "The vintage numbers need to be given in ascending order in <evolve><vintage><vintage-year> in the rock physics model\n";
         break;
       }
       else
-        compare = vintage_number[i];
+        compare = vintage_year[i];
     }
   }
-
-  if(tmpTxt != "")
-    tmpTxt += "Remember that the first vintage of the reservoir variable given under <evolve> is given vintage number 1\n";
-
-  errTxt += tmpTxt;
-
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -2854,7 +2847,7 @@ XmlModelFile::parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithT
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("distribution");
-  legalCommands.push_back("vintage-number");
+  legalCommands.push_back("vintage-year");
 
   std::string dummy_label;
   if(parseDistributionWithTrend(root, "distribution", reservoir_variable, dummy_label, true, errTxt) == false)
@@ -2862,11 +2855,11 @@ XmlModelFile::parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithT
 
   size_t variable_size = reservoir_variable.size();
 
-  int vintage_number;
-  if(parseValue(root, "vintage-number", vintage_number, errTxt) == false)
-    errTxt += "A unique integer vintage number needs to be defined for each <evolve><vintage>\n";
+  int vintage_year;
+  if(parseValue(root, "vintage-year", vintage_year, errTxt) == false)
+    errTxt += "A unique integer vintage year needs to be defined for each <evolve><vintage>\n";
 
-  reservoir_variable[variable_size-1]->SetVintageNumber(vintage_number);
+  reservoir_variable[variable_size-1]->SetVintageYear(vintage_year);
 
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -4777,8 +4770,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   //Rock physics consistency
   if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
-    if(modelSettings_->getEstimateFaciesProb() == false)
-      errTxt += "Rocks in the rock physics prior model should not be given without requesting facies probabilities under inversion settings.\n";
+    if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
+      errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";
 
     std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings_->getRockStorage();
 
@@ -4807,6 +4800,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       }
     }
   }
+
   if(modelSettings_->getBackgroundFromRockPhysics())
     // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
     // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
@@ -4910,6 +4904,31 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       else if (thf1 == NULL && thf2 != NULL)
         errTxt += "When <segy-format> in <seismic-data> is given, it needs to be identical for all time lapses.\n";
       j++;
+    }
+  }
+
+  // Check vintages in <rock-physics><evolve>
+  // Compare vintages in <reservoir> with vintages in <survey>
+  int n_surveys = modelSettings_->getNumberOfVintages();
+
+  std::vector<int> survey_year(n_surveys);
+  for(int i=0; i<n_surveys; i++)
+    survey_year[i] = modelSettings_->getVintageYear(i);
+
+  std::sort(survey_year.begin(), survey_year.end());
+
+  std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoir_variable = modelSettings_->getReservoirVariable();
+  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+    if(n_surveys != static_cast<int>(it->second.size()))
+      errTxt += "The number of vintages for reservoir variable '"+it->first+"' must be the same as the number of survey vintages\n";
+    else {
+      std::vector<DistributionWithTrendStorage *> reservoir_evolve = it->second;
+      for(int i=1; i<n_surveys; i++) {
+        if(reservoir_evolve[i]->GetVintageYear() != survey_year[i]) {
+          errTxt += "The vintage years for reservoir variable '"+it->first+"' must be the same as the <vintage><year> given in <survey>\n";
+          break;
+        }
+      }
     }
   }
 }

@@ -31,8 +31,7 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
-// Constructor to be used with Clone()
-: is_shared_(false), //Set is_shared = false as the variable is cloned
+: is_shared_(dist.is_shared_),
   use_trend_cube_(dist.use_trend_cube_)
 {
   gaussian_ = dist.gaussian_->Clone();
@@ -53,9 +52,9 @@ NormalDistributionWithTrend::ReSample(double s1, double s2) const
 
   double u = NRLib::Random::Unif01();
 
-  double probability = GetQuantileValue(u, s1, s2);
+  double value = GetQuantileValue(u, s1, s2);
 
-  return probability;
+  return value;
 }
 
 double

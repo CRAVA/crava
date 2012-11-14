@@ -12,7 +12,8 @@ public:
 
   virtual ~DistributionsFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & /*path*/,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & /*n_vintages*/,
+                                                                       const std::string                       & /*path*/,
                                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                                        std::string                             & /*errTxt*/)                    const = 0;
@@ -28,7 +29,8 @@ public:
 
   virtual ~TabulatedVelocityFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;
@@ -48,7 +50,8 @@ public:
 
   virtual ~TabulatedModulusFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;
@@ -67,7 +70,8 @@ public:
 
   virtual ~ReussFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;
@@ -85,7 +89,8 @@ public:
 
   virtual ~VoigtFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;
@@ -103,7 +108,8 @@ public:
 
   virtual ~HillFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;
@@ -122,7 +128,8 @@ public:
 
   virtual ~BatzleWangFluidStorage();
 
-  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const std::string                       & path,
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                               & n_vintages,
+                                                                       const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt) const;

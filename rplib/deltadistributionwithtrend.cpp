@@ -27,8 +27,7 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWithTrend & dist)
-// Constructor to be used with Clone()
-: is_shared_(false), //Set is_shared = false as the variable is cloned
+: is_shared_(dist.is_shared_),
   use_trend_cube_(dist.use_trend_cube_)
 {
   dirac_ = dist.dirac_->Clone();
@@ -50,7 +49,7 @@ DeltaDistributionWithTrend::ReSample(double s1, double s2) const
 
   double value = GetQuantileValue(dummy, s1, s2);
 
-  return(value);
+  return value;
 
 }
 

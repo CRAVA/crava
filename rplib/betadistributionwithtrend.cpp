@@ -92,8 +92,7 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
-// Constructor to be used with Clone()
-: is_shared_(false), //Set is_shared = false as the variable is cloned
+: is_shared_(dist.is_shared_),
   use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
   nj_(dist.nj_),
@@ -130,10 +129,10 @@ BetaDistributionWithTrend::~BetaDistributionWithTrend()
 double
 BetaDistributionWithTrend::ReSample(double s1, double s2) const
 {
-  double uniform     = NRLib::Random::Unif01();
-  double probability = GetQuantileValue(uniform, s1, s2);
+  double uniform = NRLib::Random::Unif01();
+  double value   = GetQuantileValue(uniform, s1, s2);
 
-  return(probability);
+  return value;
 }
 
 double

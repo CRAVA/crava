@@ -14,13 +14,15 @@ public:
 
   virtual ~DistributionsSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
                                                                        std::string                                               & errTxt) const = 0;
 protected:
-  std::vector<DistributionsSolid *> CreateDistributionsSolidMix(const std::string                                               & path,
+  std::vector<DistributionsSolid *> CreateDistributionsSolidMix(const int                                                       & n_vintages,
+                                                                const std::string                                               & path,
                                                                 const std::vector<std::string>                                  & trend_cube_parameters,
                                                                 const std::vector<std::vector<double> >                         & trend_cube_sampling,
                                                                 const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
@@ -42,7 +44,8 @@ public:
 
   virtual ~TabulatedVelocitySolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -69,7 +72,8 @@ public:
 
   virtual ~TabulatedModulusSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -92,7 +96,8 @@ public:
 
   virtual ~ReussSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -111,7 +116,8 @@ public:
 
   virtual ~VoigtSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -130,7 +136,8 @@ public:
 
   virtual ~HillSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
@@ -152,7 +159,8 @@ public:
 
   virtual ~DEMSolidStorage();
 
-  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const std::string                                         & path,
+  virtual std::vector<DistributionsSolid *> GenerateDistributionsSolid(const int                                                 & n_vintages,
+                                                                       const std::string                                         & path,
                                                                        const std::vector<std::string>                            & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                        const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
