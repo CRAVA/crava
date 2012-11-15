@@ -1,6 +1,8 @@
 #include "rplib/distributionsrock.h"
 #include "rplib/rock.h"
 
+#include "nrlib/iotools/logkit.hpp"
+
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
@@ -25,6 +27,69 @@ Rock * DistributionsRock::EvolveSample(double       time,
 {
     const std::vector<double> trend(2);
     return UpdateSample(time, true, trend, &rock);
+}
+
+std::vector<double> DistributionsRock::GetExpectations(const std::vector<double> & trend_params) const
+{
+  size_t ni = expectation_.GetNI();
+  size_t nj = expectation_.GetNJ();
+
+  // FindNearest ... will be replaced by an interpolation approach ...
+
+  size_t i,j;
+  FindNearestGridNode(trend_params, s_min_, s_max_, ni, nj, i, j);
+
+  return expectation_(i,j);
+}
+
+NRLib::Grid2D<double> DistributionsRock::GetCovariances(const std::vector<double> & trend_params) const
+{
+  size_t ni = covariance_.GetNI();
+  size_t nj = covariance_.GetNJ();
+
+  // FindNearest ... will be replaced by an interpolation approach ...
+
+  size_t i,j;
+  FindNearestGridNode(trend_params, s_min_, s_max_, ni, nj, i, j);
+
+  return covariance_(i,j);
+}
+
+void DistributionsRock::FindNearestGridNode(const std::vector<double> & trend_params,
+                                            const std::vector<double> & s_min,
+                                            const std::vector<double> & s_max,
+                                            const size_t                ni,
+                                            const size_t                nj,
+                                            size_t                    & i,
+                                            size_t                    & j) const
+{
+  /* would not compile ....
+  if (trend_params[0] < s_min[0]) {
+    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", trend_params[0], s_min[0]);
+    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to lowest value.\n");
+  }
+  if (trend_params[0] > s_max[0]) {
+    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", trend_params[0], s_max[0]);
+    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to largest value.\n");
+  }
+  if (trend_params[1] < s_min[1]) {
+    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", trend_params[1], s_min[1]);
+    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to lowest value.\n");
+  }
+  if (trend_params[1] > s_max[1]) {
+    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", trend_params[1], s_max[1]);
+    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to largest value.\n");
+  }
+  */
+
+  double a0 = (s_max_[0] - s_min_[0])/ni;
+  double a1 = (s_max_[1] - s_min_[1])/nj;
+
+  double d0 = (trend_params[0] - s_min_[0])/a0;    // Index in trend grid given as a double
+  double d1 = (trend_params[1] - s_min_[1])/a1;    // Index in trend grid given as a double
+
+  i = static_cast<size_t>(floor(d0 + 0.5));        // Nearest value in trend grid
+  j = static_cast<size_t>(floor(d1 + 0.5));        // Nearest value in trend grid
 }
 
 void  DistributionsRock::SetupExpectationAndCovariances(const std::vector<double> & s_min,

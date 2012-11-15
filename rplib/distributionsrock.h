@@ -36,6 +36,7 @@ public:
   virtual bool                          GetIsOkForBounding()                                              const = 0;
 
   //NBNB fjellvoll the first two functions should probably survive the new format.
+
   std::vector<double>                   GetExpectations(const std::vector<double> & trend_params)         const    ;
 
   NRLib::Grid2D<double>                 GetCovariances(const std::vector<double> & trend_params)          const    ;
@@ -75,6 +76,14 @@ protected:
                                                        const double                mup,
                                                        const std::vector<double> & q,
                                                        const double                muq);
+
+  void                                  FindNearestGridNode(const std::vector<double> & trend_params,
+                                                            const std::vector<double> & s_min,
+                                                            const std::vector<double> & s_max,
+                                                            const size_t                ni,
+                                                            const size_t                nj,
+                                                            size_t                    & i,
+                                                            size_t                    & j) const;
 
   NRLib::Grid2D<std::vector<double> >   expectation_;
   NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;
