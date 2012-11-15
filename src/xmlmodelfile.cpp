@@ -2568,89 +2568,33 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
 
   std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
   double                                      correlation_vp_vs = modelSettings_->getDefaultCorrelationVpVs();
-  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_vp_vs_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_vp_vs_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_vp_vs = t1->GetMean();
-      }
-      if(correlation_vp_vs <= -1 || correlation_vp_vs >= 1)
-        errTxt += "<correlation-vp-vs> needs to be in the interval (-1,1) in the tabulated model\n";
-    }
-  }
+  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_vp_vs_with_trend, correlation_vp_vs, errTxt);
 
   std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
   double                                      correlation_vp_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_vp_density_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_vp_density_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_vp_density = t1->GetMean();
-      }
-    }
-    if(correlation_vp_density <= -1 || correlation_vp_density >= 1)
-      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated model\n";
-  }
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_vp_density_with_trend, correlation_vp_density, errTxt);
 
   std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
   double                                      correlation_vs_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_vs_density_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_vs_density_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_vs_density = t1->GetMean();
-      }
-    }
-    if(correlation_vs_density <= -1 || correlation_vs_density >= 1)
-      errTxt += "<correlation-vs-density> needs to be in the interval (-1,1) in the tabulated model\n";
-  }
-
+  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_vs_density_with_trend, correlation_vs_density, errTxt);
 
   std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
   double                                      correlation_bulk_shear = modelSettings_->getDefaultCorrelationVpVs();
-  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_bulk_shear_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_bulk_shear_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_bulk_shear = t1->GetMean();
-      }
-    }
-    if(correlation_bulk_shear <= -1 || correlation_bulk_shear >= 1)
-      errTxt += "<correlation-bulk-shear> needs to be in the interval (-1,1) in the tabulated model\n";
-  }
-
+  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_bulk_shear_with_trend, correlation_bulk_shear, errTxt);
 
   std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
   double                                      correlation_bulk_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_bulk_density_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_bulk_density_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_bulk_density = t1->GetMean();
-      }
-    }
-    if(correlation_bulk_density <= -1 || correlation_bulk_density >= 1)
-      errTxt += "<correlation-bulk-density> needs to be in the interval (-1,1) in the tabulated model\n";
-  }
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_bulk_density_with_trend, correlation_bulk_density, errTxt);
 
   std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
   double                                      correlation_shear_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
-    if (typeid(*(correlation_shear_density_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_shear_density_with_trend[0]);
-      if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-        correlation_shear_density = t1->GetMean();
-      }
-    }
-    if(correlation_shear_density <= -1 || correlation_shear_density >= 1)
-      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated model\n";
-  }
+  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_shear_density_with_trend, correlation_shear_density, errTxt);
 
   if(use_vp)
     CheckPositiveDefiniteCorrMatrix(correlation_vp_vs, correlation_vp_density, correlation_vs_density, errTxt);
@@ -2732,22 +2676,15 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
 
-  double correlation_vp_density;
-  if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
-    correlation_vp_density = 0;
-  else {
-    if(correlation_vp_density <= -1 || correlation_vp_density >= 1)
-      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated fluid model\n";
-  }
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
+  double                                      correlation_vp_density = 0;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_vp_density_with_trend, correlation_vp_density, errTxt);
 
-  double correlation_bulk_density;
-  if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
-    correlation_bulk_density = 0;
-  else {
-    if(correlation_bulk_density <= -1 || correlation_bulk_density >= 1)
-      errTxt += "<correlation-bulk-density> needs to be in the interval (-1,1) in the tabulated fluid model\n";
-  }
-
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
+  double                                      correlation_bulk_density = 0;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true)
+    FindCorrelationValue(correlation_bulk_density_with_trend, correlation_bulk_density, errTxt);
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
@@ -2770,6 +2707,24 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
+}
+
+void
+XmlModelFile::FindCorrelationValue(const std::vector<DistributionWithTrendStorage *> & correlation_with_trend,
+                                   double                                            & correlation,
+                                   std::string                                       & errTxt)
+{
+  if(typeid(*(correlation_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
+    const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_with_trend[0]);
+    if(typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
+      const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
+      correlation = t1->GetMean();
+    }
+    if(correlation <= -1 || correlation >= 1)
+      errTxt += "The correlations need to be in the interval (-1,1) in the tabulated model\n";
+  }
+  else
+    errTxt += "The correlations need to be a double value in the tabulated model\n";
 }
 
 bool

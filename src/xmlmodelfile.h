@@ -130,6 +130,8 @@ private:
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
 
+  void FindCorrelationValue(const std::vector<DistributionWithTrendStorage *> & correlation_with_trend, double & correlation, std::string & errTxt);
+
   void checkAngleConsistency(std::string & errTxt);
 
   void ensureTrailingSlash(std::string & directory);
