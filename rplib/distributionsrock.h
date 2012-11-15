@@ -80,6 +80,9 @@ protected:
   NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;
 
   std::vector<double>                   alpha_;
+
+  std::vector<double>                   s_min_;
+  std::vector<double>                   s_max_;
 };
 
 #endif

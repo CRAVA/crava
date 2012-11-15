@@ -63,6 +63,11 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
       alpha[i] = 1;
   }
 
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
 
@@ -134,7 +139,12 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
     }
 
     for(int i=0; i<n_vintages; i++)
-      final_dist_rock[i] = new DistributionsRockMixOfRock(distr_rock[i], all_volume_fractions[i], mix_method, alpha);
+      final_dist_rock[i] = new DistributionsRockMixOfRock(distr_rock[i],
+                                                          all_volume_fractions[i],
+                                                          mix_method,
+                                                          alpha,
+                                                          s_min,
+                                                          s_max);
   }
 
   else if(mix_fluid == true && mix_solid == true) {
@@ -215,7 +225,9 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                                    solid_volume_fractions[i],
                                                                    fluid_volume_fractions[i],
                                                                    mix_method,
-                                                                   alpha);
+                                                                   alpha,
+                                                                   s_min,
+                                                                   s_max);
   }
 
   return(final_dist_rock);
@@ -263,6 +275,11 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   alpha[1] = vs_[0]     ->GetOneYearCorrelation();
   alpha[2] = density_[0]->GetOneYearCorrelation();
 
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
   int n_vintages_vp      = static_cast<int>(vp_.size());
   int n_vintages_vs      = static_cast<int>(vs_.size());
   int n_vintages_density = static_cast<int>(density_.size());
@@ -295,7 +312,9 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                               correlation_vp_density_,
                                                               correlation_vs_density_,
                                                               DEMTools::Velocity,
-                                                              alpha);
+                                                              alpha,
+                                                              s_min,
+                                                              s_max);
 
     dist_rock[i] = rock;
 
@@ -348,6 +367,11 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   alpha[1] = shear_modulus_[0]->GetOneYearCorrelation();
   alpha[2] = density_[0]      ->GetOneYearCorrelation();
 
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
   int n_vintages_bulk    = static_cast<int>(bulk_modulus_.size());
   int n_vintages_shear   = static_cast<int>(shear_modulus_.size());
   int n_vintages_density = static_cast<int>(density_.size());
@@ -380,7 +404,9 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                               correlation_bulk_density_,
                                                               correlation_shear_density_,
                                                               DEMTools::Modulus,
-                                                              alpha);
+                                                              alpha,
+                                                              s_min,
+                                                              s_max);
 
     dist_rock[i] = rock;
   }
@@ -611,6 +637,11 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
       alpha[i+n_inclusions] = 1;
   }
 
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
   std::vector<int> n_vintages_aspect(n_constituents);
   for(int i=0; i<n_inclusions; i++)
     n_vintages_aspect[i] = static_cast<int>(inclusion_aspect_ratio_[i].size());
@@ -701,7 +732,9 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                                     final_distr_fluid_inc[i],
                                                     all_aspect_ratios[i],
                                                     all_volume_fractions[i],
-                                                    alpha);
+                                                    alpha,
+                                                    s_min,
+                                                    s_max);
   }
 
   return(final_dist_rock);
@@ -783,6 +816,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   alpha[0] = porosity_[0]     ->GetOneYearCorrelation();
   alpha[1] = bulk_weight_[0]  ->GetOneYearCorrelation();
   alpha[2] = p_wave_weight_[0]->GetOneYearCorrelation();
+
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
 
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
@@ -871,7 +909,9 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                                                              bulk_weight_dist_with_trend[i],
                                                              p_wave_weight_dist_with_trend[i],
                                                              correlation_weights_,
-                                                             alpha);
+                                                             alpha,
+                                                             s_min,
+                                                             s_max);
 
     dist_rock[i] = rock;
 

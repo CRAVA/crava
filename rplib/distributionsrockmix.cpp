@@ -20,13 +20,17 @@
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< DistributionsRock * >           & distr_rock,
                                                        const std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                                        DEMTools::MixMethod                                  mix_method,
-                                                       std::vector<double>                                & alpha)
+                                                       const std::vector<double>                          & alpha,
+                                                       const std::vector<double>                          & s_min,
+                                                       const std::vector<double>                          & s_max)
 : DistributionsRock(),
   distr_rock_(distr_rock),
   distr_vol_frac_(distr_vol_frac),
   mix_method_(mix_method)
 {
   alpha_ = alpha;
+  s_min_ = s_min;
+  s_max_ = s_max;
 }
 
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist)
@@ -44,6 +48,8 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMi
   }
 
   alpha_ = dist.alpha_;
+  s_min_ = dist.s_min_;
+  s_max_ = dist.s_max_;
 }
 
 DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
@@ -217,7 +223,9 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
                                                                          const std::vector< DistributionWithTrend * >        & distr_vol_frac_solid,
                                                                          const std::vector< DistributionWithTrend * >        & distr_vol_frac_fluid,
                                                                          DEMTools::MixMethod                                   mix_method,
-                                                                         std::vector<double>                                 & alpha)
+                                                                         const std::vector<double>                           & alpha,
+                                                                         const std::vector<double>                           & s_min,
+                                                                         const std::vector<double>                           & s_max)
 : DistributionsRock(),
   distr_solid_(distr_solid),
   distr_fluid_(distr_fluid),
@@ -226,6 +234,8 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   mix_method_(mix_method)
 {
   alpha_ = alpha;
+  s_min_ = s_min;
+  s_max_ = s_max;
 }
 
 DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const DistributionsRockMixOfSolidAndFluid & dist)
@@ -252,6 +262,8 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const D
   }
 
   alpha_ = dist.alpha_;
+  s_min_ = dist.s_min_;
+  s_max_ = dist.s_max_;
 }
 
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()

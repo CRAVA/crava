@@ -16,7 +16,9 @@ public:
                             const DistributionWithTrend * bulk_weight,
                             const DistributionWithTrend * p_wave_weight,
                             double                        correlation_weights,
-                            std::vector<double>         & alpha);
+                            const std::vector<double>   & alpha,
+                            const std::vector<double>   & s_min,
+                            const std::vector<double>   & s_max);
 
   DistributionsRockBounding(const DistributionsRockBounding & dist);
 

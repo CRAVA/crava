@@ -14,7 +14,9 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
                                                      const DistributionWithTrend * bulk_weight,
                                                      const DistributionWithTrend * p_wave_weight,
                                                      double                        correlation_weights,
-                                                     std::vector<double>         & alpha)
+                                                     const std::vector<double>   & alpha,
+                                                     const std::vector<double>   & s_min,
+                                                     const std::vector<double>   & s_max)
 : upper_rock_(upper_rock),
   lower_rock_(lower_rock),
   porosity_(porosity),
@@ -23,6 +25,8 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   correlation_weights_(correlation_weights)
 {
   alpha_ = alpha;
+  s_min_ = s_min;
+  s_max_ = s_max;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> variables(3);
@@ -59,6 +63,8 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBoun
   K_weight_   = dist.K_weight_  ->Clone();
   M_weight_   = dist.M_weight_  ->Clone();
   alpha_      = dist.alpha_;
+  s_min_      = dist.s_min_;
+  s_max_      = dist.s_max_;
 }
 
 DistributionsRockBounding::~DistributionsRockBounding()

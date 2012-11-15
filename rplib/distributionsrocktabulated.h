@@ -17,7 +17,9 @@ public:
                              double                        corr_elastic1_density,
                              double                        corr_elastic2_density,
                              DEMTools::TabulatedMethod     method,
-                             std::vector<double>         & alpha);
+                             const std::vector<double>   & alpha,
+                             const std::vector<double>   & s_min,
+                             const std::vector<double>   & s_max);
 
   DistributionsRockTabulated(const DistributionsRockTabulated & dist);
 

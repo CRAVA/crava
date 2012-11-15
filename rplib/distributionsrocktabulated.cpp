@@ -11,7 +11,9 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
                                                        double                        corr_elastic1_density,
                                                        double                        corr_elastic2_density,
                                                        DEMTools::TabulatedMethod     method,
-                                                       std::vector<double>         & alpha)
+                                                       const std::vector<double>   & alpha,
+                                                       const std::vector<double>   & s_min,
+                                                       const std::vector<double>   & s_max)
   : DistributionsRock(),
     elastic1_(elastic1),
     elastic2_(elastic2),
@@ -22,6 +24,8 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
     tabulated_method_(method)
 {
   alpha_ = alpha;
+  s_min_ = s_min;
+  s_max_ = s_max;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
@@ -43,11 +47,8 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
-  std::vector<double> s_min(2, 0.0);
-  std::vector<double> s_max(2, 0.0);
-
-  SetupExpectationAndCovariances(s_min,
-                                 s_max);
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTabulated & dist)
@@ -82,6 +83,8 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTa
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
   alpha_ = dist.alpha_;
+  s_min_ = dist.s_min_;
+  s_max_ = dist.s_max_;
 }
 
 DistributionsRockTabulated::~DistributionsRockTabulated()

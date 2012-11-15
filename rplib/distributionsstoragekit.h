@@ -59,4 +59,9 @@ ReadFluid(const int                                                  & n_vintage
           const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
           std::string                                                & errTxt);
 
+void
+FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
+            std::vector<double>                     & s_min,
+            std::vector<double>                     & s_max);
+
 #endif

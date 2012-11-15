@@ -909,11 +909,14 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   for (size_t i = 0; i < distr_fluid_mixed2.size(); ++i)
     distr_fluid_mixed2[i] = distr_fluid_mixed;
   //// Rock, distribution functions.
+  std::vector<double> dummy_s;
   DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
                                                                   distr_fluid_mixed2,
                                                                   distr_incl_spectrum,
                                                                   distr_incl_concentration,
-                                                                  dummy_alpha_dem);
+                                                                  dummy_alpha_dem,
+                                                                  dummy_s,
+                                                                  dummy_s);
 
 
   //// Generating a sample of the rock.
