@@ -1,4 +1,4 @@
-#include "src/syntwelldata.h"
+#include "rplib/syntwelldata.h"
 #include <string.h>
 #include <stdlib.h>
 
