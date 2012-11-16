@@ -22,7 +22,7 @@ PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double> & d1,    
                  double                                                  d2_max,
                  double                                                  d3_min,
                  double                                                  d3_max,
-                 int ind)
+                 int                                                     ind)
                  :
 n1_(n1),
 n2_(n2),
@@ -34,9 +34,10 @@ y_max_(d2_max),
 z_min_(d3_min),
 z_max_(d3_max)
 {
+  // We assume that the input vectors are of the same length
+  if (d1.size()!=d2.size() || d2.size()!=d3.size())
+    throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
 
-  assert(d1.size()==d2.size());
-  assert(d2.size()==d3.size());
   int dim = static_cast<int>(d1.size());
 
   histogram_ = new FFTGrid(n1_, n2_, n3_, n1_, n2_, n3_);
@@ -52,13 +53,6 @@ z_max_(d3_max)
     }
   }
   histogram_->endAccess();
-
-  //x_min_ = *min_element(d1.begin(), d1.end()) - 5.0f*sqrt(sigma[0][0]);
-  //x_max_ = *max_element(d1.begin(), d1.end()) + 5.0f*sqrt(sigma[0][0]);
-  //y_min_ = *min_element(d2.begin(), d2.end()) - 5.0f*sqrt(sigma[1][1]);
-  //y_max_ = *max_element(d2.begin(), d2.end()) + 5.0f*sqrt(sigma[1][1]);
-  //z_min_ = *min_element(d3.begin(), d3.end()) - 5.0f*sqrt(sigma[2][2]);
-  //z_max_ = *max_element(d3.begin(), d3.end()) + 5.0f*sqrt(sigma[2][2]);
 
   // Spacing variables in the density grid
   dx_ = (x_max_ - x_min_)/n1_;
@@ -143,64 +137,65 @@ z_max_(d3_max)
   delete [] sigma_inv;
 }
 
-PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>  & d1,        // first dimension of data points
-                                             const std::vector<double>  & d2,        // second dimension of data points
-                                             const std::vector<double>  & d3,        // third dimension of data points
-                                             const std::vector<double>  & t1,        // fourth dimension (trend parameters)
-                                             double                    ** sigma_prior,      // Covariance matrix, prior model
-                                             double                    ** sigma_posterior,  //
-                                             int                          n1,          // resolution of density grid in elastic dimension 1
-                                             int                          n2,          // resolution of density grid in elastic dimension 2
-                                             int                          n3,          // resolution of density grid in the trend dimension
-                                             double                       t1_min,
-                                             double                       t1_max):
+PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>               & d1,        // first dimension of data points
+                                             const std::vector<double>               & d2,        // second dimension of data points
+                                             const std::vector<double>               & d3,        // third dimension of data points
+                                             const std::vector<double>               & t1,        // third dimension of data points
+                                             const std::vector<std::vector<double> > & v,        // Transformation of elastic variables from 3D to 2D
+                                             const double             *const*const   sigma,     // Gaussian smoothing kernel in 2D
+                                             int                                     n1,        // resolution of density grid in elastic dimension 1
+                                             int                                     n2,        // resolution of density grid in elastic dimension 2
+                                             int                                     n3,        // resolution of density grid in the trend dimension
+                                             double                                  d1_min,
+                                             double                                  d1_max,
+                                             double                                  d2_min,
+                                             double                                  d2_max,
+                                             double                                  t1_min,
+                                             double                                  t1_max,
+                                             int                                     ind):
 n1_(n1),
 n2_(n2),
 n3_(n3),
+x_min_(d1_min),
+x_max_(d1_max),
+y_min_(d2_min),
+y_max_(d2_max),
 z_min_(t1_min),
 z_max_(t1_max)
 {
-
   // We assume that the input vectors are of the same length
-  if (d1.size()!=d2.size() || d2.size()==d3.size() || d3.size()==t1.size())
-    throw NRLib::Exception("Facies probabilities 3D: Wrong size ");
+  if (d1.size()!=d2.size() || d2.size()!=d3.size() || d3.size()!=t1.size())
+    throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
+  if (v.size()>2 || static_cast<int>(v[0].size()) != 3 ||  static_cast<int>(v[1].size()) != 3)
+    throw NRLib::Exception("Facies probabilities: Transformation matrix v does not have the right dimensions");
 
+  for(int i=0; i<3; i++){
+    v1_[i] = v[0][i];
+    v2_[i] = v[1][i];
+  }
 
   int dim = static_cast<int>(d1.size());
 
-  //Vectors holding the transformed variables
-  std::vector<double> x(dim);
-  std::vector<double> y(dim);
-  //Temporary linear transformation vectors
-  std::vector<double> v1(3);
-  std::vector<double> v2(3);
+  std::vector<std::vector<double> > x(2);
+  x[0].resize(dim);
+  x[1].resize(dim);
 
-  // Create new 2D covariance matrix from the input smoothing variables
-  double **sigma = new double *[2];
-  for(int i=0; i<2; i++){
-    sigma[i] = new double[2];
-  }
-  // computes the optimal linear transforms v1 and v2
-  SolveGEVProblem(sigma_prior, sigma_posterior, v1, v2);
-
-  //computes x and y
-  CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
-
-  // computes the resulting 2D variance
-  CalculateVariance2D(sigma_posterior, sigma, v1, v2);
-
-  for(int i=0;i<3;i++){
-    v1_[i] = v1[i];
-    v2_[i] = v2[i];
-  }
+  //computes x and y from d1, d2 and d3
+  CalculateTransform2D(d1, d2, d3, x, v);
 
   histogram_ = new FFTGrid(n1_, n2_, n3_, n1_, n2_, n3_);
-  histogram_->fillInConstant(0); // initialize to zero
+  histogram_->createRealGrid(false);
+  int rnxp = histogram_->getRNxp();
+  histogram_->setType(FFTGrid::PARAMETER);
+  histogram_->setAccessMode(FFTGrid::WRITE);
 
-  x_min_ = *min_element(x.begin(), x.end()) - 5.0f*sqrt(sigma[0][0]);
-  x_max_ = *max_element(x.begin(), x.end()) + 5.0f*sqrt(sigma[0][0]);
-  y_min_ = *min_element(y.begin(), y.end()) - 5.0f*sqrt(sigma[1][1]);
-  y_max_ = *max_element(y.begin(), y.end()) + 5.0f*sqrt(sigma[1][1]);
+  for(int l=0;l<n3_;l++){
+    for(int k=0;k<n2_;k++){
+      for(int j=0;j<rnxp;j++)
+        histogram_->setNextReal(0.0f);
+    }
+  }
+  histogram_->endAccess();
 
   // Spacing variables in the density grid
   dx_ = (x_max_ - x_min_)/n1_;
@@ -208,40 +203,81 @@ z_max_(t1_max)
   dz_ = (z_max_ - z_min_)/n3_;
 
   // Go through data points and place in bins in histogram
-  for (int ind = 0; ind < dim; ind++){
-    int i =static_cast<int>(floor((x[ind]-x_min_)/dx_));
-    int j =static_cast<int>(floor((y[ind]-y_min_)/dy_));
-    int k =static_cast<int>(floor((t1[ind]-z_min_)/dz_));
+
+  for (int i = 0; i < dim; i++){
+    //volume->getIndexes(d1[i], d2[i], d3[i], i_tmp, j_tmp, k_tmp);
+    int i_tmp = static_cast<int>(floor((x[0][i]-x_min_)/dx_));
+    int j_tmp = static_cast<int>(floor((x[1][i]-y_min_)/dy_));
+    int k_tmp = static_cast<int>(floor((t1[i]-z_min_)/dz_));
     // Counting data points in index (i,j,k)
-    histogram_->setRealValue(i,j,k, histogram_->getRealValue(i,j,k) + 1);
+    histogram_->setAccessMode(FFTGrid::RANDOMACCESS);
+    histogram_->setRealValue(i_tmp, j_tmp, k_tmp, histogram_->getRealValue(i_tmp,j_tmp,k_tmp) + 1.0f);
+    histogram_->endAccess();
   }
 
   //multiply by normalizing constant for the PDF - dim is the total number of entries
-  histogram_->multiplyByScalar(float(1/dim));
+  histogram_->setAccessMode(FFTGrid::READANDWRITE);
+  histogram_->multiplyByScalar(float(1.0f/dim));
+  histogram_->endAccess();
+
+  if(ModelSettings::getDebugLevel() >= 1){
+    std::string baseName = "Hist_" + NRLib::ToString(ind) + IO::SuffixAsciiFiles();
+    std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+    histogram_->writeAsciiFile(fileName);
+  }
+
   histogram_->fftInPlace();
 
+  double **sigma_tmp = new double *[2];
+  for (int i=0;i<2;i++){
+    sigma_tmp[i] = new double[2];
+  }
+  for(int i=0;i<2;i++){
+    for(int j=0; j<2; j++)
+      sigma_tmp[i][j] = sigma[i][j];
+  }
   // Matrix inversion of the covariance matrix sigma
+  // SINGULAR MATRIX ?!
   double **sigma_inv = new double *[2];
   for(int i=0; i<2; i++)
     sigma_inv[i] = new double [2];
 
-  this->InvertSquareMatrix(sigma,sigma_inv,2);
+  InvertSquareMatrix(sigma_tmp,sigma_inv,2);
 
   FFTGrid *smoother = new FFTGrid(n1, n2, n3, n1, n2, n3);
 
-  SetupSmoothingGaussian3D(smoother, sigma_inv);
+  smoother->createRealGrid(false);
+  smoother->setType(FFTGrid::PARAMETER);
+  smoother->setAccessMode(FFTGrid::WRITE);
+  for(int l=0;l<n3_;l++){
+      for(int k=0;k<n2_;k++){
+        for(int j=0;j<static_cast<int>(smoother->getRNxp());j++)
+          smoother->setNextReal(0.0f);
+      }
+  }
+  smoother->endAccess();
 
-  smoother->fftInPlace();
+  //SetupSmoothingGaussian2D(smoother, sigma_inv, n1, n2, n3, dx_, dy_);
+
+  if(ModelSettings::getDebugLevel() >= 1) {
+    std::string baseName = "Smoother" + IO::SuffixAsciiFiles();
+    std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+    smoother->writeAsciiFile(fileName);
+  }
 
   // Carry out multiplication of the smoother with the density grid (histogram) in the Fourier domain
+  smoother->fftInPlace();
   histogram_->multiply(smoother);
   histogram_->invFFTInPlace();
-  histogram_->multiplyByScalar(float(sqrt(double(n1_*n2_*n3_))));
+  histogram_->multiplyByScalar(sqrt(float(n1_*n2_*n3_)));
   histogram_->endAccess();
 
   delete smoother;
-  for(int i=0;i<3;i++)
+  for(int i=0;i<3;i++){
     delete [] sigma_inv[i];
+      delete [] sigma_tmp[i];
+    }
+  delete [] sigma_tmp;
   delete [] sigma_inv;
 }
 
@@ -476,83 +512,90 @@ double PosteriorElasticPDF3D::FindDensity(const double & vp,
                                           const double & s2,
                                           const Simbox * const volume) const
 {
-  (void) s1;
-  (void) s2;
-  double jFull, kFull, lFull;
   double value = 0.0;
-  volume->getInterpolationIndexes(vp, vs, rho, jFull, kFull, lFull);
-  int j1,k1,l1;
-  int j2,k2,l2;
-  float wj,wk,wl;
-  j1=k1=l1=j2=k2=l2=0;
-  j1 = static_cast<int>(floor(jFull));
-  if(j1<0) {
-    j1 = 0;
-    j2 = 0;
-    wj = 0;
+  // if the size of v1 and v2 > 0 the PDF has been constructed with dimension reduction and one trend value
+  if (v1_.size()>0 && v2_.size()>0){
+    value = Density(vp, vs, rho, s1, s2);
+    if (value == RMISSING)
+      value = 0.0;
   }
-  else if(j1>=volume->getnx()-1) {
-    j1 = volume->getnx()-1;
-    j2 = j1;
-    wj = 0;
-  }
-  else {
-    j2 = j1 + 1;
-    wj = static_cast<float>(jFull-j1);
+  else{
+    double jFull, kFull, lFull;
+
+    volume->getInterpolationIndexes(vp, vs, rho, jFull, kFull, lFull);
+    int j1,k1,l1;
+    int j2,k2,l2;
+    float wj,wk,wl;
+    j1=k1=l1=j2=k2=l2=0;
+    j1 = static_cast<int>(floor(jFull));
+    if(j1<0) {
+      j1 = 0;
+      j2 = 0;
+      wj = 0;
+    }
+    else if(j1>=volume->getnx()-1) {
+      j1 = volume->getnx()-1;
+      j2 = j1;
+      wj = 0;
+    }
+    else {
+      j2 = j1 + 1;
+      wj = static_cast<float>(jFull-j1);
+    }
+
+    k1 = static_cast<int>(floor(kFull));
+    if(k1<0) {
+      k1 = 0;
+      k2 = 0;
+      wk = 0;
+    }
+    else if(k1>=volume->getny()-1) {
+      k1 = volume->getny()-1;
+      k2 = k1;
+      wk = 0;
+    }
+    else {
+      k2 = k1 + 1;
+      wk = static_cast<float>(kFull-k1);
+    }
+
+    l1 = static_cast<int>(floor(lFull));
+    if(l1<0) {
+      l1 = 0;
+      l2 = 0;
+      wl = 0;
+    }
+    else if(l1>=volume->getnz()-1) {
+      l1 = volume->getnz()-1;
+      l2 = l1;
+      wl = 0;
+    }
+    else {
+      l2 = l1 + 1;
+      wl = static_cast<float>(lFull-l1);
+    }
+
+
+      histogram_->setAccessMode(FFTGrid::RANDOMACCESS);
+      float value1 = std::max<float>(0,histogram_->getRealValue(j1,k1,l1));
+      float value2 = std::max<float>(0,histogram_->getRealValue(j1,k1,l2));
+      float value3 = std::max<float>(0,histogram_->getRealValue(j1,k2,l1));
+      float value4 = std::max<float>(0,histogram_->getRealValue(j1,k2,l2));
+      float value5 = std::max<float>(0,histogram_->getRealValue(j2,k1,l1));
+      float value6 = std::max<float>(0,histogram_->getRealValue(j2,k1,l2));
+      float value7 = std::max<float>(0,histogram_->getRealValue(j2,k2,l1));
+      float value8 = std::max<float>(0,histogram_->getRealValue(j2,k2,l2));
+      histogram_->endAccess();
+
+      value += (1.0f-wj)*(1.0f-wk)*(1.0f-wl)*value1;
+      value += (1.0f-wj)*(1.0f-wk)*(     wl)*value2;
+      value += (1.0f-wj)*(     wk)*(1.0f-wl)*value3;
+      value += (1.0f-wj)*(     wk)*(     wl)*value4;
+      value += (     wj)*(1.0f-wk)*(1.0f-wl)*value5;
+      value += (     wj)*(1.0f-wk)*(     wl)*value6;
+      value += (     wj)*(     wk)*(1.0f-wl)*value7;
+      value += (     wj)*(     wk)*(     wl)*value8;
   }
 
-  k1 = static_cast<int>(floor(kFull));
-  if(k1<0) {
-    k1 = 0;
-    k2 = 0;
-    wk = 0;
-  }
-  else if(k1>=volume->getny()-1) {
-    k1 = volume->getny()-1;
-    k2 = k1;
-    wk = 0;
-  }
-  else {
-    k2 = k1 + 1;
-    wk = static_cast<float>(kFull-k1);
-  }
-
-  l1 = static_cast<int>(floor(lFull));
-  if(l1<0) {
-    l1 = 0;
-    l2 = 0;
-    wl = 0;
-  }
-  else if(l1>=volume->getnz()-1) {
-    l1 = volume->getnz()-1;
-    l2 = l1;
-    wl = 0;
-  }
-  else {
-    l2 = l1 + 1;
-    wl = static_cast<float>(lFull-l1);
-  }
-
-
-    histogram_->setAccessMode(FFTGrid::RANDOMACCESS);
-    float value1 = std::max<float>(0,histogram_->getRealValue(j1,k1,l1));
-    float value2 = std::max<float>(0,histogram_->getRealValue(j1,k1,l2));
-    float value3 = std::max<float>(0,histogram_->getRealValue(j1,k2,l1));
-    float value4 = std::max<float>(0,histogram_->getRealValue(j1,k2,l2));
-    float value5 = std::max<float>(0,histogram_->getRealValue(j2,k1,l1));
-    float value6 = std::max<float>(0,histogram_->getRealValue(j2,k1,l2));
-    float value7 = std::max<float>(0,histogram_->getRealValue(j2,k2,l1));
-    float value8 = std::max<float>(0,histogram_->getRealValue(j2,k2,l2));
-    histogram_->endAccess();
-
-    value += (1.0f-wj)*(1.0f-wk)*(1.0f-wl)*value1;
-    value += (1.0f-wj)*(1.0f-wk)*(     wl)*value2;
-    value += (1.0f-wj)*(     wk)*(1.0f-wl)*value3;
-    value += (1.0f-wj)*(     wk)*(     wl)*value4;
-    value += (     wj)*(1.0f-wk)*(1.0f-wl)*value5;
-    value += (     wj)*(1.0f-wk)*(     wl)*value6;
-    value += (     wj)*(     wk)*(1.0f-wl)*value7;
-    value += (     wj)*(     wk)*(     wl)*value8;
-
-    return value;
+  return value;
 }

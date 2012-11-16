@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "src/simbox.h"
+#include "src/fftgrid.h"
 
 class Simbox;
 
@@ -56,21 +57,27 @@ protected:
                        std::vector<double>   & v2);             //Linear transformation 2
 
   void CalculateVariance2D(double                    ** sigmaSmooth,  //the smoothing 3D covariance matrix
-                           double                    ** sigma2D,                 //the resulting 2D covariance matrix
+                           double                    ** sigma2D,      //the resulting 2D covariance matrix
                            const std::vector<double>    v1,      //linear transformation 1
                            const std::vector<double>    v2);     //linear transformation 2
 
-  void CalculateTransform2D(const std::vector<double>   d1,     //data vector 1
-                            const std::vector<double>   d2,     //data vector 2
-                            const std::vector<double>   d3,     //data vector 3
-                            std::vector<double>         x,      //output dimension 1
-                            std::vector<double>         y,      //output dimension 2
-                            const std::vector<double>   v1,     //linear transformation 1
-                            const std::vector<double>   v2);    //linear transformation 2
+  void CalculateTransform2D(const std::vector<double>                & d1,
+                            const std::vector<double>                & d2,
+                            const std::vector<double>                & d3,
+                            std::vector<std::vector<double> >        & x, // either 2 x 3 or 3 x 3
+                            const std::vector<std::vector<double> >  & v);
 
   void InvertSquareMatrix(double                     ** matrix,     //matrix to be inverted
                           double                     ** invMatrix,  //inverted matrix
                           int                           n);         // size
+
+  void SetupSmoothingGaussian2D(FFTGrid                   * smoother,
+                                const double   *const*const sigma_inv,
+                                int                         n1,
+                                int                         n2,
+                                int                         n3,
+                                double                      dx,
+                                double                      dy);
 };
 
 #endif

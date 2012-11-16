@@ -82,6 +82,172 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
   }
 }
 
+void SpatialWellFilter::doFilteringSyntWells(Corr                                     * corr,
+                                             std::vector<SyntWellData *>              & syntWellData,
+                                             const std::vector<std::vector<double> >  & V){
+  LogKit::WriteHeader("Creating spatial multi-parameter filter");
+
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
+  double ** sigmapost;
+  double ** sigmapri;
+  double ** imat;
+  double ** Aw;
+
+  int lastn = 0;
+
+  // nDim is always 1 for synthetic wells
+  int nDim = 1;
+  // number of dimensions of transformed elastic variables (2 or 3)
+  int nDimElasticVar = static_cast<int>(V.size());
+
+  if(sigmae_.size() == 0) {
+    sigmae_.resize(nDim);
+    //initializing temporary matrix sigmae
+    double ** sigmae = new double * [nDimElasticVar];
+    for(int i=0;i<nDimElasticVar;i++) {
+      sigmae[i] = new double[nDimElasticVar];
+      for(int j=0;j<nDimElasticVar;j++)
+        sigmae[i][j] = 0;
+    }
+    sigmae_[0] = sigmae;
+  }
+
+  bool no_wells_filtered = true;
+
+  int nWells = static_cast<int>(syntWellData.size());
+
+  for(int w1=0;w1<nWells;w1++){
+    LogKit::LogFormatted(LogKit::Low,"\nFiltering synthetic well " + w1);
+    no_wells_filtered = false;
+
+    int n = syntWellData[w1]->getWellLength();
+
+    sigmapost = new double * [3*n];
+    for(int i=0;i<3*n;i++)
+      sigmapost[i] = new double[3*n];
+    sigmapri = new double * [3*n];
+    for(int i=0;i<3*n;i++)
+      sigmapri[i] = new double[3*n];
+    imat = new double * [3*n];
+    for(int i=0;i<3*n;i++)
+      imat[i] = new double[3*n];
+    Aw = new double * [3*n];
+    for(int i=0;i<3*n;i++)
+      Aw[i] = new double[3*n];
+
+    for(int i=0;i<3*n;i++)
+      for(int j=0;j<3*n;j++)
+        if(i==j)
+          imat[i][j] = 1.0;
+        else
+          imat[i][j] = 0.0;
+    int i1,j1,k1,l1, i2,j2,k2,l2;
+    const int *ipos = syntWellData[w1]->getIpos();
+    const int *jpos = syntWellData[w1]->getJpos();
+    const int *kpos = syntWellData[w1]->getKpos();
+    float regularization = Definitions::SpatialFilterRegularisationValue();
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha(), n, 0, 0);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta(), n, n, n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovRho(), n, 2*n, 2*n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0, n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho(), n, 0, 2*n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho(), n, 2*n, n);
+
+    // In case the synthetic well is longer than the vertical size of covgrid,
+    // set correlation for the relevant grid points to 0
+    for(l1=0;l1<3*n;l1++){
+      for(l2=0;l2<3*n;l2++){
+        if(sigmapost[l1][l2] == RMISSING)
+          sigmapost[l1][l2] = 0.0;
+      }
+    }
+
+    for(l1=0;l1<n;l1++){
+      i1 = ipos[l1];
+      j1 = jpos[l1];
+      k1 = kpos[l1];
+      for(l2=0;l2<n;l2++){
+        i2 = ipos[l2];
+        j2 = jpos[l2];
+        k2 = kpos[l2];
+
+        sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
+        sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
+        sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
+        sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0()[2][2]*priorSpatialCorr_[w1][l1][l2];
+        if(l1==l2){
+          sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
+          sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
+          sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[2*n+l1][2*n+l2]/sigmapri[2*n+l1][2*n+l2];
+          sigmapri [l1      ][l2      ] += regularization;
+          sigmapri [l1 + n  ][l2 + n  ] += regularization;
+          sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
+        }
+        sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+      }
+    }
+
+    LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
+    lib_matrCholR(3*n, sigmapri);
+    LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
+    lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
+    LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
+    lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
+
+    for(int i=0;i<3*n;i++) {
+      for(int j=0;j<3*n;j++){
+        Aw[i][j] *=-1.0;
+        if(i==j)
+          Aw[i][j]+=1.0;
+      }
+    }
+
+    updateSigmaE(Aw, sigmapost, n);
+
+    lastn += n;
+
+    for(int i=0;i<3*n;i++){
+      delete [] Aw[i];
+      delete [] sigmapri[i];
+      delete [] sigmapost[i];
+      delete [] imat[i];
+    }
+    delete [] Aw;
+    delete [] sigmapri;
+    delete [] sigmapost;
+    delete [] imat;
+  }
+
+  if(no_wells_filtered == false){
+    // finds the scale at  default inversion (all minimum noise in case of local noise)
+    sigmae_[0][0][0] /= lastn;
+    sigmae_[0][1][0] /= lastn;
+    sigmae_[0][1][1] /= lastn;
+    sigmae_[0][2][0] /= lastn;
+    sigmae_[0][2][1] /= lastn;
+    sigmae_[0][2][2] /= lastn;
+    sigmae_[0][0][1]  = sigmae_[0][1][0];
+    sigmae_[0][0][2]  = sigmae_[0][2][0];
+    sigmae_[0][1][2]  = sigmae_[0][2][1];
+    adjustDiagSigma(sigmae_[0], 3);
+  }
+
+  if (no_wells_filtered) {
+    LogKit::LogFormatted(LogKit::Low,"\nNo synthetic wells have been filtered.\n");
+  }
+
+  Timings::setTimeFiltering(wall,cpu);
+}
+
 void SpatialWellFilter::doFiltering(Corr                        * corr,
                                     std::vector<WellData  *>      wells,
                                     int                           nWells,

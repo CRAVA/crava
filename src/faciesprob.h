@@ -9,6 +9,7 @@
 #include <rplib/distributionsrock.h>
 #include <src/posteriorelasticpdf.h>
 #include <src/posteriorelasticpdf3d.h>
+#include <rplib/syntwelldata.h>
 
 class Corr;
 class FFTGrid;
@@ -48,12 +49,6 @@ public:
              FFTGrid                      * seismicLH,
              const std::vector<std::string> facies_names);
 
-  /// Constructor. Creates a PosteriorElasticPDF object and calculates the probabilities.
-  /// @param[in] alpha: an FFTGrid of Vp.
-  /// @param[in] beta: an FFTGrid of Vs.
-  /// @param[in] rho: an FFTGrid of rho.
-  /// @param[in] nFac: number of Facies.
-
   FaciesProb(FFTGrid                                            * alpha,
              FFTGrid                                            * beta,
              FFTGrid                                            * rho,
@@ -63,10 +58,6 @@ public:
              std::vector<FFTGrid *>                               priorFaciesCubes,
              FFTGrid                                            * seismicLH,
              const std::map<std::string, DistributionsRock *>   & rock_distributions,
-             const double                                         trend1_min,
-             const double                                         trend1_max,
-             const double                                         trend2_min,
-             const double                                         trend2_max,
              const std::vector<std::string>                     & facies_names,
              const std::vector<Surface *>                       & faciesEstimInterval,
              Crava                                              * cravaResult,
@@ -77,7 +68,13 @@ public:
              int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
-             bool                                                 relative = false);
+             bool                                                 relative = false,
+             const double                                         trend1_min = 0.0,
+             const double                                         trend1_max = 0.0,
+             const double                                         trend2_min = 0.0,
+             const double                                         trend2_max = 0.0,
+             FFTGrid                                            * trend1 = NULL,
+             FFTGrid                                            * trend2 = NULL);
 
 
   ~FaciesProb();
@@ -117,6 +114,7 @@ private:
   FFTGrid      *  faciesProbUndef_;
 
   void                   MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
+                                                            Crava                                                  * cravaResult,
                                                             SpatialWellFilter                                      * filteredlogs,
                                                             std::vector<FFTGrid *>                                 & priorFaciesCubes,
                                                             const ModelSettings                                    * modelSettings,
@@ -148,13 +146,16 @@ private:
   void                   CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                           * alphagrid,
                                                             FFTGrid                                                   * betagrid,
                                                             FFTGrid                                                   * rhogrid,
-                                                            const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf3d,
+                                                            const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
                                                             const std::vector<Simbox *>                                 volume,
                                                             float                                                       p_undefined,
                                                             const std::vector<float>                                  & priorFacies,
                                                             std::vector<FFTGrid *>                                    & priorFaciesCubes,
                                                             const std::vector<Grid2D *>                               & noiseScale,
-                                                            FFTGrid                                                   * seismicLH);
+                                                            FFTGrid                                                   * seismicLH,
+                                                            bool                                                        faciesProbFromRockPhysics,
+                                                            FFTGrid                                                   * trend1 = NULL,
+                                                            FFTGrid                                                   * trend2 = NULL);
 
 
 
@@ -238,7 +239,8 @@ private:
                                                      const int                                               facies,
                                                      const std::vector<Simbox *>                           & volume,
                                                      const std::vector<float>                              & t,
-                                                     int                                                     nAng);
+                                                     int                                                     nAng,
+                                                     bool                                                    faciesProbFromRockPhysics);
 
   void                   resampleAndWriteDensity(const FFTGrid     * const density,
                                                  const std::string & fileName,
@@ -261,8 +263,7 @@ private:
                                              FFTGrid                       * seismicLH);
 
   // This function draws random facies length following a geometric distribution with mean 10.0 ms, i.e. dz/10.0 bins
-  void                   GenerateSyntWellData(std::vector<std::vector<float> >                        & syntWellData,
-                                              std::vector<int>                                         & facies,
+  void                   GenerateSyntWellData(std::vector<SyntWellData *>                              & syntWellData,
                                               const std::map<std::string, DistributionsRock *>         & rock_distributions,
                                               const std::vector<std::string>                           & facies_names,
                                               const std::vector<double>                                & trend1,
@@ -280,5 +281,21 @@ private:
                                                        const bool                       accumulative,
                                                        bool                           & lowProbs,
                                                        int                            * faciesCount = NULL);
+
+  void                   FillSigmaPriAndSigmaPost(Crava                               * cravaResult,
+                                                  double                             ** sigma_pri_temp,
+                                                  double                             ** sigma_post_temp);
+
+  void    SolveGEVProblem(double                           ** sigma_prior,
+                          double                           ** sigma_posterior,
+                          std::vector<std::vector<double> > & V);
+
+  void CalculateTransform2D(const std::vector<double>  & d1,     //data vector 1
+                            const std::vector<double>  & d2,     //data vector 2
+                            const std::vector<double>  & d3,     //data vector 3
+                            std::vector<double>        & x,      //output dimension 1
+                            std::vector<double>        & y,      //output dimension 2
+                            const std::vector<double>  & v1,     //linear transformation 1
+                            const std::vector<double>  & v2);    //linear transformation 2
 };
 #endif

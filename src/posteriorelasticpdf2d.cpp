@@ -17,6 +17,8 @@ PosteriorElasticPDF2D::PosteriorElasticPDF2D(const std::vector<double> & d1,
 n1_(n1),
 n2_(n2)
 {
+  if (d1.size()!=d2.size() || d2.size()!=d3.size())
+    throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
 
   int dim = static_cast<int>(d1.size());
 
@@ -29,7 +31,7 @@ n2_(n2)
   std::vector<double> y(dim);
 
   // x and y are linear combinations of d1, d2 and d3 given by the 3d vectors v1 and v2.
-  this->CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
+  //this->CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
 
   for (int i = 0; i<3; i++){
     v1_[i] = v1[i];
@@ -112,6 +114,9 @@ PosteriorElasticPDF2D::PosteriorElasticPDF2D(const std::vector<double> & d1,
 n1_(n1),
 n2_(n2)
 {
+  if (d1.size()!=d2.size() || d2.size()!=d3.size())
+    throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
+
   int dim = static_cast<int>(d1.size());
 
   //Linear transformation vectors
@@ -130,7 +135,7 @@ n2_(n2)
   }
 
   // x and y are linear combinations of d1, d2 and d3 given by the 3d vectors v1 and v2.
-  this->CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
+  //this->CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
 
   // Create covariance matrix from the input smoothing variables
   double ** sigma_2d = new double *[2];

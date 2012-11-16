@@ -1780,10 +1780,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelGeneral_->getPriorFaciesCubes(),
                                 likelihood,
                                 modelGeneral_->getRockDistributionTime0(),
-                                0,//trend1_min,
-                                0,//trend1_max,
-                                0,//trend2_min,
-                                0,//trend2_max,
                                 modelGeneral_->getFaciesNames(),
                                 modelAVOstatic_->getFaciesEstimInterval(),
                                 this,
@@ -1794,21 +1790,14 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
-                                true);
+                                true,
+                                0,
+                                0,
+                                0,
+                                0,
+                                NULL,
+                                NULL);
 
-
-      /*}else {
-        fprob_ = new FaciesProb(postAlpha_,
-                                postBeta_,
-                                postRho_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                likelihood,
-                                modelGeneral_,
-                                modelGeneral_->getRockDistributions(),
-                                modelGeneral_->getTrendCubes());
-
-      }*/
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
@@ -1841,8 +1830,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelGeneral_->getFaciesNames());
                                 */
 
-
-                                fprob_ = new FaciesProb(postAlpha_,
+      fprob_ = new FaciesProb(postAlpha_,
                                 postBeta_,
                                 postRho_,
                                 nfac,
@@ -1851,10 +1839,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelGeneral_->getPriorFaciesCubes(),
                                 likelihood,
                                 modelGeneral_->getRockDistributionTime0(),
-                                0,
-                                0,
-                                0,
-                                0,
                                 modelGeneral_->getFaciesNames(),
                                 modelAVOstatic_->getFaciesEstimInterval(),
                                 this,
@@ -1865,20 +1849,14 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
-                                false);
+                                false,
+                                0,
+                                0,
+                                0,
+                                0,
+                                NULL,
+                                NULL);
 
-      /*else {
-        fprob_ = new FaciesProb(postAlpha_,
-                                postBeta_,
-                                postRho_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                likelihood,
-                                modelGeneral_,
-                                modelGeneral_->getRockDistributions(),
-                                modelGeneral_->getTrendCubes());
-        baseName += "Rock_Physics_";
-      }*/
     }
     fprob_->calculateConditionalFaciesProb(wells_,
                                            nWells_,

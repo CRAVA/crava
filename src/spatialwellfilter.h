@@ -2,6 +2,7 @@
 #define SPATIALWELLFILTER_H
 
 #include "src/definitions.h"
+#include "rplib/syntwelldata.h"
 
 class Corr;
 class FFTGrid;
@@ -23,6 +24,11 @@ public:
                                        int                           nAngles,
                                        const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale);
+
+  void                     doFilteringSyntWells(Corr                                      * corr,
+                                                std::vector<SyntWellData *>               & syntWellData,
+                                                const std::vector<std::vector<double> >   & V);
+
   std::vector<double **> & getSigmae(void) {return sigmae_;}
 
 private:

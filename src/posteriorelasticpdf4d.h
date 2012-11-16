@@ -17,21 +17,26 @@ class FFTGrid;
 class PosteriorElasticPDF4D : public PosteriorElasticPDF {
 public:
 
-  PosteriorElasticPDF4D(const  std::vector<double> & d1,      // first dimension of data points
-                        const  std::vector<double> & d2,      // second dimension of data points
-                        const  std::vector<double> & d3,      // third dimension of data points
-                        const  std::vector<double> & t1,      // fourth dimension (trend parameters)
-                        const  std::vector<double> & t2,      // fifth dimension (trend parameters)
-                        double                    ** sigmaPrior,   // Covariance matrix, prior model
-                        double                    ** sigmaPosterior,// Covariance matriz, posterior model
-                        int                          nx,       // resolution of density grid in dimension 1
-                        int                          ny,       // resolution of density grid in dimension 2
-                        int                          nt1,      // resolution of density grid in dimension 3 (trend parameter 1)
-                        int                          nt2,      // resolution of density grid in dimension 4 (trend parameter 2)
-                        double                       t1_min,   // min value of trend 1
-                        double                       t1_max,   // max value of trend 2
-                        double                       t2_min,   // min value of trend 1
-                        double                       t2_max);  // max value of trend 2
+  PosteriorElasticPDF4D(const std::vector<double>                   & d1, // first dimension of data points
+                        const std::vector<double>                   & d2, // second dimension of data points
+                        const std::vector<double>                   & d3, // third dimension of data points
+                        const std::vector<double>                   & t1, // fourth dimension (trend parameters)
+                        const std::vector<double>                   & t2, // fourth dimension (trend parameters)
+                        const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
+                        const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
+                        int                                           n1,    // resolution of density grid in elastic dimension 1
+                        int                                           n2,    // resolution of density grid in elastic dimension 2
+                        int                                           nt1,    // resolution of density grid in trend dimension 1
+                        int                                           nt2,    // resolution of density grid in trend dimension 2
+                        double                                        d1_min,
+                        double                                        d1_max,
+                        double                                        d2_min,
+                        double                                        d2_max,
+                        double                                        t1_min,
+                        double                                        t1_max,
+                        double                                        t2_min,
+                        double                                        t2_max,
+                        int                                           ind);
 
   PosteriorElasticPDF4D(int nx,                       // resolution of density grid in dimension 1
                         int ny,                       // resolution of density grid in dimension 2
@@ -50,17 +55,24 @@ public:
   virtual double Density(const double & vp,
                          const double & vs,
                          const double & rho,
-                         const double & s1) const = 0;
+                         const double & s1) const;
 
   virtual double Density(const double & vp,
                          const double & vs,
-                         const double & rho) const = 0;
+                         const double & rho) const;
 
   virtual void ResampleAndWriteDensity(const std::string & fileName,
                                        const Simbox      * origVol,
                                        Simbox            * volume,
                                        int                 gridNo,
                                        bool                writeSurface) const;
+
+  virtual double FindDensity(const double & vp,
+                             const double & vs,
+                             const double & rho,
+                             const double & s1 = 0,
+                             const double & s2 = 0,
+                             const Simbox * const volume = 0) const;
 
   //virtual void WriteAsciiFile(std::string filename) const;
 

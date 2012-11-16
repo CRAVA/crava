@@ -30,19 +30,23 @@ public:
                  double                                        d3_max,
                  int                                           ind = 0);
 
-  // (ii) Constructor with automatic dimension reduction: input: three elastic parameters and one
-  // trend variable
+  // (ii) Constructor with dimension reduction: input: three elastic parameters and one trend variable
   PosteriorElasticPDF3D(const std::vector<double>            & d1, // first dimension of data points
                  const std::vector<double>                   & d2, // second dimension of data points
                  const std::vector<double>                   & d3, // third dimension of data points
                  const std::vector<double>                   & t1, // fourth dimension (trend parameters)
-                 double                                     ** sigma_prior,  //Covariance matrix, prior model
-                 double                                     ** sigma_posterior,  // Covariance matrix, posterior model
+                 const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
+                 const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
                  int                                           n1,    // resolution of density grid in elastic dimension 1
                  int                                           n2,    // resolution of density grid in elastic dimension 2
                  int                                           nt,    // resolution of density grid in the trend dimension
+                 double                                        d1_min,
+                 double                                        d1_max,
+                 double                                        d2_min,
+                 double                                        d2_max,
                  double                                        t1_min,
-                 double                                        t1_max);
+                 double                                        t1_max,
+                 int                                           ind);
 
   PosteriorElasticPDF3D(int                                    n1,
                         int                                    n2,
@@ -100,23 +104,18 @@ public:
 private:
 
   FFTGrid *histogram_;   // Density grid of size n1_ \times n2_ \times n3_
-
   std::vector<double> v1_; //Transform 1
   std::vector<double> v2_; //Transform 2
-
   int n1_;                // Grid resolution for each variable.
   int n2_;
   int n3_;
-
   double x_min_; //Limits for variable 1
   double x_max_;
-  double dx_;    //dv1 = (v1_max-v1_min)/n1. To find index, take floor((v-v_min)/dv)).
-
+  double dx_;
   double y_min_;  // Limits for variable 2
   double y_max_;
   double dy_;
-
-  double z_min_;  // Limits for variable 2
+  double z_min_;  // Limits for variable 3
   double z_max_;
   double dz_;
 

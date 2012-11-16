@@ -1,6 +1,5 @@
 #include "src/fftgrid.h"
 #include <math.h>
-#include <algorithm>
 #include "lib/lib_matr.h"
 #include <src/posteriorelasticpdf.h>
 #include <src/simbox.h>
@@ -23,18 +22,18 @@ void PosteriorElasticPDF::CalculateVariance2D(double                      ** sig
 
 }
 
-void PosteriorElasticPDF::CalculateTransform2D(const std::vector<double> d1,
-                            const std::vector<double> d2,
-                            const std::vector<double> d3,
-                            std::vector<double> x,
-                            std::vector<double> y,
-                            const std::vector<double> v1,
-                            const std::vector<double> v2)
+void PosteriorElasticPDF::CalculateTransform2D(const std::vector<double>                & d1,
+                                               const std::vector<double>                & d2,
+                                               const std::vector<double>                & d3,
+                                               std::vector<std::vector<double> >        & x,
+                                               const std::vector<std::vector<double> >  & v)
 {
   int dim = static_cast<int>(d1.size());
-  for (int i=0; i<dim; i++){
-    x[i] = v1[i]*d1[i] + v1[i]*d2[i] + v1[i]*d3[i];
-    y[i] = v2[i]*d1[i] + v2[i]*d2[i] + v2[i]*d3[i];
+  int sizeOfV = static_cast<int>(v.size());
+  for (int i=0; i<sizeOfV; i++){
+    for (int j=0; j<dim; j++){
+      x[i][j] = v[i][0]*d1[i] + v[i][1]*d2[i] + v[i][2]*d3[i];
+    }
   }
 }
 
@@ -54,10 +53,10 @@ void PosteriorElasticPDF::InvertSquareMatrix(double   ** matrix,
 }
 
 
-void PosteriorElasticPDF::SolveGEVProblem(double **sigma_prior,
-                       double **sigma_posterior,
-                       std::vector<double> & v1,
-                       std::vector<double> & v2)
+void PosteriorElasticPDF::SolveGEVProblem(double               ** sigma_prior,
+                                          double               ** sigma_posterior,
+                                          std::vector<double>    & v1,
+                                          std::vector<double>    & v2)
 {
   //Compute transforms v1 and v2 ----------------------------------------
 
@@ -133,4 +132,64 @@ void PosteriorElasticPDF::SolveGEVProblem(double **sigma_prior,
   for(int i=0;i<3;i++)
     delete [] eigvec[i];
   delete [] eigvec;
+}
+
+void PosteriorElasticPDF::SetupSmoothingGaussian2D(FFTGrid                 * smoother,
+                                                   const double *const*const sigma_inv,
+                                                   int                       n1,
+                                                   int                       n2,
+                                                   int                       n3,
+                                                   double                    dx,
+                                                   double                    dy)
+{
+  float *smooth = new float[n1*n2*n3];
+  int j,k,l,jj,jjj,kk,kkk,ll,lll;
+  lll=2;
+
+  float sum = 0.0f;
+  for(l=0; l<n3; l++) {
+    kkk=2;
+    if(l<=n3/2)
+      ll = l;
+    else {
+      ll = -(l-lll);
+      lll+=2;
+    }
+    for(k=0; k<n2; k++) {
+      jjj=2;
+      if(k<=n2/2)
+        kk=k;
+      else {
+        kk = -(k-kkk);
+        kkk+=2;
+      }
+      for(j=0; j<n1; j++) {
+        if(j<=n1/2)
+          jj=j;
+        else {
+          jj = -(j-jjj);
+          jjj+=2;
+        }
+        smooth[j+k*n1+l*n1*n2] = float(exp(-0.5f*(jj*dx*jj*dx*sigma_inv[0][0]
+                                                   +kk*dy*kk*dy*sigma_inv[1][1]
+                                                   //+ll*dz_*ll*dz_*sigma_inv[2][2]
+                                                   +2*jj*dx*kk*dy*sigma_inv[1][0])));
+                                                   //+2*jj*dx_*ll*dz_*sigma_inv[2][0]
+                                                   //+2*kk*dy_*ll*dz_*sigma_inv[2][1])));
+        sum += smooth[j+k*n1+l*n1*n2];
+      }
+    }
+  }
+
+  // normalize smoother
+  for(l=0;l<n3;l++)
+    for(k=0;k<n2;k++)
+      for(j=0;j<n1;j++)
+        smooth[j+k*n1+l*n1*n2]/=sum;
+
+  smoother->fillInFromArray(smooth); //No mode/randomaccess
+  //normalizing constant for the smoother
+  //smoother->multiplyByScalar(static_cast<float>(1.0/sum)); //No mode required
+
+  delete [] smooth;
 }
