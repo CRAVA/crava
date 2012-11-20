@@ -4767,29 +4767,29 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings_->getRockStorage();
 
     // Compare names in rock physics model with names given in .xml-file
-    if(modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
-      typedef std::map<std::string,float> mapType;
-      mapType myMap = modelSettings_->getPriorFaciesProb();
+    if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+      std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
 
-      for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
-        mapType::iterator iter = myMap.find(it->first);
+      for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
 
-        if (iter == myMap.end())
-          errTxt += "Problem with rock physics prior model. Rock "+it->first+" is not one of the facies given in the xml-file.\n";
+        if(iter == rock_storage.end())
+          errTxt += "Problem with rock physics prior model. Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
       }
     }
 
     // Compare names in rock physics model with names given as input in proability cubes
-    else if(modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
-      typedef std::map<std::string,std::string> mapType;
-      mapType myMap = inputFiles_->getPriorFaciesProbFile();
+    else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
+      std::map<std::string,std::string> facies_probabilities = inputFiles_->getPriorFaciesProbFile();
 
-      for(std::map<std::string, DistributionsRockStorage *>::const_iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
-        mapType::iterator iter = myMap.find(it->first);
-        if (iter == myMap.end())
-          errTxt += "Problem with rock physics prior model. Rock "+it->first+" is not one of the facies given in the xml-file.\n";
+      for(std::map<std::string, std::string>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+        if (iter == rock_storage.end())
+          errTxt += "Problem with rock physics prior model. Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
       }
     }
+    else
+      errTxt += "Prior facies probabilities must be given in the prior model when rock physics models are used\n";
   }
 
   if(modelSettings_->getBackgroundFromRockPhysics())

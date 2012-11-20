@@ -2343,8 +2343,12 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
     std::map<std::string, DistributionsDryRockStorage *> dry_rock_storage = modelSettings->getDryRockStorage();
     std::map<std::string, DistributionsRockStorage    *> rock_storage     = modelSettings->getRockStorage();
 
-    for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
-      DistributionsRockStorage * storage    = it     ->second;
+    std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
+
+    for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+      std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+
+      DistributionsRockStorage * storage    = iter   ->second;
       std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
                                                                                  path,
                                                                                  trend_cube_parameters,
