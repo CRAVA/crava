@@ -3,13 +3,13 @@
 #include "rplib/dem.h"
 #include "rplib/solidtabulatedmodulus.h"
 #include "rplib/fluidbatzlewang.h"
-#include "rplib/co2.h"
+#include "rplib/fluidco2.h"
 #include "rplib/solidmix.h"
 #include "rplib/fluidmix.h"
 #include "rplib/rockdem.h"
 #include "rplib/distributionssolidtabulated.h"
 #include "rplib/distributionsfluidbatzlewang.h"
-#include "rplib/distributionsco2.h"
+#include "rplib/distributionsfluidco2.h"
 #include "rplib/distributionsrockdem.h"
 #include "rplib/distributionssolidmix.h"
 #include "rplib/distributionsfluidmix.h"
@@ -544,8 +544,12 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
                                          double& effective_density)
 {
   std::vector<double> dummy_u(3);
-  for(int i=0; i<3; i++)
+  for(size_t  i= 0; i < dummy_u.size(); i++)
     dummy_u[i] = 0;
+
+  std::vector<double> dummy_u2(3);
+  for(size_t i = 0; i < dummy_u2.size(); i++)
+    dummy_u2[i] = 0;
 
   // Script for rock physics modelling using differential effective medium theory (DEM).
   // Specifications
@@ -573,7 +577,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 
   FluidBatzleWang brine(brine_salinity, temperature, porepressure, dummy_u);
 
-  CO2 co2(temperature, porepressure);
+  FluidCO2 co2(temperature, porepressure, dummy_u2);
   ////
   //// plf
   ////
@@ -701,7 +705,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  NRLib::Delta distr_temperature(50.0);
 //  NRLib::Delta distr_salinity(0.05);
 //  DistributionsFluid * distr_brine  = new DistributionsFluidBatzleWang(&distr_temperature, &distr_pore_pressure, &distr_salinity);
-//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure);
+//  DistributionsFluid * distr_co2    = new DistributionsFluidCO2(&distr_temperature, &distr_pore_pressure);
 //  //Fluid * brine = distr_brine->GenerateSample();
 //  //Fluid * co2   = distr_co2->GenerateSample();
 //
@@ -857,7 +861,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   std::vector<double> dummy_alpha_bw(3,1);
   std::vector<double> dummy_alpha_co2(2,1);
   DistributionsFluid * distr_brine  = new DistributionsFluidBatzleWang(distr_temperature, distr_pore_pressure, distr_salinity, dummy_alpha_bw);
-  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure, dummy_alpha_co2);
+  DistributionsFluid * distr_co2    = new DistributionsFluidCO2(distr_temperature, distr_pore_pressure, dummy_alpha_co2);
   //Fluid * brine = distr_brine->GenerateSample();
   //Fluid * co2   = distr_co2->GenerateSample();
 
@@ -1004,7 +1008,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  NRLib::Delta distr_temperature(50.0);
 //  NRLib::Delta distr_salinity(0.05);
 //  DistributionsFluid * distr_brine  = new DistributionsFluidBatzleWang(&distr_temperature, &distr_pore_pressure, &distr_salinity);
-//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure);
+//  DistributionsFluid * distr_co2    = new DistributionsFluidCO2(&distr_temperature, &distr_pore_pressure);
 //
 //  //// Mixing, effective fluid properties. Distribution functions.
 //  std::vector< DistributionsFluid * > distr_fluid;

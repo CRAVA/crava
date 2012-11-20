@@ -1,21 +1,22 @@
-#ifndef RPLIB_CO2_H
-#define RPLIB_CO2_H
+#ifndef RPLIB_FLUID_FluidCO2_H
+#define RPLIB_FLUID_FluidCO2_H
 
 #include "rplib/fluid.h"
 
-class CO2 : public Fluid {
+class FluidCO2 : public Fluid {
 public:
 
-                              CO2(double                      temp,
-                                  double                      pore_pressure);
+  FluidCO2(double                      temp,
+           double                      pore_pressure,
+           const std::vector<double> & u);
 
-                              // Copy constructor
-                              CO2(const CO2 & rhs);
+  // Copy constructor
+  FluidCO2(const FluidCO2 & rhs);
 
-  virtual                     ~CO2();
+  virtual                     ~FluidCO2();
 
                               // Assignment operator, not yet implemented.
-                              /*CO2& operator=(const CO2& rhs);*/
+                              /*FluidCO2& operator=(const FluidCO2& rhs);*/
 
   virtual Fluid *             Clone()                                                               const;
 

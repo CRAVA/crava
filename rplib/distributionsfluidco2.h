@@ -1,21 +1,21 @@
-#ifndef RPLIB_DISTRIBUTIONSCO2_H
-#define RPLIB_DISTRIBUTIONSCO2_H
+#ifndef RPLIB_DISTRIBUTIONS_FLUID_CO2_H
+#define RPLIB_DISTRIBUTIONS_FLUID_CO2_H
 
 #include "rplib/distributionsfluid.h"
-#include "rplib/co2.h"
 
 class DistributionWithTrend;
+class FluidCO2;
 
-class DistributionsCO2 : public DistributionsFluid {
+class DistributionsFluidCO2 : public DistributionsFluid {
 public:
 
-  DistributionsCO2(const DistributionWithTrend       * distr_temperature,
-                   const DistributionWithTrend       * distr_pore_pressure,
-                   std::vector<double>               & alpha);
+  DistributionsFluidCO2(const DistributionWithTrend       * distr_temperature,
+                        const DistributionWithTrend       * distr_pore_pressure,
+                        std::vector<double>               & alpha);
 
-  DistributionsCO2(const DistributionsCO2 & dist);
+  DistributionsFluidCO2(const DistributionsFluidCO2 & dist);
 
-  virtual ~DistributionsCO2();
+  virtual ~DistributionsFluidCO2();
 
   virtual DistributionsFluid        * Clone() const;
 
@@ -31,6 +31,9 @@ public:
                                                    const Fluid               * sample) const;
 
 private:
+  Fluid                             * GetSample(const std::vector<double> & u,
+                                                const std::vector<double> & trend_params) const;
+
   const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
   const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
 };

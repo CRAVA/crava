@@ -6228,19 +6228,15 @@
 					Name="Fluid"
 					>
 					<File
-						RelativePath=".\rplib\co2.cpp"
-						>
-					</File>
-					<File
-						RelativePath=".\rplib\distributionsco2.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\rplib\distributionsfluid.cpp"
 						>
 					</File>
 					<File
 						RelativePath=".\rplib\distributionsfluidbatzlewang.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\distributionsfluidco2.cpp"
 						>
 					</File>
 					<File
@@ -6257,6 +6253,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\fluidbatzlewang.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\fluidco2.cpp"
 						>
 					</File>
 					<File
@@ -7457,19 +7457,15 @@
 					Name="Fluid"
 					>
 					<File
-						RelativePath=".\rplib\co2.h"
-						>
-					</File>
-					<File
-						RelativePath=".\rplib\distributionsco2.h"
-						>
-					</File>
-					<File
 						RelativePath=".\rplib\distributionsfluid.h"
 						>
 					</File>
 					<File
 						RelativePath=".\rplib\distributionsfluidbatzlewang.h"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\distributionsfluidco2.h"
 						>
 					</File>
 					<File
@@ -7490,6 +7486,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\fluidbatzlewang.h"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\fluidco2.h"
 						>
 					</File>
 					<File

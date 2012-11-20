@@ -9,7 +9,7 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsfluidbatzlewang.h"
-#include "rplib/distributionsco2.h"
+#include "rplib/distributionsfluidco2.h"
 #include "rplib/demmodelling.h"
 
 
@@ -266,9 +266,9 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
                                                    std::string                             & errTxt) const
 {
   std::vector<double> alpha(3);
-  alpha[0] = pore_pressure_[0]->GetOneYearCorrelation();
+  alpha[0] = salinity_[0]     ->GetOneYearCorrelation();
   alpha[1] = temperature_[0]  ->GetOneYearCorrelation();
-  alpha[2] = salinity_[0]     ->GetOneYearCorrelation();
+  alpha[2] = pore_pressure_[0]->GetOneYearCorrelation();
 
   int n_vintages_pressure    = static_cast<int>(pore_pressure_.size());
   int n_vintages_temperature = static_cast<int>(temperature_.size());
@@ -300,8 +300,9 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
     DistributionsFluid * fluid = NULL;
 
     if (is_co2) {
-      std::vector<double> dummy_alpha(2,1);
-      fluid       = new DistributionsCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], dummy_alpha);
+      std::vector<double> alpha2(2);
+      std::copy(alpha.begin() + 1, alpha.end(), alpha2.begin());
+      fluid       = new DistributionsFluidCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], alpha2);
     }
     else
       fluid       = new DistributionsFluidBatzleWang(temperature_dist_with_trend[i], pressure_dist_with_trend[i], salinity_dist_with_trend[i], alpha);
