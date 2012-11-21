@@ -2061,7 +2061,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
 
         LogKit::LogFormatted(LogKit::Low,"    Type                                   : %10s\n","Vp, Vs, Rho");
 
-        TabulatedVelocityRockStorage * rs = dynamic_cast<TabulatedVelocityRockStorage *>(it->second);
+        /*TabulatedVelocityRockStorage * rs = dynamic_cast<TabulatedVelocityRockStorage *>(it->second);
 
         if (typeid(*(rs->GetDistribution1()[0])) == typeid(NormalDistributionWithTrendStorage)) {
           const NormalDistributionWithTrendStorage * d1 = dynamic_cast<const NormalDistributionWithTrendStorage *>(rs->GetDistribution1()[0]);
@@ -2095,7 +2095,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
           LogKit::LogFormatted(LogKit::Low,"    Corr{p1,p2}                            : %10.2f\n",rs->GetCorrelation12());
           LogKit::LogFormatted(LogKit::Low,"    Corr{p1,p3}                            : %10.2f\n",rs->GetCorrelation13());
           LogKit::LogFormatted(LogKit::Low,"    Corr{p2,p3}                            : %10.2f\n",rs->GetCorrelation23());
-        }
+        }*/
       }
     }
 
