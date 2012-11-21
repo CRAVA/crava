@@ -30,7 +30,11 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
   s_min_ = s_min;
   s_max_ = s_max;
 
-  SetupExpectationAndCovariances(s_min_,
+  SetupExpectationAndCovariances(expectation_,
+                                 covariance_,
+                                 tabulated_s0_,
+                                 tabulated_s1_,
+                                 s_min_,
                                  s_max_);
 }
 
@@ -224,7 +228,11 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   s_min_ = s_min;
   s_max_ = s_max;
 
-  SetupExpectationAndCovariances(s_min_,
+  SetupExpectationAndCovariances(expectation_,
+                                 covariance_,
+                                 tabulated_s0_,
+                                 tabulated_s1_,
+                                 s_min_,
                                  s_max_);
 }
 

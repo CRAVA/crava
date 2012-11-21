@@ -47,14 +47,19 @@ public:
 protected:
                                         //This function should be called last step in constructor
                                         //for all children classes.
-  void                                  SetupExpectationAndCovariances(const std::vector<double> & s_min,
-                                                                       const std::vector<double> & s_max);
+  void                                  SetupExpectationAndCovariances(NRLib::Grid2D<std::vector<double> >   & expectation,
+                                                                       NRLib::Grid2D<NRLib::Grid2D<double> > & covariance,
+                                                                       std::vector<double>                   & tabulated_s0,
+                                                                       std::vector<double>                   & tabulated_s1,
+                                                                       const std::vector<double>             & s_min,
+                                                                       const std::vector<double>             & s_max);
 
-  void                                  FindTrendParams(NRLib::Grid2D<std::vector<double> > & trend_params,
-                                                        const std::vector<bool>             & has_trend,
-                                                        const std::vector<double>           & s_min,
-                                                        const std::vector<double>           & s_max,
-                                                        const size_t                          n);
+  void                                  FindTabulatedTrendParams(std::vector<double>       & tabulated_s0,
+                                                                 std::vector<double>       & tabulated_s1,
+                                                                 const std::vector<bool>   & has_trend,
+                                                                 const std::vector<double> & s_min,
+                                                                 const std::vector<double> & s_max,
+                                                                 const size_t                n);
 
   void                                  SetupTrendMesh(NRLib::Grid2D<std::vector<double> > & trend_params,
                                                        const std::vector<double>           & t1,
@@ -71,16 +76,46 @@ protected:
                                                        const std::vector<double> & q,
                                                        const double                muq);
 
-  void                                  FindNearestGridNode(const std::vector<double> & trend_params,
-                                                            const std::vector<double> & s_min,
-                                                            const std::vector<double> & s_max,
-                                                            const size_t                ni,
-                                                            const size_t                nj,
-                                                            size_t                    & i,
-                                                            size_t                    & j) const;
+  double                                FindInterpolationStartIndex(const std::vector<double> & tabulated_s,
+                                                                    const double                s) const;
+
+  void                                  FindInterpolationWeights(double       & w00,
+                                                                 double       & w10,
+                                                                 double       & w01,
+                                                                 double       & w11,
+                                                                 const double   di,
+                                                                 const double   dj) const;
+
+  void                                  InterpolateExpectation(std::vector<double>                       & mean,
+                                                               const NRLib::Grid2D<std::vector<double> > & expectation,
+                                                               const double                                w00,
+                                                               const double                                w10,
+                                                               const double                                w01,
+                                                               const double                                w11,
+                                                               const double                                di,
+                                                               const double                                dj,
+                                                               const size_t                                m,
+                                                               const size_t                                n,
+                                                               const size_t                                p) const;
+
+  void                                  InterpolateCovariance(NRLib::Grid2D<double>                       & cov,
+                                                              const NRLib::Grid2D<NRLib::Grid2D<double> > & covariance,
+                                                              const double                                  w00,
+                                                              const double                                  w10,
+                                                              const double                                  w01,
+                                                              const double                                  w11,
+                                                              const double                                  di,
+                                                              const double                                  dj,
+                                                              const size_t                                  m,
+                                                              const size_t                                  n,
+                                                              const size_t                                  p,
+                                                              const size_t                                  q) const;
 
   NRLib::Grid2D<std::vector<double> >   expectation_;
   NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;
+
+  std::vector<double>                   tabulated_s0_;
+  std::vector<double>                   tabulated_s1_;
 
   std::vector<double>                   alpha_;
 

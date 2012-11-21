@@ -32,7 +32,11 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
 
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 
-  SetupExpectationAndCovariances(s_min_,
+  SetupExpectationAndCovariances(expectation_,
+                                 covariance_,
+                                 tabulated_s0_,
+                                 tabulated_s1_,
+                                 s_min_,
                                  s_max_);
 }
 
