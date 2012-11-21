@@ -34,10 +34,6 @@ public:
                                                   const std::vector<double> & trend,
                                                   const Rock                * sample)       const;
 
-  virtual std::vector<double>        GetExpectation(const std::vector<double> & trend_params) const;
-
-  virtual NRLib::Grid2D<double>      GetCovariance(const std::vector<double> & trend_params)  const;
-
   virtual bool                       HasDistribution() const;
 
   virtual std::vector<bool>          HasTrend() const;

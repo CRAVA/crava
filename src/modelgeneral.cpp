@@ -52,6 +52,7 @@
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsrock.h"
 
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
@@ -2347,6 +2348,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
       std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+
+      LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
 
       DistributionsRockStorage * storage    = iter   ->second;
       std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,

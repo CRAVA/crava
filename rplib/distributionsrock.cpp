@@ -29,7 +29,7 @@ Rock * DistributionsRock::EvolveSample(double       time,
     return UpdateSample(time, true, trend, &rock);
 }
 
-std::vector<double> DistributionsRock::GetExpectations(const std::vector<double> & trend_params) const
+std::vector<double> DistributionsRock::GetExpectation(const std::vector<double> & trend_params) const
 {
   size_t ni = expectation_.GetNI();
   size_t nj = expectation_.GetNJ();
@@ -42,7 +42,7 @@ std::vector<double> DistributionsRock::GetExpectations(const std::vector<double>
   return expectation_(i,j);
 }
 
-NRLib::Grid2D<double> DistributionsRock::GetCovariances(const std::vector<double> & trend_params) const
+NRLib::Grid2D<double> DistributionsRock::GetCovariance(const std::vector<double> & trend_params) const
 {
   size_t ni = covariance_.GetNI();
   size_t nj = covariance_.GetNJ();
@@ -169,7 +169,6 @@ void  DistributionsRock::SetupExpectationAndCovariances(const std::vector<double
     }
   }
 
-  exit(1);
 }
 
 void DistributionsRock::FindTrendParams(NRLib::Grid2D<std::vector<double> > & trend_params,

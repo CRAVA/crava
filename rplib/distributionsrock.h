@@ -29,21 +29,15 @@ public:
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock)                                   const;
 
+  std::vector<double>                   GetExpectation(const std::vector<double> & trend_params)         const;
+
+  NRLib::Grid2D<double>                 GetCovariance(const std::vector<double> & trend_params)          const;
+
   virtual bool                          HasDistribution()                                                 const = 0;
 
   virtual std::vector<bool>             HasTrend()                                                        const = 0;
 
   virtual bool                          GetIsOkForBounding()                                              const = 0;
-
-  //NBNB fjellvoll the first two functions should probably survive the new format.
-
-  std::vector<double>                   GetExpectations(const std::vector<double> & trend_params)         const    ;
-
-  NRLib::Grid2D<double>                 GetCovariances(const std::vector<double> & trend_params)          const    ;
-
-  virtual std::vector<double>           GetExpectation(const std::vector<double> & /*trend_params*/)      const = 0;
-
-  virtual NRLib::Grid2D<double>         GetCovariance(const std::vector<double> & /*trend_params*/)       const = 0;
 
   virtual Rock                        * UpdateSample(double                      corr_param,
                                                      bool                        param_is_time,

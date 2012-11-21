@@ -1,6 +1,5 @@
 #include "rplib/distributionsrockmix.h"
 #include "rplib/rockmix.h"
-
 #include "rplib/rock.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionssolid.h"
@@ -9,7 +8,6 @@
 #include "rplib/demmodelling.h"
 
 #include <cassert>
-
 #include "src/definitions.h"
 
 //This file contains two classes DistributionsRockMixOfRock and DistributionsRockMixOfSolidAndFluid.
@@ -31,6 +29,9 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
   alpha_ = alpha;
   s_min_ = s_min;
   s_max_ = s_max;
+
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist)
@@ -47,9 +48,11 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMi
       distr_vol_frac_.push_back(NULL);
   }
 
-  alpha_ = dist.alpha_;
-  s_min_ = dist.s_min_;
-  s_max_ = dist.s_max_;
+  alpha_       = dist.alpha_;
+  s_min_       = dist.s_min_;
+  s_max_       = dist.s_max_;
+  expectation_ = dist.expectation_;
+  covariance_  = dist.covariance_;
 }
 
 DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
@@ -128,22 +131,6 @@ DistributionsRockMixOfRock::GetSample(const std::vector<double> & u,
   Rock * rock_mixed = new RockMixOfRock(sample_rock, volume_fraction, u, mix_method_);
 
   return rock_mixed;
-}
-
-
-
-std::vector<double>
-DistributionsRockMixOfRock::GetExpectation(const std::vector<double> & /*trend_params*/) const
-{
-  std::vector<double> dummy;
-  return(dummy);
-}
-
-NRLib::Grid2D<double>
-DistributionsRockMixOfRock::GetCovariance(const std::vector<double> & /*trend_params*/) const
-{
-  NRLib::Grid2D<double> dummy;
-  return(dummy);
 }
 
 bool
@@ -236,6 +223,9 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   alpha_ = alpha;
   s_min_ = s_min;
   s_max_ = s_max;
+
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const DistributionsRockMixOfSolidAndFluid & dist)
@@ -261,9 +251,11 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const D
       distr_vol_frac_fluid_.push_back(NULL);
   }
 
-  alpha_ = dist.alpha_;
-  s_min_ = dist.s_min_;
-  s_max_ = dist.s_max_;
+  alpha_       = dist.alpha_;
+  s_min_       = dist.s_min_;
+  s_max_       = dist.s_max_;
+  expectation_ = dist.expectation_;
+  covariance_  = dist.covariance_;
 }
 
 DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()
@@ -378,20 +370,6 @@ DistributionsRockMixOfSolidAndFluid::GetSample(const std::vector<double>  & u,
   Rock * rock_mixed = new RockMixOfSolidAndFluid(solid_sample, fluid_sample, volume_fraction_solid, volume_fraction_fluid, u, mix_method_);
 
   return rock_mixed;
-}
-
-std::vector<double>
-DistributionsRockMixOfSolidAndFluid::GetExpectation(const std::vector<double> & /*trend_params*/) const
-{
-  std::vector<double> dummy;
-  return(dummy);
-}
-
-NRLib::Grid2D<double>
-DistributionsRockMixOfSolidAndFluid::GetCovariance(const std::vector<double> & /*trend_params*/) const
-{
-  NRLib::Grid2D<double> dummy;
-  return(dummy);
 }
 
 bool

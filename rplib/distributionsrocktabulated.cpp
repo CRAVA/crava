@@ -82,9 +82,11 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTa
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
-  alpha_ = dist.alpha_;
-  s_min_ = dist.s_min_;
-  s_max_ = dist.s_max_;
+  alpha_       = dist.alpha_;
+  s_min_       = dist.s_min_;
+  s_max_       = dist.s_max_;
+  expectation_ = dist.expectation_;
+  covariance_  = dist.covariance_;
 }
 
 DistributionsRockTabulated::~DistributionsRockTabulated()
@@ -145,20 +147,6 @@ DistributionsRockTabulated::GetSample(const std::vector<double> & u,
   Rock * new_rock = new RockTabulatedVelocity(sample_vp, sample_vs, sample_density, u);
 
   return new_rock;
-}
-
-std::vector<double>
-DistributionsRockTabulated::GetExpectation(const std::vector<double> & /*trend_params*/) const
-{
-  std::vector<double> dummy;
-  return(dummy);
-}
-
-NRLib::Grid2D<double>
-DistributionsRockTabulated::GetCovariance(const std::vector<double> & /*trend_params*/) const
-{
-  NRLib::Grid2D<double> dummy;
-  return(dummy);
 }
 
 bool

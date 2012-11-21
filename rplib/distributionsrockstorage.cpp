@@ -270,6 +270,8 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                         const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                         std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Tabulated' rock physics model\n");
+
   std::vector<double> alpha(3);
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
   alpha[1] = vs_[0]     ->GetOneYearCorrelation();
@@ -362,6 +364,8 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                        std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Tabulated' rock physics model\n");
+
   std::vector<double> alpha(3);
   alpha[0] = bulk_modulus_[0] ->GetOneYearCorrelation();
   alpha[1] = shear_modulus_[0]->GetOneYearCorrelation();
@@ -440,6 +444,7 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                             std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Reuss' rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -493,6 +498,7 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                             std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Voigt' rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -547,6 +553,7 @@ HillRockStorage::GenerateDistributionsRock(const int                            
                                            const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                            std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Hill' rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -614,6 +621,8 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                           const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                           std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'DEM' rock physics model\n");
+
     // Remember: Host info is included first in constituent vectors
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
   int n_constituents = n_inclusions + 1;
@@ -763,6 +772,8 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
                                                const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Gassmann' rock physics model\n");
+
   std::vector<DistributionsRock *> rock(1, NULL);
 
   if(rock[0] == NULL)
@@ -806,6 +817,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                                                const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                std::string                                                 & errTxt) const
 {
+  LogKit::LogFormatted(LogKit::Low," Generating 'Bounding' rock physics model\n");
+
   std::string tmpErrTxt = "";
 
   int n_vintages_porosity      = static_cast<int>(porosity_.size());
@@ -825,6 +838,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
 
+  LogKit::LogFormatted(LogKit::Low,"Upper bound:\n");
   distr_upper_rock = ReadRock(n_vintages,
                               upper_rock_,
                               path,
@@ -851,6 +865,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<DistributionsRock *> final_distr_lower_rock(n_vintages);
   std::vector<DistributionsRock *> distr_lower_rock;
 
+  LogKit::LogFormatted(LogKit::Low,"Lower bound:\n");
   distr_lower_rock = ReadRock(n_vintages,
                               lower_rock_,
                               path,

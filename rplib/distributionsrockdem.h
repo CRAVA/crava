@@ -45,10 +45,6 @@ public:
 
   virtual bool                                   GetIsOkForBounding()                                                  const { return false; }
 
-  virtual std::vector<double>                    GetExpectation(const std::vector<double> & /*trend_params*/) const { return expectation_old_; }
-
-  virtual NRLib::Grid2D<double>                  GetCovariance(const std::vector<double> & /*trend_params*/)  const { return covariance_old_; }
-
 private:
   void                                           SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
                                                                                        NRLib::Grid2D<double> & covariance);

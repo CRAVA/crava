@@ -1,17 +1,15 @@
 #include "rplib/distributionsrockdem.h"
-
 #include "rplib/distributionwithtrend.h"
-
-#include "nrlib/statistics/statistics.hpp"
-
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionsfluid.h"
 #include "rplib/rockdem.h"
 #include "rplib/demmodelling.h"
 
 #include "nrlib/random/distribution.hpp"
+#include "nrlib/statistics/statistics.hpp"
 
 #include <cassert>
+
 
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
                                            std::vector< DistributionsFluid *>           & distr_fluid,
@@ -33,6 +31,9 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   s_max_                    = s_max;
 
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
+
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
@@ -51,9 +52,11 @@ DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
   for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++)
     distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
 
-  alpha_ = dist.alpha_;
-  s_min_ = dist.s_min_;
-  s_max_ = dist.s_max_;
+  alpha_       = dist.alpha_;
+  s_min_       = dist.s_min_;
+  s_max_       = dist.s_max_;
+  expectation_ = dist.expectation_;
+  covariance_  = dist.covariance_;
 }
 
 DistributionsRockDEM::~DistributionsRockDEM()

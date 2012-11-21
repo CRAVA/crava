@@ -1,6 +1,5 @@
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/rockbounding.h"
-
 #include "rplib/rock.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/tabulated.h"
@@ -50,6 +49,8 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
 
   tabulated_ = new Tabulated(variables, corr_matrix);
 
+  SetupExpectationAndCovariances(s_min_,
+                                 s_max_);
 }
 
 DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBounding & dist)
@@ -57,14 +58,17 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBoun
   correlation_weights_(dist.correlation_weights_),
   tabulated_(dist.tabulated_)
 {
-  upper_rock_ = dist.upper_rock_->Clone();
-  lower_rock_ = dist.lower_rock_->Clone();
-  porosity_   = dist.porosity_  ->Clone();
-  K_weight_   = dist.K_weight_  ->Clone();
-  M_weight_   = dist.M_weight_  ->Clone();
-  alpha_      = dist.alpha_;
-  s_min_      = dist.s_min_;
-  s_max_      = dist.s_max_;
+  upper_rock_  = dist.upper_rock_->Clone();
+  lower_rock_  = dist.lower_rock_->Clone();
+  porosity_    = dist.porosity_  ->Clone();
+  K_weight_    = dist.K_weight_  ->Clone();
+  M_weight_    = dist.M_weight_  ->Clone();
+
+  alpha_       = dist.alpha_;
+  s_min_       = dist.s_min_;
+  s_max_       = dist.s_max_;
+  expectation_ = dist.expectation_;
+  covariance_  = dist.covariance_;
 }
 
 DistributionsRockBounding::~DistributionsRockBounding()
@@ -125,20 +129,6 @@ DistributionsRockBounding::GetSample(const std::vector<double> & u,
   Rock * new_rock = new RockBounding(sample_upper_rock, sample_lower_rock, sample_porosity, sample_K_weight, sample_M_weight, u);
 
   return new_rock;
-}
-
-std::vector<double>
-DistributionsRockBounding::GetExpectation(const std::vector<double> & /*trend_params*/) const
-{
-  std::vector<double> dummy;
-  return(dummy);
-}
-
-NRLib::Grid2D<double>
-DistributionsRockBounding::GetCovariance(const std::vector<double> & /*trend_params*/) const
-{
-  NRLib::Grid2D<double> dummy;
-  return(dummy);
 }
 
 bool
