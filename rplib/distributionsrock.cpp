@@ -41,13 +41,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
                                                         const std::vector<double>             & s_max)
 //-----------------------------------------------------------------------------------------------------------
 {
-  size_t n = 1024; // Number of samples generated for each distribution
-  size_t m =   10; // Number of samples to use when sampling from s_min to s_max
-
-  tabulated_s0.resize(m);
-  tabulated_s1.resize(m);
-  expectation.Resize(m,m);
-  covariance.Resize(m,m);
+  size_t n  = 1024; // Number of samples generated for each distribution
+  size_t m  =   10; // Number of samples to use when sampling from s_min to s_max
 
   FindTabulatedTrendParams(tabulated_s0,
                            tabulated_s1,
@@ -55,6 +50,12 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
                            s_min,
                            s_max,
                            m);
+
+  size_t mi = tabulated_s0.size();
+  size_t mj = tabulated_s1.size();
+
+  expectation.Resize(mi, mj);
+  covariance.Resize(mi, mj);
 
   NRLib::Grid2D<std::vector<double> > trend_params;
 
@@ -68,8 +69,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
   std::vector<double>   b(n);
   std::vector<double>   c(n);
 
-  for (size_t i = 0 ; i < m ; i++) {
-    for (size_t j = 0 ; j < m ; j++) {
+  for (size_t i = 0 ; i < mi ; i++) {
+    for (size_t j = 0 ; j < mj ; j++) {
 
       const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
@@ -120,7 +121,6 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
       */
     }
   }
-
 }
 
 //----------------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ void DistributionsRock::FindTabulatedTrendParams(std::vector<double>       & tab
                                                  const std::vector<bool>   & has_trend,
                                                  const std::vector<double> & s_min,
                                                  const std::vector<double> & s_max,
-                                                 const size_t                n)
+                                                 const size_t                m)
 //----------------------------------------------------------------------------------------
 {
   bool t1 = has_trend[0];
@@ -138,14 +138,18 @@ void DistributionsRock::FindTabulatedTrendParams(std::vector<double>       & tab
   std::vector<double> no_trend(1, 0.0); // use when first and/or second trend is missing
 
   if (t1 && !t2) {
+    tabulated_s0.resize(m);
     SampleTrendValues(tabulated_s0, s_min[0], s_max[0]);
     tabulated_s1 = no_trend;
   }
   else if (!t1 && t2) {
-    SampleTrendValues(tabulated_s0, s_min[1], s_max[1]);
+    tabulated_s1.resize(m);
+    SampleTrendValues(tabulated_s1, s_min[1], s_max[1]);
     tabulated_s0 = no_trend;
   }
   else if (t1 && t2) {
+    tabulated_s0.resize(m);
+    tabulated_s1.resize(m);
     SampleTrendValues(tabulated_s0, s_min[0], s_max[0]);
     SampleTrendValues(tabulated_s1, s_min[1], s_max[1]);
   }
@@ -153,6 +157,11 @@ void DistributionsRock::FindTabulatedTrendParams(std::vector<double>       & tab
     tabulated_s0 = no_trend;
     tabulated_s1 = no_trend;
   }
+
+  //for (size_t i = 0 ; i < tabulated_s0.size() ; i++)
+  //  std::cout << "tab_s0 " << i << " " << tabulated_s0[i] <<std::endl;
+  //for (size_t i = 0 ; i < tabulated_s1.size() ; i++)
+  //  std::cout << "tab_s1 " << i << " " << tabulated_s1[i] <<std::endl;
 }
 
 //----------------------------------------------------------------------------------------
@@ -182,13 +191,13 @@ void DistributionsRock::SampleTrendValues(std::vector<double> & s,
 //--------------------------------------------------------------------
 {
   size_t n    = s.size();
-  double step = (s_max - s_min)/n;
+  double step = (s_max - s_min)/(n - 1);
 
   s[0]   = s_min;
   s[n-1] = s_max;
 
   for (size_t i = 1 ; i < n - 1 ; i++) {
-    s[i] = s_min + step*(i - 1);
+    s[i] = s_min + step*static_cast<double>(i);
   }
 }
 
@@ -257,6 +266,9 @@ std::vector<double> DistributionsRock::GetExpectation(const std::vector<double> 
 
   double di  = FindInterpolationStartIndex(tabulated_s0_, s0);
   double dj  = FindInterpolationStartIndex(tabulated_s1_, s1);
+  size_t i0  = static_cast<size_t>(floor(di));
+  size_t j0  = static_cast<size_t>(floor(dj));
+
 
   double w00 = 0.0;
   double w10 = 0.0;
@@ -265,10 +277,15 @@ std::vector<double> DistributionsRock::GetExpectation(const std::vector<double> 
 
   FindInterpolationWeights(w00, w10, w01, w11, di, dj);
 
+  bool do10 = m > 1 && i0 < m - 1;
+  bool do01 = n > 1 && j0 < n - 1;
+  bool do11 = do10 && do01;
+
   std::vector<double> mean(3);
-  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, di, dj, m, n, 0); // Interpolate 1st parameter
-  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, di, dj, m, n, 1); // Interpolate 2nd parameter
-  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, di, dj, m, n, 2); // Interpolate 3rd parameter
+
+  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 0); // Interpolate 1st parameter
+  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 1); // Interpolate 2nd parameter
+  InterpolateExpectation(mean, expectation_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 2); // Interpolate 3rd parameter
 
   return mean;
 }
@@ -282,7 +299,7 @@ double DistributionsRock::FindInterpolationStartIndex(const std::vector<double> 
 {
   double di = 0.0; // Default if there is no trend
 
-  if (tabulated_s.size() > 0) {
+  if (tabulated_s.size() > 1) {
     double dx;
     dx = tabulated_s[1] - tabulated_s[0]; // Assumes equally spaced table elements
     di = s/dx;
@@ -321,16 +338,14 @@ void DistributionsRock::InterpolateExpectation(std::vector<double>              
                                                const double                                w10,
                                                const double                                w01,
                                                const double                                w11,
-                                               const double                                di,
-                                               const double                                dj,
-                                               const size_t                                m,
-                                               const size_t                                n,
+                                               const size_t                                i0,
+                                               const size_t                                j0,
+                                               const bool                                  do10,
+                                               const bool                                  do01,
+                                               const bool                                  do11,
                                                const size_t                                p) const
 //-----------------------------------------------------------------------------------------------------
 {
-  size_t i0 = static_cast<size_t>(floor(di));
-  size_t j0 = static_cast<size_t>(floor(dj));
-
   //
   // Find values in cell corners
   //
@@ -339,18 +354,25 @@ void DistributionsRock::InterpolateExpectation(std::vector<double>              
   double v01 = 0.0;
   double v11 = 0.0;
 
-  v00  = expectation(i0, j0)[p];
-  if (m > 0)
-    v10  = expectation(i0 + 1, j0)[p];
-  if (n > 0)
-    v01  = expectation(i0, j0 + 1)[p];
-  if (m > 0 && n > 0)
-    v11  = expectation(i0 + 1, j0 + 1)[p];
+  v00 = expectation(i0, j0)[p];
+  if (do10)
+    v10 = expectation(i0 + 1, j0)[p];
+  if (do01)
+    v01 = expectation(i0, j0 + 1)[p];
+  if (do11)
+    v11 = expectation(i0 + 1, j0 + 1)[p];
 
   //
   // Interpolate ...
   //
   mean[p] = w00*v00 + w10*v10 + w01*v01 + w11*v11;
+
+  //printf("di=%5.2f  dj=%5.2f   m=%lu  n=%lu\n",di,dj,m,n);
+  //printf("v00 =%7.2f  w00=%5.3f\n",v00,w00);
+  //printf("v10 =%7.2f  w10=%5.3f\n",v10,w10);
+  //printf("v01 =%7.2f  w01=%5.3f\n",v01,w01);
+  //printf("v11 =%7.2f  w11=%5.3f\n",v11,w11);
+  //printf("mean=%7.2f\n\n",mean[p]);
 }
 
 
@@ -370,6 +392,8 @@ NRLib::Grid2D<double> DistributionsRock::GetCovariance(const std::vector<double>
 
   double di  = FindInterpolationStartIndex(tabulated_s0_, s0);
   double dj  = FindInterpolationStartIndex(tabulated_s1_, s1);
+  size_t i0  = static_cast<size_t>(floor(di));
+  size_t j0  = static_cast<size_t>(floor(dj));
 
   double w00 = 0.0;
   double w10 = 0.0;
@@ -378,13 +402,17 @@ NRLib::Grid2D<double> DistributionsRock::GetCovariance(const std::vector<double>
 
   FindInterpolationWeights(w00, w10, w01, w11, di, dj);
 
+  bool do10 = m > 1 && i0 < m - 1;
+  bool do01 = n > 1 && j0 < n - 1;
+  bool do11 = do10 && do01;
+
   NRLib::Grid2D<double> cov(3,3);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 0, 0);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 0, 1);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 0, 2);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 1, 1);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 1, 2);
-  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, di, dj, m, n, 2, 2);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 0, 0);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 0, 1);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 0, 2);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 1, 1);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 1, 2);
+  InterpolateCovariance(cov, covariance_, w00, w10, w01, w11, i0, j0, do10, do01, do11, 2, 2);
 
   cov(1, 0) = cov(0, 1);
   cov(2, 0) = cov(0, 2);
@@ -400,17 +428,15 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
                                               const double                                  w10,
                                               const double                                  w01,
                                               const double                                  w11,
-                                              const double                                  di,
-                                              const double                                  dj,
-                                              const size_t                                  m,
-                                              const size_t                                  n,
+                                              const size_t                                  i0,
+                                              const size_t                                  j0,
+                                              const bool                                    do10,
+                                              const bool                                    do01,
+                                              const bool                                    do11,
                                               const size_t                                  p,
                                               const size_t                                  q) const
 //-----------------------------------------------------------------------------------------------------
 {
-  size_t i0 = static_cast<size_t>(floor(di));
-  size_t j0 = static_cast<size_t>(floor(dj));
-
   //
   // Find values in cell corners
   //
@@ -420,11 +446,11 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
   double v11 = 0.0;
 
   v00 = covariance(i0, j0)(p,q);
-  if (m > 0)
+  if (do10)
     v10 = covariance(i0 + 1, j0)(p,q);
-  if (n > 0)
+  if (do01)
     v01 = covariance(i0, j0 + 1)(p,q);
-  if (m > 0 && n > 0)
+  if (do11)
     v11 = covariance(i0 + 1, j0 + 1)(p,q);
 
   //

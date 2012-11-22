@@ -92,10 +92,11 @@ protected:
                                                                const double                                w10,
                                                                const double                                w01,
                                                                const double                                w11,
-                                                               const double                                di,
-                                                               const double                                dj,
-                                                               const size_t                                m,
-                                                               const size_t                                n,
+                                                               const size_t                                i0,
+                                                               const size_t                                j0,
+                                                               const bool                                  do10,
+                                                               const bool                                  do01,
+                                                               const bool                                  do11,
                                                                const size_t                                p) const;
 
   void                                  InterpolateCovariance(NRLib::Grid2D<double>                       & cov,
@@ -104,10 +105,11 @@ protected:
                                                               const double                                  w10,
                                                               const double                                  w01,
                                                               const double                                  w11,
-                                                              const double                                  di,
-                                                              const double                                  dj,
-                                                              const size_t                                  m,
-                                                              const size_t                                  n,
+                                                              const size_t                                  i0,
+                                                              const size_t                                  j0,
+                                                              const bool                                    do10,
+                                                              const bool                                    do01,
+                                                              const bool                                    do11,
                                                               const size_t                                  p,
                                                               const size_t                                  q) const;
 
