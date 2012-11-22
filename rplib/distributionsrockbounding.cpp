@@ -23,7 +23,7 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   M_weight_(p_wave_weight),
   correlation_weights_(correlation_weights)
 {
-  alpha_ = alpha;
+  alpha_ = alpha;               // alpha_ contains the one-year correlations for (porosity, K_weight, M_weight)
   s_min_ = s_min;
   s_max_ = s_max;
 

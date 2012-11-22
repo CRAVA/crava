@@ -23,7 +23,7 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
     corr_elastic2_density_(corr_elastic2_density),
     tabulated_method_(method)
 {
-  alpha_ = alpha;
+  alpha_ = alpha;               // alpha_ contains the one-year correlations for (elastic1, elastic2, density)
   s_min_ = s_min;
   s_max_ = s_max;
 

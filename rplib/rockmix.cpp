@@ -120,7 +120,7 @@ RockMixOfRock::ComputeSeismicVariables()
 
     rock_[i]->GetSeismicParams(vp, vs, rho[i]);
 
-    DEMTools::CalcElasticParamsFromSeismicParams(vs, vp, rho[i], k[i], mu[i]);
+    DEMTools::CalcElasticParamsFromSeismicParams(vp, vs, rho[i], k[i], mu[i]);
   }
 
   double k_eff  = 0;

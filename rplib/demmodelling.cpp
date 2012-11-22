@@ -374,13 +374,20 @@ DEMTools::CalcDensityOfWaterFromTP(double temperature,
 }
 
 void
-DEMTools::CalcSeismicParamsFromElasticParams(const double bulk_modulus,
-                                             const double shear_modulus,
+DEMTools::CalcSeismicParamsFromElasticParams(double bulk_modulus,
+                                             double shear_modulus,
                                              const double density,
                                              double & vp,
                                              double & vs)
 {
   assert(density != 0.0);
+
+  double giga = 1.0E9; //NBNB Marit: Not a robust test
+  if(bulk_modulus < 1.0E8) {
+    bulk_modulus  = bulk_modulus  * giga;
+    shear_modulus = shear_modulus * giga;
+  }
+
   vp = (bulk_modulus + 4.0/3.0 * shear_modulus) / density;
   vp = sqrt(vp);
   vs = shear_modulus / density;
@@ -389,14 +396,18 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double bulk_modulus,
 }
 
 void
-DEMTools::CalcElasticParamsFromSeismicParams(const double vs,
-                                             const double vp,
+DEMTools::CalcElasticParamsFromSeismicParams(const double vp,
+                                             const double vs,
                                              const double density,
                                              double & bulk_modulus,
                                              double & shear_modulus)
 {
-  bulk_modulus = density * (std::pow(vp,2) - 4/3*std::pow(vs,2));
+  bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);
+
+  double giga = 1.0E9;
+  bulk_modulus  = bulk_modulus  / giga;
+  shear_modulus = shear_modulus / giga;
 }
 
 void

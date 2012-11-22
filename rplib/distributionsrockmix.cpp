@@ -26,7 +26,7 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
   distr_vol_frac_(distr_vol_frac),
   mix_method_(mix_method)
 {
-  alpha_ = alpha;
+  alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction)
   s_min_ = s_min;
   s_max_ = s_max;
 
@@ -43,7 +43,7 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMi
   mix_method_(dist.mix_method_)
 {
   for(size_t i=0; i<dist.distr_rock_.size(); i++)
-    distr_rock_.push_back(dist.distr_rock_[i]);
+    distr_rock_.push_back(dist.distr_rock_[i]->Clone());
 
   for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
     if(dist.distr_vol_frac_[i] != NULL)
@@ -224,7 +224,7 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   distr_vol_frac_fluid_(distr_vol_frac_fluid),
   mix_method_(mix_method)
 {
-  alpha_ = alpha;
+  alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction_solid, distr_vol_fraction_fluid)
   s_min_ = s_min;
   s_max_ = s_max;
 
@@ -241,10 +241,10 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const D
   mix_method_(dist.mix_method_)
 {
   for(size_t i=0; i<dist.distr_solid_.size(); i++)
-    distr_solid_.push_back(dist.distr_solid_[i]);
+    distr_solid_.push_back(dist.distr_solid_[i]->Clone());
 
   for(size_t i=0; i<dist.distr_fluid_.size(); i++)
-    distr_fluid_.push_back(dist.distr_fluid_[i]);
+    distr_fluid_.push_back(dist.distr_fluid_[i]->Clone());
 
   for(size_t i=0; i<dist.distr_vol_frac_solid_.size(); i++) {
     if(dist.distr_vol_frac_solid_[i] != NULL)

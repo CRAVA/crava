@@ -89,7 +89,7 @@ RockBounding::ComputeSeismicVariables()
   double G_upper;
   DEMTools::CalcElasticParamsFromSeismicParams(vp_upper, vs_upper, density_upper, K_upper, G_upper);
 
-  double M_upper = K_upper + 4/3*G_upper;
+  double M_upper = K_upper + 4.0/3.0 * G_upper;
 
   double vp_lower;
   double vs_lower;
@@ -100,13 +100,13 @@ RockBounding::ComputeSeismicVariables()
   double G_lower;
   DEMTools::CalcElasticParamsFromSeismicParams(vp_lower, vs_lower, density_lower, K_lower, G_lower);
 
-  double M_lower = K_lower + 4/3*G_lower;
+  double M_lower = K_lower + 4.0/3.0 * G_lower;
 
   double K = K_weight_ * K_upper       + (1-K_weight_) * K_lower;
   double M = M_weight_ * M_upper       + (1-M_weight_) * M_lower;
   rho_     = 0.5       * density_upper +  0.5          * density_lower;
 
-  double G  = (M - K)*3/4;
+  double G  = (M - K) * 3.0/4.0;
 
   DEMTools::CalcSeismicParamsFromElasticParams(K, G, rho_, vp_, vs_);
 }

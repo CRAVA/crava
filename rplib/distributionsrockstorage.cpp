@@ -152,6 +152,8 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
     std::vector<std::vector<DistributionsSolid *> >    distr_solid(n_vintages);
     std::vector<std::vector<DistributionWithTrend *> > fluid_volume_fractions(n_vintages);
     std::vector<std::vector<DistributionWithTrend *> > solid_volume_fractions(n_vintages);
+    std::vector<double>                                solid_alpha;
+    std::vector<double>                                fluid_alpha;
 
     int n_fluids = 0;
     int n_solids = 0;
@@ -183,6 +185,8 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
         for(int i=0; i<n_vintages; i++)
           fluid_volume_fractions[i].push_back(all_volume_fractions[i][s]);
 
+        fluid_alpha.push_back(alpha[s]);
+
         n_fluids++;
 
       }
@@ -213,11 +217,19 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
         for(int i=0; i<n_vintages; i++)
           solid_volume_fractions[i].push_back(all_volume_fractions[i][s]);
 
+        solid_alpha.push_back(alpha[s]);
+
         n_solids++;
 
       }
 
     }
+
+    // Reuse alpha, but now it is sorted
+    for(int i=0; i<n_solids; i++)
+      alpha[i] = solid_alpha[i];
+    for(int i=0; i<n_fluids; i++)
+      alpha[i+n_solids] = fluid_alpha[i];
 
     for(int i=0; i<n_vintages; i++)
       final_dist_rock[i] = new DistributionsRockMixOfSolidAndFluid(distr_solid[i],

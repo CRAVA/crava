@@ -205,7 +205,7 @@ void DistributionsRock::SampleTrendValues(std::vector<double> & s,
 double DistributionsRock::FindExpectation(const std::vector<double> & p)
 //----------------------------------------------------------------------
 {
-  int    n    = p.size();
+  int    n    = static_cast<int>(p.size());
   double mean = 0.0;
   for (int i = 0 ; i < n ; i++) {
     mean += p[i];
@@ -221,7 +221,7 @@ double DistributionsRock::FindCovariance(const std::vector<double> & p,
                                          const double                muq)
 //----------------------------------------------------------------------
 {
-  int    n   = p.size();
+  int    n   = static_cast<int>(p.size());
   double cov = 0.0;
   for (int i = 0 ; i < n ; i++) {
     cov += (p[i] - mup)*(q[i] - muq);

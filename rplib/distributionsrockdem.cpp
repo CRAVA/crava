@@ -26,7 +26,7 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   distr_fluid_              = distr_fluid;
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
-  alpha_                    = alpha;
+  alpha_                    = alpha;               // alpha_ contains the one-year correlations for (inclusion_spectrums, inclusion_concentrations)
   s_min_                    = s_min;
   s_max_                    = s_max;
 
