@@ -29,9 +29,9 @@ public:
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock)                                   const;
 
-  std::vector<double>                   GetExpectation(const std::vector<double> & trend_params)         const;
+  std::vector<double>                   GetLogExpectation(const std::vector<double> & trend_params)       const;
 
-  NRLib::Grid2D<double>                 GetCovariance(const std::vector<double> & trend_params)          const;
+  NRLib::Grid2D<double>                 GetLogCovariance(const std::vector<double> & trend_params)        const;
 
   virtual bool                          HasDistribution()                                                 const = 0;
 
@@ -69,12 +69,12 @@ protected:
                                                           const double        & s_min,
                                                           const double        & s_max);
 
-  double                                FindExpectation(const std::vector<double> & p);
+  double                                FindLogExpectation(const std::vector<double> & p);
 
-  double                                FindCovariance(const std::vector<double> & p,
-                                                       const double                mup,
-                                                       const std::vector<double> & q,
-                                                       const double                muq);
+  double                                FindLogCovariance(const std::vector<double> & p,
+                                                          const double                mup,
+                                                          const std::vector<double> & q,
+                                                          const double                muq);
 
   double                                FindInterpolationStartIndex(const std::vector<double> & tabulated_s,
                                                                     const double                s) const;
@@ -113,8 +113,8 @@ protected:
                                                               const size_t                                  p,
                                                               const size_t                                  q) const;
 
-  NRLib::Grid2D<std::vector<double> >   expectation_;
-  NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;
+  NRLib::Grid2D<std::vector<double> >   expectation_;       // Expectation of log(vp,vs,density)
+  NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;        // Covariance of log(vp,vs,density)
 
   std::vector<double>                   tabulated_s0_;
   std::vector<double>                   tabulated_s1_;

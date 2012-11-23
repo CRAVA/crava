@@ -2732,6 +2732,13 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   const int nx  = vp.getNx();
   const int rnxp = vp.getRNxp();
 
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
   const size_t number_of_facies = probability.size();
 
   // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
@@ -2755,8 +2762,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   }
 
   // Loop through all cells in the FFTGrids
-  for(int k = 0; k < nzp; k++)
-    for(int j = 0; j < nyp; j++)
+  for(int k = 0; k < nzp; k++) {
+    for(int j = 0; j < nyp; j++) {
       for(int i = 0; i < rnxp; i++) {
 
         // If outside/If in the padding in x- and y-direction, set expectation equal to 0
@@ -2783,14 +2790,17 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
         else {
           std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
 
-          std::vector<float> expectations(3);  // Antar initialisert til 0.
+          std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
+
+          std::vector<std::vector<double> > expectation_m(number_of_facies);
+          for(size_t f = 0; f < number_of_facies; f++)
+            expectation_m[f] = rock_vector[f]->GetLogExpectation(trend_position);
+
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
           for(size_t f = 0; f < number_of_facies; f++){
-            std::vector<double> m(3);
-            m = rock_vector[f]->GetExpectation(trend_position);
-            expectations[0] += static_cast<float>(m[0]*probability[f]);
-            expectations[1] += static_cast<float>(m[1]*probability[f]);
-            expectations[2] += static_cast<float>(m[2]*probability[f]);
+            expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
+            expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
+            expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
           }
 
           // Set values in expectation grids
@@ -2821,28 +2831,35 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
           for(size_t f = 0; f < number_of_facies; f++){
             NRLib::Grid2D<double> sigma;
             std::vector<double> m(3);
-            sigma = rock_vector[f]->GetCovariance(trend_position);
-            m = rock_vector[f]->GetExpectation(trend_position);
+            sigma = rock_vector[f]->GetLogCovariance(trend_position);
 
             // For all elements in the 3x3 matrix of the combined variance
-            for(size_t a=0; a<sigma.GetNI(); a++){
-              for(size_t b=0; b<sigma.GetNJ(); b++){
+            for(size_t a=0; a<3; a++){
+              for(size_t b=0; b<3; b++){
                 sumVariance(a,b) += probability[f]*sigma(a,b);
-                sumVariance(a,b) += probability[f]*(m[a] - expectations[a])*(m[b] - expectations[b]);
+                sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
               }
             }
           }
         }
       }
+    }
 
-      // Setting output variables
-      varVp  = sumVariance(0,0);
-      varVs  = sumVariance(1,1);
-      varRho = sumVariance(2,2);
-      crossVpVs  = sumVariance(0,1);
-      crossVpRho = sumVariance(0,2);
-      crossVsRho = sumVariance(1,2);
+    // Log progress
+    if (k+1 >= static_cast<int>(nextMonitor)) {
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
+  }
 
+  // Setting output variables
+  varVp  = sumVariance(0,0);
+  varVs  = sumVariance(1,1);
+  varRho = sumVariance(2,2);
+  crossVpVs  = sumVariance(0,1);
+  crossVpRho = sumVariance(0,2);
+  crossVsRho = sumVariance(1,2);
 }
 
 void

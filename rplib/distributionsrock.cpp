@@ -83,24 +83,24 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
       //
       // Expectation
       //
-      mean[0] = FindExpectation(a);
-      mean[1] = FindExpectation(b);
-      mean[2] = FindExpectation(c);
+      mean[0] = FindLogExpectation(a);
+      mean[1] = FindLogExpectation(b);
+      mean[2] = FindLogExpectation(c);
 
       expectation(i, j) = mean;
 
       //
       // Covariance
       //
-      cov(0,0) = FindCovariance(a,mean[0],a,mean[0]);
-      cov(1,1) = FindCovariance(b,mean[1],b,mean[1]);
-      cov(2,2) = FindCovariance(c,mean[2],c,mean[2]);
+      cov(0,0) = FindLogCovariance(a,mean[0],a,mean[0]);
+      cov(1,1) = FindLogCovariance(b,mean[1],b,mean[1]);
+      cov(2,2) = FindLogCovariance(c,mean[2],c,mean[2]);
 
-      cov(0,1) = FindCovariance(a,mean[0],b,mean[1]);
+      cov(0,1) = FindLogCovariance(a,mean[0],b,mean[1]);
       cov(1,0) = cov(0,1);
-      cov(0,2) = FindCovariance(a,mean[0],c,mean[2]);
+      cov(0,2) = FindLogCovariance(a,mean[0],c,mean[2]);
       cov(2,0) = cov(0,2);
-      cov(1,2) = FindCovariance(b,mean[1],c,mean[2]);
+      cov(1,2) = FindLogCovariance(b,mean[1],c,mean[2]);
       cov(2,1) = cov(1,2);
 
       covariance(i, j) = cov;
@@ -202,29 +202,29 @@ void DistributionsRock::SampleTrendValues(std::vector<double> & s,
 }
 
 //----------------------------------------------------------------------
-double DistributionsRock::FindExpectation(const std::vector<double> & p)
+double DistributionsRock::FindLogExpectation(const std::vector<double> & p)
 //----------------------------------------------------------------------
 {
   int    n    = static_cast<int>(p.size());
   double mean = 0.0;
   for (int i = 0 ; i < n ; i++) {
-    mean += p[i];
+    mean += std::log(p[i]);
   }
   mean /= n;
   return mean;
 }
 
 //----------------------------------------------------------------------
-double DistributionsRock::FindCovariance(const std::vector<double> & p,
-                                         const double                mup,
-                                         const std::vector<double> & q,
-                                         const double                muq)
+double DistributionsRock::FindLogCovariance(const std::vector<double> & p,
+                                            const double                mup,
+                                            const std::vector<double> & q,
+                                            const double                muq)
 //----------------------------------------------------------------------
 {
   int    n   = static_cast<int>(p.size());
   double cov = 0.0;
   for (int i = 0 ; i < n ; i++) {
-    cov += (p[i] - mup)*(q[i] - muq);
+    cov += (std::log(p[i]) - mup)*(std::log(q[i]) - muq);
   }
   if (n > 1)
     cov /= n - 1;
@@ -232,7 +232,7 @@ double DistributionsRock::FindCovariance(const std::vector<double> & p,
 }
 
 //---------------------------------------------------------------------------------------------------
-std::vector<double> DistributionsRock::GetExpectation(const std::vector<double> & trend_params) const
+std::vector<double> DistributionsRock::GetLogExpectation(const std::vector<double> & trend_params) const
 //---------------------------------------------------------------------------------------------------
 {
   /* would not compile ....
@@ -377,7 +377,7 @@ void DistributionsRock::InterpolateExpectation(std::vector<double>              
 
 
 //----------------------------------------------------------------------------------------------------
-NRLib::Grid2D<double> DistributionsRock::GetCovariance(const std::vector<double> & trend_params) const
+NRLib::Grid2D<double> DistributionsRock::GetLogCovariance(const std::vector<double> & trend_params) const
 //----------------------------------------------------------------------------------------------------
 {
   double s0 = trend_params[0];
