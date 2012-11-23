@@ -2761,6 +2761,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
     i++;
   }
 
+  int n_samples = 0;
   // Loop through all cells in the FFTGrids
   for(int k = 0; k < nzp; k++) {
     for(int j = 0; j < nyp; j++) {
@@ -2832,6 +2833,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
             NRLib::Grid2D<double> sigma;
             std::vector<double> m(3);
             sigma = rock_vector[f]->GetLogCovariance(trend_position);
+            n_samples++;
 
             // For all elements in the 3x3 matrix of the combined variance
             for(size_t a=0; a<3; a++){
@@ -2854,12 +2856,12 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   }
 
   // Setting output variables
-  varVp  = sumVariance(0,0);
-  varVs  = sumVariance(1,1);
-  varRho = sumVariance(2,2);
-  crossVpVs  = sumVariance(0,1);
-  crossVpRho = sumVariance(0,2);
-  crossVsRho = sumVariance(1,2);
+  varVp  = sumVariance(0,0)/n_samples;
+  varVs  = sumVariance(1,1)/n_samples;
+  varRho = sumVariance(2,2)/n_samples;
+  crossVpVs  = sumVariance(0,1)/n_samples;
+  crossVpRho = sumVariance(0,2)/n_samples;
+  crossVsRho = sumVariance(1,2)/n_samples;
 }
 
 void
