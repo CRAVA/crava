@@ -73,8 +73,8 @@ private:
   bool parseConstituent(TiXmlNode * node, std::string & constituent_label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEM(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::string moduli, std::string & errTxt);
-  bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
-  bool parseDEMInclusion(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & aspect_ratio, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
+  bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);
+  bool parseDEMInclusion(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & aspect_ratio, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);
   bool parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseUpperBound(TiXmlNode * node, std::string & label, std::string & errTxt);

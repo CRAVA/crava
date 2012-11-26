@@ -2222,8 +2222,12 @@ XmlModelFile::parseDEM(TiXmlNode                                  * node,
   std::vector<DistributionWithTrendStorage *> host_volume;
   std::string                                 host_label  = "";
 
-  if(parseDEMHost(root, host_label, host_volume, errTxt) == false)
+  bool missing_vol_frac_host = false;
+  if(parseDEMHost(root, host_label, host_volume, errTxt, missing_vol_frac_host) == false)
     errTxt += "The host must be given in the DEM rock physics model for "+label+"\n";
+
+  if (missing_vol_frac_host == true)
+    host_volume = std::vector<DistributionWithTrendStorage* >(1, NULL);
 
   std::vector<std::string>                                  inclusion_label;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume;
@@ -2233,10 +2237,29 @@ XmlModelFile::parseDEM(TiXmlNode                                  * node,
   std::vector<DistributionWithTrendStorage *> aspect;
   std::string                                 this_label = "";
 
-  while(parseDEMInclusion(root, this_label, aspect, volume, errTxt) == true) {
+  bool missing_vol_frac = false;
+  int  counter_missing_vol_frac = 0;
+
+  while(parseDEMInclusion(root, this_label, aspect, volume, errTxt, missing_vol_frac) == true) {
     inclusion_label.push_back(this_label);
-    inclusion_volume.push_back(volume);
+    if (missing_vol_frac == true) {
+      counter_missing_vol_frac++;
+      inclusion_volume.push_back(std::vector<DistributionWithTrendStorage* >(1, NULL));
+    }
+    else
+      inclusion_volume.push_back(volume);
+
     aspect_ratio.push_back(aspect);
+  }
+
+  //check missing volume fractions
+  if (missing_vol_frac_host == false) {
+    if (counter_missing_vol_frac != 1)
+      errTxt += "All the volume fractions except one must be given for the inclusions of the DEM model when the volume fraction for host is given.\n";
+  }
+  else {
+    if (counter_missing_vol_frac != 0)
+      errTxt += "All the volume fractions must be given for the inclusions of the DEM model when the volume fraction for host is not given.\n";
   }
 
   if(inclusion_label.size() < 1)
@@ -2266,12 +2289,15 @@ bool
 XmlModelFile::parseDEMHost(TiXmlNode                                   * node,
                            std::string                                 & label,
                            std::vector<DistributionWithTrendStorage *> & volume_fraction,
-                           std::string                                 & errTxt)
+                           std::string                                 & errTxt,
+                           bool                                        & missing_vol_frac)
 {
 
   TiXmlNode * root = node->FirstChildElement("host");
   if(root == 0)
     return(false);
+
+  missing_vol_frac = false;
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("solid");
@@ -2291,8 +2317,10 @@ XmlModelFile::parseDEMHost(TiXmlNode                                   * node,
     errTxt += "There can only be one constituent in the host of the DEM model\n";
 
   std::string dummy;
-  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
-    errTxt += "The volume fraction must be given for the host of the DEM model\n";
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false) {
+    //errTxt += "The volume fraction must be given for the host of the DEM model\n";
+    missing_vol_frac = true;
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2303,9 +2331,10 @@ XmlModelFile::parseDEMInclusion(TiXmlNode                                   * no
                                 std::string                                 & label,
                                 std::vector<DistributionWithTrendStorage *> & aspect_ratio,
                                 std::vector<DistributionWithTrendStorage *> & volume_fraction,
-                                std::string                                 & errTxt)
+                                std::string                                 & errTxt,
+                                bool                                        & missing_vol_frac)
 {
-
+  missing_vol_frac = false;
   TiXmlNode * root = node->FirstChildElement("inclusion");
   if(root == 0)
     return(false);
@@ -2329,8 +2358,10 @@ XmlModelFile::parseDEMInclusion(TiXmlNode                                   * no
     errTxt += "There can only be one constituent for each of the inclusions of the DEM model\n";
 
   std::string dummy;
-  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
-    errTxt += "The volume fraction must be given for the inclusions of the DEM model\n";
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false) {
+    //errTxt += "The volume fraction must be given for the inclusions of the DEM model\n";
+    missing_vol_frac = true;
+  }
 
   if(parseDistributionWithTrend(root, "aspect-ratio", aspect_ratio, dummy, false, errTxt) == false)
     errTxt += "The aspect ratio must be given for the inclusions of the DEM model\n";

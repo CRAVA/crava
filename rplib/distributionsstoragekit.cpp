@@ -174,6 +174,7 @@ ReadFluid(const int                                                  & n_vintage
                                                                                path,
                                                                                trend_cube_parameters,
                                                                                trend_cube_sampling,
+                                                                               model_fluid_storage,
                                                                                errTxt);
   }
 

@@ -23,11 +23,11 @@ public:
 
   ~CravaTrend();
 
-  std::vector<double>                  GetTrendPosition(const int & i,
-                                                        const int & j,
-                                                        const int & k) const;
+  std::vector<double>                          GetTrendPosition(const int & i,
+                                                                const int & j,
+                                                                const int & k) const;
 
-  std::vector<std::vector<double> >    GetTrendCubeSampling()   { return trend_cube_sampling_;}
+  const std::vector<std::vector<double> >    & GetTrendCubeSampling()          const   { return trend_cube_sampling_;}
 
 private:
 

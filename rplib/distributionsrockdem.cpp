@@ -8,6 +8,8 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/statistics/statistics.hpp"
 
+#include "src/definitions.h"
+
 #include <cassert>
 
 
@@ -53,8 +55,12 @@ DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
   for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
     distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
 
-  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++)
-    distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++) {
+    if (dist.distr_incl_concentration_[i] != NULL)
+      distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+    else
+      distr_incl_concentration_.push_back(NULL);
+  }
 
   alpha_       = dist.alpha_;
   s_min_       = dist.s_min_;
@@ -76,7 +82,7 @@ DistributionsRockDEM::~DistributionsRockDEM()
   }
 
   for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
-    if(distr_incl_concentration_[i]->GetIsShared() == false)
+    if (distr_incl_concentration_[i] != NULL && distr_incl_concentration_[i]->GetIsShared() == false)
       delete distr_incl_concentration_[i];
   }
 }
@@ -99,9 +105,17 @@ DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) c
 
   size_t n_incl = distr_incl_spectrum_.size();
 
-  std::vector<double> u(n_incl+n_incl+1);
-  for(size_t i=0; i<n_incl+n_incl+1; i++)
+  std::vector<double> u(n_incl+n_incl+1, RMISSING);
+  for(size_t i=0; i<n_incl; i++) {
+    if (distr_incl_concentration_[i] != NULL)
+      u[i + n_incl] = NRLib::Random::Unif01();
+
     u[i] = NRLib::Random::Unif01();
+  }
+
+  //last element incl check
+  if (distr_incl_concentration_.back() != NULL)
+    u.back() = NRLib::Random::Unif01();
 
   Rock * new_rock = GetSample(u, trend_params, solid, fluid);
 
@@ -125,15 +139,15 @@ DistributionsRockDEM::HasDistribution() const
       return true;
   }
 
-  // loop over inclusion and spectrum
   for (size_t i = 0; i < distr_incl_spectrum_.size(); ++i) {
-    if (distr_incl_spectrum_[i]->GetIsDistribution() || distr_incl_concentration_[i]->GetIsDistribution())
+    if (distr_incl_spectrum_[i]->GetIsDistribution())
       return true;
   }
 
-  // check last element
-  if (distr_incl_concentration_.back()->GetIsDistribution())
-    return true;
+  for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
+    if (distr_incl_concentration_[i] != NULL && distr_incl_concentration_[i]->GetIsDistribution())
+      return true;
+  }
 
   return false;
 }
@@ -148,7 +162,9 @@ DistributionsRockDEM::HasTrend() const
 
   for (size_t i = 0; i < distr_incl_spectrum_.size(); ++i) {
     const std::vector<bool>& incl_trend         = distr_incl_spectrum_[i]->GetUseTrendCube();
-    const std::vector<bool>& incl_conc          = distr_incl_concentration_[i]->GetUseTrendCube();
+    std::vector<bool> incl_conc(2, false);
+    if (distr_incl_concentration_[i] != NULL)
+      incl_conc  = distr_incl_concentration_[i]->GetUseTrendCube();
     const std::vector<bool>& fluid_trend_inc    = distr_fluid_[i]->HasTrend();
 
     for(size_t j = 0; j < 2; ++j) {
@@ -157,8 +173,11 @@ DistributionsRockDEM::HasTrend() const
     }
   }
 
-  //check last element
-  const std::vector<bool>& incl_conc  = distr_incl_concentration_.back()->GetUseTrendCube();
+  //check last element in inclusion
+  std::vector<bool> incl_conc(2, false);
+  if (distr_incl_concentration_.back() != NULL)
+    incl_conc  = distr_incl_concentration_.back()->GetUseTrendCube();
+
   for(size_t j = 0; j < 2; ++j) {
     if (incl_conc[j])
       has_trend[j] = true;
@@ -205,14 +224,32 @@ DistributionsRockDEM::GetSample(const std::vector<double>  & u,
 {
   size_t n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);
-  std::vector<double> inclusion_concentration(n_incl + 1);
+  std::vector<double> inclusion_concentration(n_incl + 1, 0.0);
+
+  size_t missing_index = n_incl + 1;
 
   for (size_t i = 0; i < n_incl; ++i) {
     inclusion_spectrum[i] = distr_incl_spectrum_[i]->GetQuantileValue(u[i], trend_params[0], trend_params[1]);
-    inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
+    if (distr_incl_concentration_[i] != NULL)
+      inclusion_concentration[i] = distr_incl_concentration_[i]->GetQuantileValue(u[i + n_incl], trend_params[0], trend_params[1]);
+    else
+      missing_index = i;
   }
 
-  inclusion_concentration.back() = distr_incl_concentration_.back()->GetQuantileValue(u.back(), trend_params[0], trend_params[1]);
+  if (distr_incl_concentration_.back() != NULL)
+    inclusion_concentration.back() = distr_incl_concentration_.back()->GetQuantileValue(u.back(), trend_params[0], trend_params[1]);
+  else
+    missing_index = inclusion_concentration.size() - 1;
+
+  if (missing_index != n_incl + 1) {
+
+    double sum = 0.0;
+
+    for (size_t i = 0; i < inclusion_concentration.size(); ++i)
+      sum += inclusion_concentration[i];
+
+    inclusion_concentration[missing_index] = 1.0 - sum;
+  }
 
   return new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, u);
 }

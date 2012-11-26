@@ -13,7 +13,8 @@ class FluidMix;
 class DistributionsFluidMix : public DistributionsFluid {
 public:
 
-  DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
+  DistributionsFluidMix(const std::vector<double>                    & alpha,
+                        std::vector< DistributionsFluid * >          & distr_fluid,
                         std::vector< DistributionWithTrend * >       & distr_vol_frac,
                         DEMTools::MixMethod                            mix_method);
 

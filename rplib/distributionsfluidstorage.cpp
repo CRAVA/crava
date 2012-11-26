@@ -4,6 +4,7 @@
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsfluid.h"
+#include "rplib/distributionsfluidmix.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionsfluidtabulated.h"
 #include "rplib/distributionwithtrendstorage.h"
@@ -19,6 +20,81 @@ DistributionsFluidStorage::DistributionsFluidStorage()
 
 DistributionsFluidStorage::~DistributionsFluidStorage()
 {
+}
+
+std::vector<DistributionsFluid *>
+DistributionsFluidStorage::CreateDistributionsFluidMix(const int                                                       & n_vintages,
+                                                       const std::string                                               & path,
+                                                       const std::vector<std::string>                                  & trend_cube_parameters,
+                                                       const std::vector<std::vector<double> >                         & trend_cube_sampling,
+                                                       const std::map<std::string, DistributionsFluidStorage *>        & model_fluid_storage,
+                                                       const std::vector<std::string>                                  & constituent_label,
+                                                       const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
+                                                       DEMTools::MixMethod                                               mix_method,
+                                                       std::string                                                     & errTxt) const
+{
+  int n_constituents = static_cast<int>(constituent_label.size());
+
+  std::vector<int> n_vintages_constit(n_constituents);
+  for(int i=0; i<n_constituents; i++)
+    n_vintages_constit[i] = static_cast<int>(constituent_volume_fraction[i].size());
+
+  std::vector<double> alpha(n_constituents);
+  for(int i=0; i<n_constituents; i++) {
+    if(constituent_volume_fraction[i][0] != NULL)
+      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+    else
+      alpha[i] = 1;
+  }
+
+  std::vector<std::vector<DistributionsFluid *> > distr_fluid(n_vintages);
+  for(int i=0; i<n_vintages; i++)
+    distr_fluid[i].resize(n_constituents, NULL);
+
+  for (int s = 0; s < n_constituents; s++) {
+    std::vector<DistributionsFluid *> distr_fluid_all_vintages = ReadFluid(n_vintages,
+                                                                           constituent_label[s],
+                                                                           path,
+                                                                           trend_cube_parameters,
+                                                                           trend_cube_sampling,
+                                                                           model_fluid_storage,
+                                                                           errTxt);
+
+    for(int i=0; i<n_vintages; i++) {
+      if(i < static_cast<int>(distr_fluid_all_vintages.size()))
+        distr_fluid[i][s] = distr_fluid_all_vintages[i];
+      else
+        distr_fluid[i][s] = distr_fluid[i-1][s]->Clone();
+    }
+  }
+
+  std::vector<DistributionsFluid *>                  final_dist_fluid(n_vintages, NULL);
+  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+
+  for(int i=0; i<n_vintages; i++)
+    all_volume_fractions[i].resize(n_constituents, NULL);
+
+  for(int i=0; i<n_vintages; i++) {
+
+    for (int s=0; s<n_constituents; s++) {
+
+      if(i < n_vintages_constit[s]) {
+        if(constituent_volume_fraction[s][i] != NULL)
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      }
+      else {
+        if(all_volume_fractions[i-1][s] != NULL)
+          all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+      }
+    }
+
+    CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+
+    if (errTxt == "")
+      final_dist_fluid[i] = new DistributionsFluidMix(alpha, distr_fluid[i], all_volume_fractions[i], mix_method);
+  }
+
+  return(final_dist_fluid);
 }
 
 //----------------------------------------------------------------------------------//
@@ -40,11 +116,12 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
-                                                          const std::string                       & path,
-                                                          const std::vector<std::string>          & trend_cube_parameters,
-                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                          std::string                             & errTxt) const
+TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                                          const std::string                                              & path,
+                                                          const std::vector<std::string>                                 & trend_cube_parameters,
+                                                          const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                                          const std::map<std::string, DistributionsFluidStorage *>       & /*model_fluid_storage*/,
+                                                          std::string                                                    & errTxt) const
 {
   std::vector<double> alpha(2);
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
@@ -101,11 +178,12 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
-                                                         const std::string                       & path,
-                                                         const std::vector<std::string>          & trend_cube_parameters,
-                                                         const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                         std::string                             & errTxt) const
+TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                                         const std::string                                              & path,
+                                                         const std::vector<std::string>                                 & trend_cube_parameters,
+                                                         const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                                         const std::map<std::string, DistributionsFluidStorage *>       & /*model_fluid_storage*/,
+                                                         std::string                                                    & errTxt) const
 {
   std::vector<double> alpha(2);
   alpha[0] = bulk_modulus_[0]->GetOneYearCorrelation();
@@ -160,17 +238,22 @@ ReussFluidStorage::~ReussFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-ReussFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
-                                              const std::string                       & /*path*/,
-                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                              std::string                             & errTxt) const
+ReussFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                              const std::string                                              & path,
+                                              const std::vector<std::string>                                 & trend_cube_parameters,
+                                              const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                              const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
+                                              std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid(1, NULL);
-
-  if(fluid[0] == NULL)
-    errTxt += "The Reuss model has not been implemented yet for fluids\n";
-
+  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
+                                                                        path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_fluid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        DEMTools::Reuss,
+                                                                        errTxt);
   return(fluid);
 }
 
@@ -191,17 +274,22 @@ VoigtFluidStorage::~VoigtFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-VoigtFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
-                                              const std::string                       & /*path*/,
-                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                              std::string                             & errTxt) const
+VoigtFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                              const std::string                                              & path,
+                                              const std::vector<std::string>                                 & trend_cube_parameters,
+                                              const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                              const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
+                                              std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid(1, NULL);
-
-  if(fluid[0] == NULL)
-    errTxt += "The Voigt model has not been implemented yet for fluids\n";
-
+  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
+                                                                        path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_fluid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        DEMTools::Voigt,
+                                                                        errTxt);
   return(fluid);
 }
 
@@ -222,17 +310,22 @@ HillFluidStorage::~HillFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-HillFluidStorage::GenerateDistributionsFluid(const int                               & /*n_vintages*/,
-                                             const std::string                       & /*path*/,
-                                             const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                             const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                             std::string                             & errTxt) const
+HillFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                             const std::string                                              & path,
+                                             const std::vector<std::string>                                 & trend_cube_parameters,
+                                             const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                             const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
+                                             std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid(1, NULL);
-
-  if(fluid[0] == NULL)
-    errTxt += "The Hill model has not been implemented yet for fluids\n";
-
+  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
+                                                                        path,
+                                                                        trend_cube_parameters,
+                                                                        trend_cube_sampling,
+                                                                        model_fluid_storage,
+                                                                        constituent_label_,
+                                                                        constituent_volume_fraction_,
+                                                                        DEMTools::Hill,
+                                                                        errTxt);
   return(fluid);
 }
 
@@ -259,11 +352,12 @@ BatzleWangFluidStorage::~BatzleWangFluidStorage()
 }
 
 std::vector<DistributionsFluid *>
-BatzleWangFluidStorage::GenerateDistributionsFluid(const int                               & n_vintages,
-                                                   const std::string                       & path,
-                                                   const std::vector<std::string>          & trend_cube_parameters,
-                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                   std::string                             & errTxt) const
+BatzleWangFluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                                   const std::string                                              & path,
+                                                   const std::vector<std::string>                                 & trend_cube_parameters,
+                                                   const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                                   const std::map<std::string, DistributionsFluidStorage *>       & /*model_fluid_storage*/,
+                                                   std::string                                                    & errTxt) const
 {
   std::vector<double> alpha(3);
   alpha[0] = salinity_[0]     ->GetOneYearCorrelation();

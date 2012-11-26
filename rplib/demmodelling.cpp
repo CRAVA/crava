@@ -885,7 +885,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.8), false));
   distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0 - 0.8), false));
 
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2f, DEMTools::Reuss);
+  std::vector<double> dummy_alpha3(2,1);
+  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(dummy_alpha3, distr_fluid, distr_vol_frac2f, DEMTools::Reuss);
   //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
 
 

@@ -11,7 +11,8 @@
 
 #include <cassert>
 
-DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
+DistributionsFluidMix::DistributionsFluidMix(const std::vector<double>                    & alpha,
+                                             std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method)
 : DistributionsFluid(),
@@ -20,6 +21,7 @@ DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >
   assert(distr_fluid.size() == distr_vol_frac.size());
   distr_fluid_      = distr_fluid;
   distr_vol_frac_   = distr_vol_frac;
+  alpha_            = alpha;
 }
 
 DistributionsFluidMix::DistributionsFluidMix(const DistributionsFluidMix & dist)
@@ -35,6 +37,8 @@ DistributionsFluidMix::DistributionsFluidMix(const DistributionsFluidMix & dist)
     else
       distr_vol_frac_.push_back(NULL);
   }
+
+  alpha_               = dist.alpha_;
 }
 
 DistributionsFluidMix::~DistributionsFluidMix()
