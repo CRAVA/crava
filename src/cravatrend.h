@@ -34,6 +34,7 @@ private:
   std::vector<NRLib::Grid<double> >    trend_cubes_;               ///< Trend cubes used in rock phyiscs prior model
   std::vector<std::vector<double> >    trend_cube_sampling_;       ///< Common sampling for all trends, corresponding to min/max-values of the trend cubes
   int                                  n_samples_;                 ///< Use default value 1000 for number of samples for trends
+  int                                  n_trend_cubes_;
 
 };
 

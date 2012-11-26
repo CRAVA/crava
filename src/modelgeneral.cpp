@@ -2732,7 +2732,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   const int nx  = vp.getNx();
   const int rnxp = vp.getRNxp();
 
-  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
@@ -2848,7 +2848,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
     }
 
     // Log progress
-    if (k+1 >= static_cast<int>(nextMonitor)) {
+    if (k+1 >= static_cast<int>(nextMonitor) && k < nz) {
       nextMonitor += monitorSize;
       std::cout << "^";
       fflush(stdout);

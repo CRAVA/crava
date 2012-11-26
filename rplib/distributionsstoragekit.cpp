@@ -191,7 +191,7 @@ FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
   int n_trend_cubes = static_cast<int>(trend_cube_sampling.size());
 
   for(int i=0; i<n_trend_cubes; i++) {
-    s_min[i] = trend_cube_sampling[i][0];
-    s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1];
+    s_min[i] = 0;
+    s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
   }
 }
