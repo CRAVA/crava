@@ -3439,16 +3439,21 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     if(!estimateParamCov) {
       paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
     }
-    else if(variancesFromRockPhysics.size() == 6) {
+    else if(variancesFromRockPhysics.size() > 0) {
+      estimateParamCov = false;
       paramCorr = new float * [3];
-      int index = 0;
       for(int i=0;i<3;i++) {
         paramCorr[i] = new float[3];
-        for(int j=i;j<3;j++) {
-          paramCorr[i][j] = static_cast<float>(variancesFromRockPhysics[index]);
-          index++;
-        }
       }
+      paramCorr[0][0] = static_cast<float>(variancesFromRockPhysics[0]);
+      paramCorr[1][1] = static_cast<float>(variancesFromRockPhysics[1]);
+      paramCorr[2][2] = static_cast<float>(variancesFromRockPhysics[2]);
+      paramCorr[0][1] = static_cast<float>(variancesFromRockPhysics[3]);
+      paramCorr[1][0] = static_cast<float>(variancesFromRockPhysics[3]);
+      paramCorr[0][2] = static_cast<float>(variancesFromRockPhysics[4]);
+      paramCorr[2][0] = static_cast<float>(variancesFromRockPhysics[4]);
+      paramCorr[1][2] = static_cast<float>(variancesFromRockPhysics[5]);
+      paramCorr[2][1] = static_cast<float>(variancesFromRockPhysics[5]);
     }
     if(!estimateParamCov && paramCorr == NULL)
     {
