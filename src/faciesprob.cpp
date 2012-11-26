@@ -82,6 +82,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                        const ModelSettings                                * modelSettings,
                        SpatialWellFilter                                  * filteredLogs,
                        std::vector<WellData *>                              wells,
+                       CravaTrend                                         & trend_cubes,
                        int                                                  nWells,
                        const double                                         dz,
                        bool                                                 useFilter,
@@ -89,9 +90,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                        const double                                         trend1_min,
                        const double                                         trend1_max,
                        const double                                         trend2_min,
-                       const double                                         trend2_max,
-                       FFTGrid                                            * trend1,
-                       FFTGrid                                            * trend2)
+                       const double                                         trend2_max)
 :nFacies_(nFac)
 {
   int densdim = 0;
@@ -132,7 +131,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
   */
 
   CalculateFaciesProbFromPosteriorElasticPDF(alpha, beta, rho, posteriorPdf, volume,
-                      p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH, faciesProbFromRockPhysics, trend1, trend2);
+                      p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH, faciesProbFromRockPhysics, trend_cubes);
 
   /*
   for(int l=0;l<nFacies_;l++){
@@ -566,12 +565,15 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   }else if((trend2_max-trend2_min)<eps && (trend1_max-trend1_min)>eps){
     nDimensions = 4;
     trend1.resize(nBinsTrend_);
+    trend2.resize(1,trend2_min);
     trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
     for(int i=0; i<nBinsTrend_; i++){
       trend1[i] = trend1_min + i*trend1BinSize_;
     }
     // if trend2max==trend1min and trend1max==trend1min
   }else{
+    trend1.resize(1,trend1_min);
+    trend2.resize(1,trend2_min);
     nDimensions = 3;
   }
 
@@ -590,6 +592,8 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   FillSigmaPriAndSigmaPost(cravaResult, sigma_pri_temp, sigma_post_temp);
   if(nDimensions>3){
     v.resize(2);
+    v[0].resize(3,0.0);
+    v[1].resize(3,0.0);
     SolveGEVProblem(sigma_pri_temp,sigma_post_temp, v);
   }else{
     v.resize(3);
@@ -613,8 +617,8 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
 
   // GENERATE SYNTHETIC WELLS -------------------------------------------------------------
 
-  std::vector<SyntWellData *>    syntWellData(static_cast<int>(trend1.size()*trend2.size()));
-
+  std::vector<SyntWellData *>    syntWellData;
+  syntWellData.resize(static_cast<int>(trend1.size()*trend2.size()),NULL);
   GenerateSyntWellData(syntWellData, rock_distributions, facies_names, trend1, trend2, dz);
 
   // CALCULATE SIGMA E --------------------------------------------------------------------
@@ -2040,8 +2044,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
                                                             const std::vector<Grid2D *>                               & noiseScale,
                                                             FFTGrid                                                   * seismicLH,
                                                             bool                                                        faciesProbFromRockPhysics,
-                                                            FFTGrid                                                   * trend1,
-                                                            FFTGrid                                                   * trend2)
+                                                            CravaTrend                                                & trend_cubes)
 {
   float * value = new float[nFacies_];
   int i,j,k,l;
@@ -2144,8 +2147,9 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
         beta = betagrid->getNextReal();
         rho = rhogrid->getNextReal();
         if(faciesProbFromRockPhysics){
-          t1 = trend1->getNextReal();
-          t2 = trend2->getNextReal();
+          std::vector<double> trend_values = trend_cubes.GetTrendPosition(i,j,k);
+          t1 = static_cast<float>(trend_values[0]);
+          t2 = static_cast<float>(trend_values[1]);
         }
         if(k<smallrnxp && j<ny && i<nz){
           sum = undefSum;
@@ -2453,11 +2457,11 @@ void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>            
   double p = 0.0;
   // lambda is set below, initialized to 1.0
   double lambda = 1.0;
-  // corr is initially set to 0.1
+  // corr is initially set to 0.5
   double corr = 0.5;
-  if(dz<10.0){
+  if(dz<log(10.0)){
     // this ensures that the mean of the geometric distribution is 10.0/dz
-    p = dz/10.0;
+    p = exp(dz)/10.0;
     // calculate lambda for the exponential distribution used below
     lambda = - std::log((1.0-p));
   }else{
@@ -2499,6 +2503,7 @@ void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>            
         k+= randomFaciesLength;
       }
       syntWellData[nWell] = new SyntWellData(trend1[i], trend2[j], alpha, beta, rho, facies, facies_names);
+      nWell++;
     }
   }
 
@@ -2882,7 +2887,7 @@ void    FaciesProb::FillSigmaPriAndSigmaPost(Crava                              
 
 void FaciesProb::SolveGEVProblem(double                           ** sigma_prior,
                                  double                           ** sigma_posterior,
-                                 std::vector<std::vector<double> > & V){
+                                 std::vector<std::vector<double> > & v){
   //Compute transforms v1 and v2 ----------------------------------------
 
   // Matrix inversion of sigma_prior
@@ -2935,10 +2940,11 @@ void FaciesProb::SolveGEVProblem(double                           ** sigma_prior
       max_index = i;
       max_eigvalue = eigval[i];
     }
-    for(int j=0; j<3; j++){
-      if(j!=max_eigvalue)
+  }
+
+  for(int j=0; j<3; j++){
+      if(j!=max_index)
         index_keep.push_back(j);
-    }
   }
 
   // The vector index_keep should contain two and only two integers
@@ -2947,8 +2953,8 @@ void FaciesProb::SolveGEVProblem(double                           ** sigma_prior
 
   // fetch the corresponding eigenvectors into v1 and v2
   for(int i = 0; i<3; i++){
-    V[0][i] = eigvec[index_keep[0]][i];
-    V[1][i] = eigvec[index_keep[1]][i];
+    v[0][i] = eigvec[index_keep[0]][i];
+    v[1][i] = eigvec[index_keep[1]][i];
   }
 
 

@@ -104,10 +104,9 @@ CravaTrend::~CravaTrend()
 {
 }
 
-std::vector<double>
-CravaTrend::GetTrendPosition(const int & i,
-                             const int & j,
-                             const int & k) const
+std::vector<double>  CravaTrend::GetTrendPosition(const int & i,
+                                                   const int & j,
+                                                   const int & k) const
 {
   // Find position of the trend corresponding to the value in (i,j,k) of the trend cubes.
   // As all trends are sampled from min to max of the trend cube, using increment_ in the sampling,

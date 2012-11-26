@@ -65,6 +65,7 @@ public:
              const ModelSettings                                * modelSettings,
              SpatialWellFilter                                  * filteredlogs,
              std::vector<WellData *>                              wells,
+             CravaTrend                                         & trend_cubes,
              int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
@@ -72,9 +73,7 @@ public:
              const double                                         trend1_min = 0.0,
              const double                                         trend1_max = 0.0,
              const double                                         trend2_min = 0.0,
-             const double                                         trend2_max = 0.0,
-             FFTGrid                                            * trend1 = NULL,
-             FFTGrid                                            * trend2 = NULL);
+             const double                                         trend2_max = 0.0);
 
 
   ~FaciesProb();
@@ -143,20 +142,18 @@ private:
                                                  const ModelSettings                                      * modelSettings,
                                                  const std::vector<std::string>                             facies_names);
 
-  void                   CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                           * alphagrid,
-                                                            FFTGrid                                                   * betagrid,
-                                                            FFTGrid                                                   * rhogrid,
-                                                            const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
-                                                            const std::vector<Simbox *>                                 volume,
-                                                            float                                                       p_undefined,
-                                                            const std::vector<float>                                  & priorFacies,
-                                                            std::vector<FFTGrid *>                                    & priorFaciesCubes,
-                                                            const std::vector<Grid2D *>                               & noiseScale,
-                                                            FFTGrid                                                   * seismicLH,
-                                                            bool                                                        faciesProbFromRockPhysics,
-                                                            FFTGrid                                                   * trend1 = NULL,
-                                                            FFTGrid                                                   * trend2 = NULL);
-
+  void                   CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                                   * alphagrid,
+                                                                    FFTGrid                                                   * betagrid,
+                                                                    FFTGrid                                                   * rhogrid,
+                                                                    const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
+                                                                    const std::vector<Simbox *>                                 volume,
+                                                                    float                                                       p_undefined,
+                                                                    const std::vector<float>                                  & priorFacies,
+                                                                    std::vector<FFTGrid *>                                    & priorFaciesCubes,
+                                                                    const std::vector<Grid2D *>                               & noiseScale,
+                                                                    FFTGrid                                                   * seismicLH,
+                                                                    bool                                                        faciesProbFromRockPhysics,
+                                                                    CravaTrend                                                & trend_cubes);
 
 
   void     makeFaciesProb(int                          nFac,

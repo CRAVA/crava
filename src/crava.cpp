@@ -32,7 +32,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/grid/grid2d.hpp"
-
+#include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsrock.h"
 
 
@@ -1771,7 +1771,13 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 likelihood,
                                 modelGeneral_->getFaciesNames());*/
 
-        fprob_ = new FaciesProb(meanAlpha2_,
+
+
+      std::vector<double> trend_min;
+      std::vector<double> trend_max;
+      FindSMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+
+      fprob_ = new FaciesProb(meanAlpha2_,
                                 meanBeta2_,
                                 meanRho2_,
                                 nfac,
@@ -1787,16 +1793,15 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelSettings_,
                                 filteredlogs,
                                 wells_,
+                                modelGeneral_->getTrendCubes(),
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
                                 true,
-                                0,
-                                0,
-                                0,
-                                0,
-                                NULL,
-                                NULL);
+                                trend_min[0],
+                                trend_max[0],
+                                trend_min[1],
+                                trend_max[1]);
 
       delete meanAlpha2_;
       delete meanBeta2_;
@@ -1830,6 +1835,10 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelGeneral_->getFaciesNames());
                                 */
 
+      std::vector<double> trend_min;
+      std::vector<double> trend_max;
+      FindSMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+
       fprob_ = new FaciesProb(postAlpha_,
                                 postBeta_,
                                 postRho_,
@@ -1846,16 +1855,15 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelSettings_,
                                 filteredlogs,
                                 wells_,
+                                modelGeneral_->getTrendCubes(),
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
                                 false,
-                                0,
-                                0,
-                                0,
-                                0,
-                                NULL,
-                                NULL);
+                                trend_min[0],
+                                trend_max[0],
+                                trend_min[1],
+                                trend_max[1]);
 
     }
     fprob_->calculateConditionalFaciesProb(wells_,

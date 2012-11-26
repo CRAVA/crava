@@ -43,6 +43,7 @@ public:
   RandomGen         * getRandomGen()             const { return randomGen_              ;}
   GridMapping       * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping       * getTimeCutMapping()        const { return timeCutMapping_         ;}
+  CravaTrend        & getTrendCubes()                  { return trend_cubes_            ;}
   CravaTrend          getTrendCubes()            const { return trend_cubes_            ;}
 
   bool                getVelocityFromInversion() const { return velocityFromInversion_  ;}
