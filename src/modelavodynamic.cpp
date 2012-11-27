@@ -785,9 +785,6 @@ ModelAVODynamic::processBackground(Background           *& background,
 }
 
 
-
-
-
 void
 ModelAVODynamic::processReflectionMatrix(float               **& reflectionMatrix,
                                          const Background      * background,

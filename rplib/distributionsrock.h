@@ -76,6 +76,9 @@ protected:
                                                           const std::vector<double> & q,
                                                           const double                muq);
 
+  void                                  CheckOrResetS(double                    & s,
+                                                      const std::vector<double> & tabulated_s) const;
+
   double                                FindInterpolationStartIndex(const std::vector<double> & tabulated_s,
                                                                     const double                s) const;
 
@@ -116,8 +119,8 @@ protected:
   NRLib::Grid2D<std::vector<double> >   expectation_;       // Expectation of log(vp,vs,density)
   NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;        // Covariance of log(vp,vs,density)
 
-  std::vector<double>                   tabulated_s0_;
-  std::vector<double>                   tabulated_s1_;
+  std::vector<double>                   tabulated_s0_;      // Tabulated trend values {s0_min, ... , s0_max}
+  std::vector<double>                   tabulated_s1_;      // Tabulated trend values {s1_min, ... , s1_max}
 
   std::vector<double>                   alpha_;
 

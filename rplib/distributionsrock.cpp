@@ -106,19 +106,18 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
       covariance(i, j) = cov;
 
       // Temporary logging
-      std::vector<double> s(3);
-      s[0] = std::sqrt(cov(0,0));
-      s[1] = std::sqrt(cov(1,1));
-      s[2] = std::sqrt(cov(2,2));
+      //std::vector<double> s(3);
+      //s[0] = std::sqrt(cov(0,0));
+      //s[1] = std::sqrt(cov(1,1));
+      //s[2] = std::sqrt(cov(2,2));
 
-      /*
-      printf("Expectations :  %.6f %.6f %.6f\n", mean[0], mean[1], mean[2]);
-      printf("Var          :  %.6f %.6f %.6f\n", cov(0,0), cov(1,1), cov(2,2));
-      printf("Std          :  %.6f %.6f %.6f\n\n", s[0], s[1], s[2]);
-      printf("cor ab: %.6f\n"  ,cov(0,1)/(s[0]*s[1]));
-      printf("cor ac: %.6f\n"  ,cov(0,2)/(s[0]*s[2]));
-      printf("cor bc: %.6f\n"  ,cov(1,2)/(s[1]*s[2]));
-      */
+      //printf("i,j = %lu,%lu  ", i,j);
+      //printf("Expectations :  %.6f %.6f %.6f\n", mean[0], mean[1], mean[2]);
+      //printf("Var          :  %.6f %.6f %.6f\n", cov(0,0), cov(1,1), cov(2,2));
+      //printf("Std          :  %.6f %.6f %.6f\n\n", s[0], s[1], s[2]);
+      //printf("cor ab: %.6f\n"  ,cov(0,1)/(s[0]*s[1]));
+      //printf("cor ac: %.6f\n"  ,cov(0,2)/(s[0]*s[2]));
+      //printf("cor bc: %.6f\n"  ,cov(1,2)/(s[1]*s[2]));
     }
   }
 }
@@ -135,7 +134,7 @@ void DistributionsRock::FindTabulatedTrendParams(std::vector<double>       & tab
   bool t1 = has_trend[0];
   bool t2 = has_trend[1];
 
-  std::vector<double> no_trend(1, 0.0); // use when first and/or second trend is missing
+  std::vector<double> no_trend(1, 0.0);
 
   if (t1 && !t2) {
     tabulated_s0.resize(m);
@@ -201,9 +200,9 @@ void DistributionsRock::SampleTrendValues(std::vector<double> & s,
   }
 }
 
-//----------------------------------------------------------------------
+//-------------------------------------------------------------------------
 double DistributionsRock::FindLogExpectation(const std::vector<double> & p)
-//----------------------------------------------------------------------
+//-------------------------------------------------------------------------
 {
   int    n    = static_cast<int>(p.size());
   double mean = 0.0;
@@ -214,12 +213,12 @@ double DistributionsRock::FindLogExpectation(const std::vector<double> & p)
   return mean;
 }
 
-//----------------------------------------------------------------------
+//--------------------------------------------------------------------------
 double DistributionsRock::FindLogCovariance(const std::vector<double> & p,
                                             const double                mup,
                                             const std::vector<double> & q,
                                             const double                muq)
-//----------------------------------------------------------------------
+//--------------------------------------------------------------------------
 {
   int    n   = static_cast<int>(p.size());
   double cov = 0.0;
@@ -231,31 +230,15 @@ double DistributionsRock::FindLogCovariance(const std::vector<double> & p,
   return cov;
 }
 
-//---------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 std::vector<double> DistributionsRock::GetLogExpectation(const std::vector<double> & trend_params) const
-//---------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 {
-  /* would not compile ....
-  if (trend_params[0] < s_min[0]) {
-    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", trend_params[0], s_min[0]);
-    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to lowest value.\n");
-  }
-  if (trend_params[0] > s_max[0]) {
-    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", trend_params[0], s_max[0]);
-    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to largest value.\n");
-  }
-  if (trend_params[1] < s_min[1]) {
-    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", trend_params[1], s_min[1]);
-    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to lowest value.\n");
-  }
-  if (trend_params[1] > s_max[1]) {
-    LogKit::LogFormatted(LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", trend_params[1], s_max[1]);
-    LogKit::LogFormatted(LogKit::Error,"       Setting trend parameter to largest value.\n");
-  }
-  */
-
   double s0 = trend_params[0];
   double s1 = trend_params[1];
+
+  CheckOrResetS(s0, tabulated_s0_);
+  CheckOrResetS(s1, tabulated_s1_);
 
   size_t m  = tabulated_s0_.size();
   size_t n  = tabulated_s1_.size();
@@ -269,6 +252,10 @@ std::vector<double> DistributionsRock::GetLogExpectation(const std::vector<doubl
   size_t i0  = static_cast<size_t>(floor(di));
   size_t j0  = static_cast<size_t>(floor(dj));
 
+  //printf("\ns0=%7.2f s1=%7.2f\n",s0,s1);
+  //printf("tabulated_s0_min=%7.2f  tabulated_s0_max=%7.2f\n",tabulated_s0_[0],tabulated_s0_[m-2]);
+  //printf("tabulated_s1_min=%7.2f  tabulated_s1_max=%7.2f\n",tabulated_s1_[0],tabulated_s1_[n-2]);
+  //printf("di=%5.2f  dj=%5.2f   i0=%lu  j0=%lu   m=%lu  n=%lu\n",di,dj,i0,j0,m,n);
 
   double w00 = 0.0;
   double w10 = 0.0;
@@ -290,6 +277,34 @@ std::vector<double> DistributionsRock::GetLogExpectation(const std::vector<doubl
   return mean;
 }
 
+//-----------------------------------------------------------------------------------
+void DistributionsRock::CheckOrResetS(double                    & s,
+                                      const std::vector<double> & tabulated_s) const
+//-----------------------------------------------------------------------------------
+{
+  size_t n = tabulated_s.size();
+
+  if (n > 1) { // There is a trend
+    double smin = tabulated_s[0];
+    double smax = tabulated_s[n-1];
+    if (s < smin) {
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", s, smin);
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"       Setting trend parameter to lowest value.\n");
+      s = smin;
+    }
+    if (s > smax) {
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", s, smax);
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"       Setting trend parameter to largest value.\n");
+
+      std::cout << std::setprecision(12) << s << " " << smax << std::endl;
+
+      s = smax;
+    }
+  }
+  else {
+    s = 0.0;
+  }
+}
 
 
 //--------------------------------------------------------------------------------------------
@@ -302,7 +317,7 @@ double DistributionsRock::FindInterpolationStartIndex(const std::vector<double> 
   if (tabulated_s.size() > 1) {
     double dx;
     dx = tabulated_s[1] - tabulated_s[0]; // Assumes equally spaced table elements
-    di = s/dx;
+    di = (s - tabulated_s[0])/dx;
   }
   return di;
 }
@@ -367,12 +382,15 @@ void DistributionsRock::InterpolateExpectation(std::vector<double>              
   //
   mean[p] = w00*v00 + w10*v10 + w01*v01 + w11*v11;
 
-  //printf("di=%5.2f  dj=%5.2f   m=%lu  n=%lu\n",di,dj,m,n);
-  //printf("v00 =%7.2f  w00=%5.3f\n",v00,w00);
-  //printf("v10 =%7.2f  w10=%5.3f\n",v10,w10);
-  //printf("v01 =%7.2f  w01=%5.3f\n",v01,w01);
-  //printf("v11 =%7.2f  w11=%5.3f\n",v11,w11);
-  //printf("mean=%7.2f\n\n",mean[p]);
+  //printf("i0=%lu  j0=%lu\n",i0,j0);
+  //printf("v00 =%7.5f  w00=%5.3f\n",v00,w00);
+  //printf("v10 =%7.5f  w10=%5.3f\n",v10,w10);
+  //printf("v01 =%7.5f  w01=%5.3f\n",v01,w01);
+  //printf("v11 =%7.5f  w11=%5.3f\n",v11,w11);
+  //printf("mean=%7.5f\n\n",mean[p]);
+
+  //  exit(1);
+
 }
 
 
@@ -382,6 +400,9 @@ NRLib::Grid2D<double> DistributionsRock::GetLogCovariance(const std::vector<doub
 {
   double s0 = trend_params[0];
   double s1 = trend_params[1];
+
+  CheckOrResetS(s0, tabulated_s0_);
+  CheckOrResetS(s1, tabulated_s1_);
 
   size_t m  = tabulated_s0_.size();
   size_t n  = tabulated_s1_.size();
