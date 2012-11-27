@@ -2467,7 +2467,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Bounding model can not be used to make a solid\n";
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
+    errTxt += "Implementation error: The Boundning model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
     DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, p_wave_weight, correlation);
