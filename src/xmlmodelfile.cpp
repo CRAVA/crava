@@ -1683,6 +1683,7 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("rock");
   legalCommands.push_back("trend-cube");
 
+  // The order of the parse-commands should not be changed
   parseReservoir(root, errTxt);
   while(parseEvolve(root, errTxt));
   parsePredefinitions(root, errTxt);
@@ -2841,12 +2842,12 @@ XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
 
   if(evolve_size > 1) {
     if(vintage_year[0] < 1)
-      errTxt += "The vintage numbers need to be larger than zero in <evolve><vintage><vintage-year> in the rock physics model\n";
+      errTxt += "The vintage years need to be larger than zero in <evolve><vintage><vintage-year> in the rock physics model\n";
 
     int compare = vintage_year[0];
     for(int i=1; i<evolve_size; i++) {
       if(vintage_year[i] <= compare) {
-        errTxt += "The vintage numbers need to be given in ascending order in <evolve><vintage><vintage-year> in the rock physics model\n";
+        errTxt += "The vintage years need to be given in ascending order in <evolve><vintage><vintage-year> in the rock physics model\n";
         break;
       }
       else
@@ -2913,6 +2914,7 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     legalCommands.push_back("uniform");
     legalCommands.push_back("beta");
   }
+  legalCommands.push_back("divide");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -2979,6 +2981,10 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
       errTxt += "  Note that <reservoir> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
     }
   }
+
+  double divide;
+  if(parseValue(root, "divide", divide, errTxt) == true)
+    errTxt += "The <divide> functionality in 'DistributionWithTrend' has not been implemented by NR\n";
 
   if(trendGiven == 0)
     errTxt += "Need at least one definition for the variable in <"+keyword+">\n";
