@@ -2050,8 +2050,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     //
     // Sample logging for rock of type normaldistribution
     //
-    std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings->getRockStorage();
-    std::map<std::string, DistributionsRockStorage *>::iterator it;
+    const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings->getRockStorage();
+    std::map<std::string, DistributionsRockStorage *>::const_iterator it;
 
     for (it = rock_storage.begin() ; it != rock_storage.end() ; it++) {
 
@@ -2321,12 +2321,12 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     int n_vintages = modelSettings->getNumberOfVintages();
 
-    std::string path                                      = inputFiles->getInputDirectory();
-    std::vector<std::string> trend_cube_parameters        = modelSettings->getTrendCubeParameters();
-    std::vector<std::vector<double> > trend_cube_sampling = trend_cubes_.GetTrendCubeSampling();
+    const std::string&                       path                               = inputFiles->getInputDirectory();
+    const std::vector<std::string>&          trend_cube_parameters              = modelSettings->getTrendCubeParameters();
+    const std::vector<std::vector<double> >& trend_cube_sampling                = trend_cubes_.GetTrendCubeSampling();
 
-    std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoir_variable = modelSettings->getReservoirVariable();
-    for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+    const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
+    for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
       std::vector<DistributionWithTrendStorage *> storage = it->second;
       std::vector<const DistributionWithTrend *> dist_vector(storage.size());
@@ -2339,15 +2339,15 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       reservoir_variables_[it->first] = dist_vector;
     }
 
-    std::map<std::string, DistributionsFluidStorage   *> fluid_storage    = modelSettings->getFluidStorage();
-    std::map<std::string, DistributionsSolidStorage   *> solid_storage    = modelSettings->getSolidStorage();
-    std::map<std::string, DistributionsDryRockStorage *> dry_rock_storage = modelSettings->getDryRockStorage();
-    std::map<std::string, DistributionsRockStorage    *> rock_storage     = modelSettings->getRockStorage();
+    const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
+    const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
+    const std::map<std::string, DistributionsDryRockStorage *>& dry_rock_storage = modelSettings->getDryRockStorage();
+    const std::map<std::string, DistributionsRockStorage    *>& rock_storage     = modelSettings->getRockStorage();
 
     std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
 
     for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-      std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+      std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
       LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
 

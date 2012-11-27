@@ -2804,8 +2804,8 @@ XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
     errTxt += "The keyword <reservoir-variable> telling which variable to be evolved needs to be given in evlove.\n";
 
   typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
-  my_map reservoir_variable = modelSettings_->getReservoirVariable();
-  my_map::iterator it = reservoir_variable.find(variable);
+  const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+  my_map::const_iterator it = reservoir_variable.find(variable);
 
   std::vector<DistributionWithTrendStorage *> evolving_variable;
 
@@ -2967,8 +2967,8 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
   std::string variable;
   if(parseValue(root, "reservoir-variable", variable, errTxt) == true) {
     typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
-    my_map reservoir_variable = modelSettings_->getReservoirVariable();
-    my_map::iterator it = reservoir_variable.find(variable);
+    const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+    my_map::const_iterator it = reservoir_variable.find(variable);
     if(it != reservoir_variable.end()) {
       std::vector<DistributionWithTrendStorage *> store = it->second;
       for(size_t i=0; i<store.size(); i++)
@@ -4801,14 +4801,14 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
       errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";
 
-    std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings_->getRockStorage();
+    const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
 
     // Compare names in rock physics model with names given in .xml-file
     if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
       std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
 
-      for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-        std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+      for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
         if(iter == rock_storage.end())
           errTxt += "Problem with rock physics prior model. Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
@@ -4817,10 +4817,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
     // Compare names in rock physics model with names given as input in proability cubes
     else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
-      std::map<std::string,std::string> facies_probabilities = inputFiles_->getPriorFaciesProbFile();
+      const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
 
-      for(std::map<std::string, std::string>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-        std::map<std::string, DistributionsRockStorage *>::iterator iter = rock_storage.find(it->first);
+      for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
         if (iter == rock_storage.end())
           errTxt += "Problem with rock physics prior model. Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
       }
@@ -4945,8 +4945,9 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
 
   std::sort(survey_year.begin(), survey_year.end());
 
-  std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoir_variable = modelSettings_->getReservoirVariable();
-  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+  typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
+  const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+  for(my_map::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
     if(n_surveys != static_cast<int>(it->second.size()))
       errTxt += "The number of vintages for reservoir variable '"+it->first+"' must be the same as the number of survey vintages\n";
     else {

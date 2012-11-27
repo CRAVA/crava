@@ -423,7 +423,7 @@ ModelSettings::getEstimateNumberOfWavelets(int t) const
   return tot;
 }
 
-std::vector<int>
+const std::vector<int>
 ModelSettings::findSortedVintages(void) const
 {
   int n = getNumberOfTimeLapses();

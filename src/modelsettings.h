@@ -46,16 +46,16 @@ public:
   int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}
   int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
   int                              getVintageDay(int i)                 const { return vintageDay_[i]                             ;}
-  std::vector<int>                 getSeismicType(int i)                const { return timeLapseSeismicType_[i]                   ;}
-  std::vector<float>               getAngle(int i)                      const { return timeLapseAngle_[i]                         ;}
+  const std::vector<int>         & getSeismicType(int i)                const { return timeLapseSeismicType_[i]                   ;}
+  const std::vector<float>       & getAngle(int i)                      const { return timeLapseAngle_[i]                         ;}
   float                            getWaveletScale(int i, int j)        const { return timeLapseWaveletScale_[i][j]               ;}
-  std::vector<float>               getSNRatio(int i)                    const { return timeLapseSNRatio_[i]                       ;}
+  const std::vector<float>       & getSNRatio(int i)                    const { return timeLapseSNRatio_[i]                       ;}
   float                            getWellMoveAngle(int i,int j)        const { return wellMoveAngle_[i][j]                       ;}
   float                            getWellMoveWeight(int i,int j)       const { return wellMoveWeight_[i][j]                      ;}
   int                              getNumberOfWellAngles(int i)         const { return static_cast<int>(wellMoveAngle_[i].size()) ;}
-  std::vector<bool>                getMatchEnergies(int i)              const { return timeLapseMatchEnergies_[i]                 ;}
-  std::vector<bool>                getEstimateWavelet(int i)            const { return timeLapseEstimateWavelet_[i]               ;}
-  std::vector<bool>                getUseRickerWavelet(int i)           const { return timeLapseUseRickerWavelet_[i]              ;}
+  const std::vector<bool>        & getMatchEnergies(int i)              const { return timeLapseMatchEnergies_[i]                 ;}
+  const std::vector<bool>        & getEstimateWavelet(int i)            const { return timeLapseEstimateWavelet_[i]               ;}
+  const std::vector<bool>        & getUseRickerWavelet(int i)           const { return timeLapseUseRickerWavelet_[i]              ;}
   bool                             getEstimateSNRatio(int i, int j)     const { return timeLapseEstimateSNRatio_[i][j]            ;}
   bool                             getEstimateLocalScale(int i, int j)  const { return timeLapseEstimateLocalScale_[i][j]         ;}
   bool                             getEstimateLocalShift(int i, int j)  const { return timeLapseEstimateLocalShift_[i][j]         ;}
@@ -70,11 +70,11 @@ public:
   bool                             getHasTime3DMapping(void)            const { return hasTime3DMapping_                          ;}
   bool                             getUse3DWavelet(void)                const { return use3DWavelet_                              ;}
   int                              getWaveletDim(int i)                 const { return waveletDim_[i]                             ;}
-  std::vector<float>               getStretchFactor(int i)              const { return timeLapseStretchFactor_[i]                 ;} //Never used...
+  const std::vector<float>       & getStretchFactor(int i)              const { return timeLapseStretchFactor_[i]                 ;} //Never used...
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]                              ;}
   float                            getEstRangeY(int i)                  const { return estRangeY_[i]                              ;}
   float                            getRickerPeakFrequency(int i, int j) const { return timeLapseRickerPeakFrequency_[i][j]        ;}
-  const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}
+  const std::string              & getBackgroundType(void)              const { return backgroundType_                            ;}
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
   int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]                             ;}
@@ -131,14 +131,14 @@ public:
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
-  std::vector<float>               getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
+  const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
   double                           getTimeLz(void)                      const { return time_lz_                                   ;}
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   int                              getTimeNz(void)                      const { return time_nz_                                   ;}
-  std::vector<int>                 getAreaILXL(void)                    const { return areaILXL_                                  ;}
+  const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
   bool                             getWritePrediction(void)             const { return writePrediction_                           ;}
@@ -167,7 +167,7 @@ public:
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
-  std::map<std::string,float>      getPriorFaciesProb(void)             const { return priorFaciesProb_                           ;}
+  const std::map<std::string,float>& getPriorFaciesProb(void)             const { return priorFaciesProb_                           ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
@@ -190,13 +190,13 @@ public:
   bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}
   void                             getTimeGradientSettings(float &distance, float &alpha, int t);
   int                              getEstimateNumberOfWavelets(int t)   const;
-  std::vector<int>                 findSortedVintages(void)             const;
-  std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
-  std::map<std::string, std::vector<DistributionWithTrendStorage *> > getReservoirVariable() const { return reservoirVariable_ ;}
-  std::map<std::string, DistributionsRockStorage *>     getRockStorage()       const { return rockStorage_                  ;}
-  std::map<std::string, DistributionsDryRockStorage *>  getDryRockStorage()    const { return dryRockStorage_               ;}
-  std::map<std::string, DistributionsSolidStorage *>    getSolidStorage()      const { return solidStorage_                 ;}
-  std::map<std::string, DistributionsFluidStorage *>    getFluidStorage()      const { return fluidStorage_                 ;}
+  const std::vector<int>           findSortedVintages(void)             const;
+  const std::vector<std::string> & getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
+  const std::map<std::string, std::vector<DistributionWithTrendStorage *> > & getReservoirVariable() const { return reservoirVariable_ ;}
+  const std::map<std::string, DistributionsRockStorage *>                   & getRockStorage()       const { return rockStorage_                  ;}
+  const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_               ;}
+  const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_                 ;}
+  const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_                 ;}
 
 
   void rotateVariograms(float angle);
@@ -660,13 +660,13 @@ private:
   std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
   std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
 
-  std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
+  std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
 
   std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
-  std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions
-  std::map<std::string, DistributionsDryRockStorage *>    dryRockStorage_;              // Rock physics dry rocks defined in predefinitions
-  std::map<std::string, DistributionsSolidStorage *>      solidStorage_;                // Rock physics solids defined in predefinitions
-  std::map<std::string, DistributionsFluidStorage *>      fluidStorage_;                // Rock physics fluids defined in predefinitions
+  std::map<std::string, DistributionsRockStorage *>                   rockStorage_;        // Rock physics rocks defined in predefinitions
+  std::map<std::string, DistributionsDryRockStorage *>                dryRockStorage_;     // Rock physics dry rocks defined in predefinitions
+  std::map<std::string, DistributionsSolidStorage *>                  solidStorage_;       // Rock physics solids defined in predefinitions
+  std::map<std::string, DistributionsFluidStorage *>                  fluidStorage_;       // Rock physics fluids defined in predefinitions
 
   int                               logLevel_;
 
