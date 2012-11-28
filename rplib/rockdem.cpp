@@ -161,6 +161,8 @@ RockDEM::ComputeSeismicAndElasticParams() {
                                              solid_mu,
                                              k_,
                                              mu_);
+
+  DEMTools::CalcSeismicParamsFromElasticParams(k_, mu_, rho_, vp_, vs_);
 }
 
 void
