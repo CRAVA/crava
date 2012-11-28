@@ -47,8 +47,6 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                      DEMTools::MixMethod                                               mix_method,
                                                      std::string                                                     & errTxt) const
 {
-  std::string tmpErrTxt = "";
-
   int n_constituents = static_cast<int>(constituent_label.size());
 
   std::vector<int> n_vintages_constit(n_constituents);
@@ -80,7 +78,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
       if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }
       else {
         if(all_volume_fractions[i-1][s] != NULL)
@@ -107,7 +105,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                       mix_solid,
                       mix_fluid,
                       constituent_type,
-                      tmpErrTxt);
+                      errTxt);
 
 
   if(mix_rock == true) {
@@ -126,7 +124,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                                           model_solid_storage,
                                                                           model_dry_rock_storage,
                                                                           model_fluid_storage,
-                                                                          tmpErrTxt);
+                                                                          errTxt);
 
       int n_vintages_rock = static_cast<int>(distr_rock_all_vintages.size());
 
@@ -282,7 +280,9 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                         const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                         std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Tabulated' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Tabulated rock physics model\n");
+
+  std::string tmpErrTxt = "";
 
   std::vector<double> alpha(3);
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
@@ -305,17 +305,17 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_vs)
-      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -333,6 +333,11 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     dist_rock[i] = rock;
 
 
+  }
+
+  if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the Tabulated rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
   }
 
   return(dist_rock);
@@ -376,7 +381,9 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                        std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Tabulated' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Tabulated rock physics model\n");
+
+  std::string tmpErrTxt = "";
 
   std::vector<double> alpha(3);
   alpha[0] = bulk_modulus_[0] ->GetOneYearCorrelation();
@@ -399,17 +406,17 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear)
-      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -425,6 +432,11 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                               s_max);
 
     dist_rock[i] = rock;
+  }
+
+  if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the Tabulated rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
   }
 
   return(dist_rock);
@@ -456,7 +468,7 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                             std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Reuss' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Reuss rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -510,7 +522,7 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
                                             const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                             std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Voigt' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Voigt rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -565,7 +577,7 @@ HillRockStorage::GenerateDistributionsRock(const int                            
                                            const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                            std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Hill' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Hill rock physics model\n");
 
   std::vector<DistributionsRock *> rock;
 
@@ -633,7 +645,9 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                           const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                           std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'DEM' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating DEM rock physics model\n");
+
+  std::string tmpErrTxt = "";
 
     // Remember: Host info is included first in constituent vectors
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
@@ -680,7 +694,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                                             trend_cube_parameters,
                                                             trend_cube_sampling,
                                                             model_solid_storage,
-                                                            errTxt);
+                                                            tmpErrTxt);
 
   int n_vintages_solid = static_cast<int>(distr_solid.size());
 
@@ -703,7 +717,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                                                            trend_cube_parameters,
                                                                            trend_cube_sampling,
                                                                            model_fluid_storage,
-                                                                           errTxt);
+                                                                           tmpErrTxt);
 
     int n_vintages_inc = static_cast<int>(distr_fluid_all_vintages.size());
 
@@ -730,7 +744,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_aspect[s]) {
         if(inclusion_aspect_ratio_[s][i] != NULL)
-          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
       }
       else
         all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
@@ -740,15 +754,15 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_volume[s]) {
         if(volume_fractions[s][i] != NULL)
-          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
       }
       else
         all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
     }
 
-    CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+    CheckVolumeConsistency(all_volume_fractions[i], tmpErrTxt);
 
-    if (errTxt == "")
+    if (tmpErrTxt == "")
       final_dist_rock[i] = new DistributionsRockDEM(final_distr_solid[i],
                                                     final_distr_fluid_inc[i],
                                                     all_aspect_ratios[i],
@@ -756,6 +770,11 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                                     alpha,
                                                     s_min,
                                                     s_max);
+  }
+
+   if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the DEM rock physics model:\n";
+    errTxt += tmpErrTxt;
   }
 
   return(final_dist_rock);
@@ -784,7 +803,7 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
                                                const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
                                                std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Gassmann' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Gassmann rock physics model\n");
 
   std::vector<DistributionsRock *> rock(1, NULL);
 
@@ -829,7 +848,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                                                const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                std::string                                                 & errTxt) const
 {
-  LogKit::LogFormatted(LogKit::Low," Generating 'Bounding' rock physics model\n");
+  LogKit::LogFormatted(LogKit::Low," Generating Bounding rock physics model\n");
 
   std::string tmpErrTxt = "";
 

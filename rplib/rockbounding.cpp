@@ -35,9 +35,6 @@ RockBounding::RockBounding(const RockBounding & old_rock)
   rho_      = old_rock.rho_;
   u_        = old_rock.u_;
 
-  delete upper_rock_;
-  delete lower_rock_;
-
   upper_rock_ = old_rock.upper_rock_->Clone();
   lower_rock_ = old_rock.lower_rock_->Clone();
 
