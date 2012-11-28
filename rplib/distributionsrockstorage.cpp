@@ -874,6 +874,12 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
+  std::map<std::string, DistributionsRockStorage *>::const_iterator m_all = model_rock_storage.find(upper_rock_);
+  if (m_all != model_rock_storage.end()) {
+    if(typeid(*(m_all->second)) != typeid(VoigtRockStorage))
+      tmpErrTxt += "The upper bound in the Bounding rock physics model needs to follow a Voigt model\n";
+  }
+
   std::vector<DistributionsRock *> final_distr_lower_rock(n_vintages);
   std::vector<DistributionsRock *> distr_lower_rock;
 
@@ -901,13 +907,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
-  std::string upper_type = typeid(distr_upper_rock[0]).name(); //Marit: Denne testen fungerer ikke
-  if(upper_type != "class DistributionsRock *")
-    tmpErrTxt += "The upper bound in the Bounding rock physics model needs to follow a Voigt model\n";
-
-  std::string lower_type = typeid(distr_lower_rock[0]).name(); //Marit: Denne testen fungerer ikke.
-  if(lower_type != "class DistributionsRock *")
-    tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
+   std::map<std::string, DistributionsRockStorage *>::const_iterator n_all = model_rock_storage.find(lower_rock_);
+  if (n_all != model_rock_storage.end()) {
+    if(typeid(*(n_all->second)) != typeid(ReussRockStorage))
+      tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
+  }
 
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
