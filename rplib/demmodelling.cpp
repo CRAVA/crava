@@ -382,17 +382,10 @@ DEMTools::CalcSeismicParamsFromElasticParams(double bulk_modulus,
 {
   assert(density != 0.0);
 
-  double giga = 1.0E9; //NBNB Marit: Not a robust test
-  if(bulk_modulus < 1.0E8) {
-    bulk_modulus  = bulk_modulus  * giga;
-    shear_modulus = shear_modulus * giga;
-  }
-
   vp = (bulk_modulus + 4.0/3.0 * shear_modulus) / density;
   vp = sqrt(vp);
   vs = shear_modulus / density;
   vs = sqrt(vs);
-
 }
 
 void
@@ -404,10 +397,6 @@ DEMTools::CalcElasticParamsFromSeismicParams(const double vp,
 {
   bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);
-
-  double giga = 1.0E9;
-  bulk_modulus  = bulk_modulus  / giga;
-  shear_modulus = shear_modulus / giga;
 }
 
 void
