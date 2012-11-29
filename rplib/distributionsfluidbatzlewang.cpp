@@ -4,6 +4,8 @@
 #include "rplib/fluidbatzlewang.h"
 #include "rplib/demmodelling.h"
 
+#include "nrlib/random/distribution.hpp"
+
 DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWithTrend        * distr_temperature,
                                                            const DistributionWithTrend        * distr_pore_pressure,
                                                            const DistributionWithTrend        * distr_salinity,

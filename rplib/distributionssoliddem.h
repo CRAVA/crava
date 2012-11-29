@@ -3,8 +3,6 @@
 
 #include "rplib/distributionssolid.h"
 
-#include "nrlib/random/distribution.hpp"
-
 class DistributionWithTrend;
 
 class DistributionsSolidDEM : public DistributionsSolid {

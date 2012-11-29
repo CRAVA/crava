@@ -7,10 +7,12 @@
 
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/statistics/statistics.hpp"
+#include <nrlib/flens/nrlib_flens.hpp>
 
 #include "src/definitions.h"
 
 #include <cassert>
+#include <vector>
 
 
 DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,

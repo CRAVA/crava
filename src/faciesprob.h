@@ -11,6 +11,8 @@
 #include <src/posteriorelasticpdf3d.h>
 #include <rplib/syntwelldata.h>
 
+#include <map>
+
 class Corr;
 class FFTGrid;
 class Crava;

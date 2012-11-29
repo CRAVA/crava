@@ -2,6 +2,8 @@
 
 #include "nrlib/exception/exception.hpp"
 
+#include <numeric>
+
 FluidMix::FluidMix(const std::vector<Fluid*>      & fluid,
                    const std::vector<double>      & volume_fraction,
                    const std::vector<double>      & u,

@@ -6,6 +6,8 @@
 
 #include "src/definitions.h"
 
+#include "nrlib/random/distribution.hpp"
+
 #include <cassert>
 
 DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                           * distr_solid,

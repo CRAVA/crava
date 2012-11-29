@@ -1,5 +1,7 @@
 #include "src/correlatedrocksamples.h"
 
+#include "rplib/rock.h"
+
 CorrelatedRockSamples::CorrelatedRockSamples()
 {
 }

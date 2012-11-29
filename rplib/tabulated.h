@@ -3,9 +3,15 @@
 
 #include "rplib/distributionwithtrend.h"
 #include "nrlib/grid/grid2d.hpp"
-#include "nrlib/random/distribution.hpp"
 
 #include <vector>
+
+class DistributionWithTrend;
+
+namespace NRLib {
+  template <typename T>
+  class Distribution;
+}
 
 //
 // Class that calculates correlated samples of elastic variables

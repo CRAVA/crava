@@ -1,17 +1,17 @@
 #ifndef RPLIB_DISTRIBUTIONS_ROCK_STORAGE_HPP
 #define RPLIB_DISTRIBUTIONS_ROCK_STORAGE_HPP
 
-#include "rplib/distributionsrock.h"
-#include "rplib/distributionssolid.h"
-#include "rplib/distributionsdryrock.h"
-#include "rplib/distributionsfluid.h"
-#include "rplib/distributionsrockstorage.h"
-#include "rplib/distributionssolidstorage.h"
-#include "rplib/distributionsdryrockstorage.h"
-#include "rplib/distributionsfluidstorage.h"
-#include "rplib/distributionwithtrendstorage.h"
-#include "nrlib/trend/trendstorage.hpp"
-#include "nrlib/trend/trend.hpp"
+#include "rplib/demmodelling.h"
+
+#include <map>
+
+class DistributionWithTrendStorage;
+class DistributionsSolidStorage;
+class DistributionsDryRockStorage;
+class DistributionsFluidStorage;
+
+class DistributionsRock;
+class DistributionsFluid;
 
 class DistributionsRockStorage {
 public:

@@ -3,8 +3,13 @@
 
 #include "rplib/distributionwithtrend.h"
 
-#include "nrlib/random/distribution.hpp"
-#include "nrlib/trend/trendstorage.hpp"
+
+class DistributionWithTrend;
+
+namespace NRLib {
+  class TrendStorage;
+  class Trend;
+}
 
 
 class DistributionWithTrendStorage

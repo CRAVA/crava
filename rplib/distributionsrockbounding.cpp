@@ -5,6 +5,8 @@
 #include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
 
+#include "nrlib/random/distribution.hpp"
+
 #include <cassert>
 
 DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock     * upper_rock,

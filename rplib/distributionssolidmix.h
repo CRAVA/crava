@@ -3,7 +3,6 @@
 
 #include "rplib/distributionssolid.h"
 
-#include "nrlib/random/distribution.hpp"
 #include "rplib/demmodelling.h"
 
 class DistributionWithTrend;

@@ -2,6 +2,8 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
 
+#include "nrlib/trend/trend.hpp"
+
 #include "rplib/distributionwithtrend.h"
 #include "rplib/deltadistributionwithtrend.h"
 

@@ -2,8 +2,8 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/normal.hpp"
 #include "nrlib/random/uniform.hpp"
+#include "nrlib/trend/trend.hpp"
 
-#include "rplib/distributionwithtrend.h"
 #include "rplib/normaldistributionwithtrend.h"
 
 NormalDistributionWithTrend::NormalDistributionWithTrend()

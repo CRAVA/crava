@@ -5,6 +5,8 @@
 
 #include "rplib/fluidco2.h"
 
+#include "nrlib/random/distribution.hpp"
+
 DistributionsFluidCO2::DistributionsFluidCO2(const DistributionWithTrend       * distr_temperature,
                                              const DistributionWithTrend       * distr_pore_pressure,
                                              std::vector<double>               & alpha)

@@ -3,6 +3,8 @@
 #include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
 
+#include "nrlib/random/distribution.hpp"
+
 DistributionsSolidTabulated::DistributionsSolidTabulated(const DistributionWithTrend * elastic1,
                                                          const DistributionWithTrend * elastic2,
                                                          const DistributionWithTrend * density,

@@ -1,7 +1,13 @@
 #include "rplib/distributionsfluidtabulated.h"
 #include "rplib/fluidtabulatedmodulus.h"
 #include "rplib/tabulated.h"
-#include "rplib/demmodelling.h"
+
+#include "rplib/fluid.h"
+#include "rplib/distributionwithtrend.h"
+
+#include "nrlib/random/distribution.hpp"
+
+#include <cmath>
 
 DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithTrend * elastic,
                                                          const DistributionWithTrend * density,

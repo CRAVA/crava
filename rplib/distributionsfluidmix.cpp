@@ -9,6 +9,8 @@
 
 #include "src/definitions.h"
 
+#include "nrlib/random/distribution.hpp"
+
 #include <cassert>
 
 DistributionsFluidMix::DistributionsFluidMix(const std::vector<double>                    & alpha,

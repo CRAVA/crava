@@ -1,6 +1,11 @@
 #include "rplib/syntwelldata.h"
+
+#include "src/definitions.h"
+
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
+
 
 SyntWellData::SyntWellData(double                     const  & trend1,
                            double                     const  & trend2,

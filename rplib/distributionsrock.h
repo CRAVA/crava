@@ -1,9 +1,9 @@
 #ifndef DISTRIBUTIONSROCK_H
 #define DISTRIBUTIONSROCK_H
 
-#include "rplib/rock.h"
-#include <nrlib/flens/nrlib_flens.hpp>
 #include "nrlib/grid/grid2d.hpp"
+
+class Rock;
 
 
 // Abstract class for holding all t = 0 distribution functions for rock physics parameters and saturation.

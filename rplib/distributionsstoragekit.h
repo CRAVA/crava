@@ -3,16 +3,19 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
-#include "rplib/distributionwithtrend.h"
-#include "rplib/distributionsrock.h"
-#include "rplib/distributionssolid.h"
-#include "rplib/distributionsdryrock.h"
-#include "rplib/distributionsfluid.h"
-#include "rplib/distributionsrockstorage.h"
-#include "rplib/distributionssolidstorage.h"
-#include "rplib/distributionsdryrockstorage.h"
-#include "rplib/distributionsfluidstorage.h"
+class DistributionWithTrend;
+class DistributionsRockStorage;
+class DistributionsSolidStorage;
+class DistributionsDryRockStorage;
+class DistributionsFluidStorage;
+
+class DistributionsRock;
+class DistributionsSolid;
+class DistributionsFluid;
+class DistributionsDryRock;
+
 
 void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
                             std::string                                & errTxt);

@@ -4,6 +4,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
+#include <nrlib/flens/nrlib_flens.hpp>
 
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,

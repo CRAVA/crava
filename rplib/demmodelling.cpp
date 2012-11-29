@@ -22,6 +22,7 @@
 #include "nrlib/trend/trend.hpp"
 
 #include <cmath>
+#include <numeric>
 
 double
 DEMTools::CalcBulkModulusOfBrineFromTPS(double temperature,

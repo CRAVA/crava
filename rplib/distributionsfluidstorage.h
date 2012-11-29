@@ -1,13 +1,12 @@
 #ifndef RPLIB_DISTRIBUTIONS_FLUID_STORAGE_HPP
 #define RPLIB_DISTRIBUTIONS_FLUID_STORAGE_HPP
 
-#include "rplib/distributionsfluid.h"
-#include "rplib/distributionwithtrendstorage.h"
 #include "rplib/demmodelling.h"
-#include "nrlib/trend/trendstorage.hpp"
-#include "nrlib/trend/trend.hpp"
 
 #include <map>
+
+class DistributionWithTrendStorage;
+class DistributionsFluid;
 
 class DistributionsFluidStorage {
 public:

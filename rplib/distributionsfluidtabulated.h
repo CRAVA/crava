@@ -1,11 +1,12 @@
 #ifndef RPLIB_DISTRIBUTIONS_FLUID_TABULATED_H
 #define RPLIB_DISTRIBUTIONS_FLUID_TABULATED_H
 
-#include "rplib/fluid.h"
 #include "rplib/distributionsfluid.h"
-#include "rplib/distributionwithtrend.h"
-#include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
+
+class Fluid;
+class DistributionWithTrend;
+class Tabulated;
 
 // Abstract class for holding all t = 0 distribution functions for fluid parameters.
 // One derived class for each fluid model, the latter specified in a parallel, derived Fluid class.

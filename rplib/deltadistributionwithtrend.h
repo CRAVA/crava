@@ -1,10 +1,13 @@
 #ifndef RPLIB_DELTADISTRIBUTIONWITHTREND_H
 #define RPLIB_DELTADISTRIBUTIONWITHTREND_H
 
-#include "nrlib/trend/trend.hpp"
-#include "nrlib/random/distribution.hpp"
-
 #include "rplib/distributionwithtrend.h"
+
+namespace NRLib {
+  class Trend;
+  template <typename T>
+  class Distribution;
+}
 
 class DeltaDistributionWithTrend : public DistributionWithTrend {
  public:

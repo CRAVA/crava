@@ -10,6 +10,8 @@
 #include <cassert>
 #include "src/definitions.h"
 
+#include "nrlib/random/distribution.hpp"
+
 //This file contains two classes DistributionsRockMixOfRock and DistributionsRockMixOfSolidAndFluid.
 
 //-------------------------------------- DistributionsRockMixOfRock ---------------------------------------------------------

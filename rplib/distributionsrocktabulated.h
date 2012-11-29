@@ -1,11 +1,12 @@
 #ifndef RPLIB_DISTRIBUTIONS_ROCK_TABULATED_H
 #define RPLIB_DISTRIBUTIONS_ROCK_TABULATED_H
 
-#include "rplib/rock.h"
 #include "rplib/distributionsrock.h"
-#include "rplib/distributionwithtrend.h"
-#include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
+
+class Rock;
+class Tabulated;
+class DistributionWithTrend;
 
 class DistributionsRockTabulated : public DistributionsRock {
 public:

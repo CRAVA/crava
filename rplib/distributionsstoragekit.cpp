@@ -2,17 +2,6 @@
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 
-#include "rplib/distributionsrock.h"
-#include "rplib/distributionssolid.h"
-#include "rplib/distributionsdryrock.h"
-#include "rplib/distributionsfluid.h"
-#include "rplib/distributionsrockstorage.h"
-#include "rplib/distributionssolidstorage.h"
-#include "rplib/distributionsdryrockstorage.h"
-#include "rplib/distributionsfluidstorage.h"
-#include "rplib/distributionsstoragekit.h"
-#include "rplib/distributionwithtrend.h"
-
 void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
                             std::string                                & errTxt)
 {

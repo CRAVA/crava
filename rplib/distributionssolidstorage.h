@@ -3,10 +3,10 @@
 
 #include "rplib/demmodelling.h"
 
+#include <map>
+
 class DistributionsSolid;
 class DistributionWithTrendStorage;
-
-#include <map>
 
 class DistributionsSolidStorage {
 public:

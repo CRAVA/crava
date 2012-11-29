@@ -1,8 +1,11 @@
 #include "rplib/distributionsrocktabulated.h"
 #include "rplib/rocktabulatedvelocity.h"
-#include "rplib/demmodelling.h"
+#include "rplib/distributionwithtrend.h"
+#include "rplib/tabulated.h"
+#include "rplib/rock.h"
 
 #include "nrlib/grid/grid2d.hpp"
+#include "nrlib/random/distribution.hpp"
 
 DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTrend * elastic1,
                                                        const DistributionWithTrend * elastic2,

@@ -1,11 +1,12 @@
 #ifndef RPLIB_DISTRIBUTIONS_SOLID_TABULATED_H
 #define RPLIB_DISTRIBUTIONS_SOLID_TABULATED_H
 
-#include "rplib/solid.h"
 #include "rplib/distributionssolid.h"
-#include "rplib/distributionwithtrend.h"
-#include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
+
+class Solid;
+class DistributionWithTrend;
+class Tabulated;
 
 
 // Abstract class for holding all t = 0 distribution functions for solid parameters.

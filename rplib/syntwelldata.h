@@ -2,7 +2,8 @@
 #define SYNTWELLDATA_H
 
 #include <stdlib.h>
-#include "src/definitions.h"
+
+#include <vector>
 
 class SyntWellData{
 

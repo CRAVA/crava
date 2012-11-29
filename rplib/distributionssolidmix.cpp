@@ -8,6 +8,8 @@
 
 #include "src/definitions.h"
 
+#include "nrlib/random/distribution.hpp"
+
 DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >          & distr_solid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method,

@@ -1,10 +1,13 @@
 #ifndef RPLIB_NORMALDISTRIBUTIONWITHTREND_H
 #define RPLIB_NORMALDISTRIBUTIONWITHTREND_H
 
-#include "nrlib/trend/trend.hpp"
 #include "nrlib/random/distribution.hpp"
 
 #include "rplib/distributionwithtrend.h"
+
+namespace NRLib {
+  class Trend;
+}
 
 class NormalDistributionWithTrend : public DistributionWithTrend {
  public:

@@ -5,8 +5,6 @@
 
 #include "rplib/demmodelling.h"
 
-#include "nrlib/random/distribution.hpp"
-
 class DistributionWithTrend;
 class FluidMix;
 

@@ -1,11 +1,13 @@
 #ifndef RPLIB_BETADISTRIBUTIONWITHTREND_H
 #define RPLIB_BETADISTRIBUTIONWITHTREND_H
 
-#include "nrlib/trend/trend.hpp"
-#include "nrlib/random/distribution.hpp"
-#include "nrlib/grid/grid2d.hpp"
-
 #include "rplib/distributionwithtrend.h"
+
+namespace NRLib {
+  class Trend;
+  template <typename T>
+  class Grid2D;
+}
 
 class BetaDistributionWithTrend : public DistributionWithTrend {
  public:
