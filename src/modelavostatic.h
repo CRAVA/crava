@@ -24,7 +24,6 @@ public:
   ModelAVOStatic(ModelSettings        *& modelSettings,
                  ModelGeneral         *& modelGeneral,
                  const InputFiles      * inputFiles,
-                 std::vector<bool>       failedGeneralDetails,
                  GridMapping           * timeCutMapping,
                  Simbox                * timeSimbox,
                  Simbox               *& timeBGSimbox,

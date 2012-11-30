@@ -48,7 +48,6 @@
 ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
                                ModelGeneral         *& modelGeneral,
                                const InputFiles      * inputFiles,
-                               std::vector<bool>       failedGeneralDetails,
                                GridMapping           * timeCutMapping,
                                Simbox                * timeSimbox,
                                Simbox               *& timeBGSimbox,
@@ -57,18 +56,17 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
 {
   forwardModeling_        = modelSettings->getForwardModeling();
 
-  bool failedSimbox       = failedGeneralDetails[0];
+  bool failedModelGeneral = modelGeneral->getFailed();
 
   failed_                 = false;
   bool failedExtraSurf    = false;
   bool failedPriorFacies  = false;
-  bool failedRockPhysics  = false;
 
   bool failedLoadingModel = false;
 
   std::string errText("");
 
-  if(!failedSimbox)
+  if(!failedModelGeneral)
   {
     if (modelSettings->getForwardModeling() == false)
     {
@@ -103,7 +101,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
     else // forward modeling
       checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
   }
-  failedLoadingModel = failedExtraSurf || failedPriorFacies || failedRockPhysics;
+  failedLoadingModel = failedExtraSurf || failedPriorFacies;
 
   if (failedLoadingModel) {
     LogKit::WriteHeader("Error(s) while loading data");

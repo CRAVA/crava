@@ -121,6 +121,34 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
       //printf("cor bc: %.6f\n"  ,cov(1,2)/(s[1]*s[2]));
     }
   }
+
+  mean_log_expectation_.resize(3,0);
+  mean_log_covariance_.Resize(3,3,0);
+
+  for (size_t i = 0 ; i < mi ; i++) {
+    for (size_t j = 0 ; j < mj ; j++) {
+
+      std::vector<double>   this_expectation = expectation(i,j);
+      NRLib::Grid2D<double> this_covariance = covariance(i,j);
+
+      for(int k=0; k<3; k++)
+        mean_log_expectation_[k] += this_expectation[k];
+
+      for(int k=0; k<3; k++) {
+        for(int l=0; l<3; l++)
+          mean_log_covariance_(k,l) += this_covariance(k,l);
+      }
+    }
+  }
+
+  for(int k=0; k<3; k++)
+    mean_log_expectation_[k] /= (mi*mj);
+
+  for(int k=0; k<3; k++) {
+    for(int l=0; l<3; l++)
+      mean_log_covariance_(k,l) /= (mi*mj);
+  }
+
 }
 
 //----------------------------------------------------------------------------------------

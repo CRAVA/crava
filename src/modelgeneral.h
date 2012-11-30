@@ -129,7 +129,8 @@ public:
                                                       double                                           & varRho,
                                                       double                                           & crossVpVs,
                                                       double                                           & crossVpRho,
-                                                      double                                           & crossVsRho);
+                                                      double                                           & crossVsRho,
+                                                      std::string                                      & errTxt);
 
   void                generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
                                                       const std::vector<double>                        & probability,
@@ -137,7 +138,8 @@ public:
                                                       Corr                                             & correlations, //The grids here get/set correctly.
                                                       const Simbox                                     & timeSimbox,
                                                       const ModelSettings                              & modelSettings,
-                                                      State4D                                          & state4d);
+                                                      State4D                                          & state4d,
+                                                      std::string                                      & errTxt);
 
   void             processWellLocation(FFTGrid                     ** seisCube,
                                        float                       ** reflectionMatrix,
@@ -225,6 +227,11 @@ private:
                                       bool                         & failed,
                                       std::string                  & errTxt,
                                       const InputFiles             * inputFiles);
+
+  void                printExpectationAndCovariance(const std::vector<double>   & expectation,
+                                                    const NRLib::Grid2D<double> & covariance,
+                                                    const bool                  & has_trend) const;
+
   void                setSimboxSurfaces(Simbox                        *& simbox,
                                         const std::vector<std::string> & surfFile,
                                         ModelSettings                  * modelSettings,

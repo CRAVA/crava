@@ -7,6 +7,7 @@
 #include <limits.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <typeinfo>
 
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
@@ -207,6 +208,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   failed_details_.push_back(failedDepthConv);
   failed_details_.push_back(failedWells);
   failed_details_.push_back(failedBackground);
+  failed_details_.push_back(failedRockPhysics);
 
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;
@@ -2339,6 +2341,13 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       reservoir_variables_[it->first] = dist_vector;
     }
 
+    float alpha_min = modelSettings->getAlphaMin();
+    float alpha_max = modelSettings->getAlphaMax();
+    float beta_min  = modelSettings->getBetaMin();
+    float beta_max  = modelSettings->getBetaMax();
+    float rho_min   = modelSettings->getRhoMin();
+    float rho_max   = modelSettings->getRhoMax();
+
     const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
     const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
     const std::map<std::string, DistributionsDryRockStorage *>& dry_rock_storage = modelSettings->getDryRockStorage();
@@ -2361,6 +2370,54 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                                                                  dry_rock_storage,
                                                                                  fluid_storage,
                                                                                  errTxt);
+
+      int n_vintages = static_cast<int>(rock.size());
+      if(n_vintages > 1)
+        LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
+
+      for(int i=0; i<n_vintages; i++) {
+        if(n_vintages > 1)
+          LogKit::LogFormatted(LogKit::Low, "Vintage number: %4d\n", i+1);
+
+        std::vector<bool> has_trends = rock[i]->HasTrend();
+        bool              has_trend = false;
+        for(size_t j=0; j<has_trends.size(); j++) {
+          if(has_trends[j] == true) {
+            has_trend = true;
+            break;
+          }
+        }
+
+        std::vector<double> expectation = rock[i]->GetMeanLogExpectation();
+        NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
+
+        printExpectationAndCovariance(expectation, covariance, has_trend);
+
+        std::string tmpErrTxt = "";
+        if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
+          tmpErrTxt += "Vp value of "+NRLib::ToString(expectation[0])+" detected: ";
+          tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+")\n";
+        }
+        if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
+          if(typeid(*(storage)) == typeid(ReussRockStorage))
+            tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
+          else
+            tmpErrTxt += "Vs value of "+NRLib::ToString(expectation[1])+" detected: ";
+          tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+")\n";
+        }
+        if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
+          tmpErrTxt += "Rho value of "+NRLib::ToString(expectation[2])+" detected: ";
+          tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+")\n";
+        }
+
+        if(tmpErrTxt != "") {
+          errTxt += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
+          errTxt += tmpErrTxt;
+          break;
+        }
+
+      }
+
       rock_distributions_[it->first] = rock;
     }
 
@@ -2368,6 +2425,30 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       failed = true;
   }
 }
+
+void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & expectation,
+                                                 const NRLib::Grid2D<double> & covariance,
+                                                 const bool                  & has_trend) const
+{
+  if(has_trend == true)
+      LogKit::LogFormatted(LogKit::Low,"\nMean expectation and covariance estimated over all trend values:\n");
+  else
+    LogKit::LogFormatted(LogKit::Low,"\nEstimated expectation and covariance:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Expectation    ln Vp      ln Vs      ln Rho         \n");
+  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"               %5.4f     %5.4f     %5.4f \n",expectation[0], expectation[1], expectation[2]);
+
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Covariance | ln Vp      ln Vs      ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-----------+------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp      | %.2e     %.2e      %.2e \n",covariance(0,0), covariance(0,1), covariance(0,2));
+  LogKit::LogFormatted(LogKit::Low,"ln Vs      | %.2e     %.2e      %.2e \n",covariance(1,0), covariance(1,1), covariance(1,2));
+  LogKit::LogFormatted(LogKit::Low,"ln Rho     | %.2e     %.2e      %.2e \n",covariance(2,0), covariance(2,1), covariance(2,2));
+
+}
+
+
 
 void
 ModelGeneral::loadVelocity(FFTGrid           *& velocity,
@@ -2720,7 +2801,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
                                               double                                           & varRho,
                                               double                                           & crossVpVs,
                                               double                                           & crossVpRho,
-                                              double                                           & crossVsRho)
+                                              double                                           & crossVsRho,
+                                              std::string                                      & /*errTxt*/)
 {
   // Set up of expectations grids and computation of covariance sums given rock physics.
 
@@ -2828,18 +2910,21 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
           //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
           // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
 
-          // For all facies: Summing up expected value of variances and variance of expected values
-          for(size_t f = 0; f < number_of_facies; f++){
-            NRLib::Grid2D<double> sigma;
-            std::vector<double> m(3);
-            sigma = rock_vector[f]->GetLogCovariance(trend_position);
-            n_samples++;
 
-            // For all elements in the 3x3 matrix of the combined variance
-            for(size_t a=0; a<3; a++){
-              for(size_t b=0; b<3; b++){
-                sumVariance(a,b) += probability[f]*sigma(a,b);
-                sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+          if(k % 15 == 0) {
+            // For all facies: Summing up expected value of variances and variance of expected values
+            for(size_t f = 0; f < number_of_facies; f++){
+              NRLib::Grid2D<double> sigma;
+              std::vector<double> m(3);
+              sigma = rock_vector[f]->GetLogCovariance(trend_position);
+              n_samples++;
+
+              // For all elements in the 3x3 matrix of the combined variance
+              for(size_t a=0; a<3; a++){
+                for(size_t b=0; b<3; b++){
+                  sumVariance(a,b) += probability[f]*sigma(a,b);
+                  sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+                }
               }
             }
           }
@@ -2871,7 +2956,8 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
                                               Corr                                             & correlations, //The grids here get/set correctly.
                                               const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
-                                              State4D                                          & state4d)
+                                              State4D                                          & state4d,
+                                              std::string                                      & errTxt)
 {
   // Create all necessary grids for 4D inversion and return all grids in a State4D object.
   // We assume an existing object of the class Corr and an empty object of state4d.
@@ -2932,7 +3018,7 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   rho_rho_stat->createRealGrid();
 
   // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
+  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errTxt);
 
   // Correlations
   float corrGradI, corrGradJ;
@@ -4038,7 +4124,8 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
                                   std::string          &  errText,
                                   bool                 &  failed)
 {
-  bool failedPriorCorr = false;
+  bool failedPriorCorr               = false;
+  bool failedRockPhysics4DBackground = false;
 
   // Variables to be created in this function
   Corr       * correlations;
@@ -4067,9 +4154,16 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
   std::vector<double> dummyVector;
   processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
                            seisCube, inputFiles, dummyVector, errText, failedPriorCorr);
-  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D);
-  // Add more handling of possible failing situations
-  failed = failedPriorCorr; // || failedRockPhysics4DBackground
+
+  std::string tmpError = "";
+  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D, tmpError);
+
+  if(tmpError != "") {
+    errText += tmpError;
+    failedRockPhysics4DBackground = true;
+  }
+
+  failed = failedPriorCorr || failedRockPhysics4DBackground;
 
   return failed;
 

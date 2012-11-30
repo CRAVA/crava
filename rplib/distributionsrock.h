@@ -33,6 +33,10 @@ public:
 
   NRLib::Grid2D<double>                 GetLogCovariance(const std::vector<double> & trend_params)        const;
 
+  const std::vector<double>           & GetMeanLogExpectation()                                           const { return mean_log_expectation_ ;}
+
+  const NRLib::Grid2D<double>         & GetMeanLogCovariance()                                            const { return mean_log_covariance_  ;}
+
   virtual bool                          HasDistribution()                                                 const = 0;
 
   virtual std::vector<bool>             HasTrend()                                                        const = 0;
@@ -118,6 +122,9 @@ protected:
 
   NRLib::Grid2D<std::vector<double> >   expectation_;       // Expectation of log(vp,vs,density)
   NRLib::Grid2D<NRLib::Grid2D<double> > covariance_;        // Covariance of log(vp,vs,density)
+
+  std::vector<double>                   mean_log_expectation_;
+  NRLib::Grid2D<double>                 mean_log_covariance_;
 
   std::vector<double>                   tabulated_s0_;      // Tabulated trend values {s0_min, ... , s0_max}
   std::vector<double>                   tabulated_s1_;      // Tabulated trend values {s1_min, ... , s1_max}

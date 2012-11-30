@@ -926,7 +926,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
-   std::map<std::string, DistributionsRockStorage *>::const_iterator n_all = model_rock_storage.find(lower_rock_);
+  std::map<std::string, DistributionsRockStorage *>::const_iterator n_all = model_rock_storage.find(lower_rock_);
   if (n_all != model_rock_storage.end()) {
     if(typeid(*(n_all->second)) != typeid(ReussRockStorage))
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
