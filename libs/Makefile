@@ -13,25 +13,23 @@ NRLIB_MODULES := geometry \
                  trend \
                  volume
 
-#MODULES := boost flens $(addprefix nrlib/, $(NRLIB_MODULES))
-
-MODULES := $(addprefix nrlib/, $(NRLIB_MODULES))
+MODULES := $(addprefix nrlib/, $(NRLIB_MODULES)) flens
 
 NRLIB_BASE_DIR := nrlib/
 
 SRC :=
-
 # Files with sources for each of the modules.
 include $(patsubst %, %/module.mk, $(MODULES))
-
 # This file contains the files we want from NRLib where we do not want entire directory.
 include submodulescrava.mk
 
 OBJDIR = ../obj/libs/
 
-OBJECTS := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
+OBJ_NRLIB := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
+OBJ_FLENS := $(patsubst %.cc, $(OBJDIR)%.o, $(filter %.cc,  $(SRC)))
 
-DIRS := $(sort $(dir $(OBJECTS)))
+DIRS := $(sort $(dir $(OBJ_NRLIB)))
+DIRS += $(sort $(dir $(OBJ_FLENS)))
 
 INCLUDE := -I../libs/
 
@@ -40,7 +38,16 @@ CPPFLAGS += $(INCLUDE)
 $(OBJDIR)%.o : %.cpp
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
-all: $(DIRS) $(OBJECTS)
+$(OBJDIR)%.o : %.cc
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(CXXFLENS) $< -o $@
+
+all: $(DIRS) $(OBJ_NRLIB) $(OBJ_FLENS)
+
+help:
+	@echo 'MODULES:'
+	@echo $(MODULES)
+	@echo 'A:'
+	@echo $(A)
 
 $(DIRS):
 	install -d $@

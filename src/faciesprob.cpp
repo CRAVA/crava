@@ -488,7 +488,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   for(int i=0;i<nAng;i++)
     G[i] = new double[3];
 
-  cravaResult->computeG(G);
+  //cravaResult->computeG(G);
+  cravaResult->computeG_new(G);
 
   for(int i=0;i<densdim;i++) {
     makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered,

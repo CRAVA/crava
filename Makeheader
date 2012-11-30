@@ -2,7 +2,7 @@
 # The available CRAVA compiler directives are
 #    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)
 #
-CDIR        =
+CDIR        = -DFLENS_FIRST_INDEX=0
 CXX         = g++
 CC          = gcc
 GCCNEW      = $(shell expr `gcc -dumpversion | sed s/\\.//` \>= 46)
@@ -18,6 +18,8 @@ GRAMMAR     = grammar
 OPT         = -O2
 DEBUG       =
 PURIFY      =
+ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+
 mode        = all
 
 ifeq ($(GCCNEW),1)
@@ -44,6 +46,15 @@ PROGRAM = cravarun.purify
 PURIFY  = purify -best-effort
 endif
 
+ifeq ($(lib),mkl)
+ATLASLFLAGS  =
+MKLINCLUDE  := /nr/prog/intel/Compiler/mkl/include
+MKLPATH     := /nr/prog/intel/Compiler/mkl/lib/intel64
+MKLLFLAGS   := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+                 $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
+                 -lpthread -ldl
+endif
+
 OPT     := $(strip $(OPT))
 PROFILE := $(strip $(PROFILE))
 DEBUG   := $(strip $(DEBUG))
@@ -55,4 +66,4 @@ EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING)
 CPPFLAGS   = $(EXTRAFLAGS)
-LFLAGS     = $(PROFILE) $(DEBUG) -lm
+LFLAGS     = $(PROFILE) $(ATLASLFLAGS) $(MKLLFLAGS) $(DEBUG) -lm

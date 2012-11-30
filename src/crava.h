@@ -7,6 +7,7 @@
 
 #include "fftw.h"
 #include "definitions.h"
+#include "libs/nrlib/flens/nrlib_flens.hpp"
 
 class ModelGeneral;
 class ModelAVOStatic;
@@ -64,6 +65,8 @@ public:
   void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
   void               doPredictionKriging();
 
+
+  void               computeG_new(double ** G) const;
 
 private:
   void               computeDataVariance(void);
@@ -174,4 +177,5 @@ private:
 
   NRLib::Grid2D<double **>           *sigmamdnew_;
 };
+
 #endif

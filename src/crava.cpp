@@ -2,10 +2,9 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include "src/crava.h"
-
 #include "rfftw.h"
 
+#include "src/crava.h"
 #include "src/wavelet.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
@@ -30,13 +29,15 @@
 #include "src/qualitygrid.h"
 #include "src/io.h"
 #include "src/tasklist.h"
+
 #include "lib/timekit.hpp"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
+
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/grid/grid2d.hpp"
-
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -2039,6 +2040,99 @@ void Crava::computeG(double **G) const
   delete [] error;
   delete [] lambdag;
 }
+
+//-----------------------------------------------
+void Crava::computeG_new(double ** G) const
+//-----------------------------------------------
+{
+  //
+  // Class variables in use
+  //
+  double ** errThetaCov  = errThetaCov_;
+  Corr   *  correlations = correlations_;
+  int       n_theta      = ntheta_;
+
+  NRLib::Matrix Sm(3,3);
+  NRLib::Matrix Smd(3,3);
+  NRLib::Matrix ErrThetaCov(n_theta, n_theta);
+
+  NRLib::SetMatrixFrom2DArray(Sm , correlations->getPriorVar0());
+  NRLib::SetMatrixFrom2DArray(Smd, correlations->getPostVar0());
+  NRLib::SetMatrixFrom2DArray(ErrThetaCov, errThetaCov);
+
+  NRLib::Matrix Sdelta = Sm - Smd;
+
+  NRLib::Vector Eval(3);
+  NRLib::Matrix Evec(3,3);
+  NRLib::Matrix EvalMat(3,3);
+
+  NRLib::ComputeEigenVectors(Sdelta, Eval, Evec);
+
+  NRLib::InitializeMatrix(EvalMat, 0.0);
+  for (int i=0 ; i < 3 ; i++) {
+    if (Eval(i) > 0.0) {
+      EvalMat(i,i) = Eval(i);
+    }
+  }
+
+  NRLib::Matrix EvecT, H;
+
+  EvecT  = NRLib::transpose(Evec);
+  H      = Evec * EvalMat;
+  Sdelta = H * EvecT;
+
+  NRLib::ComputeEigenVectors(Sm, Eval, Evec);
+
+  NRLib::InitializeMatrix(EvalMat, 0.0);
+  for (int i=0 ; i < 3 ; i++) {
+    if (Eval(i) > 0.0000001) {
+      EvalMat(i, i) = 1.0/sqrt(Eval(i));
+    }
+  }
+
+  NRLib::Matrix Sinv, A;
+
+  EvecT = flens::transpose(Evec);
+  H     = Evec * EvalMat;
+  Sinv  = H * EvecT;
+  H     = Sinv * Sdelta;
+  A     = H * Sinv;
+
+  NRLib::ComputeEigenVectors(A, Eval, Evec);
+  NRLib::Sort3x3(Eval, Evec);
+
+  NRLib::Matrix Lg(n_theta, 3);
+
+  NRLib::InitializeMatrix(Lg, 0.0);
+  for (int i=0 ; i < std::min(n_theta, 3) ; i++) {
+    Lg(i,i) = sqrt(Eval(i)/(1.0 - Eval(i)));
+  }
+
+  NRLib::Vector Evale(n_theta);
+  NRLib::Matrix Evece(n_theta, n_theta);
+  NRLib::Matrix EvalMate(n_theta, n_theta);
+
+  NRLib::ComputeEigenVectors(ErrThetaCov, Evale, Evece);
+
+  NRLib::InitializeMatrix(EvalMate, 0.0);
+  for (int i=0 ; i < n_theta ; i++) {
+    if(Evale(i) > 0.0) {
+      EvalMate(i,i) = sqrt(Evale(i));
+    }
+  }
+
+  NRLib::Matrix EveceT = flens::transpose(Evece);
+  NRLib::Matrix He = Evece * EvalMate;
+  Evece = He * EveceT;
+  NRLib::Matrix H1 = Evece * Lg;
+  EvecT = flens::transpose(Evec);
+  NRLib::Matrix H2 = H1 * EvecT;
+  NRLib::Matrix GG = H2*Sinv;
+
+  NRLib::Set2DArrayFromMatrix(GG, G);
+}
+
+
 void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales,
                                      double ** sigmamdnew) const
 {

@@ -7,6 +7,7 @@ DIRS        = src libs libs/lib libs/boost libs/fft/fftw libs/fft/rfftw
 OBJDIR      = obj
 OBJLIBDIR   = obj/libs/lib
 OBJFFTDIR   = obj/libs/fft
+OBJFLENSDIR = obj/libs/flens
 OBJBOOSTDIR = obj/libs/boost
 OBJNRLIBDIR = obj/libs/nrlib
 OBJFINDGRAM = findgrammar/findgrammar.o
@@ -18,13 +19,13 @@ OBJGRAMMAR  = $(OBJNRLIBDIR)/iotools/fileio.o         \
               $(OBJBOOSTDIR)/filesystem/path.o        \
               $(OBJBOOSTDIR)/filesystem/operations.o  \
               $(OBJBOOSTDIR)/filesystem/portability.o
-INCLUDE     = -I. -I./libs -I./libs/nrlib -I./libs/fft/include
+INCLUDE     = -I. -I./libs -I./libs/nrlib -I./libs/flens -I./libs/fft/include
 CPPFLAGS   += $(INCLUDE)
 
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJLIBDIR)/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJNRLIBDIR)/*/*.o  main.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJLIBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJFLENSDIR)/*.o main.o
 
 $(GRAMMAR): findgrammar/findgrammar.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)
@@ -46,10 +47,11 @@ clean:
 
 cleanlib:
 	rm -f $(OBJDIR)/*.o
-	rm -f $(PROGRAM) main.o
 	rm -f $(OBJLIBDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJBOOSTDIR)/*/*.o
+	rm -f $(OBJFLENSDIR)/*.o
+	rm -f $(PROGRAM) main.o
 
 cleanall:
 	rm -f $(OBJDIR)/*.o
@@ -57,7 +59,9 @@ cleanall:
 	rm -f $(OBJFFTDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJBOOSTDIR)/*/*.o
-	rm -f $(PROGRAM) $(GRAMMAR) $(OBJFINDGRAM) main.o
+	rm -f $(OBJFLENSDIR)/*.o
+	rm -f $(GRAMMAR) $(OBJFINDGRAM)
+	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
 	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..
@@ -68,8 +72,8 @@ help:
 	@echo ''
 	@echo 'types'
 	@echo '  clean     : Remove object files generated from  src'
-	@echo '  cleanlib  : Remove object files generated from  src + NRLib'
-	@echo '  cleanall  : Remove object files generated from  src + NRLib + fft'
+	@echo '  cleanlib  : Remove object files generated from  src + boost + flens + NRLib'
+	@echo '  cleanall  : Remove object files generated from  src + boost + flens + NRLib + fft'
 	@echo '  test      : Run CRAVA in test suite'
 	@echo '  all       : Make CRAVA'
 	@echo ''
