@@ -1698,10 +1698,7 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->setFaciesProbFromRockPhysics(true);
 
-  if(modelSettings_->getGenerateBackground()) {
-    modelSettings_->setBackgroundFromRockPhysics(true);
-    modelSettings_->setGenerateBackground(false);
-  }
+  modelSettings_->setBackgroundFromRockPhysics(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -4829,12 +4826,18 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "Prior facies probabilities must be given in the prior model when rock physics models are used\n";
   }
 
-  if(modelSettings_->getBackgroundFromRockPhysics())
+  if(modelSettings_->getBackgroundFromRockPhysics()) {
     // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
     // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
     if(inputFiles_->getParamCorrFile()!=""){
       errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.";
     }
+
+    if(modelSettings_->getGenerateBackground() == false) {
+      errTxt += "The background model can not be given when rock physics models are used.\n";
+      errTxt += "The background model is estimated from the rock physics models\n";
+    }
+  }
 }
 
 void

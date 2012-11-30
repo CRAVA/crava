@@ -2396,18 +2396,18 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
         std::string tmpErrTxt = "";
         if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
           tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
-          tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+")\n";
+          tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
         }
         if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
           if(typeid(*(storage)) == typeid(ReussRockStorage))
             tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
           else
             tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
-          tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+")\n";
+          tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
         }
         if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
           tmpErrTxt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
-          tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+")\n";
+          tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
         }
 
         if(tmpErrTxt != "") {
