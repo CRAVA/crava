@@ -19,7 +19,11 @@ public:
   SpatialWellFilter(int nwells);
   ~SpatialWellFilter();
 
-  void                     setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr);
+  void                     setPriorSpatialCorr(FFTGrid  * parSpatialCorr,
+                                               WellData * well,
+                                               int        wellnr);
+
+  //-----------------------------------------------------------------------------
   void                     doFiltering(Corr                        * corr,
                                        WellData                   ** wells,
                                        int                           nWells,
@@ -27,32 +31,37 @@ public:
                                        int                           nAngles,
                                        const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale);
-
-  void                     doFiltering_new(Corr                        * corr,
+  void                     doFiltering_old(Corr                        * corr,
                                            WellData                   ** wells,
                                            int                           nWells,
                                            bool                          useVpRhoFilter,
                                            int                           nAngles,
                                            const Crava                 * cravaResult,
                                            const std::vector<Grid2D *> & noiseScale);
+  //-----------------------------------------------------------------------------
 
-  std::vector<double **> & getSigmae(void) {return sigmae_;}
+  std::vector<double **> & getSigmae(void) { return sigmae_ ;}
 
 private:
+  //-------------------------------------------------------
   void doVpRhoFiltering(const double ** sigmapri,
                         const double ** sigmapost,
                         int             n,
+                        BlockedLogs  *  blockedLogs);
+  void doVpRhoFiltering_old(const double ** sigmapri,
+                        const double ** sigmapost,
+                        int             n,
                         BlockedLogs  *  blockedlogs);
-  void doVpRhoFiltering_new(const double ** sigmapri,
-                            const double ** sigmapost,
-                            int             n,
-                            BlockedLogs  *  blockedLogs);
   //-------------------------------------------------------
-
-
-  void updateSigmaE(double ** filter,
+  void updateSigmaE(const NRLib::Matrix &  filter,
+                    const NRLib::Matrix &  PostCov,
+                    double              ** sigmae,
+                    int                    n);
+  void updateSigmaE_old(double ** filter,
                     double ** postCov,
                     int       n);
+  //-------------------------------------------------------
+
 
   void completeSigmaE(int                           lastn,
                       const Crava                 * cravaResult,
@@ -79,24 +88,27 @@ private:
 
 
   //----------------------------------------------------------------
-  void calculateFilteredLogs(double      ** Aw,
+  void calculateFilteredLogs(const NRLib::Matrix & Aw,
+                             BlockedLogs         * blockedlogs,
+                             int                   n,
+                             bool                  useVs);
+  void calculateFilteredLogs_old(double      ** Aw,
                              BlockedLogs *  blockedlogs,
                              int            n,
                              bool           useVs);
 
-  void calculateFilteredLogs_new(const NRLib::Matrix & Aw,
-                                 BlockedLogs         * blockedlogs,
-                                 int                   n,
-                                 bool                  useVs);
-
   //----------------------------------------------------------------
-
-
-  void MakeInterpolatedResiduals(const float *  bwLog,
-                                 const float *  bwLogBG,
-                                 const int      n,
-                                 const int      offset,
-                                 double      ** residuals);
+  void MakeInterpolatedResiduals(const float   * bwLog,
+                                 const float   * bwLogBG,
+                                 const int       n,
+                                 const int       offset,
+                                 NRLib::Vector & residuals);
+  void MakeInterpolatedResiduals_old(const float *  bwLog,
+                                     const float *  bwLogBG,
+                                     const int      n,
+                                     const int      offset,
+                                     double      ** residuals);
+  //----------------------------------------------------------------
 
   void fillValuesInSigmapost(double    ** sigmapost,
                              const int *  ipos,

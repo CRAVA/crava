@@ -65,9 +65,6 @@ public:
   void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
   void               doPredictionKriging();
 
-
-  void               computeG_new(double ** G) const;
-
 private:
   void               computeDataVariance(void);
   void               setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
