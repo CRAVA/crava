@@ -31,13 +31,6 @@ public:
                                        int                           nAngles,
                                        const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale);
-  void                     doFiltering_old(Corr                        * corr,
-                                           WellData                   ** wells,
-                                           int                           nWells,
-                                           bool                          useVpRhoFilter,
-                                           int                           nAngles,
-                                           const Crava                 * cravaResult,
-                                           const std::vector<Grid2D *> & noiseScale);
   //-----------------------------------------------------------------------------
 
   std::vector<double **> & getSigmae(void) { return sigmae_ ;}
@@ -48,18 +41,11 @@ private:
                         const double ** sigmapost,
                         int             n,
                         BlockedLogs  *  blockedLogs);
-  void doVpRhoFiltering_old(const double ** sigmapri,
-                        const double ** sigmapost,
-                        int             n,
-                        BlockedLogs  *  blockedlogs);
   //-------------------------------------------------------
   void updateSigmaE(const NRLib::Matrix &  filter,
                     const NRLib::Matrix &  PostCov,
                     double              ** sigmae,
                     int                    n);
-  void updateSigmaE_old(double ** filter,
-                    double ** postCov,
-                    int       n);
   //-------------------------------------------------------
 
 
@@ -92,22 +78,12 @@ private:
                              BlockedLogs         * blockedlogs,
                              int                   n,
                              bool                  useVs);
-  void calculateFilteredLogs_old(double      ** Aw,
-                             BlockedLogs *  blockedlogs,
-                             int            n,
-                             bool           useVs);
-
   //----------------------------------------------------------------
   void MakeInterpolatedResiduals(const float   * bwLog,
                                  const float   * bwLogBG,
                                  const int       n,
                                  const int       offset,
                                  NRLib::Vector & residuals);
-  void MakeInterpolatedResiduals_old(const float *  bwLog,
-                                     const float *  bwLogBG,
-                                     const int      n,
-                                     const int      offset,
-                                     double      ** residuals);
   //----------------------------------------------------------------
 
   void fillValuesInSigmapost(double    ** sigmapost,
