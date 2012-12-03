@@ -244,6 +244,16 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
+    double lower_mega = 1.0e+5; //Finn grenser fra modelsettings
+    double upper_mega = 1.0e+8;
+    double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
+    double test_shear = shear_dist_with_trend[0]->ReSample(0,0);
+    if(test_bulk < lower_mega || test_bulk > upper_mega)
+      errTxt += "Bulk modulus need to be given in megaPa\n";
+    if(test_shear < lower_mega || test_shear > upper_mega)
+      errTxt += "Shear modulus need to be given in megaPa\n";
+
+
     DistributionsSolid * solid = new DistributionsSolidTabulated(bulk_dist_with_trend[i],
                                                                  shear_dist_with_trend[i],
                                                                  density_dist_with_trend[i],

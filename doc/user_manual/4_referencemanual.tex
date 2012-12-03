@@ -2283,15 +2283,15 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-fluid}
  \slist
-   \item \Description Density. Needs to be specified
-   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Description Density given in g/cm$^3$. Needs to be specified
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}. 
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-fluid}
  \slist
-   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-fluid} needs to be specified.
-   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Description Bulk modulus given in MPa. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-fluid} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}. 
    \item \Default 
  \elist
 
@@ -2304,7 +2304,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-fluid}
  \slist
-   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-fluid} or <vp> needs to be specified.
+   \item \Description P-wave velocity given in m/s. One of \rkw{bulk-modulus}{bulk-modulus-fluid} or <vp> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -2459,21 +2459,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-solid}
  \slist
-   \item \Description Density. Needs to be specified
+   \item \Description Density given in g/cm$^3$. Needs to be specified
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-solid}
  \slist
-   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-solid} needs to be specified.
+   \item \Description Bulk modulus given in MPa. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-solid} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{shear-modulus}}\rnewkw{shear-modulus}{shear-modulus-solid}
  \slist
-   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-solid} needs to be specified.
+   \item \Description Shear modulus given in MPa. One of <shear-modulus> or \rkw{vs}{vs-tabulated-solid} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -2501,14 +2501,14 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-solid}
  \slist
-   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-solid} or <vp> needs to be specified.
+   \item \Description P-wave velocity given in m/s. One of \rkw{bulk-modulus}{bulk-modulus-solid} or <vp> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-solid}
  \slist
-   \item \Description S-wave velocity. One of \rkw{shear-modulus}{shear-modulus-solid} or <vs> needs to be specified.
+   \item \Description S-wave velocity given in m/s. One of \rkw{shear-modulus}{shear-modulus-solid} or <vs> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -2706,21 +2706,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-dry-rock}
  \slist
-   \item \Description Density. Needs to be specified
+   \item \Description Density given in g/cm$^3$. Needs to be specified
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-dry-rock}
  \slist
-   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-dry-rock} needs to be specified.
+   \item \Description Bulk modulus given in MPa. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-dry-rock} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{shear-modulus}}\rnewkw{shear-modulus}{shear-modulus-dry-rock}
  \slist
-   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-dry-rock} needs to be specified.
+   \item \Description Shear modulus given in MPa. One of <shear-modulus> or \rkw{vs}{vs-tabulated-dry-rock} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -2748,14 +2748,14 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-dry-rock}
  \slist
-   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-dry-rock} or <vp> needs to be specified.
+   \item \Description P-wave velocity given in m/s. One of \rkw{bulk-modulus}{bulk-modulus-dry-rock} or <vp> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-dry-rock}
  \slist
-   \item \Description S-wave velocity. One of \rkw{shear-modulus}{shear-modulus-dry-rock} or <vs> needs to be specified.
+   \item \Description S-wave velocity given in m/s. One of \rkw{shear-modulus}{shear-modulus-dry-rock} or <vs> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -2973,21 +2973,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-rock}
  \slist
-   \item \Description Density. Needs to be specified
+   \item \Description Density given in g/cm$^3$. Needs to be specified
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subparagraph{\hbracket{bulk-modulus}}\newkw{bulk-modulus}
  \slist
-   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-rock} needs to be specified.
+   \item \Description Bulk modulus given in MPa. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-rock} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subparagraph{\hbracket{shear-modulus}}\newkw{shear-modulus}
  \slist
-   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-rock} needs to be specified.
+   \item \Description Shear modulus given in MPa. One of <shear-modulus> or \rkw{vs}{vs-tabulated-rock} needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
@@ -3015,14 +3015,14 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-rock}
  \slist
-   \item \Description P-wave velocity. One of \kw{bulk-modulus} or <vp> needs to be specified.
+   \item \Description P-wave velocity given in m/s. One of \kw{bulk-modulus} or <vp> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-rock}
  \slist
-   \item \Description S-wave velocity. One of \kw{shear-modulus} or <vs> needs to be specified.
+   \item \Description S-wave velocity given in m/s. One of \kw{shear-modulus} or <vs> needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
