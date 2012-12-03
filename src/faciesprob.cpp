@@ -33,26 +33,26 @@
 #include "src/io.h"
 #include "src/tasklist.h"
 
-FaciesProb::FaciesProb(FFTGrid                        * alpha,
-                       FFTGrid                        * beta,
-                       FFTGrid                        * rho,
-                       const std::vector<std::string> & faciesNames,
-                       int                              nFac,
-                       float                            p_undef,
-                       const float                    * priorFacies,
-                       FFTGrid                       ** priorFaciesCubes,
-                       const std::vector<double **>   & sigmaEOrig,
-                       bool                             useFilter,
-                       const WellData                ** wells,
-                       int                              nWells,
-                       const std::vector<Surface *>   & faciesEstimInterval,
-                       const double                     dz,
-                       bool                             relative,
-                       bool                             noVs,
-                       Crava                          * cravaResult,
-                       const std::vector<Grid2D *>    & noiseScale,
-                       const ModelSettings *            modelSettings,
-                       FFTGrid                        * seismicLH)
+FaciesProb::FaciesProb(FFTGrid                           * alpha,
+                       FFTGrid                           * beta,
+                       FFTGrid                           * rho,
+                       const std::vector<std::string>    & faciesNames,
+                       int                                 nFac,
+                       float                               p_undef,
+                       const float                       * priorFacies,
+                       FFTGrid                          ** priorFaciesCubes,
+                       const std::vector<NRLib::Matrix>  & sigmaEOrig,
+                       bool                                useFilter,
+                       const WellData                   ** wells,
+                       int                                 nWells,
+                       const std::vector<Surface *>      & faciesEstimInterval,
+                       const double                        dz,
+                       bool                                relative,
+                       bool                                noVs,
+                       Crava                             * cravaResult,
+                       const std::vector<Grid2D *>       & noiseScale,
+                       const ModelSettings *               modelSettings,
+                       FFTGrid                           * seismicLH)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells,
                  faciesEstimInterval, dz, relative, noVs,
@@ -171,19 +171,19 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
 
 void
 FaciesProb::makeFaciesDens(int nfac,
-                           const std::vector<double **> & sigmaEOrig,
-                           bool                           useFilter,
-                           bool                           noVs,
-                           const std::vector<float>     & alphaFiltered,
-                           const std::vector<float>     & betaFiltered,
-                           const std::vector<float>     & rhoFiltered,
-                           const std::vector<int>       & faciesLog,
-                           std::vector<FFTGrid *>       & density,
-                           Simbox                      ** volume,
-                           int                            index,
-                           double                      ** G,
-                           Crava                        * cravaResult,
-                           const std::vector<Grid2D *>  & noiseScale)
+                           const std::vector<NRLib::Matrix> & sigmaEOrig,
+                           bool                               useFilter,
+                           bool                               noVs,
+                           const std::vector<float>         & alphaFiltered,
+                           const std::vector<float>         & betaFiltered,
+                           const std::vector<float>         & rhoFiltered,
+                           const std::vector<int>           & faciesLog,
+                           std::vector<FFTGrid *>           & density,
+                           Simbox                          ** volume,
+                           int                                index,
+                           double                          ** G,
+                           Crava                            * cravaResult,
+                           const std::vector<Grid2D *>      & noiseScale)
 {
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
   //      values outside the denisty table to the edge, any values should do in this dimension.
@@ -300,19 +300,19 @@ FaciesProb::makeFaciesDens(int nfac,
     if(noVs == false) {
       for(i=0;i<3;i++) {
         for(j=0;j<3;j++)
-          sigmae[i][j] = sigmaEOrig[index][i][j];
+          sigmae[i][j] = sigmaEOrig[index](i,j);
       }
     }
     else {
-      sigmae[0][0] = sigmaEOrig[index][0][0];
+      sigmae[0][0] = sigmaEOrig[index](0,0);
       sigmae[0][1] = 0.0;
-      sigmae[0][2] = sigmaEOrig[index][0][1];
+      sigmae[0][2] = sigmaEOrig[index](0,1);
       sigmae[1][0] = 0.0;
       sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
       sigmae[1][2] = 0.0;
-      sigmae[2][0] = sigmaEOrig[index][1][0];
+      sigmae[2][0] = sigmaEOrig[index](1,0);
       sigmae[2][1] = 0.0;
-      sigmae[2][2] = sigmaEOrig[index][1][1];
+      sigmae[2][2] = sigmaEOrig[index](1,1);
     }
   }
   else {
@@ -447,25 +447,25 @@ FaciesProb::makeFaciesDens(int nfac,
 }
 
 
-void FaciesProb::makeFaciesProb(int                            nfac,
-                                FFTGrid                      * postAlpha,
-                                FFTGrid                      * postBeta,
-                                FFTGrid                      * postRho,
-                                const std::vector<double **> & sigmaEOrig,
-                                bool                           useFilter,
-                                const WellData              ** wells,
-                                int                            nWells,
-                                const std::vector<Surface *> & faciesEstimInterval,
-                                const double                   dz,
-                                bool                           relative,
-                                bool                           noVs,
-                                float                          p_undef,
-                                const float                  * priorFacies,
-                                FFTGrid                     ** priorFaciesCubes,
-                                Crava                        * cravaResult,
-                                const std::vector<Grid2D *>  & noiseScale,
-                                const ModelSettings          * modelSettings,
-                                FFTGrid                      * seismicLH)
+void FaciesProb::makeFaciesProb(int                                nfac,
+                                FFTGrid                          * postAlpha,
+                                FFTGrid                          * postBeta,
+                                FFTGrid                          * postRho,
+                                const std::vector<NRLib::Matrix> & sigmaEOrig,
+                                bool                               useFilter,
+                                const WellData                  ** wells,
+                                int                                nWells,
+                                const std::vector<Surface *>     & faciesEstimInterval,
+                                const double                       dz,
+                                bool                               relative,
+                                bool                               noVs,
+                                float                              p_undef,
+                                const float                      * priorFacies,
+                                FFTGrid                         ** priorFaciesCubes,
+                                Crava                            * cravaResult,
+                                const std::vector<Grid2D *>      & noiseScale,
+                                const ModelSettings              * modelSettings,
+                                FFTGrid                          * seismicLH)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;

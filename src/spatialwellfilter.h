@@ -33,19 +33,20 @@ public:
                                        const std::vector<Grid2D *> & noiseScale);
   //-----------------------------------------------------------------------------
 
-  std::vector<double **> & getSigmae(void) { return sigmae_ ;}
+  std::vector<NRLib::Matrix> & getSigmae(void) { return sigmae_ ;}
 
 private:
-  //-------------------------------------------------------
-  void doVpRhoFiltering(const double ** sigmapri,
-                        const double ** sigmapost,
-                        int             n,
-                        BlockedLogs  *  blockedLogs);
-  //-------------------------------------------------------
-  void updateSigmaE(const NRLib::Matrix &  filter,
-                    const NRLib::Matrix &  PostCov,
-                    double              ** sigmae,
-                    int                    n);
+
+  //----------------------------------------------------------------
+  void doVpRhoFiltering(const NRLib::SymmetricMatrix & sigmapri,
+                        const NRLib::SymmetricMatrix & sigmapost,
+                        const int                      n,
+                        BlockedLogs                  * blockedLogs);
+  //----------------------------------------------------------------
+  void updateSigmaE(const NRLib::Matrix & filter,
+                    const NRLib::Matrix & Spost,
+                    NRLib::Matrix       & sigmae,
+                    int                   n);
   //-------------------------------------------------------
 
 
@@ -53,23 +54,23 @@ private:
                       const Crava                 * cravaResult,
                       const std::vector<Grid2D *> & noiseScale);
 
-  void updateSigmaEVpRho(double ** filter,
-                         double ** postCov,
-                         int       nDim,
-                         int       n);
+  void updateSigmaEVpRho(const NRLib::Matrix & filter,
+                         const NRLib::Matrix & postCov,
+                         int                   nDim,
+                         int                   n);
 
   void completeSigmaEVpRho(int                           lastn,
                            const Crava                 * cravaResult,
                            const std::vector<Grid2D *> & noiseScale);
 
-  void computeSigmaEAdjusted(double ** sigmae ,
-                             double ** sigmaE0,
-                             double ** sigmaETmp,
-                             int       n,
-                             double ** sigmaEAdj);
+  void computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
+                             double        ** sigmaE0,
+                             double        ** sigmaETmp,
+                             int              n,
+                             double        ** sigmaEAdj);
 
-  void adjustDiagSigma(double ** sigmae,
-                       int       n);
+  void adjustDiagSigma(NRLib::Matrix & sigmae,
+                       int             n);
 
 
 
@@ -95,8 +96,10 @@ private:
                              int          ni,
                              int          nj);
 
-  std::vector<double **>     sigmae_;
-  std::vector<double **>     sigmaeVpRho_;
+  std::vector<NRLib::Matrix> sigmae_;
+  std::vector<NRLib::Matrix> sigmaeVpRho_;
+
+
   int                        nData_;   ///< sum no blocks in all wells
   int                        nWells_;
   int                    *   n_;
