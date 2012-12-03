@@ -2814,6 +2814,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   const int nx  = vp.getNx();
   const int rnxp = vp.getRNxp();
 
+  LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
+
   float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;
   std::cout

@@ -598,43 +598,43 @@ ModelAVODynamic::processBackground(Background           *& background,
   const int nxPad = modelSettings->getNXpad();
   const int nyPad = modelSettings->getNYpad();
   const int nzPad = modelSettings->getNZpad();
-  if (modelSettings->getGenerateBackground())
-  {
-    FFTGrid * velocity = NULL;
-    std::string backVelFile = inputFiles->getBackVelFile();
-    if (backVelFile != ""){
-      bool dummy;
-      ModelGeneral::loadVelocity(velocity,
-                                 timeSimbox,
-                                 timeCutSimbox,
-                                 modelSettings,
-                                 backVelFile,
-                                 dummy,
-                                 errText,
-                                 failed);
-    }
-    if (!failed)
-    {
-      if(modelSettings->getBackgroundVario() == NULL)
-      {
-        errText += "There is no variogram available for the background modelling.\n";
-        failed = true;
-      }
-      for (int i=0 ; i<3 ; i++)
-      {
-        backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
-        backModel[i]->setType(FFTGrid::PARAMETER);
-      }
-      background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+  if (modelSettings->getGenerateBackground()) {
 
-    if(velocity != NULL)
-      delete velocity;
-    }
-  }
-  else if(modelSettings->getBackgroundFromRockPhysics()) {
+    if(modelSettings->getGenerateBackgroundFromRockPhysics() == false) {
 
-      for (int i=0 ; i<3 ; i++)
-      {
+      FFTGrid * velocity = NULL;
+      std::string backVelFile = inputFiles->getBackVelFile();
+      if (backVelFile != ""){
+        bool dummy;
+        ModelGeneral::loadVelocity(velocity,
+          timeSimbox,
+          timeCutSimbox,
+          modelSettings,
+          backVelFile,
+          dummy,
+          errText,
+          failed);
+      }
+      if (!failed) {
+
+        if(modelSettings->getBackgroundVario() == NULL) {
+          errText += "There is no variogram available for the background modelling.\n";
+          failed = true;
+        }
+        for (int i=0 ; i<3 ; i++)
+        {
+          backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
+          backModel[i]->setType(FFTGrid::PARAMETER);
+        }
+        background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+
+        if(velocity != NULL)
+          delete velocity;
+      }
+    }
+    else {
+
+      for (int i=0 ; i<3 ; i++) {
         backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->createRealGrid();
         backModel[i]->setType(FFTGrid::PARAMETER);
@@ -648,8 +648,7 @@ ModelAVODynamic::processBackground(Background           *& background,
       typedef std::map<std::string,float> mapType;
       mapType myMap = modelSettings->getPriorFaciesProb();
 
-      for(int i=0;i<n_facies;i++)
-      {
+      for(int i=0;i<n_facies;i++) {
         mapType::iterator iter = myMap.find(facies_names[i]);
         if(iter!=myMap.end())
           priorProbability[i] = iter->second;
@@ -657,9 +656,18 @@ ModelAVODynamic::processBackground(Background           *& background,
 
       double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
       // filling in the backModel in Background
-      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributionTime0(),priorProbability,
-        *backModel[0], *backModel[1], *backModel[2],
-        varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errText);
+      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributionTime0(),
+                                                    priorProbability,
+                                                    *backModel[0],
+                                                    *backModel[1],
+                                                    *backModel[2],
+                                                    varVp,
+                                                    varVs,
+                                                    varRho,
+                                                    crVpVs,
+                                                    crVpRho,
+                                                    crVsRho,
+                                                    errText);
 
       background = new Background(backModel);
 
@@ -671,9 +679,9 @@ ModelAVODynamic::processBackground(Background           *& background,
       variancesFromRockPhysics[3] = crVpVs;
       variancesFromRockPhysics[4] = crVpRho;
       variancesFromRockPhysics[5] = crVsRho;
+    }
   }
-  else
-  {
+  else {
     std::vector<std::string> parName;
     if (modelSettings->getUseAIBackground())
       parName.push_back("AI "+modelSettings->getBackgroundType());

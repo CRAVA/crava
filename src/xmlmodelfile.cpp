@@ -4759,7 +4759,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
         (inputFiles_->getWaveletFile(0,0)!="" || useRicker[0] == true) &&
         inputFiles_->getTempCorrFile()!="" &&
         inputFiles_->getParamCorrFile()!="" ||
-        modelSettings_->getBackgroundFromRockPhysics())
+        modelSettings_->getGenerateBackgroundFromRockPhysics())
       modelSettings_->setNoWellNeeded(true);
     else {
       errTxt += "Wells are needed for the inversion. ";
@@ -4826,7 +4826,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "Prior facies probabilities must be given in the prior model when rock physics models are used\n";
   }
 
-  if(modelSettings_->getBackgroundFromRockPhysics()) {
+  if(modelSettings_->getGenerateBackgroundFromRockPhysics()) {
     // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
     // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
     if(inputFiles_->getParamCorrFile()!=""){
