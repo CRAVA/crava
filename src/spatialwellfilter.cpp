@@ -179,8 +179,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
           Spost(j,i) = sigmapost[j][i];
 
       if(useVpRhoFilter == true) //Only additional
-        doVpRhoFiltering(Sprior,
-                         Spost,
+        doVpRhoFiltering(sigmapri,
+                         sigmapost,
                          n,
                          wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
 
@@ -517,33 +517,44 @@ SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
     delete [] sigmae[i];
   }
   delete [] sigmae;
-
 }
 
-//----------------------------------------------------------------------------------
-void SpatialWellFilter::doVpRhoFiltering(const NRLib::SymmetricMatrix & sigmapri,
-                                         const NRLib::SymmetricMatrix & sigmapost,
-                                         const int                      n,
-                                         BlockedLogs                  * blockedLogs)
-//----------------------------------------------------------------------------------
+//------------------------------------------------------------------
+void SpatialWellFilter::doVpRhoFiltering(double      ** sigmapri,
+                                         double      ** sigmapost,
+                                         const int      n,
+                                         BlockedLogs  * blockedLogs)
+//------------------------------------------------------------------
 {
   int m = 2*n;
+
+  NRLib::Matrix tmp1(m,m);
+  NRLib::Matrix tmp2(m,m);
+
+  for (int j=0 ; j<n ; j++) {
+    for (int i=0 ; i<n ; i++) {
+      tmp1(i,   j  ) = sigmapri [i  ][j  ];
+      tmp1(i+n, j  ) = sigmapri [i+m][j  ];
+      tmp1(i  , j+n) = sigmapri [i  ][j+m];
+      tmp1(i+n, j+n) = sigmapri [i+m][j+m];
+
+      tmp2(i,   j  ) = sigmapost[i  ][j  ];
+      tmp2(i+n, j  ) = sigmapost[i+m][j  ];
+      tmp2(i,   j+n) = sigmapost[i  ][j+m];
+      tmp2(i+n, j+n) = sigmapost[i+m][j+m];
+    }
+  }
+
   NRLib::SymmetricMatrix Sprior2(m);
   NRLib::SymmetricMatrix Spost2(m);
 
-  for (int j=0 ; j<n ; j++) {
-    for (int i=0 ; i<j ; i++) {
-      Sprior2(i,   j  ) = sigmapri(i,   j  );
-      Sprior2(i+n, j  ) = sigmapri(i+m, j  );
-      Sprior2(i  , j+n) = sigmapri(i  , j+m);
-      Sprior2(i+n, j+n) = sigmapri(i+m, j+m);
+  for(int j = 0 ; j < m ; j++)
+    for(int i = 0 ; i <= j ; i++)
+      Sprior2(i,j) = tmp1(i,j);
 
-      Spost2(i,   j  )  = sigmapost(i  , j  );
-      Spost2(i+n, j  )  = sigmapost(i+m, j  );
-      Spost2(i,   j+n)  = sigmapost(i  , j+m);
-      Spost2(i+n, j+n)  = sigmapost(i+m, j+m);
-    }
-  }
+  for(int j = 0 ; j < m ; j++)
+    for(int i = 0 ; i <= j ; i++)
+      Spost2(i,j) = tmp2(i,j);
 
   NRLib::Matrix I(m, m);
   NRLib::InitializeMatrix(I, 0);

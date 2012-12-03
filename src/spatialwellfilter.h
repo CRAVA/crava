@@ -38,10 +38,10 @@ public:
 private:
 
   //----------------------------------------------------------------
-  void doVpRhoFiltering(const NRLib::SymmetricMatrix & sigmapri,
-                        const NRLib::SymmetricMatrix & sigmapost,
-                        const int                      n,
-                        BlockedLogs                  * blockedLogs);
+  void doVpRhoFiltering(double       ** sigmapri,
+                        double       ** sigmapost,
+                        const int       n,
+                        BlockedLogs   * blockedLogs);
   //----------------------------------------------------------------
   void updateSigmaE(const NRLib::Matrix & filter,
                     const NRLib::Matrix & Spost,
