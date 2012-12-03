@@ -3309,21 +3309,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subparagraph{\hbracket{bulk-modulus-weight}}\newkw{bulk-modulus-weight}
  \slist
-   \item \Description The bulk modulus is calculated using the weights and upper/lower bounds from the relation $K=W_k*$upper-bound$+(1-W_k)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
+   \item \Description The bulk modulus $K$ is calculated using the weights and upper/lower bounds from the relation $K=W_K*$upper-bound$+(1-W_K)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
    \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
-\subparagraph{\hbracket{p-wave-modulus-weight}}\newkw{p-wave-modulus-weight}
+\subparagraph{\hbracket{shear-modulus-weight}}\newkw{shear-modulus-weight}
  \slist
-   \item \Description The p-wave modulus is often termed $M$, and calculated from the relation $M=\rho*\vp^2$. The p-wave modulus is calculated using the weights and upper/lower bounds from the relation $M=W_m*$upper-bound$+(1-W_m)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
+   \item \Description The shear modulus $G$ is calculated using the weights and upper/lower bounds from the relation $G=W_G*$upper-bound$+(1-W_G)*$lower-bound. Higher weigths therefore indicate stiffer rock, while lower weights indicate softer rock.
    \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
 \subparagraph{\hbracket{correlation-weights}}\newkw{correlation-weights}
  \slist
-   \item \Description The correlation between the bulk-modulus weight and p-wave-modulus-weight.
+   \item \Description The correlation between the bulk-modulus weight and shear-modulus-weight.
    \item \Argument Value
    \item \Default 0
  \elist

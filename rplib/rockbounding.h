@@ -12,7 +12,7 @@ public:
                const Rock          * lower_rock,
                double                porosity,
                double                K_weight,
-               double                M_weight,
+               double                G_weight,
                std::vector<double>   u);
 
   RockBounding();
@@ -39,7 +39,7 @@ private:
   Rock * lower_rock_;                 // Reuss
   double porosity_;
   double K_weight_;
-  double M_weight_;
+  double G_weight_;
 
 };
 

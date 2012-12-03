@@ -2428,7 +2428,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
   legalCommands.push_back("upper-bound");
   legalCommands.push_back("lower-bound");
   legalCommands.push_back("bulk-modulus-weight");
-  legalCommands.push_back("p-wave-modulus-weight");
+  legalCommands.push_back("shear-modulus-weight");
   legalCommands.push_back("correlation-weights");
   legalCommands.push_back("porosity");
 
@@ -2445,9 +2445,9 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
   if(parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true) == false)
     errTxt += "<bulk-modulus-weight> needs to be given in <rock><bounding>\n";
 
-  std::vector<DistributionWithTrendStorage *> p_wave_weight;
-  if(parseDistributionWithTrend(root, "p-wave-modulus-weight", p_wave_weight, dummy, false, errTxt, true) == false)
-    errTxt += "<p-wave-weight> needs to be given in <rock><bounding>\n";
+  std::vector<DistributionWithTrendStorage *> shear_weight;
+  if(parseDistributionWithTrend(root, "shear-modulus-weight", shear_weight, dummy, false, errTxt, true) == false)
+    errTxt += "<shear-weight> needs to be given in <rock><bounding>\n";
 
   double correlation;
   if(parseValue(root, "correlation-weights", correlation, errTxt) == false)
@@ -2467,7 +2467,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Boundning model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, p_wave_weight, correlation);
+    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, shear_weight, correlation);
     modelSettings_->addRock(label, rock);
   }
 

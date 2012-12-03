@@ -14,7 +14,7 @@ public:
                             const DistributionsRock     * lower_rock,
                             const DistributionWithTrend * porosity,
                             const DistributionWithTrend * bulk_weight,
-                            const DistributionWithTrend * p_wave_weight,
+                            const DistributionWithTrend * shear_weight,
                             double                        correlation_weights,
                             const std::vector<double>   & alpha,
                             const std::vector<double>   & s_min,
@@ -51,7 +51,7 @@ private:
   const DistributionsRock     * lower_rock_;
   const DistributionWithTrend * porosity_;
   const DistributionWithTrend * K_weight_;
-  const DistributionWithTrend * M_weight_;
+  const DistributionWithTrend * G_weight_;
   double                        correlation_weights_;
   Tabulated                   * tabulated_;
 };

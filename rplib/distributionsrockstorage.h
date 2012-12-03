@@ -240,7 +240,7 @@ public:
                       std::string                                 lower_rock,
                       std::vector<DistributionWithTrendStorage *> porosity,
                       std::vector<DistributionWithTrendStorage *> bulk_weight,
-                      std::vector<DistributionWithTrendStorage *> p_wave_weight,
+                      std::vector<DistributionWithTrendStorage *> shear_weight,
                       double                                      correlation_weights);
 
   virtual ~BoundingRockStorage();
@@ -260,7 +260,7 @@ private:
   std::string                                 lower_rock_;
   std::vector<DistributionWithTrendStorage *> porosity_;
   std::vector<DistributionWithTrendStorage *> bulk_weight_;
-  std::vector<DistributionWithTrendStorage *> p_wave_weight_;
+  std::vector<DistributionWithTrendStorage *> shear_weight_;
   double                                      correlation_weights_;
 
 };

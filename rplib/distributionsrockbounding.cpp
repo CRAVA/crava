@@ -13,7 +13,7 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
                                                      const DistributionsRock     * lower_rock,
                                                      const DistributionWithTrend * porosity,
                                                      const DistributionWithTrend * bulk_weight,
-                                                     const DistributionWithTrend * p_wave_weight,
+                                                     const DistributionWithTrend * shear_weight,
                                                      double                        correlation_weights,
                                                      const std::vector<double>   & alpha,
                                                      const std::vector<double>   & s_min,
@@ -22,10 +22,10 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   lower_rock_(lower_rock),
   porosity_(porosity),
   K_weight_(bulk_weight),
-  M_weight_(p_wave_weight),
+  G_weight_(shear_weight),
   correlation_weights_(correlation_weights)
 {
-  alpha_ = alpha;               // alpha_ contains the one-year correlations for (porosity, K_weight, M_weight)
+  alpha_ = alpha;               // alpha_ contains the one-year correlations for (porosity, K_weight, G_weight)
   s_min_ = s_min;
   s_max_ = s_max;
 
@@ -33,7 +33,7 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   std::vector<const DistributionWithTrend *> variables(3);
   variables[0] = porosity_;
   variables[1] = K_weight_;
-  variables[2] = M_weight_;
+  variables[2] = G_weight_;
 
   NRLib::Grid2D<double> corr_matrix(3,3,0);
 
@@ -68,7 +68,7 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBoun
   lower_rock_  = dist.lower_rock_->Clone();
   porosity_    = dist.porosity_  ->Clone();
   K_weight_    = dist.K_weight_  ->Clone();
-  M_weight_    = dist.M_weight_  ->Clone();
+  G_weight_    = dist.G_weight_  ->Clone();
 
   alpha_       = dist.alpha_;
   s_min_       = dist.s_min_;
@@ -88,8 +88,8 @@ DistributionsRockBounding::~DistributionsRockBounding()
   if(K_weight_->GetIsShared() == false)
     delete K_weight_;
 
-  if(M_weight_->GetIsShared() == false)
-    delete M_weight_;
+  if(G_weight_->GetIsShared() == false)
+    delete G_weight_;
 
   delete tabulated_;
 }
@@ -130,9 +130,9 @@ DistributionsRockBounding::GetSample(const std::vector<double> & u,
 
   double sample_porosity = sample[0];
   double sample_K_weight = sample[1];
-  double sample_M_weight = sample[2];
+  double sample_G_weight = sample[2];
 
-  Rock * new_rock = new RockBounding(sample_upper_rock, sample_lower_rock, sample_porosity, sample_K_weight, sample_M_weight, u);
+  Rock * new_rock = new RockBounding(sample_upper_rock, sample_lower_rock, sample_porosity, sample_K_weight, sample_G_weight, u);
 
   return new_rock;
 }
@@ -143,7 +143,7 @@ DistributionsRockBounding::HasDistribution() const
   bool has_distribution = false;
 
   if(upper_rock_->HasDistribution() == true || lower_rock_->HasDistribution() == true ||
-    porosity_->GetIsDistribution() == true || K_weight_->GetIsDistribution() == true || M_weight_->GetIsDistribution() == true) {
+     porosity_->GetIsDistribution() == true || K_weight_->GetIsDistribution() == true || G_weight_->GetIsDistribution() == true) {
       has_distribution = true;
   }
 
@@ -160,11 +160,11 @@ DistributionsRockBounding::HasTrend() const
   std::vector<bool> lower_rock_trend = lower_rock_->HasTrend();
   std::vector<bool> poro_trend       = porosity_->GetUseTrendCube();
   std::vector<bool> K_trend          = K_weight_->GetUseTrendCube();
-  std::vector<bool> M_trend          = M_weight_->GetUseTrendCube();
+  std::vector<bool> G_trend          = G_weight_->GetUseTrendCube();
 
   for(int i=0; i<2; i++) {
     if(upper_rock_trend[i] == true || lower_rock_trend[i] == true ||
-      poro_trend[i] == true || K_trend[i] == true || M_trend[i] == true) {
+       poro_trend[i]       == true || K_trend[i]          == true || G_trend[i] == true) {
         has_trend[i] = true;
     }
   }

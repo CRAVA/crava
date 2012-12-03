@@ -829,13 +829,13 @@ BoundingRockStorage::BoundingRockStorage(std::string                            
                                          std::string                                 lower_rock,
                                          std::vector<DistributionWithTrendStorage *> porosity,
                                          std::vector<DistributionWithTrendStorage *> bulk_weight,
-                                         std::vector<DistributionWithTrendStorage *> p_wave_weight,
+                                         std::vector<DistributionWithTrendStorage *> shear_weight,
                                          double                                      correlation_weights)
 : upper_rock_(upper_rock),
   lower_rock_(lower_rock),
   porosity_(porosity),
   bulk_weight_(bulk_weight),
-  p_wave_weight_(p_wave_weight),
+  shear_weight_(shear_weight),
   correlation_weights_(correlation_weights)
 {
 }
@@ -844,8 +844,8 @@ BoundingRockStorage::~BoundingRockStorage()
 {
   if(bulk_weight_[0]->GetIsShared() == false)
     delete bulk_weight_[0];
-  if(p_wave_weight_[0]->GetIsShared() == false)
-    delete p_wave_weight_[0];
+  if(shear_weight_[0]->GetIsShared() == false)
+    delete shear_weight_[0];
 }
 
 std::vector<DistributionsRock *>
@@ -863,14 +863,14 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   std::string tmpErrTxt = "";
 
-  int n_vintages_porosity      = static_cast<int>(porosity_.size());
-  int n_vintages_bulk_weight   = static_cast<int>(bulk_weight_.size());
-  int n_vintages_p_wave_weight = static_cast<int>(p_wave_weight_.size());
+  int n_vintages_porosity     = static_cast<int>(porosity_.size());
+  int n_vintages_bulk_weight  = static_cast<int>(bulk_weight_.size());
+  int n_vintages_shear_weight = static_cast<int>(shear_weight_.size());
 
   std::vector<double> alpha(3);
-  alpha[0] = porosity_[0]     ->GetOneYearCorrelation();
-  alpha[1] = bulk_weight_[0]  ->GetOneYearCorrelation();
-  alpha[2] = p_wave_weight_[0]->GetOneYearCorrelation();
+  alpha[0] = porosity_[0]    ->GetOneYearCorrelation();
+  alpha[1] = bulk_weight_[0] ->GetOneYearCorrelation();
+  alpha[2] = shear_weight_[0]->GetOneYearCorrelation();
 
   std::vector<double> s_min;
   std::vector<double> s_max;
@@ -946,7 +946,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_weight_dist_with_trend(n_vintages, NULL);
-  std::vector<DistributionWithTrend *> p_wave_weight_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> shear_weight_dist_with_trend(n_vintages, NULL);
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_porosity)
@@ -959,16 +959,16 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     else
       bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_p_wave_weight)
-      p_wave_weight_dist_with_trend[i] = p_wave_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+    if(i < n_vintages_shear_weight)
+      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
-      p_wave_weight_dist_with_trend[i] = p_wave_weight_dist_with_trend[i-1]->Clone();
+      shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
 
     DistributionsRock * rock = new DistributionsRockBounding(final_distr_upper_rock[i],
                                                              final_distr_lower_rock[i],
                                                              porosity_dist_with_trend[i],
                                                              bulk_weight_dist_with_trend[i],
-                                                             p_wave_weight_dist_with_trend[i],
+                                                             shear_weight_dist_with_trend[i],
                                                              correlation_weights_,
                                                              alpha,
                                                              s_min,
