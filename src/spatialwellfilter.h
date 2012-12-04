@@ -19,47 +19,46 @@ public:
   SpatialWellFilter(int nwells);
   ~SpatialWellFilter();
 
-  void                     setPriorSpatialCorr(FFTGrid  * parSpatialCorr,
-                                               WellData * well,
-                                               int        wellnr);
+  void                         setPriorSpatialCorr(FFTGrid  * parSpatialCorr,
+                                                   WellData * well,
+                                                   int        wellnr);
 
-  //-----------------------------------------------------------------------------
-  void                     doFiltering(Corr                        * corr,
-                                       WellData                   ** wells,
-                                       int                           nWells,
-                                       bool                          useVpRhoFilter,
-                                       int                           nAngles,
-                                       const Crava                 * cravaResult,
-                                       const std::vector<Grid2D *> & noiseScale);
-  //-----------------------------------------------------------------------------
+  void                         doFiltering(Corr                        * corr,
+                                           WellData                   ** wells,
+                                           int                           nWells,
+                                           bool                          useVpRhoFilter,
+                                           int                           nAngles,
+                                           const Crava                 * cravaResult,
+                                           const std::vector<Grid2D *> & noiseScale);
 
   std::vector<NRLib::Matrix> & getSigmae(void) { return sigmae_ ;}
 
 private:
 
-  //----------------------------------------------------------------
-  void doVpRhoFiltering(double       ** sigmapri,
-                        double       ** sigmapost,
-                        const int       n,
-                        BlockedLogs   * blockedLogs);
-  //----------------------------------------------------------------
-  void updateSigmaE(const NRLib::Matrix & filter,
+  void doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
+                        double                     ** sigmapri,
+                        double                     ** sigmapost,
+                        const int                     n,
+                        BlockedLogs                 * blockedLogs);
+
+  void updateSigmaE(NRLib::Matrix       & sigmae,
+                    const NRLib::Matrix & filter,
                     const NRLib::Matrix & Spost,
-                    NRLib::Matrix       & sigmae,
                     int                   n);
-  //-------------------------------------------------------
 
-
-  void completeSigmaE(int                           lastn,
+  void completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
+                      int                           lastn,
                       const Crava                 * cravaResult,
                       const std::vector<Grid2D *> & noiseScale);
 
-  void updateSigmaEVpRho(const NRLib::Matrix & filter,
-                         const NRLib::Matrix & postCov,
-                         int                   nDim,
-                         int                   n);
+  void updateSigmaEVpRho(std::vector<NRLib::Matrix> & sigmaeVpRho,
+                         const NRLib::Matrix        & Aw,
+                         const NRLib::Matrix        & Spost,
+                         int                          nDim,
+                         int                          n);
 
-  void completeSigmaEVpRho(int                           lastn,
+  void completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmaeVpRho,
+                           int                           lastn,
                            const Crava                 * cravaResult,
                            const std::vector<Grid2D *> & noiseScale);
 
@@ -72,20 +71,16 @@ private:
   void adjustDiagSigma(NRLib::Matrix & sigmae,
                        int             n);
 
-
-
-  //----------------------------------------------------------------
   void calculateFilteredLogs(const NRLib::Matrix & Aw,
                              BlockedLogs         * blockedlogs,
                              int                   n,
                              bool                  useVs);
-  //----------------------------------------------------------------
+
   void MakeInterpolatedResiduals(const float   * bwLog,
                                  const float   * bwLogBG,
                                  const int       n,
                                  const int       offset,
                                  NRLib::Vector & residuals);
-  //----------------------------------------------------------------
 
   void fillValuesInSigmapost(double    ** sigmapost,
                              const int *  ipos,
@@ -97,8 +92,6 @@ private:
                              int          nj);
 
   std::vector<NRLib::Matrix> sigmae_;
-  std::vector<NRLib::Matrix> sigmaeVpRho_;
-
 
   int                        nData_;   ///< sum no blocks in all wells
   int                        nWells_;

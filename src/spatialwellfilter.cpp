@@ -90,6 +90,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
+  std::vector<NRLib::Matrix> sigmaeVpRho;
+
   double ** sigmapost;
   double ** sigmapri;
 
@@ -179,7 +181,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
           Spost(j,i) = sigmapost[j][i];
 
       if(useVpRhoFilter == true) //Only additional
-        doVpRhoFiltering(sigmapri,
+        doVpRhoFiltering(sigmaeVpRho,
+                         sigmapri,
                          sigmapost,
                          n,
                          wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
@@ -202,9 +205,9 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
       }
 
       if(useVpRhoFilter == false) { //Save time, since below is not needed then.
-        updateSigmaE(Aw,
+        updateSigmaE(sigmae_[0],
+                     Aw,
                      Spost,
-                     sigmae_[0],
                      n);
       }
 
@@ -225,10 +228,16 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
   }
 
   if(no_wells_filtered == false)
-    completeSigmaE(lastn, cravaResult,noiseScale);
+    completeSigmaE(sigmae_,
+                   lastn,
+                   cravaResult,
+                   noiseScale);
 
   if(useVpRhoFilter == true)
-    completeSigmaEVpRho(lastn,cravaResult,noiseScale);
+    completeSigmaEVpRho(sigmaeVpRho,
+                        lastn,
+                        cravaResult,
+                        noiseScale);
 
   if (no_wells_filtered) {
     LogKit::LogFormatted(LogKit::Low,"\nNo wells have been filtered.\n");
@@ -264,9 +273,9 @@ SpatialWellFilter::fillValuesInSigmapost(double    ** sigmapost,
 }
 
 //------------------------------------------------------------------
-void SpatialWellFilter::updateSigmaE(const NRLib::Matrix & Filter,
+void SpatialWellFilter::updateSigmaE(NRLib::Matrix       & sigmae,
+                                     const NRLib::Matrix & Filter,
                                      const NRLib::Matrix & PostCov,
-                                     NRLib::Matrix       & sigmae,
                                      int                   n)
 //------------------------------------------------------------------
 {
@@ -281,29 +290,30 @@ void SpatialWellFilter::updateSigmaE(const NRLib::Matrix & Filter,
     sigmae(2,1) += sigmaeW(i + 2*n, i +   n);
     sigmae(2,2) += sigmaeW(i + 2*n, i + 2*n);
   }
-  // sigmae_ Is normalized (1/n) in completeSigmaE, Here well by well is added.
+  // sigmae Is normalized (1/n) in completeSigmaE, Here well by well is added.
 }
 
 //-------------------------------------------------------------------------------
-void SpatialWellFilter::completeSigmaE(int                           lastn,
+void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
+                                       int                           lastn,
                                        const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale)
 //-------------------------------------------------------------------------------
 {
   // finds the scale at  default inversion (all minimum noise in case of local noise)
-  sigmae_[0](0,0) /= lastn;
-  sigmae_[0](1,0) /= lastn;
-  sigmae_[0](1,1) /= lastn;
-  sigmae_[0](2,0) /= lastn;
-  sigmae_[0](2,1) /= lastn;
-  sigmae_[0](2,2) /= lastn;
-  sigmae_[0](0,1)  = sigmae_[0](1,0);
-  sigmae_[0](0,2)  = sigmae_[0](2,0);
-  sigmae_[0](1,2)  = sigmae_[0](2,1);
+  sigmae[0](0,0) /= lastn;
+  sigmae[0](1,0) /= lastn;
+  sigmae[0](1,1) /= lastn;
+  sigmae[0](2,0) /= lastn;
+  sigmae[0](2,1) /= lastn;
+  sigmae[0](2,2) /= lastn;
+  sigmae[0](0,1)  = sigmae[0](1,0);
+  sigmae[0](0,2)  = sigmae[0](2,0);
+  sigmae[0](1,2)  = sigmae[0](2,1);
 
-  adjustDiagSigma(sigmae_[0], 3);
+  adjustDiagSigma(sigmae[0], 3);
 
-  if(sigmae_.size() > 1) { // then we have local noise
+  if(sigmae.size() > 1) { // then we have local noise
     // initialization
     int nAng = static_cast<int>(noiseScale.size());
     std::vector<double> maxScale(nAng);
@@ -347,14 +357,14 @@ void SpatialWellFilter::completeSigmaE(int                           lastn,
     cravaResult->newPosteriorCovPointwise(dummy, G, scale, help);
     lib_matr_prod(help,help, 3, 3, 3, postCovAdj);
     cravaResult->computeFilter(sigmaPri0,postCovAdj,3,filter);
-
     lib_matr_prod(filter, postCovAdj, 3, 3, 3, sigmaE0);
-    // note idealy  sigmaE0 =sigmae_[0] but this is not the case due to
-    // spatial effects.  We therfor adjust the sigmae_[0]
-    // by   sqrt(sigmaETmp*sigmaE0^-1)*sigmae_[0]* sqrt(sigmaE0^-1*sigmaETmp)
+
+    // note idealy  sigmaE0 =sigmae[0] but this is not the case due to
+    // spatial effects.  We therfor adjust the sigmae[0]
+    // by   sqrt(sigmaETmp*sigmaE0^-1)*sigmae[0]* sqrt(sigmaE0^-1*sigmaETmp)
 
     //Interpret conf counter bitwise - 0 means min value noise for that component, 1 means max.
-    for(unsigned int conf = 1; conf < sigmae_.size();conf++) {
+    for(unsigned int conf = 1; conf < sigmae.size();conf++) {
 
       //Compute pointwise filter
       int factor = 1;
@@ -371,19 +381,23 @@ void SpatialWellFilter::completeSigmaE(int                           lastn,
       cravaResult->computeFilter(sigmaPri0,postCovAdj,3,filter);
       lib_matr_prod(filter, postCovAdj, 3, 3, 3, sigmaETmp);
 
-      computeSigmaEAdjusted(sigmae_[0],sigmaE0,sigmaETmp,3,sigmaEAdj);
+      computeSigmaEAdjusted(sigmae[0],
+                            sigmaE0,
+                            sigmaETmp,
+                            3,
+                            sigmaEAdj);
 
-      sigmae_[conf](0,0) = sigmaEAdj[0][0];
-      sigmae_[conf](0,1) = sigmaEAdj[0][1];
-      sigmae_[conf](0,2) = sigmaEAdj[0][2];
-      sigmae_[conf](1,0) = sigmaEAdj[1][0];
-      sigmae_[conf](1,1) = sigmaEAdj[1][1];
-      sigmae_[conf](1,2) = sigmaEAdj[1][2];
-      sigmae_[conf](2,0) = sigmaEAdj[2][0];
-      sigmae_[conf](2,1) = sigmaEAdj[2][1];
-      sigmae_[conf](2,2) = sigmaEAdj[2][2];
+      sigmae[conf](0,0) = sigmaEAdj[0][0];
+      sigmae[conf](0,1) = sigmaEAdj[0][1];
+      sigmae[conf](0,2) = sigmaEAdj[0][2];
+      sigmae[conf](1,0) = sigmaEAdj[1][0];
+      sigmae[conf](1,1) = sigmaEAdj[1][1];
+      sigmae[conf](1,2) = sigmaEAdj[1][2];
+      sigmae[conf](2,0) = sigmaEAdj[2][0];
+      sigmae[conf](2,1) = sigmaEAdj[2][1];
+      sigmae[conf](2,2) = sigmaEAdj[2][2];
 
-      adjustDiagSigma(sigmae_[conf], 3);
+      adjustDiagSigma(sigmae[conf], 3);
 
     }
 
@@ -419,17 +433,15 @@ SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
                                          int              n,
                                          double        ** sigmaEAdj)
 {
+  // NRLib::Matrix sigmaE0(n,n);
+
   // sigmaEAdj  =sqrt(sigmaETmp*sigmaE0^-1)*sigmae* sqrt(sigmaE0^-1*sigmaETmp)
-
-
 
   double ** sigmae = new double*[n];
   for (int i = 0 ; i < n ; i++) {
     sigmae[i] = new double[n];
   }
-
- NRLib::Set2DArrayFromMatrix(sigmaeX, sigmae);
-
+  NRLib::Set2DArrayFromMatrix(sigmaeX, sigmae);
 
   int     * error     = new int[1];
   double  * eigval0   = new double[n];
@@ -449,21 +461,25 @@ SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
     tmp3[i]      = new double[n];
   }
 
+  //
+  // xxxxx
+  //
+  //NRLib::Vector Eval0(n);
+  //NRLib::Matrix Evec0(n,n);
+  //NRLib::ComputeEigenVectors(sigmaE0, Eval0, Evec0);
 
   lib_matr_eigen(sigmaE0,n,eigvec0,eigval0,error);
   lib_matr_eigen(sigmaETmp,n,eigvecTmp,eigvalTmp,error);
 
-  double max0=0.0;
-  double maxTmp=0.0;
-  for(int i=0;i<n;i++)
-  {
-    max0=std::max(max0,eigval0[i]);
-    maxTmp=std::max(maxTmp,eigvalTmp[i]);
+  double max0   = 0.0;
+  double maxTmp = 0.0;
+  for (int i=0 ; i<n ; i++) {
+    max0   = std::max(max0,eigval0[i]);
+    maxTmp = std::max(maxTmp,eigvalTmp[i]);
   }
-  for(int i=0;i<n;i++)
-  {
-    eigval0[i]=std::max(eigval0[i],max0/1000);
-    eigvalTmp[i]=std::max(eigvalTmp[i],maxTmp/1000);
+  for (int i=0 ; i<n ; i++) {
+    eigval0[i]   = std::max(eigval0[i],max0/1000);
+    eigvalTmp[i] = std::max(eigvalTmp[i],maxTmp/1000);
   }
 
   // computes: =sqrt(sigmaETmp*sigmaE0^-1) = UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)*U0T
@@ -519,12 +535,13 @@ SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
   delete [] sigmae;
 }
 
-//------------------------------------------------------------------
-void SpatialWellFilter::doVpRhoFiltering(double      ** sigmapri,
-                                         double      ** sigmapost,
-                                         const int      n,
-                                         BlockedLogs  * blockedLogs)
-//------------------------------------------------------------------
+//---------------------------------------------------------------------------------
+void SpatialWellFilter::doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
+                                         double                     ** sigmapri,
+                                         double                     ** sigmapost,
+                                         const int                     n,
+                                         BlockedLogs                *  blockedLogs)
+//---------------------------------------------------------------------------------
 {
   int m = 2*n;
 
@@ -571,57 +588,60 @@ void SpatialWellFilter::doVpRhoFiltering(double      ** sigmapri,
 
   calculateFilteredLogs(Aw, blockedLogs, n, false);
 
-  updateSigmaEVpRho(Aw,
+  updateSigmaEVpRho(sigmaeVpRho,
+                    Aw,
                     Spost2,
                     static_cast<int>(sigmae_.size()),
                     n);
 }
 
-//---------------------------------------------------------------------
-void SpatialWellFilter::updateSigmaEVpRho(const NRLib::Matrix & Aw,
-                                          const NRLib::Matrix & Spost,
-                                          int                   nDim,
-                                          int                   n)
-//---------------------------------------------------------------------
+//---------------------------------------------------------------------------------
+void SpatialWellFilter::updateSigmaEVpRho(std::vector<NRLib::Matrix> & sigmaeVpRho,
+                                          const NRLib::Matrix        & Aw,
+                                          const NRLib::Matrix        & Spost,
+                                          int                          nDim,
+                                          int                          n)
+//---------------------------------------------------------------------------------
 {
-  if (sigmaeVpRho_.size() == 0) { // then first time alocate memory
-    sigmaeVpRho_.resize(nDim);
+  if (sigmaeVpRho.size() == 0) { // then first time alocate memory
+    sigmaeVpRho.resize(nDim);
 
     NRLib::Matrix sigmae(2, 2);
     NRLib::InitializeMatrix(sigmae, 0.0);
 
     for (int k=0 ; k < nDim ; k++) {
-      sigmaeVpRho_[k] = sigmae;
+      sigmaeVpRho[k] = sigmae;
     }
   }
 
   NRLib::Matrix sigma = Aw * Spost;
 
   //
-  // NBNB-PAL: Bug? førsteindeksen på sigmaeVpRho_[0][0][0] står
+  // NBNB-PAL: Bug? førsteindeksen på sigmaeVpRho[0][0][0] står
   // stille hele tiden. Det er ingen n-avhengighet.
   //
   for(int i=0 ; i < n ; i++) {
-    sigmaeVpRho_[0](0,0) += sigma(i    , i    );
-    sigmaeVpRho_[0](1,0) += sigma(i + n, i    );
-    sigmaeVpRho_[0](1,1) += sigma(i + n, i + n);
+    sigmaeVpRho[0](0,0) += sigma(i    , i    );
+    sigmaeVpRho[0](1,0) += sigma(i + n, i    );
+    sigmaeVpRho[0](1,1) += sigma(i + n, i + n);
   }
 }
 
 //------------------------------------------------------------------------------------
-void SpatialWellFilter::completeSigmaEVpRho(int                           lastn,
+void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmaeVpRho,
+                                            int                           lastn,
                                             const Crava                 * cravaResult,
                                             const std::vector<Grid2D *> & noiseScale)
 //------------------------------------------------------------------------------------
 {
-  sigmaeVpRho_[0](0,0) /= lastn;
-  sigmaeVpRho_[0](1,0) /= lastn;
-  sigmaeVpRho_[0](1,1) /= lastn;
-  sigmaeVpRho_[0](0,1)  = sigmae_[0](1,0);
+  sigmaeVpRho[0](0,0) /= lastn;
+  sigmaeVpRho[0](1,0) /= lastn;
+  sigmaeVpRho[0](1,1) /= lastn;
+  sigmaeVpRho[0](0,1)  = sigmae_[0](1,0);
 
-  adjustDiagSigma(sigmaeVpRho_[0], 2);
+  adjustDiagSigma(sigmaeVpRho[0], 2);
 
-  if(sigmaeVpRho_.size() > 1) { // then we have local noise
+  if(sigmaeVpRho.size() > 1) { // then we have local noise
     // initialization
     int nAng = static_cast<int>(noiseScale.size());
     std::vector<double> maxScale(nAng);
@@ -684,7 +704,7 @@ void SpatialWellFilter::completeSigmaEVpRho(int                           lastn,
     cravaResult->computeFilter(priCovVpRho,postCovVpRho,2,filter);
     lib_matr_prod(filter, postCovVpRho, 2, 2, 2, sigmaE0);
 
-    for(unsigned int conf = 1; conf < sigmaeVpRho_.size();conf++) {
+    for(unsigned int conf = 1; conf < sigmaeVpRho.size();conf++) {
 
       //Compute pointwise filter
       int factor = 1;
@@ -705,13 +725,13 @@ void SpatialWellFilter::completeSigmaEVpRho(int                           lastn,
       cravaResult->computeFilter( priCovVpRho,postCovVpRho,2,filter);
       lib_matr_prod(filter, postCovVpRho, 2, 2, 2, sigmaETmp);
 
-      computeSigmaEAdjusted(sigmaeVpRho_[0],sigmaE0,sigmaETmp,2,sigmaEAdj);
+      computeSigmaEAdjusted(sigmaeVpRho[0],sigmaE0,sigmaETmp,2,sigmaEAdj);
 
-      sigmaeVpRho_[conf](0,0) = sigmaEAdj[0][0];
-      sigmaeVpRho_[conf](0,1) = sigmaEAdj[0][1];
-      sigmaeVpRho_[conf](1,0) = sigmaEAdj[1][0];
-      sigmaeVpRho_[conf](1,1) = sigmaEAdj[1][1];
-      adjustDiagSigma(sigmaeVpRho_[conf], 2);
+      sigmaeVpRho[conf](0,0) = sigmaEAdj[0][0];
+      sigmaeVpRho[conf](0,1) = sigmaEAdj[0][1];
+      sigmaeVpRho[conf](1,0) = sigmaEAdj[1][0];
+      sigmaeVpRho[conf](1,1) = sigmaEAdj[1][1];
+      adjustDiagSigma(sigmaeVpRho[conf], 2);
     }
   }
 }
