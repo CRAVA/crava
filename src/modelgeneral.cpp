@@ -2814,6 +2814,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   const int nx  = vp.getNx();
   const int rnxp = vp.getRNxp();
 
+  int modulus = static_cast<int>(std::ceil(nx*ny*nz/1000.0f));
+
   LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
 
   float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
@@ -2913,22 +2915,34 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
           // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
 
 
-          if(k % 15 == 0) {
+          if(((i+1)*(j+1)*(k+1)) % modulus == 0) {
             // For all facies: Summing up expected value of variances and variance of expected values
-            for(size_t f = 0; f < number_of_facies; f++){
+            NRLib::Grid2D<double> first_sigma(3,3,0);
+            NRLib::Grid2D<double> second_sigma(3,3,0);
+            NRLib::Grid2D<double> both_sigma(3,3,0);
+
+            for(size_t f = 0; f < number_of_facies; f++) {
               NRLib::Grid2D<double> sigma;
               std::vector<double> m(3);
               sigma = rock_vector[f]->GetLogCovariance(trend_position);
-              n_samples++;
 
               // For all elements in the 3x3 matrix of the combined variance
               for(size_t a=0; a<3; a++){
                 for(size_t b=0; b<3; b++){
-                  sumVariance(a,b) += probability[f]*sigma(a,b);
-                  sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+                  first_sigma(a,b)  += probability[f]*sigma(a,b);
+                  second_sigma(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+                  both_sigma(a,b)   += (first_sigma(a,b) + second_sigma(a,b));
+                  //sumVariance(a,b) += probability[f] * (sigma(a,b) + (expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]));
+                  //sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
                 }
               }
             }
+            for(size_t a=0; a<3; a++){
+              for(size_t b=0; b<3; b++){
+                sumVariance(a,b) += both_sigma(a,b);
+              }
+            }
+            n_samples++;
           }
         }
       }
