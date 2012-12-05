@@ -2596,39 +2596,77 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
     errTxt += "<density> needs to be specified in <solid><tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
-  double                                      correlation_vp_vs = modelSettings_->getDefaultCorrelationVpVs();
-  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_vp_vs_with_trend, correlation_vp_vs, errTxt);
+  std::vector<double>                         correlation_vp_vs;
+  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_with_trend, "correlation", correlation_vp_vs, errTxt);
+    for(size_t i=0; i<correlation_vp_vs.size(); i++) {
+      if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
+        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
 
   std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
-  double                                      correlation_vp_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_vp_density_with_trend, correlation_vp_density, errTxt);
+  std::vector<double>                         correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
+    for(size_t i=0; i<correlation_vp_density.size(); i++) {
+      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_vp_density.push_back(0.0);
 
   std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
-  double                                      correlation_vs_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_vs_density_with_trend, correlation_vs_density, errTxt);
+  std::vector<double>                         correlation_vs_density;
+  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vs_density_with_trend, "correlation", correlation_vs_density, errTxt);
+    for(size_t i=0; i<correlation_vs_density.size(); i++) {
+      if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
+        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_vs_density.push_back(0.0);
 
   std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
-  double                                      correlation_bulk_shear = modelSettings_->getDefaultCorrelationVpVs();
-  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_bulk_shear_with_trend, correlation_bulk_shear, errTxt);
+  std::vector<double>                         correlation_bulk_shear;
+  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_with_trend, "correlation", correlation_bulk_shear, errTxt);
+    for(size_t i=0; i<correlation_bulk_shear.size(); i++) {
+      if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
+        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
 
   std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
-  double                                      correlation_bulk_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_bulk_density_with_trend, correlation_bulk_density, errTxt);
+  std::vector<double>                         correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
+    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
+      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_bulk_density.push_back(0.0);
+
 
   std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
-  double                                      correlation_shear_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_shear_density_with_trend, correlation_shear_density, errTxt);
-
-  if(use_vp)
-    CheckPositiveDefiniteCorrMatrix(correlation_vp_vs, correlation_vp_density, correlation_vs_density, errTxt);
+  std::vector<double>                         correlation_shear_density;
+  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_shear_density_with_trend, "correlation", correlation_shear_density, errTxt);
+    for(size_t i=0; i<correlation_shear_density.size(); i++) {
+      if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
+        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
   else
-    CheckPositiveDefiniteCorrMatrix(correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, errTxt);
+    correlation_shear_density.push_back(0.0);
 
 
   if(use_vp) {
@@ -2706,14 +2744,30 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
     errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
-  double                                      correlation_vp_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_vp_density_with_trend, correlation_vp_density, errTxt);
+  std::vector<double>                         correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
+    for(size_t i=0; i<correlation_vp_density.size(); i++) {
+      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_vp_density.push_back(0.0);
+
 
   std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
-  double                                      correlation_bulk_density = 0;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true)
-    FindCorrelationValue(correlation_bulk_density_with_trend, correlation_bulk_density, errTxt);
+  std::vector<double>                         correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
+    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
+      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+  }
+  else
+    correlation_bulk_density.push_back(0.0);
+
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
@@ -2739,21 +2793,30 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
 }
 
 void
-XmlModelFile::FindCorrelationValue(const std::vector<DistributionWithTrendStorage *> & correlation_with_trend,
-                                   double                                            & correlation,
-                                   std::string                                       & errTxt)
+XmlModelFile::FindDoubleValueFromDistributionWithTrend(const std::vector<DistributionWithTrendStorage *> & dist_with_trend,
+                                                       std::string                                         type,
+                                                       std::vector<double>                               & value,
+                                                       std::string                                       & errTxt) const
 {
-  if(typeid(*(correlation_with_trend[0])) == typeid(DeltaDistributionWithTrendStorage)) {
-    const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(correlation_with_trend[0]);
-    if(typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-      const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-      correlation = t1->GetMean();
+  int n_vintages = static_cast<int>(dist_with_trend.size());
+
+  value.resize(n_vintages);
+
+  for(int i=0; i<n_vintages; i++) {
+    if(typeid(*(dist_with_trend[i])) == typeid(DeltaDistributionWithTrendStorage)) {
+      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(dist_with_trend[i]);
+      if(typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
+        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
+        value[i] = t1->GetMean();
+      }
     }
-    if(correlation <= -1 || correlation >= 1)
-      errTxt += "The correlations need to be in the interval (-1,1) in the tabulated model\n";
+    else {
+      if(n_vintages == 1)
+        errTxt += "The "+type+" need to be a double value\n";
+      else
+        errTxt += "The "+type+" need to be a double value in vintage "+NRLib::ToString(i+1)+"\n";
+    }
   }
-  else
-    errTxt += "The correlations need to be a double value in the tabulated model\n";
 }
 
 bool
@@ -3084,7 +3147,7 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
     delete mean_storage[0];
     delete variance_storage[0];
 
-    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
+    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, 0, 1, is_shared);
 
     storage.push_back(dist);
   }
@@ -4989,33 +5052,4 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
     errTxt += "A format is requested in wavelet-output without specifying any of the wavelet\n";
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
   }
-}
-
-void
-XmlModelFile::CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt)
-{
-
-  NRLib::Matrix corr_matrix(3,3);
-  for(int i=0; i<3; i++)
-    corr_matrix(i,i) = 1;
-
-  corr_matrix(0,1) = corr01;
-  corr_matrix(1,0) = corr01;
-  corr_matrix(0,2) = corr02;
-  corr_matrix(2,0) = corr02;
-  corr_matrix(1,2) = corr12;
-  corr_matrix(2,1) = corr12;
-
-  NRLib::Vector eigen_values(3);
-  NRLib::Matrix eigen_vectors(3,3);
-  NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
-
-  bool pos_def = true;
-  for( int i=0; i<3; i++) {
-    if(eigen_values(i) < 0)
-      pos_def = false;
-  }
-
-  if(pos_def == false)
-    errTxt += "The correlations giveb in the tabulated rock physics model need to generate a positive definite matrix\n";
 }

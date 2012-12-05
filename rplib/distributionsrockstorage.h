@@ -49,9 +49,9 @@ public:
   TabulatedVelocityRockStorage(std::vector<DistributionWithTrendStorage *> vp,
                                std::vector<DistributionWithTrendStorage *> vs,
                                std::vector<DistributionWithTrendStorage *> density,
-                               double                                      correlation_vp_vs,
-                               double                                      correlation_vp_density,
-                               double                                      correlation_vs_density);
+                               std::vector<double>                         correlation_vp_vs,
+                               std::vector<double>                         correlation_vp_density,
+                               std::vector<double>                         correlation_vs_density);
 
   virtual ~TabulatedVelocityRockStorage();
 
@@ -65,20 +65,13 @@ public:
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                                      std::string                                                 & errTxt) const;
 
-  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution1() const { return vp_                     ;}
-  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution2() const { return vs_                     ;}
-  virtual const std::vector<DistributionWithTrendStorage *> & GetDistribution3() const { return density_                ;}
-  virtual const double                                        GetCorrelation12() const { return correlation_vp_vs_      ;}
-  virtual const double                                        GetCorrelation13() const { return correlation_vp_density_ ;}
-  virtual const double                                        GetCorrelation23() const { return correlation_vs_density_ ;}
-
 private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> vs_;
   std::vector<DistributionWithTrendStorage *> density_;
-  double                                      correlation_vp_vs_;
-  double                                      correlation_vp_density_;
-  double                                      correlation_vs_density_;
+  std::vector<double>                         correlation_vp_vs_;
+  std::vector<double>                         correlation_vp_density_;
+  std::vector<double>                         correlation_vs_density_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -87,9 +80,9 @@ public:
   TabulatedModulusRockStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                               std::vector<DistributionWithTrendStorage *> shear_modulus,
                               std::vector<DistributionWithTrendStorage *> density,
-                              double                                      correlation_bulk_shear,
-                              double                                      correlation_bulk_density,
-                              double                                      correlation_shear_density);
+                              std::vector<double>                         correlation_bulk_shear,
+                              std::vector<double>                         correlation_bulk_density,
+                              std::vector<double>                         correlation_shear_density);
 
   virtual ~TabulatedModulusRockStorage();
 
@@ -107,9 +100,9 @@ private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> shear_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  double                                      correlation_bulk_shear_;
-  double                                      correlation_bulk_density_;
-  double                                      correlation_shear_density_;
+  std::vector<double>                         correlation_bulk_shear_;
+  std::vector<double>                         correlation_bulk_density_;
+  std::vector<double>                         correlation_shear_density_;
 };
 
 //----------------------------------------------------------------------------------//

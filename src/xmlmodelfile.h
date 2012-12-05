@@ -130,7 +130,10 @@ private:
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
 
-  void FindCorrelationValue(const std::vector<DistributionWithTrendStorage *> & correlation_with_trend, double & correlation, std::string & errTxt);
+  void FindDoubleValueFromDistributionWithTrend(const std::vector<DistributionWithTrendStorage *> & correlation_with_trend,
+                                                std::string                                         type,
+                                                std::vector<double>                               & correlation,
+                                                std::string                                       & errTxt) const;
 
   void checkAngleConsistency(std::string & errTxt);
 
@@ -146,7 +149,6 @@ private:
   void checkInversionConsistency(std::string & errTxt);
   void checkTimeLapseConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
-  void CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

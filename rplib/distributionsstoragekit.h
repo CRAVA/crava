@@ -67,4 +67,11 @@ FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
             std::vector<double>                     & s_min,
             std::vector<double>                     & s_max);
 
+void
+CheckPositiveDefiniteCorrMatrix(double corr01,
+                                double corr02,
+                                double corr12,
+                                std::string & errTxt);
+
+
 #endif

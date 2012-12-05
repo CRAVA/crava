@@ -145,6 +145,8 @@ public:
 
   BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                    const NRLib::TrendStorage * variance,
+                                   const double              & lower_limit,
+                                   const double              & upper_limit,
                                    bool                        is_shared);
 
   BetaDistributionWithTrendStorage(const BetaDistributionWithTrendStorage & dist);
@@ -180,6 +182,8 @@ private:
 
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
+  double                                 lower_limit_;
+  double                                 upper_limit_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;

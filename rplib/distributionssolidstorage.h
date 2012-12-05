@@ -38,9 +38,9 @@ public:
   TabulatedVelocitySolidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                 std::vector<DistributionWithTrendStorage *> vs,
                                 std::vector<DistributionWithTrendStorage *> density,
-                                double                                      correlation_vp_vs,
-                                double                                      correlation_vp_density,
-                                double                                      correlation_vs_density);
+                                std::vector<double>                         correlation_vp_vs,
+                                std::vector<double>                         correlation_vp_density,
+                                std::vector<double>                         correlation_vs_density);
 
   virtual ~TabulatedVelocitySolidStorage();
 
@@ -55,9 +55,9 @@ private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> vs_;
   std::vector<DistributionWithTrendStorage *> density_;
-  double                                      correlation_vp_vs_;
-  double                                      correlation_vp_density_;
-  double                                      correlation_vs_density_;
+  std::vector<double>                         correlation_vp_vs_;
+  std::vector<double>                         correlation_vp_density_;
+  std::vector<double>                         correlation_vs_density_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -66,9 +66,9 @@ public:
   TabulatedModulusSolidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                std::vector<DistributionWithTrendStorage *> shear_modulus,
                                std::vector<DistributionWithTrendStorage *> density,
-                               double                                      correlation_bulk_shear,
-                               double                                      correlation_bulk_density,
-                               double                                      correlation_shear_density);
+                               std::vector<double>                         correlation_bulk_shear,
+                               std::vector<double>                         correlation_bulk_density,
+                               std::vector<double>                         correlation_shear_density);
 
   virtual ~TabulatedModulusSolidStorage();
 
@@ -83,9 +83,9 @@ private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> shear_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  double                                      correlation_bulk_shear_;
-  double                                      correlation_bulk_density_;
-  double                                      correlation_shear_density_;
+  std::vector<double>                         correlation_bulk_shear_;
+  std::vector<double>                         correlation_bulk_density_;
+  std::vector<double>                         correlation_shear_density_;
 };
 
 //----------------------------------------------------------------------------------//

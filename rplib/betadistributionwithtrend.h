@@ -16,6 +16,8 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
 
    BetaDistributionWithTrend(const NRLib::Trend * mean,
                              const NRLib::Trend * var,
+                             const double       & lower_limit,
+                             const double       & upper_limit,
                              bool                 shared);
 
    BetaDistributionWithTrend(const BetaDistributionWithTrend & dist);

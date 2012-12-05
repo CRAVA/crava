@@ -1,6 +1,7 @@
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 #include "nrlib/grid/grid2d.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsfluid.h"
@@ -100,7 +101,7 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
 //----------------------------------------------------------------------------------//
 TabulatedVelocityFluidStorage::TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                                              std::vector<DistributionWithTrendStorage *> density,
-                                                             double                                      correlation_vp_density)
+                                                             std::vector<double>                         correlation_vp_density)
 : vp_(vp),
   density_(density),
   correlation_vp_density_(correlation_vp_density)
@@ -127,12 +128,15 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
   alpha[1] = density_[0]->GetOneYearCorrelation();
 
-  int n_vintages_vp      = static_cast<int>(vp_.size());
-  int n_vintages_density = static_cast<int>(density_.size());
+  int n_vintages_vp         = static_cast<int>(vp_.size());
+  int n_vintages_density    = static_cast<int>(density_.size());
+  int n_vintages_vp_density = static_cast<int>(correlation_vp_density_.size());
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
+
+  std::vector<double> corr_vp_density;
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
@@ -145,15 +149,20 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
+    if(i < n_vintages_vp_density)
+      corr_vp_density.push_back(correlation_vp_density_[i]);
+    else
+      corr_vp_density.push_back(correlation_vp_density_[i-1]);
+  }
+
+   for(int i=0; i<n_vintages; i++) {
     DistributionsFluid * fluid = new DistributionsFluidTabulated(vp_dist_with_trend[i],
                                                                  density_dist_with_trend[i],
-                                                                 correlation_vp_density_,
+                                                                 corr_vp_density[i],
                                                                  DEMTools::Velocity,
                                                                  alpha);
 
     dist_fluid[i] = fluid;
-
-
   }
 
   return(dist_fluid);
@@ -162,7 +171,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
 //----------------------------------------------------------------------------------//
 TabulatedModulusFluidStorage::TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                                            std::vector<DistributionWithTrendStorage *> density,
-                                                           double                         correlation_bulk_density)
+                                                           std::vector<double>                         correlation_bulk_density)
 : bulk_modulus_(bulk_modulus),
   density_(density),
   correlation_bulk_density_(correlation_bulk_density)
@@ -189,12 +198,15 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   alpha[0] = bulk_modulus_[0]->GetOneYearCorrelation();
   alpha[1] = density_[0]     ->GetOneYearCorrelation();
 
-  int n_vintages_bulk    = static_cast<int>(bulk_modulus_.size());
-  int n_vintages_density = static_cast<int>(density_.size());
+  int n_vintages_bulk         = static_cast<int>(bulk_modulus_.size());
+  int n_vintages_density      = static_cast<int>(density_.size());
+  int n_vintages_bulk_density = static_cast<int>(correlation_bulk_density_.size());
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
+
+  std::vector<double> corr_bulk_density;
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
@@ -213,15 +225,20 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
     if(test_bulk < lower_mega || test_bulk > upper_mega)
       errTxt += "Bulk modulus need to be given in megaPa\n";
 
+    if(i < n_vintages_bulk_density)
+      corr_bulk_density.push_back(correlation_bulk_density_[i]);
+    else
+      corr_bulk_density.push_back(correlation_bulk_density_[i-1]);
+  }
+
+  for(int i=0; i<n_vintages; i++) {
     DistributionsFluid * fluid = new DistributionsFluidTabulated(bulk_dist_with_trend[i],
                                                                  density_dist_with_trend[i],
-                                                                 correlation_bulk_density_,
+                                                                 corr_bulk_density[i],
                                                                  DEMTools::Modulus,
                                                                  alpha);
 
     dist_fluid[i] = fluid;
-
-
   }
 
   return(dist_fluid);

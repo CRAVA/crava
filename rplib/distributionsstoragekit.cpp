@@ -1,6 +1,8 @@
 
 #include "src/definitions.h"
 #include "src/modelsettings.h"
+#include "nrlib/flens/nrlib_flens.hpp"
+
 
 void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
                             std::string                                & errTxt)
@@ -184,4 +186,33 @@ FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
     s_min[i] = 0;
     s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
   }
+}
+
+void
+CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt)
+{
+
+  NRLib::Matrix corr_matrix(3,3);
+  for(int i=0; i<3; i++)
+    corr_matrix(i,i) = 1;
+
+  corr_matrix(0,1) = corr01;
+  corr_matrix(1,0) = corr01;
+  corr_matrix(0,2) = corr02;
+  corr_matrix(2,0) = corr02;
+  corr_matrix(1,2) = corr12;
+  corr_matrix(2,1) = corr12;
+
+  NRLib::Vector eigen_values(3);
+  NRLib::Matrix eigen_vectors(3,3);
+  NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
+
+  bool pos_def = true;
+  for( int i=0; i<3; i++) {
+    if(eigen_values(i) < 0)
+      pos_def = false;
+  }
+
+  if(pos_def == false)
+    errTxt += "The correlations given in the tabulated rock physics model need to generate a positive definite matrix\n";
 }

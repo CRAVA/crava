@@ -16,6 +16,8 @@ BetaDistributionWithTrend::BetaDistributionWithTrend()
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
                                                      const NRLib::Trend * var,
+                                                     const double       & lower_limit,
+                                                     const double       & upper_limit,
                                                      bool                 shared)
 : mean_(mean),
   var_(var),
@@ -83,7 +85,7 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
       CalculateAlpha(mean_sampling_[i], var_sampling_[j], a);
       CalculateBeta(mean_sampling_[i],  var_sampling_[j], b);
 
-      NRLib::Distribution<double> * dist = new NRLib::Beta(0, 1, a, b);
+      NRLib::Distribution<double> * dist = new NRLib::Beta(lower_limit, upper_limit, a, b);
 
       (*beta_distribution_)(i,j) = dist;
 

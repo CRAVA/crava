@@ -167,8 +167,12 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                    const NRLib::TrendStorage * variance,
+                                                                   const double              & lower_limit,
+                                                                   const double              & upper_limit,
                                                                    bool                        is_shared)
-: is_shared_(is_shared),
+: lower_limit_(upper_limit),
+  upper_limit_(lower_limit),
+  is_shared_(is_shared),
   vintage_year_(1),
   one_year_correlation_(1.0)
 {
@@ -178,7 +182,9 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::
 }
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const BetaDistributionWithTrendStorage & dist)
-: is_shared_(dist.is_shared_),
+: lower_limit_(dist.upper_limit_),
+  upper_limit_(dist.lower_limit_),
+  is_shared_(dist.is_shared_),
   vintage_year_(dist.vintage_year_),
   one_year_correlation_(dist.one_year_correlation_)
 {
@@ -211,7 +217,7 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
 
     CheckBetaConsistency(mean_trend, variance_trend, errTxt);
 
-    distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, is_shared_);
+    distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, is_shared_);
   }
 
   return(distribution_with_trend_);
