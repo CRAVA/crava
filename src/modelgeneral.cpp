@@ -2836,7 +2836,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
 
   // Local storage for summed combined variances
-  NRLib::Grid2D<double> sumVariance(3,3);
+  NRLib::Grid2D<double> sumVariance(3,3,0);
 
   // Make a vector of rock objects instead of a map
   // Find a better solution of using rock_distribution map later
@@ -2913,34 +2913,26 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
           // Var(X) = E([X-E(X)]^2) = E([X - E(X|facies)]^2) + E([E(X|facies) -E(X)]^2) = E(Var(X|facies)) + Var(E(X|facies))
           //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
           // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
-
-
+          //
           if(((i+1)*(j+1)*(k+1)) % modulus == 0) {
             // For all facies: Summing up expected value of variances and variance of expected values
-            NRLib::Grid2D<double> first_sigma(3,3,0);
-            NRLib::Grid2D<double> second_sigma(3,3,0);
-            NRLib::Grid2D<double> both_sigma(3,3,0);
+            NRLib::Grid2D<double> sigma_sum(3,3,0);
 
             for(size_t f = 0; f < number_of_facies; f++) {
-              NRLib::Grid2D<double> sigma;
-              std::vector<double> m(3);
-              sigma = rock_vector[f]->GetLogCovariance(trend_position);
+              NRLib::Grid2D<double> sigma = rock_vector[f]->GetLogCovariance(trend_position);
+              NRLib::Grid2D<double> sigma_weigth(3,3,0);
 
               // For all elements in the 3x3 matrix of the combined variance
               for(size_t a=0; a<3; a++){
                 for(size_t b=0; b<3; b++){
-                  first_sigma(a,b)  += probability[f]*sigma(a,b);
-                  second_sigma(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
-                  both_sigma(a,b)   += (first_sigma(a,b) + second_sigma(a,b));
-                  //sumVariance(a,b) += probability[f] * (sigma(a,b) + (expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]));
-                  //sumVariance(a,b) += probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+                  sigma_weigth(a,b) = probability[f]*sigma(a,b) + probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
+                  sigma_sum(a,b)   += sigma_weigth(a,b);
                 }
               }
             }
             for(size_t a=0; a<3; a++){
-              for(size_t b=0; b<3; b++){
-                sumVariance(a,b) += both_sigma(a,b);
-              }
+              for(size_t b=0; b<3; b++)
+                sumVariance(a,b) += sigma_sum(a,b);
             }
             n_samples++;
           }
@@ -2957,9 +2949,9 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   }
 
   // Setting output variables
-  varVp  = sumVariance(0,0)/n_samples;
-  varVs  = sumVariance(1,1)/n_samples;
-  varRho = sumVariance(2,2)/n_samples;
+  varVp      = sumVariance(0,0)/n_samples;
+  varVs      = sumVariance(1,1)/n_samples;
+  varRho     = sumVariance(2,2)/n_samples;
   crossVpVs  = sumVariance(0,1)/n_samples;
   crossVpRho = sumVariance(0,2)/n_samples;
   crossVsRho = sumVariance(1,2)/n_samples;
