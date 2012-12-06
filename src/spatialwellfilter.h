@@ -62,11 +62,11 @@ private:
                            const Crava                 * cravaResult,
                            const std::vector<Grid2D *> & noiseScale);
 
-  void computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
-                             double        ** sigmaE0,
-                             double        ** sigmaETmp,
-                             int              n,
-                             double        ** sigmaEAdj);
+  void computeSigmaEAdjusted(NRLib::Matrix & sigmae,
+                             NRLib::Matrix & sigmaE0,
+                             NRLib::Matrix & sigmaETmp,
+                             int             n,
+                             NRLib::Matrix & sigmaEAdj);
 
   void adjustDiagSigma(NRLib::Matrix & sigmae,
                        int             n);

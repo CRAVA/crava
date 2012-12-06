@@ -327,11 +327,12 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
     // initialize
     float **sigmaPri0 = cravaResult->getPriorVar0();// not to be deleted
 
+    NRLib::Matrix sigmaEAdj(3,3);
+
     double ** dummy      = new double * [3];
     double ** help       = new double * [3];
     double ** filter     = new double * [3];
     double ** postCovAdj = new double * [3];
-    double ** sigmaEAdj  = new double * [3];
     double ** sigmaETmp  = new double * [3];
     double ** sigmaE0    = new double * [3];
 
@@ -340,7 +341,6 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
       dummy[i]      = new double[3];
       filter[i]     = new double[3];
       postCovAdj[i] = new double[3];
-      sigmaEAdj[i]  = new double[3];
       sigmaE0[i]    = new double[3];
       sigmaETmp[i]  = new double[3];
     }
@@ -381,24 +381,29 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
       cravaResult->computeFilter(sigmaPri0,postCovAdj,3,filter);
       lib_matr_prod(filter, postCovAdj, 3, 3, 3, sigmaETmp);
 
+
+      NRLib::Matrix SigmaE0(3,3);
+      NRLib::Matrix SigmaETmp(3,3);
+      NRLib::SetMatrixFrom2DArray(SigmaE0, sigmaE0);
+      NRLib::SetMatrixFrom2DArray(SigmaETmp, sigmaETmp);
+
       computeSigmaEAdjusted(sigmae[0],
-                            sigmaE0,
-                            sigmaETmp,
+                            SigmaE0,
+                            SigmaETmp,
                             3,
                             sigmaEAdj);
 
-      sigmae[conf](0,0) = sigmaEAdj[0][0];
-      sigmae[conf](0,1) = sigmaEAdj[0][1];
-      sigmae[conf](0,2) = sigmaEAdj[0][2];
-      sigmae[conf](1,0) = sigmaEAdj[1][0];
-      sigmae[conf](1,1) = sigmaEAdj[1][1];
-      sigmae[conf](1,2) = sigmaEAdj[1][2];
-      sigmae[conf](2,0) = sigmaEAdj[2][0];
-      sigmae[conf](2,1) = sigmaEAdj[2][1];
-      sigmae[conf](2,2) = sigmaEAdj[2][2];
+      sigmae[conf](0,0) = sigmaEAdj(0,0);
+      sigmae[conf](0,1) = sigmaEAdj(0,1);
+      sigmae[conf](0,2) = sigmaEAdj(0,2);
+      sigmae[conf](1,0) = sigmaEAdj(1,0);
+      sigmae[conf](1,1) = sigmaEAdj(1,1);
+      sigmae[conf](1,2) = sigmaEAdj(1,2);
+      sigmae[conf](2,0) = sigmaEAdj(2,0);
+      sigmae[conf](2,1) = sigmaEAdj(2,1);
+      sigmae[conf](2,2) = sigmaEAdj(2,2);
 
       adjustDiagSigma(sigmae[conf], 3);
-
     }
 
     for(int i=0;i<3;i++) {
@@ -406,7 +411,6 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
       delete [] help[i];
       delete [] filter[i];
       delete [] postCovAdj[i];
-      delete [] sigmaEAdj[i];
       delete [] sigmaE0[i];
       delete [] sigmaETmp[i];
     }
@@ -414,7 +418,6 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
     delete [] help;
     delete [] filter;
     delete [] postCovAdj;
-    delete [] sigmaEAdj;
     delete [] sigmaE0;
     delete [] sigmaETmp;
 
@@ -427,112 +430,62 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
 
 
 void
-SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix &  sigmaeX,
-                                         double        ** sigmaE0,
-                                         double        ** sigmaETmp,
-                                         int              n,
-                                         double        ** sigmaEAdj)
+SpatialWellFilter::computeSigmaEAdjusted(NRLib::Matrix & sigmae,
+                                         NRLib::Matrix & sigmaE0,
+                                         NRLib::Matrix & sigmaETmp,
+                                         int             n,
+                                         NRLib::Matrix & sigmaEAdj)
 {
-  // NRLib::Matrix sigmaE0(n,n);
+  // sigmaEAdj = sqrt(sigmaETmp*sigmaE0^-1) * sigmae * sqrt(sigmaE0^-1*sigmaETmp)
 
-  // sigmaEAdj  =sqrt(sigmaETmp*sigmaE0^-1)*sigmae* sqrt(sigmaE0^-1*sigmaETmp)
+  NRLib::Vector Eval0(n);
+  NRLib::Matrix Evec0(n,n);
 
-  double ** sigmae = new double*[n];
-  for (int i = 0 ; i < n ; i++) {
-    sigmae[i] = new double[n];
-  }
-  NRLib::Set2DArrayFromMatrix(sigmaeX, sigmae);
+  NRLib::ComputeEigenVectors(sigmaE0, Eval0, Evec0);
 
-  int     * error     = new int[1];
-  double  * eigval0   = new double[n];
-  double ** eigvec0   = new double * [n];
-  double  * eigvalTmp = new double[n];
-  double ** eigvecTmp = new double * [n];
-  double ** tmp1      = new double * [n];
-  double ** tmp2      = new double * [n];
-  double ** tmp3      = new double * [n];
+  NRLib::Vector EvalTmp(n);
+  NRLib::Matrix EvecTmp(n,n);
 
-  for(int i=0;i<n;i++)
-  {
-    eigvec0[i]   = new double[n];
-    eigvecTmp[i] = new double[n];
-    tmp1[i]      = new double[n];
-    tmp2[i]      = new double[n];
-    tmp3[i]      = new double[n];
-  }
-
-  //
-  // xxxxx
-  //
-  //NRLib::Vector Eval0(n);
-  //NRLib::Matrix Evec0(n,n);
-  //NRLib::ComputeEigenVectors(sigmaE0, Eval0, Evec0);
-
-  lib_matr_eigen(sigmaE0,n,eigvec0,eigval0,error);
-  lib_matr_eigen(sigmaETmp,n,eigvecTmp,eigvalTmp,error);
+  NRLib::ComputeEigenVectors(sigmaETmp, EvalTmp, EvecTmp);
 
   double max0   = 0.0;
   double maxTmp = 0.0;
   for (int i=0 ; i<n ; i++) {
-    max0   = std::max(max0,eigval0[i]);
-    maxTmp = std::max(maxTmp,eigvalTmp[i]);
+    max0   = std::max(max0,Eval0(i));
+    maxTmp = std::max(maxTmp,EvalTmp(i));
   }
   for (int i=0 ; i<n ; i++) {
-    eigval0[i]   = std::max(eigval0[i],max0/1000);
-    eigvalTmp[i] = std::max(eigvalTmp[i],maxTmp/1000);
+    Eval0(i)   = std::max(Eval0(i),max0/1000);
+    EvalTmp(i) = std::max(EvalTmp(i),maxTmp/1000);
   }
 
-  // computes: =sqrt(sigmaETmp*sigmaE0^-1) = UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)*U0T
+  // Computes: = sqrt(sigmaETmp*sigmaE0^-1) = UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)*U0T
 
-  for(int i=0;i<n;i++)
-    for(int j=0;j<n;j++)
-      tmp1[i][j] = eigvecTmp[i][j]*sqrt(eigvalTmp[j]);
-  // tmp1=UTmp*LambdaTmp^(1/2)
-
-  lib_matrTranspose(eigvecTmp, n, n, tmp2);
-  lib_matr_prod(tmp1,tmp2,n,n,n,tmp3);
-  // tmp3=UTmp*LambdaTmp^(1/2)*UTmpT
-
-  lib_matr_prod(tmp3,eigvec0,n,n,n,tmp1);
-  // tmp1 = UTmp*LambdaTmp^(1/2)*UTmpT*U0
-
-  for(int i=0;i<n;i++)
-    for(int j=0;j<n;j++)
-      tmp1[i][j] = tmp1[i][j]*sqrt(1./eigval0[j]);
-  //tmp1=UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)
-
-  lib_matrTranspose(eigvec0, n, n, tmp2);
-  lib_matr_prod(tmp1,tmp2,n,n,n,tmp3);
-  //tmp3=UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)*U0T
-
-  lib_matr_prod(tmp3,sigmae,n,n,n,tmp1);
-  // tmp1 = sqrt(sigmaETmp*sigmaE0^-1)*sigmae
-
-  lib_matrTranspose(tmp3, n, n, tmp2);
-  lib_matr_prod(tmp1,tmp2,n,n,n,sigmaEAdj);
-  // sigmaEAdj  =sqrt(sigmaETmp*sigmaE0^-1)*sigmae* sqrt(sigmaE0^-1*sigmaETmp)
-
-  for(int i=0;i<n;i++)
-  {
-    delete [] eigvec0[i];
-    delete [] eigvecTmp[i];
-    delete [] tmp1[i];
-    delete [] tmp2[i];
-    delete [] tmp3[i];
+  NRLib::Matrix T1(n,n);
+  for (int i=0 ; i<n ; i++) {
+    for (int j=0 ; j<n ; j++) {
+      T1(i,j) = EvecTmp(i,j)*sqrt(EvalTmp(j));     // T1 = UTmp*LambdaTmp^(1/2)
+    }
   }
-  delete [] error;
-  delete [] eigval0 ;
-  delete [] eigvec0;
-  delete [] eigvalTmp;
-  delete [] eigvecTmp;
-  delete [] tmp1;
-  delete [] tmp2;
-  delete [] tmp3;
 
-  for (int i = 0 ; i < n ; i++) {
-    delete [] sigmae[i];
+  NRLib::Matrix T2 = NRLib::transpose(EvecTmp);
+  NRLib::Matrix T3 = T1 * T2;                      // T3 = UTmp*LambdaTmp^(1/2)*UTmpT
+
+  T1 = T3 * Evec0;                                 // T1 = UTmp*LambdaTmp^(1/2)*UTmpT*U0
+
+  for(int i=0 ; i<n ; i++) {
+    for(int j=0 ; j<n ; j++) {
+      T1(i,j) = T1(i,j) * sqrt(1.0/Eval0(j));      // T1 = UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)
+    }
   }
-  delete [] sigmae;
+
+  T2 = NRLib::transpose(Evec0);
+  T3 = T1 * T2;                                    // T3 = UTmp*LambdaTmp^(1/2)*UTmpT*U0*Lambda0^(-1/2)*U0T
+  T1 = T3 * sigmae;                                // T1 = sqrt(sigmaETmp*sigmaE0^-1)*sigmae
+
+  T2 = NRLib::transpose(T3);
+
+  sigmaEAdj = T1 * T2;                             // sigmaEAdj = sqrt(sigmaETmp*sigmaE0^-1)*sigmae*sqrt(sigmaE0^-1*sigmaETmp)
 }
 
 //---------------------------------------------------------------------------------
@@ -656,7 +609,6 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
     double ** help         = new double * [3];
     double ** postCovAdj   = new double * [3];
 
-    double ** sigmaEAdj    = new double * [2];
     double ** sigmaETmp    = new double * [2];
     double ** sigmaE0      = new double * [2];
     float  ** priCovVpRho  = new float  * [2];
@@ -673,7 +625,6 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
       priCovVpRho[i] = new float[2];
       postCovVpRho[i]= new double[2];
       filter[i]      = new double[2];
-      sigmaEAdj[i]   = new double[2];
       sigmaE0[i]     = new double[2];
       sigmaETmp[i]   = new double[2];
     }
@@ -725,12 +676,23 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
       cravaResult->computeFilter( priCovVpRho,postCovVpRho,2,filter);
       lib_matr_prod(filter, postCovVpRho, 2, 2, 2, sigmaETmp);
 
-      computeSigmaEAdjusted(sigmaeVpRho[0],sigmaE0,sigmaETmp,2,sigmaEAdj);
+      NRLib::Matrix SigmaE0(2,2);
+      NRLib::Matrix SigmaETmp(2,2);
+      NRLib::SetMatrixFrom2DArray(SigmaE0, sigmaE0);
+      NRLib::SetMatrixFrom2DArray(SigmaETmp, sigmaETmp);
 
-      sigmaeVpRho[conf](0,0) = sigmaEAdj[0][0];
-      sigmaeVpRho[conf](0,1) = sigmaEAdj[0][1];
-      sigmaeVpRho[conf](1,0) = sigmaEAdj[1][0];
-      sigmaeVpRho[conf](1,1) = sigmaEAdj[1][1];
+      NRLib::Matrix sigmaEAdj(2,2);
+
+      computeSigmaEAdjusted(sigmaeVpRho[0],
+                            SigmaE0,
+                            SigmaETmp,
+                            2,
+                            sigmaEAdj);
+
+      sigmaeVpRho[conf](0,0) = sigmaEAdj(0,0);
+      sigmaeVpRho[conf](0,1) = sigmaEAdj(0,1);
+      sigmaeVpRho[conf](1,0) = sigmaEAdj(1,0);
+      sigmaeVpRho[conf](1,1) = sigmaEAdj(1,1);
       adjustDiagSigma(sigmaeVpRho[conf], 2);
     }
   }
