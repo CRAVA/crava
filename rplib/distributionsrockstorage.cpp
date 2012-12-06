@@ -137,13 +137,15 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
       }
     }
 
-    for(int i=0; i<n_vintages; i++)
-      final_dist_rock[i] = new DistributionsRockMixOfRock(distr_rock[i],
-                                                          all_volume_fractions[i],
-                                                          mix_method,
-                                                          alpha,
-                                                          s_min,
-                                                          s_max);
+    if(errTxt == "") {
+      for(int i=0; i<n_vintages; i++)
+        final_dist_rock[i] = new DistributionsRockMixOfRock(distr_rock[i],
+                                                            all_volume_fractions[i],
+                                                            mix_method,
+                                                            alpha,
+                                                            s_min,
+                                                            s_max);
+    }
   }
 
   else if(mix_fluid == true && mix_solid == true) {
@@ -230,15 +232,17 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
     for(int i=0; i<n_fluids; i++)
       alpha[i+n_solids] = fluid_alpha[i];
 
-    for(int i=0; i<n_vintages; i++)
-      final_dist_rock[i] = new DistributionsRockMixOfSolidAndFluid(distr_solid[i],
-                                                                   distr_fluid[i],
-                                                                   solid_volume_fractions[i],
-                                                                   fluid_volume_fractions[i],
-                                                                   mix_method,
-                                                                   alpha,
-                                                                   s_min,
-                                                                   s_max);
+    if(errTxt == "") {
+      for(int i=0; i<n_vintages; i++)
+        final_dist_rock[i] = new DistributionsRockMixOfSolidAndFluid(distr_solid[i],
+                                                                     distr_fluid[i],
+                                                                     solid_volume_fractions[i],
+                                                                     fluid_volume_fractions[i],
+                                                                     mix_method,
+                                                                     alpha,
+                                                                     s_min,
+                                                                     s_max);
+    }
   }
 
   return(final_dist_rock);
@@ -330,17 +334,17 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     if(i < n_vintages_vp_vs)
       corr_vp_vs.push_back(correlation_vp_vs_[i]);
     else
-      corr_vp_vs.push_back(correlation_vp_vs_[i-1]);
+      corr_vp_vs.push_back(corr_vp_vs[i-1]);
 
     if(i < n_vintages_vp_density)
       corr_vp_density.push_back(correlation_vp_density_[i]);
     else
-      corr_vp_density.push_back(correlation_vp_density_[i-1]);
+      corr_vp_density.push_back(corr_vp_density[i-1]);
 
     if(i < n_vintages_vs_density)
       corr_vs_density.push_back(correlation_vs_density_[i]);
     else
-      corr_vs_density.push_back(correlation_vs_density_[i-1]);
+      corr_vs_density.push_back(corr_vs_density[i-1]);
   }
 
   for(int i=0; i<n_vintages; i++) {
@@ -348,24 +352,26 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     CheckPositiveDefiniteCorrMatrix(corr_vp_vs[i], corr_vp_density[i], corr_vs_density[i], corrErrTxt);
     if(corrErrTxt != "") {
       if(n_vintages > 1)
-        errTxt += "Vintage "+NRLib::ToString(i+1)+":";
-      errTxt += corrErrTxt;
+        tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
+      tmpErrTxt += corrErrTxt;
     }
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    DistributionsRock * rock = new DistributionsRockTabulated(vp_dist_with_trend[i],
-                                                              vs_dist_with_trend[i],
-                                                              density_dist_with_trend[i],
-                                                              corr_vp_vs[i],
-                                                              corr_vp_density[i],
-                                                              corr_vs_density[i],
-                                                              DEMTools::Velocity,
-                                                              alpha,
-                                                              s_min,
-                                                              s_max);
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsRock * rock = new DistributionsRockTabulated(vp_dist_with_trend[i],
+                                                                vs_dist_with_trend[i],
+                                                                density_dist_with_trend[i],
+                                                                corr_vp_vs[i],
+                                                                corr_vp_density[i],
+                                                                corr_vs_density[i],
+                                                                DEMTools::Velocity,
+                                                                alpha,
+                                                                s_min,
+                                                                s_max);
 
-    dist_rock[i] = rock;
+      dist_rock[i] = rock;
+    }
   }
 
   if(tmpErrTxt != "") {
@@ -472,17 +478,17 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     if(i < n_vintages_bulk_shear)
       corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
     else
-      corr_bulk_shear.push_back(correlation_bulk_shear_[i-1]);
+      corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
 
     if(i < n_vintages_bulk_density)
       corr_bulk_density.push_back(correlation_bulk_density_[i]);
     else
-      corr_bulk_density.push_back(correlation_bulk_density_[i-1]);
+      corr_bulk_density.push_back(corr_bulk_density[i-1]);
 
     if(i < n_vintages_shear_density)
       corr_shear_density.push_back(correlation_shear_density_[i]);
     else
-      corr_shear_density.push_back(correlation_shear_density_[i-1]);
+      corr_shear_density.push_back(corr_shear_density[i-1]);
   }
 
   for(int i=0; i<n_vintages; i++) {
@@ -490,24 +496,26 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     CheckPositiveDefiniteCorrMatrix(corr_bulk_shear[i], corr_bulk_density[i], corr_shear_density[i], corrErrTxt);
     if(corrErrTxt != "") {
       if(n_vintages > 1)
-        errTxt += "Vintage "+NRLib::ToString(i+1)+":";
-      errTxt += corrErrTxt;
+        tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
+      tmpErrTxt += corrErrTxt;
     }
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    DistributionsRock * rock = new DistributionsRockTabulated(bulk_dist_with_trend[i],
-                                                              shear_dist_with_trend[i],
-                                                              density_dist_with_trend[i],
-                                                              corr_bulk_shear[i],
-                                                              corr_bulk_density[i],
-                                                              corr_shear_density[i],
-                                                              DEMTools::Modulus,
-                                                              alpha,
-                                                              s_min,
-                                                              s_max);
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsRock * rock = new DistributionsRockTabulated(bulk_dist_with_trend[i],
+                                                                shear_dist_with_trend[i],
+                                                                density_dist_with_trend[i],
+                                                                corr_bulk_shear[i],
+                                                                corr_bulk_density[i],
+                                                                corr_shear_density[i],
+                                                                DEMTools::Modulus,
+                                                                alpha,
+                                                                s_min,
+                                                                s_max);
 
-    dist_rock[i] = rock;
+      dist_rock[i] = rock;
+    }
   }
 
   if(tmpErrTxt != "") {
@@ -965,8 +973,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   }
 
   if(distr_upper_rock[0]->GetIsOkForBounding() == false) {
-    tmpErrTxt += "The upper bound does not follow the requirements for the bounding model.\n";
-    tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+    tmpErrTxt += "The upper bound does not follow the requirements for the bounding model:\n";
+    tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
   std::map<std::string, DistributionsRockStorage *>::const_iterator m_all = model_rock_storage.find(upper_rock_);
@@ -998,8 +1006,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   }
 
   if(distr_lower_rock[0]->GetIsOkForBounding() == false) {
-    tmpErrTxt += "The lower bound does not follow the requirements for the bounding model.\n";
-    tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+    tmpErrTxt += "The lower bound does not follow the requirements for the bounding model:\n";
+    tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
   }
 
   std::map<std::string, DistributionsRockStorage *>::const_iterator n_all = model_rock_storage.find(lower_rock_);
@@ -1028,20 +1036,22 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
     else
       shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
+  }
 
-    DistributionsRock * rock = new DistributionsRockBounding(final_distr_upper_rock[i],
-                                                             final_distr_lower_rock[i],
-                                                             porosity_dist_with_trend[i],
-                                                             bulk_weight_dist_with_trend[i],
-                                                             shear_weight_dist_with_trend[i],
-                                                             correlation_weights_,
-                                                             alpha,
-                                                             s_min,
-                                                             s_max);
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsRock * rock = new DistributionsRockBounding(final_distr_upper_rock[i],
+                                                               final_distr_lower_rock[i],
+                                                               porosity_dist_with_trend[i],
+                                                               bulk_weight_dist_with_trend[i],
+                                                               shear_weight_dist_with_trend[i],
+                                                               correlation_weights_,
+                                                               alpha,
+                                                               s_min,
+                                                               s_max);
 
-    dist_rock[i] = rock;
-
-
+      dist_rock[i] = rock;
+    }
   }
 
   if(tmpErrTxt != "") {

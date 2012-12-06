@@ -3433,23 +3433,37 @@ All the properties and function parameters can use previously assigned values in
 
 \subsection{\hbracket{beta}}\newkw{beta}
  \slist
-   \item \Description Commands controlling assignment of Beta probabilistic values to a variable. The Beta distribution is defined in the interval [0,1]. Whenever several building blocks use the same stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all the building blocks. 
+   \item \Description Commands controlling assignment of Beta probabilistic values to a variable. Whenever several building blocks use the same stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all the building blocks. 
    \item \Argument
    \item \Default 
  \elist
 
 \subsubsection{\hbracket{mean}}\rnewkw{mean}{mean-beta}
  \slist
-   \item \Description Mean value of the Beta distribution on [0,1]
+   \item \Description Mean value of the Beta distribution
    \item \Argument Value or trend
    \item \Default 
  \elist
 
 \subsubsection{\hbracket{variance}}\rnewkw{variance}{variance-beta}
  \slist
-   \item \Description Variance of the Beta distribution on [0,1]
+   \item \Description Variance of the Beta distribution
    \item \Argument Value or trend
    \item \Default 
+ \elist
+
+\subsubsection{\hbracket{lower-limit}}\newkw{lower-limit}
+ \slist
+   \item \Description Lower limit of the Beta distribution
+   \item \Argument Value
+   \item \Default 0
+ \elist
+
+\subsubsection{\hbracket{upper-limit}}\newkw{upper-limit}
+ \slist
+   \item \Description Upper limit of the Beta distribution
+   \item \Argument Value
+   \item \Default 1
  \elist
 
 \subsection{\hbracket{reservoir-variable}}\newkw{reservoir-variable}

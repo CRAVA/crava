@@ -2603,6 +2603,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
         errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_vp_vs_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_vs_with_trend[0];
   }
   else
     correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
@@ -2615,6 +2617,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
         errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_density_with_trend[0];
   }
   else
     correlation_vp_density.push_back(0.0);
@@ -2627,6 +2631,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
         errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_vs_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vs_density_with_trend[0];
   }
   else
     correlation_vs_density.push_back(0.0);
@@ -2639,6 +2645,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
         errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_bulk_shear_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_shear_with_trend[0];
   }
   else
     correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
@@ -2651,6 +2659,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
         errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_density_with_trend[0];
   }
   else
     correlation_bulk_density.push_back(0.0);
@@ -2664,6 +2674,8 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
         errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_shear_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_shear_density_with_trend[0];
   }
   else
     correlation_shear_density.push_back(0.0);
@@ -2751,6 +2763,8 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
       if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
         errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_density_with_trend[0];
   }
   else
     correlation_vp_density.push_back(0.0);
@@ -2764,6 +2778,8 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
       if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
         errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
     }
+    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_density_with_trend[0];
   }
   else
     correlation_bulk_density.push_back(0.0);
@@ -2812,9 +2828,9 @@ XmlModelFile::FindDoubleValueFromDistributionWithTrend(const std::vector<Distrib
     }
     else {
       if(n_vintages == 1)
-        errTxt += "The "+type+" need to be a double value\n";
+        errTxt += "All "+type+" variables need to be double values, not trends or distributions\n";
       else
-        errTxt += "The "+type+" need to be a double value in vintage "+NRLib::ToString(i+1)+"\n";
+        errTxt += "All "+type+" variables need to be double values in vintage "+NRLib::ToString(i+1)+", not trends or distributions\n";
     }
   }
 }
@@ -3109,6 +3125,8 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
   std::vector<std::string> legalCommands;
   legalCommands.push_back("mean");
   legalCommands.push_back("variance");
+  legalCommands.push_back("lower-limit");
+  legalCommands.push_back("upper-limit");
 
   std::vector<DistributionWithTrendStorage *> mean_storage;
   std::string label;
@@ -3125,29 +3143,32 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
     ok = false;
   }
 
+  std::vector<DistributionWithTrendStorage *> lower_limit_storage;
+  std::vector<double>                         lower_limit;
+  if(parseDistributionWithTrend(root, "lower-limit", lower_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_limit_storage, "lower-limit", lower_limit, errTxt);
+    delete lower_limit_storage[0];
+  }
+  else
+    lower_limit.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_limit_storage;
+  std::vector<double>                         upper_limit;
+  if(parseDistributionWithTrend(root, "upper-limit", upper_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_limit_storage, "upper-limit", upper_limit, errTxt);
+    delete upper_limit_storage[0];
+  }
+  else
+    upper_limit.push_back(1.0);
+
   if (ok) {
     const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
     const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
 
-    if (typeid(*mean) == typeid(NRLib::TrendConstantStorage)) {
-      const NRLib::TrendConstantStorage * m = dynamic_cast<const NRLib::TrendConstantStorage *>(mean);
-      if (m->GetMean() < 0.0 || m->GetMean() > 1.0) {
-        errTxt += "The expectation of the beta distribution ("+NRLib::ToString(m->GetMean(),2)+")";
-        errTxt += lineColumnText(root)+" must be between 0 and 1.\n";
-      }
-    }
-    if (typeid(*variance) == typeid(NRLib::TrendConstantStorage)) {
-      const NRLib::TrendConstantStorage * v = dynamic_cast<const NRLib::TrendConstantStorage *>(variance);
-      if (v->GetMean() < 0.0 || v->GetMean() > 1.0) {
-        errTxt += "The variance of the beta distribution ("+NRLib::ToString(v->GetMean(),2)+")";
-        errTxt += lineColumnText(root)+" must be between 0 and 1.\n";
-      }
-    }
-
     delete mean_storage[0];
     delete variance_storage[0];
 
-    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, 0, 1, is_shared);
+    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, lower_limit[0], upper_limit[0], is_shared);
 
     storage.push_back(dist);
   }

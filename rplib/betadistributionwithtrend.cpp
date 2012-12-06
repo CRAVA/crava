@@ -82,10 +82,13 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
   for(int i=0; i<n_samples_mean_; i++) {
     for(int j=0; j<n_samples_var_; j++) {
 
-      CalculateAlpha(mean_sampling_[i], var_sampling_[j], a);
-      CalculateBeta(mean_sampling_[i],  var_sampling_[j], b);
+      CalculateAlpha(mean_sampling_[i], var_sampling_[j], lower_limit, upper_limit, a);
+      CalculateBeta(mean_sampling_[i],  var_sampling_[j], lower_limit, upper_limit, b);
 
-      NRLib::Distribution<double> * dist = new NRLib::Beta(lower_limit, upper_limit, a, b);
+      NRLib::Distribution<double> * dist = NULL;
+
+      if(a > 0 && b > 0)
+        dist = new NRLib::Beta(lower_limit, upper_limit, a, b);
 
       (*beta_distribution_)(i,j) = dist;
 
@@ -198,13 +201,29 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) cons
 }
 
 void
-BetaDistributionWithTrend::CalculateAlpha(double mean, double var, double & alpha) const
+BetaDistributionWithTrend::CalculateAlpha(const double & mean,
+                                          const double & var,
+                                          const double & lower_limit,
+                                          const double & upper_limit,
+                                          double       & alpha) const
 {
-  alpha = mean * (mean*(1-mean)/var - 1);
+  double diff = upper_limit-lower_limit;
+  double moved_mean = (mean-lower_limit) / diff;
+  double moved_var  = var / std::pow(diff,2);
+
+  alpha = moved_mean * (moved_mean*(1-moved_mean)/moved_var - 1);
 }
 
 void
-BetaDistributionWithTrend::CalculateBeta(double mean, double var, double & beta) const
+BetaDistributionWithTrend::CalculateBeta(const double & mean,
+                                         const double & var,
+                                         const double & lower_limit,
+                                         const double & upper_limit,
+                                         double       & beta) const
 {
-  beta = (1-mean) * (mean*(1-mean)/var - 1);
+  double diff = upper_limit-lower_limit;
+  double moved_mean = (mean-lower_limit) / diff;
+  double moved_var  = var / std::pow(diff,2);
+
+  beta = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
 }

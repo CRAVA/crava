@@ -1,7 +1,6 @@
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 #include "nrlib/grid/grid2d.hpp"
-#include "nrlib/iotools/stringtools.hpp"
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsfluid.h"
@@ -152,7 +151,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
     if(i < n_vintages_vp_density)
       corr_vp_density.push_back(correlation_vp_density_[i]);
     else
-      corr_vp_density.push_back(correlation_vp_density_[i-1]);
+      corr_vp_density.push_back(corr_vp_density[i-1]);
   }
 
    for(int i=0; i<n_vintages; i++) {
@@ -228,7 +227,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
     if(i < n_vintages_bulk_density)
       corr_bulk_density.push_back(correlation_bulk_density_[i]);
     else
-      corr_bulk_density.push_back(correlation_bulk_density_[i-1]);
+      corr_bulk_density.push_back(corr_bulk_density[i-1]);
   }
 
   for(int i=0; i<n_vintages; i++) {

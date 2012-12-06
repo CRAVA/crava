@@ -34,8 +34,17 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
    virtual double                     GetQuantileValue(double u, double s1, double s2) const;
 
  private:
-   void CalculateAlpha(double mean, double var, double & alpha) const;
-   void CalculateBeta(double mean, double var, double & beta) const;
+   void CalculateAlpha(const double & mean,
+                       const double & var,
+                       const double & lower_limit,
+                       const double & upper_limit,
+                       double       & alpha) const;
+
+   void CalculateBeta(const double & mean,
+                      const double & var,
+                      const double & lower_limit,
+                      const double & upper_limit,
+                      double       & beta) const;
 
   NRLib::Grid2D<NRLib::Distribution<double> *>              * beta_distribution_;
   const NRLib::Trend                                        * mean_;

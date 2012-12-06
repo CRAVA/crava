@@ -8,6 +8,7 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
 #include "nrlib/trend/trendstorage.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 
 DistributionWithTrendStorage::DistributionWithTrendStorage()
 {
@@ -170,8 +171,8 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::
                                                                    const double              & lower_limit,
                                                                    const double              & upper_limit,
                                                                    bool                        is_shared)
-: lower_limit_(upper_limit),
-  upper_limit_(lower_limit),
+: lower_limit_(lower_limit),
+  upper_limit_(upper_limit),
   is_shared_(is_shared),
   vintage_year_(1),
   one_year_correlation_(1.0)
@@ -236,23 +237,32 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
                                                        std::string  & errTxt) const
 {
 
-  if(mean->GetMinValue() < 0 || mean->GetMaxValue() > 1)
-    errTxt += "The mean values of the Beta distribution must be in the interval [0,1]\n";
+  if(mean->GetMinValue() < lower_limit_ || mean->GetMaxValue() > upper_limit_)
+    errTxt += "The mean values of the Beta distribution must be in the interval ["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
 
-  std::string tmpErrTxt = "";
+  double mean_value = mean    ->GetTrendElement(0,0,0);
+  double var_value  = variance->GetTrendElement(0,0,0);
 
-  std::vector<int> trend_size = mean->GetTrendSize();
-  for(int i=0; i<trend_size[0]; i++) {
-    for(int j=0; j<trend_size[1]; j++) {
-      if(tmpErrTxt == "") {
-        double mean_value = mean    ->GetTrendElement(i,j,0);
-        double var_value  = variance->GetTrendElement(i,j,0);
+  double diff = upper_limit_-lower_limit_;
+  double moved_mean = (mean_value-lower_limit_) / diff;
+  double moved_var  = var_value / std::pow(diff,2);
 
-        if(var_value > mean_value*(1-mean_value))
-          tmpErrTxt += "The Beta distribution demands that variance < mean*(1-mean) in each trend location\n";
-      }
-    }
+  double alpha = moved_mean * (moved_mean*(1-moved_mean)/moved_var - 1);
+  double beta  = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
+
+  if(alpha < 0) {
+    errTxt += "The combination mean="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
+    errTxt += "  provides alpha < 0 in the Beta distribution\n";
+    errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
   }
-
-  errTxt += tmpErrTxt;
+  if(beta < 0) {
+    errTxt += "The combination mean ="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
+    errTxt += "  provides beta < 0 in the Beta distribution\n";
+    errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
+  }
+  if(moved_var > moved_mean*(1-moved_mean)) {
+    errTxt += "The Beta distribution demands that v < e*(1-e)\n";
+    errTxt += "  where e = (mean-a)/(b-a) and v = variance/(b-a)^2`\n";
+    errTxt += "  mean="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"] found\n";
+  }
 }

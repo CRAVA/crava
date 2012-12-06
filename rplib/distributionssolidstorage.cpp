@@ -173,17 +173,17 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int             
     if(i < n_vintages_vp_vs)
       corr_vp_vs.push_back(correlation_vp_vs_[i]);
     else
-      corr_vp_vs.push_back(correlation_vp_vs_[i-1]);
+      corr_vp_vs.push_back(corr_vp_vs[i-1]);
 
     if(i < n_vintages_vp_density)
       corr_vp_density.push_back(correlation_vp_density_[i]);
     else
-      corr_vp_density.push_back(correlation_vp_density_[i-1]);
+      corr_vp_density.push_back(corr_vp_density[i-1]);
 
     if(i < n_vintages_vs_density)
       corr_vs_density.push_back(correlation_vs_density_[i]);
     else
-      corr_vs_density.push_back(correlation_vs_density_[i-1]);
+      corr_vs_density.push_back(corr_vs_density[i-1]);
   }
 
   for(int i=0; i<n_vintages; i++) {
@@ -296,17 +296,17 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
     if(i < n_vintages_bulk_shear)
       corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
     else
-      corr_bulk_shear.push_back(correlation_bulk_shear_[i-1]);
+      corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
 
     if(i < n_vintages_bulk_density)
       corr_bulk_density.push_back(correlation_bulk_density_[i]);
     else
-      corr_bulk_density.push_back(correlation_bulk_density_[i-1]);
+      corr_bulk_density.push_back(corr_bulk_density[i-1]);
 
     if(i < n_vintages_shear_density)
       corr_shear_density.push_back(correlation_shear_density_[i]);
     else
-      corr_shear_density.push_back(correlation_shear_density_[i-1]);
+      corr_shear_density.push_back(corr_shear_density[i-1]);
   }
 
   for(int i=0; i<n_vintages; i++) {
