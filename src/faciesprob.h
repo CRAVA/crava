@@ -69,6 +69,8 @@ public:
              std::vector<WellData *>                              wells,
              CravaTrend                                         & trend_cubes,
              int                                                  lowIntCut,
+             float                                                corrGradI,
+             float                                                corrGradJ,
              int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
@@ -129,7 +131,9 @@ private:
                                                             const double                                           & trend2_min,
                                                             const double                                           & trend2_max,
                                                             bool                                                     useFilter,
-                                                            int                                                      lowIntCut);
+                                                            int                                                      lowIntCut,
+                                                            float                                                    corrGradI,
+                                                            float                                                    corrGradJ);
 
   int                    MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf3d,
                                                  std::vector<Simbox*>                                     & volume,
@@ -271,7 +275,8 @@ private:
                                               const std::vector<std::string>                           & facies_names,
                                               const std::vector<double>                                & trend1,
                                               const std::vector<double>                                & trend2,
-                                              double                                                     dz);
+                                              double                                                     dz,
+                                              int                                                        nWellsPerCombinationOfTrendParams);
 
   // shared routine for the calculateFaciesProb functions
 

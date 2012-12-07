@@ -40,12 +40,12 @@ public:
 
   std::vector<double **> & getSigmae(void) {return sigmae_;}
 
-  std::vector<std::vector<double> > & getSigmaeSynt() {return sigmaeSynt_;}
+  std::vector<double **> & getSigmaeSynt() {return sigmaeSynt_;}
 
 private:
   std::vector<double **> sigmae_;
   std::vector<double **> sigmaeVpRho_;
-  std::vector<std::vector<double> > sigmaeSynt_;
+  std::vector<double **> sigmaeSynt_;
   int                    nData_;   ///< sum no blocks in all wells
   int                    nWells_;
   int                  * n_;

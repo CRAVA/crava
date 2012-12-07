@@ -64,7 +64,9 @@ public:
   void       initializeCorrelationsSyntWells(SpatialWellFilter                   * spatwellfilter,
                                              std::vector<SyntWellData *>           wells,
                                              int                                   nWells,
-                                             int                                   lowIntCut);
+                                             int                                   lowIntCut,
+                                             float                                 corrGradI,
+                                             float                                 corrGradJ);
 
   fftw_real* initializeCorrelations(SpatialWellFilter     * spatwellfilter,
                                     std::vector<WellData *> wells,

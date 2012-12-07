@@ -523,13 +523,15 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
 void Corr::initializeCorrelationsSyntWells(SpatialWellFilter                    * spatwellfilter,
                                            std::vector<SyntWellData *>            wells,
                                            int                                    nWells,
-                                           int                                    lowIntCut)
+                                           int                                    lowIntCut,
+                                           float                                  corrGradI,
+                                           float                                  corrGradJ)
 {
   fftw_real * corrT = NULL;
 
   if(common_correlation_ == true){
 
-    corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, 0, 0);
+    corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, corrGradI, corrGradJ);
     //setPriorCorrTFiltered(corrT, nz, nzp); // Can have zeros in the middle
 
     if(spatwellfilter != NULL){

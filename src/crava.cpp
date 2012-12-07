@@ -1775,6 +1775,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;
+      float corrGradI, corrGradJ;
+      modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
       int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt())));
 
@@ -1796,6 +1798,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 wells_,
                                 modelGeneral_->getTrendCubes(),
                                 lowIntCut,
+                                corrGradI,
+                                corrGradJ,
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
@@ -1840,6 +1844,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       std::vector<double> trend_min;
       std::vector<double> trend_max;
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      float corrGradI, corrGradJ;
+      modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
       int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt())));
 
       fprob_ = new FaciesProb(postAlpha_,
@@ -1860,22 +1866,25 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 wells_,
                                 modelGeneral_->getTrendCubes(),
                                 lowIntCut,
+                                corrGradI,
+                                corrGradJ,
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
                                 false,
                                 trend_min[0],
                                 trend_max[0],
-                                0,0);
-                                //trend_min[1],
-                                //trend_max[1]);
+                                trend_min[1],
+                                trend_max[1]);
 
     }
-    fprob_->calculateConditionalFaciesProb(wells_,
-                                           nWells_,
-                                           modelAVOstatic_->getFaciesEstimInterval(),
-                                           facies_names,
-                                           simbox_->getdz());
+    if(!modelSettings->getFaciesProbFromRockPhysics()){
+      fprob_->calculateConditionalFaciesProb(wells_,
+                                             nWells_,
+                                             modelAVOstatic_->getFaciesEstimInterval(),
+                                             facies_names,
+                                             simbox_->getdz());
+    }
     LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
 
 

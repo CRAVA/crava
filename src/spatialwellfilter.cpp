@@ -38,6 +38,12 @@ SpatialWellFilter::~SpatialWellFilter()
   }
   delete [] priorSpatialCorr_;
 
+  for(j=0;j<static_cast<int>(sigmaeSynt_.size());j++) {
+    for(i=0;i<3;i++)
+      delete [] sigmaeSynt_[j][i];
+    delete [] sigmaeSynt_[j];
+  }
+
   for(j=0;j<static_cast<int>(sigmae_.size());j++) {
     for(i=0;i<3;i++)
       delete [] sigmae_[j][i];
@@ -137,7 +143,7 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-/*
+
   double ** sigmapost;
   double ** sigmapri;
   double ** imat;
@@ -147,25 +153,22 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
 
   // nDim is always 1 for synthetic wells
   int nDim = 1;
-  // number of dimensions of transformed elastic variables (2 or 3)
+
+  //number of dimensions of transformed elastic variables (2 or 3)
   //int nDimElasticVar = static_cast<int>(V.size());
 
   if(sigmaeSynt_.size() == 0) {
     sigmaeSynt_.resize(nDim);
-    //initializing temporary matrix sigmae
-    double ** sigmae = new double * [3];
+    sigmaeSynt_[0] = new double *[3];
     for(int i=0;i<3;i++) {
-      sigmae[i] = new double[3];
-      for(int j=0;j<3;j++)
-        sigmae[i][j] = 0;
+      sigmaeSynt_[0][i] = new double[3] ;
     }
-    sigmaeSynt_[0] = sigmae;
   }
 
   bool no_wells_filtered = true;
 
   for(int w1=0;w1<nWells;w1++){
-    LogKit::LogFormatted(LogKit::Low,"\nFiltering synthetic well " + w1);
+    LogKit::LogFormatted(LogKit::Low,"\nFiltering synthetic well number " + NRLib::ToString(w1+1,1) + "...");
     no_wells_filtered = false;
 
     int n = syntWellData[w1]->getWellLength();
@@ -291,20 +294,7 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
   if (no_wells_filtered) {
     LogKit::LogFormatted(LogKit::Low,"\nNo synthetic wells have been filtered.\n");
   }
-*/
-  sigmaeSynt_.resize(3);
-  for(int i=0;i<3;i++) {
-    sigmaeSynt_[i].resize(3,0.1);
-  }
-  sigmaeSynt_[0][0] = .01;
-  sigmaeSynt_[0][1] = .01;
-  sigmaeSynt_[0][2] = .01;
-  sigmaeSynt_[1][0] = .01;
-  sigmaeSynt_[1][1] = .01;
-  sigmaeSynt_[1][2] = .01;
-  sigmaeSynt_[2][0] = .01;
-  sigmaeSynt_[2][1] = .01;
-  sigmaeSynt_[2][2] = .01;
+
   Timings::setTimeFiltering(wall,cpu);
 }
 
@@ -579,12 +569,12 @@ SpatialWellFilter::updateSigmaeSynt(double ** filter, double ** postCov,  int n)
 
   for(int i=0;i<n;i++)
   {
-    sigmaeSynt_[0][0] += sigmaeW[i      ][i     ];
-    sigmaeSynt_[1][0] += sigmaeW[i +   n][i     ];
-    sigmaeSynt_[2][0] += sigmaeW[i + 2*n][i     ];
-    sigmaeSynt_[1][1] += sigmaeW[i +   n][i +  n];
-    sigmaeSynt_[2][1] += sigmaeW[i + 2*n][i +  n];
-    sigmaeSynt_[2][2] += sigmaeW[i + 2*n][i + 2*n];
+    sigmaeSynt_[0][0][0] += sigmaeW[i      ][i     ];
+    sigmaeSynt_[0][1][0] += sigmaeW[i +   n][i     ];
+    sigmaeSynt_[0][2][0] += sigmaeW[i + 2*n][i     ];
+    sigmaeSynt_[0][1][1] += sigmaeW[i +   n][i +  n];
+    sigmaeSynt_[0][2][1] += sigmaeW[i + 2*n][i +  n];
+    sigmaeSynt_[0][2][2] += sigmaeW[i + 2*n][i + 2*n];
   }
   // sigmaeSynt_ Is normalized (1/n) in completeSigmaE, Here well by well is added.
 
