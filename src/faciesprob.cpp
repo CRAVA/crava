@@ -83,6 +83,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                        SpatialWellFilter                                  * filteredLogs,
                        std::vector<WellData *>                              wells,
                        CravaTrend                                         & trend_cubes,
+                       int                                                  lowIntCut,
                        int                                                  nWells,
                        const double                                         dz,
                        bool                                                 useFilter,
@@ -94,6 +95,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
 :nFacies_(nFac)
 {
   int densdim = 0;
+  int nDimensions = 0;
   std::vector<Simbox*>  volume;
   std::vector<std::vector<PosteriorElasticPDF *> > posteriorPdf;
   bool faciesProbFromRockPhysics = modelSettings->getFaciesProbFromRockPhysics();
@@ -106,31 +108,31 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
     for (int i=0;i<densdim;i++){
       posteriorPdf[i].resize(nFacies_, NULL);
     }
-    MakePosteriorElasticPDF3D(posteriorPdf, volume, filteredLogs->getSigmae(), useFilter,wells,nWells,
+    nDimensions = MakePosteriorElasticPDF3D(posteriorPdf, volume, filteredLogs->getSigmae(), useFilter,wells,nWells,
       faciesEstimInterval,dz,relative,modelSettings->getNoVsFaciesProb(),priorFaciesCubes,cravaResult,noiseScale, modelSettings, facies_names);
 
   }else{
     densdim = 1;
-    syntWellLength_ = 1000;
+    volume.resize(densdim);
+    syntWellLength_ = 200;
     nBinsTrend_ = 20;
     posteriorPdf.resize(1);
     posteriorPdf[0].resize(nFacies_,NULL);
-    MakePosteriorElasticPDFRockPhysics(posteriorPdf, cravaResult, filteredLogs, priorFaciesCubes, modelSettings, rock_distributions,
-      facies_names, dz, trend1_min, trend1_max, trend2_min, trend2_max, useFilter);
+    nDimensions = MakePosteriorElasticPDFRockPhysics(posteriorPdf, volume, cravaResult, priorFaciesCubes, modelSettings, rock_distributions,
+      facies_names, dz, trend1_min, trend1_max, trend2_min, trend2_max, useFilter, lowIntCut);
   }
+
   /*
   for (int i=0;i<densdim;i++){
     for(int l=0;l<nFacies_;l++){
-      if(ModelSettings::getDebugLevel() >= 1) {
         std::string baseName = "Smoothed_hist_" + NRLib::ToString(i) + NRLib::ToString(l) + IO::SuffixAsciiFiles();
         std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
         posteriorPdf[i][l]->WriteAsciiFile(fileName);
-      }
     }
   }
   */
 
-  CalculateFaciesProbFromPosteriorElasticPDF(alpha, beta, rho, posteriorPdf, volume,
+  CalculateFaciesProbFromPosteriorElasticPDF(alpha, beta, rho, posteriorPdf, volume, nDimensions,
                       p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH, faciesProbFromRockPhysics, trend_cubes);
 
   /*
@@ -522,9 +524,10 @@ void FaciesProb::makeFaciesDens(int                             nfac,
   delete [] sigmaeinv;
 }
 
-void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >         & posteriorPdf,
+int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >         & posteriorPdf,
+                                                    std::vector<Simbox *>                                    & volume,
                                                     Crava                                                    * cravaResult,
-                                                    SpatialWellFilter                                        * spatialWellFilter,
+                                                    //SpatialWellFilter                                        * spatialWellFilter,
                                                     std::vector<FFTGrid *>                                   & priorFaciesCubes,
                                                     const ModelSettings                                      * modelSettings,
                                                     const std::map<std::string, DistributionsRock *>         & rock_distributions,
@@ -534,7 +537,8 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
                                                     const double                                             & trend1_max,
                                                     const double                                             & trend2_min,
                                                     const double                                             & trend2_max,
-                                                    bool                                                       useFilter)
+                                                    bool                                                       useFilter,
+                                                    int                                                        lowIntCut)
 {
   double eps = 0.000001;
   int nDimensions = 0;
@@ -621,13 +625,20 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   syntWellData.resize(static_cast<int>(trend1.size()*trend2.size()),NULL);
   GenerateSyntWellData(syntWellData, rock_distributions, facies_names, trend1, trend2, dz);
 
-  // CALCULATE SIGMA E --------------------------------------------------------------------
-  // NB! EN doFilteringSyntWells can invert 2N matrices instead
-  spatialWellFilter->doFilteringSyntWells(cravaResult->getCorrelations(),syntWellData, v);
+  // CALCULATE SIGMA_E --------------------------------------------------------------------
+
+  //we filter only one synthetic well to save cpu time
+  int nWellsToBeFiltered = 1;
+
+  SpatialWellFilter * spatWellFilter = new SpatialWellFilter(nWellsToBeFiltered);
+  cravaResult->getCorrelations()->initializeCorrelationsSyntWells(spatWellFilter, syntWellData, nWellsToBeFiltered, lowIntCut);
+
+  // NB! EN doFilteringSyntWells can potentially invert 2N matrices instead
+  spatWellFilter->doFilteringSyntWells(cravaResult->getCorrelations(), syntWellData, v, nWellsToBeFiltered);
 
   // TRANSFORM SIGMA E ACCORDING TO DIMENSION REDUCTION MATRIX V --------------------------
 
-  std::vector<double **> sigmaeSynt = spatialWellFilter->getSigmae();
+  const std::vector<std::vector<double> > sigmaeSynt = spatWellFilter->getSigmaeSynt();
 
   double ** sigmaeSyntCopy = new double *[3];
   for (int i=0; i<3; i++){
@@ -635,7 +646,7 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   }
   for(int i=0; i<3; i++){
     for (int j=0; j<3; j++){
-      sigmaeSyntCopy[i][j] = sigmaeSynt[0][i][j];
+      sigmaeSyntCopy[i][j] = sigmaeSynt[i][j];
     }
   }
 
@@ -643,6 +654,9 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   double ** sigmaeTransformed = new double *[sizeOfV];
   double ** vCopy = new double *[sizeOfV];
   double ** vTranspose = new double *[3];
+  for (int i=0; i<3; i++){
+    vTranspose[i] = new double[sizeOfV];
+  }
   for (int i=0; i<sizeOfV; i++){
     sigmaeTransformed[i] = new double[sizeOfV];
     vCopy[i] = new double[3];
@@ -673,6 +687,8 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
   delete [] vCopy;
   delete [] vTranspose;
   delete [] tempMatrix;
+
+  delete spatWellFilter;
 
   //Set the grid to 100*100*50 for the elastic parameters
   int nBinsX = 100;
@@ -727,7 +743,7 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
         }
       }
     }
-    totLength+= static_cast<int>(syntWellData.size());
+    totLength+= static_cast<int>(syntWellData[i]->getWellLength());
   }
 
   // Calculates variances for the synthetic wells over all trend values
@@ -738,6 +754,8 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
     if(facies[i]!=IMISSING)
       nobs++;
   }
+
+  assert(nobs == static_cast<int>(facies.size()));
 
   hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
   kstda = hopt*sqrt(varAlpha);
@@ -798,18 +816,24 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
     dZ =  (zMax-zMin)/nBinsZ;
   }else if(nDimensions>3){
     //reduction to two elastic dimensions
-    xMin  = *min_element(vp.begin(), vp.end()) - 5.0f*sqrt(sigmae[0][0]);
-    xMax  = *max_element(vp.begin(), vp.end()) + 5.0f*sqrt(sigmae[0][0]);
-    yMin  = *min_element(vs.begin(), vs.end()) - 5.0f*sqrt(sigmae[1][1]);
-    yMax  = *max_element(vs.begin(), vs.end()) + 5.0f*sqrt(sigmae[1][1]);
+    std::vector <double> x_transformed(nobs);
+    std::vector <double> y_transformed(nobs);
+    for(int i=0; i<nobs; i++){
+      x_transformed[i] = v[0][0]*vp[i] + v[0][1]*vs[i] +v[0][2]*rho[i];
+      y_transformed[i] = v[1][0]*vp[i] + v[1][1]*vs[i] +v[1][2]*rho[i];
+    }
+    xMin  = *min_element(x_transformed.begin(), x_transformed.end()) - 5.0f*sqrt(sigmae[0][0]);
+    xMax  = *max_element(x_transformed.begin(), x_transformed.end()) + 5.0f*sqrt(sigmae[0][0]);
+    yMin  = *min_element(y_transformed.begin(), y_transformed.end()) - 5.0f*sqrt(sigmae[1][1]);
+    yMax  = *max_element(y_transformed.begin(), y_transformed.end()) + 5.0f*sqrt(sigmae[1][1]);
     dX  = (xMax-xMin)/nBinsX;
     dY  = (yMax-yMin)/nBinsY;
     dZ  = (zMax-zMin)/nBinsTrend_;
   }
 
-  // Only needed if no trends or dimensions reduction
+  // Only needed if no trends or no dimension reduction
   Surface rhoMinSurf(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, zMin);
-  Simbox *volume  = new Simbox(xMin, yMin, rhoMinSurf, xMax-xMin, yMax-yMin, zMax-zMin, 0, dX, dY, dZ);
+  volume[0]  = new Simbox(xMin, yMin, rhoMinSurf, xMax-xMin, yMax-yMin, zMax-zMin, 0, dX, dY, dZ);
 
   if(nDimensions == 3){
     for(int j=0; j<nFacies_; j++)
@@ -830,35 +854,40 @@ void FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Post
     NRLib::Exception("Facies probabilities: Number of dimensions in posterior elastic PDF is wrong");
   }
 
-  for(int j=0;j<3;j++)
+  for(int j=0;j<sizeOfV;j++)
     delete [] sigmae[j];
   delete [] sigmae;
+
+  for (int j=0; j<static_cast<int>(syntWellData.size()); j++)
+    delete syntWellData[j];
 
 
   // Only possible to call ResampleAndWriteDensity for an object with 3 elastic dimensions
   if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && nDimensions == 3) {
     if (nDimensions == 3){
-    Simbox * expVol = createExpVol(volume);
+    Simbox * expVol = createExpVol(volume[0]);
     for(int j=0; j<static_cast<int>(posteriorPdf[0].size()); j++) {
       std::string baseName = "Rock_Physics_";
       baseName = baseName + facies_names[0];
       std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
       bool writeSurface = (j==0); //writeSurface is true if j == 0.
-      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume, expVol, 0, writeSurface);
+      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume[0], expVol, 0, writeSurface);
 
     }
     delete expVol;
     }
     else{
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING: No implementation of resampling and file writing for elastic PDFs with trends or dimension reduction\n");
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: No implementation of resampling / file writing for elastic PDFs with trends or dimension reduction\n");
     }
   }
 
   if(priorFaciesCubes.size() != 0)
     normalizeCubes(priorFaciesCubes);
+
+  return nDimensions;
 }
 
-void FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >   & posteriorPdf3d,
+int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >   & posteriorPdf3d,
                                            std::vector<Simbox *>                              & volume,
                                            const std::vector<double **>                       & sigmaEOrig,
                                            bool                                                 useFilter,
@@ -1097,6 +1126,8 @@ void FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElas
   for(int i=0 ; i<nAng ; i++)
     delete [] G[i];
   delete [] G;
+
+  return 3;
 }
 
 void FaciesProb::makeFaciesProb(int                    nFac,
@@ -2037,7 +2068,8 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
                                                             FFTGrid                                                   * betagrid,
                                                             FFTGrid                                                   * rhogrid,
                                                             const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
-                                                            const std::vector<Simbox *>                                 volume,
+                                                            const std::vector<Simbox *>                               & volume,
+                                                            int                                                         nDimensions,
                                                             float                                                       p_undefined,
                                                             const std::vector<float>                                  & priorFacies,
                                                             std::vector<FFTGrid *>                                    & priorFaciesCubes,
@@ -2046,8 +2078,9 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
                                                             bool                                                        faciesProbFromRockPhysics,
                                                             CravaTrend                                                & trend_cubes)
 {
+  assert (nDimensions == 3 || nDimensions == 4 || nDimensions == 5);
   float * value = new float[nFacies_];
-  int i,j,k,l;
+  //int i,j,k,l;
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
   float t1 = 0;
@@ -2059,14 +2092,12 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   nx   = alphagrid->getNx();
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
-  //--------------------------------------------------- TEMP ERIK
-  std::vector<FFTGrid *> densGrid(nFacies_);
-  for(int i=0; i<nFacies_ ;i++){
-    densGrid[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
-    densGrid[i]->setAccessMode(FFTGrid::WRITE);
-    densGrid[i]->createRealGrid(false);
+  std::vector<std::vector<int> >  trendGridSizes;
+  if (nDimensions>3){
+    trendGridSizes =  trend_cubes.GetSizeTrendCubes();
+    assert(trendGridSizes[0][0] == nx && trendGridSizes[0][1] == ny && trendGridSizes[0][2] == nz);
   }
-  //---------------------------------------------------
+
   faciesProb_ = new FFTGrid*[nFacies_];
   if(alphagrid->isFile()==1)
     faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
@@ -2075,7 +2106,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
   rhogrid->setAccessMode(FFTGrid::READ);
-  for(i=0;i<nFacies_;i++)
+  for(int i=0;i<nFacies_;i++)
   {
     if(alphagrid->isFile()==1)
     {
@@ -2094,7 +2125,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
     seismicLH->setAccessMode(FFTGrid::WRITE);
 
   if(priorFaciesCubes.size() != 0)
-    for(i=0;i<nFacies_;i++)
+    for(int i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
   smallrnxp = faciesProb_[0]->getRNxp();
@@ -2106,7 +2137,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   std::vector<Grid2D *> tgrid(nAng);
 
   if(!faciesProbFromRockPhysics){
-    for(i=0;i<int(noiseScale.size());i++)
+    for(int i=0;i<int(noiseScale.size());i++)
       if(noiseScale[i]!=NULL)
         nAng++;
 
@@ -2132,50 +2163,50 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
 
   float help;
   float dens;
-  //int nx_temp = int(0.5+posteriorPdf3d[0][0]->GetXMax()/posteriorPdf3d[0][0]->GetdX());
-  //int ny_temp = int(0.5+posteriorPdf3d[0][0]->GetYMax()/posteriorPdf3d[0][0]->GetdY());
-  //int nz_temp = int(0.5+posteriorPdf3d[0][0]->GetZMax()/posteriorPdf3d[0][0]->GetdZ());
-  float undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*volume[0]->getnz());
-  //float undefSum = p_undefined/(nx_temp*ny_temp*nz_temp);
-  for(i=0;i<nzp;i++)
+  float undefSum = 0.0;
+  if (nDimensions == 3 || nDimensions == 4){
+    undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*volume[0]->getnz());
+  }else if (nDimensions == 5){
+    undefSum = p_undefined/(nBinsTrend_*nBinsTrend_*volume[0]->getnx()*volume[0]->getny());
+  }
+
+  for(int i=0;i<nzp;i++)
   {
-    for(j=0;j<nyp;j++)
+    for(int j=0;j<nyp;j++)
     {
-      for(k=0;k<rnxp;k++)
+      for(int k=0;k<rnxp;k++)
       {
         alpha = alphagrid->getNextReal();
         beta = betagrid->getNextReal();
         rho = rhogrid->getNextReal();
-        if(faciesProbFromRockPhysics){
-          std::vector<double> trend_values = trend_cubes.GetTrendPosition(i,j,k);
+        if(faciesProbFromRockPhysics && nDimensions>3){
+          int ii, jj, kk;
+          ii = std::min(i, trendGridSizes[0][2]-1);
+          jj = std::min(j, trendGridSizes[0][1]-1);
+          kk = std::min(k, trendGridSizes[0][0]-1);
+          std::vector<double> trend_values = trend_cubes.GetTrendPosition(kk,jj,ii);
           t1 = static_cast<float>(trend_values[0]);
           t2 = static_cast<float>(trend_values[1]);
         }
         if(k<smallrnxp && j<ny && i<nz){
           sum = undefSum;
-          for(l=0;l<nFacies_;l++){
+          for(int l=0;l<nFacies_;l++){
             if(k<nx){
               if(!faciesProbFromRockPhysics){
                 for(int angle = 0; angle<nAng; angle++)
                   t[angle] = float((*tgrid[angle])(k,j));
               }
               dens = FindDensityFromPosteriorPDF(alpha, beta, rho, t1, t2, posteriorPdf, l, volume, t, nAng, faciesProbFromRockPhysics);
-              //-----------------------------------------------------------
-              densGrid[l]->setNextReal(dens);
-              //-----------------------------------------------------------
             }
             else
               dens = 1.0;
-            //-----------------------------------------------------------
-              densGrid[l]->setNextReal(dens);
-              //-----------------------------------------------------------
             if(priorFaciesCubes.size() != 0)
               value[l] = priorFaciesCubes[l]->getNextReal()*dens;
             else
               value[l] = priorFacies[l]*dens;
             sum = sum+value[l];
           }
-          for(l=0;l<nFacies_;l++)
+          for(int l=0;l<nFacies_;l++)
           {
             help = value[l]/sum;
             if(k<nx)
@@ -2209,26 +2240,13 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   }
   std::cout << "\n";
 
-  //----------------------------------------------
-  for(int l=0;l<nFacies_;l++){
-    densGrid[l]->endAccess();
-    if(ModelSettings::getDebugLevel() >= 1) {
-      std::string baseName = "DensGridTemp_" + NRLib::ToString(l) + IO::SuffixAsciiFiles();
-      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
-      densGrid[l]->writeAsciiFile(fileName);
-    }
-  }
-  for(int l=0;l<nFacies_;l++){
-    delete densGrid[l];
-  }
-  //----------------------------------------------
 
   if(priorFaciesCubes.size() != 0)
-    for(i=0;i<nFacies_;i++)
+    for(int i=0;i<nFacies_;i++)
     {
       priorFaciesCubes[i]->endAccess();
     }
-  for(i=0;i<nFacies_;i++)
+  for(int i=0;i<nFacies_;i++)
     faciesProb_[i]->endAccess();
   alphagrid->endAccess();
   betagrid->endAccess();
@@ -2495,9 +2513,9 @@ void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>            
 
         for(int l = 0; l<randomFaciesLength; l++){
           facies.push_back(randomFacies);
-          alpha.push_back(static_cast<float>(vp_temp[l]));
-          beta.push_back(static_cast<float>(vs_temp[l]));
-          rho.push_back(static_cast<float>(rho_temp[l]));
+          alpha.push_back(static_cast<float>(log(vp_temp[l])));
+          beta.push_back(static_cast<float>(log(vs_temp[l])));
+          rho.push_back(static_cast<float>(log(rho_temp[l])));
         }
 
         k+= randomFaciesLength;

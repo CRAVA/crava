@@ -47,33 +47,39 @@ t2_max_(t2_max)
   if (v.size()>2 || static_cast<int>(v[0].size()) != 3 ||  static_cast<int>(v[1].size()) != 3)
     throw NRLib::Exception("Facies probabilities: Transformation matrix v does not have the right dimensions");
 
+  v1_.resize(3,0.0);
+  v2_.resize(3,0.0);
+
   for(int i=0; i<3; i++){
     v1_[i] = v[0][i];
     v2_[i] = v[1][i];
   }
 
   // set size of 2D grid to ni*nj
-  histogram_.Resize(nt1_,nt2_);
+  histogram_.Resize(nt1_,nt2_,NULL);
   int nData = 0;
 
   int dim = static_cast<int>(d1.size());
 
   std::vector<std::vector<double> > x(2);
-  x[0].resize(dim);
-  x[1].resize(dim);
+  x[0].resize(dim,0.0);
+  x[1].resize(dim,0.0);
 
   for(int i=0; i<nt1_; i++){
     for (int j=0; j<nt2_; j++){
       histogram_(i,j) = new FFTGrid(nx_, ny_, 1, nx_, ny_, 1);
-      histogram_(i,j)->createRealGrid(false);
-      int rnxp = histogram_(i,j)->getRNxp();
+      //histogram_(i,j)->createRealGrid(true);
+      //int rnxp = histogram_(i,j)->getRNxp();
       histogram_(i,j)->setType(FFTGrid::PARAMETER);
       histogram_(i,j)->setAccessMode(FFTGrid::WRITE);
 
+      histogram_(i,j)->fillInConstant(0.0);
+      /*
       for(int k=0;k<ny_;k++){
         for(int j=0;j<rnxp;j++)
           histogram_(i,j)->setNextReal(0.0f);
       }
+      */
 
       histogram_(i,j)->endAccess();
     }
@@ -132,7 +138,7 @@ t2_max_(t2_max)
 
       InvertSquareMatrix(sigma_tmp,sigma_inv,2);
 
-      FFTGrid *smoother = new FFTGrid(nx_, ny_, 1, nx_, ny_, 1);
+      FFTGrid * smoother = new FFTGrid(nx_, ny_, 1, nx_, ny_, 1);
 
       smoother->createRealGrid(false);
       smoother->setType(FFTGrid::PARAMETER);
@@ -153,10 +159,10 @@ t2_max_(t2_max)
       histogram_(i,j)->endAccess();
 
       delete smoother;
-      for(int i=0;i<3;i++){
+      for(int i=0;i<2;i++){
         delete [] sigma_inv[i];
-          delete [] sigma_tmp[i];
-        }
+        delete [] sigma_tmp[i];
+      }
       delete [] sigma_tmp;
       delete [] sigma_inv;
     }
@@ -220,8 +226,17 @@ double PosteriorElasticPDF4D::Density(const double & vp,
     // skal returnvalue være 0 eller missing hvis utenfor gridet?
     returnvalue = 0;
   }else{
-    int i = static_cast<int>(floor((s1-t1_min_)/dt1_+0.5));
-    int j = static_cast<int>(floor((s2-t2_min_)/dt2_+0.5));
+    int i = static_cast<int>(floor((s1-t1_min_)/dt1_));
+    int j = static_cast<int>(floor((s2-t2_min_)/dt2_));
+
+    /***/
+    /*
+    std::string baseName = "Smoothed_hist_" + NRLib::ToString(i) + NRLib::ToString(j) + IO::SuffixAsciiFiles();
+    std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+    histogram_(i,j)->writeAsciiFile(fileName);
+    */
+    /****/
+
     returnvalue = histogram_(i,j)->InterpolateTrilinear(x_min_, x_max_,
                                    y_min_, y_max_, 0, 0, x, y, 0);
     // If the value is outside FFTGrid, return probability 0
@@ -233,10 +248,13 @@ double PosteriorElasticPDF4D::Density(const double & vp,
   return returnvalue;
 }
 
-/*void PosteriorElasticPDF4D::WriteAsciiFile(std::string filename) const
+void PosteriorElasticPDF4D::WriteAsciiFile(std::string filename,
+                                           int         i,
+                                           int         j) const
 {
-
-}*/
+  if(i<nx_ && j<ny_)
+    histogram_(i,j)->writeAsciiFile(filename);
+}
 
 double PosteriorElasticPDF4D::FindDensity(const double & vp,
                                           const double & vs,

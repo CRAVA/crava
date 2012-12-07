@@ -68,6 +68,7 @@ public:
              SpatialWellFilter                                  * filteredlogs,
              std::vector<WellData *>                              wells,
              CravaTrend                                         & trend_cubes,
+             int                                                  lowIntCut,
              int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
@@ -114,9 +115,10 @@ private:
   FFTGrid      ** faciesProb_;
   FFTGrid      *  faciesProbUndef_;
 
-  void                   MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
+  int                    MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
+                                                            std::vector<Simbox*>                                   & volume,
                                                             Crava                                                  * cravaResult,
-                                                            SpatialWellFilter                                      * filteredlogs,
+                                                            //SpatialWellFilter                                      * filteredlogs,
                                                             std::vector<FFTGrid *>                                 & priorFaciesCubes,
                                                             const ModelSettings                                    * modelSettings,
                                                             const std::map<std::string, DistributionsRock *>       & rock_distributions,
@@ -126,9 +128,10 @@ private:
                                                             const double                                           & trend1_max,
                                                             const double                                           & trend2_min,
                                                             const double                                           & trend2_max,
-                                                            bool                                                     useFilter);
+                                                            bool                                                     useFilter,
+                                                            int                                                      lowIntCut);
 
-  void                   MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf3d,
+  int                    MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf3d,
                                                  std::vector<Simbox*>                                     & volume,
                                                  const std::vector<double **>                             & sigmaEOrig,
                                                  bool                                                       useFilter,
@@ -148,7 +151,8 @@ private:
                                                                     FFTGrid                                                   * betagrid,
                                                                     FFTGrid                                                   * rhogrid,
                                                                     const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
-                                                                    const std::vector<Simbox *>                                 volume,
+                                                                    const std::vector<Simbox *>                               & volume,
+                                                                    int                                                         nDimensions,
                                                                     float                                                       p_undefined,
                                                                     const std::vector<float>                                  & priorFacies,
                                                                     std::vector<FFTGrid *>                                    & priorFaciesCubes,

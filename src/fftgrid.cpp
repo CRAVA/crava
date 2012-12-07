@@ -433,7 +433,10 @@ double FFTGrid::InterpolateTrilinear(double x_min,
   double dz = (z_max - z_min)/nz_;
 
   // If values are outside definition area return MISSING
-  if(x < x_min || x > x_max || y < y_min || y > y_max  || z<z_min || z> z_max){
+  if (z_min == z_max){
+    return InterpolateBilinearXY(x_min, x_max, y_min, y_max, x, y);
+  }
+  else if(x < x_min || x > x_max || y < y_min || y > y_max  || z<z_min || z> z_max){
     return RMISSING;
   // Can only interpolate from x_min+dx/2 to x_max-dx/2 etc.
   } /*else if (x<x_min+dx/2 || x>x_max-dx/2 || y<y_min+dy/2 || y>y_max-dy/2 || z<z_min+dz/2 || z>z_max-dz/2 ){
@@ -454,18 +457,62 @@ double FFTGrid::InterpolateTrilinear(double x_min,
   double wj = (y - j1*dy-y_min-dy/2)/dy;
   double wk = (z - k1*dz-z_min-dz/2)/dz;
 
+  assert (wi>=0 && wi<=1 && wj>=0 && wj<=1 && wk>=0 && wk<=1);
+
 
   double *value = new double[8];
+  value[0] = 0;
+  value[1] = 0;
+  value[2] = 0;
+  value[3] = 0;
+  value[4] = 0;
+  value[5] = 0;
+  value[6] = 0;
+  value[7] = 0;
 
-
-  value[0] = std::max<double>(0,this->getRealValue(i1,j1,k1));
-  value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
-  value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
-  value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
-  value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
-  value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
-  value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
-  value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  if(i1<0 && j1<0 && k1<0){
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1<0 && k1>=0){
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1>=0 && k1>=0){
+    value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1>=0 && k1<0){
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1<0 && k1<0){
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1>=0 && k1<0){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1<0 && k1>=0){
+    value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1>=0 && k1>=0){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,k1));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
+    value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
 
   //float value=0;
   double returnvalue = 0;
@@ -478,13 +525,106 @@ double FFTGrid::InterpolateTrilinear(double x_min,
   returnvalue += (     wi)*(     wj)*(1.0f-wk)*value[6];
   returnvalue += (     wi)*(     wj)*(     wk)*value[7];
 
+  delete [] value;
+
   return returnvalue;
 }
 
-/*double        FFTGrid::InterpolateBilinear(double x_min,
-                                           double x_max,
-                                           double z_min,
-                                           double z_max);*/
+double FFTGrid::InterpolateBilinearXY(double x_min,
+                                      double x_max,
+                                      double y_min,
+                                      double y_max,
+                                      double x,
+                                      double y)
+{
+  int i1,j1,i2,j2;
+
+  double dx = (x_max - x_min)/nx_;
+  double dy = (y_max - y_min)/ny_;
+
+  // If values are outside definition area return RMISSING
+  if(x < x_min || x > x_max || y < y_min || y > y_max){
+    return RMISSING;
+  // Can only interpolate from x_min+dx/2 to x_max-dx/2 etc.
+  }
+  else{
+    // i1,j1,k1 can take values in the interval [-1,nx-1],[-1,ny-1]
+    i1 = static_cast<int>(floor((x-x_min-dx/2)/dx));
+    j1 = static_cast<int>(floor((y-y_min-dy/2)/dy));
+    // i2,j2,k2 can take values in the interval [0,nx],[0,ny]
+    i2 = i1+1;
+    j2 = j1+1;
+  }
+  // BILINEAR INTERPOLATION
+  double wi = (x - i1*dx-x_min-dx/2)/dx;
+  double wj = (y - j1*dy-y_min-dy/2)/dy;
+
+  assert (wi>=0 && wi<=1 && wj>=0 && wj<=1);
+
+  double *value = new double[4];
+  value[0] = 0;
+  value[1] = 0;
+  value[2] = 0;
+  value[3] = 0;
+
+  // all indexes inside grid
+  if(i1>=0 && j1>=0 && i2<nx_ && j2<ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // i1 and j1 outside grid
+  else if(i1<0 && j1<0 && i2<nx_ && j2<ny_){
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // j1 outside grid
+  else if(i1>=0 && j1<0 && i2<nx_ && j2<ny_){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // j1 and i2 outside grid
+  else if(i1>=0 && j1<0 && i2>=nx_ && j2<ny_){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+  }
+  // i1 outside grid
+  else if(i1<0 && j1>=0 && i2<nx_ && j2<ny_){
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+
+  // i2 outside grid
+  else if(i1>=0 && j1>=0 && i2>=nx_ && j2<ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+  }
+  // i1 and j2 outside grid
+  else if(i1<0 && j1>=0 && i2<nx_ && j2>=ny_){
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+  }
+  // j2 outside grid
+  else if(i1>=0 && j1>=0 && i2<nx_ && j2>=ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+  }
+  // i2 and j2 outside grid
+  else if(i1>=0 && j1>=0 && i2>=nx_ && j2>=ny_ ){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+  }
+  else {
+    // something is wrong
+  }
+
+  double returnvalue = 0;
+  returnvalue += (1.0f-wi)*(1.0f-wj)*value[0];
+  returnvalue += (1.0f-wi)*(     wj)*value[1];
+  returnvalue += (     wi)*(1.0f-wj)*value[2];
+  returnvalue += (     wi)*(     wj)*value[3];
+
+  delete [] value;
+
+  return returnvalue;
+}
 
 void
 FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,

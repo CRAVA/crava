@@ -32,7 +32,7 @@ void PosteriorElasticPDF::CalculateTransform2D(const std::vector<double>        
   int sizeOfV = static_cast<int>(v.size());
   for (int i=0; i<sizeOfV; i++){
     for (int j=0; j<dim; j++){
-      x[i][j] = v[i][0]*d1[i] + v[i][1]*d2[i] + v[i][2]*d3[i];
+      x[i][j] = v[i][0]*d1[j] + v[i][1]*d2[j] + v[i][2]*d3[j];
     }
   }
 }

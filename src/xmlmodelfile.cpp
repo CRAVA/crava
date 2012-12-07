@@ -1698,6 +1698,8 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->setFaciesProbFromRockPhysics(true);
 
+  modelSettings_->setFaciesProbRelative(false);
+
   modelSettings_->setBackgroundFromRockPhysics(true);
 
   checkForJunk(root, errTxt, legalCommands);

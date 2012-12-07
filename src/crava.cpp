@@ -1775,7 +1775,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;
-      FindSMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt())));
 
       fprob_ = new FaciesProb(meanAlpha2_,
                                 meanBeta2_,
@@ -1794,6 +1795,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 filteredlogs,
                                 wells_,
                                 modelGeneral_->getTrendCubes(),
+                                lowIntCut,
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
@@ -1837,7 +1839,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;
-      FindSMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt())));
 
       fprob_ = new FaciesProb(postAlpha_,
                                 postBeta_,
@@ -1856,14 +1859,16 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 filteredlogs,
                                 wells_,
                                 modelGeneral_->getTrendCubes(),
+                                lowIntCut,
                                 nWells_,
                                 simbox_->getdz(),
                                 useFilter,
                                 false,
                                 trend_min[0],
                                 trend_max[0],
-                                trend_min[1],
-                                trend_max[1]);
+                                0,0);
+                                //trend_min[1],
+                                //trend_max[1]);
 
     }
     fprob_->calculateConditionalFaciesProb(wells_,

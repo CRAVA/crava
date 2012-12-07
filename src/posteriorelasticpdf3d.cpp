@@ -169,6 +169,9 @@ z_max_(t1_max)
   if (v.size()>2 || static_cast<int>(v[0].size()) != 3 ||  static_cast<int>(v[1].size()) != 3)
     throw NRLib::Exception("Facies probabilities: Transformation matrix v does not have the right dimensions");
 
+  v1_.resize(3);
+  v2_.resize(3);
+
   for(int i=0; i<3; i++){
     v1_[i] = v[0][i];
     v2_[i] = v[1][i];
@@ -273,9 +276,9 @@ z_max_(t1_max)
   histogram_->endAccess();
 
   delete smoother;
-  for(int i=0;i<3;i++){
+  for(int i=0;i<2;i++){
     delete [] sigma_inv[i];
-      delete [] sigma_tmp[i];
+    delete [] sigma_tmp[i];
     }
   delete [] sigma_tmp;
   delete [] sigma_inv;

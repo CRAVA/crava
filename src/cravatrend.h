@@ -23,6 +23,8 @@ public:
 
   ~CravaTrend();
 
+  std::vector<std::vector<int> >               GetSizeTrendCubes() const;
+
   std::vector<double>                          GetTrendPosition(const int & i,
                                                                 const int & j,
                                                                 const int & k) const;

@@ -119,3 +119,20 @@ std::vector<double>  CravaTrend::GetTrendPosition(const int & i,
 
   return trend_cube_values;
 }
+
+std::vector<std::vector<int> >    CravaTrend::GetSizeTrendCubes() const{
+
+  std::vector<std::vector<int> >  gridSizes;
+  gridSizes.resize(n_trend_cubes_);
+
+  for(int m=0; m<n_trend_cubes_; m++){
+    int nI = static_cast<int>(trend_cubes_[m].GetNI());
+    int nJ = static_cast<int>(trend_cubes_[m].GetNJ());
+    int nK = static_cast<int>(trend_cubes_[m].GetNK());
+    gridSizes[m].push_back(nI);
+    gridSizes[m].push_back(nJ);
+    gridSizes[m].push_back(nK);
+  }
+  return gridSizes;
+
+}

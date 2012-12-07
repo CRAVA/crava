@@ -519,9 +519,34 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
     }
   }
 }
+
+void Corr::initializeCorrelationsSyntWells(SpatialWellFilter                    * spatwellfilter,
+                                           std::vector<SyntWellData *>            wells,
+                                           int                                    nWells,
+                                           int                                    lowIntCut)
+{
+  fftw_real * corrT = NULL;
+
+  if(common_correlation_ == true){
+
+    corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, 0, 0);
+    //setPriorCorrTFiltered(corrT, nz, nzp); // Can have zeros in the middle
+
+    if(spatwellfilter != NULL){
+        postCovAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+
+        for(int i=0; i<nWells; i++)
+          spatwellfilter->setPriorSpatialCorrSyntWell(postCovAlpha_, wells[i], i);
+
+        postCovAlpha_->endAccess();
+    }
+  }
+  delete corrT;
+}
+
 //--------------------------------------------------------------------
 fftw_real*
-Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, std::vector<WellData *> wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
+Corr::initializeCorrelations(SpatialWellFilter   * spatwellfilter, std::vector<WellData *> wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
 {
 
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));

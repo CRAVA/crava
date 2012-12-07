@@ -216,3 +216,18 @@ CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std
   if(pos_def == false)
     errTxt += "The correlations given in the tabulated rock physics model need to generate a positive definite matrix\n";
 }
+
+void FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
+                   std::vector<double>                     & s_min,
+                   std::vector<double>                     & s_max)
+{
+  s_min.resize(2, 0.0);
+  s_max.resize(2, 0.0);
+
+  int n_trend_cubes = static_cast<int>(trend_cube_sampling.size());
+
+  for(int i=0; i<n_trend_cubes; i++) {
+    s_min[i] = trend_cube_sampling[i][0];
+    s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
+  }
+}

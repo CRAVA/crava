@@ -64,10 +64,12 @@ public:
                                    double           y,
                                    double           z);
 
- /*double               InterpolateBilinear(double x_min,
-                                           double x_max,
-                                           double z_min,
-                                           double z_max);*/
+  double              InterpolateBilinearXY(double x_min,
+                                            double x_max,
+                                            double y_min,
+                                            double y_max,
+                                            double x,
+                                            double y);
 
   void                 interpolateGridValues(std::vector<float> & grid_trace,
                                              float                z0_grid,

@@ -74,7 +74,9 @@ public:
                              const double & s2 = 0,
                              const Simbox * const volume = 0) const;
 
-  //virtual void WriteAsciiFile(std::string filename) const;
+  void WriteAsciiFile(std::string filename,
+                      int         i,
+                      int         j) const;
 
 
   // Get functions for the limits of the variables

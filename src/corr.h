@@ -3,6 +3,7 @@
 
 #include "src/definitions.h"
 #include "nrlib/surface/regularsurface.hpp"
+#include "rplib/syntwelldata.h"
 #include "src/fftgrid.h"
 
 class ModelSettings;
@@ -59,6 +60,11 @@ public:
                                   float            wnc,
                                   double ** errThetaCov,
                                   bool invert_frequency);
+
+  void       initializeCorrelationsSyntWells(SpatialWellFilter                   * spatwellfilter,
+                                             std::vector<SyntWellData *>           wells,
+                                             int                                   nWells,
+                                             int                                   lowIntCut);
 
   fftw_real* initializeCorrelations(SpatialWellFilter     * spatwellfilter,
                                     std::vector<WellData *> wells,
