@@ -237,32 +237,83 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
                                                        std::string  & errTxt) const
 {
 
-  if(mean->GetMinValue() < lower_limit_ || mean->GetMaxValue() > upper_limit_)
+  bool mean_outside = false;
+  if(mean->GetMinValue() < lower_limit_ || mean->GetMaxValue() > upper_limit_) {
     errTxt += "The mean values of the Beta distribution must be in the interval ["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
-
-  double mean_value = mean    ->GetTrendElement(0,0,0);
-  double var_value  = variance->GetTrendElement(0,0,0);
-
-  double diff = upper_limit_-lower_limit_;
-  double moved_mean = (mean_value-lower_limit_) / diff;
-  double moved_var  = var_value / std::pow(diff,2);
-
-  double alpha = moved_mean * (moved_mean*(1-moved_mean)/moved_var - 1);
-  double beta  = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
-
-  if(alpha < 0) {
-    errTxt += "The combination mean="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
-    errTxt += "  provides alpha < 0 in the Beta distribution\n";
-    errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
+    mean_outside = true;
   }
-  if(beta < 0) {
-    errTxt += "The combination mean ="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
-    errTxt += "  provides beta < 0 in the Beta distribution\n";
-    errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
+
+  int n_samples_mean;
+  int n_samples_var;
+  int ni;
+  int nj;
+
+  if(mean->GetTrendDimension() == 0) {
+    ni = 1;
+    n_samples_mean = 1;
   }
-  if(moved_var > moved_mean*(1-moved_mean)) {
-    errTxt += "The Beta distribution demands that v < e*(1-e)\n";
-    errTxt += "  where e = (mean-a)/(b-a) and v = variance/(b-a)^2`\n";
-    errTxt += "  mean="+NRLib::ToString(mean_value)+", variance="+NRLib::ToString(var_value)+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"] found\n";
+  else {
+    ni = 2;
+    n_samples_mean = 4;
+  }
+
+  if(variance->GetTrendDimension() == 0) {
+    nj = 1;
+    n_samples_var = 1;
+  }
+  else {
+    nj = 2;
+    n_samples_var = 4;
+  }
+
+  double mean_min = mean->GetMinValue();
+  double mean_max = mean->GetMaxValue();
+
+  double var_min = variance->GetMinValue();
+  double var_max = variance->GetMaxValue();
+
+  double dx;
+  if(ni == 1)
+    dx = 0;
+  else
+    dx = (mean_max - mean_min)/(n_samples_mean - 1);
+
+  double dy;
+  if(nj == 1)
+    dy = 0;
+  else
+    dy = (var_max  - var_min) /(n_samples_var - 1);
+
+  std::vector<double> mean_sampling(n_samples_mean);
+  for(int i=0; i<n_samples_mean; i++)
+    mean_sampling[i] = mean_min + i*dx;
+
+  std::vector<double> var_sampling(n_samples_var);
+  for(int j=0; j<n_samples_var; j++)
+    var_sampling[j]  = var_min  + j*dy;
+
+  for(int i=0; i<n_samples_mean; i++) {
+    for(int j=0; j<n_samples_var; j++) {
+
+      double diff       = upper_limit_-lower_limit_;
+      double moved_mean = (mean_sampling[i] - lower_limit_) / diff;
+      double moved_var  = var_sampling[j] / std::pow(diff,2);
+
+      double alpha =    moved_mean  * (moved_mean*(1-moved_mean)/moved_var - 1);
+      double beta  = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
+
+      if(alpha <= 0 || beta <= 0) {
+        errTxt += "The combination mean="+NRLib::ToString(mean_sampling[i])+", variance="+NRLib::ToString(var_sampling[j])+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
+        errTxt += "  provides alpha<=0 and/or beta<=0 in the Beta distribution\n";
+        if(mean_outside == true)
+          errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
+        else
+          errTxt += "  The variance should be smaller than "+NRLib::ToString(moved_mean*(1-moved_mean)*std::pow(diff,2))+" for mean="+NRLib::ToString(mean_sampling[i])+"\n";
+      }
+      if(moved_var > moved_mean*(1-moved_mean)) {
+        errTxt += "  The Beta distribution demands that v < e*(1-e)\n";
+        errTxt += "  where e = (mean-a)/(b-a) and v = variance/(b-a)^2.\n";
+      }
+    }
   }
 }
