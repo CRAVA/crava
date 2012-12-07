@@ -176,7 +176,7 @@ DistributionsSolidDEM::UpdateSample(double                      corr_param,
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
 
-  assert(typeid(sample) == typeid(SolidDEM));
+  assert(typeid(*sample) == typeid(SolidDEM));
   const SolidDEM * core_sample = dynamic_cast<const SolidDEM *>(sample);
 
   Solid * updated_solid_host = distr_solid_->UpdateSample(corr_param,

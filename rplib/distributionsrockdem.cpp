@@ -265,7 +265,7 @@ DistributionsRockDEM::UpdateSample(double                      corr_param,
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
-  assert(typeid(sample) == typeid(RockDEM));
+  assert(typeid(*sample) == typeid(RockDEM));
   const RockDEM * core_sample = dynamic_cast<const RockDEM *>(sample);
 
   Solid * updated_solid = distr_solid_->UpdateSample(corr_param,

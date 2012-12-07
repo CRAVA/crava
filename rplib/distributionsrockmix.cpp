@@ -192,7 +192,7 @@ DistributionsRockMixOfRock::UpdateSample(double                      corr_param,
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
-  assert(typeid(sample) == typeid(RockMixOfRock));
+  assert(typeid(*sample) == typeid(RockMixOfRock));
   const RockMixOfRock * core_sample = dynamic_cast<const RockMixOfRock *>(sample);
 
   std::vector<Rock *> updated_sub_rocks(distr_rock_.size());
@@ -497,7 +497,7 @@ DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      co
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
-  assert(typeid(sample) == typeid(RockMixOfSolidAndFluid));
+  assert(typeid(*sample) == typeid(RockMixOfSolidAndFluid));
   const RockMixOfSolidAndFluid * core_sample = dynamic_cast<const RockMixOfSolidAndFluid *>(sample);
 
   std::vector<Solid *> updated_solids(distr_solid_.size());

@@ -21,6 +21,8 @@
 #include "nrlib/random/normal.hpp"
 #include "nrlib/trend/trend.hpp"
 
+#include "src/definitions.h"
+
 #include <cmath>
 #include <numeric>
 
@@ -1200,9 +1202,9 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //}
 
 void DEMTools::UpdateU(std::vector<double> & u,
-                  double                corr_param,
-                  bool                  param_is_time,
-                  std::vector<double>   alpha)
+                       double                corr_param,
+                       bool                  param_is_time,
+                       std::vector<double>   alpha)
 
 {
   std::vector<double> corr(u.size());
@@ -1223,8 +1225,10 @@ void DEMTools::UpdateU(std::vector<double> & u,
   }
 
   for(size_t i=0; i<u.size(); i++){
-    normal0[i] = std.Quantile01(u[i]);
-    normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Unif01();
-    u[i] = std.Cdf(normal1[i]);
+    if(u[i] != RMISSING) {
+      normal0[i] = std.Quantile01(u[i]);
+      normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Unif01();
+      u[i] = std.Cdf(normal1[i]);
+    }
   }
 }

@@ -173,7 +173,7 @@ DistributionsFluidMix::UpdateSample(double                      corr_param,
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
 
-  assert(typeid(sample) == typeid(FluidMix));
+  assert(typeid(*sample) == typeid(FluidMix));
   const FluidMix * core_sample = dynamic_cast<const FluidMix *>(sample);
 
   std::vector<Fluid *> updated_sub_fluids(distr_fluid_.size());
