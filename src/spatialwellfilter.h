@@ -65,11 +65,9 @@ private:
   void computeSigmaEAdjusted(NRLib::Matrix & sigmae,
                              NRLib::Matrix & sigmaE0,
                              NRLib::Matrix & sigmaETmp,
-                             int             n,
                              NRLib::Matrix & sigmaEAdj);
 
-  void adjustDiagSigma(NRLib::Matrix & sigmae,
-                       int             n);
+  void adjustDiagSigma(NRLib::Matrix & sigmae);
 
   void calculateFilteredLogs(const NRLib::Matrix & Aw,
                              BlockedLogs         * blockedlogs,

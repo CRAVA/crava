@@ -148,6 +148,68 @@ Corr::getPriorCorrT(int &n, float &dt) const
 }
 
 //--------------------------------------------------------------------
+NRLib::Matrix
+Corr::getPriorVar0(void) const
+{
+  NRLib::Matrix PriorVar0(3,3);
+  PriorVar0(0,0) = static_cast<double>(priorVar0_[0][0]);
+  PriorVar0(1,0) = static_cast<double>(priorVar0_[1][0]);
+  PriorVar0(2,0) = static_cast<double>(priorVar0_[2][0]);
+  PriorVar0(0,1) = static_cast<double>(priorVar0_[0][1]);
+  PriorVar0(1,1) = static_cast<double>(priorVar0_[1][1]);
+  PriorVar0(2,1) = static_cast<double>(priorVar0_[2][1]);
+  PriorVar0(0,2) = static_cast<double>(priorVar0_[0][2]);
+  PriorVar0(1,2) = static_cast<double>(priorVar0_[1][2]);
+  PriorVar0(2,2) = static_cast<double>(priorVar0_[2][2]);
+  return PriorVar0;
+}
+
+//--------------------------------------------------------------------
+NRLib::SymmetricMatrix
+Corr::getSymmetricPriorVar0(void) const
+{
+  NRLib::SymmetricMatrix PriorVar0(3);
+  PriorVar0(0,0) = static_cast<double>(priorVar0_[0][0]);
+  PriorVar0(0,1) = static_cast<double>(priorVar0_[0][1]);
+  PriorVar0(0,2) = static_cast<double>(priorVar0_[0][2]);
+  PriorVar0(1,1) = static_cast<double>(priorVar0_[1][1]);
+  PriorVar0(1,2) = static_cast<double>(priorVar0_[1][2]);
+  PriorVar0(2,2) = static_cast<double>(priorVar0_[2][2]);
+  return PriorVar0;
+}
+
+//--------------------------------------------------------------------
+NRLib::Matrix
+Corr::getPostVar0(void) const
+{
+  NRLib::Matrix PostVar0(3,3);
+  PostVar0(0,0) = static_cast<double>(postVar0_[0][0]);
+  PostVar0(1,0) = static_cast<double>(postVar0_[1][0]);
+  PostVar0(2,0) = static_cast<double>(postVar0_[2][0]);
+  PostVar0(0,1) = static_cast<double>(postVar0_[0][1]);
+  PostVar0(1,1) = static_cast<double>(postVar0_[1][1]);
+  PostVar0(2,1) = static_cast<double>(postVar0_[2][1]);
+  PostVar0(0,2) = static_cast<double>(postVar0_[0][2]);
+  PostVar0(1,2) = static_cast<double>(postVar0_[1][2]);
+  PostVar0(2,2) = static_cast<double>(postVar0_[2][2]);
+  return PostVar0;
+}
+
+//--------------------------------------------------------------------
+NRLib::SymmetricMatrix
+Corr::getSymmetricPostVar0(void) const
+{
+  NRLib::SymmetricMatrix PostVar0(3);
+  PostVar0(0,0) = static_cast<double>(postVar0_[0][0]);
+  PostVar0(0,1) = static_cast<double>(postVar0_[0][1]);
+  PostVar0(0,2) = static_cast<double>(postVar0_[0][2]);
+  PostVar0(1,1) = static_cast<double>(postVar0_[1][1]);
+  PostVar0(1,2) = static_cast<double>(postVar0_[1][2]);
+  PostVar0(2,2) = static_cast<double>(postVar0_[2][2]);
+  return PostVar0;
+}
+
+//--------------------------------------------------------------------
 void
 Corr::setPriorVar0(float ** priorVar0)
 {

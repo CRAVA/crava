@@ -57,12 +57,18 @@ public:
   int                getRelative();
 
 
-  void               computeG(double **G) const;
-  float**            getPriorVar0() const;
-  float**            getPostVar0() const;
-  void               newPosteriorCovPointwise(double ** sigmanew, double **G,
-                                              const std::vector<double> & scales, double **sigmamdnew) const;
-  void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
+  void               computeG(NRLib::Matrix & G) const;
+  NRLib::Matrix      getPriorVar0() const;
+  NRLib::Matrix      getPostVar0() const;
+  NRLib::SymmetricMatrix getSymmetricPriorVar0() const;
+  NRLib::SymmetricMatrix getSymmetricPostVar0() const;
+  void               newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
+                                              NRLib::Matrix & G,
+                                              NRLib::Vector & scales,
+                                              NRLib::Matrix & sigmamdnew) const;
+  NRLib::Matrix      computeFilter(NRLib::SymmetricMatrix & priorCov,
+                                   NRLib::SymmetricMatrix & posteriorCov) const;
+
   void               doPredictionKriging();
 
 private:

@@ -121,7 +121,7 @@ private:
                                         std::vector<FFTGrid *>           & density,
                                         Simbox                          ** volume,
                                         int                                index,
-                                        double                          ** G,
+                                        NRLib::Matrix                    & G,
                                         Crava                            * cravaResult,
                                         const std::vector<Grid2D *>      & noiseScale);
 

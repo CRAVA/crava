@@ -37,6 +37,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/grid/grid2d.hpp"
+
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #define _USE_MATH_DEFINES
@@ -119,7 +120,7 @@ Crava::Crava(ModelSettings     * modelSettings,
     seisData_       = modelAVOdynamic_->getSeisCubes();
     modelAVOdynamic_->releaseGrids();
     correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
-    parPointCov_    = correlations_->getPriorVar0();
+    parPointCov_    = correlations_->getPriorVar0_old();
     parSpatialCorr  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
     errCorrUnsmooth = correlations_->getPostCovBeta();   // Double-use grids to save memory
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
@@ -641,7 +642,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
   rcCovT = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
   fftw_complex * rcSpecIntens = reinterpret_cast<fftw_complex*>(rcCovT);
   const float * corrT = corr->getPriorCorrTFiltered();
-  computeReflectionCoefficientTimeCovariance( rcCovT, corrT,corr->getPriorVar0(),A);
+  computeReflectionCoefficientTimeCovariance( rcCovT, corrT,corr->getPriorVar0_old(),A);
   rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
 
 
@@ -1870,16 +1871,29 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   Timings::setTimeFiltering(wall,cpu);
 }
 
-float**
-Crava::getPriorVar0() const {return correlations_->getPriorVar0();}
+NRLib::Matrix Crava::getPriorVar0(void) const
+{
+  return correlations_->getPriorVar0();
+}
 
-float**
-Crava::getPostVar0() const {return correlations_->getPostVar0();}
+NRLib::Matrix Crava::getPostVar0(void) const
+{
+  return correlations_->getPostVar0();
+}
 
+NRLib::SymmetricMatrix Crava::getSymmetricPriorVar0(void) const
+{
+  return correlations_->getSymmetricPriorVar0();
+}
 
-//-------------------------------------
-void Crava::computeG(double ** G) const
-//-------------------------------------
+NRLib::SymmetricMatrix Crava::getSymmetricPostVar0(void) const
+{
+  return correlations_->getSymmetricPostVar0();
+}
+
+//-------------------------------------------
+void Crava::computeG(NRLib::Matrix & G) const
+//-------------------------------------------
 {
   //
   // Class variables in use
@@ -1888,14 +1902,11 @@ void Crava::computeG(double ** G) const
   Corr   *  correlations = correlations_;
   int       n_theta      = ntheta_;
 
-  NRLib::Matrix Sm(3,3);
-  NRLib::Matrix Smd(3,3);
   NRLib::Matrix ErrThetaCov(n_theta, n_theta);
-
-  NRLib::SetMatrixFrom2DArray(Sm , correlations->getPriorVar0());
-  NRLib::SetMatrixFrom2DArray(Smd, correlations->getPostVar0());
   NRLib::SetMatrixFrom2DArray(ErrThetaCov, errThetaCov);
 
+  NRLib::Matrix Sm     = correlations->getPriorVar0();
+  NRLib::Matrix Smd    = correlations->getPostVar0();
   NRLib::Matrix Sdelta = Sm - Smd;
 
   NRLib::Vector Eval(3);
@@ -1963,284 +1974,157 @@ void Crava::computeG(double ** G) const
   NRLib::Matrix H1 = Evece * Lg;
   EvecT = flens::transpose(Evec);
   NRLib::Matrix H2 = H1 * EvecT;
-  NRLib::Matrix GG = H2*Sinv;
-
-  NRLib::Set2DArrayFromMatrix(GG, G);
+  G = H2*Sinv;
 }
 
-
-void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales,
-                                     double ** sigmamdnew) const
+void Crava::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
+                                     NRLib::Matrix & G,
+                                     NRLib::Vector & scales,
+                                     NRLib::Matrix & sigmamdnew) const
 {
   //  this function name is not suited... it returns not what we should think perhaps...
   //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
   //  sigmamdnew = Sqrt( Posterior covariance)
 
-  double **sigmaenew = new double*[ntheta_];
-  double **D         = new double*[ntheta_];
-  double **help      = new double*[ntheta_];
-  int i,j;
-  for(i=0;i<ntheta_;i++)
-  {
-    sigmaenew[i] = new double[ntheta_];
-    D[i]         = new double[ntheta_];
-    help[i]      = new double[ntheta_];
+  NRLib::Matrix D = NRLib::ZeroMatrix(ntheta_);
+  for (int i=0 ; i<ntheta_ ; i++) {
+    D(i,i) = sqrt(scales(i));
   }
 
-  for(i=0;i<ntheta_;i++)
-    for(j=0;j<ntheta_;j++)
-      if(i==j)
-        D[i][j] = sqrt(scales[i]);
-      else
-        D[i][j] = 0.0;
+  NRLib::Matrix ErrThetaCov(ntheta_, ntheta_);
+  NRLib::SetMatrixFrom2DArray(ErrThetaCov, errThetaCov_);
 
-  lib_matr_prod(D,errThetaCov_,ntheta_,ntheta_,ntheta_,help);
-  lib_matr_prod(help,D,ntheta_,ntheta_,ntheta_,sigmaenew);
+  NRLib::Matrix help      = D * ErrThetaCov;
+  NRLib::Matrix sigmaenew = help * D;
 
-  double **GT    = new double *[3];
-  double **help1 = new double *[ntheta_];
-  double **help2 = new double *[3];
-  double **help4 = new double *[3];
-  for(i=0;i<3;i++)
-  {
-    GT[i] = new double[ntheta_];
-    help2[i] = new double[ntheta_];
-    help4[i] = new double[ntheta_];
-  }
-  for(i=0;i<ntheta_;i++)
-    help1[i] = new double[3];
-  lib_matrTranspose(G,ntheta_,3,GT);
-  double **sigmam = new double*[3];
-  for(i=0;i<3;i++)
-  {
-    sigmam[i] = new double[3];
-    for(j=0;j<3;j++)
-      sigmam[i][j] = double(correlations_->getPriorVar0()[i][j]);
-  }
-  lib_matr_prod(G,sigmam,ntheta_,3,3,help1);
-  lib_matr_prod(help1,GT,ntheta_,3,ntheta_,help);
-  for(i=0;i<ntheta_;i++)
-    for(j=0;j<ntheta_;j++)
-      help[i][j]+=sigmaenew[i][j];
-  // help = G*Sigmam*GT+sigmaE_New
+  NRLib::Matrix GT        = NRLib::transpose(G);
+  NRLib::Matrix sigmam    = correlations_->getPriorVar0();
+  NRLib::Matrix H1        = G * sigmam;
 
+  help = H1 * GT;
+  help = help + sigmaenew;
 
-  int     * error         = new int[1];
-  double  * eigvale       = new double[ntheta_];
-  double ** eigvece       = new double * [ntheta_];
-  double ** eigvalmate    = new double * [ntheta_];
-  double ** eigvecetrans  = new double * [ntheta_];
+  NRLib::Vector eigvale(ntheta_);
+  NRLib::Matrix eigvece(ntheta_,ntheta_);
+  NRLib::ComputeEigenVectors(help, eigvale, eigvece);
 
-  for(i=0;i<ntheta_;i++)
-  {
-    eigvece[i]      = new double[ntheta_];
-    eigvalmate[i]   = new double[ntheta_];
-    eigvecetrans[i] = new double[ntheta_];
-  }
-  lib_matr_eigen(help,ntheta_,eigvece,eigvale,error);
-  for(i=0;i<ntheta_;i++)
-    for(j=0;j<ntheta_;j++)
-      if(i==j && eigvale[i]>0.00000001)
-        eigvalmate[i][j] = 1.0/eigvale[i];
-      else
-        eigvalmate[i][j] = 0.0;
+  NRLib::Matrix eigvalmate = NRLib::ZeroMatrix(ntheta_);
 
-  lib_matrTranspose(eigvece,ntheta_,ntheta_,eigvecetrans);
-  lib_matr_prod(eigvece,eigvalmate,ntheta_,ntheta_,ntheta_,help);
-  lib_matr_prod(help,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece); // eigvece = (G*Sigmam*GT+sigmaE_New)^-1
-
-  double ** help3 = new double *[3];
-  for(i=0;i<3;i++)
-    help3[i] = new double[3];
-
-  double **deltanew = new double *[3];
-  for(i=0;i<3;i++)
-    deltanew[i] = new double[3];
-
-  lib_matr_prod(sigmam,GT,3,3,ntheta_,help4);
-  lib_matr_prod(help4,eigvece,3,ntheta_,ntheta_,help2);// help2= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1
-  lib_matr_prod(help2,G,3,ntheta_,3,help3);// help2= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*G
-  lib_matr_prod(help3,sigmam,3,3,3,deltanew);// delta new= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM
-
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-    {
-      sigmamdnew[i][j] = -deltanew[i][j];
-      sigmamdnew[i][j]+=sigmam[i][j];
+  for (int i=0 ; i<ntheta_ ; i++) {
+    if (eigvale(i) > 0.00000001) {
+      eigvalmate(i,i) = 1.0/eigvale(i);
     }
-   // sigmamdnew = SigmaM - SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM;  is the local posterior covariance.
-
-  double  * eigval      = new double[3];
-  double ** eigvalmat   = new double*[3];
-  double ** eigvec      = new double *[3];
-  double ** eigvectrans = new double *[3];
-  for(i=0;i<3;i++)
-  {
-    eigvec[i] = new double[3];
-    eigvalmat[i] = new double[3];
-    eigvectrans[i] = new double[3];
   }
 
-  lib_matr_eigen(sigmamdnew,3,eigvec,eigval,error); // take square root of sigmamdnew, because this is what is needed to save for later use in simulation.
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(i==j && eigval[i]>0.0)
-        eigvalmat[i][j]=sqrt(eigval[i]);
-      else
-        eigvalmat[i][j] = 0.0;
-  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
-  lib_matrTranspose(eigvec,3,3,eigvectrans);
-  lib_matr_prod(help3,eigvectrans,3,3,3,sigmamdnew);
-  // sigmamdnew = Sqrt( Posterior covariance)
+  NRLib::Matrix eigvecetrans = NRLib::transpose(eigvece);
+  help    = eigvece * eigvalmate;
+  eigvece = help * eigvecetrans;   // eigvece = (G*Sigmam*GT+sigmaE_New)^-1
 
-  // delta new= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM
-  lib_matr_eigen(deltanew,3,eigvec,eigval,error);
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(i==j && eigval[i]>0.0)
-        eigvalmat[i][j]=sqrt(eigval[i]);
-      else
-        eigvalmat[i][j] = 0.0;
+  NRLib::Matrix H4       = sigmam * GT;
+  NRLib::Matrix H2       = H4 * eigvece; // SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1
+  NRLib::Matrix H3       = H2 * G;       // SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*G
+  NRLib::Matrix deltanew = H3 * sigmam;  // SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM
 
-  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
-  lib_matrTranspose(eigvec,3,3,eigvectrans);
-  lib_matr_prod(help3,eigvectrans,3,3,3,deltanew);
-  // deltanew = sqrt(  SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM)
+  sigmamdnew = sigmam - deltanew;        // SigmaM - SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM;  is the local posterior covariance.
 
-  float **sigmamd = correlations_->getPostVar0();
-  double **sigmadelta = new double*[3];
+  NRLib::Vector eigval(3);
+  NRLib::Matrix eigvec(3, 3);
+  NRLib::ComputeEigenVectors(sigmamdnew, eigval, eigvec);
 
-  for(i=0;i<3;i++)
-    sigmadelta[i] = new double[3];
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
-  // sigmadelta = sigmaM-sigmaM|d
-
-  lib_matr_eigen(sigmadelta,3,eigvec,eigval,error);
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(i==j&& eigval[i]>0.0000001)
-        eigvalmat[i][j]=1.0/sqrt(eigval[i]);
-      else
-        eigvalmat[i][j] = 0.0;
-  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
-  lib_matrTranspose(eigvec,3,3,eigvectrans);
-  lib_matr_prod(help3,eigvectrans,3,3,3,sigmadelta);
-   // sigmadelta = sqrt( sigmaM-sigmaM|d ) (robustified )
-
-
-  lib_matr_prod(deltanew,sigmadelta,3,3,3,sigmanew);
-  // sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
-
-  for(i=0;i<ntheta_;i++)
-  {
-    delete [] eigvecetrans[i];
-    delete [] eigvalmate[i];
-    delete [] eigvece[i];
-    delete [] sigmaenew[i];
-    delete [] help1[i];
-    delete [] help[i];
-    delete [] D[i];
+  NRLib::Matrix eigvalmat = NRLib::ZeroMatrix(3);
+  for (int i=0 ; i<3 ; i++) {
+    if (eigval(i) > 0.0) {
+      eigvalmat(i,i) = std::sqrt(eigval(i));
+    }
   }
-  delete [] eigvecetrans;
-  delete [] eigvalmate;
-  delete [] eigvece;
-  delete [] sigmaenew;
-  delete [] help1;
-  delete [] help;
-  delete [] D;
 
-  for(i=0;i<3;i++)
-  {
-    delete [] eigvectrans[i];
-    delete [] eigvalmat[i];
-    delete [] eigvec[i];
-    delete [] sigmadelta[i];
-    delete [] sigmam[i];
-    delete [] deltanew[i];
-    delete [] GT[i];
-    delete [] help2[i];
-    delete [] help3[i];
-    delete [] help4[i];
+  NRLib::Matrix eigvectrans = NRLib::transpose(eigvec);
+
+  H3          = eigvec * eigvalmat;
+  sigmamdnew = H3 * eigvectrans;      // sigmamdnew = Sqrt( Posterior covariance)
+
+  // -------
+
+  NRLib::ComputeEigenVectors(deltanew, eigval, eigvec);
+
+  NRLib::InitializeMatrix(eigvalmat, 0.0);
+  for (int i=0 ; i<3 ; i++) {
+    if (eigval(i) > 0.0) {
+      eigvalmat(i,i) = std::sqrt(eigval(i));
+    }
   }
-  delete [] eigvectrans;
-  delete [] eigvalmat;
-  delete [] eigvec;
-  delete [] eigval;
-  delete [] sigmadelta;
-  delete [] sigmam;
-  delete [] deltanew;
-  delete [] GT;
-  delete [] help2;
-  delete [] help3;
-  delete [] help4;
 
-  delete [] error;
-  delete [] eigvale;
+  H3          = eigvec * eigvalmat;
+  eigvectrans = NRLib::transpose(eigvec);
+  deltanew    = H3 * eigvectrans;             // sqrt(SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM)
+
+  // -------
+
+  NRLib::Matrix sigmamd    = correlations_->getPostVar0();
+  NRLib::Matrix sigmadelta = sigmam - sigmamd;
+
+  NRLib::ComputeEigenVectors(sigmadelta, eigval, eigvec);
+
+  NRLib::InitializeMatrix(eigvalmat, 0.0);
+  for (int i=0 ; i<3 ; i++) {
+    if (eigval(i) > 0.0000001) {
+      eigvalmat(i,i) = 1.0/std::sqrt(eigval(i));
+    }
+  }
+
+  H3          = eigvec * eigvalmat;
+  eigvectrans = NRLib::transpose(eigvec);
+  sigmadelta  = H3 * eigvectrans;           // sqrt( sigmaM-sigmaM|d ) (robustified )
+
+  // -------
+
+  sigmanew = deltanew * sigmadelta;         // sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
 }
 
-void
-Crava::computeFilter( float ** priorCov, double ** posteriorCov,int n,double** filter) const
+
+NRLib::Matrix
+Crava::computeFilter(NRLib::SymmetricMatrix & Sprior,
+                     NRLib::SymmetricMatrix & Spost) const
 {
-  double ** imat       = new double *[n];
-  double ** priorCov2       = new double *[n];
-  for(int i=0;i<n;i++)
-  {
-    imat[i] = new double [n];
-    priorCov2[i] = new double [n];
-    for(int j=0;j<n;j++)
-    {
-      priorCov2[i][j] =  priorCov[i][j];
-      imat[i][j] = 0.0;
-      if(i==j)
-        imat[i][j] =1.0;
-    }
-  }
+  //
+  // Filter = I - Sigma_post * inv(Sigma_prior)
+  //
+  int n = Sprior.dim();
 
-  lib_matrCholR(n, priorCov2);
-  lib_matrAXeqBMatR(n, priorCov2, imat, n);
-  lib_matr_prod(posteriorCov,imat,n,n,n,filter);
-  for(int i=0;i<n;i++)
-  {
-    for(int j=0;j<n;j++)
-    {
-      filter[i][j] *=-1.0;
-      if(i==j)
-        filter[i][j]+=1.0;
-    }
-    delete [] imat[i];
-    delete [] priorCov2[i];
-  }
+  NRLib::Matrix I = NRLib::IdentityMatrix(n);
+  NRLib::Matrix J = I;
+  NRLib::CholeskySolve(Sprior, I);
+  NRLib::Matrix F = Spost * I;
 
-  delete [] imat;
-  delete [] priorCov2;
+  F  = F * (-1);
+  F += J;
+
+  return F;
 }
 
 
 void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
 {
   int i,j,k;
-  double **G = new double*[ntheta_];
-  for(i=0;i<ntheta_;i++)
-    G[i] = new double[3];
+
+  NRLib::Matrix G(ntheta_, 3);
 
   computeG(G);
 
-  double **sigmanew = new double *[3];
-  double **sigmamd = new double *[3];
-  for(i=0;i<3;i++)
-  {
-    sigmanew[i] = new double[3];
-    sigmamd[i] = new double[3];
-  }
-  double **sigmamdold = new double*[3];
+  NRLib::Matrix sigmanew(3,3);
+  NRLib::Matrix sigmamd(3,3);
 
+  double **sigmamdx = new double*[3];
+  for(i=0;i<3;i++)
+    sigmamdx[i] = new double[3];
+
+  double **sigmamdold = new double*[3];
   for(i=0;i<3;i++)
     sigmamdold[i] = new double[3];
+
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
-      sigmamdold[i][j] = correlations_->getPostVar0()[i][j];
+      sigmamdold[i][j] = correlations_->getPostVar0_old()[i][j];
 
   double  * eigval       = new double[3];
   double ** eigvalmat    = new double*[3];
@@ -2295,13 +2179,18 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   {
     for(j=0;j<ny_;j++)
     {
-      std::vector<double> scales(modelSettings->getNumberOfAngles());
-      for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
-        scales[angle] = (*(modelAVOdynamic_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
+      NRLib::Vector scales(modelSettings->getNumberOfAngles());
+      for (int angle=0 ; angle<modelSettings->getNumberOfAngles() ; angle++)
+        scales(angle) = (*(modelAVOdynamic_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
-      newPosteriorCovPointwise(sigmanew,G, scales, sigmamd);
+      newPosteriorCovPointwise(sigmanew,
+                               G,
+                               scales,
+                               sigmamd);
 
-      lib_matr_prod(sigmamd,sigmamdold,3,3,3,eigvec); // store product in eigvec
+      NRLib::Set2DArrayFromMatrix(sigmamd, sigmamdx);
+
+      lib_matr_prod(sigmamdx,sigmamdold,3,3,3,eigvec); // store product in eigvec
 
       if(sigmamdnew_!=NULL)
       {
@@ -2326,9 +2215,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
         float alphadiff = alpha[k] - meanalpha[k];
         float betadiff  = beta[k]  - meanbeta[k];
         float rhodiff   = rho[k]   - meanrho[k];
-        alpha[k]  = float(meanalpha[k]+sigmanew[0][0]*alphadiff + sigmanew[0][1]*betadiff + sigmanew[0][2]*rhodiff);
-        beta[k]   = float(meanbeta[k] +sigmanew[1][0]*alphadiff + sigmanew[1][1]*betadiff + sigmanew[1][2]*rhodiff);
-        rho[k]    = float(meanrho[k]  +sigmanew[2][0]*alphadiff + sigmanew[2][1]*betadiff + sigmanew[2][2]*rhodiff);
+        alpha[k]  = float(meanalpha[k]+sigmanew(0,0)*alphadiff + sigmanew(0,1)*betadiff + sigmanew(0,2)*rhodiff);
+        beta[k]   = float(meanbeta[k] +sigmanew(1,0)*alphadiff + sigmanew(1,1)*betadiff + sigmanew(1,2)*rhodiff);
+        rho[k]    = float(meanrho[k]  +sigmanew(2,0)*alphadiff + sigmanew(2,1)*betadiff + sigmanew(2,2)*rhodiff);
       }
       postAlpha_->setRealTrace(i,j, alpha);
       postBeta_->setRealTrace(i,j,beta);
@@ -2359,18 +2248,6 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
 
   for(i=0;i<3;i++)
   {
-    delete [] sigmanew[i];
-    delete [] sigmamd[i];
-  }
-  delete [] sigmanew;
-  delete [] sigmamd;
-
-  for(i=0;i<ntheta_;i++)
-    delete [] G[i];
-  delete [] G;
-
-  for(i=0;i<3;i++)
-  {
     delete [] eigvectrans[i];
     delete [] eigvalmat[i];
     delete [] eigvec[i];
@@ -2384,6 +2261,10 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   delete [] sigmamdold;
   delete [] error;
   delete [] help;
+
+  for(i=0;i<3;i++)
+    delete sigmamdx[i];
+  delete [] sigmamdx;
 
 }
 

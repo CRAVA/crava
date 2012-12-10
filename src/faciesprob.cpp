@@ -181,7 +181,7 @@ FaciesProb::makeFaciesDens(int nfac,
                            std::vector<FFTGrid *>           & density,
                            Simbox                          ** volume,
                            int                                index,
-                           double                          ** G,
+                           NRLib::Matrix                    & G,
                            Crava                            * cravaResult,
                            const std::vector<Grid2D *>      & noiseScale)
 {
@@ -209,16 +209,8 @@ FaciesProb::makeFaciesDens(int nfac,
   std::vector<float> alphaFilteredNew(alphaFiltered.size());
   std::vector<float> betaFilteredNew(betaFiltered.size());
   std::vector<float> rhoFilteredNew(rhoFiltered.size());
-  if(index>0)
+  if(index > 0)
   {
-    // Multiply alpha, beta, rho with scale
-    double ** H    = new double * [3];
-    double ** junk = new double * [3];
-    for(i=0;i<3;i++) {
-      H[i]    = new double[3];
-      junk[i] = new double[3];
-    }
-
     int nAng = static_cast<int>(noiseScale.size());
     // int nAng = int(log(float(sigmaEOrig.size()))/log(2.0));
 
@@ -230,17 +222,30 @@ FaciesProb::makeFaciesDens(int nfac,
       maxScale[angle] = maxS/minS;
     }
     //Compute H matrix
-    std::vector<double> scale(nAng);
+    NRLib::Vector scale(nAng);
     int factor = 1;
     for(int angle=0;angle<nAng;angle++) {
       if((index & factor) > 0)
-        scale[angle] = maxScale[angle];
+        scale(angle) = maxScale[angle];
       else
-        scale[angle] = 1.0;
+        scale(angle) = 1.0;
       factor *= 2;
     }
 
-    cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
+    NRLib::Matrix HH(3,3);
+    NRLib::Matrix junk(3,3);
+
+    cravaResult->newPosteriorCovPointwise(HH,
+                                          G,
+                                          scale,
+                                          junk);
+
+
+    double ** H = new double * [3];
+    for(i=0;i<3;i++) {
+      H[i] = new double[3];
+    }
+    NRLib::Set2DArrayFromMatrix(HH,H);
 
     double **help1 = new double*[3];
     help1[0] = new double[1];
@@ -275,9 +280,7 @@ FaciesProb::makeFaciesDens(int nfac,
       alphaFilteredNew[i] = alphaFiltered[i];
       betaFilteredNew[i] = betaFiltered[i];
       rhoFilteredNew[i] = rhoFiltered[i];
-
     }
-
   }
 
   // Make bins.
@@ -336,7 +339,6 @@ FaciesProb::makeFaciesDens(int nfac,
   double betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*sqrt(sigmae[1][1]);
   double rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*sqrt(sigmae[2][2]);
   double rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*sqrt(sigmae[2][2]);
-
 
   // invert sigmae
   double **sigmaeinv = new double *[3];
@@ -484,15 +486,14 @@ void FaciesProb::makeFaciesProb(int                                nfac,
 
   //int nAng = int(log(float(densdim))/log(2.0));
   int nAng = static_cast<int>(noiseScale.size());
-  double **G = new double*[nAng];
-  for(int i=0;i<nAng;i++)
-    G[i] = new double[3];
 
+  NRLib::Matrix G(nAng, 3);
   cravaResult->computeG(G);
 
   for(int i=0;i<densdim;i++) {
     makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered,
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
+
     if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && (i == 0 || i == densdim-1)) {
       Simbox * expVol = createExpVol(volume[i]);
       for(int j=0; j<static_cast<int>(density[i].size()); j++) {
@@ -524,10 +525,6 @@ void FaciesProb::makeFaciesProb(int                                nfac,
       delete density[i][j];
     delete volume[i];
   }
-
-  for(int i=0 ; i<nAng ; i++)
-    delete [] G[i];
-  delete [] G;
 }
 
 float FaciesProb::findDensity(float                                       alpha,
