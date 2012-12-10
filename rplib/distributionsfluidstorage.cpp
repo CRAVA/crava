@@ -254,8 +254,10 @@ ReussFluidStorage::ReussFluidStorage(std::vector<std::string>                   
 ReussFluidStorage::~ReussFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -290,8 +292,10 @@ VoigtFluidStorage::VoigtFluidStorage(std::vector<std::string>                   
 VoigtFluidStorage::~VoigtFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -326,8 +330,10 @@ HillFluidStorage::HillFluidStorage(std::vector<std::string>                     
 HillFluidStorage::~HillFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 

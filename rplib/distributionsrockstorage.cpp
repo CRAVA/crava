@@ -145,6 +145,19 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                             alpha,
                                                             s_min,
                                                             s_max);
+
+
+      for(int i=0; i<n_vintages; i++) {
+        for(size_t s=0; s<distr_rock.size(); s++)
+          delete distr_rock[i][s];
+
+        for(size_t s=0; s<all_volume_fractions.size(); s++) {
+          if(all_volume_fractions[i][s] != NULL) {
+            if(all_volume_fractions[i][s]->GetIsShared() == false)
+              delete all_volume_fractions[i][s];
+          }
+        }
+      }
     }
   }
 
@@ -242,6 +255,28 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                                      alpha,
                                                                      s_min,
                                                                      s_max);
+
+      for(int i=0; i<n_vintages; i++) {
+        for(size_t s=0; s<distr_solid[i].size(); s++)
+          delete distr_solid[i][s];
+
+        for(size_t s=0; s<distr_fluid[i].size(); s++)
+          delete distr_fluid[i][s];
+
+        for(size_t s=0; s<solid_volume_fractions[i].size(); s++) {
+          if(solid_volume_fractions[i][s] != NULL) {
+            if(solid_volume_fractions[i][s]->GetIsShared() == false)
+              delete solid_volume_fractions[i][s];
+          }
+        }
+
+        for(size_t s=0; s<fluid_volume_fractions[i].size(); s++) {
+          if(fluid_volume_fractions[i][s] != NULL) {
+            if(fluid_volume_fractions[i][s]->GetIsShared() == false)
+              delete fluid_volume_fractions[i][s];
+          }
+        }
+      }
     }
   }
 
@@ -371,6 +406,15 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                                 s_max);
 
       dist_rock[i] = rock;
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(vp_dist_with_trend[i]->GetIsShared() == false)
+        delete vp_dist_with_trend[i];
+      if(vs_dist_with_trend[i]->GetIsShared() == false)
+        delete vp_dist_with_trend[i];
+      if(density_dist_with_trend[i]->GetIsShared() == false)
+        delete density_dist_with_trend[i];
     }
   }
 
@@ -536,8 +580,10 @@ ReussRockStorage::ReussRockStorage(std::vector<std::string>                     
 ReussRockStorage::~ReussRockStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -590,8 +636,10 @@ VoigtRockStorage::VoigtRockStorage(std::vector<std::string>                     
 VoigtRockStorage::~VoigtRockStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -645,8 +693,10 @@ HillRockStorage::HillRockStorage(std::vector<std::string>                       
 HillRockStorage::~HillRockStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
-    if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -704,12 +754,16 @@ DEMRockStorage::DEMRockStorage(std::string                                      
 
 DEMRockStorage::~DEMRockStorage()
 {
-  if(host_volume_fraction_[0]->GetIsShared() == false)
-    delete host_volume_fraction_[0];
+  if(host_volume_fraction_[0] != NULL) {
+    if(host_volume_fraction_[0]->GetIsShared() == false)
+      delete host_volume_fraction_[0];
+  }
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_[0].size()); i++) {
-    if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
-      delete inclusion_volume_fraction_[0][i];
+    if(inclusion_volume_fraction_[0][i] != NULL) {
+      if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
+        delete inclusion_volume_fraction_[0][i];
+    }
   }
 
   for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_[0].size()); i++) {
@@ -846,7 +900,10 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
     CheckVolumeConsistency(all_volume_fractions[i], tmpErrTxt);
 
-    if (tmpErrTxt == "")
+  }
+
+  if (tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++)
       final_dist_rock[i] = new DistributionsRockDEM(final_distr_solid[i],
                                                     final_distr_fluid_inc[i],
                                                     all_aspect_ratios[i],
@@ -854,9 +911,30 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                                     alpha,
                                                     s_min,
                                                     s_max);
+
+
+
+    for(int i=0; i<n_vintages; i++) {
+      delete final_distr_solid[i];
+
+      for(size_t s=0; s<final_distr_fluid_inc[i].size(); s++)
+        delete final_distr_fluid_inc[i][s];
+
+      for(size_t s=0; s<all_aspect_ratios[i].size(); s++) {
+        if(all_aspect_ratios[i][s]->GetIsShared() == false)
+          delete all_aspect_ratios[i][s];
+      }
+
+      for(size_t s=0; s<all_volume_fractions[i].size(); s++) {
+        if (all_volume_fractions[i][s] != NULL) {
+          if(all_volume_fractions[i][s]->GetIsShared() == false)
+            delete all_volume_fractions[i][s];
+        }
+      }
+    }
   }
 
-   if(tmpErrTxt != "") {
+  if(tmpErrTxt != "") {
     errTxt += "\nProblems with the DEM rock physics model:\n";
     errTxt += tmpErrTxt;
   }
@@ -915,6 +993,8 @@ BoundingRockStorage::BoundingRockStorage(std::string                            
 
 BoundingRockStorage::~BoundingRockStorage()
 {
+  if(porosity_[0]->GetIsShared() == false)
+    delete porosity_[0];
   if(bulk_weight_[0]->GetIsShared() == false)
     delete bulk_weight_[0];
   if(shear_weight_[0]->GetIsShared() == false)
@@ -1052,6 +1132,22 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
       dist_rock[i] = rock;
     }
+
+    for(int i=0; i<n_vintages; i++) {
+      delete final_distr_upper_rock[i];
+
+      delete final_distr_lower_rock[i];
+
+      if(porosity_dist_with_trend[i]->GetIsShared() == false)
+        delete porosity_dist_with_trend[i];
+
+      if(bulk_weight_dist_with_trend[i]->GetIsShared() == false)
+        delete bulk_weight_dist_with_trend[i];
+
+      if(shear_weight_dist_with_trend[i]->GetIsShared() == false)
+        delete shear_weight_dist_with_trend[i];
+    }
+
   }
 
   if(tmpErrTxt != "") {

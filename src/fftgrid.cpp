@@ -2570,7 +2570,7 @@ FFTGrid::interpolateSeismic(float energyTreshold)
         index++;
       }
 
-      LogKit::LogFormatted(LogKit::Low,"%d of %d traces (%d with zero response)",
+      LogKit::LogFormatted(LogKit::Low,"\n%d of %d traces (%d with zero response)",
         nInter, nx_*ny_, nInter0);
       int curIndex = 0;
       for(j=0;j<ny_;j++)

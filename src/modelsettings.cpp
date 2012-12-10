@@ -204,11 +204,6 @@ ModelSettings::~ModelSettings(void)
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
 
-  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
-    std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
-    for(size_t i=0; i<vintageStorage.size(); i++)
-      delete vintageStorage[i];
-  }
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
     delete storage;
@@ -224,6 +219,12 @@ ModelSettings::~ModelSettings(void)
   for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluidStorage_.begin(); it != fluidStorage_.end(); it++) {
     DistributionsFluidStorage * storage = it->second;
     delete storage;
+  }
+  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
+    std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
+    for(size_t i=0; i<vintageStorage.size(); i++) {
+      delete vintageStorage[i];
+    }
   }
 
 }

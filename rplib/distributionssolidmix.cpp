@@ -46,8 +46,10 @@ DistributionsSolidMix::~DistributionsSolidMix()
     delete distr_solid_[i];
 
   for(size_t i=0; i<distr_vol_frac_.size(); i++) {
-    if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsShared() == false)
-      delete distr_vol_frac_[i];
+    if(distr_vol_frac_[i] != NULL) {
+      if(distr_vol_frac_[i]->GetIsShared() == false)
+        delete distr_vol_frac_[i];
+    }
   }
 }
 

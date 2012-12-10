@@ -18,14 +18,15 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
                                                        const std::vector<double>   & s_min,
                                                        const std::vector<double>   & s_max)
   : DistributionsRock(),
-    elastic1_(elastic1),
-    elastic2_(elastic2),
-    density_(density),
     corr_elastic1_elastic2_(corr_elastic1_elastic2),
     corr_elastic1_density_(corr_elastic1_density),
     corr_elastic2_density_(corr_elastic2_density),
     tabulated_method_(method)
 {
+  elastic1_ = elastic1->Clone();
+  elastic2_ = elastic2->Clone();
+  density_  = density ->Clone();
+
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (elastic1, elastic2, density)
   s_min_ = s_min;
   s_max_ = s_max;

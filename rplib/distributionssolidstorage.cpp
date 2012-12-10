@@ -382,8 +382,10 @@ VoigtSolidStorage::VoigtSolidStorage(std::vector<std::string >                  
 VoigtSolidStorage::~VoigtSolidStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
-    if(constituent_volume_fraction_[0][i] && constituent_volume_fraction_[0][i]->GetIsShared() == false)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -418,8 +420,10 @@ HillSolidStorage::HillSolidStorage(std::vector<std::string>                     
 HillSolidStorage::~HillSolidStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
-    if(constituent_volume_fraction_[0][i] && constituent_volume_fraction_[0][i]->GetIsShared() == false)
-      delete constituent_volume_fraction_[0][i];
+    if(constituent_volume_fraction_[0][i] != NULL) {
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
   }
 }
 
@@ -464,12 +468,14 @@ DEMSolidStorage::~DEMSolidStorage()
     delete host_volume_fraction_[0];
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_[0].size()); i++) {
-    if(inclusion_volume_fraction_[0][i] && inclusion_volume_fraction_[0][i]->GetIsShared() == false)
-      delete inclusion_volume_fraction_[0][i];
+    if(inclusion_volume_fraction_[0][i] != NULL) {
+      if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
+        delete inclusion_volume_fraction_[0][i];
+    }
   }
 
   for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_[0].size()); i++) {
-    if(inclusion_aspect_ratio_[0][i] && inclusion_aspect_ratio_[0][i]->GetIsShared() == false)
+    if(inclusion_aspect_ratio_[0][i]->GetIsShared() == false)
       delete inclusion_aspect_ratio_[0][i];
   }
 }

@@ -199,7 +199,7 @@ Crava::Crava(ModelSettings     * modelSettings,
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->getUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->getNumberOfAngles();
-    if(spatwellfilter != NULL)
+    if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
       spatwellfilter->doFiltering(correlations_,
                                   modelGeneral->getWells(),
                                   modelSettings->getNumberOfWells(),
@@ -454,8 +454,8 @@ Crava::checkScale(void)
   std::string scaleWarning3;
   std::string scaleWarning4;
 
-  scaleWarning1 = "The observed variability in seismic data is much larger than in the model.\n   Variance of: \n";
-  scaleWarning2 = "The observed variability in seismic data is much less than in the model.\n   Variance of: \n";
+  scaleWarning1 = "The observed variability in seismic data is much larger than in the model";
+  scaleWarning2 = "The observed variability in seismic data is much less than in the model";
   scaleWarning3 = "Small signal to noise ratio detected";
   scaleWarning4 = "Large signal to noise ratio detected";
 
@@ -472,12 +472,12 @@ Crava::checkScale(void)
       if(isOk==0)
       {
         isOk = 1;
-        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning1+"\n";
+        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+" for seismic data:\n"+scaleWarning1+"\n";
       }
       else
       {
         isOk = 1;
-        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning1+"\n";
+        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+" for seismic data:\n"+scaleWarning1+"\n";
       }
     }
     if( (dataVariance_[l] < 0.1 * signalVariance_[l]) && thisThetaIsOk) //1 var 0.1
@@ -486,12 +486,12 @@ Crava::checkScale(void)
       if(isOk==0)
       {
         isOk = 2;
-        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning2+"\n";
+        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+" for seismic data:\n"+scaleWarning2+"\n";
       }
       else
       {
         isOk = 2;
-        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning2+"\n";
+        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+" for seismic data:\n"+scaleWarning2+"\n";
       }
     }
     if( (modelVariance_[l] < 0.02 * errorVariance_[l]) && thisThetaIsOk)

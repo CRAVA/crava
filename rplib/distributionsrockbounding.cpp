@@ -18,13 +18,14 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
                                                      const std::vector<double>   & alpha,
                                                      const std::vector<double>   & s_min,
                                                      const std::vector<double>   & s_max)
-: upper_rock_(upper_rock),
-  lower_rock_(lower_rock),
-  porosity_(porosity),
-  K_weight_(bulk_weight),
-  G_weight_(shear_weight),
-  correlation_weights_(correlation_weights)
+: correlation_weights_(correlation_weights)
 {
+  upper_rock_ = upper_rock  ->Clone();
+  lower_rock_ = lower_rock  ->Clone();
+  porosity_   = porosity    ->Clone();
+  K_weight_   = bulk_weight ->Clone();
+  G_weight_   = shear_weight->Clone();
+
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (porosity, K_weight, G_weight)
   s_min_ = s_min;
   s_max_ = s_max;

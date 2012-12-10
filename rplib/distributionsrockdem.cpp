@@ -25,11 +25,34 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
 : DistributionsRock()
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
+  assert( distr_incl_spectrum.size()     == distr_fluid.size());
 
-  distr_solid_              = distr_solid;
-  distr_fluid_              = distr_fluid;
-  distr_incl_spectrum_      = distr_incl_spectrum;
-  distr_incl_concentration_ = distr_incl_concentration;
+  int n_inclusions = static_cast<int>(distr_incl_spectrum.size());
+
+  distr_solid_ = distr_solid->Clone();
+
+  distr_fluid_.resize(n_inclusions);
+  for(int i=0; i<n_inclusions; i++)
+    distr_fluid_[i] = distr_fluid[i]->Clone();
+
+  distr_incl_spectrum_.resize(n_inclusions);
+  for(int i=0; i<n_inclusions; i++) {
+    if(distr_incl_spectrum[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i]->Clone();
+    else
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i];
+  }
+
+  distr_incl_concentration_.resize(n_inclusions+1, NULL);
+  for(int i=0; i<n_inclusions+1; i++) {
+    if(distr_incl_concentration[i] != NULL) {
+      if(distr_incl_concentration[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = distr_incl_concentration[i]->Clone();
+      else
+        distr_incl_concentration_[i] = distr_incl_concentration[i];
+    }
+  }
+
   alpha_                    = alpha;               // alpha_ contains the one-year correlations for (inclusion_spectrums, inclusion_concentrations)
   s_min_                    = s_min;
   s_max_                    = s_max;
@@ -84,8 +107,10 @@ DistributionsRockDEM::~DistributionsRockDEM()
   }
 
   for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
-    if (distr_incl_concentration_[i] != NULL && distr_incl_concentration_[i]->GetIsShared() == false)
-      delete distr_incl_concentration_[i];
+    if (distr_incl_concentration_[i] != NULL) {
+      if(distr_incl_concentration_[i]->GetIsShared() == false)
+        delete distr_incl_concentration_[i];
+    }
   }
 }
 

@@ -24,10 +24,24 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
                                                        const std::vector<double>                          & s_min,
                                                        const std::vector<double>                          & s_max)
 : DistributionsRock(),
-  distr_rock_(distr_rock),
-  distr_vol_frac_(distr_vol_frac),
   mix_method_(mix_method)
 {
+
+  size_t rock_size = distr_rock.size();
+  distr_rock_.resize(rock_size);
+  for(size_t i=0; i<rock_size; i++)
+    distr_rock_[i] = distr_rock[i]->Clone();
+
+  distr_vol_frac_.resize(rock_size,NULL);
+  for(size_t i=0; i<rock_size; i++) {
+    if(distr_vol_frac_[i] != NULL) {
+      if(distr_vol_frac[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = distr_vol_frac[i]->Clone();
+      else
+        distr_vol_frac_[i] = distr_vol_frac[i];
+    }
+  }
+
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction)
   s_min_ = s_min;
   s_max_ = s_max;
@@ -67,10 +81,11 @@ DistributionsRockMixOfRock::~DistributionsRockMixOfRock()
     delete distr_rock_[i];
 
   for(size_t i=0; i<distr_vol_frac_.size(); i++) {
-    if(distr_vol_frac_[i] != NULL && distr_vol_frac_[i]->GetIsShared() == false)
-      delete distr_vol_frac_[i];
+    if(distr_vol_frac_[i] != NULL) {
+      if(distr_vol_frac_[i]->GetIsShared() == false)
+        delete distr_vol_frac_[i];
+    }
   }
-
 }
 
 DistributionsRock *
@@ -220,12 +235,40 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
                                                                          const std::vector<double>                           & s_min,
                                                                          const std::vector<double>                           & s_max)
 : DistributionsRock(),
-  distr_solid_(distr_solid),
-  distr_fluid_(distr_fluid),
-  distr_vol_frac_solid_(distr_vol_frac_solid),
-  distr_vol_frac_fluid_(distr_vol_frac_fluid),
   mix_method_(mix_method)
 {
+  assert((distr_solid.size() == distr_vol_frac_solid.size()) && (distr_fluid.size() ==  distr_vol_frac_fluid.size()));
+
+  size_t solid_size = distr_solid.size();
+  distr_solid_.resize(solid_size);
+  for(size_t i=0; i<solid_size; i++)
+    distr_solid_[i] = distr_solid[i]->Clone();
+
+  size_t fluid_size = distr_fluid.size();
+  distr_fluid_.resize(fluid_size);
+  for(size_t i=0; i<fluid_size; i++)
+    distr_fluid_[i] = distr_fluid[i]->Clone();
+
+  distr_vol_frac_solid_.resize(solid_size,NULL);
+  for(size_t i=0; i<solid_size; i++) {
+    if(distr_vol_frac_solid[i] != NULL) {
+      if(distr_vol_frac_solid[i]->GetIsShared() == false)
+        distr_vol_frac_solid_[i] = distr_vol_frac_solid[i]->Clone();
+      else
+        distr_vol_frac_solid_[i] = distr_vol_frac_solid[i];
+    }
+  }
+
+  distr_vol_frac_fluid_.resize(fluid_size,NULL);
+  for(size_t i=0; i<fluid_size; i++) {
+    if(distr_vol_frac_fluid[i] != NULL) {
+      if(distr_vol_frac_fluid[i]->GetIsShared() == false)
+        distr_vol_frac_fluid_[i] = distr_vol_frac_fluid[i]->Clone();
+      else
+        distr_vol_frac_fluid_[i] = distr_vol_frac_fluid[i];
+    }
+  }
+
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction_solid, distr_vol_fraction_fluid)
   s_min_ = s_min;
   s_max_ = s_max;
@@ -277,13 +320,17 @@ DistributionsRockMixOfSolidAndFluid::~DistributionsRockMixOfSolidAndFluid()
     delete distr_fluid_[i];
 
   for(size_t i=0; i<distr_vol_frac_solid_.size(); i++) {
-    if(distr_vol_frac_solid_[i] != NULL && distr_vol_frac_solid_[i]->GetIsShared() == false)
-      delete distr_vol_frac_solid_[i];
+    if(distr_vol_frac_solid_[i] != NULL) {
+      if(distr_vol_frac_solid_[i]->GetIsShared() == false)
+        delete distr_vol_frac_solid_[i];
+    }
   }
 
   for(size_t i=0; i<distr_vol_frac_fluid_.size(); i++) {
-    if(distr_vol_frac_fluid_[i] != NULL && distr_vol_frac_fluid_[i]->GetIsShared() == false)
-      delete distr_vol_frac_fluid_[i];
+    if(distr_vol_frac_fluid_[i] != NULL) {
+      if(distr_vol_frac_fluid_[i]->GetIsShared() == false)
+        delete distr_vol_frac_fluid_[i];
+    }
   }
 }
 
