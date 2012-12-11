@@ -189,7 +189,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
         }
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
-        if(modelSettings->getDo4DInversion()){
+        if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
           process4DBackground(modelSettings, inputFiles, errText, failedBackground);
         }
       }
