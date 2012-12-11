@@ -412,7 +412,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
       if(vp_dist_with_trend[i]->GetIsShared() == false)
         delete vp_dist_with_trend[i];
       if(vs_dist_with_trend[i]->GetIsShared() == false)
-        delete vp_dist_with_trend[i];
+        delete vs_dist_with_trend[i];
       if(density_dist_with_trend[i]->GetIsShared() == false)
         delete density_dist_with_trend[i];
     }
