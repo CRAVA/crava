@@ -67,7 +67,7 @@ public:
 
   virtual NRLib::TrendStorage            * CloneMean() const;
 
-  virtual const NRLib::TrendStorage      * GetMean()   const { return mean_ ;}
+  virtual const NRLib::TrendStorage      * GetMean()   const                         { return mean_                        ;}
 
   virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 
@@ -112,9 +112,6 @@ public:
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
-
-  virtual const NRLib::TrendStorage      * GetMean()     const { return mean_     ;}
-  virtual const NRLib::TrendStorage      * GetVariance() const { return variance_ ;}
 
   virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 
@@ -161,9 +158,6 @@ public:
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
-
-  virtual const NRLib::TrendStorage      * GetMean()     const { return mean_     ;}
-  virtual const NRLib::TrendStorage      * GetVariance() const { return variance_ ;}
 
   virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
 

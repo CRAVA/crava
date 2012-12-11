@@ -1714,15 +1714,17 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       TaskList::addTask(text);
     }
 
-    LogKit::LogFormatted(LogKit::Low,"\n");
-    LogKit::LogFormatted(LogKit::Low,"Well                    Use    SyntheticVs    Deviated\n");
-    LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------\n");
-    for(int i=0 ; i<nWells_ ; i++) {
-      LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
-                           wells_[i]->getWellname().c_str(),
-                           ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
-                           ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
-                           ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
+    if(modelSettings->getFaciesProbFromRockPhysics() == false) {
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      LogKit::LogFormatted(LogKit::Low,"Well                    Use    SyntheticVs    Deviated\n");
+      LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------\n");
+      for(int i=0 ; i<nWells_ ; i++) {
+        LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
+          wells_[i]->getWellname().c_str(),
+          ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
+          ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
+          ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
+      }
     }
 
     std::string baseName = IO::PrefixFaciesProbability();
@@ -1911,11 +1913,13 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
     }
-    fprob_->writeBWFaciesProb(wells_, nWells_);
-    std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
+    if(modelSettings->getFaciesProbFromRockPhysics() == false) {
+      fprob_->writeBWFaciesProb(wells_, nWells_);
+      std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
 
-    if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
-      QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
+      if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
+        QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
+    }
 
     if(likelihood != NULL) {
       for(int i=0;i<nfac;i++) {

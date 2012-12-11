@@ -2047,57 +2047,41 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       }
     }
 
-    LogKit::LogFormatted(LogKit::Low,"\nRock physics:\n");
-
-    //
-    // Sample logging for rock of type normaldistribution
-    //
-    const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings->getRockStorage();
-    std::map<std::string, DistributionsRockStorage *>::const_iterator it;
-
-    for (it = rock_storage.begin() ; it != rock_storage.end() ; it++) {
-
-      LogKit::LogFormatted(LogKit::Low,"  Label                                    : %10s\n",(it->first).c_str());
-
-      if (typeid(*(it->second)) == typeid(TabulatedVelocityRockStorage)) {
-
-        LogKit::LogFormatted(LogKit::Low,"    Type                                   : %10s\n","Vp, Vs, Rho");
-
-        /*TabulatedVelocityRockStorage * rs = dynamic_cast<TabulatedVelocityRockStorage *>(it->second);
-
-        if (typeid(*(rs->GetDistribution1()[0])) == typeid(NormalDistributionWithTrendStorage)) {
-          const NormalDistributionWithTrendStorage * d1 = dynamic_cast<const NormalDistributionWithTrendStorage *>(rs->GetDistribution1()[0]);
-          const NormalDistributionWithTrendStorage * d2 = dynamic_cast<const NormalDistributionWithTrendStorage *>(rs->GetDistribution2()[0]);
-          const NormalDistributionWithTrendStorage * d3 = dynamic_cast<const NormalDistributionWithTrendStorage *>(rs->GetDistribution3()[0]);
-
-          if (typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter1 - mean                      : %10.1f\n",t1->GetMean());
-          }
-          if (typeid((*d1->GetVariance())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetVariance());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter1 - variance                  : %10.1f\n",t1->GetMean());
-          }
-          if (typeid(*(d2->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t2 = dynamic_cast<const NRLib::TrendConstantStorage *>(d2->GetMean());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter2 - mean                      : %10.1f\n",t2->GetMean());
-          }
-          if (typeid((*d2->GetVariance())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t2 = dynamic_cast<const NRLib::TrendConstantStorage *>(d2->GetVariance());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter2 - variance                  : %10.1f\n",t2->GetMean());
-          }
-          if (typeid(*(d3->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t3 = dynamic_cast<const NRLib::TrendConstantStorage *>(d3->GetMean());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter3 - mean                      : %10.1f\n",t3->GetMean());
-          }
-          if (typeid((*d3->GetVariance())) == typeid(NRLib::TrendConstantStorage)) {
-            const NRLib::TrendConstantStorage * t3 = dynamic_cast<const NRLib::TrendConstantStorage *>(d3->GetVariance());
-            LogKit::LogFormatted(LogKit::Low,"    Parameter3 - variance                  : %10.1f\n",t3->GetMean());
-          }
-          LogKit::LogFormatted(LogKit::Low,"    Corr{p1,p2}                            : %10.2f\n",rs->GetCorrelation12());
-          LogKit::LogFormatted(LogKit::Low,"    Corr{p1,p3}                            : %10.2f\n",rs->GetCorrelation13());
-          LogKit::LogFormatted(LogKit::Low,"    Corr{p2,p3}                            : %10.2f\n",rs->GetCorrelation23());
-        }*/
+    if(modelSettings->getFaciesProbFromRockPhysics()) {
+      LogKit::LogFormatted(LogKit::Low,"\nRock physics:\n");
+      {
+        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings->getRockStorage();
+        std::map<std::string, DistributionsRockStorage *>::const_iterator it;
+        for (it = rock_storage.begin() ; it != rock_storage.end() ; it++)
+          LogKit::LogFormatted(LogKit::Low,"  Rock                                     : %10s\n",(it->first).c_str());
+        LogKit::LogFormatted(LogKit::Low,"\n");
+      }
+      {
+        const std::map<std::string, DistributionsDryRockStorage *>& dryrock_storage = modelSettings->getDryRockStorage();
+        std::map<std::string, DistributionsDryRockStorage *>::const_iterator it;
+        for (it = dryrock_storage.begin() ; it != dryrock_storage.end() ; it++)
+          LogKit::LogFormatted(LogKit::Low,"  Dry Rock                                 : %10s\n",(it->first).c_str());
+        LogKit::LogFormatted(LogKit::Low,"\n");
+      }
+      {
+        const std::map<std::string, DistributionsSolidStorage *>& solid_storage = modelSettings->getSolidStorage();
+        std::map<std::string, DistributionsSolidStorage *>::const_iterator it;
+        for (it = solid_storage.begin() ; it != solid_storage.end() ; it++)
+          LogKit::LogFormatted(LogKit::Low,"  Solid                                    : %10s\n",(it->first).c_str());
+        LogKit::LogFormatted(LogKit::Low,"\n");
+      }
+      {
+        const std::map<std::string, DistributionsFluidStorage *>& fluid_storage = modelSettings->getFluidStorage();
+        std::map<std::string, DistributionsFluidStorage *>::const_iterator it;
+        for (it = fluid_storage.begin() ; it != fluid_storage.end() ; it++)
+          LogKit::LogFormatted(LogKit::Low,"  Fluid                                    : %10s\n",(it->first).c_str());
+        LogKit::LogFormatted(LogKit::Low,"\n");
+      }
+      {
+        const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_storage = modelSettings->getReservoirVariable();
+        std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it;
+        for (it = reservoir_storage.begin() ; it != reservoir_storage.end() ; it++)
+          LogKit::LogFormatted(LogKit::Low,"  Reservoir variable                       : %10s\n",(it->first).c_str());
       }
     }
 

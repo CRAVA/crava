@@ -607,13 +607,13 @@ ModelAVODynamic::processBackground(Background           *& background,
       if (backVelFile != ""){
         bool dummy;
         ModelGeneral::loadVelocity(velocity,
-          timeSimbox,
-          timeCutSimbox,
-          modelSettings,
-          backVelFile,
-          dummy,
-          errText,
-          failed);
+                                   timeSimbox,
+                                   timeCutSimbox,
+                                   modelSettings,
+                                   backVelFile,
+                                   dummy,
+                                   errText,
+                                   failed);
       }
       if (!failed) {
 

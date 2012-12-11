@@ -137,8 +137,8 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
 void SpatialWellFilter::doFilteringSyntWells(Corr                                     * corr,
                                              std::vector<SyntWellData *>              & syntWellData,
                                              const std::vector<std::vector<double> >  & v,
-                                             int                                        nWells){
-  LogKit::WriteHeader("Creating spatial multi-parameter filter for synthetic wells");
+                                             int                                        nWells)
+{
   (void) v;
 
   double wall=0.0, cpu=0.0;
@@ -168,7 +168,7 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
   bool no_wells_filtered = true;
 
   for(int w1=0;w1<nWells;w1++){
-    LogKit::LogFormatted(LogKit::Low,"\nFiltering synthetic well number " + NRLib::ToString(w1+1,1) + "...");
+    //LogKit::LogFormatted(LogKit::Low,"\nFiltering synthetic well number " + NRLib::ToString(w1+1,1) + "...");
     no_wells_filtered = false;
 
     int n = syntWellData[w1]->getWellLength();
@@ -246,11 +246,11 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
     }
 
 
-    LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
+    //LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
     lib_matrCholR(3*n, sigmapri);
-    LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
+    //LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
-    LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
+    //LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
 
     for(int i=0;i<3*n;i++) {
