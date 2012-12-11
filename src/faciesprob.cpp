@@ -2195,6 +2195,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   }
   std::cout << "\n";
 
+
   if(priorFaciesCubes.size() != 0)
     for(int i=0;i<nFacies_;i++)
     {
