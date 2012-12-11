@@ -2054,28 +2054,24 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         std::map<std::string, DistributionsRockStorage *>::const_iterator it;
         for (it = rock_storage.begin() ; it != rock_storage.end() ; it++)
           LogKit::LogFormatted(LogKit::Low,"  Rock                                     : %10s\n",(it->first).c_str());
-        LogKit::LogFormatted(LogKit::Low,"\n");
       }
       {
         const std::map<std::string, DistributionsDryRockStorage *>& dryrock_storage = modelSettings->getDryRockStorage();
         std::map<std::string, DistributionsDryRockStorage *>::const_iterator it;
         for (it = dryrock_storage.begin() ; it != dryrock_storage.end() ; it++)
           LogKit::LogFormatted(LogKit::Low,"  Dry Rock                                 : %10s\n",(it->first).c_str());
-        LogKit::LogFormatted(LogKit::Low,"\n");
       }
       {
         const std::map<std::string, DistributionsSolidStorage *>& solid_storage = modelSettings->getSolidStorage();
         std::map<std::string, DistributionsSolidStorage *>::const_iterator it;
         for (it = solid_storage.begin() ; it != solid_storage.end() ; it++)
           LogKit::LogFormatted(LogKit::Low,"  Solid                                    : %10s\n",(it->first).c_str());
-        LogKit::LogFormatted(LogKit::Low,"\n");
       }
       {
         const std::map<std::string, DistributionsFluidStorage *>& fluid_storage = modelSettings->getFluidStorage();
         std::map<std::string, DistributionsFluidStorage *>::const_iterator it;
         for (it = fluid_storage.begin() ; it != fluid_storage.end() ; it++)
           LogKit::LogFormatted(LogKit::Low,"  Fluid                                    : %10s\n",(it->first).c_str());
-        LogKit::LogFormatted(LogKit::Low,"\n");
       }
       {
         const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_storage = modelSettings->getReservoirVariable();
@@ -2327,12 +2323,18 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     if(errTxt == "") {
 
-      float alpha_min = modelSettings->getAlphaMin();
-      float alpha_max = modelSettings->getAlphaMax();
-      float beta_min  = modelSettings->getBetaMin();
-      float beta_max  = modelSettings->getBetaMax();
-      float rho_min   = modelSettings->getRhoMin();
-      float rho_max   = modelSettings->getRhoMax();
+      float alpha_min     = modelSettings->getAlphaMin();
+      float alpha_max     = modelSettings->getAlphaMax();
+      float beta_min      = modelSettings->getBetaMin();
+      float beta_max      = modelSettings->getBetaMax();
+      float rho_min       = modelSettings->getRhoMin();
+      float rho_max       = modelSettings->getRhoMax();
+      float var_alpha_min = modelSettings->getVarAlphaMin();
+      float var_alpha_max = modelSettings->getVarAlphaMax();
+      float var_beta_min  = modelSettings->getVarBetaMin();
+      float var_beta_max  = modelSettings->getVarBetaMax();
+      float var_rho_min   = modelSettings->getVarRhoMin();
+      float var_rho_max   = modelSettings->getVarRhoMax();
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
       const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
@@ -2346,6 +2348,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
 
+        std::string rockErrTxt = "";
+
         DistributionsRockStorage * storage    = iter   ->second;
         std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
                                                                                    path,
@@ -2355,9 +2359,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                                                                    solid_storage,
                                                                                    dry_rock_storage,
                                                                                    fluid_storage,
-                                                                                   errTxt);
+                                                                                   rockErrTxt);
 
-        if(errTxt == "") {
+        if(rockErrTxt == "") {
 
           int n_vintages = static_cast<int>(rock.size());
           if(n_vintages > 1)
@@ -2401,13 +2405,36 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
             if(tmpErrTxt != "") {
               errTxt += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
               errTxt += tmpErrTxt;
-              break;
             }
+
+            std::string varErrTxt = "";
+            if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
+              varErrTxt += "Var(Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
+              varErrTxt += "Var(Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
+            }
+            if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
+              varErrTxt += "Var(Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
+              varErrTxt += "Var(Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
+            }
+            if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
+              varErrTxt += "Var(Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
+              varErrTxt += "Var(Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
+            }
+
+            if(varErrTxt != "") {
+              errTxt += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
+              errTxt += varErrTxt;
+            }
+
+            if(varErrTxt != "" || tmpErrTxt != "")
+              break;
 
           }
 
           rock_distributions_[it->first] = rock;
         }
+        else
+          errTxt += rockErrTxt;
       }
     }
 
@@ -2430,8 +2457,8 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   LogKit::LogFormatted(LogKit::Low,"               %5.4f     %5.4f     %5.4f \n",expectation[0], expectation[1], expectation[2]);
 
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Covariance | ln Vp      ln Vs      ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-----------+------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Covariance | ln Vp           ln Vs           ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-----------+----------------------------------------\n");
   LogKit::LogFormatted(LogKit::Low,"ln Vp      | %.2e     %.2e      %.2e \n",covariance(0,0), covariance(0,1), covariance(0,2));
   LogKit::LogFormatted(LogKit::Low,"ln Vs      | %.2e     %.2e      %.2e \n",covariance(1,0), covariance(1,1), covariance(1,2));
   LogKit::LogFormatted(LogKit::Low,"ln Rho     | %.2e     %.2e      %.2e \n",covariance(2,0), covariance(2,1), covariance(2,2));
