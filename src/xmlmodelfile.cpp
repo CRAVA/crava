@@ -4925,6 +4925,15 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "The background model can not be given when rock physics models are used.\n";
       errTxt += "The background model is estimated from the rock physics models\n";
     }
+
+    std::vector<bool> wavelet = modelSettings_->getEstimateWavelet(0);
+    std::vector<float>  angle = modelSettings_->getAngle(0);
+    for(int i=0; i<modelSettings_->getNumberOfAngles(0); i++) {
+      if(wavelet[i] == true) {
+        errTxt += "Wavelet must be given when rock physics models are used.\n";
+        errTxt += "  Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
+      }
+    }
   }
 }
 
