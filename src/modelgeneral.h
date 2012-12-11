@@ -132,6 +132,14 @@ public:
                                                       double                                           & crossVsRho,
                                                       std::string                                      & errTxt);
 
+  void                setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                                const std::vector<double>                        & probability,
+                                                const Simbox                                     & timeSimbox,
+                                                const ModelSettings                              & modelSettings,
+                                                State4D                                          & state4d,
+                                                std::vector<double>                              & variancesFromRockPhysics,
+                                                std::string                                      & errTxt);
+
   void                generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
                                                       const std::vector<double>                        & probability,
                                                       int                                                lowCut,
@@ -139,6 +147,7 @@ public:
                                                       const Simbox                                     & timeSimbox,
                                                       const ModelSettings                              & modelSettings,
                                                       State4D                                          & state4d,
+                                                      std::vector<double>                                variancesFromRockPhycis,
                                                       std::string                                      & errTxt);
 
   void             processWellLocation(FFTGrid                     ** seisCube,
@@ -162,9 +171,9 @@ public:
                                       std::string        & errText,
                                       bool               & failed);
 
-    void           get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
-                                    FFTGrid *vp, FFTGrid *vs, FFTGrid *rho,
-                                    FFTGrid *crCovVpVp, FFTGrid *crCovVpVs, FFTGrid *crCovVpRho, FFTGrid *crCovVsVs, FFTGrid *crCovVsRho, FFTGrid *crCovRhoRho);
+   void            getInitial3DPriorFrom4D(SeismicParametersHolder seismicParameters);
+
+   void            allocateDynamic4DGrids(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
 
    void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           std::vector<WellData *>        wells,

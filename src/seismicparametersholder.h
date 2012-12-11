@@ -21,6 +21,8 @@ public:
                             FFTGrid  * muRho,
                             Corr     * correlations);
 
+  void allocateGrids(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
+
   FFTGrid * GetMuAlpha()        { return muAlpha_        ;}
   FFTGrid * GetMuBeta()         { return muBeta_         ;}
   FFTGrid * GetMuRho()          { return muRho_          ;}

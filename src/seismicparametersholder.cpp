@@ -3,6 +3,7 @@
 #include "src/seismicparametersholder.h"
 #include "src/fftgrid.h"
 #include "src/corr.h"
+#include "src/modelgeneral.h"
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
@@ -55,5 +56,28 @@ SeismicParametersHolder::setSeismicParameters(FFTGrid  * muAlpha,
   crCovAlphaBeta_ = correlations->getPostCrCovAlphaBeta();
   crCovAlphaRho_  = correlations->getPostCrCovAlphaRho();
   crCovBetaRho_   = correlations->getPostCrCovBetaRho();
+}
+
+void
+SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
+{
+  muAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muAlpha_->fillInConstant(0.0);
+  muBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muBeta_->fillInConstant(0.0);
+  muRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muRho_->fillInConstant(0.0);
+  covAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  covAlpha_->fillInConstant(0.0);
+  covBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  covBeta_->fillInConstant(0.0);
+  covRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  covRho_->fillInConstant(0.0);
+  crCovAlphaBeta_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  crCovAlphaBeta_->fillInConstant(0.0);
+  crCovAlphaRho_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  crCovAlphaRho_->fillInConstant(0.0);
+  crCovBetaRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  crCovBetaRho_->fillInConstant(0.0);
 }
 

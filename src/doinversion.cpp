@@ -126,49 +126,25 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   return(failedLoadingModel);
 }
 
-bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeBGSimbox){
-
-  // FFTGrids needed for 4D inversion. To be allocated in memory.
-  FFTGrid *vp;
-  FFTGrid *vs;
-  FFTGrid *rho;
-  FFTGrid *crCovVpVp;
-  FFTGrid *crCovVpVs;
-  FFTGrid *crCovVpRho;
-  FFTGrid *crCovVsVs;
-  FFTGrid *crCovVsRho;
-  FFTGrid *crCovRhoRho;
+bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeSimbox){
 
   // Parameters for generating new FFTGrids
-  const int nx    = timeBGSimbox->getnx();
-  const int ny    = timeBGSimbox->getny();
-  const int nz    = timeBGSimbox->getnz();
+  const int nx    = timeSimbox->getnx();
+  const int ny    = timeSimbox->getny();
+  const int nz    = timeSimbox->getnz();
   const int nxPad = modelSettings->getNXpad();
   const int nyPad = modelSettings->getNYpad();
   const int nzPad = modelSettings->getNZpad();
 
-  // Creating the 4D grids
-  vp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  vp->createRealGrid();
-  vs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  vs->createRealGrid();
-  rho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  rho->createRealGrid();
-  crCovVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovVpVp->createRealGrid();
-  crCovVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovVpVs->createRealGrid();
-  crCovVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovVpRho->createRealGrid();
-  crCovVsVs  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovVsVs->createRealGrid();
-  crCovVsRho  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovVsRho->createRealGrid();
-  crCovRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  crCovRhoRho->createRealGrid();
+  // Allocate grids in seismicParameters. These are the 3 + 6 static grids.
+  seismicParameters.allocateGrids(nx, ny, nz, nxPad, nyPad, nzPad);
+  
+  // Alocate dynamic grids needed for 4D inversion. 3 + 6 + 9 dynamic grids.
+  // These grids are held by the class variable state4d_
+  modelGeneral->allocateDynamic4DGrids(nx, ny, nz, nxPad, nyPad, nzPad);
 
   // Merge the allocated 4D grids in the structure seismicParametersHolder
-  modelGeneral->get3DPriorFrom4D(seismicParameters, vp, vs, rho, crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
+  modelGeneral->getInitial3DPriorFrom4D(seismicParameters);
 
-  return 1;
+  return false;
 }

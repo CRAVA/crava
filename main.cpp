@@ -218,21 +218,21 @@ int main(int argc, char** argv)
       modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
       switch(eventType) {
       case TimeLine::AVO :
+        // In case of 4D inversion
+        if(modelSettings->getDo4DInversion()){
+          bool failedAllocating = 0;
+          failedAllocating      = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, modelGeneral->getTimeSimbox());
+          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+        }
         // In case of 3D inversion
-        failedFirst = doFirstAVOInversion(modelSettings,
+        else{
+          failedFirst = doFirstAVOInversion(modelSettings,
                                           modelGeneral,
                                           modelAVOstatic,
                                           seismicParameters,
                                           inputFiles,
                                           eventIndex,
                                           timeBGSimbox);
-
-        // In case of 4D inversion, use 4D prior
-        // For now deactivating the whole if-segment by testing on 0 as well.
-        if(modelSettings->getDo4DInversion()){
-          bool failedAllocating = 0;
-          failedAllocating      = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, timeBGSimbox);
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
         }
         break;
       case TimeLine::TRAVEL_TIME :

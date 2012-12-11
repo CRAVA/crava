@@ -2975,32 +2975,20 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
 }
 
 void
-ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                              const std::vector<double>                        & probability,
-                                              int                                                lowCut,
-                                              Corr                                             & correlations, //The grids here get/set correctly.
-                                              const Simbox                                     & timeSimbox,
-                                              const ModelSettings                              & modelSettings,
-                                              State4D                                          & state4d,
-                                              std::string                                      & errTxt)
+ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                        const std::vector<double>                        & probability,
+                                        const Simbox                                     & timeSimbox,
+                                        const ModelSettings                              & modelSettings,
+                                        State4D                                          & state4d,
+                                        std::vector<double>                              & variancesFromRockPhysics,
+                                        std::string                                      & errTxt)
 {
-  // Create all necessary grids for 4D inversion and return all grids in a State4D object.
-  // We assume an existing object of the class Corr and an empty object of state4d.
+  // Allocates the static mu grid: 3 grids.
 
-  // Static mu
+  // Static grids for 4D inversion, filled with 3D rock physics background
   FFTGrid * vp_stat;
   FFTGrid * vs_stat;
   FFTGrid * rho_stat;
-
-  // Static sigma
-  FFTGrid * vp_vp_stat;
-  FFTGrid * vp_vs_stat;
-  FFTGrid * vp_rho_stat;
-  FFTGrid * vs_vs_stat;
-  FFTGrid * vs_rho_stat;
-  FFTGrid * rho_rho_stat;
-
-  // The dynamic grids are NULL
 
   // Variance coefficients which will be set in generateRockPhysics3DBackground
   double varVp;
@@ -3027,6 +3015,48 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   vs_stat ->createRealGrid();
   rho_stat->createRealGrid();
 
+  // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
+  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errTxt);
+
+  state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
+
+  variancesFromRockPhysics[0] = varVp;
+  variancesFromRockPhysics[1] = varVs;
+  variancesFromRockPhysics[2] = varRho;
+  variancesFromRockPhysics[3] = crVpVs;
+  variancesFromRockPhysics[4] = crVpRho;
+  variancesFromRockPhysics[5] = crVsRho;
+}
+
+void
+ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                              const std::vector<double>                        & probability,
+                                              int                                                lowCut,
+                                              Corr                                             & correlations, //The grids here get/set correctly.
+                                              const Simbox                                     & timeSimbox,
+                                              const ModelSettings                              & modelSettings,
+                                              State4D                                          & state4d,
+                                              std::vector<double>                                variancesFromRockPhycics,
+                                              std::string                                      & errTxt)
+{
+  // Allocates the static sigma grids: 6 grids.
+
+  // Static sigma
+  FFTGrid * vp_vp_stat;
+  FFTGrid * vp_vs_stat;
+  FFTGrid * vp_rho_stat;
+  FFTGrid * vs_vs_stat;
+  FFTGrid * vs_rho_stat;
+  FFTGrid * rho_rho_stat;
+
+  // Parameters for generating new FFTGrids
+  const int nx    = timeSimbox.getnx();
+  const int ny    = timeSimbox.getny();
+  const int nz    = timeSimbox.getnz();
+  const int nxPad = modelSettings.getNXpad();
+  const int nyPad = modelSettings.getNYpad();
+  const int nzPad = modelSettings.getNZpad();
+
   // Creating grids for sigma static
   vp_vp_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
   vp_vs_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
@@ -3042,9 +3072,6 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   vs_rho_stat ->createRealGrid();
   rho_rho_stat->createRealGrid();
 
-  // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errTxt);
-
   // Correlations
   float corrGradI, corrGradJ;
   ModelGeneral::getCorrGradIJ(corrGradI, corrGradJ);
@@ -3056,21 +3083,15 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   rho_rho_stat->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
 
   // Multiply covariance grids with scalar variance coefficients
-  vp_vp_stat  ->multiplyByScalar(static_cast<float>(varVp));
-  vp_vs_stat  ->multiplyByScalar(static_cast<float>(crVpVs));
-  vp_rho_stat ->multiplyByScalar(static_cast<float>(crVpRho));
-  vs_vs_stat  ->multiplyByScalar(static_cast<float>(varVs));
-  vs_rho_stat ->multiplyByScalar(static_cast<float>(crVsRho));
-  rho_rho_stat->multiplyByScalar(static_cast<float>(varRho));
+  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[0]));
+  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[3]));
+  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[4]));
+  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[1]));
+  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[5]));
+  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[2]));
 
-  // Set the static and dynamic grids in the state4d object
-  state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
+  // Set the static grids in the state4d object
   state4d.setStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
-
-  // Not necessary to set dynamic grids, as all grids are initially initialized as NULL in State4D.
-  //state4d.setDynamicMu(NULL, NULL, NULL);
-  //state4d.setDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL);
-  //state4d.setStaticDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 }
 
@@ -4154,7 +4175,6 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
 
   // Variables to be created in this function
   Corr       * correlations;
-  State4D      state4D;
 
   Background * background = NULL;
 
@@ -4164,6 +4184,7 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
   int n_facies = static_cast<int>(faciesNames_.size());
 
   // Get prior probabilities for the facies in a vector
+  /*
   std::vector<double> priorProbability;
   priorProbability.resize(n_facies);
   typedef std::map<std::string,float> mapType;
@@ -4175,13 +4196,27 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
     if(iter!=myMap.end())
       priorProbability[i] = iter->second;
   }
+  */
+  typedef std::map<std::string,float> mapType;
+  mapType myMap = modelSettings->getPriorFaciesProb();
 
-  std::vector<double> dummyVector;
-  processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
-                           seisCube, inputFiles, dummyVector, errText, failedPriorCorr);
+  n_facies = static_cast<int>(myMap.size());
+  std::vector<double> priorProbability;
+  priorProbability.resize(n_facies);
 
+  int i = 0;
+  for(mapType::iterator iter=myMap.begin();iter!=myMap.end();iter++){
+    priorProbability[i] = iter->second;
+    i++;
+  }
   std::string tmpError = "";
-  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D, tmpError);
+  std::vector<double> variancesFromRockPhysics(6);
+  setUp3DPartOf4DBackground(getRockDistributionTime0(), priorProbability, timeSimbox_, *modelSettings, state4d_, variancesFromRockPhysics, tmpError);
+
+  processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
+                           seisCube, inputFiles, variancesFromRockPhysics, errText, failedPriorCorr);
+
+  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4d_, variancesFromRockPhysics, tmpError);
 
   if(tmpError != "") {
     errText += tmpError;
@@ -4195,13 +4230,85 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
 }
 
 void
-ModelGeneral::get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
-                               FFTGrid *vp, FFTGrid *vs, FFTGrid *rho,
-                               FFTGrid *crCovVpVp, FFTGrid *crCovVpVs, FFTGrid *crCovVpRho,
-                               FFTGrid *crCovVsVs, FFTGrid *crCovVsRho,
-                               FFTGrid *crCovRhoRho)
+ModelGeneral::allocateDynamic4DGrids(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
 {
-  state4d_.setStaticMu(vp, vs, rho);
-  state4d_.setStaticSigma(crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
+  // Static grids (3 + 6) are set in process4DBackground.
+  // Dynamic grids (3 + 6 + 9) are set here.
+
+  FFTGrid * dynamicVp;
+  FFTGrid * dynamicVs;
+  FFTGrid * dynamicRho;
+  FFTGrid * dynamicVpVp;
+
+  FFTGrid *dynamicVpVs;
+  FFTGrid *dynamicVpRho;
+  FFTGrid *dynamicVsVs;
+  FFTGrid *dynamicVsRho;
+  FFTGrid *dynamicRhoRho;
+
+  FFTGrid *staticDynamicVpVp;
+  FFTGrid *staticDynamicVpVs;
+  FFTGrid *staticDynamicVpRho;
+  FFTGrid *staticDynamicVsVp;
+  FFTGrid *staticDynamicVsVs;
+  FFTGrid *staticDynamicVsRho;
+  FFTGrid *staticDynamicRhoVp;
+  FFTGrid *staticDynamicRhoVs;
+  FFTGrid *staticDynamicRhoRho;
+
+  dynamicVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVp->fillInConstant(0.0);
+  dynamicVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVs->fillInConstant(0.0);
+  dynamicRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicRho->fillInConstant(0.0);
+
+  state4d_.setDynamicMu(dynamicVp, dynamicVs, dynamicRho);
+
+  dynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpVp->fillInConstant(0.0);
+  dynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpVs->fillInConstant(0.0);
+  dynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpRho->fillInConstant(0.0);
+  dynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVsVs->fillInConstant(0.0);
+  dynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVsRho->fillInConstant(0.0);
+  dynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicRhoRho->fillInConstant(0.0);
+
+  state4d_.setDynamicSigma(dynamicVpVp, dynamicVpVs, dynamicVpRho,
+                                        dynamicVsVs, dynamicVsRho,
+                                                     dynamicRhoRho);
+
+  staticDynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpVp->fillInConstant(0.0);
+  staticDynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpVs->fillInConstant(0.0);
+  staticDynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpRho->fillInConstant(0.0);
+  staticDynamicVsVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsVp->fillInConstant(0.0);
+  staticDynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsVs->fillInConstant(0.0);
+  staticDynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsRho->fillInConstant(0.0);
+  staticDynamicRhoVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoVp->fillInConstant(0.0);
+  staticDynamicRhoVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoVs->fillInConstant(0.0);
+  staticDynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoRho->fillInConstant(0.0);
+
+  state4d_.setStaticDynamicSigma(staticDynamicVpVp,  staticDynamicVpVs,  staticDynamicVpRho,
+                                 staticDynamicVsVp,  staticDynamicVsVs,  staticDynamicVsRho,
+                                 staticDynamicRhoVp, staticDynamicRhoVs, staticDynamicRhoRho);
+}
+
+
+void
+ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder seismicParameters)
+{
   state4d_.merge(seismicParameters);
 }
