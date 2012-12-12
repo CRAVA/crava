@@ -16,8 +16,6 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
-#include "lib/lib_matr.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"

@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <math.h>
 
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "fftw.h"
 #include "rfftw.h"

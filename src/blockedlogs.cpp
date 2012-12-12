@@ -2249,8 +2249,11 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
   }
 }
 
-void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient,
-                                 std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data, std::vector<std::vector<double> > &Sigma_gradient)
+void BlockedLogs::smoothGradient(std::vector<double>               & xGradient,
+                                 std::vector<double>               & yGradient,
+                                 std::vector<double>               & Qepsilon,
+                                 std::vector<double>               & Qepsilon_data,
+                                 std::vector<std::vector<double> > &Sigma_gradient)
 {
   int i, j;
   int n_beta = nBlocks_* 2;
@@ -2305,9 +2308,10 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
   //Compute the inverse of Qbeta_data
   //First we do cholesky factorization LL^T = covD
   lib_matrCholR(n_beta, Qbeta_data);
-
   //Solve Q inverse
   lib_matrAXeqBMatR(n_beta,Qbeta_data,Identity,n_beta);
+
+  //xxxxxx
 
   //Compute the product (Qbeta_Data)^-1 Qepsilon_data
   double *res = new double[n_beta];

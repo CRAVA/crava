@@ -15,7 +15,7 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
-#include "lib/lib_matr.h"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
@@ -49,8 +49,6 @@ Wavelet::Wavelet(int dim)
     gainGrid_(NULL)
 {
 }
-
-
 
 Wavelet::Wavelet(int       dim,
                  Wavelet * wavelet)
@@ -1086,52 +1084,45 @@ Wavelet::getWaveletValue(float   z,
   // returns the value of the vavelet in the location z. Wavelet have the length nz
   // and the center value is Wavelet[center]
   // uses kriging with ricker 20Hz wavelet as correlation function.
-  float value;
-  int    k,l;
-  int*   ind=new int[6];// iL1,iL2,iL3,iR1,iR2,iR3;
-  double* val=new double[6];//vL1,vL2,vL3,vR1,vR2,vR3;
 
-  ind[2]= int( floor( (z/dz) ) );
-  for(k=0;k<6;k++)
-    ind[k]=  ind[2]+k-2;
+  NRLib::IntegerVector ind(6);  // iL1,iL2,iL3,iR1,iR2,iR3;
+  NRLib::Vector        val(6);  // vL1,vL2,vL3,vR1,vR2,vR3;
 
-  for(k=0;k<6;k++)
-    val[k]=  getArrayValueOrZero(ind[k]+center , Wavelet,  nz);
+  ind(2) = static_cast<int>( floor( (z/dz) ) );
+  for(int k=0 ; k<6 ; k++)
+    ind(k) = ind(2) + k-2;
 
-  double** Cov = new double*[6];
-  double*  cov = new double[6];
-  double   nu = 20;
+  for(int k=0;k<6;k++)
+    val(k) = getArrayValueOrZero(ind(k) + center, Wavelet,  nz);
+
+  NRLib::SymmetricMatrix Cov = NRLib::SymmetricZeroMatrix(6);
+  NRLib::Vector cov(6);
+  NRLib::Vector x(6);
+
+  double   nu  = 20;
   double   deltaT;
+  double   factor;
 
-  for(k=0;k<6;k++)
+  for (int k=0 ; k<6 ; k++)
   {
-    Cov[k] = new double[6];
-    deltaT = (dz*ind[k]-z)*0.001;
-    cov[k] = (1-2*nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT))*exp(-nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT));
-    for(l=0;l<6;l++)
+    deltaT = (dz*ind(k) - z)*0.001;
+    factor = nu*nu*NRLib::Pi*NRLib::Pi*deltaT*deltaT;
+    cov(k) = (1-2*factor)*exp(-factor);
+    for (int l=0 ; l<=k ; l++)
     {
-      deltaT =(dz*ind[k]-dz*ind[l])*0.001;
-      Cov[k][l] = (1-2*nu*nu*NRLib::Pi*NRLib::Pi*deltaT * deltaT )*exp(-nu*nu*NRLib::Pi*NRLib::Pi*deltaT*deltaT);
+      deltaT   = (dz*ind(k) - dz*ind(l))*0.001;
+      factor   = nu*nu*NRLib::Pi*NRLib::Pi*deltaT*deltaT;
+      Cov(l,k) = (1-2*factor)*exp(-factor);
     }
   }
   //OK not very intellegent implementation since chol is done for each time step.
-  lib_matrCholR(6,  Cov);
-  lib_matrAxeqbR(6, Cov, cov); // cov contains now the kriging weigths;
 
-  value = 0.0;
-  for(k=0;k<6;k++)
-  {
-    value+= float(val[k]*cov[k]);
-    delete [] Cov[k];
-  }
-  delete [] Cov;
-  delete [] cov;
-  delete [] val;
-  delete [] ind;
+  NRLib::CholeskySolve(Cov, cov, x);
+
+  float value = static_cast<float>(val * x);
+
   return value;
 }
-
-
 
 float
 Wavelet::getArrayValueOrZero(int     i,

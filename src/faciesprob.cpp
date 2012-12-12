@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include <string>
 
-#include "nrlib/flens/nrlib_flens.hpp"
-
 #include "lib/random.h"
 #include "lib/kriging1d.h"
 
