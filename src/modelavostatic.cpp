@@ -38,7 +38,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"

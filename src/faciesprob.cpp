@@ -10,7 +10,8 @@
 #include <stdio.h>
 #include <string>
 
-#include "lib/lib_matr.h"
+#include "nrlib/flens/nrlib_flens.hpp"
+
 #include "lib/random.h"
 #include "lib/kriging1d.h"
 
@@ -188,7 +189,7 @@ FaciesProb::makeFaciesDens(int nfac,
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
   //      values outside the denisty table to the edge, any values should do in this dimension.
   //      Still, we prefer to create reasonable values.
-  int i,j,k,l;
+
   nFacies_ = nfac;
 
   float kstda, kstdb, kstdr, hopt;
@@ -198,10 +199,8 @@ FaciesProb::makeFaciesDens(int nfac,
     nbinsb = 1; //Ignore what happens for Vs.
   int nbinsr = 50;
 
-
   int nobs   = 0;
-  float *smooth = new float[nbinsa*nbinsb*nbinsr];
-  for(i=0;i<static_cast<int>(alphaFiltered.size());i++)
+  for(int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++)
   {
     if(faciesLog[i]!=IMISSING)
       nobs++;
@@ -209,14 +208,13 @@ FaciesProb::makeFaciesDens(int nfac,
   std::vector<float> alphaFilteredNew(alphaFiltered.size());
   std::vector<float> betaFilteredNew(betaFiltered.size());
   std::vector<float> rhoFilteredNew(rhoFiltered.size());
-  if(index > 0)
-  {
+  if(index > 0) {
     int nAng = static_cast<int>(noiseScale.size());
     // int nAng = int(log(float(sigmaEOrig.size()))/log(2.0));
 
     std::vector<double> maxScale(nAng);
     double maxS, minS;
-    for(int angle=0;angle<nAng;angle++) {
+    for(int angle=0 ; angle < nAng ; angle++) {
       minS = noiseScale[angle]->FindMin(RMISSING);
       maxS = noiseScale[angle]->FindMax(RMISSING);
       maxScale[angle] = maxS/minS;
@@ -232,59 +230,41 @@ FaciesProb::makeFaciesDens(int nfac,
       factor *= 2;
     }
 
-    NRLib::Matrix HH(3,3);
+    NRLib::Matrix H(3,3);
     NRLib::Matrix junk(3,3);
 
-    cravaResult->newPosteriorCovPointwise(HH,
+    cravaResult->newPosteriorCovPointwise(H,
                                           G,
                                           scale,
                                           junk);
 
+    NRLib::Vector h1(3);
 
-    double ** H = new double * [3];
-    for(i=0;i<3;i++) {
-      H[i] = new double[3];
-    }
-    NRLib::Set2DArrayFromMatrix(HH,H);
+    for(int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++)
+    {
+      h1(0) = static_cast<double>(alphaFiltered[i]);
+      h1(1) = static_cast<double>(betaFiltered[i]);
+      h1(2) = static_cast<double>(rhoFiltered[i]);
 
-    double **help1 = new double*[3];
-    help1[0] = new double[1];
-    help1[1] = new double[1];
-    help1[2] = new double[1];
-    double **help2 = new double*[3];
-    help2[0] = new double[1];
-    help2[1] = new double[1];
-    help2[2] = new double[1];
-    for(i=0;i<int(alphaFiltered.size());i++)
-    {
-      help1[0][0] = alphaFiltered[i];
-      help1[1][0] = betaFiltered[i];
-      help1[2][0] = rhoFiltered[i];
-      lib_matr_prod(H,help1,3,3,1,help2);  //
-      alphaFilteredNew[i] = float(help2[0][0]);
-      betaFilteredNew[i] = float(help2[1][0]);
-      rhoFilteredNew[i] = float(help2[2][0]);
+      NRLib::Vector h2 = H * h1;
+
+      alphaFilteredNew[i] = static_cast<float>(h2(0));
+      betaFilteredNew[i]  = static_cast<float>(h2(1));
+      rhoFilteredNew[i]   = static_cast<float>(h2(2));
     }
-    for(i=0;i<3;i++)
-    {
-      delete [] help1[i];
-      delete [] help2[i];
-    }
-    delete [] help1;
-    delete [] help2;
   }
-  else
-  {
-    for(i=0;i<int(alphaFiltered.size());i++)
-   {
+  else {
+    for(int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++) {
       alphaFilteredNew[i] = alphaFiltered[i];
-      betaFilteredNew[i] = betaFiltered[i];
-      rhoFilteredNew[i] = rhoFiltered[i];
+      betaFilteredNew[i]  = betaFiltered[i];
+      rhoFilteredNew[i]   = rhoFiltered[i];
     }
   }
 
   // Make bins.
-  float varAlpha = 0.0f, varBeta = 0.0f, varRho = 0.0f;
+  float varAlpha = 0.0f;
+  float varBeta  = 0.0f;
+  float varRho   = 0.0f;
   calculateVariances(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog,
                      varAlpha, varBeta, varRho);//sets varAlpha etc....
   if(noVs == true)
@@ -295,68 +275,50 @@ FaciesProb::makeFaciesDens(int nfac,
   kstdb = hopt*sqrt(varBeta);
   kstdr = hopt*sqrt(varRho);
 
-  double ** sigmae = new double *[3];
-  for(i=0;i<3;i++)
-    sigmae[i] = new double[3];
+  NRLib::SymmetricMatrix sigmae(3);
 
-  if(useFilter == true) {
-    if(noVs == false) {
-      for(i=0;i<3;i++) {
-        for(j=0;j<3;j++)
-          sigmae[i][j] = sigmaEOrig[index](i,j);
+  if (useFilter == true) {
+    if (noVs == false) {
+      for (int i=0 ; i < 3 ; i++) {
+        for (int j=0 ; j <= i ; j++)
+          sigmae(j,i) = sigmaEOrig[index](j,i);
       }
     }
     else {
-      sigmae[0][0] = sigmaEOrig[index](0,0);
-      sigmae[0][1] = 0.0;
-      sigmae[0][2] = sigmaEOrig[index](0,1);
-      sigmae[1][0] = 0.0;
-      sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
-      sigmae[1][2] = 0.0;
-      sigmae[2][0] = sigmaEOrig[index](1,0);
-      sigmae[2][1] = 0.0;
-      sigmae[2][2] = sigmaEOrig[index](1,1);
+      sigmae(0,0) = sigmaEOrig[index](0,0);
+      sigmae(0,1) = 0.0;
+      sigmae(1,1) = 0.0; //Will be overruled by reasonable value.
+      sigmae(0,2) = sigmaEOrig[index](0,1);
+      sigmae(1,2) = 0.0;
+      sigmae(2,2) = sigmaEOrig[index](1,1);
     }
   }
   else {
-    for(i=0;i<3;i++) {
-      for(j=0;j<3;j++)
-        sigmae[i][j] = 0.0;
+    for (int i=0 ; i < 3 ; i++) {
+      for (int j=0 ; j <= i ; j++) {
+        sigmae(j,i) = 0.0;
+      }
     }
   }
 
-  if(sigmae[0][0]<kstda*kstda)
-    sigmae[0][0] = kstda*kstda;
-  if(sigmae[1][1]<kstdb*kstdb)
-    sigmae[1][1] = kstdb*kstdb;
-  if(sigmae[2][2]<kstdr*kstdr)
-    sigmae[2][2] = kstdr*kstdr;
+  if(sigmae(0,0) < kstda*kstda)
+    sigmae(0,0) = kstda*kstda;
+  if(sigmae(1,1) < kstdb*kstdb)
+    sigmae(1,1) = kstdb*kstdb;
+  if(sigmae(2,2) < kstdr*kstdr)
+    sigmae(2,2) = kstdr*kstdr;
 
   //Establish limits before we invert sigma.
-  double alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae[0][0]);
-  double alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae[0][0]);
-  double betaMin  = *min_element(betaFilteredNew.begin(), betaFilteredNew.end()) - 5.0f*sqrt(sigmae[1][1]);
-  double betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*sqrt(sigmae[1][1]);
-  double rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*sqrt(sigmae[2][2]);
-  double rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*sqrt(sigmae[2][2]);
+  double alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae(0,0));
+  double alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae(0,0));
+  double betaMin  = *min_element(betaFilteredNew.begin() , betaFilteredNew.end())  - 5.0f*sqrt(sigmae(1,1));
+  double betaMax  = *max_element(betaFilteredNew.begin() , betaFilteredNew.end())  + 5.0f*sqrt(sigmae(1,1));
+  double rhoMin   = *min_element(rhoFilteredNew.begin()  , rhoFilteredNew.end())   - 5.0f*sqrt(sigmae(2,2));
+  double rhoMax   = *max_element(rhoFilteredNew.begin()  , rhoFilteredNew.end())   + 5.0f*sqrt(sigmae(2,2));
 
-  // invert sigmae
-  double **sigmaeinv = new double *[3];
-  for(i=0;i<3;i++)
-    sigmaeinv[i] = new double [3];
+  NRLib::Matrix sigmaeinv = NRLib::IdentityMatrix(3);
 
-  for(i=0;i<3;i++)
-      for(j=0;j<3;j++)
-        if(i==j)
-          sigmaeinv[i][j] = 1.0;
-        else
-          sigmaeinv[i][j] = 0.0;
-  lib_matrCholR(3, sigmae);
-  lib_matrAXeqBMatR(3, sigmae, sigmaeinv, 3);
-
-  for(int i=0;i<3;i++)
-    delete [] sigmae[i];
-  delete [] sigmae;
+  NRLib::CholeskySolve(sigmae, sigmaeinv);
 
   double dAlpha = (alphaMax-alphaMin)/nbinsa;
   double dBeta  = (betaMax-betaMin)/nbinsb;
@@ -367,11 +329,13 @@ FaciesProb::makeFaciesDens(int nfac,
   *volume  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho);
   density = makeFaciesHistAndSetPriorProb(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog, *volume);
 
+  float *smooth = new float[nbinsa*nbinsb*nbinsr];
+
   int jj,jjj,kk,kkk,ll,lll;
   lll=2;
 
   float sum = 0.0f;
-  for(l=0;l<nbinsr;l++)
+  for(int l=0 ; l<nbinsr ; l++)
   {
     kkk=2;
     if(l<=nbinsr/2)
@@ -381,7 +345,7 @@ FaciesProb::makeFaciesDens(int nfac,
       ll = -(l-lll);
       lll+=2;
     }
-    for(k=0;k<nbinsb;k++)
+    for(int k=0 ; k < nbinsb ; k++)
     {
       jjj=2;
       if(k<=nbinsb/2)
@@ -391,7 +355,7 @@ FaciesProb::makeFaciesDens(int nfac,
         kk = -(k-kkk);
         kkk+=2;
       }
-      for(j=0;j<nbinsa;j++)
+      for(int j=0 ; j < nbinsa ; j++)
       {
         if(j<=nbinsa/2)
           jj=j;
@@ -400,20 +364,22 @@ FaciesProb::makeFaciesDens(int nfac,
           jj = -(j-jjj);
           jjj+=2;
         }
-        smooth[j+k*nbinsa+l*nbinsa*nbinsb] = float(exp(-0.5f*(jj*dAlpha*jj*dAlpha*sigmaeinv[0][0]
-                                                             +kk*dBeta *kk*dBeta *sigmaeinv[1][1]
-                                                             +ll*dRho  *ll*dRho  *sigmaeinv[2][2]
-                                                           +2*jj*dAlpha*kk*dBeta *sigmaeinv[1][0]
-                                                           +2*jj*dAlpha*ll*dRho  *sigmaeinv[2][0]
-                                                           +2*kk*dBeta *ll*dRho  *sigmaeinv[2][1])));
-        sum = sum+smooth[j+k*nbinsa+l*nbinsa*nbinsb];
+        float factor = static_cast<float>( jj*dAlpha*jj*dAlpha*sigmaeinv(0,0)
+                                          +kk*dBeta *kk*dBeta *sigmaeinv(1,1)
+                                          +ll*dRho  *ll*dRho  *sigmaeinv(2,2)
+                                        +2*jj*dAlpha*kk*dBeta *sigmaeinv(1,0)
+                                        +2*jj*dAlpha*ll*dRho  *sigmaeinv(2,0)
+                                        +2*kk*dBeta *ll*dRho  *sigmaeinv(2,1));
+
+        smooth[j+k*nbinsa+l*nbinsa*nbinsb] = std::exp(-0.5f*(factor));
+        sum = sum + smooth[j+k*nbinsa+l*nbinsa*nbinsb];
       }
     }
   }
   // normalize smoother
-  for(l=0;l<nbinsr;l++)
-    for(k=0;k<nbinsb;k++)
-      for(j=0;j<nbinsa;j++)
+  for(int l=0 ; l < nbinsr ; l++)
+    for(int k=0 ; k < nbinsb ; k++)
+      for(int j=0 ; j < nbinsa ; j++)
         smooth[j+k*nbinsa+l*nbinsa*nbinsb]/=sum;
 
   FFTGrid *smoother;
@@ -428,7 +394,7 @@ FaciesProb::makeFaciesDens(int nfac,
 
   smoother->fftInPlace();
 
-  for(i=0;i<nFacies_;i++)
+  for(int i=0 ; i < nFacies_ ; i++)
   {
     if(ModelSettings::getDebugLevel() >= 1)
     {
@@ -443,9 +409,6 @@ FaciesProb::makeFaciesDens(int nfac,
   }
   delete smoother;
   delete [] smooth;
-  for(i=0;i<3;i++)
-    delete [] sigmaeinv[i];
-  delete [] sigmaeinv;
 }
 
 

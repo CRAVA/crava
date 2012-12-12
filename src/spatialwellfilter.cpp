@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "lib/lib_matr.h"
 #include "lib/timekit.hpp"
 
 #include "nrlib/iotools/logkit.hpp"

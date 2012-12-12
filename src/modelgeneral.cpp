@@ -37,7 +37,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -46,6 +45,9 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+
+#include "lib/lib_matr.h"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
 {
@@ -1189,9 +1191,9 @@ ModelGeneral::findPlane(Surface * surf)
       A[1][1] += x*x;
       A[1][2] += x*y;
       A[2][2] += y*y;
-      b[0] += z;
-      b[1] += x*z;
-      b[2] += y*z;
+      b[0]    += z;
+      b[1]    += x*z;
+      b[2]    += y*z;
     }
   }
 
