@@ -6,11 +6,9 @@
 
 #include "src/definitions.h"
 #include "src/kriging2d.h"
-#include "lib/lib_matr.h"
 #include "lib/utils.h"
 
 #include "nrlib/iotools/logkit.hpp"
-
 
 void Kriging2D::krigSurface(Grid2D              & trend,
                             const KrigingData2D & krigingData,
@@ -28,141 +26,82 @@ void Kriging2D::krigSurface(Grid2D              & trend,
 
   int nx = static_cast<int>(trend.GetNI());
   int ny = static_cast<int>(trend.GetNJ());
-  if (md < nx*ny) {
-    subtractTrend(data, trend, indexi, indexj, md);
 
-    double ** K;  // Kriging matrix
-    double ** C;  // Kriging matrix cholesky decomposed
-    double *  k;  // Kriging vector
+  if (md > 0 && md < nx*ny) {
 
-    allocateSpaceForMatrixEq(K, C, k, md);
-    fillKrigingMatrix(K, cov, indexi, indexj, md);
-    cholesky(K, C, md);
+    NRLib::SymmetricMatrix K(md);
+    NRLib::Vector residual(md);
+    NRLib::Vector k(md);
+    NRLib::Vector x(md);
 
-    for (int i = 0 ; i < nx ; i++)
-      for (int j = 0 ; j < ny ; j++)
-      {
-        fillKrigingVector(k, cov, indexi, indexj, md, i, j);
-        lib_matrAxeqbR(md, C, k); // solve kriging equation
-        if (getResiduals)
-          for (int ii = 0 ; ii < md ; ii++)
-            trend(i,j)  = k[ii] * data[ii];
-        else
-          for (int ii = 0 ; ii < md ; ii++)
-            trend(i,j) += k[ii] * data[ii];
+    subtractTrend(residual, data, trend, indexi, indexj);
+
+    fillKrigingMatrix(K, cov, indexi, indexj);
+
+    for (int i = 0 ; i < nx ; i++) {
+      for (int j = 0 ; j < ny ; j++) {
+        fillKrigingVector(k, cov, indexi, indexj, i, j);
+
+        NRLib::CholeskySolve(K, k, x);
+
+        if (getResiduals) {
+          trend(i,j) = x * residual;
+        }
+        else {
+          trend(i,j) += x * residual;
+        }
       }
-    deAllocateSpaceForMatrixEq(K, C, k, md);
+    }
   }
 }
 
 void
-Kriging2D::subtractTrend(std::vector<float>     & data,
-                         const Grid2D           & trend,
-                         const std::vector<int> & indexi,
-                         const std::vector<int> & indexj,
-                         int                      md)
+Kriging2D::subtractTrend(NRLib::Vector            & residual,
+                         const std::vector<float> & data,
+                         const Grid2D             & trend,
+                         const std::vector<int>   & indexi,
+                         const std::vector<int>   & indexj)
 {
+  int md = residual.length();
   for (int i = 0 ; i < md ; i++)
-    data[i] -= static_cast<float>(trend(indexi[i],indexj[i]));
+    residual(i) = data[i] - static_cast<float>(trend(indexi[i],indexj[i]));
 
   bool debug = false;
   if (debug) {
     LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::LogFormatted(LogKit::Low," i indexi[i] indexj[i] data : %3d %3d %3d  %.5f\n",i,indexi[i],indexj[i],data[i]);
+      LogKit::LogFormatted(LogKit::Low," i indexi[i] indexj[i] residual : %3d %3d %3d  %.5f\n",i,indexi[i],indexj[i],residual(i));
     }
   }
 }
 
 void
-Kriging2D::fillKrigingMatrix(double                 ** K,
+Kriging2D::fillKrigingMatrix(NRLib::SymmetricMatrix  & K,
                              const CovGrid2D         & cov,
                              const std::vector<int>  & indexi,
-                             const std::vector<int>  & indexj,
-                             int                       md)
+                             const std::vector<int>  & indexj)
 {
-  for(int i=0;i<md;i++)
-    for(int j=0;j<md;j++)
-    {
+  int n = K.dim();
+  for(int i=0 ; i < n  ; i++) {
+    for(int j=0 ; j <= i ; j++) {
       int deltai = indexi[i] - indexi[j];
       int deltaj = indexj[i] - indexj[j];
-      K[i][j] = static_cast<double>(cov.getCov(deltai,deltaj));
+      K(j,i) = static_cast<double>(cov.getCov(deltai,deltaj));
     }
+  }
 }
 
 void
-Kriging2D::fillKrigingVector(double                 * k,
+Kriging2D::fillKrigingVector(NRLib::Vector          & k,
                              const CovGrid2D        & cov,
                              const std::vector<int> & indexi,
                              const std::vector<int> & indexj,
-                             int md, int i, int j)
+                             int i, int j)
 {
-  for(int ii=0;ii<md;ii++)
-  {
-    int deltai = indexi[ii]-i;
-    int deltaj = indexj[ii]-j;
-    k[ii] = static_cast<double>(cov.getCov(deltai,deltaj));
+  for(int ii=0 ; ii < k.length() ; ii++) {
+    int deltai = indexi[ii] - i;
+    int deltaj = indexj[ii] - j;
+    k(ii) = static_cast<double>(cov.getCov(deltai,deltaj));
   }
-}
-
-void
-Kriging2D::allocateSpaceForMatrixEq(double ** & K,
-                                    double ** & C,
-                                    double  * & k,
-                                    int         md)
-{
-  K = new double * [md];
-  C = new double * [md];
-  k = new double[md];
-  for (int i = 0 ; i < md ; i++) {
-    K[i] = new double[md];
-    C[i] = new double[md];
-  }
-}
-
-void
-Kriging2D::deAllocateSpaceForMatrixEq(double ** K,
-                                      double ** C,
-                                      double  * k,
-                                      int       md)
-{
-  for (int i = 0 ; i < md ; i++) {
-    delete [] K[i];
-    delete [] C[i];
-  }
-  delete [] K;
-  delete [] C;
-  delete [] k;
-  K = NULL;
-  C = NULL;
-  k = NULL;
-}
-
-void
-Kriging2D::cholesky(double ** K,
-                    double ** C,
-                    int       md)
-{
-  static const double choleskyRepairFactor = 1.001;
-  int count = 0;
-  while ( lib_matrCholR(md, copyMatrix(K, C, md)) ) {
-    for (int i = 0 ; i < md ; i++)
-      K[i][i] *= choleskyRepairFactor;
-    count++;
-    if (count > 5)
-      LogKit::LogFormatted(LogKit::Low,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
-  }
-}
-
-double **
-Kriging2D::copyMatrix(double ** in,
-                      double ** out,
-                      int       md)
-{
-  for (int i = 0 ; i < md ; i++) {
-    for (int j = 0 ; j < md ; j++)
-      out[i][j] = in[i][j];
-  }
-  return out;
 }
 
