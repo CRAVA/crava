@@ -27,14 +27,20 @@ DistributionsSolidMix::DistributionsSolidMix(const DistributionsSolidMix & dist)
 : DistributionsSolid(dist),
   mix_method_(dist.mix_method_)
 {
-  for(size_t i=0; i<dist.distr_solid_.size(); i++)
-    distr_solid_.push_back(dist.distr_solid_[i]);
+  size_t solid_size = dist.distr_solid_.size();
 
-  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
-    if(dist.distr_vol_frac_[i] != NULL)
-      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
-    else
-      distr_vol_frac_.push_back(NULL);
+  distr_solid_.resize(solid_size);
+  for(size_t i=0; i<solid_size; i++)
+    distr_solid_[i] = dist.distr_solid_[i]->Clone();
+
+  distr_vol_frac_.resize(solid_size, NULL);
+  for(size_t i=0; i<solid_size; i++) {
+    if(dist.distr_vol_frac_[i] != NULL) {
+      if(dist.distr_vol_frac_[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i]->Clone();
+      else
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i];
+    }
   }
 
   alpha_ = dist.alpha_;

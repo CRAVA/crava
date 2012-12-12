@@ -58,14 +58,20 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMi
 : DistributionsRock(dist),
   mix_method_(dist.mix_method_)
 {
-  for(size_t i=0; i<dist.distr_rock_.size(); i++)
-    distr_rock_.push_back(dist.distr_rock_[i]->Clone());
+  size_t rock_size = dist.distr_rock_.size();
 
-  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
-    if(dist.distr_vol_frac_[i] != NULL)
-      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
-    else
-      distr_vol_frac_.push_back(NULL);
+  distr_rock_.resize(rock_size);
+  for(size_t i=0; i<rock_size; i++)
+    distr_rock_[i] = dist.distr_rock_[i]->Clone();
+
+  distr_vol_frac_.resize(rock_size, NULL);
+  for(size_t i=0; i<rock_size; i++) {
+    if(dist.distr_vol_frac_[i] != NULL) {
+      if(dist.distr_vol_frac_[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i]->Clone();
+      else
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i];
+    }
   }
 
   alpha_       = dist.alpha_;
@@ -285,23 +291,35 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const D
 : DistributionsRock(dist),
   mix_method_(dist.mix_method_)
 {
-  for(size_t i=0; i<dist.distr_solid_.size(); i++)
-    distr_solid_.push_back(dist.distr_solid_[i]->Clone());
+  size_t solid_size = dist.distr_solid_.size();
+  size_t fluid_size = dist.distr_fluid_.size();
 
-  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
-    distr_fluid_.push_back(dist.distr_fluid_[i]->Clone());
+  distr_solid_.resize(solid_size);
+  for(size_t i=0; i<solid_size; i++)
+    distr_solid_[i] = dist.distr_solid_[i]->Clone();
 
-  for(size_t i=0; i<dist.distr_vol_frac_solid_.size(); i++) {
-    if(dist.distr_vol_frac_solid_[i] != NULL)
-      distr_vol_frac_solid_.push_back(dist.distr_vol_frac_solid_[i]->Clone());
-    else
-      distr_vol_frac_solid_.push_back(NULL);
+  distr_fluid_.resize(fluid_size);
+  for(size_t i=0; i<fluid_size; i++)
+    distr_fluid_[i] = dist.distr_fluid_[i]->Clone();
+
+  distr_vol_frac_solid_.resize(solid_size, NULL);
+  for(size_t i=0; i<solid_size; i++) {
+    if(dist.distr_vol_frac_solid_[i] != NULL) {
+      if(dist.distr_vol_frac_solid_[i]->GetIsShared() == false)
+        distr_vol_frac_solid_[i] = dist.distr_vol_frac_solid_[i]->Clone();
+      else
+        distr_vol_frac_solid_[i] = dist.distr_vol_frac_solid_[i];
+    }
   }
-  for(size_t i=0; i<dist.distr_vol_frac_fluid_.size(); i++) {
-    if(dist.distr_vol_frac_fluid_[i] != NULL)
-      distr_vol_frac_fluid_.push_back(dist.distr_vol_frac_fluid_[i]->Clone());
-    else
-      distr_vol_frac_fluid_.push_back(NULL);
+
+  distr_vol_frac_fluid_.resize(fluid_size, NULL);
+  for(size_t i=0; i<fluid_size; i++) {
+    if(dist.distr_vol_frac_fluid_[i] != NULL) {
+      if(dist.distr_vol_frac_fluid_[i]->GetIsShared() == false)
+        distr_vol_frac_fluid_[i] = dist.distr_vol_frac_fluid_[i]->Clone();
+      else
+        distr_vol_frac_fluid_[i] = dist.distr_vol_frac_fluid_[i];
+    }
   }
 
   alpha_       = dist.alpha_;

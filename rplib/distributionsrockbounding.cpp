@@ -18,13 +18,25 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
                                                      const std::vector<double>   & alpha,
                                                      const std::vector<double>   & s_min,
                                                      const std::vector<double>   & s_max)
-: correlation_weights_(correlation_weights)
+  : correlation_weights_(correlation_weights)
 {
   upper_rock_ = upper_rock  ->Clone();
   lower_rock_ = lower_rock  ->Clone();
-  porosity_   = porosity    ->Clone();
-  K_weight_   = bulk_weight ->Clone();
-  G_weight_   = shear_weight->Clone();
+
+  if(porosity->GetIsShared() == true)
+    porosity_ = porosity;
+  else
+    porosity_ = porosity->Clone();
+
+  if(bulk_weight->GetIsShared() == true)
+    K_weight_ = bulk_weight;
+  else
+    K_weight_ = bulk_weight->Clone();
+
+  if(shear_weight->GetIsShared() == true)
+    G_weight_ = shear_weight;
+  else
+    G_weight_ = shear_weight->Clone();
 
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (porosity, K_weight, G_weight)
   s_min_ = s_min;
@@ -67,9 +79,21 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBoun
 {
   upper_rock_  = dist.upper_rock_->Clone();
   lower_rock_  = dist.lower_rock_->Clone();
-  porosity_    = dist.porosity_  ->Clone();
-  K_weight_    = dist.K_weight_  ->Clone();
-  G_weight_    = dist.G_weight_  ->Clone();
+
+  if(dist.porosity_->GetIsShared() == true)
+    porosity_ = dist.porosity_;
+  else
+    porosity_ = dist.porosity_->Clone();
+
+  if(dist.K_weight_->GetIsShared() == true)
+    K_weight_ = dist.K_weight_;
+  else
+    K_weight_ = dist.K_weight_->Clone();
+
+  if(dist.G_weight_->GetIsShared() == true)
+    G_weight_ = dist.G_weight_;
+  else
+    G_weight_ = dist.G_weight_->Clone();
 
   alpha_       = dist.alpha_;
   s_min_       = dist.s_min_;

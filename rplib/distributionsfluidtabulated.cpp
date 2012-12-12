@@ -44,8 +44,15 @@ DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionsFlui
   corr_elastic_density_(dist.corr_elastic_density_),
   tabulated_method_(dist.tabulated_method_)
 {
-  elastic_ = dist.elastic_->Clone();
-  density_ = dist.density_->Clone();
+  if(dist.elastic_->GetIsShared() == false)
+    elastic_ = dist.elastic_->Clone();
+  else
+    elastic_ = dist.elastic_;
+
+  if(dist.density_->GetIsShared() == false)
+    density_ = dist.density_->Clone();
+  else
+    density_ = dist.density_;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(2);

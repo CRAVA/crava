@@ -53,9 +53,20 @@ DistributionsSolidTabulated::DistributionsSolidTabulated(const DistributionsSoli
   corr_elastic2_density_(dist.corr_elastic2_density_),
   tabulated_method_(dist.tabulated_method_)
 {
-  elastic1_ = dist.elastic1_->Clone();
-  elastic2_ = dist.elastic1_->Clone();
-  density_  = dist.density_ ->Clone();
+  if(dist.elastic1_->GetIsShared() == false)
+    elastic1_ = dist.elastic1_->Clone();
+  else
+    elastic1_ = dist.elastic1_;
+
+  if(dist.elastic2_->GetIsShared() == false)
+    elastic2_ = dist.elastic2_->Clone();
+  else
+    elastic2_ = dist.elastic2_;
+
+  if(dist.density_->GetIsShared() == false)
+    density_  = dist.density_ ->Clone();
+  else
+    density_ = dist.density_;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);

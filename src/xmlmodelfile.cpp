@@ -4934,6 +4934,9 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
         errTxt += "  Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
       }
     }
+    if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
+      errTxt += "The backround trend can not be written to file when rock physics models are used\n";
+
   }
 }
 

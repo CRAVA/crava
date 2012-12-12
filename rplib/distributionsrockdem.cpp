@@ -72,19 +72,30 @@ DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
   expectation_old_(dist.expectation_old_),
   covariance_old_(dist.covariance_old_)
 {
+  int n_inclusions = static_cast<int>(dist.distr_incl_spectrum_.size());
+
   distr_solid_ = dist.distr_solid_->Clone();
 
-  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
-    distr_fluid_.push_back(dist.distr_fluid_[i]);
+  distr_fluid_.resize(n_inclusions);
+  for(int i=0; i<n_inclusions; i++)
+    distr_fluid_[i] = dist.distr_fluid_[i]->Clone();
 
-  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
-    distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
-
-  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++) {
-    if (dist.distr_incl_concentration_[i] != NULL)
-      distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+  distr_incl_spectrum_.resize(n_inclusions);
+  for(int i=0; i<n_inclusions; i++) {
+    if(dist.distr_incl_spectrum_[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i]->Clone();
     else
-      distr_incl_concentration_.push_back(NULL);
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i];
+  }
+
+  distr_incl_concentration_.resize(n_inclusions+1, NULL);
+  for(int i=0; i<n_inclusions+1; i++) {
+    if(dist.distr_incl_concentration_[i] != NULL) {
+      if(dist.distr_incl_concentration_[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i]->Clone();
+      else
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i];
+    }
   }
 
   alpha_       = dist.alpha_;

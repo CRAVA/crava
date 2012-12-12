@@ -23,9 +23,20 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
     corr_elastic2_density_(corr_elastic2_density),
     tabulated_method_(method)
 {
-  elastic1_ = elastic1->Clone();
-  elastic2_ = elastic2->Clone();
-  density_  = density ->Clone();
+  if(elastic1->GetIsShared() == false)
+    elastic1_ = elastic1->Clone();
+  else
+    elastic1_ = elastic1;
+
+  if(elastic2->GetIsShared() == false)
+    elastic2_ = elastic2->Clone();
+  else
+    elastic2_ = elastic2;
+
+  if(density->GetIsShared() == false)
+    density_ = density->Clone();
+  else
+    density_ = density;
 
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (elastic1, elastic2, density)
   s_min_ = s_min;
@@ -66,9 +77,20 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTa
     corr_elastic2_density_(dist.corr_elastic2_density_),
     tabulated_method_(dist.tabulated_method_)
 {
-  elastic1_ = dist.elastic1_->Clone();
-  elastic2_ = dist.elastic1_->Clone();
-  density_  = dist.density_ ->Clone();
+  if(dist.elastic1_->GetIsShared() == false)
+    elastic1_ = dist.elastic1_->Clone();
+  else
+    elastic1_ = dist.elastic1_;
+
+  if(dist.elastic2_->GetIsShared() == false)
+    elastic2_ = dist.elastic2_->Clone();
+  else
+    elastic2_ = dist.elastic2_;
+
+  if(dist.density_->GetIsShared() == false)
+    density_  = dist.density_ ->Clone();
+  else
+    density_ = dist.density_;
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);

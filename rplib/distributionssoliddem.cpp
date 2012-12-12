@@ -32,17 +32,28 @@ DistributionsSolidDEM::DistributionsSolidDEM(const DistributionsSolidDEM & dist)
 {
   distr_solid_ = dist.distr_solid_->Clone();
 
-  for(size_t i=0; i<dist.distr_solid_inc_.size(); i++)
-    distr_solid_inc_.push_back(dist.distr_solid_inc_[i]->Clone());
+  size_t n_inclusions = dist.distr_solid_inc_.size();
 
-  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
-    distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
+  distr_solid_inc_.resize(n_inclusions);
+  for(size_t i=0; i<n_inclusions; i++)
+    distr_solid_inc_[i] = dist.distr_solid_inc_[i]->Clone();
 
-  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++) {
-    if (dist.distr_incl_concentration_[i] != NULL)
-      distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+  distr_incl_spectrum_.resize(n_inclusions);
+  for(size_t i=0; i<n_inclusions; i++) {
+    if(dist.distr_incl_spectrum_[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i]->Clone();
     else
-      distr_incl_concentration_.push_back(NULL);
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i];
+  }
+
+  distr_incl_concentration_.resize(n_inclusions+1, NULL);
+  for(size_t i=0; i<n_inclusions+1; i++) {
+    if(dist.distr_incl_concentration_[i] != NULL) {
+      if(dist.distr_incl_concentration_[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i]->Clone();
+      else
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i];
+    }
   }
 
   alpha_ = dist.alpha_;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
@@ -61,9 +72,11 @@ DistributionsSolidDEM::~DistributionsSolidDEM()
       delete distr_incl_spectrum_[i];
   }
 
- for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
-    if (distr_incl_concentration_[i] != NULL && distr_incl_concentration_[i]->GetIsShared() == false)
-      delete distr_incl_concentration_[i];
+  for(size_t i=0; i<distr_incl_concentration_.size(); i++) {
+    if (distr_incl_concentration_[i] != NULL) {
+      if(distr_incl_concentration_[i]->GetIsShared() == false)
+        delete distr_incl_concentration_[i];
+    }
   }
 }
 

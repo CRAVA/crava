@@ -30,14 +30,20 @@ DistributionsFluidMix::DistributionsFluidMix(const DistributionsFluidMix & dist)
 : DistributionsFluid(dist),
   mix_method_(dist.mix_method_)
 {
-  for(size_t i=0; i<dist.distr_fluid_.size(); i++)
-    distr_fluid_.push_back(dist.distr_fluid_[i]);
+  size_t fluid_size = dist.distr_fluid_.size();
 
-  for(size_t i=0; i<dist.distr_vol_frac_.size(); i++) {
-    if(dist.distr_vol_frac_[i] != NULL)
-      distr_vol_frac_.push_back(dist.distr_vol_frac_[i]->Clone());
-    else
-      distr_vol_frac_.push_back(NULL);
+  distr_fluid_.resize(fluid_size);
+  for(size_t i=0; i<fluid_size; i++)
+    distr_fluid_[i] = dist.distr_fluid_[i]->Clone();
+
+  distr_vol_frac_.resize(fluid_size, NULL);
+  for(size_t i=0; i<fluid_size; i++) {
+    if(dist.distr_vol_frac_[i] != NULL) {
+      if(dist.distr_vol_frac_[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i]->Clone();
+      else
+        distr_vol_frac_[i] = dist.distr_vol_frac_[i];
+    }
   }
 
   alpha_               = dist.alpha_;
