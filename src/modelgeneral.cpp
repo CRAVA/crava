@@ -46,9 +46,6 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
-#include "lib/lib_matr.h"
-#include "nrlib/flens/nrlib_flens.hpp"
-
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
 {
   timeSimbox_             = new Simbox();
@@ -1003,7 +1000,7 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
                                       int        otherOutput)
 {
   timeCutSimbox = new Simbox(timeSimbox);
-  double * corrPlanePars = findPlane(corrSurf);
+  NRLib::Vector corrPlanePars = findPlane(corrSurf);
   Surface * meanSurf;
   if(corrSurf->GetNI() > 2)
     meanSurf = new Surface(*corrSurf);
@@ -1032,12 +1029,12 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   meanSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
   meanSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
   meanSurf->Multiply(0.5);
-  double * refPlanePars = findPlane(meanSurf);
+  NRLib::Vector refPlanePars = findPlane(meanSurf);
 
-  for(i=0;i<3;i++)
-    refPlanePars[i] -= corrPlanePars[i];
-  gradX_ = refPlanePars[1];
-  gradY_ = refPlanePars[2];
+  refPlanePars -= corrPlanePars;
+
+  gradX_ = refPlanePars(1);
+  gradY_ = refPlanePars(2);
 
   Surface * refPlane = createPlaneSurface(refPlanePars, meanSurf);
   delete meanSurf;
@@ -1047,8 +1044,6 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   IO::writeSurfaceToFile(*refPlane, fileName, IO::PathToCorrelations(), outputFormat);
 
   refPlane->AddNonConform(corrSurf);
-  delete [] corrPlanePars;
-  delete [] refPlanePars;
 
   Surface topSurf(*refPlane);
   topSurf.SubtractNonConform(&(timeSimbox->GetTopSurface()));
@@ -1166,62 +1161,51 @@ ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   }
 }
 
-double *
+NRLib::Vector
 ModelGeneral::findPlane(Surface * surf)
 {
-  double ** A = new double * [3];
-  double * b = new double[3];
-  int i, j;
-  for(i=0;i<3;i++) {
-    A[i] = new double[3];
-    for(j=0;j<3;j++)
-      A[i][j] = 0;
-    b[i] = 0;
-  }
+  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
+  NRLib::Vector b(3);
+  NRLib::Vector x(3);
 
-  double x, y, z;
+  b = 0;
+
   int nData = 0;
-  for(i=0;i<static_cast<int>(surf->GetN());i++) {
+
+  for(int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+    double x, y, z;
     surf->GetXY(i, x, y);
     z = (*surf)(i);
     if(!surf->IsMissing(z)) {
       nData++;
-      A[0][1] += x;
-      A[0][2] += y;
-      A[1][1] += x*x;
-      A[1][2] += x*y;
-      A[2][2] += y*y;
-      b[0]    += z;
-      b[1]    += x*z;
-      b[2]    += y*z;
+      A(0,1) += x;
+      A(0,2) += y;
+      A(1,1) += x*x;
+      A(1,2) += x*y;
+      A(2,2) += y*y;
+      b(0)   += z;
+      b(1)   += x*z;
+      b(2)   += y*z;
     }
   }
 
-  A[0][0] = nData;
-  A[1][0] = A[0][1];
-  A[2][0] = A[0][2];
-  A[2][1] = A[1][2];
+  A(0,0) = nData;
 
-  lib_matrCholR(3, A);
-  lib_matrAxeqbR(3, A, b);
+  NRLib::CholeskySolve(A, b, x);
 
-  for(i=0;i<3;i++)
-    delete [] A[i];
-  delete [] A;
-
-  return(b);
+  return x;
 }
 
 
 Surface *
-ModelGeneral::createPlaneSurface(double * planeParams, Surface * templateSurf)
+ModelGeneral::createPlaneSurface(const NRLib::Vector & planeParams,
+                                 Surface             * templateSurf)
 {
   Surface * result = new Surface(*templateSurf);
-  double x,y;
-  int i;
-  for(i=0;i<static_cast<int>(result->GetN());i++) {
+  for(int i=0;i<static_cast<int>(result->GetN());i++) {
+    double x,y;
     result->GetXY(i,x,y);
-    (*result)(i) = planeParams[0]+planeParams[1]*x+planeParams[2]*y;
+    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
   }
   return(result);
 }

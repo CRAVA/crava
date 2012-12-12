@@ -8,11 +8,13 @@
 #include <stdio.h>
 
 #include "nrlib/surface/regularsurface.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+
 
 struct irapgrid;
 class Corr;
@@ -146,10 +148,10 @@ private:
   void                printSettings(ModelSettings    * modelSettings,
                                     const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  double           * findPlane(Surface * surf); //Finds plane l2-closest to surface.
+  NRLib::Vector      findPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface          * createPlaneSurface(double  * planeParams,
-                                        Surface * templateSurf);
+  Surface          * createPlaneSurface(const NRLib::Vector & planeParams,
+                                        Surface             * templateSurf);
   void               writeAreas(const SegyGeometry * areaParams,
                                 Simbox             * timeSimbox,
                                 std::string        & text);
