@@ -10,6 +10,9 @@ class FFTGrid;
 class CBWellPt;
 class Simbox;
 class CovGridSeparated;
+
+#include "nrlib/flens/nrlib_flens.hpp"
+
 #include "src/box.h"
 
 class CKrigingAdmin
@@ -42,12 +45,11 @@ private:
   void            FindDataInDataBlockLoop(Gamma gamma);
   DataBoxSize     FindDataInDataBlock(Gamma gamma, const CBox & dataBlock);
   int             NBlocks(int dBlocks, int lSBox) const;
-  void            AllocateSpaceForMatrixEq();
-  void            DeAllocateSpaceForMatrixEq();
-  void            SetMatrix(Gamma gamma);
-  void            SetKrigVector(Gamma gamma);
-  void            SolveKrigingEq(Gamma gamma);
-  void            DoCholesky();
+  void            SetMatrix(NRLib::Matrix & krigMatrix,
+                            NRLib::Vector & residual,
+                            Gamma           gamma);
+  void            SetKrigVector(NRLib::Vector & k,
+                                Gamma           gamma);
   void            EstimateSizeOfBlock();
   void            EstimateSizeOfBlock2();
   float           CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, bool& rapidInc);
@@ -87,8 +89,6 @@ private:
   int             noCholeskyDecomp_;                         // number of cholesky decompositions
   int             monitorSize_;                              // for progress monitor
 
-  double       ** krigMatrix_, **krigMatrix2_, *krigVector_;
-  float         * krigDataVector_;
   int             rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_;
   int             rangeBetaX_, rangeBetaY_, rangeBetaZ_;
   int             rangeRhoX_, rangeRhoY_, rangeRhoZ_;        // ranges estimated from covariance cubes

@@ -17,7 +17,7 @@ void Kriging2D::krigSurface(Grid2D              & trend,
 {
   //
   // This routine by default returns z(x) = m(x) + k(x)K^{-1}(d - m). If only
-  // residuals are wanted a copy of the inpuit trend
+  // residuals are wanted a copy of the input trend
   //
   int md = krigingData.getNumberOfData();
   const std::vector<int> & indexi = krigingData.getIndexI();
@@ -38,17 +38,18 @@ void Kriging2D::krigSurface(Grid2D              & trend,
 
     fillKrigingMatrix(K, cov, indexi, indexj);
 
+    NRLib::CholeskySolve(K, residual, x);
+
     for (int i = 0 ; i < nx ; i++) {
       for (int j = 0 ; j < ny ; j++) {
+
         fillKrigingVector(k, cov, indexi, indexj, i, j);
 
-        NRLib::CholeskySolve(K, k, x);
-
-        if (getResiduals) {
-          trend(i,j) = x * residual;
+        if (getResiduals) {  // Only get the residuals
+          trend(i,j) = k * x;
         }
         else {
-          trend(i,j) += x * residual;
+          trend(i,j) += k * x;
         }
       }
     }
