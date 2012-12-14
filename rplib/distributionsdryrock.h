@@ -3,24 +3,43 @@
 
 #include "rplib/dryrock.h"
 
-// Abstract class for holding all t = 0 distribution functions for DryRock parameters.
-// One derived class for each DryRock model, the latter specified in a parallel, derived DryRock class.
+#include <vector>
+
+// Abstract class for holding all t = 0 distribution functions for solid parameters.
+// One derived class for each solid model, the latter specified in a parallel, derived DryRock class.
 // The class must be able to produce an object of the specific DryRock class.
 class DistributionsDryRock {
 public:
-
-  //NBNB: Vet ikke hvoran dry rock skal håndteres. Har derfor laget DistributionsDryRock som ikke nødvendigvis skal brukes
 
   DistributionsDryRock(){}
 
   virtual ~DistributionsDryRock(){}
 
-  // DryRock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual DryRock * GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
+  virtual DistributionsDryRock  * Clone()                                                      const = 0;
 
-  virtual bool                  HasDistribution()                                        const = 0;
+  virtual DryRock *               GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
 
-  virtual std::vector<bool>     HasTrend()                                               const = 0;
+  std::vector< DryRock* >         GenerateWellSample(const  std::vector<double> & trend_params,
+                                                     double                       corr)        const;
+
+  virtual bool                    HasDistribution()                                            const = 0;
+
+  virtual std::vector<bool>       HasTrend()                                                   const = 0;
+
+  DryRock *                       EvolveSample(double           time,
+                                               const DryRock &  dryrock)                       const
+                                  {
+                                    const std::vector<double> trend(2);
+                                    return UpdateSample(time, true, trend, &dryrock);
+                                  }
+
+  virtual DryRock *               UpdateSample(double                      corr_param,
+                                               bool                        param_is_time,
+                                               const std::vector<double> & trend,
+                                               const DryRock             * sample)             const = 0;
+
+protected:
+  std::vector< double >           alpha_;
 };
 
 #endif
