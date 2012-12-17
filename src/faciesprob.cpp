@@ -1032,7 +1032,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
         text += "\n         the inverted elastic parameters against well logs.";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
-      else if(faciesCount[f1] > 0) {
+      else if (faciesCount[f1] > 0) {
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only "+NRLib::ToString(totProb[f1],3)+". This";
         text += "\n         means that some of the places where \'"+faciesNames[f1]+"\' are observed in the well, the";
@@ -1043,7 +1043,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       else {
         lowProbs = false;
         std::string text;
-        if(accumulative)
+        if (accumulative)
           text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in any well. Facies probability can not be estimated for this facies.\n";
         //else
         //  text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
