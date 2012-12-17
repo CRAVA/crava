@@ -53,10 +53,11 @@ private:
   void            EstimateSizeOfBlock();
   void            EstimateSizeOfBlock2();
   float           CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, bool& rapidInc);
+
   const FFTGrid & CreateAndFillFFTGridWithCov(int i);    // needed in kriging hack modus, remember delete
   const FFTGrid & CreateAndFillFFTGridWithCovRot(int i); // needed in kriging hack modus, remember delete
   const FFTGrid & CreateAndFillFFTGridWithCrCov();       // needed in kriging hack modus, remember delete
-  double       ** CopyMatrix(double** inMatrix, double** outMatrix, int size);
+
   void            RotateVec(float& rx, float& ry, float& rz, const float mat[][3]);
   void            SmoothKrigedResult(Gamma gamma);
   void            CalcSmoothWeights(Gamma gamma, int direction); // direction X(1), Y(2), Z(3)

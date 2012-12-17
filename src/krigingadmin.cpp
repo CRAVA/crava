@@ -17,8 +17,6 @@
 #include "src/covgridseparated.h"
 #include "src/definitions.h"
 
-#include "lib/lib_matr.h"
-
 CKrigingAdmin::CKrigingAdmin(const Simbox      & simbox,
                              CBWellPt         ** pBWellPt,
                              int                 noData,
@@ -340,7 +338,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma)
   } // end switch
 
   NRLib::Vector x(n);
-  // Add try/catch loop around CholeskySolve call with a regularization term.
+  // NBNB-PAL: Add try/catch loop around CholeskySolve call with a regularization term.
   NRLib::CholeskySolve(K, residual, x);
 
   NRLib::Vector kVec(n);
@@ -1147,18 +1145,6 @@ const FFTGrid& CKrigingAdmin::CreateAndFillFFTGridWithCrCov() {
   return *pGrid;
 }
 
-double**
-CKrigingAdmin::CopyMatrix(double** inMatrix, double** outMatrix, int size) {
-  int i,j;
-  for (j = 0; j < size; j++) {
-    for (i = 0; i < size; i++) {
-      outMatrix[i][j] = inMatrix[i][j];
-    } // end i
-  } // end j
-
-  return outMatrix;
-}
-
 void CKrigingAdmin::RotateVec(float& rx, float& ry, float& rz, const float mat[][3]) {
   float res[3] = {0.0f};
 
@@ -1212,24 +1198,21 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   } // end switch direction
 
   // allocate
-  double ** ppMatrix = new double*[size];
-  double ** ppMatrix2 = new double*[size];
   int i;
-  double * pVec = new double[size];
+
+  NRLib::Vector pVec(size);
 
   for (i = 0; i < size; i++) {
-    ppMatrix[i] = new double[size];
-    ppMatrix2[i] = new double[size];
     //if (i > 0) {
     switch (direction) {
     case 1 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, i, 0, 0);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, i, 0, 0);
       break;
     case 2 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, 0, i, 0);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, 0, i, 0);
       break;
     case 3 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, 0, 0, i);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, 0, 0, i);
       break;
     default :
       // should never arrive here
@@ -1240,46 +1223,61 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   //pVec[0] = 1.0;
   //pVec[0] = pCov
 
-  int a,b;
-  for (a = 0; a < size; a++) {
-    for (b = 0; b < size; b++) {
-      // set up matrix
-      ppMatrix[a][b] = pVec[abs(a - b)];
+
+  NRLib::SymmetricMatrix ppMatrix(size);
+
+  for (int a = 0 ; a < size ; a++) {
+    for (int b = 0 ; b <= a ; b++) {
+      ppMatrix(b, a) = pVec(std::abs(a - b));
       // noise
       if (a == b && a > 0 && a < size - 1)
-        ppMatrix[a][a] *= 1.2;
-    } // end b
-  } // end a
-
-
+        ppMatrix(a,a) *= 1.2;
+    }
+  }
 
   int counter = 0;
   static const double cholesky_repair_factor = 1.01;
-  while (lib_matrCholR(size, CopyMatrix(ppMatrix, ppMatrix2, size))) {
-    for (i = 0; i < size; i++)
-      ppMatrix[i][i] *= cholesky_repair_factor;
+  bool robustify = false;
 
-    if (counter++ > maxCholeskyLoopCounter_) break;
-  } // end while
+  NRLib::SymmetricMatrix ppMatrix2 = ppMatrix;
+  NRLib::Matrix          ppInv     = NRLib::IdentityMatrix(size);
+
+  try {
+    NRLib::CholeskySolve(ppMatrix2, ppInv);
+  }
+  catch (NRLib::IOError e) {
+    robustify = true;
+  }
+
+  while (robustify && counter < maxCholeskyLoopCounter_) {
+    for (i = 0 ; i < size ; i++) {
+      ppMatrix(i,i) *= cholesky_repair_factor;
+    }
+    ppMatrix2 = ppMatrix;
+    robustify = false;
+    try {
+      NRLib::CholeskySolve(ppMatrix2, ppInv);
+    }
+    catch (NRLib::Exception & e) {
+      robustify = true;
+    }
+    counter++;
+  }
+
   Require(counter <= maxCholeskyLoopCounter_, "counter <= maxCholeskyLoopCounter_");
 
-  int krigI;
-  for (krigI = 0; krigI < size - 2; krigI++) {
+  NRLib::Vector p(size);
+
+  for (int krigI = 0 ; krigI < size - 2 ; krigI++) {
+    for (int b = 0 ; b < size ; b++)
+      p(b) = pVec(std::abs(b - krigI - 1));
+
+    NRLib::Vector x = ppInv * p;
+
     double * const pWeights = ppKrigSmoothWeights[krigI];
-    for (b = 0; b < size; b++)
-      pWeights[b] = pVec[abs(b - krigI - 1)];
-
-    lib_matrAxeqbR(size, ppMatrix2, pWeights);
+    for (int b = 0; b < size; b++)
+      pWeights[b] = x(b);
   }
-
-
-
-  for (i = 0; i < size; i++) {
-    delete [] ppMatrix[i];
-    delete [] ppMatrix2[i];
-  }
-  delete [] ppMatrix; delete [] ppMatrix2; delete [] pVec;
-
 }
 
 void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
