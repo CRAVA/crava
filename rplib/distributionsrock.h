@@ -73,13 +73,6 @@ protected:
                                                           const double        & s_min,
                                                           const double        & s_max);
 
-  double                                FindLogExpectation(const std::vector<double> & p);
-
-  double                                FindLogCovariance(const std::vector<double> & p,
-                                                          const double                mup,
-                                                          const std::vector<double> & q,
-                                                          const double                muq);
-
   void                                  CheckOrResetS(double                    & s,
                                                       const std::vector<double> & tabulated_s) const;
 

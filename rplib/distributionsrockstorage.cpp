@@ -67,6 +67,9 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
   FindSMinMax(trend_cube_sampling, s_min, s_max);
 
+  for(int i=0; i<n_constituents; i++)
+    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
 
@@ -797,6 +800,9 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   for(int i=0; i<n_inclusions; i++)
     volume_fractions[i+1] = inclusion_volume_fraction_[i];
 
+  for(int i=0; i<n_constituents; i++)
+    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+
   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
   std::vector<double> alpha(n_inclusions + n_constituents);
 
@@ -1028,7 +1034,9 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<double> s_min;
   std::vector<double> s_max;
 
-  FindSMinMax(trend_cube_sampling, s_min, s_max);
+  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
 
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
@@ -1052,9 +1060,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       final_distr_upper_rock[i] = final_distr_upper_rock[i-1]->Clone();
   }
 
-  if(distr_upper_rock[0]->GetIsOkForBounding() == false) {
-    tmpErrTxt += "The upper bound does not follow the requirements for the bounding model:\n";
-    tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+  if(distr_upper_rock[0] != NULL) {
+    if(distr_upper_rock[0]->GetIsOkForBounding() == false) {
+      tmpErrTxt += "The upper bound does not follow the requirements for the bounding model:\n";
+      tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+    }
   }
 
   std::map<std::string, DistributionsRockStorage *>::const_iterator m_all = model_rock_storage.find(upper_rock_);
@@ -1085,9 +1095,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       final_distr_lower_rock[i] = final_distr_lower_rock[i-1]->Clone();
   }
 
-  if(distr_lower_rock[0]->GetIsOkForBounding() == false) {
-    tmpErrTxt += "The lower bound does not follow the requirements for the bounding model:\n";
-    tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+  if(distr_lower_rock[0] != NULL) {
+    if(distr_lower_rock[0]->GetIsOkForBounding() == false) {
+      tmpErrTxt += "The lower bound does not follow the requirements for the bounding model:\n";
+      tmpErrTxt += "  The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+    }
   }
 
   std::map<std::string, DistributionsRockStorage *>::const_iterator n_all = model_rock_storage.find(lower_rock_);
@@ -1119,6 +1131,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   }
 
   if(tmpErrTxt == "") {
+    FindSMinMax(trend_cube_sampling, s_min, s_max);
+
     for(int i=0; i<n_vintages; i++) {
       DistributionsRock * rock = new DistributionsRockBounding(final_distr_upper_rock[i],
                                                                final_distr_lower_rock[i],

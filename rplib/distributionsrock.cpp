@@ -4,6 +4,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
+#include "nrlib/statistics/statistics.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
 void DistributionsRock::GenerateWellSample(double                 corr,
@@ -42,8 +43,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
                                                         const std::vector<double>             & s_max)
 //-----------------------------------------------------------------------------------------------------------
 {
-  size_t n  = 1024; // Number of samples generated for each distribution
-  size_t m  =   10; // Number of samples to use when sampling from s_min to s_max
+  int n  = 1024; // Number of samples generated for each distribution
+  int m  =   10; // Number of samples to use when sampling from s_min to s_max
 
   FindTabulatedTrendParams(tabulated_s0,
                            tabulated_s1,
@@ -52,8 +53,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
                            s_max,
                            m);
 
-  size_t mi = tabulated_s0.size();
-  size_t mj = tabulated_s1.size();
+  int mi = static_cast<int>(tabulated_s0.size());
+  int mj = static_cast<int>(tabulated_s1.size());
 
   expectation.Resize(mi, mj);
   covariance.Resize(mi, mj);
@@ -70,85 +71,93 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
   std::vector<double>   b(n);
   std::vector<double>   c(n);
 
-  for (size_t i = 0 ; i < mi ; i++) {
-    for (size_t j = 0 ; j < mj ; j++) {
+  bool failed = false;
+
+  for (int i = 0 ; i < mi ; i++) {
+    for (int j = 0 ; j < mj ; j++) {
 
       const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
-      for (size_t k = 0 ; k < n ; k++) {
+      NRLib::Vector log_vp(n);
+      NRLib::Vector log_vs(n);
+      NRLib::Vector log_rho(n);
+
+      double vp;
+      double vs;
+      double rho;
+
+      for (int k = 0 ; k < n ; k++) {
         Rock * rock = GenerateSample(tp);
-        rock->GetSeismicParams(a[k], b[k], c[k]);
+
+        rock->GetSeismicParams(vp, vs, rho);
+
+        log_vp(k) = std::log(vp);
+        log_vs(k) = std::log(vs);
+        log_rho(k) = std::log(rho);
+
         delete rock;
+
+        if(vp <= 0 || vs < 0 || rho <=0) {
+          failed = true;
+          break;
+        }
       }
 
-      //
-      // Expectation
-      //
-      mean[0] = FindLogExpectation(a);
-      mean[1] = FindLogExpectation(b);
-      mean[2] = FindLogExpectation(c);
+      std::vector<double>   expectation_small(3, 0.0);
+      NRLib::Grid2D<double> covariance_small(3, 3, 0.0);
 
-      expectation(i, j) = mean;
+      if(failed == false) {
 
-      //
-      // Covariance
-      //
-      cov(0,0) = FindLogCovariance(a,mean[0],a,mean[0]);
-      cov(1,1) = FindLogCovariance(b,mean[1],b,mean[1]);
-      cov(2,2) = FindLogCovariance(c,mean[2],c,mean[2]);
+        std::vector<NRLib::Vector> m(3);
 
-      cov(0,1) = FindLogCovariance(a,mean[0],b,mean[1]);
-      cov(1,0) = cov(0,1);
-      cov(0,2) = FindLogCovariance(a,mean[0],c,mean[2]);
-      cov(2,0) = cov(0,2);
-      cov(1,2) = FindLogCovariance(b,mean[1],c,mean[2]);
-      cov(2,1) = cov(1,2);
+        m[0] = log_vp;
+        m[1] = log_vs;
+        m[2] = log_rho;
 
-      covariance(i, j) = cov;
+        for (int k = 0; k < 3; k++) {
+          expectation_small[k] = NRLib::Mean(m[k]);
+          for (int l = k; l < 3; l++) {
+            covariance_small(k,l) = NRLib::Cov(m[k], m[l]);
+            covariance_small(l,k) = covariance_small(k,l);
+          }
+        }
+      }
 
-      // Temporary logging
-      //std::vector<double> s(3);
-      //s[0] = std::sqrt(cov(0,0));
-      //s[1] = std::sqrt(cov(1,1));
-      //s[2] = std::sqrt(cov(2,2));
-
-      //printf("i,j = %lu,%lu  ", i,j);
-      //printf("Expectations :  %.6f %.6f %.6f\n", mean[0], mean[1], mean[2]);
-      //printf("Var          :  %.6f %.6f %.6f\n", cov(0,0), cov(1,1), cov(2,2));
-      //printf("Std          :  %.6f %.6f %.6f\n\n", s[0], s[1], s[2]);
-      //printf("cor ab: %.6f\n"  ,cov(0,1)/(s[0]*s[1]));
-      //printf("cor ac: %.6f\n"  ,cov(0,2)/(s[0]*s[2]));
-      //printf("cor bc: %.6f\n"  ,cov(1,2)/(s[1]*s[2]));
+      expectation(i,j) = expectation_small;
+      covariance(i,j) = covariance_small;
     }
   }
 
-  mean_log_expectation_.resize(3,0);
-  mean_log_covariance_.Resize(3,3,0);
+  mean_log_expectation_.resize(3, 0);
+  mean_log_covariance_.Resize(3, 3, 0);
 
-  for (size_t i = 0 ; i < mi ; i++) {
-    for (size_t j = 0 ; j < mj ; j++) {
+  if(failed == false) {
+    for(int i = 0 ; i < mi ; i++) {
+      for(int j = 0 ; j < mj ; j++) {
 
-      std::vector<double>   this_expectation = expectation(i,j);
-      NRLib::Grid2D<double> this_covariance = covariance(i,j);
+        std::vector<double>   this_expectation = expectation(i,j);
+        NRLib::Grid2D<double> this_covariance  = covariance(i,j);
 
-      for(int k=0; k<3; k++)
-        mean_log_expectation_[k] += this_expectation[k];
+        for(int k=0; k<3; k++)
+          mean_log_expectation_[k] += this_expectation[k];
 
-      for(int k=0; k<3; k++) {
-        for(int l=0; l<3; l++)
-          mean_log_covariance_(k,l) += this_covariance(k,l);
+        for(int k=0; k<3; k++) {
+          for(int l=0; l<3; l++)
+            mean_log_covariance_(k,l) += this_covariance(k,l);
+        }
+
       }
     }
+
+    for(int k=0; k<3; k++)
+      mean_log_expectation_[k] /= (mi*mj);
+
+    for(int k=0; k<3; k++) {
+      for(int l=0; l<3; l++)
+        mean_log_covariance_(k,l) /= (mi*mj);
+    }
+
   }
-
-  for(int k=0; k<3; k++)
-    mean_log_expectation_[k] /= (mi*mj);
-
-  for(int k=0; k<3; k++) {
-    for(int l=0; l<3; l++)
-      mean_log_covariance_(k,l) /= (mi*mj);
-  }
-
 }
 
 //----------------------------------------------------------------------------------------
@@ -227,36 +236,6 @@ void DistributionsRock::SampleTrendValues(std::vector<double> & s,
   for (size_t i = 1 ; i < n - 1 ; i++) {
     s[i] = s_min + step*static_cast<double>(i);
   }
-}
-
-//-------------------------------------------------------------------------
-double DistributionsRock::FindLogExpectation(const std::vector<double> & p)
-//-------------------------------------------------------------------------
-{
-  int    n    = static_cast<int>(p.size());
-  double mean = 0.0;
-  for (int i = 0 ; i < n ; i++) {
-    mean += std::log(p[i]);
-  }
-  mean /= n;
-  return mean;
-}
-
-//--------------------------------------------------------------------------
-double DistributionsRock::FindLogCovariance(const std::vector<double> & p,
-                                            const double                mup,
-                                            const std::vector<double> & q,
-                                            const double                muq)
-//--------------------------------------------------------------------------
-{
-  int    n   = static_cast<int>(p.size());
-  double cov = 0.0;
-  for (int i = 0 ; i < n ; i++) {
-    cov += (std::log(p[i]) - mup)*(std::log(q[i]) - muq);
-  }
-  if (n > 1)
-    cov /= n - 1;
-  return cov;
 }
 
 //------------------------------------------------------------------------------------------------------

@@ -169,6 +169,9 @@ public:
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
+  virtual const double                     GetLowerLimit() const                     { return lower_limit_                 ;}
+  virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
+
 private:
   void                                     CheckBetaConsistency(NRLib::Trend * mean,
                                                                 NRLib::Trend * variance,

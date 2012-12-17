@@ -2380,7 +2380,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
               }
             }
 
-            std::vector<double> expectation = rock[i]->GetMeanLogExpectation();
+            std::vector<double> expectation  = rock[i]->GetMeanLogExpectation();
             NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
 
             printExpectationAndCovariance(expectation, covariance, has_trend);

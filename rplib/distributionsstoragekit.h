@@ -77,5 +77,11 @@ FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sampling
                    std::vector<double>                     & s_min,
                    std::vector<double>                     & s_max);
 
+void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & test_objects,
+                          const std::string                                 & type,
+                          const std::string                                 & path,
+                          const std::vector<std::string>                    & trend_cube_parameters,
+                          const std::vector<std::vector<double> >           & trend_cube_sampling,
+                          std::string                                       & errTxt);
 
 #endif

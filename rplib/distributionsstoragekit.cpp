@@ -218,8 +218,8 @@ CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std
 }
 
 void FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
-                   std::vector<double>                     & s_min,
-                   std::vector<double>                     & s_max)
+                        std::vector<double>                     & s_min,
+                        std::vector<double>                     & s_max)
 {
   s_min.resize(2, 0.0);
   s_max.resize(2, 0.0);
@@ -229,5 +229,47 @@ void FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sam
   for(int i=0; i<n_trend_cubes; i++) {
     s_min[i] = trend_cube_sampling[i][0];
     s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
+  }
+}
+
+void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & test_objects,
+                          const std::string                                 & type,
+                          const std::string                                 & path,
+                          const std::vector<std::string>                    & trend_cube_parameters,
+                          const std::vector<std::vector<double> >           & trend_cube_sampling,
+                          std::string                                       & errTxt)
+{
+  for(size_t i=0; i<test_objects.size(); i++) {
+
+    if(test_objects[i] != NULL) {
+      if(typeid(*(test_objects[i])) == typeid(DeltaDistributionWithTrendStorage)) {
+        const DeltaDistributionWithTrendStorage * delta = dynamic_cast<const DeltaDistributionWithTrendStorage *>(test_objects[i]);
+
+        NRLib::TrendStorage * mean_storage = delta->CloneMean();
+        NRLib::Trend        * mean         = mean_storage->GenerateTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+        double min = mean->GetMinValue();
+        double max = mean->GetMaxValue();
+
+        if(min < 0 || min > 1 || max > 1 || min > max) {
+          errTxt += "The "+type+" must be in [0,1]\n";
+          break;
+        }
+
+        delete mean_storage;
+        delete mean;
+      }
+      else if(typeid(*(test_objects[i])) == typeid(BetaDistributionWithTrendStorage)) {
+        const BetaDistributionWithTrendStorage * beta = dynamic_cast<const BetaDistributionWithTrendStorage *>(test_objects[i]);
+
+        double lower_limit = beta->GetLowerLimit();
+        double upper_limit = beta->GetUpperLimit();
+
+        if(lower_limit < 0 || lower_limit > 1 || upper_limit > 1 || lower_limit > upper_limit)
+          errTxt += "The limits in the Beta distribution must be in [0,1] for "+type+"\n";
+      }
+      else
+        errTxt += "The "+type+" must be in [0,1]. It should be given by a value or the Beta distribution with limits [0,1]\n";
+    }
   }
 }
