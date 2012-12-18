@@ -537,22 +537,23 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   // both trend vectors have the same number of bins
   if((trend2_max-trend2_min)>eps && (trend1_max-trend1_min)>eps){
     nDimensions = 5;
-    trend1.resize(nBinsTrend_);
-    trend2.resize(nBinsTrend_);
+    // add one bin and subtract dx/10 to avoid numerical errors since the entire range is used
+    trend1.resize(nBinsTrend_+1);
+    trend2.resize(nBinsTrend_+1);
     trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
     trend2BinSize_ = (trend2_max - trend2_min)/nBinsTrend_;
-    for(int i=0; i<nBinsTrend_; i++){
-      trend1[i] = trend1_min + i*trend1BinSize_;
-      trend2[i] = trend2_min + i*trend2BinSize_;
+    for(int i=0; i<nBinsTrend_+1; i++){
+      trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
+      trend2[i] = trend2_min + i*trend2BinSize_ - trend1BinSize_/10;
     }
   //it is not possible to have a trend2 but no trend1
   }else if((trend2_max-trend2_min)<eps && (trend1_max-trend1_min)>eps){
     nDimensions = 4;
-    trend1.resize(nBinsTrend_);
+    trend1.resize(nBinsTrend_+1);
     trend2.resize(1,trend2_min);
     trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
-    for(int i=0; i<nBinsTrend_; i++){
-      trend1[i] = trend1_min + i*trend1BinSize_;
+    for(int i=0; i<nBinsTrend_+1; i++){
+      trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
     }
     // if trend2max==trend1min and trend1max==trend1min
   }else{
@@ -698,8 +699,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   std::vector<std::vector<double> > vp_matrix(nFacies_);
   std::vector<std::vector<double> > vs_matrix(nFacies_);
   std::vector<std::vector<double> > rho_matrix(nFacies_);
-  std::vector<std::vector<double> > trend1_matrix(nFacies_);
-  std::vector<std::vector<double> > trend2_matrix(nFacies_);
+  std::vector<std::vector<int> > trend1_matrix(nFacies_);
+  std::vector<std::vector<int> > trend2_matrix(nFacies_);
 
   int totLength = 0;
   for (int i=0; i<static_cast<int>(syntWellData.size()); i++){
@@ -716,9 +717,9 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
           vs_matrix[facies_temp].push_back(syntWellData[i]->getBeta(j));
           rho_matrix[facies_temp].push_back(syntWellData[i]->getRho(j));
           if(nDimensions>3)
-            trend1_matrix[facies_temp].push_back(syntWellData[i]->getTrend1Val());
+            trend1_matrix[facies_temp].push_back(syntWellData[i]->getTrend1Ind());
           if(nDimensions>4)
-            trend2_matrix[facies_temp].push_back(syntWellData[i]->getTrend2Val());
+            trend2_matrix[facies_temp].push_back(syntWellData[i]->getTrend2Ind());
         }
         else{
           NRLib::Exception("Facies probabilities: Facies in simulated well does not exist");
@@ -824,13 +825,13 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   }else if(nDimensions == 4){
     for(int j=0; j<nFacies_; j++){
       posteriorPdf[0][j] = new PosteriorElasticPDF3D(vp_matrix[j], vs_matrix[j], rho_matrix[j], trend1_matrix[j], v,
-        sigmae, nBinsX, nBinsY, nBinsTrend_, xMin, xMax, yMin, yMax, trend1_min, trend1_max, j);
+        sigmae, nBinsX, nBinsY, nBinsTrend_+1, xMin, xMax, yMin, yMax, trend1[0], trend1[nBinsTrend_], j);
     }
   }else if(nDimensions == 5){
     for(int j=0; j<nFacies_; j++){
       posteriorPdf[0][j] = new PosteriorElasticPDF4D(vp_matrix[j], vs_matrix[j], rho_matrix[j], trend1_matrix[j],
-        trend2_matrix[j], v, sigmae, nBinsX, nBinsY, nBinsTrend_, nBinsTrend_, xMin, xMax, yMin, yMax, trend1_min, trend1_max,
-        trend2_min, trend2_max, j);
+        trend2_matrix[j], v, sigmae, nBinsX, nBinsY, nBinsTrend_+1, nBinsTrend_+1, xMin, xMax, yMin, yMax, trend1[0], trend1[nBinsTrend_],
+        trend2[0], trend2[nBinsTrend_], j);
     }
   }else{
     NRLib::Exception("Facies probabilities: Number of dimensions in posterior elastic PDF is wrong");
@@ -2485,7 +2486,7 @@ void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>            
 
           k+= randomFaciesLength;
         }
-        syntWellData[nWell] = new SyntWellData(trend1[i], trend2[j], alpha, beta, rho, facies, facies_names);
+        syntWellData[nWell] = new SyntWellData(trend1[i], trend2[j], i, j, alpha, beta, rho, facies, facies_names);
         nWell++;
       }
     }

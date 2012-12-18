@@ -140,7 +140,7 @@ z_max_(d3_max)
 PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>               & d1,        // first dimension of data points
                                              const std::vector<double>               & d2,        // second dimension of data points
                                              const std::vector<double>               & d3,        // third dimension of data points
-                                             const std::vector<double>               & t1,        // third dimension of data points
+                                             const std::vector<int>                  & t1,        // trend data points
                                              const std::vector<std::vector<double> > & v,        // Transformation of elastic variables from 3D to 2D
                                              const double             *const*const   sigma,     // Gaussian smoothing kernel in 2D
                                              int                                     n1,        // resolution of density grid in elastic dimension 1
@@ -211,7 +211,7 @@ z_max_(t1_max)
     //volume->getIndexes(d1[i], d2[i], d3[i], i_tmp, j_tmp, k_tmp);
     int i_tmp = static_cast<int>(floor((x[0][i]-x_min_)/dx_));
     int j_tmp = static_cast<int>(floor((x[1][i]-y_min_)/dy_));
-    int k_tmp = static_cast<int>(floor((t1[i]-z_min_)/dz_));
+    int k_tmp = t1[i];
     // Counting data points in index (i,j,k)
     histogram_->setAccessMode(FFTGrid::RANDOMACCESS);
     histogram_->setRealValue(i_tmp, j_tmp, k_tmp, histogram_->getRealValue(i_tmp,j_tmp,k_tmp) + 1.0f);

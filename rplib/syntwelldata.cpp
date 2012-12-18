@@ -9,6 +9,8 @@
 
 SyntWellData::SyntWellData(double                     const  & trend1,
                            double                     const  & trend2,
+                           int                                 i,
+                           int                                 j,
                            std::vector<float>         const  & alpha,
                            std::vector<float>         const  & beta,
                            std::vector<float>         const  & rho,
@@ -17,7 +19,9 @@ SyntWellData::SyntWellData(double                     const  & trend1,
 nBins_(static_cast<int>(alpha.size())),
 nFacies_(static_cast<int>(faciesNames.size())),
 trend1Value_(trend1),
-trend2Value_(trend2){
+trend2Value_(trend2),
+trend1Index_(i),
+trend2Index_(j){
 
   assert(alpha.size()==beta.size() && beta.size()==rho.size());
 

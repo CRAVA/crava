@@ -527,11 +527,11 @@ void Corr::initializeCorrelationsSyntWells(SpatialWellFilter                    
                                            float                                  corrGradI,
                                            float                                  corrGradJ)
 {
-  fftw_real * corrT = NULL;
+  //fftw_real * corrT = NULL;
 
   if(common_correlation_ == true){
 
-    corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, corrGradI, corrGradJ);
+    postCovAlpha_->fillInParamCorr(this, lowIntCut, corrGradI, corrGradJ);
     //setPriorCorrTFiltered(corrT, nz, nzp); // Can have zeros in the middle
 
     if(spatwellfilter != NULL){
@@ -543,7 +543,7 @@ void Corr::initializeCorrelationsSyntWells(SpatialWellFilter                    
         postCovAlpha_->endAccess();
     }
   }
-  delete corrT;
+  //delete corrT;
 }
 
 //--------------------------------------------------------------------

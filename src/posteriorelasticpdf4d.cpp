@@ -11,8 +11,8 @@
 PosteriorElasticPDF4D::PosteriorElasticPDF4D(const std::vector<double>                   & d1, // first dimension of data points
                                              const std::vector<double>                   & d2, // second dimension of data points
                                              const std::vector<double>                   & d3, // third dimension of data points
-                                             const std::vector<double>                   & t1, // fourth dimension (trend parameters)
-                                             const std::vector<double>                   & t2, // fourth dimension (trend parameters)
+                                             const std::vector<int>                      & t1, // fourth dimension (trend parameters)
+                                             const std::vector<int>                      & t2, // fourth dimension (trend parameters)
                                              const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
                                              const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
                                              int                                           n1,    // resolution of density grid in elastic dimension 1
@@ -97,8 +97,8 @@ t2_max_(t2_max)
   // Loop over data points and place in bins in histogram_
 
   for (int l = 0; l < dim; l++){
-    int i = static_cast<int>(floor((t1[l]-t1_min_)/dt1_+0.5));
-    int j = static_cast<int>(floor((t2[l]-t2_min_)/dt2_+0.5));
+    int i = t1[l];
+    int j = t2[l];
     int m = static_cast<int>(floor((x[0][l]-x_min_)/dx_));
     int n = static_cast<int>(floor((x[1][l]-y_min_)/dy_));
 

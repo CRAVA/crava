@@ -10,6 +10,8 @@ class SyntWellData{
 public:
   SyntWellData(double                      const  & trend1,
                double                      const  & trend2,
+               int                                  i,
+               int                                  j,
                std::vector<float>          const  & alpha,
                std::vector<float>          const  & beta,
                std::vector<float>          const  & rho,
@@ -21,6 +23,8 @@ public:
   int                         getWellLength()       const  {return nBins_       ;}
   double                      getTrend1Val()        const  {return trend1Value_ ;}
   double                      getTrend2Val()        const  {return trend2Value_ ;}
+  int                         getTrend1Ind()        const  {return trend1Index_ ;}
+  int                         getTrend2Ind()        const  {return trend2Index_ ;}
   int                         getFacies(int   i)    const  {return faciesLog_[i];}
   float                       getAlpha(int    i)    const  {return alpha_[i]    ;}
   float                       getBeta (int    i)    const  {return beta_[i]     ;}
@@ -39,6 +43,8 @@ private:
   int                                    nFacies_;
   double                                 trend1Value_;
   double                                 trend2Value_;
+  int                                    trend1Index_;
+  int                                    trend2Index_;
   std::vector<float>                     alpha_;
   std::vector<float>                     beta_;
   std::vector<float>                     rho_;
