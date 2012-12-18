@@ -19,7 +19,6 @@
 #include "src/corr.h"
 #include "nrlib/iotools/logkit.hpp"
 
-
 FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
                                const Simbox * timeSimboxOrigThick,
                                const Corr   * correlations,
@@ -273,13 +272,16 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     fftw_complex *paramvec = new fftw_complex[3];
     fftw_complex *help = new fftw_complex[3];
     int ok;
-    double **F = new double*[3];
+
+    double ** FF = new double*[3];
 
     for(int i=0;i<3;i++){
       sigmaK[i] = new fftw_complex[3];
       sigmaE[i] = new fftw_complex[3];
-      F[i] =new double[3];
+      FF[i] =new double[3];
     }
+
+    NRLib::Matrix F(3,3);
 
     for(int w=0;w<nzp/2+1;w++)
     {
@@ -334,26 +336,30 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
 
       //Do cholesky of sigmaK
       ok = lib_matrCholCpx(3,sigmaK);
+
       if(ok==0 && (w*domega > lowCut && w*domega < highCut) )
       {
         calcFilter(sigmaK, sigmaE, F);
+
+        NRLib::Set2DArrayFromMatrix(F, FF);
+
         //apply filter on alpha, beta, rho
-        paramvec[0] = alpha_cAmp[w];
-        paramvec[1] = beta_cAmp[w];
-        paramvec[2] = rho_cAmp[w];
-        lib_matrProdMatRVecCpx(F, paramvec, 3,3, help);
-        alpha_cAmp[w] = help[0];
-        beta_cAmp[w] = help[1];
-        rho_cAmp[w] = help[2];
+        paramvec[0]      = alpha_cAmp[w];
+        paramvec[1]      = beta_cAmp[w];
+        paramvec[2]      = rho_cAmp[w];
+        lib_matrProdMatRVecCpx(FF, paramvec, 3,3, help);
+        alpha_cAmp[w]    = help[0];
+        beta_cAmp[w]     = help[1];
+        rho_cAmp[w]      = help[2];
       }
       else
       {
         alpha_cAmp[w].re = 0.0;
-        beta_cAmp[w].re = 0.0;
-        rho_cAmp[w].re = 0.0;
+        beta_cAmp[w].re  = 0.0;
+        rho_cAmp[w].re   = 0.0;
         alpha_cAmp[w].im = 0.0;
-        beta_cAmp[w].im = 0.0;
-        rho_cAmp[w].im = 0.0;
+        beta_cAmp[w].im  = 0.0;
+        rho_cAmp[w].im   = 0.0;
       }
     }
 
@@ -407,11 +413,11 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     {
       delete [] sigmaK[i];
       delete [] sigmaE[i];
-      delete [] F[i];
+      delete [] FF[i];
     }
     delete [] sigmaK;
     delete [] sigmaE;
-    delete [] F;
+    delete [] FF;
     delete [] help;
     delete [] paramvec;
   } //end for wells
@@ -464,77 +470,69 @@ FilterWellLogs::extrapolate(float * blockedLog,
 }
 
 void
-FilterWellLogs::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double **F)
+FilterWellLogs::calcFilter(fftw_complex  ** sigmaK,
+                           fftw_complex  ** sigmaE,
+                           NRLib::Matrix  & F)
 {
-  int i,j;
-  int     * ok1 = new int[1];
-  double  * ev  = new double[3];
-  double ** M   = new double*[3];
-  double ** V   = new double*[3];
-  double ** EV  = new double*[3];
-  double ** sigmaKreal = new double*[3];
-  fftw_complex ** help = new fftw_complex*[3];
 
-  for(i=0;i<3;i++){
+  fftw_complex ** help = new fftw_complex*[3];
+  for (int i=0 ; i<3 ; i++){
     help[i] = new fftw_complex[3];
-    M[i] = new double[3];
-    V[i] = new double[3];
-    EV[i] =new double[3];
-    sigmaKreal[i] = new double[3];
   }
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      sigmaKreal[i][j] = sigmaK[i][j].re;
 
   lib_matrLXeqBMatCpx(3, sigmaK, sigmaE, 3);
   lib_matrAdjoint(sigmaE,3,3,help);
+
   lib_matrLXeqBMatCpx(3, sigmaK, help, 3);
   lib_matrAdjoint(help,3,3,sigmaE); //sigmaE = M
 
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      M[i][j] = sigmaE[i][j].re;
-
-  lib_matr_eigen(M,3,V,ev,ok1);
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-    {
-      if(i==j && ev[i]>0.0)
-        EV[i][j] = sqrt(ev[i]);
-      else
-        EV[i][j] = 0.0;
-    }
-  lib_matr_prod(V,EV,3,3,3,M);  // M=V*EV
-  lib_matrTranspose(V,3,3,EV);  // EV = V^T
-  lib_matr_prod(M,EV,3,3,3,V);  // V = A^K=VD^0.5V^T
-  //F = L*V*L^-1
-
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      EV[i][j] = sigmaKreal[i][j];
-  EV[0][2] = 0.0;
-  EV[0][1] = 0.0;
-  EV[1][2] = 0.0;
-  lib_matr_prod(EV,V,3,3,3,M); //M=LA
-  lib_matrTranspose(M,3,3,V);
-  lib_matrLtXeqBR(3, sigmaKreal, V, 3);  //L^T*F^T = V
-  lib_matrTranspose(V,3,3,F);
-
-  delete [] ok1;
-  delete [] ev;
   for (int i=0 ; i < 3 ; i++)
-  {
-    delete [] M[i];
-    delete [] V[i];
-    delete [] EV[i];
-    delete [] sigmaKreal[i];
     delete [] help[i];
-
-  }
-  delete [] M;
-  delete [] V;
-  delete [] EV;
-  delete [] sigmaKreal;
   delete [] help;
+
+  NRLib::Matrix M(3,3);
+
+  for (int i=0 ; i<3 ; i++)
+    for (int j=0 ; j<3 ; j++)
+      M(i,j) = sigmaE[i][j].re;
+
+  NRLib::Vector ev(3);
+  NRLib::Matrix V(3,3);
+
+  NRLib::ComputeEigenVectors(M, ev, V);
+
+  NRLib::Matrix EV = NRLib::ZeroMatrix(3);
+
+  for (int i=0 ; i<3 ; i++) {
+    if (ev(i) > 0.0) {
+      EV(i,i) = std::sqrt(ev(i));
+    }
+  }
+
+  M  = V * EV;                    // M  = V * EV
+  EV = NRLib::transpose(V);       // EV = V^T
+  V  = M * EV;                    // V  = A^K = VD^0.5V^T
+
+  // F = L*V*L^-1
+
+  for (int i=0 ; i<3 ; i++)
+    for (int j=0 ; j<3 ; j++)
+      EV(i,j) = sigmaK[i][j].re;
+
+  EV(0,2) = 0.0;
+  EV(0,1) = 0.0;
+  EV(1,2) = 0.0;
+
+  M = EV * V;                     // M = LA
+  V = NRLib::transpose(M);
+
+  NRLib::SymmetricMatrix sigmaKreal(3);
+  for (int i=0 ; i<3 ; i++)
+    for (int j=0 ; j<=i ; j++)
+      sigmaKreal(j,i) = sigmaK[i][j].re;
+
+  NRLib::CholeskySolve(sigmaKreal, V);   // L^T*F^T = V
+
+  F = NRLib::transpose(V);
 }
 

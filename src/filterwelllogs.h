@@ -9,6 +9,8 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
+#include "libs/nrlib/flens/nrlib_flens.hpp"
+
 class Simbox;
 class CKrigingAdmin;
 class KrigingData;
@@ -57,9 +59,9 @@ private:
                              int               nzp);
   void           extrapolate(float * log,
                              int     nz) ;
-  void           calcFilter(fftw_complex ** sigmaK,
-                            fftw_complex ** sigmaE,
-                            double       ** F);
+  void           calcFilter(fftw_complex  ** sigmaK,
+                            fftw_complex  ** sigmaE,
+                            NRLib::Matrix  & F);
 
   float       ** vtAlphaFiltered_;
   float       ** vtBetaFiltered_;

@@ -1381,4 +1381,3 @@ void lib_matrDump(const char * fName, double ** mat, int n1, int n2)
     fclose(dump);
   }
 }
-
