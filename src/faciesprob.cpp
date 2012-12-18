@@ -26,7 +26,6 @@
 #include "src/blockedlogs.h"
 #include "src/modelsettings.h"
 #include "src/definitions.h"
-#include "src/filterwelllogs.h"
 #include "src/spatialwellfilter.h"
 #include "src/simbox.h"
 #include "src/io.h"

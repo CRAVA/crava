@@ -22,7 +22,6 @@
 #include "src/faciesprob.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
-#include "src/filterwelllogs.h"
 #include "src/parameteroutput.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
@@ -1846,29 +1845,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
     Timings::setTimeFaciesProb(wall,cpu);
   }
-}
-
-
-void
-Crava::filterLogs(Simbox          * timeSimboxConstThick,
-                  FilterWellLogs *& filterlogs)
-{
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
-  int relative;
-  if(modelSettings_->getEstimateFaciesProb())
-    relative = 1;
-  else
-    relative = 0;
-
-  filterlogs = new FilterWellLogs(timeSimboxConstThick,
-                                  simbox_,
-                                  correlations_,
-                                  nzp_, nz_,
-                                  wells_, nWells_,
-                                  lowCut_, highCut_,
-                                  relative);
-  Timings::setTimeFiltering(wall,cpu);
 }
 
 NRLib::Matrix Crava::getPriorVar0(void) const

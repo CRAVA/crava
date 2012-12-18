@@ -24,7 +24,6 @@ class CovGridSeparated;
 class KrigingData3D;
 class FaciesProb;
 class GridMapping;
-class FilterWellLogs;
 class ModelSettings;
 class Corr;
 class SpatialWellFilter;
@@ -39,76 +38,73 @@ public:
         ModelAVODynamic   * modelAVOdynamic,
         SpatialWellFilter * spatwellfilter);
   ~Crava();
-  int                computePostMeanResidAndFFTCov();
-  int                simulate( RandomGen * randomGen );
-  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
-  int                computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
-  FFTGrid          * getPostAlpha()                 { return postAlpha_ ;}
-  FFTGrid          * getPostBeta()                  { return postBeta_  ;}
-  FFTGrid          * getPostRho()                   { return postRho_   ;}
 
-  int                getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
+  int                    computePostMeanResidAndFFTCov();
+  int                    simulate( RandomGen * randomGen );
+  void                   computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+  FFTGrid              * getPostAlpha() { return postAlpha_ ;}
+  FFTGrid              * getPostBeta()  { return postBeta_  ;}
+  FFTGrid              * getPostRho()   { return postRho_   ;}
 
-  void               printEnergyToScreen();
- // void               computeFaciesProb(FilterWellLogs *filteredlogs);
-  void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
-  void               filterLogs(Simbox          * timeSimboxConstThick,
-                                FilterWellLogs *& filterlogs);
-  int                getRelative();
+  int                    getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
+
+  void                   printEnergyToScreen();
+  void                   computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
+  int                    getRelative();
 
 
-  void               computeG(NRLib::Matrix & G) const;
-  NRLib::Matrix      getPriorVar0() const;
-  NRLib::Matrix      getPostVar0() const;
+  void                   computeG(NRLib::Matrix & G) const;
+  NRLib::Matrix          getPriorVar0() const;
+  NRLib::Matrix          getPostVar0() const;
   NRLib::SymmetricMatrix getSymmetricPriorVar0() const;
   NRLib::SymmetricMatrix getSymmetricPostVar0() const;
-  void               newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
-                                              NRLib::Matrix & G,
-                                              NRLib::Vector & scales,
-                                              NRLib::Matrix & sigmamdnew) const;
-  NRLib::Matrix      computeFilter(NRLib::SymmetricMatrix & priorCov,
+  void                   newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
+                                                  NRLib::Matrix & G,
+                                                  NRLib::Vector & scales,
+                                                  NRLib::Matrix & sigmamdnew) const;
+  NRLib::Matrix          computeFilter(NRLib::SymmetricMatrix & priorCov,
                                    NRLib::SymmetricMatrix & posteriorCov) const;
 
-  void               doPredictionKriging();
+  void                   doPredictionKriging();
 
 private:
-  void               computeDataVariance(void);
-  void               setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
-  void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
-  void               writeBWPredicted(void);
-  float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
-  float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
-  float              getSignalVariance(int l) const {return signalVariance_[l];}
-  float              getErrorVariance(int l)  const {return errorVariance_[l];}
-  float              getDataVariance(int l)   const {return dataVariance_[l];}
-  void               computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A) const;
-  void               computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
+  void                   computeDataVariance(void);
+  void                   setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
+  void                   computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
+  void                   writeBWPredicted(void);
+  float                  getEmpSNRatio(int l)     const { return empSNRatio_[l]     ;}
+  float                  getTheoSNRatio(int l)    const { return theoSNRatio_[l]    ;}
+  float                  getSignalVariance(int l) const { return signalVariance_[l] ;}
+  float                  getErrorVariance(int l)  const { return errorVariance_[l]  ;}
+  float                  getDataVariance(int l)   const { return dataVariance_[l]   ;}
+  void                   computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A) const;
+  void                   computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
 
-  int                checkScale(void);
-  void               fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
-  void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
-  void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
+  int                    checkScale(void);
+  void                   fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
+  void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
+  void                   fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
 
-  void               computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
+  void                   computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
 
-  FFTGrid          * createFFTGrid();
-  FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
-  FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
+  FFTGrid              * createFFTGrid();
+  FFTGrid              * copyFFTGrid(FFTGrid * fftGridOld);
+  FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
 
-  float              computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
-  //float              computeWDCorrMVar (Wavelet* WD);
+  float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
+  //float                computeWDCorrMVar (Wavelet* WD);
 
-  void               divideDataByScaleWavelet();
-  void               multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
-  void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
+  void                   divideDataByScaleWavelet();
+  void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
+  void                   doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
-  void               correctAlphaBetaRho(ModelSettings *modelSettings);
+  void                   correctAlphaBetaRho(ModelSettings *modelSettings);
 
-  FFTGrid *          computeSeismicImpedance(FFTGrid * alpha,
-                                             FFTGrid * beta,
-                                             FFTGrid * rho,
-                                             int angle);
-
+  FFTGrid *              computeSeismicImpedance(FFTGrid * alpha,
+                                                 FFTGrid * beta,
+                                                 FFTGrid * rho,
+                                                 int angle);
 
   bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox
@@ -178,7 +174,7 @@ private:
   ModelAVODynamic  * modelAVOdynamic_;
 
 
-  NRLib::Grid2D<double **>           *sigmamdnew_;
+  NRLib::Grid2D<double **> * sigmamdnew_;
 };
 
 #endif
