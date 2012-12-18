@@ -2702,7 +2702,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
   }
   else {
     if(constituent == ModelSettings::FLUID) {
-      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid(\n";
+      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
     }
     else if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);

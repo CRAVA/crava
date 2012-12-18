@@ -840,6 +840,14 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     delete [] sigmae[j];
   delete [] sigmae;
 
+  for(int i=0; i<sizeOfV; i++)
+    delete [] sigmaeTransformed[i];
+  delete [] sigmaeTransformed;
+
+  for(int i=0; i<sizeOfV; i++)
+    delete [] kstdMat[i];
+  delete [] kstdMat;
+
   for (int j=0; j<static_cast<int>(syntWellData.size()); j++)
     delete syntWellData[j];
 

@@ -238,6 +238,9 @@ ModelGeneral::~ModelGeneral(void)
       delete variable[i];
   }
 
+  if(timeLine_ != NULL)
+    delete timeLine_;
+
   delete randomGen_;
   delete timeSimbox_;
   delete timeSimboxConstThick_;

@@ -38,10 +38,11 @@ SpatialWellFilter::~SpatialWellFilter()
   }
   delete [] priorSpatialCorr_;
 
-  for(j=0;j<static_cast<int>(sigmaeSynt_.size());j++) {
+  for(j=0; j<static_cast<int>(sigmaeSynt_.size()); j++) {
+    double ** Se = sigmaeSynt_[j];
     for(i=0;i<3;i++)
-      delete [] sigmaeSynt_[j][i];
-    delete [] sigmaeSynt_[j];
+      delete [] Se[i];
+    delete [] Se;
   }
 
   for(j=0;j<static_cast<int>(sigmae_.size());j++) {
@@ -159,10 +160,13 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
 
   if(sigmaeSynt_.size() == 0) {
     sigmaeSynt_.resize(nDim);
-    sigmaeSynt_[0] = new double *[3];
-    for(int i=0;i<3;i++) {
-      sigmaeSynt_[0][i] = new double[3] ;
+    double ** Se = new double *[3];
+    for(int i=0; i<3; i++) {
+      Se[i] = new double[3] ;
+      for(int j=0; j<3; j++)
+        Se[i][j] = 0;
     }
+    sigmaeSynt_[0] = Se;
   }
 
   bool no_wells_filtered = true;
@@ -174,8 +178,11 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
     int n = syntWellData[w1]->getWellLength();
 
     sigmapost = new double * [3*n];
-    for(int i=0;i<3*n;i++)
+    for(int i=0;i<3*n;i++) {
       sigmapost[i] = new double[3*n];
+      for(int j=0; j<3*n; j++)
+        sigmapost[i][j] = RMISSING;
+    }
     sigmapri = new double * [3*n];
     for(int i=0;i<3*n;i++)
       sigmapri[i] = new double[3*n];
@@ -279,16 +286,17 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
 
   if(no_wells_filtered == false){
     // finds the scale at  default inversion (all minimum noise in case of local noise)
-    sigmaeSynt_[0][0][0] /= lastn;
-    sigmaeSynt_[0][1][0] /= lastn;
-    sigmaeSynt_[0][1][1] /= lastn;
-    sigmaeSynt_[0][2][0] /= lastn;
-    sigmaeSynt_[0][2][1] /= lastn;
-    sigmaeSynt_[0][2][2] /= lastn;
-    sigmaeSynt_[0][0][1]  = sigmaeSynt_[0][1][0];
-    sigmaeSynt_[0][0][2]  = sigmaeSynt_[0][2][0];
-    sigmaeSynt_[0][1][2]  = sigmaeSynt_[0][2][1];
-    adjustDiagSigma(sigmaeSynt_[0], 3);
+    double ** Se = sigmaeSynt_[0];
+    Se[0][0] /= lastn;
+    Se[1][0] /= lastn;
+    Se[1][1] /= lastn;
+    Se[2][0] /= lastn;
+    Se[2][1] /= lastn;
+    Se[2][2] /= lastn;
+    Se[0][1]  = Se[1][0];
+    Se[0][2]  = Se[2][0];
+    Se[1][2]  = Se[2][1];
+    adjustDiagSigma(Se, 3);
   }
 
   if (no_wells_filtered) {
@@ -567,14 +575,14 @@ SpatialWellFilter::updateSigmaeSynt(double ** filter, double ** postCov,  int n)
 
   lib_matr_prod(filter,postCov,3*n,3*n,3*n,sigmaeW);
 
-  for(int i=0;i<n;i++)
-  {
-    sigmaeSynt_[0][0][0] += sigmaeW[i      ][i     ];
-    sigmaeSynt_[0][1][0] += sigmaeW[i +   n][i     ];
-    sigmaeSynt_[0][2][0] += sigmaeW[i + 2*n][i     ];
-    sigmaeSynt_[0][1][1] += sigmaeW[i +   n][i +  n];
-    sigmaeSynt_[0][2][1] += sigmaeW[i + 2*n][i +  n];
-    sigmaeSynt_[0][2][2] += sigmaeW[i + 2*n][i + 2*n];
+  for(int i=0; i<n; i++) {
+    double ** Se = sigmaeSynt_[0];
+    Se[0][0] += sigmaeW[i      ][i     ];
+    Se[1][0] += sigmaeW[i +   n][i     ];
+    Se[2][0] += sigmaeW[i + 2*n][i     ];
+    Se[1][1] += sigmaeW[i +   n][i +  n];
+    Se[2][1] += sigmaeW[i + 2*n][i +  n];
+    Se[2][2] += sigmaeW[i + 2*n][i + 2*n];
   }
   // sigmaeSynt_ Is normalized (1/n) in completeSigmaE, Here well by well is added.
 
