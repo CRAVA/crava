@@ -185,13 +185,17 @@ DistributionsFluidMix::UpdateSample(double                      corr_param,
   const FluidMix * core_sample = dynamic_cast<const FluidMix *>(sample);
 
   std::vector<Fluid *> updated_sub_fluids(distr_fluid_.size());
-  for(size_t i = 0; i<distr_fluid_.size(); i++){
+
+  for(size_t i = 0; i<distr_fluid_.size(); i++) {
     updated_sub_fluids[i] = distr_fluid_[i]->UpdateSample(corr_param,
                                                           param_is_time,
                                                           trend,
                                                           core_sample->GetSubFluid(i));
   }
   Fluid * updated_sample = GetSample(u, trend, updated_sub_fluids);
+
+  for(size_t i = 0; i<distr_fluid_.size(); i++)
+    delete updated_sub_fluids[i];
 
   return updated_sample;
 

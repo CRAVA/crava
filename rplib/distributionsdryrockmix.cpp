@@ -180,12 +180,15 @@ DistributionsDryRockMix::UpdateSample(double                      corr_param,
   std::vector<DryRock *> updated_sub_dryrocks(distr_dryrock_.size());
   for(size_t i = 0; i<distr_dryrock_.size(); i++){
      updated_sub_dryrocks[i] = distr_dryrock_[i]->UpdateSample(corr_param,
-                                                           param_is_time,
-                                                           trend,
-                                                           core_sample->GetSubDryRock(i));
+                                                               param_is_time,
+                                                               trend,
+                                                               core_sample->GetSubDryRock(i));
   }
 
   DryRock * updated_sample = GetSample(u, trend, updated_sub_dryrocks);
+
+  for(size_t i = 0; i<distr_dryrock_.size(); i++)
+    delete updated_sub_dryrocks[i];
 
   return updated_sample;
 }

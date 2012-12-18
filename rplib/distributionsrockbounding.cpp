@@ -231,5 +231,8 @@ DistributionsRockBounding::UpdateSample(double                      corr_param,
 
   Rock * updated_sample     = GetSample(u, trend, updated_upper_rock, updated_lower_rock);
 
+  delete updated_upper_rock;
+  delete updated_lower_rock;
+
   return updated_sample;
 }

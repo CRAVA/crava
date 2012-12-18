@@ -217,14 +217,18 @@ DistributionsRockMixOfRock::UpdateSample(double                      corr_param,
   const RockMixOfRock * core_sample = dynamic_cast<const RockMixOfRock *>(sample);
 
   std::vector<Rock *> updated_sub_rocks(distr_rock_.size());
-  for(size_t i = 0; i<distr_rock_.size(); i++)
-  {
+
+  for(size_t i = 0; i<distr_rock_.size(); i++) {
     updated_sub_rocks[i] = distr_rock_[i]->UpdateSample(corr_param,
                                                         param_is_time,
                                                         trend,
                                                         core_sample->GetSubRock(i));
   }
+
   Rock * updated_sample = GetSample(u, trend, updated_sub_rocks);
+
+  for(size_t i = 0; i<distr_rock_.size(); i++)
+    delete updated_sub_rocks[i];
 
   return updated_sample;
 }
@@ -568,15 +572,14 @@ DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      co
   std::vector<Solid *> updated_solids(distr_solid_.size());
   std::vector<Fluid *> updated_fluids(distr_fluid_.size());
 
-  for(size_t i = 0; i < distr_solid_.size(); i++)
-  {
+  for(size_t i = 0; i < distr_solid_.size(); i++) {
     updated_solids[i] = distr_solid_[i]->UpdateSample(corr_param,
                                                       param_is_time,
                                                       trend,
                                                       core_sample->GetSubSolid(i));
   }
-  for(size_t i = 0; i < distr_fluid_.size(); i++)
-  {
+
+  for(size_t i = 0; i < distr_fluid_.size(); i++) {
     updated_fluids[i] = distr_fluid_[i]->UpdateSample(corr_param,
                                                       param_is_time,
                                                       trend,
@@ -584,6 +587,12 @@ DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      co
   }
 
   Rock * updated_sample = GetSample(u, trend, updated_solids, updated_fluids);
+
+  for(size_t i = 0; i < distr_solid_.size(); i++)
+    delete updated_solids[i];
+
+  for(size_t i = 0; i < distr_fluid_.size(); i++)
+    delete updated_fluids[i];
 
   return updated_sample;
 }

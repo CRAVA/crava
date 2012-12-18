@@ -14,9 +14,10 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend()
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean,
                                                        bool                 shared)
-: mean_(mean),
-  is_shared_(shared)
+: is_shared_(shared)
 {
+
+  mean_ = mean->Clone();
 
   dirac_ = new NRLib::Delta();
 
@@ -38,8 +39,8 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWi
 
 DeltaDistributionWithTrend::~DeltaDistributionWithTrend()
 {
-  delete dirac_;
   delete mean_;
+  delete dirac_;
 }
 
 double

@@ -80,6 +80,8 @@ DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::stri
     NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
     distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, is_shared_);
+
+    delete mean_trend;
   }
 
   return(distribution_with_trend_);
@@ -108,8 +110,8 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRL
   vintage_year_(1),
   one_year_correlation_(1.0)
 {
-  mean_                     = mean;
-  variance_                 = variance;
+  mean_                     = mean->Clone();
+  variance_                 = variance->Clone();
   distribution_with_trend_  = NULL;
 }
 
@@ -146,6 +148,9 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
     NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
     distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, is_shared_);
+
+    delete mean_trend;
+    delete variance_trend;
   }
 
   return(distribution_with_trend_);
@@ -177,8 +182,8 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::
   vintage_year_(1),
   one_year_correlation_(1.0)
 {
-  mean_                     = mean;
-  variance_                 = variance;
+  mean_                     = mean->Clone();
+  variance_                 = variance->Clone();
   distribution_with_trend_  = NULL;
 }
 
@@ -219,6 +224,9 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
     CheckBetaConsistency(mean_trend, variance_trend, errTxt);
 
     distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, is_shared_);
+
+    delete mean_trend;
+    delete variance_trend;
   }
 
   return(distribution_with_trend_);

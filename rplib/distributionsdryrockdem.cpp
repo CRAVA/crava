@@ -180,18 +180,25 @@ DistributionsDryRockDEM::UpdateSample(double                      corr_param,
   const DryRockDEM * core_sample = dynamic_cast<const DryRockDEM *>(sample);
 
   DryRock * updated_dryrock_host = distr_dryrock_->UpdateSample(corr_param,
-                                                          param_is_time,
-                                                          trend,
-                                                          core_sample->GetDryRockHost());
+                                                                param_is_time,
+                                                                trend,
+                                                                core_sample->GetDryRockHost());
+
   std::vector<DryRock *> updated_dryrock_inc(distr_dryrock_inc_.size());
+
   for (size_t i = 0; i < updated_dryrock_inc.size(); ++i) {
     updated_dryrock_inc[i] = distr_dryrock_inc_[i]->UpdateSample(corr_param,
-                                                             param_is_time,
-                                                             trend,
-                                                             core_sample->GetDryRockInclusion(i));
+                                                                 param_is_time,
+                                                                 trend,
+                                                                 core_sample->GetDryRockInclusion(i));
   }
 
   DryRock * updated_sample = GetSample(u, trend, updated_dryrock_host, updated_dryrock_inc);
+
+  delete updated_dryrock_host;
+
+  for (size_t i = 0; i < updated_dryrock_inc.size(); ++i)
+    delete updated_dryrock_inc[i];
 
   return updated_sample;
 }

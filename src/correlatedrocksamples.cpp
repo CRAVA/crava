@@ -55,7 +55,7 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
   }
 
   // Must delete memory allocated by classes DistributionsRock and Rock.
-  for (int k = 1; k < k_max; ++k){
+  for (int k = 0; k < k_max; ++k){
     for (int i = 0; i < i_max; ++i){
       if (rock[k][i] != NULL)
         delete rock[k][i];

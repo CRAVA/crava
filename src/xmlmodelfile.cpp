@@ -3104,9 +3104,15 @@ XmlModelFile::parseGaussianWithTrend(TiXmlNode                                  
   if (ok) {
     const NRLib::TrendStorage * mean     = mean_storage[0]->CloneMean();
     const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+
     delete mean_storage[0];
     delete variance_storage[0];
+
     DistributionWithTrendStorage * dist = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+
+    delete mean;
+    delete variance;
+
     storage.push_back(dist);
   }
 
@@ -3171,6 +3177,9 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
     delete variance_storage[0];
 
     DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, lower_limit[0], upper_limit[0], is_shared);
+
+    delete mean;
+    delete variance;
 
     storage.push_back(dist);
   }

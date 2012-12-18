@@ -19,10 +19,11 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
                                                      const double       & lower_limit,
                                                      const double       & upper_limit,
                                                      bool                 shared)
-: mean_(mean),
-  var_(var),
-  is_shared_(shared)
+: is_shared_(shared)
 {
+  mean_ = mean->Clone();
+  var_  = var->Clone();
+
   use_trend_cube_.resize(2);
   for(int i=0; i<2; i++)
     use_trend_cube_[i] = false;

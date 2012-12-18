@@ -563,6 +563,15 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
       dist_rock[i] = rock;
     }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(bulk_dist_with_trend[i]->GetIsShared() == false)
+        delete bulk_dist_with_trend[i];
+      if(shear_dist_with_trend[i]->GetIsShared() == false)
+        delete shear_dist_with_trend[i];
+      if(density_dist_with_trend[i]->GetIsShared() == false)
+        delete density_dist_with_trend[i];
+    }
   }
 
   if(tmpErrTxt != "") {

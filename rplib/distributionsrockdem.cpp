@@ -310,14 +310,20 @@ DistributionsRockDEM::UpdateSample(double                      corr_param,
                                                      core_sample->GetSolid());
 
   std::vector<Fluid *> updated_fluid(distr_fluid_.size());
+
   for (size_t i = 0; i < updated_fluid.size(); ++i) {
-  updated_fluid[i]      = distr_fluid_[i]->UpdateSample(corr_param,
-                                                        param_is_time,
-                                                        trend,
-                                                        core_sample->GetFluid(i));
+    updated_fluid[i] = distr_fluid_[i]->UpdateSample(corr_param,
+                                                     param_is_time,
+                                                     trend,
+                                                     core_sample->GetFluid(i));
   }
 
   Rock * updated_sample = GetSample(u, trend, updated_solid, updated_fluid);
+
+  delete updated_solid;
+
+  for (size_t i = 0; i < updated_fluid.size(); ++i)
+    delete updated_fluid[i];
 
   return updated_sample;
 }

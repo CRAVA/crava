@@ -206,6 +206,11 @@ DistributionsSolidDEM::UpdateSample(double                      corr_param,
 
   Solid * updated_sample = GetSample(u, trend, updated_solid_host, updated_solid_inc);
 
+  delete updated_solid_host;
+
+  for (size_t i = 0; i < updated_solid_inc.size(); ++i)
+    delete updated_solid_inc[i];
+
   return updated_sample;
 }
 

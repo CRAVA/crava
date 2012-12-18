@@ -186,7 +186,8 @@ DistributionsSolidMix::UpdateSample(double                      corr_param,
   const SolidMix * core_sample = dynamic_cast<const SolidMix *>(sample);
 
   std::vector<Solid *> updated_sub_solids(distr_solid_.size());
-  for(size_t i = 0; i<distr_solid_.size(); i++){
+
+  for(size_t i = 0; i<distr_solid_.size(); i++) {
      updated_sub_solids[i] = distr_solid_[i]->UpdateSample(corr_param,
                                                            param_is_time,
                                                            trend,
@@ -194,6 +195,9 @@ DistributionsSolidMix::UpdateSample(double                      corr_param,
   }
 
   Solid * updated_sample = GetSample(u, trend, updated_sub_solids);
+
+  for(size_t i = 0; i<distr_solid_.size(); i++)
+    delete updated_sub_solids[i];
 
   return updated_sample;
 }
