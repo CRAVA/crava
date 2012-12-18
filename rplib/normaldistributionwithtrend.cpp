@@ -14,10 +14,11 @@ NormalDistributionWithTrend::NormalDistributionWithTrend()
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * mean,
                                                          const NRLib::Trend * var,
                                                          bool                 shared)
-: mean_(mean),
-  var_(var),
-  is_shared_(shared)
+: is_shared_(shared)
 {
+
+  mean_ = mean->Clone();
+  var_  = var->Clone();
 
   gaussian_ = new NRLib::Normal();
 
