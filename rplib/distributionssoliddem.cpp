@@ -15,14 +15,35 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
                                              std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
                                              std::vector< DistributionWithTrend * >       & distr_incl_concentration,
                                              std::vector<double>                          & alpha)
-: DistributionsSolid()
+: DistributionsSolid(),
+  distr_solid_inc_(distr_solid_inc.size(), NULL),
+  distr_incl_spectrum_(distr_incl_spectrum.size(), NULL),
+  distr_incl_concentration_(distr_incl_concentration.size(), NULL)
+
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
 
-  distr_solid_              = distr_solid;
-  distr_solid_inc_          = distr_solid_inc;
-  distr_incl_spectrum_      = distr_incl_spectrum;
-  distr_incl_concentration_ = distr_incl_concentration;
+  distr_solid      = distr_solid->Clone();
+
+  for (size_t i = 0; i < distr_solid_inc.size(); ++i)
+    distr_solid_inc_[i]      = distr_solid_inc[i]->Clone();
+
+  for (size_t i = 0; i < distr_incl_spectrum.size(); ++i) {
+    if(distr_incl_spectrum[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i]->Clone();
+    else
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i];
+  }
+
+  for (size_t i = 0; i < distr_incl_concentration.size(); ++i) {
+    if(distr_incl_concentration[i] != NULL) {
+      if(distr_incl_concentration[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = distr_incl_concentration[i]->Clone();
+      else
+        distr_incl_concentration_[i] = distr_incl_concentration[i];
+    }
+  }
+
   alpha_                    = alpha;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
 
 }

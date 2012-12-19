@@ -14,12 +14,24 @@ DistributionsDryRockMix::DistributionsDryRockMix(std::vector< DistributionsDryRo
                                                  std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                                  DEMTools::MixMethod                            mix_method,
                                                  std::vector<double>                          & alpha)
-: DistributionsDryRock()
+: DistributionsDryRock(),
+  distr_dryrock_(distr_dryrock.size(), NULL),
+  distr_vol_frac_(distr_vol_frac.size(), NULL),
+  mix_method_(mix_method)
 {
   assert(distr_dryrock.size() == distr_vol_frac.size());
-  distr_dryrock_      = distr_dryrock;
-  distr_vol_frac_   = distr_vol_frac;
-  mix_method_       = mix_method;
+
+  for (size_t i = 0; i < distr_dryrock.size(); ++i)
+    distr_dryrock_[i] = distr_dryrock[i]->Clone();
+
+  for (size_t i = 0; i < distr_vol_frac.size(); ++i) {
+    if(distr_vol_frac_[i] != NULL) {
+      if(distr_vol_frac[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = distr_vol_frac[i]->Clone();
+      else
+        distr_vol_frac_[i] = distr_vol_frac[i];
+    }
+  }
   alpha_            = alpha;
 }
 

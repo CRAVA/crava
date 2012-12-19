@@ -14,12 +14,25 @@ DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method,
                                              std::vector<double>                          & alpha)
-: DistributionsSolid()
+: DistributionsSolid(),
+  distr_solid_(distr_solid.size(), NULL),
+  distr_vol_frac_(distr_vol_frac.size(), NULL),
+  mix_method_(mix_method)
 {
   assert(distr_solid.size() == distr_vol_frac.size());
-  distr_solid_      = distr_solid;
-  distr_vol_frac_   = distr_vol_frac;
-  mix_method_       = mix_method;
+
+  for (size_t i = 0; i < distr_solid.size(); ++i)
+    distr_solid_[i] = distr_solid[i]->Clone();
+
+  for (size_t i = 0; i < distr_vol_frac.size(); ++i) {
+    if(distr_vol_frac_[i] != NULL) {
+      if(distr_vol_frac[i]->GetIsShared() == false)
+        distr_vol_frac_[i] = distr_vol_frac[i]->Clone();
+      else
+        distr_vol_frac_[i] = distr_vol_frac[i];
+    }
+  }
+
   alpha_            = alpha;
 }
 

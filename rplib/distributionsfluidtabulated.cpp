@@ -16,8 +16,16 @@ DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithT
                                                          std::vector<double>         & alpha)
 : DistributionsFluid()
 {
-  elastic_              = elastic;
-  density_              = density;
+  if (elastic->GetIsShared() == true)
+    elastic_ = elastic;
+  else
+    elastic_ = elastic->Clone();
+
+  if (density->GetIsShared() == true)
+    density_ = density;
+  else
+    density_ = density->Clone();
+
   corr_elastic_density_ = corr_elastic_density;
   tabulated_method_     = method;
   alpha_                = alpha;

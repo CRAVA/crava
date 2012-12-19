@@ -12,8 +12,16 @@ DistributionsFluidCO2::DistributionsFluidCO2(const DistributionWithTrend       *
                                              std::vector<double>               & alpha)
 : DistributionsFluid()
 {
-  distr_temperature_   = distr_temperature;
-  distr_pore_pressure_ = distr_pore_pressure;
+  if (distr_temperature->GetIsShared() == true)
+    distr_temperature_ = distr_temperature;
+  else
+    distr_temperature_ = distr_temperature->Clone();
+
+  if (distr_pore_pressure->GetIsShared() == true)
+    distr_pore_pressure_ = distr_pore_pressure;
+  else
+    distr_pore_pressure_ = distr_pore_pressure->Clone();
+
   alpha_               = alpha;
 }
 

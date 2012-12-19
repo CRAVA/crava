@@ -15,9 +15,21 @@ DistributionsSolidTabulated::DistributionsSolidTabulated(const DistributionWithT
                                                          std::vector<double>         & alpha)
 : DistributionsSolid()
 {
-  elastic1_               = elastic1;
-  elastic2_               = elastic2;
-  density_                = density;
+  if (elastic1->GetIsShared() == true)
+    elastic1_ = elastic1;
+  else
+    elastic1_ = elastic1->Clone();
+
+  if (elastic2->GetIsShared() == true)
+    elastic2_ = elastic2;
+  else
+    elastic2_ = elastic2->Clone();
+
+  if (density->GetIsShared() == true)
+    density_ = density;
+  else
+    density_ = density->Clone();
+
   corr_elastic1_elastic2_ = corr_elastic1_elastic2;
   corr_elastic1_density_  = corr_elastic1_density;
   corr_elastic2_density_  = corr_elastic2_density;

@@ -15,9 +15,33 @@ DistributionsDryRockDEM::DistributionsDryRockDEM(DistributionsDryRock           
                                                  std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
                                                  std::vector< DistributionWithTrend * >       & distr_incl_concentration,
                                                  std::vector<double>                          & alpha)
-: DistributionsDryRock()
+: DistributionsDryRock(),
+  distr_dryrock_inc_(distr_dryrock_inc.size(), NULL),
+  distr_incl_spectrum_(distr_incl_spectrum.size(), NULL),
+  distr_incl_concentration_(distr_incl_concentration.size(), NULL)
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
+
+  distr_dryrock_      = distr_dryrock->Clone();
+
+  for (size_t i = 0; i < distr_dryrock_inc.size(); ++i)
+    distr_dryrock_inc_[i]      = distr_dryrock_inc[i]->Clone();
+
+  for (size_t i = 0; i < distr_incl_spectrum.size(); ++i) {
+    if(distr_incl_spectrum[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i]->Clone();
+    else
+      distr_incl_spectrum_[i] = distr_incl_spectrum[i];
+  }
+
+  for (size_t i = 0; i < distr_incl_concentration.size(); ++i) {
+    if(distr_incl_concentration[i] != NULL) {
+      if(distr_incl_concentration[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = distr_incl_concentration[i]->Clone();
+      else
+        distr_incl_concentration_[i] = distr_incl_concentration[i];
+    }
+  }
 
   distr_dryrock_              = distr_dryrock;
   distr_dryrock_inc_          = distr_dryrock_inc;
