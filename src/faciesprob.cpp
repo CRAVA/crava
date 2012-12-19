@@ -660,11 +660,11 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 
   for (int i = 0; i<3; i++){
     delete [] sigmaeSyntCopy[i];
-    if(i<sizeOfV){
-      delete [] vCopy[i];
-      delete [] vTranspose[i];
-      delete [] tempMatrix[i];
-    }
+  }
+  for (int i=0; i<sizeOfV;i++){
+    delete [] vCopy[i];
+    delete [] vTranspose[i];
+    delete [] tempMatrix[i];
   }
   delete [] sigmaeSyntCopy;
   delete [] vCopy;
@@ -2945,8 +2945,13 @@ void FaciesProb::SolveGEVProblem(double                           ** sigma_prior
 
   delete [] error;
   delete [] eigval;
-  for(int i=0;i<3;i++)
+  for(int i=0;i<3;i++){
+    delete [] product_mat[i];
     delete [] eigvec[i];
+    delete [] sigma_prior_inv[i];
+  }
+  delete [] product_mat;
+  delete [] sigma_prior_inv;
   delete [] eigvec;
 }
 
