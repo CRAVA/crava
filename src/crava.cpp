@@ -1659,7 +1659,7 @@ void
 Crava::printEnergyToScreen()
 {
   int i;
-  LogKit::LogFormatted(LogKit::Low,"\n\n                       ");
+  LogKit::LogFormatted(LogKit::Low,"\n                       ");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"  Seismic %4.1f ",thetaDeg_[i]);
   LogKit::LogFormatted(LogKit::Low,"\n----------------------");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"---------------");

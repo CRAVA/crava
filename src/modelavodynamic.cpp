@@ -1165,25 +1165,25 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
   if (error == 0) {
     wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,i));
 
-    if (modelSettings->getForwardModeling() == false) {
+    if (modelSettings->getForwardModeling() == false && modelSettings->getNumberOfWells() > 0) {
       float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox,
-                                                             seisCube[i],
-                                                             wells,
-                                                             modelSettings,
-                                                             errText,
-                                                             error,
-                                                             i,
-                                                             localNoiseScale_[i],
-                                                             shiftGrid,
-                                                             gainGrid,
-                                                             SNRatio_[i],
-                                                             modelSettings->getWaveletScale(thisTimeLapse_,i),
-                                                             modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
-                                                             modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i),
-                                                             modelSettings->getEstimateLocalNoise(thisTimeLapse_,i),
-                                                             modelSettings->getEstimateLocalShift(thisTimeLapse_,i),
-                                                             modelSettings->getEstimateLocalScale(thisTimeLapse_,i),
-                                                             estimateWavelet_[i]);
+                                                               seisCube[i],
+                                                               wells,
+                                                               modelSettings,
+                                                               errText,
+                                                               error,
+                                                               i,
+                                                               localNoiseScale_[i],
+                                                               shiftGrid,
+                                                               gainGrid,
+                                                               SNRatio_[i],
+                                                               modelSettings->getWaveletScale(thisTimeLapse_,i),
+                                                               modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
+                                                               modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i),
+                                                               modelSettings->getEstimateLocalNoise(thisTimeLapse_,i),
+                                                               modelSettings->getEstimateLocalShift(thisTimeLapse_,i),
+                                                               modelSettings->getEstimateLocalScale(thisTimeLapse_,i),
+                                                               estimateWavelet_[i]);
 
       if(modelSettings->getEstimateSNRatio(thisTimeLapse_,i))
         SNRatio_[i] = SNRatio;

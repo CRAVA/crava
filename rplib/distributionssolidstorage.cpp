@@ -93,9 +93,23 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
     }
 
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+  }
 
-    if (errTxt == "")
+  if (errTxt == "") {
+    for(int i=0; i<n_vintages; i++)
       final_dist_solid[i] = new DistributionsSolidMix(distr_solid[i], all_volume_fractions[i], mix_method, alpha);
+
+    for(int i=0; i<n_vintages; i++) {
+      for(size_t s=0; s<distr_solid.size(); s++)
+        delete distr_solid[i][s];
+
+      for(size_t s=0; s<all_volume_fractions.size(); s++) {
+        if(all_volume_fractions[i][s] != NULL) {
+          if(all_volume_fractions[i][s]->GetIsShared() == false)
+            delete all_volume_fractions[i][s];
+        }
+      }
+    }
   }
 
   return(final_dist_solid);
@@ -210,6 +224,15 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int             
                                                                  alpha);
 
     dist_solid[i] = solid;
+  }
+
+  for(int i=0; i<n_vintages; i++) {
+    if(vp_dist_with_trend[i]->GetIsShared() == false)
+      delete vp_dist_with_trend[i];
+    if(vs_dist_with_trend[i]->GetIsShared() == false)
+      delete vs_dist_with_trend[i];
+    if(density_dist_with_trend[i]->GetIsShared() == false)
+      delete density_dist_with_trend[i];
   }
 
   return(dist_solid);
@@ -333,6 +356,15 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
                                                                  alpha);
 
     dist_solid[i] = solid;
+  }
+
+  for(int i=0; i<n_vintages; i++) {
+    if(bulk_dist_with_trend[i]->GetIsShared() == false)
+      delete bulk_dist_with_trend[i];
+    if(shear_dist_with_trend[i]->GetIsShared() == false)
+      delete shear_dist_with_trend[i];
+    if(density_dist_with_trend[i]->GetIsShared() == false)
+      delete density_dist_with_trend[i];
   }
 
   return(dist_solid);
@@ -601,15 +633,33 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
 
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    if (errTxt == "")
+  if (errTxt == "") {
+    for(int i=0; i<n_vintages; i++)
       final_dist_solid[i] = new DistributionsSolidDEM(final_distr_solid[i],
                                                       final_distr_solid_inc[i],
                                                       all_aspect_ratios[i],
                                                       all_volume_fractions[i],
                                                       alpha);
+
+    for(int i=0; i<n_vintages; i++) {
+      delete final_distr_solid[i];
+
+      for(size_t s=0; s<final_distr_solid_inc[i].size(); s++)
+        delete final_distr_solid_inc[i][s];
+
+      for(size_t s=0; s<all_aspect_ratios[i].size(); s++) {
+        if(all_aspect_ratios[i][s]->GetIsShared() == false)
+          delete all_aspect_ratios[i][s];
+      }
+
+      for(size_t s=0; s<all_volume_fractions[i].size(); s++) {
+        if(all_volume_fractions[i][s] != NULL) {
+          if(all_volume_fractions[i][s]->GetIsShared() == false)
+            delete all_volume_fractions[i][s];
+        }
+      }
+    }
   }
 
   return(final_dist_solid);
-
 }

@@ -92,9 +92,23 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
     }
 
     CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+  }
 
-    if (errTxt == "")
+  if (errTxt == "") {
+    for(int i=0; i<n_vintages; i++)
       final_dist_fluid[i] = new DistributionsFluidMix(alpha, distr_fluid[i], all_volume_fractions[i], mix_method);
+
+    for(int i=0; i<n_vintages; i++) {
+      for(size_t s=0; s<distr_fluid.size(); s++)
+        delete distr_fluid[i][s];
+
+      for(size_t s=0; s<all_volume_fractions.size(); s++) {
+        if(all_volume_fractions[i][s] != NULL) {
+          if(all_volume_fractions[i][s]->GetIsShared() == false)
+            delete all_volume_fractions[i][s];
+        }
+      }
+    }
   }
 
   return(final_dist_fluid);
@@ -166,6 +180,13 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
 
     dist_fluid[i] = fluid;
   }
+
+   for(int i=0; i<n_vintages; i++) {
+     if(vp_dist_with_trend[i]->GetIsShared() == false)
+       delete vp_dist_with_trend[i];
+     if(density_dist_with_trend[i]->GetIsShared() == false)
+       delete density_dist_with_trend[i];
+   }
 
   return(dist_fluid);
 }
@@ -241,6 +262,13 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
                                                                  alpha);
 
     dist_fluid[i] = fluid;
+  }
+
+  for(int i=0; i<n_vintages; i++) {
+    if(bulk_dist_with_trend[i]->GetIsShared() == false)
+      delete bulk_dist_with_trend[i];
+    if(density_dist_with_trend[i]->GetIsShared() == false)
+      delete density_dist_with_trend[i];
   }
 
   return(dist_fluid);
@@ -434,8 +462,15 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
 
 
     dist_fluid[i] = fluid;
+  }
 
-
+  for(int i=0; i<n_vintages; i++) {
+    if(temperature_dist_with_trend[i]->GetIsShared() == false)
+      delete temperature_dist_with_trend[i];
+    if(pressure_dist_with_trend[i]->GetIsShared() == false)
+      delete pressure_dist_with_trend[i];
+    if(salinity_dist_with_trend[i]->GetIsShared() == false)
+      delete salinity_dist_with_trend[i];
   }
 
   return(dist_fluid);
