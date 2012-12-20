@@ -953,7 +953,9 @@ FFTGrid::fillInTest(float value1,float value2)
 void
 FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nxp=2*nx, nyp=2*ny, nzp=2*nz
 {
-  createRealGrid();
+  if(rvalue_ == NULL) // if(rvalue_ != NULL), the grid is already created
+    createRealGrid();
+
   cubetype_ = PARAMETER;
   int i,j,k, ii,jj,kk, iii, jjj, kkk;
   setAccessMode(WRITE);
