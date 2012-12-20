@@ -140,7 +140,10 @@ public:
   float                getMinReal() const {return rValMin_;}
   float                getMaxReal() const {return rValMax_;}
   float                getAvgReal() const {return rValAvg_;}
+
   bool                 getIsTransformed() const {return(istransformed_);}
+  //For use when writing to a grid that may be in the wrong state.
+  void                 setTransformedStatus(bool status) {istransformed_ = status;}
 
   enum                 gridTypes{CTMISSING, DATA, PARAMETER, COVARIANCE, VELOCITY};
   enum                 accessMode{NONE, READ, WRITE, READANDWRITE, RANDOMACCESS};

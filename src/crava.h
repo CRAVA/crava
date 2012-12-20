@@ -58,7 +58,7 @@ private:
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
   int                simulate( RandomGen * randomGen );
-  int                computePostMeanResidAndFFTCov();
+  int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
   void               printEnergyToScreen();
   void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
   void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);

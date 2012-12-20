@@ -3021,6 +3021,10 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, Distribution
   // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
   ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errTxt);
 
+  vp_stat ->setType(FFTGrid::PARAMETER);
+  vs_stat ->setType(FFTGrid::PARAMETER);
+  rho_stat->setType(FFTGrid::PARAMETER);
+
   state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
 
   variancesFromRockPhysics[0] = varVp;
@@ -3092,6 +3096,14 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[1]));
   vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[5]));
   rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[2]));
+
+  //Set grid type.
+  vp_vp_stat  ->setType(FFTGrid::COVARIANCE);
+  vp_vs_stat  ->setType(FFTGrid::COVARIANCE);
+  vp_rho_stat ->setType(FFTGrid::COVARIANCE);
+  vs_vs_stat  ->setType(FFTGrid::COVARIANCE);
+  vs_rho_stat ->setType(FFTGrid::COVARIANCE);
+  rho_rho_stat->setType(FFTGrid::COVARIANCE);
 
   // Set the static grids in the state4d object
   state4d.setStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
@@ -4233,7 +4245,7 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
 }
 
 void
-ModelGeneral::allocateDynamic4DGrids(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
+ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
 {
   // Static grids (3 + 6) are set in process4DBackground.
   // Dynamic grids (3 + 6 + 9) are set here.
@@ -4261,25 +4273,34 @@ ModelGeneral::allocateDynamic4DGrids(const int nx, const int ny, const int nz, c
 
   dynamicVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVp->fillInConstant(0.0);
+  dynamicVp->setType(FFTGrid::PARAMETER);
   dynamicVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVs->fillInConstant(0.0);
+  dynamicVs->setType(FFTGrid::PARAMETER);
   dynamicRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicRho->fillInConstant(0.0);
+  dynamicRho->setType(FFTGrid::PARAMETER);
 
   state4d_.setDynamicMu(dynamicVp, dynamicVs, dynamicRho);
 
   dynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicVpVp->fillInConstant(0.0);
+  dynamicVpVp->setType(FFTGrid::COVARIANCE);
   dynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicVpVs->fillInConstant(0.0);
+  dynamicVpVs->setType(FFTGrid::COVARIANCE);
   dynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicVpRho->fillInConstant(0.0);
+  dynamicVpRho->setType(FFTGrid::COVARIANCE);
   dynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicVsVs->fillInConstant(0.0);
+  dynamicVsVs->setType(FFTGrid::COVARIANCE);
   dynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicVsRho->fillInConstant(0.0);
+  dynamicVsRho->setType(FFTGrid::COVARIANCE);
   dynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   dynamicRhoRho->fillInConstant(0.0);
+  dynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
   state4d_.setDynamicSigma(dynamicVpVp, dynamicVpVs, dynamicVpRho,
                                         dynamicVsVs, dynamicVsRho,
@@ -4287,31 +4308,42 @@ ModelGeneral::allocateDynamic4DGrids(const int nx, const int ny, const int nz, c
 
   staticDynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVpVp->fillInConstant(0.0);
+  staticDynamicVpVp->setType(FFTGrid::COVARIANCE);
   staticDynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVpVs->fillInConstant(0.0);
+  staticDynamicVpVs->setType(FFTGrid::COVARIANCE);
   staticDynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVpRho->fillInConstant(0.0);
+  staticDynamicVpRho->setType(FFTGrid::COVARIANCE);
   staticDynamicVsVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVsVp->fillInConstant(0.0);
+  staticDynamicVsVp->setType(FFTGrid::COVARIANCE);
   staticDynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVsVs->fillInConstant(0.0);
+  staticDynamicVsVs->setType(FFTGrid::COVARIANCE);
   staticDynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicVsRho->fillInConstant(0.0);
+  staticDynamicVsRho->setType(FFTGrid::COVARIANCE);
   staticDynamicRhoVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicRhoVp->fillInConstant(0.0);
+  staticDynamicRhoVp->setType(FFTGrid::COVARIANCE);
   staticDynamicRhoVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicRhoVs->fillInConstant(0.0);
+  staticDynamicRhoVs->setType(FFTGrid::COVARIANCE);
   staticDynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
   staticDynamicRhoRho->fillInConstant(0.0);
+  staticDynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
   state4d_.setStaticDynamicSigma(staticDynamicVpVp,  staticDynamicVpVs,  staticDynamicVpRho,
                                  staticDynamicVsVp,  staticDynamicVsVs,  staticDynamicVsRho,
                                  staticDynamicRhoVp, staticDynamicRhoVs, staticDynamicRhoRho);
+
+  state4d_.FFT();
 }
 
-
 void
-ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder seismicParameters)
+ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters)
 {
   state4d_.merge(seismicParameters);
+  seismicParameters.invFFT(); //merge gives FFT-transformed version, need the standard for now.
 }

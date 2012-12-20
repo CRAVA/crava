@@ -141,7 +141,7 @@ bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings 
   
   // Alocate dynamic grids needed for 4D inversion. 3 + 6 + 9 dynamic grids.
   // These grids are held by the class variable state4d_
-  modelGeneral->allocateDynamic4DGrids(nx, ny, nz, nxPad, nyPad, nzPad);
+  modelGeneral->complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad);
 
   // Merge the allocated 4D grids in the structure seismicParametersHolder
   modelGeneral->getInitial3DPriorFrom4D(seismicParameters);

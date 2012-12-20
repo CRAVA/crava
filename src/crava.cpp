@@ -180,7 +180,7 @@ Crava::Crava(ModelSettings     * modelSettings,
     time(&timeend);
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
-    computePostMeanResidAndFFTCov();
+    computePostMeanResidAndFFTCov(modelGeneral);
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
@@ -817,7 +817,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
 
 
 int
-Crava::computePostMeanResidAndFFTCov()
+Crava::computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral)
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
 
@@ -920,7 +920,7 @@ Crava::computePostMeanResidAndFFTCov()
   FFTGrid * postCrCovAlphaRho  = correlations_->getPostCrCovAlphaRho();
   FFTGrid * postCrCovBetaRho   = correlations_->getPostCrCovBetaRho();
 
-  correlations_->initializeAccess(); //Accessmodes for covariance grids
+  correlations_->initializeAccess(modelGeneral); //Accessmodes for covariance grids
 
   // Computes the posterior mean first  below the covariance is computed
   // To avoid to many grids in mind at the same time

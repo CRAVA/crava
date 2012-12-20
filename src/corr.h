@@ -11,6 +11,7 @@ class Simbox;
 class SeismicParametersHolder;
 class SpatialWellFilter;
 class WellData;
+class ModelGeneral;
 
 class Corr
 {
@@ -77,7 +78,7 @@ public:
                                     int                     nz,
                                     int                     nzp);
   void       terminateAccess(void);
-  void       initializeAccess(void);
+  void       initializeAccess(ModelGeneral * modelGeneral);
 
   void       createPostVariances(void);
 

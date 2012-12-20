@@ -59,12 +59,10 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
 
 void State4D::merge(SeismicParametersHolder & current_state )
 {
-  bool IsTested=false;
-  assert(IsTested);
-
   // We assume FFT transformed grids
   assert(allGridsAreTransformed());
 
+  //First, merge expectations.
   std::vector<FFTGrid *> mu(3);
   mu[0] =  current_state.GetMuAlpha(); //mu_Alpha
   mu[1] =  current_state.GetMuBeta(); //mu_Beta
@@ -72,30 +70,11 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   for(int i = 0; i<3; i++)
   {
-    assert(mu[i]->getIsTransformed());
+    mu[i]->setTransformedStatus(true); //Going to fill it with transformed info.
     mu[i]->setAccessMode(FFTGrid::WRITE);
     mu_static_[i]->setAccessMode(FFTGrid::READ);
     mu_dynamic_[i]->setAccessMode(FFTGrid::READ);
   }
-
-  std::vector<FFTGrid *> sigma(6);
-  sigma[0]=current_state.GetCovAlpha();
-  sigma[1]=current_state.GetCovBeta();
-  sigma[2]=current_state.GetCovRho();
-  sigma[3]=current_state.GetCrCovAlphaBeta();
-  sigma[4]=current_state.GetCrCovAlphaRho();
-  sigma[5]=current_state.GetCrCovBetaRho();
-
-  for(int i = 0; i<6; i++)
-  {
-    assert(sigma[i]->getIsTransformed());
-    sigma[i]->setAccessMode(FFTGrid::WRITE);
-    sigma_static_static_[i]->setAccessMode(FFTGrid::READ);
-    sigma_dynamic_dynamic_[i]->setAccessMode(FFTGrid::READ);
-  }
-
-  for(int i = 0; i<9; i++)
-    sigma_static_dynamic_[i]->setAccessMode(FFTGrid::READ);
 
   int nzp = mu[0]->getNzp();
   int nyp = mu[0]->getNyp();
@@ -103,14 +82,6 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   fftw_complex*  muFullPrior=new fftw_complex[6];
   fftw_complex*  muCurrentPrior=new fftw_complex[3];
-
-  fftw_complex** sigmaFullPrior=new fftw_complex*[6];
-  for(int i=0;i<6;i++)
-    sigmaFullPrior[i]=new fftw_complex[6];
-
-  fftw_complex** sigmaCurrentPrior=new fftw_complex*[3];
-  for(int i=0;i<3;i++)
-    sigmaCurrentPrior[i]=new fftw_complex[3];
 
   for (int k = 0; k < nzp; k++) {
     for (int j = 0; j < nyp; j++) {
@@ -125,6 +96,67 @@ void State4D::merge(SeismicParametersHolder & current_state )
            muCurrentPrior[l].re =muFullPrior[l].re+muFullPrior[l+3].re;
            muCurrentPrior[l].im =muFullPrior[l].im+muFullPrior[l+3].im;
          }
+
+         mu[0]->setNextComplex(muCurrentPrior[0]);
+         mu[1]->setNextComplex(muCurrentPrior[1]);
+         mu[2]->setNextComplex(muCurrentPrior[2]);
+      }
+    }
+  }
+
+  for(int i = 0; i<3; i++)
+  {
+    mu[i]->endAccess();
+    mu_static_[i]->endAccess();
+    mu_dynamic_[i]->endAccess();
+  }
+
+  delete [] muFullPrior;
+  delete [] muCurrentPrior;
+
+  //Merge covariances
+  std::vector<FFTGrid *> sigma(6);
+  sigma[0]=current_state.GetCovAlpha();
+  sigma[1]=current_state.GetCovBeta();
+  sigma[2]=current_state.GetCovRho();
+  sigma[3]=current_state.GetCrCovAlphaBeta();
+  sigma[4]=current_state.GetCrCovAlphaRho();
+  sigma[5]=current_state.GetCrCovBetaRho();
+
+  mergeCov(sigma);
+}
+
+
+void State4D::mergeCov(std::vector<FFTGrid * > & sigma)
+{
+  assert(sigma.size() == 6);
+
+  for(int i = 0; i<6; i++)
+  {
+    sigma[i]->setTransformedStatus(true); //Going to fill it with transformed info.
+    sigma[i]->setAccessMode(FFTGrid::WRITE);
+    sigma_static_static_[i]->setAccessMode(FFTGrid::READ);
+    sigma_dynamic_dynamic_[i]->setAccessMode(FFTGrid::READ);
+  }
+
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->setAccessMode(FFTGrid::READ);
+
+  std::vector<std::vector<fftw_complex> > sigmaFullPrior(6);
+  for(int i=0;i<6;i++)
+    sigmaFullPrior[i].resize(6);
+
+  std::vector<std::vector<fftw_complex> > sigmaCurrentPrior(3);
+  for(int i=0;i<3;i++)
+    sigmaCurrentPrior[i].resize(3);
+
+  int nzp = sigma[0]->getNzp();
+  int nyp = sigma[0]->getNyp();
+  int cnxp = sigma[0]->getCNxp();
+
+  for (int k = 0; k < nzp; k++) {
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
          sigmaFullPrior[0][0] = sigma_static_static_[0]->getNextComplex();
          sigmaFullPrior[0][1] = sigma_static_static_[1]->getNextComplex();
          sigmaFullPrior[0][2] = sigma_static_static_[2]->getNextComplex();
@@ -169,20 +201,10 @@ void State4D::merge(SeismicParametersHolder & current_state )
          sigma[3]->setNextComplex(sigmaCurrentPrior[1][1]);
          sigma[4]->setNextComplex(sigmaCurrentPrior[1][2]);
          sigma[5]->setNextComplex(sigmaCurrentPrior[2][2]);
-
-         mu[0]->setNextComplex(muCurrentPrior[0]);
-         mu[1]->setNextComplex(muCurrentPrior[1]);
-         mu[2]->setNextComplex(muCurrentPrior[2]);
       }
     }
   }
 
-  for(int i = 0; i<3; i++)
-  {
-    mu[i]->endAccess();
-    mu_static_[i]->endAccess();
-    mu_dynamic_[i]->endAccess();
-  }
   for(int i = 0; i<6; i++)
   {
     sigma[i]->endAccess();
@@ -192,19 +214,6 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   for(int i = 0; i<9; i++)
     sigma_static_dynamic_[i]->endAccess();
-
-
-  for(int i=0;i<6;i++)
-    delete [] sigmaFullPrior[i];
-
-  for(int i=0;i<3;i++)
-    delete [] sigmaCurrentPrior[i];
-
-  delete [] muFullPrior;
-  delete [] muCurrentPrior;
-
-  delete [] sigmaFullPrior;
-  delete [] sigmaCurrentPrior;
 }
 
 void State4D::split(SeismicParametersHolder current_state )
@@ -644,3 +653,17 @@ State4D::allGridsAreTransformed()
    return allTransformed;
 }
 
+void
+State4D::FFT()
+{
+  for(int i = 0; i<3; i++)
+    mu_static_[i]->fftInPlace();
+  for(int i = 0; i<3; i++)
+    mu_dynamic_[i]->fftInPlace();
+  for(int i = 0; i<6; i++)
+    sigma_static_static_[i]->fftInPlace();
+  for(int i = 0; i<6; i++)
+    sigma_dynamic_dynamic_[i]->fftInPlace();
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->fftInPlace();
+}

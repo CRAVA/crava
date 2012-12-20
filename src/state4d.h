@@ -34,10 +34,11 @@ public:
   void setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
 
   void   merge(SeismicParametersHolder & current_state );
+  void   mergeCov(std::vector<FFTGrid * > & sigma);
   void   split(const SeismicParametersHolder current_state );
   void   evolve(int time_step, const TimeEvolution timeEvolution );
 
-
+  bool   isActive() const {return(mu_static_.size() > 0);}
 
   // Suggestions for get-functions. Not yet used. Naming etc to be decided later when actual in use.
   FFTGrid * getMuVpStatic(void)  { return mu_static_[0]; }
@@ -73,6 +74,7 @@ public:
   FFTGrid * getCovRhoVsStaticDynamic(void)  { return sigma_static_dynamic_[7]; }
   FFTGrid * getCovRhoRhoStaticDynamic(void) { return sigma_static_dynamic_[8]; }
 
+  void      FFT();
 
 private:
   bool allGridsAreTransformed();

@@ -33,7 +33,7 @@ public:
   FFTGrid * GetCrCovAlphaRho()  { return crCovAlphaRho_  ;}
   FFTGrid * GetCrCovBetaRho()   { return crCovBetaRho_   ;}
 
-
+  void      invFFT();
 
 private:
     FFTGrid * muAlpha_;

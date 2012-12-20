@@ -173,6 +173,7 @@ int main(int argc, char** argv)
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
       LogKit::EndBuffering();
+
       return(1);
     }
 

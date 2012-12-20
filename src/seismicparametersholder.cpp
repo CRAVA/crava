@@ -63,21 +63,43 @@ SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz,
 {
   muAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   muAlpha_->fillInConstant(0.0);
+  muAlpha_->setType(FFTGrid::PARAMETER);
   muBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   muBeta_->fillInConstant(0.0);
+  muBeta_->setType(FFTGrid::PARAMETER);
   muRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   muRho_->fillInConstant(0.0);
+  muRho_->setType(FFTGrid::PARAMETER);
   covAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   covAlpha_->fillInConstant(0.0);
+  covAlpha_->setType(FFTGrid::COVARIANCE);
   covBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   covBeta_->fillInConstant(0.0);
+  covBeta_->setType(FFTGrid::COVARIANCE);
   covRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   covRho_->fillInConstant(0.0);
+  covRho_->setType(FFTGrid::COVARIANCE);
   crCovAlphaBeta_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   crCovAlphaBeta_->fillInConstant(0.0);
+  crCovAlphaBeta_->setType(FFTGrid::COVARIANCE);
   crCovAlphaRho_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   crCovAlphaRho_->fillInConstant(0.0);
+  crCovAlphaRho_->setType(FFTGrid::COVARIANCE);
   crCovBetaRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   crCovBetaRho_->fillInConstant(0.0);
+  crCovBetaRho_->setType(FFTGrid::COVARIANCE);
 }
 
+void
+SeismicParametersHolder::invFFT()
+{
+  muAlpha_->invFFTInPlace();
+  muBeta_->invFFTInPlace();
+  muRho_->invFFTInPlace();
+  covAlpha_->invFFTInPlace();
+  covBeta_->invFFTInPlace();
+  covRho_->invFFTInPlace();
+  crCovAlphaBeta_->invFFTInPlace();
+  crCovAlphaRho_->invFFTInPlace();
+  crCovBetaRho_->invFFTInPlace();
+}

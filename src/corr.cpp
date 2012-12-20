@@ -7,6 +7,7 @@
 #include "src/seismicparametersholder.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
+#include "src/modelgeneral.h"
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/welldata.h"
@@ -580,7 +581,7 @@ Corr::initializeCorrelations(SpatialWellFilter   * spatwellfilter, std::vector<W
 }
 //--------------------------------------------------------------------
 void
-Corr::initializeAccess(void)
+Corr::initializeAccess(ModelGeneral * modelGeneral)
 {
   if(common_correlation_ == true){
 
@@ -595,8 +596,19 @@ Corr::initializeAccess(void)
     postCrCovBetaRho_  ->setAccessMode(FFTGrid::WRITE);
   }
   else{
-
-    FFT();
+    if(modelGeneral->getIs4DActive() == true) {
+      std::vector<FFTGrid *> sigma(6);
+      sigma[0] = postCovAlpha_;
+      sigma[1] = postCovBeta_;
+      sigma[2] = postCovRho_;
+      sigma[3] = postCrCovAlphaBeta_;
+      sigma[4] = postCrCovAlphaRho_;
+      sigma[5] = postCrCovBetaRho_;
+      modelGeneral->mergeCovariance(sigma); //To avoid a second FFT og these.
+      errCorr_->fftInPlace();
+    }
+    else
+      FFT();
 
     errCorr_           ->setAccessMode(FFTGrid::READ);          //endAccess() in Corr::terminateAccess
     postCovAlpha_      ->setAccessMode(FFTGrid::READANDWRITE);  //endAccess() in Crava::computePostMeanResidAndFFTCov()

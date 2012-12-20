@@ -66,114 +66,77 @@ public:
   void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
   void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)                   ;}
 
-  static FFTGrid    * createFFTGrid(int nx,
-                                    int ny,
-                                    int nz,
-                                    int nxp,
-                                    int nyp,
-                                    int nzp,
-                                    bool fileGrid);
-  static void         readGridFromFile(const std::string       & fileName,
-                                       const std::string       & parName,
-                                       const float               offset,
-                                       FFTGrid                *& grid,
-                                       const SegyGeometry     *& geometry,
-                                       const TraceHeaderFormat * format,
-                                       int                       gridType,
-                                       const Simbox            * timeSimbox,
-                                       const Simbox            * timeCutSimbox,
-                                       const ModelSettings     * modelSettings,
-                                       std::string             & errorText,
-                                       bool                      nopadding = false);
-  static void         readSegyFile(const std::string       & fileName,
-                                   FFTGrid                *& target,
-                                   const Simbox            * timeSimbox,
-                                   const Simbox            * timeCutSimbox,
-                                   const ModelSettings     * modelSettings,
-                                   const SegyGeometry     *& geometry,
-                                   int                       gridType,
-                                   float                     offset,
-                                   const TraceHeaderFormat * format,
-                                   std::string             & errText,
-                                   bool                      nopadding = false);
-  static void         checkThatDataCoverGrid(const SegY   * segy,
-                                             float         offset,
-                                             const Simbox * timeCutSimbox,
-                                             float         guard_zone,
-                                             std::string & errText);
-  static void         readStormFile(const std::string  & fileName,
-                                    FFTGrid           *& target,
-                                    const int            gridType,
-                                    const std::string  & parName,
-                                    const Simbox       * timeSimbox,
-                                    const ModelSettings * modelSettings,
-                                    std::string        & errText,
-                                    bool                 isStorm  = true,
-                                    bool                 nopadding = true);
-  static void         loadVelocity(FFTGrid           *& velocity,
-                                   const Simbox       * timeSimbox,
-                                   const Simbox       * timeCutSimbox,
-                                   const ModelSettings * modelSettings,
-                                   const std::string  & velocityField,
-                                   bool               & velocityFromInversion,
-                                   std::string        & errText,
-                                   bool               & failed);
+  bool getIs4DActive() const {return(state4d_.isActive());}
 
-  void                generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                                      const std::vector<double>                        & probability,
-                                                      FFTGrid                                          & vp,
-                                                      FFTGrid                                          & vs,
-                                                      FFTGrid                                          & rho,
-                                                      double                                           & varVp,
-                                                      double                                           & varVs,
-                                                      double                                           & varRho,
-                                                      double                                           & crossVpVs,
-                                                      double                                           & crossVpRho,
-                                                      double                                           & crossVsRho,
-                                                      std::string                                      & errTxt);
+  static FFTGrid  * createFFTGrid(int nx,
+                                  int ny,
+                                  int nz,
+                                  int nxp,
+                                  int nyp,
+                                  int nzp,
+                                  bool fileGrid);
+  static void       readGridFromFile(const std::string       & fileName,
+                                     const std::string       & parName,
+                                     const float               offset,
+                                     FFTGrid                *& grid,
+                                     const SegyGeometry     *& geometry,
+                                     const TraceHeaderFormat * format,
+                                     int                       gridType,
+                                     const Simbox            * timeSimbox,
+                                     const Simbox            * timeCutSimbox,
+                                     const ModelSettings     * modelSettings,
+                                     std::string             & errorText,
+                                     bool                      nopadding = false);
+  static void       readSegyFile(const std::string       & fileName,
+                                 FFTGrid                *& target,
+                                 const Simbox            * timeSimbox,
+                                 const Simbox            * timeCutSimbox,
+                                 const ModelSettings     * modelSettings,
+                                 const SegyGeometry     *& geometry,
+                                 int                       gridType,
+                                 float                     offset,
+                                 const TraceHeaderFormat * format,
+                                 std::string             & errText,
+                                 bool                      nopadding = false);
+  static void       checkThatDataCoverGrid(const SegY   * segy,
+                                           float         offset,
+                                           const Simbox * timeCutSimbox,
+                                           float         guard_zone,
+                                           std::string & errText);
+  static void       readStormFile(const std::string  & fileName,
+                                  FFTGrid           *& target,
+                                  const int            gridType,
+                                  const std::string  & parName,
+                                  const Simbox       * timeSimbox,
+                                  const ModelSettings * modelSettings,
+                                  std::string        & errText,
+                                  bool                 isStorm  = true,
+                                  bool                 nopadding = true);
+  static void       loadVelocity(FFTGrid           *& velocity,
+                                 const Simbox       * timeSimbox,
+                                 const Simbox       * timeCutSimbox,
+                                 const ModelSettings * modelSettings,
+                                 const std::string  & velocityField,
+                                 bool               & velocityFromInversion,
+                                 std::string        & errText,
+                                 bool               & failed);
 
-  void                setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                                const std::vector<double>                        & probability,
-                                                const Simbox                                     & timeSimbox,
-                                                const ModelSettings                              & modelSettings,
-                                                State4D                                          & state4d,
-                                                std::vector<double>                              & variancesFromRockPhysics,
-                                                std::string                                      & errTxt);
 
-  void                generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                                      const std::vector<double>                        & probability,
-                                                      int                                                lowCut,
-                                                      Corr                                             & correlations, //The grids here get/set correctly.
-                                                      const Simbox                                     & timeSimbox,
-                                                      const ModelSettings                              & modelSettings,
-                                                      State4D                                          & state4d,
-                                                      std::vector<double>                                variancesFromRockPhycis,
-                                                      std::string                                      & errTxt);
+  void              processWellLocation(FFTGrid                     ** seisCube,
+                                        float                       ** reflectionMatrix,
+                                        ModelSettings                * modelSettings,
+                                        const std::vector<Surface *> & interval);              // Changes wells
 
-  void             processWellLocation(FFTGrid                     ** seisCube,
-                                       float                       ** reflectionMatrix,
-                                       ModelSettings                * modelSettings,
-                                       const std::vector<Surface *> & interval);              // Changes wells
-
-  void             processPriorCorrelations(Corr                 *& correlations,
-                                            Background            * background,
-                                            std::vector<WellData *> wells,
-                                            const Simbox          * timeSimbox,
-                                            const ModelSettings   * modelSettings,
-                                            FFTGrid              ** seisCube,
-                                            const InputFiles      * inputFiles,
-                                            std::vector<double>     coefFromRPForVariances,
-                                            std::string           & errText,
-                                            bool                  & failed);
-
-   bool            process4DBackground(ModelSettings     *& modelSettings,
-                                      const InputFiles   * inputFiles,
-                                      std::string        & errText,
-                                      bool               & failed);
-
-   void            getInitial3DPriorFrom4D(SeismicParametersHolder seismicParameters);
-
-   void            allocateDynamic4DGrids(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
+  void              processPriorCorrelations(Corr                 *& correlations,
+                                             Background            * background,
+                                             std::vector<WellData *> wells,
+                                             const Simbox          * timeSimbox,
+                                             const ModelSettings   * modelSettings,
+                                             FFTGrid              ** seisCube,
+                                             const InputFiles      * inputFiles,
+                                             std::vector<double>     coefFromRPForVariances,
+                                             std::string           & errText,
+                                             bool                  & failed);
 
    void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           std::vector<WellData *>        wells,
@@ -184,120 +147,161 @@ public:
                                           std::string                  & errTxt,
                                           const InputFiles             * inputFiles);
 
+  void              generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                                    const std::vector<double>                        & probability,
+                                                    FFTGrid                                          & vp,
+                                                    FFTGrid                                          & vs,
+                                                    FFTGrid                                          & rho,
+                                                    double                                           & varVp,
+                                                    double                                           & varVs,
+                                                    double                                           & varRho,
+                                                    double                                           & crossVpVs,
+                                                    double                                           & crossVpRho,
+                                                    double                                           & crossVsRho,
+                                                    std::string                                      & errTxt);
+
+  void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
+
+  void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
+
+  void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
+
 private:
-  void             processWells(std::vector<WellData *> & wells,
-                                Simbox                  * timeSimbox,
-                                ModelSettings          *& modelSettings,
-                                const InputFiles        * inputFiles,
-                                std::string             & errText,
-                                bool                    & failed);
+  void              processWells(std::vector<WellData *> & wells,
+                                 Simbox                  * timeSimbox,
+                                 ModelSettings          *& modelSettings,
+                                 const InputFiles        * inputFiles,
+                                 std::string             & errText,
+                                 bool                    & failed);
 
-  void             setFaciesNamesFromWells(std::vector<WellData *>        wells,
-                                           ModelSettings               *& modelSettings,
-                                           std::string                  & tmpErrText,
-                                           int                          & error);
+  void              setFaciesNamesFromWells(std::vector<WellData *>        wells,
+                                            ModelSettings               *& modelSettings,
+                                            std::string                  & tmpErrText,
+                                            int                          & error);
 
-  void             setFaciesNamesFromRockPhysics();
+  void              setFaciesNamesFromRockPhysics();
 
-  void                makeTimeSimboxes(Simbox          *& timeSimbox,
-                                       Simbox          *& timeCutSimbox,
-                                       Simbox          *& timeBGSimbox,
-                                       Simbox          *& timeSimboxConstThick,
-                                       Surface         *& correlationDirection,
-                                       ModelSettings   *& modelSettings,
-                                       const InputFiles * inputFiles,
-                                       std::string      & errText,
-                                       bool             & failed);
-  void                logIntervalInformation(const Simbox      * simbox,
-                                             const std::string & header_text1,
-                                             const std::string & header_text2);
-  void                setupExtendedTimeSimbox(Simbox  * timeSimbox,
-                                              Surface * corrSurf,
-                                              Simbox *& timeCutSimbox,
-                                              int       outputFormat,
-                                              int       outputDomain,
-                                              int       otherOutput);
-  void                setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
-                                                    Surface  * corrSurf,
-                                                    Simbox  *& timeBGSimbox,
-                                                    int        outputFormat,
-                                                    int        outputDomain,
-                                                    int        otherOutput);
-  void                processDepthConversion(Simbox           * timeCutSimbox,
-                                             Simbox           * timeSimbox,
-                                             ModelSettings    * modelSettings,
-                                             const InputFiles * inputFiles,
-                                             std::string      & errText,
-                                             bool             & failedVelocity);
+  void              setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                              const std::vector<double>                        & probability,
+                                              const Simbox                                     & timeSimbox,
+                                              const ModelSettings                              & modelSettings,
+                                              State4D                                          & state4d,
+                                              std::vector<double>                              & variancesFromRockPhysics,
+                                              std::string                                      & errTxt);
 
-  void             processRockPhysics(Simbox                       * timeSimbox,
-                                      Simbox                       * timeCutSimbox,
-                                      ModelSettings                * modelSettings,
-                                      bool                         & failed,
-                                      std::string                  & errTxt,
-                                      const InputFiles             * inputFiles);
+  void              generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                                    const std::vector<double>                        & probability,
+                                                    int                                                lowCut,
+                                                    Corr                                             & correlations, //The grids here get/set correctly.
+                                                    const Simbox                                     & timeSimbox,
+                                                    const ModelSettings                              & modelSettings,
+                                                    State4D                                          & state4d,
+                                                    std::vector<double>                                variancesFromRockPhycis,
+                                                    std::string                                      & errTxt);
+  bool              process4DBackground(ModelSettings     *& modelSettings,
+                                        const InputFiles   * inputFiles,
+                                        std::string        & errText,
+                                        bool               & failed);
 
-  void                printExpectationAndCovariance(const std::vector<double>   & expectation,
-                                                    const NRLib::Grid2D<double> & covariance,
-                                                    const bool                  & has_trend) const;
+  void              makeTimeSimboxes(Simbox          *& timeSimbox,
+                                     Simbox          *& timeCutSimbox,
+                                     Simbox          *& timeBGSimbox,
+                                     Simbox          *& timeSimboxConstThick,
+                                     Surface         *& correlationDirection,
+                                     ModelSettings   *& modelSettings,
+                                     const InputFiles * inputFiles,
+                                     std::string      & errText,
+                                     bool             & failed);
+  void              logIntervalInformation(const Simbox      * simbox,
+                                           const std::string & header_text1,
+                                           const std::string & header_text2);
+  void              setupExtendedTimeSimbox(Simbox  * timeSimbox,
+                                            Surface * corrSurf,
+                                            Simbox *& timeCutSimbox,
+                                            int       outputFormat,
+                                            int       outputDomain,
+                                            int       otherOutput);
+  void              setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
+                                                  Surface  * corrSurf,
+                                                  Simbox  *& timeBGSimbox,
+                                                  int        outputFormat,
+                                                  int        outputDomain,
+                                                  int        otherOutput);
+  void              processDepthConversion(Simbox           * timeCutSimbox,
+                                           Simbox           * timeSimbox,
+                                           ModelSettings    * modelSettings,
+                                           const InputFiles * inputFiles,
+                                           std::string      & errText,
+                                           bool             & failedVelocity);
 
-  void                setSimboxSurfaces(Simbox                        *& simbox,
-                                        const std::vector<std::string> & surfFile,
-                                        ModelSettings                  * modelSettings,
-                                        std::string                    & errText,
-                                        bool                           & failed);
-  void                estimateXYPaddingSizes(Simbox         * timeSimbox,
-                                             ModelSettings *& modelSettings);
-  void                estimateZPaddingSize(Simbox         * timeSimbox,
+  void              processRockPhysics(Simbox                       * timeSimbox,
+                                       Simbox                       * timeCutSimbox,
+                                       ModelSettings                * modelSettings,
+                                       bool                         & failed,
+                                       std::string                  & errTxt,
+                                       const InputFiles             * inputFiles);
+
+  void              printExpectationAndCovariance(const std::vector<double>   & expectation,
+                                                  const NRLib::Grid2D<double> & covariance,
+                                                  const bool                  & has_trend) const;
+
+  void              setSimboxSurfaces(Simbox                        *& simbox,
+                                      const std::vector<std::string> & surfFile,
+                                      ModelSettings                  * modelSettings,
+                                      std::string                    & errText,
+                                      bool                           & failed);
+  void              estimateXYPaddingSizes(Simbox         * timeSimbox,
                                            ModelSettings *& modelSettings);
-  int                 setPaddingSize(int    nx,
-                                     double px);
+  void              estimateZPaddingSize(Simbox         * timeSimbox,
+                                         ModelSettings *& modelSettings);
+  int               setPaddingSize(int    nx,
+                                   double px);
 
-  void                printSettings(ModelSettings    * modelSettings,
-                                    const InputFiles * inputFiles);
+  void              printSettings(ModelSettings    * modelSettings,
+                                  const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  double           * findPlane(Surface * surf); //Finds plane l2-closest to surface.
+  double          * findPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface          * createPlaneSurface(double  * planeParams,
-                                        Surface * templateSurf);
-  void               writeAreas(const SegyGeometry * areaParams,
-                                Simbox             * timeSimbox,
-                                std::string        & text);
-  void               findSmallestSurfaceGeometry(const double   x0,
-                                                 const double   y0,
-                                                 const double   lx,
-                                                 const double   ly,
-                                                 const double   rot,
-                                                 double       & xMin,
-                                                 double       & yMin,
-                                                 double       & xMax,
-                                                 double       & yMax);
+  Surface         * createPlaneSurface(double  * planeParams,
+                                       Surface * templateSurf);
+  void              writeAreas(const SegyGeometry * areaParams,
+                               Simbox             * timeSimbox,
+                               std::string        & text);
+  void              findSmallestSurfaceGeometry(const double   x0,
+                                               const double   y0,
+                                               const double   lx,
+                                               const double   ly,
+                                               const double   rot,
+                                               double       & xMin,
+                                               double       & yMin,
+                                               double       & xMax,
+                                               double       & yMax);
   void              getGeometryFromGridOnFile(const std::string         seismicFile,
                                               const TraceHeaderFormat * thf,
                                               SegyGeometry           *& geometry,
                                               std::string             & errText);
   SegyGeometry    * geometryFromCravaFile(const std::string & fileName);
   SegyGeometry    * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
-  //void             processStructureParameters();
+  //void            processStructureParameters();
 
-  void             estimateCorrXYFromSeismic(Surface *& CorrXY,
-                                             FFTGrid ** seisCube,
-                                             int numberOfAngles);
-  Surface        * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
+  void              estimateCorrXYFromSeismic(Surface *& CorrXY,
+                                              FFTGrid ** seisCube,
+                                              int numberOfAngles);
+  Surface         * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
 
-  int              computeTime(int year, int month, int day) const;
+  int               computeTime(int year, int month, int day) const;
 
-  void             checkFaciesNamesConsistency(ModelSettings     *& modelSettings,
-                                               const InputFiles   * inputFiles,
-                                               std::string        & tmpErrText) const;
+  void              checkFaciesNamesConsistency(ModelSettings     *& modelSettings,
+                                                const InputFiles   * inputFiles,
+                                                std::string        & tmpErrText) const;
 
-  void             readPriorFaciesProbCubes(const InputFiles        * inputFiles,
-                                            ModelSettings           * modelSettings,
-                                            std::vector<FFTGrid *>  & priorFaciesProbCubes,
-                                            Simbox                  * timeSimbox,
-                                            Simbox                  * timeCutSimbox,
-                                            std::string             & errTxt,
-                                            bool                    & failed);
+  void              readPriorFaciesProbCubes(const InputFiles        * inputFiles,
+                                             ModelSettings           * modelSettings,
+                                             std::vector<FFTGrid *>  & priorFaciesProbCubes,
+                                             Simbox                  * timeSimbox,
+                                             Simbox                  * timeCutSimbox,
+                                             std::string             & errTxt,
+                                             bool                    & failed);
 
   Simbox            * timeSimbox_;            ///< Information about simulation area.
   Simbox            * timeSimboxConstThick_;  ///< Simbox with constant thickness
