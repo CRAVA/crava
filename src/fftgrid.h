@@ -6,6 +6,7 @@
 #define FFTGRID_H
 
 #include <assert.h>
+#include <complex>
 #include <string>
 
 #include "fftw.h"
@@ -86,6 +87,7 @@ public:
   virtual fftw_complex getNextComplex() ;                       // Accessmode read/readandwrite
   virtual float        getNextReal() ;                          // Accessmode read/readandwrite
   virtual int          setNextComplex(fftw_complex);            // Accessmode write/readandwrite
+  virtual int          SetNextComplex(std::complex<double> & v);// Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false) const;  // Accessmode randomaccess
   float                getRealValueCyclic(int i, int j, int k);

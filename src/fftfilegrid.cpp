@@ -234,6 +234,20 @@ FFTFileGrid::setRealValue(int i, int j, int k, float value, bool extSimbox)
 
 
 int
+FFTFileGrid::SetNextComplex(std::complex<double> & value)
+{
+  assert(istransformed_==true);
+  assert(accMode_ == READANDWRITE || accMode_ == WRITE);
+  fftw_complex tmp;
+  tmp.re = value.real();
+  tmp.im = value.imag();
+  char * buffer = reinterpret_cast<char *>(&tmp);
+  outFile_.write(buffer,sizeof(fftw_complex));
+  return(0);
+}
+
+
+int
 FFTFileGrid::setNextComplex(fftw_complex value)
 {
   assert(istransformed_==true);

@@ -1362,7 +1362,27 @@ FFTGrid::setNextComplex(fftw_complex value)
 }
 
 int
-FFTGrid::setNextReal(float  value)
+FFTGrid::SetNextComplex(std::complex<double> & value)
+{
+  assert(istransformed_==true);
+  assert(counterForSet_ < csize_);
+  counterForSet_ += 1;
+  if(counterForSet_==csize_)
+  {
+    counterForSet_=0;
+    cvalue_[csize_-1].re = static_cast<float>(value.real());
+    cvalue_[csize_-1].im = static_cast<float>(value.imag());
+  }
+  else {
+    cvalue_[counterForSet_-1].re = static_cast<float>(value.real());
+    cvalue_[counterForSet_-1].im = static_cast<float>(value.imag());
+  }
+
+  return(0);
+}
+
+int
+FFTGrid::setNextReal(float value)
 {
   assert(istransformed_== false);
   assert(counterForSet_ < rsize_);

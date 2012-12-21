@@ -82,9 +82,9 @@ private:
   void                   computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
 
   int                    checkScale(void);
-  void                   fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
+  void                   fillkW(int k, NRLib::ComplexVector & kW, Wavelet** seisWavelet);
   void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
-  void                   fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
+  void                   fillkWNorm(int k, NRLib::ComplexVector & kWNorm, Wavelet1D** wavelet);
 
   void                   computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
 
@@ -105,6 +105,13 @@ private:
                                                  FFTGrid * beta,
                                                  FFTGrid * rho,
                                                  int angle);
+
+  std::complex<double>   SetComplexNumber(const fftw_complex & c);
+
+  void                   SetComplexVector(NRLib::ComplexVector & V,
+                                          fftw_complex         * v);
+
+
 
   bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox
