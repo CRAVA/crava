@@ -4121,6 +4121,8 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
 
     }
   }
+  if(errTxt != "")
+    failed = true;
 }
 
 void
