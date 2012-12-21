@@ -663,9 +663,11 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   }
   for (int i=0; i<sizeOfV;i++){
     delete [] vCopy[i];
-    delete [] vTranspose[i];
     delete [] tempMatrix[i];
   }
+  for(int i=0; i<3; i++)
+    delete [] vTranspose[i];
+
   delete [] sigmaeSyntCopy;
   delete [] vCopy;
   delete [] vTranspose;
