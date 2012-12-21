@@ -83,7 +83,7 @@ private:
 
   int                    checkScale(void);
   void                   fillkW(int k, NRLib::ComplexVector & kW, Wavelet** seisWavelet);
-  void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
+  void                   fillInverseAbskWRobust(int k, NRLib::ComplexVector & invkW, Wavelet1D** seisWaveletForNorm);
   void                   fillkWNorm(int k, NRLib::ComplexVector & kWNorm, Wavelet1D** wavelet);
 
   void                   computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
