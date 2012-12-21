@@ -4890,6 +4890,13 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   //Rock physics consistency
   if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
+    // No wells should be given for now
+    if(modelSettings_->getNumberOfWells() > 0)
+      errTxt += "No wells should be given when the rock physics prior model is used\n";
+
+    if(inputFiles_->getTempCorrFile() == "")
+      errTxt += "The temporal correlation needs to be given when the rock physics prior model is used\n";
+
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
       errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";
 
