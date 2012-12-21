@@ -80,16 +80,15 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
     checkForJunk(&doc, errTxt, legalCommands);
     checkConsistency(errTxt);
 
-    if (errTxt != "") {
+    if (errTxt == "") {
       setDerivedParameters(errTxt);
-
-      if (errTxt != "") {
-        LogKit::WriteHeader("Invalid model file");
-        LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
-        LogKit::LogMessage(LogKit::Error, errTxt);
-        LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-        failed_ = true;
-      }
+    }
+    if (errTxt != "") {
+      LogKit::WriteHeader("Invalid model file");
+      LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
+      LogKit::LogMessage(LogKit::Error, errTxt);
+      LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+      failed_ = true;
     }
   }
 }
