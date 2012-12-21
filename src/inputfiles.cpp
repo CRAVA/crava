@@ -109,7 +109,7 @@ InputFiles::addPathAndCheck(std::string & fileName, const bool possiblyNumber)
       NRLib::OpenRead(infile, fileName);
       infile.close();
     }
-    catch (NRLib::Exception e) {
+    catch (NRLib::Exception & e) {
       error = e.what();
       error += "\n";
     }

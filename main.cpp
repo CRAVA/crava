@@ -165,6 +165,8 @@ int main(int argc, char** argv)
   {
     XmlModelFile modelFile(argv[1]);
 
+    //    std::cout << "XXXXX" << std::endl;
+
     InputFiles     * inputFiles     = modelFile.getInputFiles();
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
     ModelGeneral   * modelGeneral   = NULL;
