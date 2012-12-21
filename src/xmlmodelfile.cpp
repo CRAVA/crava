@@ -76,20 +76,20 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
     std::string errTxt = "";
     if(parseCrava(&doc, errTxt) == false)
       errTxt = "'"+std::string(fileName)+"' is not a crava model file (lacks the <crava> keyword.)\n";
-
     std::vector<std::string> legalCommands(1);
     checkForJunk(&doc, errTxt, legalCommands);
-
     checkConsistency(errTxt);
 
-    setDerivedParameters(errTxt);
+    if (errTxt != "") {
+      setDerivedParameters(errTxt);
 
-    if(errTxt != "") {
-      LogKit::WriteHeader("Invalid model file");
-      LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
-      LogKit::LogMessage(LogKit::Error, errTxt);
-      LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-      failed_ = true;
+      if (errTxt != "") {
+        LogKit::WriteHeader("Invalid model file");
+        LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
+        LogKit::LogMessage(LogKit::Error, errTxt);
+        LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+        failed_ = true;
+      }
     }
   }
 }
@@ -4759,7 +4759,6 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
       errTxt += "You cannot ask the Vp/Vs ratio to be calculated from well data when a reflection matrix is read from file";
     }
   }
-
   if (modelSettings_->getVpVsRatio() != RMISSING) {
     double vpvs    = modelSettings_->getVpVsRatio();
     double vpvsMin = modelSettings_->getVpVsRatioMin();
