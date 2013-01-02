@@ -40,6 +40,7 @@ public:
   ~Crava();
 
   int                    computePostMeanResidAndFFTCov();
+  int                    computePostMeanResidAndFFTCov_flens();
   int                    simulate( RandomGen * randomGen );
   void                   computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
   int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
@@ -82,9 +83,14 @@ private:
   void                   computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
 
   int                    checkScale(void);
-  void                   fillkW(int k, NRLib::ComplexVector & kW, Wavelet** seisWavelet);
-  void                   fillInverseAbskWRobust(int k, NRLib::ComplexVector & invkW, Wavelet1D** seisWaveletForNorm);
-  void                   fillkWNorm(int k, NRLib::ComplexVector & kWNorm, Wavelet1D** wavelet);
+
+  void                   fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
+  void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
+  void                   fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
+
+  void                   fillkW_flens(int k, NRLib::ComplexVector & kW, Wavelet** seisWavelet);
+  void                   fillInverseAbskWRobust_flens(int k, NRLib::ComplexVector & invkW, Wavelet1D** seisWaveletForNorm);
+  void                   fillkWNorm_flens(int k, NRLib::ComplexVector & kWNorm, Wavelet1D** wavelet);
 
   void                   computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
 
