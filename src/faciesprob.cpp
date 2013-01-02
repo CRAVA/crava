@@ -2444,12 +2444,13 @@ void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>            
   double lambda = 1.0;
   // corr is initially set to 0.5
   double corr = 0.5;
-  if(dz<log(10.0)){
+  if(dz < 10.0) { //Erik: dz<log(10)
     // this ensures that the mean of the geometric distribution is 10.0/dz
-    p = exp(dz)/10.0;
+    p = dz/10.0; // Erik: exp(dz)/10.0;
     // calculate lambda for the exponential distribution used below
     lambda = - std::log((1.0-p));
-  }else{
+  }
+  else {
     throw NRLib::Exception("Facies probabilities: dz is too large to generate synthetic well data");
   }
 

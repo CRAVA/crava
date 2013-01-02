@@ -881,6 +881,11 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                                                    IO::PathToInversionResults(),
                                                    modelSettings->getOutputGridFormat());
           }
+
+          if(timeSimbox->getdz() >= 10.0 && modelSettings->getFaciesProbFromRockPhysics() == true) {
+            errText += "dz is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
+            failed = true;
+          }
         }
         else
         {
