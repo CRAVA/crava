@@ -2872,6 +2872,10 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
     i++;
   }
 
+  vp.setAccessMode(FFTGrid::WRITE);
+  vs.setAccessMode(FFTGrid::WRITE);
+  rho.setAccessMode(FFTGrid::WRITE);
+
   int n_samples = 0;
   // Loop through all cells in the FFTGrids
   for(int k = 0; k < nzp; k++) {
@@ -2972,6 +2976,10 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
       fflush(stdout);
     }
   }
+
+  vp.endAccess();
+  vs.endAccess();
+  rho.endAccess();
 
   // Setting output variables
   varVp      = sumVariance(0,0)/n_samples;
