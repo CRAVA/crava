@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <vector>
+#include <string>
 
 class SyntWellData{
 

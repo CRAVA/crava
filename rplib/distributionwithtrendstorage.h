@@ -1,6 +1,9 @@
 #ifndef RPLIB_DISTRIBUTION_WITH_TREND_STORAGE_H
 #define RPLIB_DISTRIBUTION_WITH_TREND_STORAGE_H
 
+#include <string>
+#include <vector>
+
 #include "rplib/distributionwithtrend.h"
 
 

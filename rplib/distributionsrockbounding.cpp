@@ -1,3 +1,5 @@
+#include <typeinfo>
+
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/rockbounding.h"
 #include "rplib/rock.h"
