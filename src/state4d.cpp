@@ -117,11 +117,11 @@ void State4D::merge(SeismicParametersHolder & current_state )
   //Merge covariances
   std::vector<FFTGrid *> sigma(6);
   sigma[0]=current_state.GetCovAlpha();
-  sigma[1]=current_state.GetCovBeta();
-  sigma[2]=current_state.GetCovRho();
-  sigma[3]=current_state.GetCrCovAlphaBeta();
-  sigma[4]=current_state.GetCrCovAlphaRho();
-  sigma[5]=current_state.GetCrCovBetaRho();
+  sigma[1]=current_state.GetCrCovAlphaBeta();
+  sigma[2]=current_state.GetCrCovAlphaRho();
+  sigma[3]=current_state.GetCovBeta();
+  sigma[4]=current_state.GetCrCovBetaRho();
+  sigma[5]=current_state.GetCovRho();
 
   mergeCov(sigma);
 }

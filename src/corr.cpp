@@ -471,7 +471,7 @@ Corr::getNextParameterCovariance(fftw_complex **& parVar)
     parVar[0][2].re = ik.re;
     parVar[0][2].im = ik.im;
     parVar[2][0].re = ik.re;
-    parVar[2][0].im = ik.im;
+    parVar[2][0].im = -ik.im;
 
     parVar[1][2].re = jk.re;
     parVar[1][2].im = jk.im;
@@ -599,11 +599,11 @@ Corr::initializeAccess(ModelGeneral * modelGeneral)
     if(modelGeneral->getIs4DActive() == true) {
       std::vector<FFTGrid *> sigma(6);
       sigma[0] = postCovAlpha_;
-      sigma[1] = postCovBeta_;
-      sigma[2] = postCovRho_;
-      sigma[3] = postCrCovAlphaBeta_;
-      sigma[4] = postCrCovAlphaRho_;
-      sigma[5] = postCrCovBetaRho_;
+      sigma[1] = postCrCovAlphaBeta_;
+      sigma[2] = postCrCovAlphaRho_;
+      sigma[3] = postCovBeta_;
+      sigma[4] = postCrCovBetaRho_;
+      sigma[5] = postCovRho_;
       modelGeneral->mergeCovariance(sigma); //To avoid a second FFT og these.
       errCorr_->fftInPlace();
     }
