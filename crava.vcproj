@@ -48,8 +48,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\libs\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;libs/nrlib;libs/fft;libs;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include\fftw;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include\ia32"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;INTEL_SUITE_VERSION=PE121_300;MKL;FLENS_FIRST_INDEX=0;FFTW_ENABLE_FLOAT"
+				AdditionalIncludeDirectories=".;libs/nrlib;libs;libs/fft/include;&quot;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include\ia32&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -147,8 +147,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;nrlibs/;libs/fft;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\fftw;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
+				AdditionalIncludeDirectories=".;libs/nrlib;libs;libs/fft/include;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -246,8 +246,8 @@
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;libs/nrlib;libs/fft/include;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include\fftw;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include\ia32"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories=".;libs/nrlib;libs;libs/fft/include;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include\ia32&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -340,8 +340,8 @@
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;libs/nrlib;libs/fft/include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\fftw;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories=".;libs/nrlib;libs;libs/fft/include;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -1101,6 +1101,10 @@
 					</File>
 					<File
 						RelativePath=".\libs\nrlib\well\norsarwell.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\nrlib\flens\nrlib_flens.cpp"
 						>
 					</File>
 					<File
@@ -6372,6 +6376,50 @@
 						</File>
 					</Filter>
 				</Filter>
+				<Filter
+					Name="flens"
+					>
+					<File
+						RelativePath=".\libs\flens\aux_complex.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\aux_malloc.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\id.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\range.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\scalarclosures.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\snapshot.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparse_blas.cc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\underscore.cc"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -6669,6 +6717,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\libs\nrlib\flens\nrlib_flens.hpp"
+						>
+					</File>
+					<File
 						RelativePath=".\libs\nrlib\random\random.hpp"
 						>
 					</File>
@@ -6774,6 +6826,358 @@
 					</File>
 					<File
 						RelativePath="libs\fft\include\rfftw.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="flens"
+					>
+					<File
+						RelativePath=".\libs\flens\array.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\array.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\aux_cmath.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\aux_cmath.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\aux_complex.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\aux_malloc.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\bandstorage.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\bandstorage.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas_flens.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas_flens.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas_generic.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\blas_generic.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\cg.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\cg.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\crs.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\crs.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\densevector.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\densevector.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\evalclosure.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\evalclosure.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\fixedsizearray.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\fixedsizearray.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\flens.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\fullstorage.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\fullstorage.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\generalmatrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\generalmatrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\hacksforgmpxx.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\hermitianmatrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\hermitianmatrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\id.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_flens.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_flens.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_flens_aux.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_flens_aux.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_generic.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\lapack_generic.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\listinitializer.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\listinitializer.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\macros.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvec.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvec.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecclosures.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecclosures.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecio.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecio.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecoperations.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\matvecoperations.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\multigrid.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\multigrid.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\operationtypes.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\packedstorage.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\packedstorage.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\polynom.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\polynom.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\range.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\range.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\result.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\scalarclosures.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\scalarclosures.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\scalaroperations.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\scalaroperations.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\snapshot.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparse_blas.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparse_blas.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparse_blas_flens.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparse_blas_flens.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparsematrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\sparsematrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\storage.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\symmetricmatrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\symmetricmatrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tiny_blas.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tiny_blas.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tinymatrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tinymatrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tinyvector.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\tinyvector.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\traits.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\triangularmatrix.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\triangularmatrix.tcc"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\underscore.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\uplo.h"
+						>
+					</File>
+					<File
+						RelativePath=".\libs\flens\uplo.tcc"
 						>
 					</File>
 				</Filter>
