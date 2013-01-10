@@ -10,6 +10,7 @@ OBJFFTDIR   = obj/libs/fft
 OBJFLENSDIR = obj/libs/flens
 OBJBOOSTDIR = obj/libs/boost
 OBJNRLIBDIR = obj/libs/nrlib
+OFILES      =
 OBJFINDGRAM = findgrammar/findgrammar.o
 OBJGRAMMAR  = $(OBJNRLIBDIR)/iotools/fileio.o         \
               $(OBJNRLIBDIR)/tinyxml/tinyxml.o        \
@@ -25,10 +26,10 @@ CPPFLAGS   += $(INCLUDE)
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJLIBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJFLENSDIR)/*.o main.o
+	$(PURIFY) $(CXX) $(OBJDIR)/*.o $(OBJLIBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJFLENSDIR)/*.o main.o $(LFLAGS) -o $@
 
 $(GRAMMAR): findgrammar/findgrammar.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)
+	$(PURIFY) $(CXX) $(OBJGRAMMAR) $(OBJFINDGRAM) $(LFLAGS) -o $@
 
 $(OBJDIR):
 	install -d $(OBJDIR)
