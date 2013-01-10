@@ -1379,8 +1379,9 @@ Crava::computePostMeanResidAndFFTCov_flens()
 
       for (int i=0 ; i<ntheta_ ; i++) {
         std::complex<double> kWi = kW(i);
-        kW(i).real() = kD.re * kWi.real() - kD.im * kWi.imag();
-        kW(i).imag() = kD.re * kWi.imag() + kD.im * kWi.real();
+        double kWiR = kD.re * kWi.real() - kD.im * kWi.imag();
+        double kWiI = kD.re * kWi.imag() + kD.im * kWi.real();
+        kW(i) = std::complex<double>(kWiR, kWiI);
       }
 
       for (int i=0 ; i<ntheta_ ; i++) {
@@ -1394,8 +1395,7 @@ Crava::computePostMeanResidAndFFTCov_flens()
       fillkWNorm_flens(k, ErrMult2, errorSmooth3);              // defines input of  (kWD3Norm) errMult2
 
       for (int l=0 ; l < ntheta_ ; l++) {
-        ErrMult3(l).real() = 1.0;
-        ErrMult3(l).imag() = 0.0;
+        ErrMult3(l) = std::complex<double>(1.0, 0.0);
       }
     }
     else {
@@ -1410,8 +1410,7 @@ Crava::computePostMeanResidAndFFTCov_flens()
       }
 
       for (int l=0 ; l < ntheta_ ; l++) {
-        ErrMult1(l).real() = 1.0/seisWavelet_[l]->getNorm();
-        ErrMult1(l).imag() = 0.0;
+        ErrMult1(l) = std::complex<double>(1.0/seisWavelet_[l]->getNorm(), 0.0);
       }
 
       ErrMult2 = SetComplexNumber(kD3);
@@ -1437,19 +1436,16 @@ Crava::computePostMeanResidAndFFTCov_flens()
         }
 
         std::complex<double> ijkTmp    = SetComplexNumber(parSpatialCorr->getNextComplex());
-        std::complex<double> ijkParLam = std::sqrt(ijkTmp*ijkTmp);
-        ijkParLam.imag() = 0.0;
+        std::complex<double> ijkParLam = std::complex<double>(std::sqrt(ijkTmp*ijkTmp).real(), 0.0);
 
         for (int l = 0 ; l < 3 ; l++) {
           for (int m = 0 ; m < 3 ; m++) {
-            XparVar(l,m).real() = parPointCov_[l][m] * ijkParLam.real();
-            XparVar(l,m).imag() = 0.0;
+            XparVar(l,m) = std::complex<double>(parPointCov_[l][m]*ijkParLam.real(), 0.0);
           }
         }
 
         std::complex<double> ijkTmp2   = SetComplexNumber(errCorrUnsmooth->getNextComplex());
-        std::complex<double> ijkErrLam = std::sqrt(ijkTmp2*ijkTmp2);
-        ijkErrLam.imag() = 0.0;
+        std::complex<double> ijkErrLam = std::complex<double>(std::sqrt(ijkTmp2*ijkTmp2).real(), 0.0);
 
         if (realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_) { // inverting only relevant frequencies
 
@@ -1463,19 +1459,21 @@ Crava::computePostMeanResidAndFFTCov_flens()
               //  ErrVar(l,m).imag()  = 0.0;
               //}
 
-              double fac = factor * ErrThetaCov(l,m);
+              double fac     = factor * ErrThetaCov(l,m);
 
-              ErrVar(l,m).real() = fac * (+ErrMult1(l).real() *  ErrMult1(m).real() +  ErrMult1(l).imag() *  ErrMult1(m).imag()
-                                          +ErrMult2(l).real() *  ErrMult2(m).real() +  ErrMult2(l).imag() *  ErrMult2(m).imag());
+              double ErrVarI;
+              double ErrVarR = fac * (+ErrMult1(l).real() *  ErrMult1(m).real() +  ErrMult1(l).imag() *  ErrMult1(m).imag()
+                                      +ErrMult2(l).real() *  ErrMult2(m).real() +  ErrMult2(l).imag() *  ErrMult2(m).imag());
 
               if (l==m) {
-                ErrVar(l,m).real() += wnc_ * ErrThetaCov(l,m) * ErrMult3(l).real() * ErrMult3(l).real();
-                ErrVar(l,m).imag()  = 0.0;
+                ErrVarR += wnc_ * ErrThetaCov(l,m) * ErrMult3(l).real() * ErrMult3(l).real();
+                ErrVarI  = 0.0;
               }
               else {
-                ErrVar(l,m).imag() = fac * (-ErrMult1(l).real() * ErrMult1(m).imag() + ErrMult1(l).imag() * ErrMult1(m).real()
-                                            -ErrMult2(l).real() * ErrMult2(m).imag() + ErrMult2(l).imag() * ErrMult2(m).real());
+                ErrVarI = fac * (-ErrMult1(l).real() * ErrMult1(m).imag() + ErrMult1(l).imag() * ErrMult1(m).real()
+                                 -ErrMult2(l).real() * ErrMult2(m).imag() + ErrMult2(l).imag() * ErrMult2(m).real());
               }
+              ErrVar(l,m) = std::complex<double>(ErrVarR, ErrVarI);
             }
           }
 
@@ -1633,20 +1631,16 @@ Crava::computePostMeanResidAndFFTCov_flens()
 std::complex<double>
 Crava::SetComplexNumber(const fftw_complex & c)
 {
-  std::complex<double> C;
-  C.real() = c.re;
-  C.imag() = c.im;
-  return C;
+  return std::complex<double>(c.re, c.im);
 }
 
 void
 Crava::SetComplexVector(NRLib::ComplexVector & V,
                         fftw_complex         * v)
 {
-for (int l=0; l < ntheta_; l++) {
-  V(l).real() = v[l].re;
-  V(l).imag() = v[l].im;
- }
+  for (int l=0; l < ntheta_; l++) {
+    V(l) = std::complex<double>(v[l].re, v[l].im);
+  }
 }
 
 
@@ -2031,8 +2025,9 @@ Crava::fillkW_flens(int                     k,
                     Wavelet              ** seisWavelet)
 {
   for(int l = 0; l < ntheta_; l++) {
-    kW(l).real() =  static_cast<double>( seisWavelet[l]->getCAmp(k).re );
-    kW(l).imag() = -static_cast<double>( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
+    double kWR =  static_cast<double>( seisWavelet[l]->getCAmp(k).re );
+    double kWI = -static_cast<double>( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
+    kW(l) = std::complex<double>(kWR, kWI);
   }
 }
 
@@ -2043,8 +2038,9 @@ Crava::fillkWNorm_flens(int                     k,
 {
   for (int l = 0; l < ntheta_; l++)
   {
-    kWNorm(l).real() =  static_cast<double>(wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
-    kWNorm(l).imag() = -static_cast<double>(wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm()); // // adjust for complex conjugate in getCAmp(k)
+    double kWNormR =  static_cast<double>(wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
+    double kWNormI = -static_cast<double>(wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm()); // // adjust for complex conjugate in getCAmp(k)
+    kWNorm(l) = std::complex<double>(kWNormR, kWNormI);
   }
 }
 
@@ -2063,13 +2059,11 @@ Crava::fillInverseAbskWRobust_flens(int                     k,
 
     if(maxMod > 0.0)
     {
-      invkW(l).real()  = static_cast<double>(1.0/sqrt(maxMod));
-      invkW(l).imag()  = 0.0;
+      invkW(l) = std::complex<double>(static_cast<double>(1.0/sqrt(maxMod)), 0.0);
     }
     else
     {
-      invkW(l).real()  =  seisWaveletForNorm[l]->getNorm()*nzp_*nzp_*100.0f; // a big number
-      invkW(l).imag()  =  0.0; // a big number
+      invkW(l) = std::complex<double>(seisWaveletForNorm[l]->getNorm()*nzp_*nzp_*100.0f, 0.0);
     }
   }
 }
@@ -2082,9 +2076,9 @@ Crava::createFFTGrid()
   FFTGrid* fftGrid;
 
   if(fileGrid_)
-    fftGrid =  new FFTFileGrid(nx_,ny_,nz_,nxp_,nyp_,nzp_);
+    fftGrid = new FFTFileGrid(nx_,ny_,nz_,nxp_,nyp_,nzp_);
   else
-    fftGrid =  new FFTGrid(nx_,ny_,nz_,nxp_,nyp_,nzp_);
+    fftGrid = new FFTGrid(nx_,ny_,nz_,nxp_,nyp_,nzp_);
 
   return(fftGrid);
 }
@@ -2094,9 +2088,9 @@ Crava::copyFFTGrid(FFTGrid * fftGridOld)
 {
   FFTGrid* fftGrid;
   if(fileGrid_)
-    fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld));
+    fftGrid = new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld));
   else
-    fftGrid =  new FFTGrid(fftGridOld);
+    fftGrid = new FFTGrid(fftGridOld);
   return(fftGrid);
 }
 
