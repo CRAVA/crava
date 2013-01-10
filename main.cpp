@@ -294,6 +294,8 @@ int main(int argc, char** argv)
   catch (std::bad_alloc& ba)
   {
     std::cerr << "Out of memory: " << ba.what() << std::endl;
+    std::string error_message = std::string("Out of memory: ") + ba.what() + "\n";
+    LogKit::LogMessage(LogKit::Error, error_message);
   }
 
 #if defined(COMPILE_STORM_MODULES_FOR_RMS)
