@@ -725,10 +725,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath=".\src\filterwelllogs.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\src\gridmapping.cpp"
 					>
 				</File>
@@ -6442,10 +6438,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\src\filterwelllogs.h"
-					>
-				</File>
-				<File
 					RelativePath=".\src\gridmapping.h"
 					>
 				</File>
@@ -6553,11 +6545,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\system\config.hpp"
+						RelativePath=".\libs\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\filesystem\config.hpp"
+						RelativePath=".\libs\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -6782,26 +6774,6 @@
 					</File>
 					<File
 						RelativePath="libs\fft\include\rfftw.h"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="flens"
-					>
-					<File
-						RelativePath=".\libs\flens\blas.h"
-						>
-					</File>
-					<File
-						RelativePath=".\libs\flens\blas_flens.h"
-						>
-					</File>
-					<File
-						RelativePath=".\libs\flens\blas_generic.h"
-						>
-					</File>
-					<File
-						RelativePath=".\libs\flens\storage.h"
 						>
 					</File>
 				</Filter>
