@@ -28,27 +28,35 @@ DryRockMix::DryRockMix(const std::vector<DryRock*>    & dryrock,
   else if (std::accumulate(volume_fraction.begin(), volume_fraction.end(), 0.0) > 1.0) //NBNB fjellvoll possible to give warning to user and then rescale
     throw NRLib::Exception("Invalid arguments:Sum of volume fractions > 1.0");
   else {
-    std::vector<double> k(dryrock.size()), mu(dryrock.size()), rho(dryrock.size());
-    for (size_t i = 0; i < dryrock.size(); i++)
+    std::vector<double> k(dryrock.size()), mu(dryrock.size()), rho(dryrock.size()), total_porosity(dryrock.size()), mineral_moduli_k(dryrock.size());
+    for (size_t i = 0; i < dryrock.size(); i++) {
       dryrock[i]->GetElasticParams(k[i], mu[i], rho[i]);
+      total_porosity[i]   = dryrock[i]->GetTotalPorosity();
+      mineral_moduli_k[i] = dryrock[i]->GetMineralModuliK();
+     }
 
     switch (mix_method_) {
       case DEMTools::Hill :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction);
-        mu_   = DEMTools::CalcEffectiveElasticModuliUsingHill(mu, volume_fraction);
+        k_                = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction);
+        mu_               = DEMTools::CalcEffectiveElasticModuliUsingHill(mu, volume_fraction);
+        mineral_moduli_k_ = DEMTools::CalcEffectiveElasticModuliUsingHill(mineral_moduli_k, volume_fraction);
         break;
       case DEMTools::Reuss :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction);     // homogeneous
-        mu_   = DEMTools::CalcEffectiveElasticModuliUsingReuss(mu, volume_fraction);
+        k_                = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction);     // homogeneous
+        mu_               = DEMTools::CalcEffectiveElasticModuliUsingReuss(mu, volume_fraction);
+        mineral_moduli_k_ = DEMTools::CalcEffectiveElasticModuliUsingReuss(mineral_moduli_k, volume_fraction);
         break;
       case DEMTools::Voigt :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction);
-        mu_   = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mu, volume_fraction);
+        k_                = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction);
+        mu_               = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mu, volume_fraction);
+        mineral_moduli_k_ = DEMTools::CalcEffectiveElasticModuliUsingVoigt(mineral_moduli_k, volume_fraction);
         break;
       default :
         throw NRLib::Exception("Invalid dryrock mixing algorithm specified.");
     }
-    rho_    = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
+    rho_            = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
+    total_porosity_ = DEMTools::CalcEffectivePorosity(total_porosity, volume_fraction);
+
   }
 }
 

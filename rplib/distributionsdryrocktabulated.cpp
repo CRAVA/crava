@@ -2,12 +2,15 @@
 #include "rplib/dryrocktabulatedmodulus.h"
 #include "rplib/tabulated.h"
 #include "rplib/demmodelling.h"
+#include "rplib/distributionssolid.h"
 
 #include "nrlib/random/distribution.hpp"
 
 DistributionsDryRockTabulated::DistributionsDryRockTabulated(const DistributionWithTrend * elastic1,
                                                              const DistributionWithTrend * elastic2,
                                                              const DistributionWithTrend * density,
+                                                             const DistributionsSolid    * mineral,
+                                                             const DistributionWithTrend * total_porosity,
                                                              double                        corr_elastic1_elastic2,
                                                              double                        corr_elastic1_density,
                                                              double                        corr_elastic2_density,
@@ -29,6 +32,13 @@ DistributionsDryRockTabulated::DistributionsDryRockTabulated(const DistributionW
     density_ = density;
   else
     density_ = density->Clone();
+
+  mineral_ = mineral->Clone();
+
+  if (total_porosity->GetIsShared() == true)
+    total_porosity_ = total_porosity;
+  else
+    total_porosity_ = total_porosity->Clone();
 
   corr_elastic1_elastic2_ = corr_elastic1_elastic2;
   corr_elastic1_density_  = corr_elastic1_density;
@@ -65,9 +75,11 @@ DistributionsDryRockTabulated::DistributionsDryRockTabulated(const Distributions
   corr_elastic2_density_(dist.corr_elastic2_density_),
   tabulated_method_(dist.tabulated_method_)
 {
-  elastic1_ = dist.elastic1_->Clone();
-  elastic2_ = dist.elastic1_->Clone();
-  density_  = dist.density_ ->Clone();
+  elastic1_         = dist.elastic1_->Clone();
+  elastic2_         = dist.elastic1_->Clone();
+  density_          = dist.density_ ->Clone();
+  mineral_          = dist.mineral_->Clone();
+  total_porosity_   = dist.total_porosity_->Clone();
 
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
@@ -101,6 +113,11 @@ DistributionsDryRockTabulated::~DistributionsDryRockTabulated()
   if(density_->GetIsShared() == false)
     delete density_;
 
+  delete mineral_;
+
+  if(total_porosity_->GetIsShared() == false)
+    delete total_porosity_;
+
   delete tabulated_;
 }
 
@@ -115,16 +132,23 @@ DistributionsDryRockTabulated::GenerateSample(const std::vector<double> & trend_
 {
   std::vector<double> u(3);
 
-  for(int i=0; i<3; i++)
+  for(unsigned int i=0; i<u.size(); i++)
     u[i] = NRLib::Random::Unif01();
 
-  DryRock * dryrock = GetSample(u, trend_params);
+  std::vector<double> u2(1);
+
+  for(unsigned int i=0; i<u2.size(); i++)
+    u2[i] = NRLib::Random::Unif01();
+
+  DryRock * dryrock = GetSample(u, u2, trend_params);
 
   return dryrock;
 }
 
 DryRock *
-DistributionsDryRockTabulated::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const
+DistributionsDryRockTabulated::GetSample(const std::vector<double> & u,
+                                         const std::vector<double> & u2,
+                                         const std::vector<double> & trend_params) const
 {
 
   std::vector<double> seismic_sample;
@@ -144,8 +168,20 @@ DistributionsDryRockTabulated::GetSample(const std::vector<double> & u, const st
     bulk_sample  = elastic1_sample;
     shear_sample = elastic2_sample;
   }
+  Solid * mineral_sample = mineral_->GenerateSample(trend_params);
+  double mineral_moduli_k_sample, dummy1, dummy2;
+  mineral_sample->GetElasticParams(mineral_moduli_k_sample, dummy1, dummy2);
+  delete mineral_sample;
 
-  DryRock * dryrock = new DryRockTabulatedModulus(bulk_sample, shear_sample, density_sample, u);
+  double total_porosity_sample    = total_porosity_->GetQuantileValue(u2[1], trend_params[0], trend_params[1]);
+
+  std::vector<double> u_final(4);
+
+  u_final[0] = u[0]; u_final[1] = u[1]; u_final[2] = u[2];
+  u_final[3] = u2[0];
+
+  DryRock * dryrock = new DryRockTabulatedModulus(bulk_sample, shear_sample, density_sample,
+                                                  total_porosity_sample, mineral_moduli_k_sample, u_final);
 
   return dryrock;
 }
@@ -153,12 +189,11 @@ DistributionsDryRockTabulated::GetSample(const std::vector<double> & u, const st
 bool
 DistributionsDryRockTabulated::HasDistribution() const
 {
-  bool has_distribution = false;
+  if (mineral_->HasDistribution() == true || elastic1_->GetIsDistribution() == true || elastic2_->GetIsDistribution() == true ||
+     density_->GetIsDistribution() == true  || total_porosity_->GetIsDistribution() == true)
+    return true;
 
-  if(elastic1_->GetIsDistribution() == true || elastic2_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
-    has_distribution = true;
-
-  return has_distribution;
+  return false;
 }
 
 
@@ -167,12 +202,16 @@ DistributionsDryRockTabulated::HasTrend() const
 {
   std::vector<bool> has_trend(2, false);
 
-  std::vector<bool> elastic1_trend = elastic1_->GetUseTrendCube();
-  std::vector<bool> elastic2_trend = elastic2_->GetUseTrendCube();
-  std::vector<bool> density_trend  = density_ ->GetUseTrendCube();
+  std::vector<bool> elastic1_trend          = elastic1_->GetUseTrendCube();
+  std::vector<bool> elastic2_trend          = elastic2_->GetUseTrendCube();
+  std::vector<bool> density_trend           = density_ ->GetUseTrendCube();
+  std::vector<bool> mineral_moduli_k_trend  = mineral_ ->HasTrend();
+  std::vector<bool> total_porosity_trend    = total_porosity_ ->GetUseTrendCube();
+
 
   for(int i=0; i<2; i++) {
-    if(elastic1_trend[i] == true || elastic2_trend[i] == true || density_trend[i] == true)
+    if(elastic1_trend[i] == true || elastic2_trend[i] == true || density_trend[i] == true ||
+       mineral_moduli_k_trend[i] == true || total_porosity_trend[i] == true)
       has_trend[i] = true;
   }
 
@@ -187,7 +226,13 @@ DistributionsDryRockTabulated::UpdateSample(double                      corr_par
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
-  DryRock * updated_sample = GetSample(u, trend);
+
+  std::vector<double> u1(3);
+  std::vector<double> u2(2);
+
+  u1[0] = u[0]; u1[1] = u[1]; u1[2] = u[2];
+  u2[0] = u[3];
+  DryRock * updated_sample = GetSample(u1, u2, trend);
 
   return updated_sample;
 }

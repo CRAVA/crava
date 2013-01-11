@@ -9,6 +9,8 @@ public:
   DryRockTabulatedModulus(const double                    k,
                           const double                    mu,
                           const double                    rho,
+                          const double                    total_porosity,
+                          const double                    mineral_moduli_k,
                           std::vector<double>             u);
 
 

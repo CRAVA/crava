@@ -142,6 +142,37 @@ ReadSolid(const int                                                  & n_vintage
   return(solid);
 }
 
+std::vector<DistributionsDryRock *>
+ReadDryRock(const int                                                  & n_vintages,
+            const std::string                                          & target_dryrock,
+            const std::string                                          & path,
+            const std::vector<std::string>                             & trend_cube_parameters,
+            const std::vector<std::vector<double> >                    & trend_cube_sampling,
+            const std::map<std::string, DistributionsDryRockStorage *> & model_dryrock_storage,
+            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+            std::string                                                & errTxt)
+{
+  std::vector<DistributionsDryRock *> dryrock;
+
+  std::map<std::string, DistributionsDryRockStorage *>::const_iterator m_all = model_dryrock_storage.find(target_dryrock);
+
+  if (m_all == model_dryrock_storage.end()) // fatal error
+    errTxt += "Failed to find dryrock label " + target_dryrock + "\n";
+
+  else { //label found
+    DistributionsDryRockStorage  * storage = m_all->second;
+    dryrock                                = storage->GenerateDistributionsDryRock(n_vintages,
+                                                                                   path,
+                                                                                   trend_cube_parameters,
+                                                                                   trend_cube_sampling,
+                                                                                   model_dryrock_storage,
+                                                                                   model_solid_storage,
+                                                                                   errTxt);
+  }
+
+  return(dryrock);
+}
+
 std::vector<DistributionsFluid *>
 ReadFluid(const int                                                  & n_vintages,
           const std::string                                          & target_fluid,

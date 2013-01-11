@@ -53,6 +53,16 @@ ReadSolid(const int                                                  & n_vintage
           const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
           std::string                                                & errTxt);
 
+std::vector<DistributionsDryRock *>
+ReadDryRock(const int                                                  & n_vintages,
+            const std::string                                          & target_dryrock,
+            const std::string                                          & path,
+            const std::vector<std::string>                             & trend_cube_parameters,
+            const std::vector<std::vector<double> >                    & trend_cube_sampling,
+            const std::map<std::string, DistributionsDryRockStorage *> & model_dryrock_storage,
+            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+            std::string                                                & errTxt);
+
 std::vector<DistributionsFluid *>
 ReadFluid(const int                                                  & n_vintages,
           const std::string                                          & target_fluid,

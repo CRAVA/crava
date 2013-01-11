@@ -110,22 +110,43 @@ void
 DryRockDEM::ComputeElasticParams() {
 
   std::vector<double> dryrock_inc_rho, dryrock_inc_k, dryrock_inc_mu;
+  std::vector<double> total_porosity(dryrock_inc_.size()), mineral_moduli_k(dryrock_inc_.size());
 
   dryrock_inc_rho.resize(dryrock_inc_.size());
   dryrock_inc_k.resize(dryrock_inc_.size());
   dryrock_inc_mu.resize(dryrock_inc_.size());
 
-  for (size_t i = 0; i < dryrock_inc_.size(); ++i)
-    dryrock_inc_[i]->GetElasticParams(dryrock_inc_k[i], dryrock_inc_mu[i], dryrock_inc_rho[i]); //NBNB fjellvoll marit what to to here?
 
-  double dryrock_rho, dryrock_k, dryrock_mu;
+  for (size_t i = 0; i < dryrock_inc_.size(); ++i) {
+    dryrock_inc_[i]->GetElasticParams(dryrock_inc_k[i], dryrock_inc_mu[i], dryrock_inc_rho[i]);
+    total_porosity[i]   = dryrock_inc_[i]->GetTotalPorosity();
+    mineral_moduli_k[i] = dryrock_inc_[i]->GetMineralModuliK();
+  }
+
+  double dryrock_rho, dryrock_k, dryrock_mu, dryrock_poro, dryrock_mineral_moduli_k;
   dryrock_->GetElasticParams(dryrock_k, dryrock_mu, dryrock_rho);
+  dryrock_poro             = dryrock_->GetTotalPorosity();
+  dryrock_mineral_moduli_k = dryrock_->GetMineralModuliK();
 
   { //Calculation of effective density if inclusion_concentration_ is filled with inclusions AND host.
     std::vector<double> dryrock_host_inc_rho(dryrock_inc_.size() + 1);
     dryrock_host_inc_rho[0] = dryrock_rho;
     std::copy(dryrock_inc_rho.begin(), dryrock_inc_rho.end(), dryrock_host_inc_rho.begin() + 1);
     rho_  = DEMTools::CalcEffectiveDensity(dryrock_host_inc_rho, inclusion_concentration_);
+  }
+
+  { //Calculation of effective total porosity if inclusion_concentration_ is filled with inclusions AND host.
+    std::vector<double> dryrock_host_inc_poro(dryrock_inc_.size() + 1);
+    dryrock_host_inc_poro[0] = dryrock_poro;
+    std::copy(total_porosity.begin(), total_porosity.end(), dryrock_host_inc_poro.begin() + 1);
+    total_porosity_  = DEMTools::CalcEffectivePorosity(dryrock_host_inc_poro, inclusion_concentration_);
+  }
+
+  { //Calculation of effective mineral moduli k if inclusion_concentration_ is filled with inclusions AND host.
+    std::vector<double> dryrock_host_inc_moduli_k(dryrock_inc_.size() + 1);
+    dryrock_host_inc_moduli_k[0] = dryrock_mineral_moduli_k;
+    std::copy(mineral_moduli_k.begin(), mineral_moduli_k.end(), dryrock_host_inc_moduli_k.begin() + 1);
+    mineral_moduli_k_  = DEMTools::CalcEffectiveElasticModuliUsingVoigt(dryrock_host_inc_moduli_k, inclusion_concentration_);
   }
 
   //remove host from inclusion vector

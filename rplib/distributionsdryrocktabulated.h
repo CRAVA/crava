@@ -7,7 +7,7 @@
 class DryRock;
 class DistributionWithTrend;
 class Tabulated;
-
+class DistributionsSolid;
 
 // Abstract class for holding all t = 0 distribution functions for solid parameters.
 // One derived class for each solid model, the latter specified in a parallel, derived DryRock class.
@@ -19,6 +19,8 @@ public:
   DistributionsDryRockTabulated(const DistributionWithTrend * elastic1,
                                 const DistributionWithTrend * elastic2,
                                 const DistributionWithTrend * density,
+                                const DistributionsSolid    * mineral,
+                                const DistributionWithTrend * total_porosity,
                                 double                        corr_elastic1_elastic2,
                                 double                        corr_elastic1_density,
                                 double                        corr_elastic2_density,
@@ -46,11 +48,15 @@ protected:
                                                const DryRock             * sample) const;
 
 private:
-  DryRock                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+  DryRock                       * GetSample(const std::vector<double> & u,
+                                            const std::vector<double> & u2,
+                                            const std::vector<double> & trend_params) const;
 
   const DistributionWithTrend   * elastic1_;
   const DistributionWithTrend   * elastic2_;
   const DistributionWithTrend   * density_;
+  const DistributionsSolid       * mineral_;
+  const DistributionWithTrend   * total_porosity_;
   double                          corr_elastic1_elastic2_;
   double                          corr_elastic1_density_;
   double                          corr_elastic2_density_;
