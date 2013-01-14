@@ -99,10 +99,10 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
       final_dist_fluid[i] = new DistributionsFluidMix(alpha, distr_fluid[i], all_volume_fractions[i], mix_method);
 
     for(int i=0; i<n_vintages; i++) {
-      for(size_t s=0; s<distr_fluid.size(); s++)
+      for(size_t s=0; s<distr_fluid[i].size(); s++)
         delete distr_fluid[i][s];
 
-      for(size_t s=0; s<all_volume_fractions.size(); s++) {
+      for(size_t s=0; s<all_volume_fractions[i].size(); s++) {
         if(all_volume_fractions[i][s] != NULL) {
           if(all_volume_fractions[i][s]->GetIsShared() == false)
             delete all_volume_fractions[i][s];
@@ -286,7 +286,7 @@ ReussFluidStorage::~ReussFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
     if(constituent_volume_fraction_[0][i] != NULL) {
-      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
         delete constituent_volume_fraction_[0][i];
     }
   }
@@ -324,7 +324,7 @@ VoigtFluidStorage::~VoigtFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
     if(constituent_volume_fraction_[0][i] != NULL) {
-      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
         delete constituent_volume_fraction_[0][i];
     }
   }
@@ -362,7 +362,7 @@ HillFluidStorage::~HillFluidStorage()
 {
   for(size_t i=0; i<constituent_volume_fraction_[0].size(); i++) {
     if(constituent_volume_fraction_[0][i] != NULL) {
-      if(constituent_volume_fraction_[0][i]->GetIsShared() == true)
+      if(constituent_volume_fraction_[0][i]->GetIsShared() == false)
         delete constituent_volume_fraction_[0][i];
     }
   }

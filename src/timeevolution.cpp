@@ -14,9 +14,9 @@
 #include "rplib/distributionsrock.h"
 
 
-TimeEvolution::TimeEvolution(int i_max,
-                             TimeLine & time_line,
-                             const DistributionsRock        * dist_rock)
+TimeEvolution::TimeEvolution(int                                     i_max,
+                             TimeLine                              & time_line,
+                             const std::vector<DistributionsRock*> & dist_rock)
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
@@ -25,12 +25,12 @@ TimeEvolution::TimeEvolution(int i_max,
 }
 
 
-void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>    & evolution_matrix,
-                                           std::vector< NRLib::Matrix>    & cov_correction_term,
-                                           std::vector< NRLib::Vector>    & mean_correction_term,
-                                           int                              i_max,
-                                           TimeLine                       & time_line,
-                                           const DistributionsRock        * dist_rock)
+void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>           & evolution_matrix,
+                                           std::vector< NRLib::Matrix>           & cov_correction_term,
+                                           std::vector< NRLib::Vector>           & mean_correction_term,
+                                           int                                     i_max,
+                                           TimeLine                              & time_line,
+                                           const std::vector<DistributionsRock*> & dist_rock)
 {
   // A note on variable names in this function:
   // _mk in the variable names refers to the seismic parameter m with subscript k, time index.

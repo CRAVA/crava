@@ -214,6 +214,7 @@ int main(int argc, char** argv)
       int  eventIndex;
       int  oldTime;
       bool failedFirst = false;
+      modelGeneral->getTimeLine()->ReSet();
       modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
       switch(eventType) {
       case TimeLine::AVO :

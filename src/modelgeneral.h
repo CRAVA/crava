@@ -12,6 +12,7 @@
 #include "src/cravatrend.h"
 #include "src/seismicparametersholder.h"
 #include "src/state4d.h"
+#include "src/timeevolution.h"
 
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionsfluid.h"
@@ -317,6 +318,8 @@ private:
   CravaTrend                                                         trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
   std::map<std::string, std::vector<DistributionsRock *> >           rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<const DistributionWithTrend *> > reservoir_variables_;   ///< Reservoir variables used in the rock physics model
+
+  TimeEvolution       timeEvolution_;
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping       * timeCutMapping_;        ///< Simbox and mapping for timeCut

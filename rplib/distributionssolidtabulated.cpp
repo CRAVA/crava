@@ -197,7 +197,7 @@ DistributionsSolidTabulated::UpdateSample(double                      corr_param
                                           const Solid               * sample) const
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
   Solid * updated_sample = GetSample(u, trend);
 
   return updated_sample;

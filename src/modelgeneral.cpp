@@ -191,6 +191,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 
         if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
           process4DBackground(modelSettings, inputFiles, errText, failedBackground);
+          timeEvolution_ = TimeEvolution(1000, *timeLine_, rock_distributions_.begin()->second);
         }
       }
     }

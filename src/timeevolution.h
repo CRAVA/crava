@@ -14,9 +14,10 @@ class FFTGrid;
 class TimeEvolution
 {
 public:
-  TimeEvolution(int i_max,
-                TimeLine & time_line,
-                const DistributionsRock       * dist_rock);
+  TimeEvolution() {}
+  TimeEvolution(int                                     i_max,
+                TimeLine                              & time_line,
+                const std::vector<DistributionsRock*> & dist_rock);
   //void Split(const SeismicParametersHolder &m_combined, State4D & state4D);
   //void Evolve(int time_step, State4D & state4D);
   //void Merge(const State4D & state4D, SeismicParametersHolder &m_combined);
@@ -37,12 +38,12 @@ private:
 
 
   // Estimate time evolution matrices and correction term mean and covariance:
-  void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>   & evolution_matrix,
-                             std::vector< NRLib::Matrix>    & cov_correction_term,
-                             std::vector< NRLib::Vector>    & mean_correction_term,
-                             int                              i_max,
-                             TimeLine                       & time_line,
-                             const DistributionsRock        * dist_rock);
+  void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          & evolution_matrix,
+                             std::vector< NRLib::Matrix>           & cov_correction_term,
+                             std::vector< NRLib::Vector>           & mean_correction_term,
+                             int                                     i_max,
+                             TimeLine                              & time_line,
+                             const std::vector<DistributionsRock*> & dist_rock);
 
   // Adjusting diagonal of matrix to be inverted if necessary,
   // and adjusting the other matrices similarly to ensure block form of evolution

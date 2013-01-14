@@ -28,7 +28,7 @@ DistributionsFluidMix::DistributionsFluidMix(const std::vector<double>          
     distr_fluid_[i] = distr_fluid[i]->Clone();
 
   for (size_t i = 0; i < distr_vol_frac.size(); ++i) {
-    if(distr_vol_frac_[i] != NULL) {
+    if(distr_vol_frac[i] != NULL) {
       if(distr_vol_frac[i]->GetIsShared() == false)
         distr_vol_frac_[i] = distr_vol_frac[i]->Clone();
       else
@@ -193,7 +193,7 @@ DistributionsFluidMix::UpdateSample(double                      corr_param,
                                     const Fluid               * sample) const
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
   assert(typeid(*sample) == typeid(FluidMix));
   const FluidMix * core_sample = dynamic_cast<const FluidMix *>(sample);
