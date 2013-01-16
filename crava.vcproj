@@ -6352,6 +6352,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\rplib\distributionsrockgassmann.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\distributionsrockmix.cpp"
 						>
 					</File>
@@ -6373,6 +6377,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\rockdem.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\rockgassmann.cpp"
 						>
 					</File>
 					<File
@@ -7137,11 +7145,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7581,6 +7589,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\rplib\distributionsrockgassmann.h"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\distributionsrockmix.h"
 						>
 					</File>
@@ -7602,6 +7614,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\rockdem.h"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\rockgassmann.h"
 						>
 					</File>
 					<File

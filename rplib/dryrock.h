@@ -29,6 +29,7 @@ public:
 
   double                              GetMineralModuliK() const   { return mineral_moduli_k_; }
   double                              GetTotalPorosity()  const   { return total_porosity_; }
+  void                                SetTotalPorosity(double porosity)  { total_porosity_ = porosity; }
 
   const std::vector<double>&          GetU()                                                                              const { return u_; }
 
