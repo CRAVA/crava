@@ -16,10 +16,10 @@ GXXWARNING  = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-ca
 PROGRAM     = cravarun
 GRAMMAR     = grammar
 OPT         = -O2
+EXTRALFLAGS = -static
 DEBUG       =
 PURIFY      =
 ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran
-
 mode        = all
 
 ifeq ($(GCCNEW),1)
@@ -66,5 +66,5 @@ EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING)
 CPPFLAGS   = $(EXTRAFLAGS)
-LFLAGS     = $(PROFILE) $(ATLASLFLAGS)$(MKLLFLAGS) $(DEBUG) -lm
-# Add -static to LFLAGS?
+LFLAGS     = $(EXTRALFLAGS) $(PROFILE) $(ATLASLFLAGS)$(MKLLFLAGS) $(DEBUG) -lm
+

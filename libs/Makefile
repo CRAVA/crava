@@ -31,7 +31,7 @@ OBJ_FLENS := $(patsubst %.cc, $(OBJDIR)%.o, $(filter %.cc,  $(SRC)))
 DIRS := $(sort $(dir $(OBJ_NRLIB)))
 DIRS += $(sort $(dir $(OBJ_FLENS)))
 
-INCLUDE := -I../libs/
+INCLUDE := -I../libs
 
 CPPFLAGS += $(INCLUDE)
 
