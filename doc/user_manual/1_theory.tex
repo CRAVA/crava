@@ -53,14 +53,14 @@ linearised AVO inversion, the seismic data must be processed to remove
 nonlinear relations between the model parameters and the seismic
 response. Important steps in the processing are the removal of the
 move-out, multiples, and the effects of geometrical spreading and
-absorption. The seismic data should be prestack migrated, such that
-dip related effects are removed. After prestack migration, it is
+absorption. The seismic data should be pre-stack migrated, such that
+dip related effects are removed. After pre-stack migration, it is
 reasonable to assume that each single bin-gather can be regarded as
-the response of a local 1-D earth model. The benefits of prestack
+the response of a local 1-D earth model. The benefits of pre-stack
 migration before AVO analysis are discussed in
 \cite{brow92,mosh96,bula2001d}. It is further assumed that wave mode
 conversions, interbed multiples and  anisotropy effects can be
-neglected after processing.  Ideally, the prestack gathers are also
+neglected after processing.  Ideally, the pre-stack gathers are also
 transformed from offsets to reflection angles. Offset gathers are often close
 to angle gathers, so we can use these, but if the inversion area is
 thick, this will give more noise in the CRAVA model.
@@ -149,7 +149,7 @@ The seismic data can also be represented as a convolution in three dimensions
    d_{obs}(\vect{x},t,\theta)
     =\int w(\vect{x},\tau,\theta) \: c(\vect{x}-\vect{\chi},t-\tau,\theta) \: d\vect{\chi}d\tau + e(\vect{x},t,\theta),
 \end{equation}
-where $w$ now denotes a 3D wavelet. The 3D wavelet is derived from the point-spread function (PSF) which acts as a filter on the reflectivity cube to mimic the imaging process of prestack depth migration. For a thorough description on how the PSF is calculated with ray-tracing by identifying the illumination vectors, see \cite{lecomte08}. For a more physical interpretation of the PSF, the parametrization in the wavenumber (Fourier) domain is done in terms of spherical coordinates. The relationship between these coordinates and the spatial frequencies $\vect{k}=(k_x,
+where $w$ now denotes a 3D wavelet. The 3D wavelet is derived from the point-spread function (PSF) which acts as a filter on the reflectivity cube to mimic the imaging process of pre-stack depth migration. For a thorough description on how the PSF is calculated with ray-tracing by identifying the illumination vectors, see \cite{lecomte08}. For a more physical interpretation of the PSF, the parametrisation in the wavenumber (Fourier) domain is done in terms of spherical coordinates. The relationship between these coordinates and the spatial frequencies $\vect{k}=(k_x,
 k_y, k_z)$ for a point $P$ is given by 
 \begin{equation}
 k_x=r\cos(\phi)\sin(\psi),\; k_y=r\sin(\phi)\sin(\psi),\; k_z=r\cos(\psi), \label{eq:spherical}
@@ -180,7 +180,7 @@ $\tilde{\alpha}_2(\omega,\phi,\psi;\theta) = \exp(-\pi |\omega|
 \tilde{H}(\phi,\psi;\theta))$ are frequency independent and frequency
 dependent processing factors respectively.
 
-Since the point-spread function is defined in the depth domain, and the 3D wavelet in expression \eqref{3Dconv} is in time domain, a relation between time and depth is needed. In the region of interest, a target center is defined at depth $Z_0$. A reference time surface $T_0(x,y)$ corresponds to this depth. For a given time $\tau$ the corresponding depth is $\zeta$. Let $T_{\tau}(x,y)$ be the time to a point, and $Z_{\zeta}(x,y)$ the depth to the same point, the time-depth relation is:
+Since the point-spread function is defined in the depth domain, and the 3D wavelet in expression \eqref{3Dconv} is in time domain, a relation between time and depth is needed. In the region of interest, a target centre is defined at depth $Z_0$. A reference time surface $T_0(x,y)$ corresponds to this depth. For a given time $\tau$ the corresponding depth is $\zeta$. Let $T_{\tau}(x,y)$ be the time to a point, and $Z_{\zeta}(x,y)$ the depth to the same point, the time-depth relation is:
 \begin{equation}
 T_{\tau}(x,y) = T_0(x,y) + \frac{2}{V_0}(Z_{\zeta}(x,y)-Z_0)
 \end{equation}

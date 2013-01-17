@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <string.h>
 
 #include "src/parameteroutput.h"
@@ -179,4 +183,3 @@ CovGrid2D & QualityGrid::makeCovGrid2D(const Simbox * simbox,
 
   return(*cov);
 }
-

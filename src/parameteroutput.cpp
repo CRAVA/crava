@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/parameteroutput.h"

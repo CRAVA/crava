@@ -76,7 +76,7 @@ appropriately aligned. The alignment is defined by the time interval
 surfaces specified as input, or alternatively, the correlation
 direction surface. It is important that the alignment reflects the
 correlation structure (deposition/compaction), and if the time
-surfaces are either eroding or onlapped, one should consider specifying
+surfaces are either eroding or on-lapped, one should consider specifying
 the correlation direction separately using the
 \texttt{<correlation-direction>} keyword.
 
@@ -165,6 +165,9 @@ and a Gaussian variogram model with relatively long ranges may seem an
 obvious choice. This model is too smooth, however, and should be
 omitted as it often give parameter over- and undershooting away
 from wells.
+
+\subsubsection{Multizone background model}
+In the \kw{multizone-model}, the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The full multizone background model is made from the zone background models by using Beta distributions with $\alpha = \beta =2$ for the transitions between the zones. The limits of the Beta distribution may be different for each surface, and they are given as input to the model. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
 
 \subsection{Covariance}
 \label{sec:correstimp}
@@ -277,7 +280,7 @@ and reflection coefficients is found by convolving the data with the reflection 
 and tapering the result. The auto-correlation of the reflection coefficients 
 are found similarly by convolving the reflection coefficients with themselves 
 and then applying a taper to the result. The tapering is 
-preformed in order to avoid spurious correlations at large lags.  
+performed in order to avoid spurious correlations at large lags.  
 
 Using the standard convolutional relation for seismic data,
 \begin{equation}
@@ -286,21 +289,21 @@ Using the standard convolutional relation for seismic data,
 where $\vect{d}$ is the seismic amplitude data, $\vect{w}$ is the
 wavelet, $\vect{c}$ the reflection coefficients, and $\vect{e}$ is the
 noise. We see that convolving the data with reflection-coefficients, 
-transforming to the  fourier domain, and take the expectation we get
+transforming to the  Fourier domain, and take the expectation we get
 \begin{equation}
 d(\omega)\bar{c}(\omega) = w(\omega)|c(\omega)|^2
 \end{equation}
 Note that the convolution has disappeared, and the equation can be
-solved for each frequency $\omega$. We recognisee the left hand side as the 
-specter of the cross-correlation between data
+solved for each frequency $\omega$. We recognise the left hand side as the 
+spectre of the cross-correlation between data
 and reflection coefficients. And the left hand side as the wavelet multiplied with 
-specter of the auto-correlation of the reflection coefficients. 
-This can be obtained by dividing the specter of the cross-correlation with the 
-specter of the auto-correlation. 
+spectre of the auto-correlation of the reflection coefficients. 
+This can be obtained by dividing the spectre of the cross-correlation with the 
+spectre of the auto-correlation. 
 
-Tapering of the estimated cross-correlation and auto-correlation is required in order to stabilize the estimate. In Crava a Papoulis taper is used. Tapering is equivalent 
+Tapering of the estimated cross-correlation and auto-correlation is required in order to stabilise the estimate. In Crava a Papoulis taper is used. Tapering is equivalent 
 to a local smoothing in the frequency domain, thus the resulting wavelet 
-estimate will behave smoothly in fourier domain. 
+estimate will behave smoothly in Fourier domain. 
 
 
 We find the optimal vertical shift for each well. The global wavelet

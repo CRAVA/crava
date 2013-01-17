@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 
 #ifndef CKRIGINGADMIN_H
 #define CKRIGINGADMIN_H
@@ -6,6 +10,9 @@ class FFTGrid;
 class CBWellPt;
 class Simbox;
 class CovGridSeparated;
+
+#include "nrlib/flens/nrlib_flens.hpp"
+
 #include "src/box.h"
 
 class CKrigingAdmin
@@ -38,19 +45,19 @@ private:
   void            FindDataInDataBlockLoop(Gamma gamma);
   DataBoxSize     FindDataInDataBlock(Gamma gamma, const CBox & dataBlock);
   int             NBlocks(int dBlocks, int lSBox) const;
-  void            AllocateSpaceForMatrixEq();
-  void            DeAllocateSpaceForMatrixEq();
-  void            SetMatrix(Gamma gamma);
-  void            SetKrigVector(Gamma gamma);
-  void            SolveKrigingEq(Gamma gamma);
-  void            DoCholesky();
+  void            SetMatrix(NRLib::Matrix & krigMatrix,
+                            NRLib::Vector & residual,
+                            Gamma           gamma);
+  void            SetKrigVector(NRLib::Vector & k,
+                                Gamma           gamma);
   void            EstimateSizeOfBlock();
   void            EstimateSizeOfBlock2();
   float           CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, bool& rapidInc);
+
   const FFTGrid & CreateAndFillFFTGridWithCov(int i);    // needed in kriging hack modus, remember delete
   const FFTGrid & CreateAndFillFFTGridWithCovRot(int i); // needed in kriging hack modus, remember delete
   const FFTGrid & CreateAndFillFFTGridWithCrCov();       // needed in kriging hack modus, remember delete
-  double       ** CopyMatrix(double** inMatrix, double** outMatrix, int size);
+
   void            RotateVec(float& rx, float& ry, float& rz, const float mat[][3]);
   void            SmoothKrigedResult(Gamma gamma);
   void            CalcSmoothWeights(Gamma gamma, int direction); // direction X(1), Y(2), Z(3)
@@ -83,8 +90,6 @@ private:
   int             noCholeskyDecomp_;                         // number of cholesky decompositions
   int             monitorSize_;                              // for progress monitor
 
-  double       ** krigMatrix_, **krigMatrix2_, *krigVector_;
-  float         * krigDataVector_;
   int             rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_;
   int             rangeBetaX_, rangeBetaY_, rangeBetaZ_;
   int             rangeRhoX_, rangeRhoY_, rangeRhoZ_;        // ranges estimated from covariance cubes

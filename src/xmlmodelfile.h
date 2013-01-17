@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef XMLMODELFILE_H
 #define XMLMODELFILE_H
 
@@ -149,6 +153,7 @@ private:
   void checkInversionConsistency(std::string & errTxt);
   void checkTimeLapseConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
+  void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

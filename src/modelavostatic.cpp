@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -34,7 +38,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"

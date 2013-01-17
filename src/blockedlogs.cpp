@@ -1,8 +1,13 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <iomanip>
 #include <math.h>
 
-#include "lib/lib_matr.h"
+#include "nrlib/flens/nrlib_flens.hpp"
+
 #include "nrlib/iotools/logkit.hpp"
 #include "fftw.h"
 #include "rfftw.h"
@@ -2315,93 +2320,74 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
   }
 }
 
-void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient,
-                                 std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data, std::vector<std::vector<double> > &Sigma_gradient)
+void BlockedLogs::smoothGradient(std::vector<double>               & xGradient,
+                                 std::vector<double>               & yGradient,
+                                 std::vector<double>               & Qepsilon,
+                                 std::vector<double>               & Qepsilon_data,
+                                 std::vector<std::vector<double> > &Sigma_gradient)
 {
   int i, j;
   int n_beta = nBlocks_* 2;
-  double **Qbeta_data = new double * [n_beta];
-  for(i = 0; i < n_beta; i++)
-    Qbeta_data[i] = new double[n_beta];
 
+  NRLib::SymmetricMatrix Qbeta_data = NRLib::SymmetricZeroMatrix(n_beta);
 
   //Set the prior precicion values
   double a, b, c;
   computePrecisionMatrix(a,b,c);
 
   //Initialize the Qm|d matrix
-  for(i = 0; i < n_beta-2; i++){
-    Qbeta_data[i][i] = c + Qepsilon[2*i];
-    Qbeta_data[i][i+2] = b;
+  for(i = 0; i < n_beta - 2; i++){
+    Qbeta_data(i,i)   = c + Qepsilon[2*i];
+    Qbeta_data(i,i+2) = b;
     if(i % 2 == 0)
-      Qbeta_data[i][i+1] = Qepsilon[2*i+1];
+      Qbeta_data(i,i+1) = Qepsilon[2*i+1];
     else
-      Qbeta_data[i][i+1] = 0;
+      Qbeta_data(i,i+1) = 0;
   }
   //Edge effects
-  Qbeta_data[0][0] += a - c;
-  Qbeta_data[1][1] += a - c;
-  Qbeta_data[n_beta-2][n_beta-2] = c + Qepsilon[2*(n_beta-2)];
-  Qbeta_data[n_beta-1][n_beta-1] = c + Qepsilon[2*(n_beta-1)];
-  Qbeta_data[n_beta-2][n_beta-1] = Qepsilon[2*(n_beta-2)+1];
+  Qbeta_data(0,0             )  += a - c;
+  Qbeta_data(1,1)               += a - c;
+  Qbeta_data(n_beta-2,n_beta-2)  = c + Qepsilon[2*(n_beta-2)];
+  Qbeta_data(n_beta-1,n_beta-1)  = c + Qepsilon[2*(n_beta-1)];
+  Qbeta_data(n_beta-2,n_beta-1)  = Qepsilon[2*(n_beta-2)+1];
 
-  for(i = 0; i < n_beta; i++){
-    for(j = i+3; j < n_beta; j++)
-      Qbeta_data[i][j] = 0;
-  }
-  //Transpose and fill in
-  for(i = 1; i < n_beta; i++){
-    for(j = 0; j < i; j++)
-      Qbeta_data[i][j] = Qbeta_data[j][i];
-  }
+  // Inversion of precision matrix
 
-  //Inversion of precision matrix
-  double **Identity = new double * [n_beta];
-  for(i = 0; i < n_beta; i++)
-    Identity[i] = new double[n_beta];
-  for(i = 0; i < n_beta; i++){
-    for(j = 0; j < n_beta; j++){
-      if(i == j)
-        Identity[i][j] = 1.0;
-      else
-        Identity[i][j] = 0;
-    }
-  }
+  NRLib::Matrix I = NRLib::IdentityMatrix(n_beta);
 
-  //Compute the inverse of Qbeta_data
-  //First we do cholesky factorization LL^T = covD
-  lib_matrCholR(n_beta, Qbeta_data);
-
-  //Solve Q inverse
-  lib_matrAXeqBMatR(n_beta,Qbeta_data,Identity,n_beta);
+  // Compute the inverse of Qbeta_data
+  // First we do cholesky factorization LL^T = covD
+  // Solve Q inverse
+  NRLib::CholeskySolve(Qbeta_data, I);
 
   //Compute the product (Qbeta_Data)^-1 Qepsilon_data
-  double *res = new double[n_beta];
-  double tmp;
+  NRLib::Vector res(n_beta);
+
   for(i = 0; i < n_beta; i++){
-    tmp = 0;
+    double tmp = 0;
     for(j = 0; j < n_beta; j++)
-      tmp += Identity[i][j]*Qepsilon_data[j];
-    res[i] = tmp;
+      tmp += I(i,j)*Qepsilon_data[j];
+    res(i) = tmp;
   }
 
-  //Return Sigma_gradient
+  // Return Sigma_gradient
   Sigma_gradient.resize(n_beta);
   std::vector<double> tmp_vec(n_beta);
   for(i = 0; i < n_beta; i++){
     for(j = 0; j < n_beta; j++)
-      tmp_vec[j] = Identity[i][j];
+      tmp_vec[j] = I(i,j);
     Sigma_gradient[i] = tmp_vec;
   }
 
 
   int counter = 0;
   for(i = 0; i < nBlocks_; i++){
-   xGradient[i] = res[counter];
-   yGradient[i] = res[counter+1];
-   counter +=2;
+    xGradient[i] = res(counter);
+    yGradient[i] = res(counter+1);
+    counter += 2;
   }
 
+  /*
    char* buffer2 = new char[1000];
    sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
    std::ofstream out2(buffer2);
@@ -2410,16 +2396,7 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
      out2 << std::endl;
    }
   delete [] buffer2;
-
-  for(i = 0; i < n_beta; i++){
-    if(Qbeta_data[i] != NULL)
-      delete [] Qbeta_data[i];
-    if(Identity[i] != NULL)
-      delete [] Identity[i];
-  }
-  delete [] Qbeta_data;
-  delete [] Identity;
-  delete [] res;
+  */
 }
 
 void BlockedLogs::computePrecisionMatrix(double &a, double &b, double &c)

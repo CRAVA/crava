@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef GRIDMAPPING_H
 #define GRIDMAPPING_H
 

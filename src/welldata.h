@@ -1,5 +1,11 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef WELLDATA_H
 #define WELLDATA_H
+
+#include "nrlib/stormgrid/stormcontgrid.hpp"
 
 #include "src/blockedlogs.h"
 #include "src/simbox.h"
@@ -66,6 +72,7 @@ public:
   int                 getNd(void) const;
   int                 checkError(std::string & errText);
   int                 checkSimbox(Simbox *simbox);
+  int                 checkStormgrid(StormContGrid & stormgrid) const;
   bool                removeDuplicateLogEntries(const Simbox * simbox, int & nMerges);
   void                setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
   void                filterLogs(void);

@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include "../nrlib/iotools/fileio.hpp"
 #include "../nrlib/tinyxml/tinyxml.h"
 
@@ -7,13 +11,13 @@
 #include <algorithm>
 #include <vector>
 
-std::string 
+std::string
 FindPreceedingString(const std::string & file, std::string::size_type end)
 {
   std::string::size_type start = end-1;
   while(start >= 0 && file[start] != ' ')
     start--;
-  
+
   std::string name = file.substr(start+1,end-start);
   return(name);
 }
@@ -43,10 +47,10 @@ CheckInputFiles(const std::string & topDir,
 
   std::string::size_type comStart = file1.find("addPathAndCheck");
   std::string::size_type comEnd   = file1.find("InputFiles::", comStart);
-    
+
   std::string::size_type base = file2.find("private:");
   std::string::size_type end  = file2.find("_", base);
-  
+
   while(end < file2.size()) {
     std::string variable = FindPreceedingString(file2, end);
     if(variable != "inputDirectory_") {
@@ -118,7 +122,7 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
     }
     start = file.find("parse",end);
   }
-  
+
   for(unsigned int i=0;i<cList.size();i++)
     errTxt = errTxt+"Error: Command <"+cList[i]+"> is listed as legal, but not implemented.\n";
 
@@ -126,7 +130,7 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
 }
 
 TiXmlElement *
-ProcessDocLevel(const std::string & file, int level, const std::vector<std::string> & commands, 
+ProcessDocLevel(const std::string & file, int level, const std::vector<std::string> & commands,
                 std::string::size_type first, std::string::size_type last)
 {
   std::string::size_type init  = file.find(commands[level],first);
@@ -159,7 +163,7 @@ ProcessDocLevel(const std::string & file, int level, const std::vector<std::stri
       TiXmlElement * child = ProcessDocLevel(file, level+1, commands, start, term);
       if(child != NULL)
         node->LinkEndChild(child);
-      start = file.find(commands[level+1], start+1); 
+      start = file.find(commands[level+1], start+1);
     }
   }
   return(node);
@@ -220,7 +224,7 @@ int main(int argc, char** argv)
   CheckInputFiles(topDir, errTxt);
   if(errTxt == "")
     std::cout << "All files are checked for existence.\n";
-  
+
   std::ifstream infile;
   NRLib::OpenRead(infile,topDir+"doc/user_manual/4_referencemanual.tex");
   std::string file;

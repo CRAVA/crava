@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -36,7 +40,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -45,6 +48,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "nrlib/volume/volume.hpp"
 
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
@@ -548,8 +552,8 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
       if((modelSettings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
         for(int i=0;i<numberOfAngles_;i++) {
           std::string angle    = NRLib::ToString(i);
-          std::string baseName = IO::FileTemporarySeismic() + angle;
-          seisCube[i]->writeCravaFile(baseName, timeSimbox);
+          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle);
+          seisCube[i]->writeCravaFile(fileName, timeSimbox);
         }
       }
 
@@ -626,7 +630,11 @@ ModelAVODynamic::processBackground(Background           *& background,
           backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
           backModel[i]->setType(FFTGrid::PARAMETER);
         }
-        background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+
+        if(modelSettings->getMultizoneBackground() == false)
+          background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+        else
+          background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
 
         if(velocity != NULL)
           delete velocity;
@@ -639,6 +647,7 @@ ModelAVODynamic::processBackground(Background           *& background,
         backModel[i]->createRealGrid();
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
+
 
       // Get prior probabilities for the facies in a vector
       std::vector<std::string> facies_names = modelGeneral->getFaciesNames();
@@ -766,7 +775,7 @@ ModelAVODynamic::processBackground(Background           *& background,
         LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
         backModel[0]->subtract(backModel[2]);
       }
-      if (modelSettings->getUseVpVsBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
+      if (modelSettings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
         LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
         backModel[1]->subtract(backModel[2]);
       }
@@ -1193,13 +1202,18 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
       if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
          (modelSettings->getEstimationMode() && estimateWavelet_[i])) {
         std::string type;
-        if (estimateWavelet_[i])
+        if (estimateWavelet_[i]) {
           type = "Estimated_";
-        else if (modelSettings->getWaveletScale(thisTimeLapse_,i) == 1.00)
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+        }
+        else if (modelSettings->getWaveletScale(thisTimeLapse_,i) == 1.00) {
           type = "";
-        else
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else {
           type = "Scaled_";
-        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
       }
       const float SNLow  = 1.0;
       const float SNHigh = 10.0;
@@ -1338,13 +1352,21 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
       if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
          (modelSettings->getEstimationMode() && estimateWavelet_[i])) {
         std::string type;
-        if (estimateWavelet_[i])
+        if (estimateWavelet_[i]) {
           type = "Estimated_";
-        else if (modelSettings->getWaveletScale(thisTimeLapse_,i) == 1.00)
+          if(wavelet->getDim()==1)
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+          else
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else if (modelSettings->getWaveletScale(thisTimeLapse_,i) == 1.00) {
           type = "";
-        else
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else {
           type = "Scaled_";
-        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
       }
 
       const float SNLow  = 1.0;
@@ -1728,4 +1750,3 @@ ModelAVODynamic::calculateSmoothGrad(const Surface * surf, double x, double y, d
    gy = RMISSING;
   }
 }
-

@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <fstream>
 
@@ -11,7 +15,7 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
-#include "lib/lib_matr.h"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/surface/surfaceio.hpp"
@@ -248,11 +252,11 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
   rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_);
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
   LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
   if( ModelSettings::getDebugLevel() > 0 )
-    writeWaveletToFile("estimated_wavelet_", 1.0f);
+    writeWaveletToFile("estimated_wavelet_", 1.0f,false);
 
   norm_ = findNorm();
 
@@ -270,7 +274,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
       NRLib::Substitute(wellname,"/","_");
       NRLib::Substitute(wellname," ","_");
       std::string fileName = IO::PrefixWellWavelet() + wellname + "_";
-      writeWaveletToFile(fileName, 1.0f);
+      writeWaveletToFile(fileName, 1.0f,false);
     }
   }
   fftw_free(rAmp_);
@@ -717,9 +721,9 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
     if ((SNRatio<minSN || SNRatio>maxSN) && estimateWavelet) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
-        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
       else
-        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1)+"\n");
     }
   }
 
@@ -943,57 +947,51 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
   std::vector<fftw_real> wellWavelet(rnzp_, 0.0);
 
   double maxG = 0.0;
-  //double maxD = 0.0;
   for (int i=0; i<nPoints; i++) {
-    //maxD = std::max(maxD, static_cast<double> (fabs(dVec[i])));
     for (int j=0; j<nWl; j++)
       maxG = std::max(maxG, static_cast<double> (fabs(gMat[i][j])));
   }
 
   //double wScale = maxD/maxG;
 
-  double **gTrg = new double *[nWl];
+  NRLib::SymmetricMatrix gTrg = NRLib::SymmetricZeroMatrix(nWl);
+
   for (int i=0; i<nWl; i++) {
-    gTrg[i]     = new double[nWl];
-    for (int j=0; j<nWl; j++) {
-      gTrg[i][j] = 0.0;
+    for (int j=0; j<=i; j++) {
       for (int k=0; k<nPoints; k++)
-        gTrg[i][j] += gMat[k][i]*gMat[k][j];
+        gTrg(j,i) += gMat[k][i]*gMat[k][j];
     }
   }
 
-  double *gTrd = new double[nWl];
+  NRLib::Vector gTrd = NRLib::ZeroVector(nWl);
+  NRLib::Vector x(nWl);
+
   double alpha = 4.0;
   double beta  = 0.5;
+
   for (int i=0; i<nWl; i++) {
-    gTrd[i] = 0.0;
     double a;
     if (i <= nhalfWl)
       a = static_cast<double> (i)/ static_cast<double> (nhalfWl);
     else
       a = static_cast<double> (nWl-i)/ static_cast<double> (nhalfWl);
-    gTrg[i][i] += maxG * maxG * exp(alpha*a*a) / (SNR * beta * beta); //( GTG+ (maxG/maxD)^2*(Noise)^2*priorCov^-1)=( GTG+ maxG^2/SN*(priorCov^-1)
+    gTrg(i,i) += maxG * maxG * exp(alpha*a*a) / (SNR * beta * beta); //( GTG+ (maxG/maxD)^2*(Noise)^2*priorCov^-1)=( GTG+ maxG^2/SN*(priorCov^-1)
+
     for (int j=0; j<nPoints; j++)
-      gTrd[i] += gMat[j][i] * dVec[j];
+      gTrd(i) += gMat[j][i] * dVec[j];
   }
 
-  //int result=
-  lib_matrCholR(nWl, gTrg);
-  lib_matrAxeqbR(nWl, gTrg, gTrd);
-  for (int i=0; i<nWl; i++)
-    delete [] gTrg[i];
-  delete [] gTrg;
+  NRLib::CholeskySolve(gTrg, gTrd, x);
 
-  wellWavelet[0] = static_cast<fftw_real> (gTrd[0]);
+  wellWavelet[0] = static_cast<fftw_real> (x(0));
   for (int i=1; i<nhalfWl; i++) {
-    wellWavelet[i]      = static_cast<fftw_real> (gTrd[i]);
-    wellWavelet[nzp_-i] = static_cast<fftw_real> (gTrd[nWl-i]);
+    wellWavelet[i]      = static_cast<fftw_real> (x(i));
+    wellWavelet[nzp_-i] = static_cast<fftw_real> (x(nWl-i));
   }
   for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
     wellWavelet[i] = 0.0f;
   for (int i=nzp_; i<rnzp_; i++)
     wellWavelet[i] = RMISSING;
-  delete [] gTrd;
 
   return wellWavelet;
 }

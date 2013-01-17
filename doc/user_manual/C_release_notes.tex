@@ -5,22 +5,171 @@ system called
 \index{JIRA, project management} Note that access permission is
 required to be able to open the links.
 
-\section{Changes from \crava Version 1.0 to Version 1.1}
+\section{Changes from v1.2 to v1.3}
+
+\begin{description}
+\item [New features:] \mbox{ }
+  \begin{itemize}
+    \item Smoothing values from illumination vector grid. \jira{162}
+    \item Build zones for multizone background model. \jira{317}
+    \item Fill in values in the multizone background model. \jira{319}
+    \item Generate complete multizone background model in timeSimbox. \jira{325}
+    \item Include beta distribution in nrlib/random \jira{331}
+ \end{itemize}
+
+\item [Changes:] \mbox{ }
+  \begin{itemize}
+   \item Check that facies probabilities are between 0 and 1. \jira{347}
+   \item Adjust estimated wavelet such that it is smooth and the amplitude goes smoothly to zero in frequency domain. \jira{315}
+   \item Make CRAVA compile under g++ 4.6.3 (Ubuntu 12.04). \jira{345}
+ \end{itemize}
+
+\item [Bug fixes:] \mbox{ }
+  \begin{itemize}
+  \item If ASCII grid output is requested, STORM grids cannot be imported to RMS \jira{224}
+    \item Incorrect guard zone check done before smoothing seismic data in new resampling. \jira{330}
+    \item Problems if <seg-start-time> is used when it should not have been. \jira{346}
+    \item Bug in writing of background trend to file for multizone background model \jira{348}
+    \item Failed to open temporal seismic file in crava format for writing. \jira{349}
+    \item In new resampling algorithm of seismic data, wrong weights are used when doing interpolation. \jira{350}
+    \item CRAVA incorrectly reports that no optimal global wavelet scale has been found. \jira{351}
+    \item Some segy files are given the same path twice. \jira{352}
+  \end{itemize}
+\end{description}
+
+\section{Changes from v1.1 to v1.2}
 
 \begin{description}
 
 \item [New features:] \mbox{ }
   \begin{itemize}
-    \item Report ... \jira{272}
- \end{itemize}
+    \item Introduce new and more efficient resampling of seismic
+      data. \jira{274}
+    \item Add SI (=Vs*Rho) as possible input type for background
+      model. \jira{287}
+    \item For forward modelling allow earth model to be input as
+      (AI,SI,Rho) and (AI,Vp/Vs,Rho). \jira{302}
+    \item Add new SegY format "SIPX" to list of auto-detected
+      formats.\jira{290}
+    \item Added 3D wavelet estimation/inversion. \jira{304}, \jira{308},
+      \jira{309}
+  \end{itemize}
 
 \item [Changes:] \mbox{ }
   \begin{itemize}
-    \item Multiple ... zeroes.  \jira{284}
+    \item Require seismic data in target zone+guard zone rather than
+      in full inversion grid (simbox). \jira{216}
+    \item Cleaned test suite and findgrammar for <TAB> and trailing
+      blanks, and added "no trailings blanks" as requirement for passing
+      test suite. \jira{275}, \jira{276}
+    \item Use one wavelet (200ms) as default when estimating vertical
+      padding size. Previous default was half a wavelet
+      (100ms). \jira{300}
+    \item Ensure that we log the parameter values of all parameters
+      available under the \kw{advanced-settings} keyword. \jira{307}
   \end{itemize}
 
 \item [Bug fixes:] \mbox{ }
   \begin{itemize}
-    \item Wrong .... \jira{285}
+    \item Fixed problem identifying the lateral geometry of seismic
+      data. \jira{277}
+    \item Vp and Vs were reported as input data types for background
+      model in logFile.txt when AI and Vp/Vs were used. \jira{288}
+    \item An incorrect grid size estimate made inversion runs stop
+      even for medium sized grids. \jira{292}
+    \item Fixed crash when the \kw{filter-elastic-logs} option was
+      used. \jira{310}
+    \item Removed memory leaks in test suite using Purify. \jira{265}.
+  \end{itemize}
+\end{description}
+
+
+\section{Changes from v1.0 to v1.1}
+
+\begin{description}
+
+\item [New features:] \mbox{ }
+  \begin{itemize}
+    \item Allow background model to be specified with AI and\!/\!or
+      \vp/\vs, as a complement to \vp, \vs, and $\rho$. Specify files
+      for these parameters with keyword \kw{ai-file} and
+      \kw{vp-vs-ratio-file}. \jira{214}
+    \item Allow users to specify \vp/\vs for use in the
+      reflection matrix.  Use keyword \kw{vp-vs-ratio}. \jira{219}
+    \item Remove certain QC checks when \crava is run from
+      \rms, as \rms will perform these tests. Activated with keyword
+      \kw{rms-panel-mode}. \jira{221}
+    \item When seismic data is given in SegY format, write the IL-XL
+      range of data to the log file. \jira{230}, \jira{267}
+    \item Create synthetic residuals which add up to original seismic
+      when added to synthetic seismic. Activated with
+      \kw{synthetic-residuals}. \jira{234}
+    \item If the \kw{rms-panel-mode} mode has been requested and
+      facies probabilities are not requested, well logs will not be
+      (multi-parameter) filtered. \jira{242}
+    \item Allow \vp/\vs to be estimated from wells. Activated
+      with keyword \kw{vp-vs-ratio-from-wells}. If
+      \kw{wavelet-estimation-interval} has been specified, this
+      interval will also be used for the \vp/\vs estimate. \jira{247}
+    \item If automatic SegY format detection fails, list trace
+      header locations of known formats as well as their associated
+      \crava-names. \jira{259}
+    \item Give a warning if prior or posterior parameter correlations
+      exceed one. To avoid this situation completely, some recoding is
+      required. This is left for a later release (see
+      \jira{257}). \jira{261}
+    \item When specifying an area as UTM coordinates or surface,
+      choose as inversion area the smallest IL-XL box that
+      encloses the specified area. Activated with keyword
+      \kw{snap-to-seismic-data}. \jira{266}
+    \item Allow (some) traces to have bogus IL-XL information in
+      header. If encountered, the IL-XL values are set to
+      undefined. \jira{269}
+    \item Write IL-XL values for well start positions whenever
+      possible. This makes it easy to do inversion around a given
+      well. \jira{270}
+ \end{itemize}
+
+\item [Changes:] \mbox{ }
+  \begin{itemize}
+    \item When the prior correlation between \vp and \vs cannot be
+      estimated from well data it is set to $1/\sqrt{2}\approx
+      0.7$. \jira{220}
+    \item Made blocking of facies deterministic. If a cell has the
+      same facies count for $n$ different facies, the cell value
+      becomes facies\_to\_choose $= (k + 1)\ \%\ n$, where $k$ is the
+      layer number. This used to be randomly chosen, so that identical
+      runs could give different facies predictions. \jira{249}
+    \item Changed the computation of SegY geometry, and improved error messages. The new version should be more accurate and robust.
+  \end{itemize}
+
+\item [Bug fixes:] \mbox{ }
+  \begin{itemize}
+    \item Fixed crash in background modelling when there were
+      (unrealistically) few layers in grid. \jira{200}
+    \item Background volumes of AI and\!/\!or \vp/\vs containing undefined
+      values caused troubles. The fix is to set such undefined values
+      to global mean. \jira{222}
+    \item Removed bugs in estimation of wavelet norm, which indirectly
+      led to ringing in inversion results. \jira{223}
+    \item Number of allocated grids were incorrectly counted when
+      estimating total memory requirement for \crava. \jira{251}
+    \item Fixed crash when interval was specified with option
+      \kw{interval-one-surface}. Wavelets had not been transformed
+      prior to constant thickness inversion. Also, a wavelet polarity
+      bug was fixed. New test cases 16 and 17 were added to avoid
+      future constant thickness and wavelet polarity related
+      bugs. \jira{252}, \jira{253}
+    \item For short wells, deviation angles were incorrectly estimated
+      due to an 10ms sample requirement. Also, the angle was
+      calculated between well start and well end instead of for
+      trajectory tangents.
+    \item Fixed crash when project directory could not be
+      created. This was a bug in the throw/catch system of
+      NRLib. \jira{256}
+    \item Fixed several bugs encountered when using 3D prior facies
+      probability volumes. \jira{272}
+    \item Fixed bug with interpolation of Storm-grids used for input.
  \end{itemize}
 \end{description}
+

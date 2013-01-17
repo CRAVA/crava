@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef FACIESPROB_H
 #define FACIESPROB_H
 
@@ -5,6 +9,7 @@
 #include "rfftw.h"
 #include "fftw-int.h"
 #include "f77_func.h"
+#include "libs/nrlib/flens/nrlib_flens.hpp"
 
 #include <rplib/distributionsrock.h>
 #include <src/posteriorelasticpdf.h>
@@ -30,26 +35,26 @@ class CravaTrend;
 class FaciesProb
 {
 public:
-  FaciesProb(FFTGrid                      * alpha,
-             FFTGrid                      * beta,
-             FFTGrid                      * rho,
-             int                            nFac,
-             float                          p_undef,
-             const std::vector<float>     & priorFacies,
-             std::vector<FFTGrid *>         priorFaciesCubes,
-             const std::vector<double **> & sigmaEOrig,
-             bool                           useFilter,
-             std::vector<WellData *>        wells,
-             int                            nWells,
-             const std::vector<Surface *> & faciesEstimInterval,
-             const double                   dz,
-             bool                           relative,
-             bool                           noVs,
-             Crava                         *cravaResult,
-             const std::vector<Grid2D *>  & noiseScale,
-             const ModelSettings          * modelSettings,
-             FFTGrid                      * seismicLH,
-             const std::vector<std::string> facies_names);
+  FaciesProb(FFTGrid                           * alpha,
+             FFTGrid                           * beta,
+             FFTGrid                           * rho,
+             int                                 nFac,
+             float                               p_undef,
+             const std::vector<float>          & priorFacies,
+             std::vector<FFTGrid *>              priorFaciesCubes,
+             const std::vector<NRLib::Matrix>  & sigmaEOrig,
+             bool                                useFilter,
+             std::vector<WellData *>             wells,
+             int                                 nWells,
+             const std::vector<Surface *>      & faciesEstimInterval,
+             const double                        dz,
+             bool                                relative,
+             bool                                noVs,
+             Crava                              *cravaResult,
+             const std::vector<Grid2D *>       & noiseScale,
+             const ModelSettings               * modelSettings,
+             FFTGrid                           * seismicLH,
+             const std::vector<std::string>      facies_names);
 
   FaciesProb(FFTGrid                                            * alpha,
              FFTGrid                                            * beta,
@@ -109,13 +114,27 @@ public:
                          int                     nWells);
 
 private:
-  int             nFacies_;
-  int             syntWellLength_; // default is 1000 in the constructor, mean facies length is set to 10
-  int             nBinsTrend_; //default is 20 in the constructor
-  double          trend1BinSize_;
-  double          trend2BinSize_;
-  FFTGrid      ** faciesProb_;
-  FFTGrid      *  faciesProbUndef_;
+
+
+  void                   makeFaciesProb(int                                nfac,
+                                        FFTGrid                          * postAlpha,
+                                        FFTGrid                          * postBeta,
+                                        FFTGrid                          * postRho,
+                                        const std::vector<NRLib::Matrix> & sigmaEOrig,
+                                        bool                               useFilter,
+                                        const WellData                  ** wells,
+                                        int                                nWells,
+                                        const std::vector<Surface *>     & faciesEstimInterval,
+                                        const double                       dz,
+                                        bool                               relative,
+                                        bool                               noVs,
+                                        float                              p_undef,
+                                        const float                      * priorFacies,
+                                        FFTGrid                         ** priorFaciesCubes,
+                                        Crava                            * cravaResult,
+                                        const std::vector<Grid2D *>      & noiseScale,
+                                        const ModelSettings              * modelSettings,
+                                        FFTGrid                          * seismicLH);
 
   int                    MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
                                                             std::vector<Simbox*>                                   & volume,
@@ -134,10 +153,13 @@ private:
                                                             int                                                      lowIntCut,
                                                             float                                                    corrGradI,
                                                             float                                                    corrGradJ);
+  void                   checkProbabilities(const std::vector<std::string>  & faciesNames,
+                                            FFTGrid                        ** faciesProb,
+                                            int                               nFacies) const;
 
   int                    MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf3d,
                                                  std::vector<Simbox*>                                     & volume,
-                                                 const std::vector<double **>                             & sigmaEOrig,
+                                                 const std::vector<NRLib::Matrix>                         & sigmaEOrig,
                                                  bool                                                       useFilter,
                                                  std::vector<WellData *>                                    wells,
                                                  int                                                        nWells,
@@ -166,26 +188,26 @@ private:
                                                                     CravaTrend                                                & trend_cubes);
 
 
-  void     makeFaciesProb(int                          nFac,
-                       FFTGrid                       * alpha,
-                       FFTGrid                       * beta,
-                       FFTGrid                       * rho,
-                       const std::vector<double **>  & sigmaEOrig,
-                       bool                            useFilter,
-                       std::vector<WellData *>         wells,
-                       int                             nWells,
-                       const std::vector<Surface *>  & faciesEstimInterval,
-                       const double                    dz,
-                       bool                            relative,
-                       bool                            noVs,
-                       float                           p_undef,
-                       const std::vector<float>      & priorFacies,
-                       std::vector<FFTGrid *>          priorFaciesCubes,
-                       Crava                         * cravaResult,
-                       const std::vector<Grid2D *>   & noiseScale,
-                       const ModelSettings           * modelSettings,
-                       FFTGrid                       * seismicLH,
-                       const std::vector<std::string>  facies_names);
+  void     makeFaciesProb(int                                 nFac,
+                          FFTGrid                           * alpha,
+                          FFTGrid                           * beta,
+                          FFTGrid                           * rho,
+                          const std::vector<NRLib::Matrix>  & sigmaEOrig,
+                          bool                                useFilter,
+                          std::vector<WellData *>             wells,
+                          int                                 nWells,
+                          const std::vector<Surface *>      & faciesEstimInterval,
+                          const double                        dz,
+                          bool                                relative,
+                          bool                                noVs,
+                          float                               p_undef,
+                          const std::vector<float>          & priorFacies,
+                          std::vector<FFTGrid *>              priorFaciesCubes,
+                          Crava                             * cravaResult,
+                          const std::vector<Grid2D *>       & noiseScale,
+                          const ModelSettings               * modelSettings,
+                          FFTGrid                           * seismicLH,
+                          const std::vector<std::string>      facies_names);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -193,20 +215,20 @@ private:
                                                        const std::vector<int>   & facies,
                                                        const Simbox             * volume);
 
-  void                   makeFaciesDens(int nfac,
-                                        const std::vector<double **> & sigmaEOrig,
-                                        bool                           useFilter,
-                                        bool                           noVs,
-                                        const std::vector<float>     & alphaFiltered,
-                                        const std::vector<float>     & betaFiltered,
-                                        const std::vector<float>     & rhoFiltered,
-                                        const std::vector<int>       & faciesLog,
-                                        std::vector<FFTGrid *>       & density,
-                                        Simbox                      ** volume,
-                                        int                            index,
-                                        double                       **G,
-                                        Crava                         *cravaResult,
-                                        const std::vector<Grid2D *>   & noiseScale);
+  void                   makeFaciesDens(int                                nfac,
+                                        const std::vector<NRLib::Matrix> & sigmaEOrig,
+                                        bool                               useFilter,
+                                        bool                               noVs,
+                                        const std::vector<float>         & alphaFiltered,
+                                        const std::vector<float>         & betaFiltered,
+                                        const std::vector<float>         & rhoFiltered,
+                                        const std::vector<int>           & faciesLog,
+                                        std::vector<FFTGrid *>           & density,
+                                        Simbox                          ** volume,
+                                        int                                index,
+                                        NRLib::Matrix                    & G,
+                                        Crava                            * cravaResult,
+                                        const std::vector<Grid2D *>      & noiseScale);
 
   void                   setNeededLogsSpatial(std::vector<WellData  *>       wells,
                                               int                            nWells,
@@ -305,5 +327,13 @@ private:
                             std::vector<double>        & y,      //output dimension 2
                             const std::vector<double>  & v1,     //linear transformation 1
                             const std::vector<double>  & v2);    //linear transformation 2
+
+  int             nFacies_;
+  FFTGrid      ** faciesProb_;
+  FFTGrid       * faciesProbUndef_;
+  int             syntWellLength_; // default is 1000 in the constructor, mean facies length is set to 10
+  int             nBinsTrend_; //default is 20 in the constructor
+  double          trend1BinSize_;
+  double          trend2BinSize_;
 };
 #endif

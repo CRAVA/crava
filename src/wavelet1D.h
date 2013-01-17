@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef WAVELET1D_H
 #define WAVELET1D_H
 
@@ -153,14 +157,17 @@ private:
                                   float                        waveletLength,
                                   const std::vector<float>   & wellWeight)    const;
 
-  void          getWavelet(fftw_real                        ** ccor_seis_cpp_r,
+  void          adjustLowfrequency(fftw_real                * vec_r,
+                                   float                      dz,
+                                   int                        nzp,
+                                   float                      waveletLength) const;
+
+  void          findWavelet(fftw_real                        ** ccor_seis_cpp_r,
                            fftw_real                        ** cor_cpp_r,
                            fftw_real                        ** wavelet_r,
                            const std::vector<float>          & wellWeight,
                            int                                 nWells,
                            int                                 nt);
-
-
 
   void           writeDebugInfo(fftw_real                   ** seis_r,
                                 fftw_real                   ** cor_cpp_r,

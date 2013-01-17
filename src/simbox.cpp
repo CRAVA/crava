@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <math.h>
 #include <assert.h>
 #include <algorithm>
@@ -237,10 +241,22 @@ Simbox::getZInterpolation(double x, double y, double z,
 void
 Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const
 {
+  getXYCoord(xInd, yInd, x, y);
+  getZCoord(zInd, x, y, z);
+}
+
+void
+Simbox::getXYCoord(int xInd, int yInd, double &x, double &y) const
+{
   double rx = (static_cast<double>(xInd) + 0.5)*dx_;
   double ry = (static_cast<double>(yInd) + 0.5)*dy_;
   x = rx*cosrot_-ry*sinrot_ + GetXMin();
   y = rx*sinrot_+ry*cosrot_ + GetYMin();
+}
+
+void
+Simbox::getZCoord(int zInd, double x, double y, double &z) const
+{
   z = RMISSING;
   double zBot, zTop = GetTopSurface().GetZ(x,y);
   if(GetTopSurface().IsMissing(zTop) == false)
@@ -252,15 +268,6 @@ Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) 
       z = zTop + (static_cast<double>(zInd) + 0.5)*dz;
     }
   }
-}
-
-void
-Simbox::getXYCoord(int xInd, int yInd, double &x, double &y) const
-{
-  double rx = (static_cast<double>(xInd) + 0.5)*dx_;
-  double ry = (static_cast<double>(yInd) + 0.5)*dy_;
-  x = rx*cosrot_-ry*sinrot_ + GetXMin();
-  y = rx*sinrot_+ry*cosrot_ + GetYMin();
 }
 
 void
@@ -472,7 +479,7 @@ Simbox::setTopBotName(const std::string & topname,
                       int                 outputFormat)
 {
   std::string suffix;
-  if ((outputFormat & IO::ASCII) > 0)
+  if ((outputFormat & IO::ASCII) > 0 && (outputFormat & IO::STORM) == 0)
     suffix = IO::SuffixAsciiIrapClassic();
   else
     suffix = IO::SuffixStormBinary();

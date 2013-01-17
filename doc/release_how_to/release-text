@@ -1,6 +1,28 @@
-Denne er inntil versjon 1.0 av CRAVA blir sluppet er det opp til deg å 
-utforme denne teksten. Pass på å få med lenken:
+Subject:
+Release of CRAVA version X.Y.Z (download from Web)
 
-http://www.nr.no/~loginname/www_ekstern/f8eu3j2d/crava_prog_0.9.8.tar
+Body:
+Dear all.
 
-i e-posten.
+The CRAVA development team is happy to announce the release of
+version X.Y.Z.
+
+Main new feature: ...
+Main bug fix    : ...
+
+64 bits executables for Linux (compiled under RH5) and Windows
+(compiled under Windows 7) can be download from
+
+http://www.nr.no/~pdahle/5yost87n/crava_prog_1.1.0.tgz
+
+The executables have been zipped and can be unpacked using, for
+example, unzip (Linux) and winzip (Windows).
+
+An updated CRAVA reference manual (pdf) which includes release
+notes is available from
+
+http://www.nr.no/pages/sand/area_Cohiba
+
+On behalf of the CRAVA team.
+
+Pål Dahle

@@ -1,23 +1,30 @@
 #
 # The available CRAVA compiler directives are
-#    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)  
+#    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)
 #
-CDIR       = 
-CXX        = g++
-CC         = gcc
-GCCWARNING = -Wall -pedantic -Wno-long-long -Werror
+CDIR        = -DFLENS_FIRST_INDEX=0
+CXX         = g++
+CC          = gcc
+GCCNEW      = $(shell expr `gcc -dumpversion | sed s/\\.//` \>= 46)
+GCCWARNING := -Wall -pedantic -Wno-long-long -Werror
 #
 # The directive -fno-strict-aliasing has been included to avoid a following compilator error:
 # segy/traceheader.cpp: In member function ‘int NRLib::TraceHeader::GetInt32(int) const’:
 # segy/traceheader.cpp:519: error: dereferencing type-punned pointer will break strict-aliasing rules
-# 
-GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast -Werror -fno-strict-aliasing
-PROGRAM    = cravarun
-GRAMMAR    = grammar
-OPT        = -O2
-DEBUG      =
-PURIFY     = 
-mode       = all
+#
+GXXWARNING  = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast -Werror -fno-strict-aliasing
+PROGRAM     = cravarun
+GRAMMAR     = grammar
+OPT         = -O2
+DEBUG       =
+PURIFY      =
+ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran
+
+mode        = all
+
+ifeq ($(GCCNEW),1)
+GXXWARNING += -Wno-unused-but-set-variable
+endif
 
 ifeq ($(mode),debug)
 # Don't use -O2 (makes it impossible to set breakpoints)
@@ -27,7 +34,7 @@ endif
 
 ifeq ($(mode),profile)
 # Don't use -ggdb here
-DEBUG   = -g 
+DEBUG   = -g
 PROFILE = -pg
 endif
 
@@ -39,6 +46,15 @@ PROGRAM = cravarun.purify
 PURIFY  = purify -best-effort
 endif
 
+ifeq ($(lib),mkl)
+ATLASLFLAGS  =
+MKLINCLUDE  := /nr/prog/intel/Compiler/mkl/include
+MKLPATH     := /nr/prog/intel/Compiler/mkl/lib/intel64
+MKLLFLAGS   := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+                 $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
+                 -lpthread -ldl
+endif
+
 OPT     := $(strip $(OPT))
 PROFILE := $(strip $(PROFILE))
 DEBUG   := $(strip $(DEBUG))
@@ -47,13 +63,8 @@ PURIFY  := $(strip $(PURIFY))
 
 EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 
-MKLINCLUDE := /nr/prog/intel/Compiler/mkl/include
-MKLPATH    := /nr/prog/intel/Compiler/mkl/lib/intel64
-MKLLFLAGS  := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
-	$(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
-	-lpthread -ldl
-
 CFLAGS     = $(GCCWARNING)
-CXXFLAGS   = $(GXXWARNING) -I$(MKLINCLUDE) -DFLENS_FIRST_INDEX=0 -DMKL
+CXXFLAGS   = $(GXXWARNING)
 CPPFLAGS   = $(EXTRAFLAGS)
-LFLAGS     = $(PROFILE) $(DEBUG) $(MKLLFLAGS) -lm
+LFLAGS     = $(PROFILE) $(ATLASLFLAGS)$(MKLLFLAGS) $(DEBUG) -lm
+# Add -static to LFLAGS?

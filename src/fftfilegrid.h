@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef FFTFILEGRID_H
 #define FFTFILEGRID_H
 
@@ -23,6 +27,7 @@ public:
   float        getRealValue(int i, int j, int k, bool extSimbox = false);
   float        getRealValueInterpolated(int i, int j, float kindex);
   int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);
+  int          SetNextComplex(std::complex<double> & value);
   int          setNextComplex(fftw_complex);
   int          setNextReal(float);
   int          square();

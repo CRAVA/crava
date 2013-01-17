@@ -1,7 +1,12 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef FFTGRID_H
 #define FFTGRID_H
 
 #include <assert.h>
+#include <complex>
 #include <string>
 
 #include "fftw.h"
@@ -26,22 +31,22 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(const SegY * segy, const Simbox *simbox, bool nopadding = false ); // No mode
+  int                  fillInFromSegY(const SegY              * segy,
+                                      const Simbox            * simbox,
+                                      const std::string       & parName,
+                                      bool                      nopadding = false ); // No mode
   void                 fillInSeismicDataFromSegY(const SegY   * segy,
                                                  const Simbox * timeSimbox,
                                                  const Simbox * timeCutSimbox,
                                                  float         smooth_length,
-                                                 int         & missingTracesSimbox,
-                                                 int         & missingTracesPadding,
-                                                 int         & deadTracesSimbox,
-                                                 std::string & errTxt);
+                                                 int          & missingTracesSimbox,
+                                                 int          & missingTracesPadding,
+                                                 int          & deadTracesSimbox,
+                                                 std::string  & errTxt);
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
                                               float                z0_data,
                                               float                zn_data,
                                               float                dz_data,
-                                              float                ztop,
-                                              float                zbase,
-                                              float                dz,
                                               float                smooth_length,
                                               std::string        & errTxt);
   void                 resampleTrace(const std::vector<float> & data_trace,
@@ -101,6 +106,7 @@ public:
   virtual fftw_complex getNextComplex() ;                       // Accessmode read/readandwrite
   virtual float        getNextReal() ;                          // Accessmode read/readandwrite
   virtual int          setNextComplex(fftw_complex);            // Accessmode write/readandwrite
+  virtual int          SetNextComplex(std::complex<double> & v);// Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false) const;  // Accessmode randomaccess
   float                getRealValueCyclic(int i, int j, int k);

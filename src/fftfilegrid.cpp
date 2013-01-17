@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <sstream>
 #include <math.h>
@@ -226,6 +230,20 @@ FFTFileGrid::setRealValue(int i, int j, int k, float value, bool extSimbox)
   assert(accMode_ == RANDOMACCESS);
   modified_ = 1;
   return(FFTGrid::setRealValue(i, j, k, value, extSimbox));
+}
+
+
+int
+FFTFileGrid::SetNextComplex(std::complex<double> & value)
+{
+  assert(istransformed_==true);
+  assert(accMode_ == READANDWRITE || accMode_ == WRITE);
+  fftw_complex tmp;
+  tmp.re = value.real();
+  tmp.im = value.imag();
+  char * buffer = reinterpret_cast<char *>(&tmp);
+  outFile_.write(buffer,sizeof(fftw_complex));
+  return(0);
 }
 
 

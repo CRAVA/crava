@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -38,7 +42,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_matr.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -255,7 +258,6 @@ ModelGeneral::~ModelGeneral(void)
 
 }
 
-
 void
 ModelGeneral::readSegyFile(const std::string       & fileName,
                            FFTGrid                *& target,
@@ -264,6 +266,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            const ModelSettings     * modelSettings,
                            const SegyGeometry     *& geometry,
                            int                       gridType,
+                           const std::string       & parName,
                            float                     offset,
                            const TraceHeaderFormat * format,
                            std::string             & errText,
@@ -304,7 +307,10 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
     if (errTxt == "") {
       bool  onlyVolume      = true;
-      float padding        = 2*guard_zone; // This is *not* the same as FFT-grid padding
+      // This is *not* the same as FFT-grid padding. If the padding
+      // size is changed from 2*guard_zone, the smoothing done in
+      // FFTGrid::smoothTraceInGuardZone() will become incorrect.
+      float padding         = 2*guard_zone;
       bool  relativePadding = false;
 
       segy->ReadAllTraces(timeCutSimbox,
@@ -371,6 +377,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     else {
       missingTracesSimbox = target->fillInFromSegY(segy,
                                                    timeSimbox,
+                                                   parName,
                                                    nopadding);
     }
 
@@ -385,7 +392,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
         }
         else {
           LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(missingTracesSimbox)
-                             +" grid columns were outside the seismic data area.");
+                             +" grid columns are outside the area defiend by the seismic data.");
           std::string text;
           text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
           text += "    the seismic data specified in file \'"+fileName+"\'.";
@@ -394,15 +401,17 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       }
     }
     if (missingTracesPadding > 0) {
-      int nxpad  = xpad - timeSimbox->getnx();
-      int nypad  = ypad - timeSimbox->getny();
-      int nxypad = nxpad*nypad;
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding with no seismic data: "
+      int nx     = timeSimbox->getnx();
+      int ny     = timeSimbox->getny();
+      int nxpad  = xpad - nx;
+      int nypad  = ypad - ny;
+      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
                          +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
     }
     if (deadTracesSimbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid with no seismic data   : "
-                         +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
+      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                         +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
     }
   }
   if (segy != NULL)
@@ -435,24 +444,24 @@ ModelGeneral::checkThatDataCoverGrid(const SegY   * segy,
     errText += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
     errText += "must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a ";
     errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
-    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
-    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
-    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
-    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
-    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
-    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
+    errText += "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n";
+    errText += "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n";
+    errText += "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n";
+    errText += "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n";
+    errText += "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n";
   }
   if (bot_guard > zn) {
     float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
     errText += "\nThere is not enough seismic data below the interval of interest. The seismic data\n";
     errText += "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a ";
     errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
-    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
-    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
-    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
-    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
-    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
-    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
+    errText += "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n";
+    errText += "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n";
+    errText += "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n";
+    errText += "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n";
+    errText += "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n";
   }
 }
 
@@ -651,7 +660,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               }
               else {
                 text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-                text  = "   of those found in the seismic data.\n";
+                text += "   of those found in the seismic data.\n";
                 TaskList::addTask(text);
               }
             }
@@ -1074,7 +1083,7 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
                                       int        otherOutput)
 {
   timeCutSimbox = new Simbox(timeSimbox);
-  double * corrPlanePars = findPlane(corrSurf);
+  NRLib::Vector corrPlanePars = findPlane(corrSurf);
   Surface * meanSurf;
   if(corrSurf->GetNI() > 2)
     meanSurf = new Surface(*corrSurf);
@@ -1103,12 +1112,12 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   meanSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
   meanSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
   meanSurf->Multiply(0.5);
-  double * refPlanePars = findPlane(meanSurf);
+  NRLib::Vector refPlanePars = findPlane(meanSurf);
 
-  for(i=0;i<3;i++)
-    refPlanePars[i] -= corrPlanePars[i];
-  gradX_ = refPlanePars[1];
-  gradY_ = refPlanePars[2];
+  refPlanePars -= corrPlanePars;
+
+  gradX_ = refPlanePars(1);
+  gradY_ = refPlanePars(2);
 
   Surface * refPlane = createPlaneSurface(refPlanePars, meanSurf);
   delete meanSurf;
@@ -1118,8 +1127,6 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   IO::writeSurfaceToFile(*refPlane, fileName, IO::PathToCorrelations(), outputFormat);
 
   refPlane->AddNonConform(corrSurf);
-  delete [] corrPlanePars;
-  delete [] refPlanePars;
 
   Surface topSurf(*refPlane);
   topSurf.SubtractNonConform(&(timeSimbox->GetTopSurface()));
@@ -1237,62 +1244,51 @@ ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   }
 }
 
-double *
+NRLib::Vector
 ModelGeneral::findPlane(Surface * surf)
 {
-  double ** A = new double * [3];
-  double * b = new double[3];
-  int i, j;
-  for(i=0;i<3;i++) {
-    A[i] = new double[3];
-    for(j=0;j<3;j++)
-      A[i][j] = 0;
-    b[i] = 0;
-  }
+  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
+  NRLib::Vector b(3);
+  NRLib::Vector x(3);
 
-  double x, y, z;
+  b = 0;
+
   int nData = 0;
-  for(i=0;i<static_cast<int>(surf->GetN());i++) {
+
+  for(int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+    double x, y, z;
     surf->GetXY(i, x, y);
     z = (*surf)(i);
     if(!surf->IsMissing(z)) {
       nData++;
-      A[0][1] += x;
-      A[0][2] += y;
-      A[1][1] += x*x;
-      A[1][2] += x*y;
-      A[2][2] += y*y;
-      b[0] += z;
-      b[1] += x*z;
-      b[2] += y*z;
+      A(0,1) += x;
+      A(0,2) += y;
+      A(1,1) += x*x;
+      A(1,2) += x*y;
+      A(2,2) += y*y;
+      b(0)   += z;
+      b(1)   += x*z;
+      b(2)   += y*z;
     }
   }
 
-  A[0][0] = nData;
-  A[1][0] = A[0][1];
-  A[2][0] = A[0][2];
-  A[2][1] = A[1][2];
+  A(0,0) = nData;
 
-  lib_matrCholR(3, A);
-  lib_matrAxeqbR(3, A, b);
+  NRLib::CholeskySolve(A, b, x);
 
-  for(i=0;i<3;i++)
-    delete [] A[i];
-  delete [] A;
-
-  return(b);
+  return x;
 }
 
 
 Surface *
-ModelGeneral::createPlaneSurface(double * planeParams, Surface * templateSurf)
+ModelGeneral::createPlaneSurface(const NRLib::Vector & planeParams,
+                                 Surface             * templateSurf)
 {
   Surface * result = new Surface(*templateSurf);
-  double x,y;
-  int i;
-  for(i=0;i<static_cast<int>(result->GetN());i++) {
+  for(int i=0;i<static_cast<int>(result->GetN());i++) {
+    double x,y;
     result->GetXY(i,x,y);
-    (*result)(i) = planeParams[0]+planeParams[1]*x+planeParams[2]*y;
+    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
   }
   return(result);
 }
@@ -1436,7 +1432,7 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
   }
   else if(fileType == IO::SEGY)
     readSegyFile(fileName, grid, timeSimbox, timeCutSimbox, modelSettings, geometry,
-                 gridType, offset, format, errText, nopadding);
+                 gridType, parName, offset, format, errText, nopadding);
   else if(fileType == IO::STORM)
     readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)
@@ -1922,6 +1918,28 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",modelSettings->getMaxHzBackground());
+    if(modelSettings->getMultizoneBackground() == true) {
+      std::vector<std::string> surface_files = inputFiles->getMultizoneSurfaceFiles();
+      std::vector<int> erosion = modelSettings->getErosionPriority();
+      std::vector<double> uncertainty = modelSettings->getSurfaceUncertainty();
+      std::vector<int> structure = modelSettings->getCorrelationStructure();
+      int nZones = static_cast<int>(surface_files.size()-1);
+      LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
+      LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
+      LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
+      for(int i=0; i<nZones; i++) {
+        LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
+        LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
+        LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
+        LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
+        if(structure[i+1] == ModelSettings::TOP)
+          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
+        else if(structure[i+1] == ModelSettings::BASE)
+          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
+        else if(structure[i+1] == ModelSettings::COMPACTION)
+          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
+      }
+    }
   }
   else
   {

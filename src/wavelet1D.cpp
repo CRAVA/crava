@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <fstream>
 
@@ -11,8 +15,6 @@
 #include "rfftw.h"
 #include "fftw-int.h"
 #include "f77_func.h"
-
-#include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
@@ -48,21 +50,20 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
 
-  coeff_[0] = reflCoef[0];
-  coeff_[1] = reflCoef[1];
-  coeff_[2] = reflCoef[2];
-
-  dz_                   = static_cast<float>(simbox->getdz());
-  nz_                   = simbox->getnz();
-  theta_                = seisCube->getTheta();
-  nzp_                  = seisCube->getNzp();
-  cnzp_                 = nzp_/2+1;
-  rnzp_                 = 2*cnzp_;
-  scale_                = 1.0f;
-  cz_                   = 0;
-  inFFTorder_           = true;
-  isReal_               = true;
-  formats_              = modelSettings->getWaveletFormatFlag();
+  coeff_[0]   = reflCoef[0];
+  coeff_[1]   = reflCoef[1];
+  coeff_[2]   = reflCoef[2];
+  dz_         = static_cast<float>(simbox->getdz());
+  nz_         = simbox->getnz();
+  theta_      = seisCube->getTheta();
+  nzp_        = seisCube->getNzp();
+  cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
+  scale_      = 1.0f;
+  cz_         = 0;
+  inFFTorder_ = true;
+  isReal_     = true;
+  formats_    = modelSettings->getWaveletFormatFlag();
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -92,23 +93,23 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     cpp_r[i]           = new fftw_real[rnzp_];
     synt_seis_r[i]     = new fftw_real[rnzp_];
     for(int j=0;j<rnzp_;j++) {
-      cpp_r[i][j] = 0;
+      cpp_r[i][j]       = 0;
       synt_seis_r[i][j] = 0;
     }
-    seis_r[i]          = new fftw_real[rnzp_];
-    cor_cpp_r[i]       = new fftw_real[rnzp_];
-    ccor_seis_cpp_r[i] = new fftw_real[rnzp_];
-    wavelet_r[i]       = new fftw_real[rnzp_];
+    seis_r[i]                   = new fftw_real[rnzp_];
+    cor_cpp_r[i]                = new fftw_real[rnzp_];
+    ccor_seis_cpp_r[i]          = new fftw_real[rnzp_];
+    wavelet_r[i]                = new fftw_real[rnzp_];
 
     const std::vector<int> ipos = wells[i]->getBlockedLogsOrigThick()->getIposVector();
     const std::vector<int> jpos = wells[i]->getBlockedLogsOrigThick()->getJposVector();
-    dzWell[i]          = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    dzWell[i]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
   }
 
-  std::vector<float>  z0(nWells);               // Needed to block syntSeis
-  std::vector<int>    sampleStart(nWells,0);    // Needed to block syntSeis
-  std::vector<int>    sampleStop(nWells,0);     // Needed to block syntSeis
-  std::vector<float>  wellWeight(nWells,0.0f);
+  std::vector<float> z0(nWells);              // Needed to block syntSeis
+  std::vector<int>   sampleStart(nWells,0);   // Needed to block syntSeis
+  std::vector<int>   sampleStop(nWells,0);    // Needed to block syntSeis
+  std::vector<float> wellWeight(nWells,0.0f);
   //
   // Loop over wells and create a blocked well and blocked seismic
   //
@@ -122,7 +123,16 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
       // Block seismic data for this well
       //
       std::vector<float> seisLog(bl->getNumberOfBlocks());
-      bl->getBlockedGrid(seisCube,&seisLog[0]);
+      bl->getBlockedGrid(seisCube, &seisLog[0]);
+      float maxAmp = 0.0f;
+      for (int i = 0 ; i < bl->getNumberOfBlocks() ; i++) {
+        maxAmp = std::max(maxAmp, std::abs(seisLog[i]));
+      }
+      if (maxAmp == 0.0f) {
+        errCode = 1;
+        errTxt  += "The seismic data in stack " + NRLib::ToString(iAngle) + " have zero amplitudes in well \'"+wells[w]->getWellname()+"\'.\n";
+      }
+
       //
       // Check seismic data outside estimation interval missing
       //
@@ -198,9 +208,13 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     std::vector<float> shiftWell(nWells);
     float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
     multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
+    for(int w=0;w<nWells;w++)
+    {
+      if(wellWeight[w]>0)
+        adjustLowfrequency(ccor_seis_cpp_r[w], dzWell[w],  nzp_, waveletTaperLength);
+    }
     multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-    getWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
-
+    findWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
     // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
     // to simplify comparison
     std::vector<std::vector<fftw_real> > wellWavelets(nWells);
@@ -213,11 +227,29 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
           wellWavelets[w][i] = 0;
       }
     }
-
     rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_); // wavelet centered
+    adjustLowfrequency(rAmp_, dz_,  nzp_, waveletTaperLength);
     cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-    for(int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
+    for(int w=0;w<nWells;w++)
+    {
+      if(wellWeight[w]>0)
+        adjustLowfrequency(wavelet_r[w], dzWell[w],  nzp_, waveletTaperLength);
+    }
+
+    // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
+    // to simplify comparison
+    for(int w=0; w<nWells; w++) {
+      wellWavelets[w].resize(nzp_);
+      for(int i=0;i<nzp_;i++) {
+        if(wellWeight[w] > 0)
+          wellWavelets[w][i] = wavelet_r[w][i];
+        else
+          wellWavelets[w][i] = 0;
+      }
+    }
+
+    for (int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
       fileName = "waveletShift";
@@ -246,37 +278,57 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
 
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
-    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
     LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
-    if( ModelSettings::getDebugLevel() > 0 )
-      writeWaveletToFile("estimated_wavelet_", 1.0f);
+    if (waveletLength_ < 50.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
+      TaskList::addTask("Check the estimated wavelet lengths. A small length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
+    }
+    if (waveletLength_ > 400.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually large.\n");
+      TaskList::addTask("Check the estimated wavelet lengths. A large length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
+    }
+
+    if( ModelSettings::getDebugLevel() > 0 ){
+      writeWaveletToFile("estimated_wavelet_adjusted_", 1.0f,true);
+      writeWaveletToFile("estimated_wavelet_", 1.0f,false);
+    }
 
     norm_ = findNorm();
 
     //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
     fftw_real * trueAmp = rAmp_;
+    float       truedDz = dz_;
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
     for(int w=0; w<nWells; w++) {
       if (wells[w]->getUseForWaveletEstimation() &&
-         ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
-      {
-        for(int i=0;i<nzp_;i++)
+          ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+        dz_ = dzWell[w];
+        for(int i = 0 ; i < nzp_ ; i++)
           rAmp_[i] = wellWavelets[w][i];
         std::string wellname(wells[w]->getWellname());
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         fileName = IO::PrefixWellWavelet() + wellname + "_";
-        writeWaveletToFile(fileName, 1.0f);
+          writeWaveletToFile(fileName, 1.0f,true);
       }
     }
+
     fftw_free(rAmp_);
     rAmp_ = trueAmp;
     cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
+    dz_   = truedDz;
 
     if(ModelSettings::getDebugLevel() > 1)
       writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
+
+    if (scaleOpt == RMISSING) {
+      errCode = 1;
+      LogKit::LogFormatted(LogKit::Error,"  Could not estimate global wavelet scale\n");
+      errTxt += "Could not estimate global wavelet scale for stack "+NRLib::ToString(iAngle)+".\n";
+    }
   }
 
   for(int i=0;i<nWells;i++) {
@@ -314,8 +366,8 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet)
 }
 
 Wavelet1D::Wavelet1D(int difftype,
-                 int nz,
-                 int nzp)
+                     int nz,
+                     int nzp)
 : Wavelet(difftype, nz, nzp)
 {
   cnzp_       = nzp_/2+1;
@@ -366,7 +418,7 @@ Wavelet1D::Wavelet1D(int difftype,
 
 
 Wavelet1D::Wavelet1D(Wavelet * wavelet,
-                 int       difftype)
+                     int       difftype)
  :Wavelet(wavelet, difftype)
 {
   cnzp_ = nzp_/2+1;
@@ -434,7 +486,7 @@ Wavelet1D::~Wavelet1D()
 Wavelet1D::Wavelet1D(const ModelSettings * modelSettings,
                      const float         * reflCoef,
                      float           theta,
-                     float          peakFrequency,
+                     float           peakFrequency,
                      int           & errCode)
   : Wavelet(modelSettings, reflCoef, theta, 1, peakFrequency, errCode)
 {
@@ -460,8 +512,8 @@ Wavelet1D::createWavelet1DForErrorNorm()
   return errorWavelet;
 }
 
-Wavelet1D::Wavelet1D(std::vector<float>   vecReal,
-          int                 nzp)
+Wavelet1D::Wavelet1D(std::vector<float> vecReal,
+                     int                nzp)
 : Wavelet(1)
 {
   int nz= std::min(static_cast<int>(vecReal.size()),nzp);
@@ -644,8 +696,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
                                            bool                    doEstimateWavelet)
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells");
-  float errStd  = 0.0f;
-  float dataVar = 0.0f;
 
   std::string angle                 = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   int         nWells                = modelSettings->getNumberOfWells();
@@ -671,14 +721,14 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   std::vector<float>  dzWell(nWells);
 
   for(int w=0; w<nWells; w++) {
-    cpp_r[w]           = new fftw_real[rnzp_];
-    seis_r[w]          = new fftw_real[rnzp_];
-    cor_seis_synt_r[w] = new fftw_real[rnzp_];
-    wavelet_r[w]       = new fftw_real[rnzp_];
-    synt_r[w]          = new fftw_real[rnzp_];
-    const std::vector<int> ipos   = wells[w]->getBlockedLogsOrigThick()->getIposVector();
-    const std::vector<int> jpos   = wells[w]->getBlockedLogsOrigThick()->getJposVector();
-    dzWell[w]          = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    cpp_r[w]                    = new fftw_real[rnzp_];
+    seis_r[w]                   = new fftw_real[rnzp_];
+    cor_seis_synt_r[w]          = new fftw_real[rnzp_];
+    wavelet_r[w]                = new fftw_real[rnzp_];
+    synt_r[w]                   = new fftw_real[rnzp_];
+    const std::vector<int> ipos = wells[w]->getBlockedLogsOrigThick()->getIposVector();
+    const std::vector<int> jpos = wells[w]->getBlockedLogsOrigThick()->getJposVector();
+    dzWell[w]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
   }
   //
   // Loop over wells and create a blocked well and blocked seismic
@@ -753,7 +803,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       }
     }
   }
-
   float globalScale = waveletScale;
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
@@ -763,18 +812,19 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   //If global scale given, do not use return value. Do kriging with global scale as mean.
   //If local scale given, run separate routine to find local noise if wanted.
   float optScale;
-  if(doEstimateLocalScale==true || doEstimateGlobalScale==true) {
-    optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale);
-    if(doEstimateGlobalScale==false)
+  if (doEstimateLocalScale || doEstimateGlobalScale) {
+    optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale
+);
+    if (!doEstimateGlobalScale)
       optScale = globalScale;
     else {
       scale(optScale);
-      for(int i=0;i<nWells;i++)
-        scaleOptWell[i]/=optScale;
+      for (int i=0 ; i < nWells ; i++)
+        scaleOptWell[i] /= optScale;
     }
   }
   // local scale given means gain !=NULL
-  else if(doEstimateLocalNoise==true && gainGrid!=NULL) {
+  else if (doEstimateLocalNoise && gainGrid != NULL) {
     optScale = globalScale; // Global scale must be given if local scale is given
     findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, wells, simbox);
   }
@@ -800,28 +850,50 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   int nData=0;
   for(int w=0; w<nWells; w++) {
     nData   += nActiveData[w];
-    errStd  += errVarWell[w];
-    dataVar += dataVarWell[w];
-    if(nActiveData[w]>0) {
-      errVarWell[w]  /= nActiveData[w];
-      dataVarWell[w] /= nActiveData[w];
-    }
   }
 
-  if (nData == 0) {
+  float errStd  = 0.0f;
+  float locStd  = 0.0f;
+  float dataVar = 0.0f;
 
-    if(doEstimateSNRatio == true) {
-      errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
-      error += 1;
+  if (nData > 0) {
+    for (int w=0 ; w < nWells ; w++) {
+      errStd  += errVarWell[w];
+      locStd  += errWellOptScale[w]*errWellOptScale[w]*nActiveData[w];
+      dataVar += dataVarWell[w];
+
+      if(nActiveData[w] > 0) {
+        errVarWell[w]  /= nActiveData[w];
+        dataVarWell[w] /= nActiveData[w];
+      }
+    }
+
+    if (doEstimateLocalScale) { // Estimate global noise with local waveletscale
+      errStd = locStd;
+    }
+
+    dataVar /= static_cast<float>(nData);
+    errStd  /= static_cast<float>(nData);
+    errStd   = sqrt(errStd);
+
+    if (doEstimateGlobalScale) {
+      errStd = errOptScale;
     }
   }
   else {
-    dataVar /= static_cast<float> (nData);
-    errStd  /= static_cast<float> (nData);
-    errStd   = sqrt(errStd);
+    if (doEstimateSNRatio) {
+      errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
+      error   += 1;
+    }
+    else {
+      // Something is very bad, but not we do not necessarily need to stop. Anyway, there is nothing more for us to do here.
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Could not estimate empirical SN ratio. No legal data available.\n");
+      TaskList::addTask("Check the wavelet section. Empirical signal-to-noise ratio could not be estimated.");
+      return RMISSING;
+    }
   }
 
-  if(nWells > 0) {
+  if (nWells > 0) {
     LogKit::LogFormatted(LogKit::Medium,"\n  Reporting  estimated errors (as standard deviations) in different ways:\n");
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
@@ -843,7 +915,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   if (estimateSomething) {
     float minLocalGain = 0.3334f;
     float maxLocalGain = 3.0f;
-    for(int w=0; w<nWells; w++) {
+    for(int w=0 ; w < nWells ; w++) {
       if((scaleOptWell[w] >= maxLocalGain || scaleOptWell[w] <= minLocalGain) && nActiveData[w]>0) {
         std::string text;
         text  = "\nWARNING: An optimal local gain cannot be established for well "+wells[w]->getWellname()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
@@ -856,22 +928,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     }
   }
 
-  if(doEstimateLocalScale==true) {
-    // Estimate global noise with local waveletscale
-    dataVar = 0.0;
-    errStd = 0.0;
-    for(int w=0; w<nWells; w++) {
-      dataVar +=(dataVarWell[w]*nActiveData[w]);
-      errStd  +=(errWellOptScale[w]*errWellOptScale[w]*nActiveData[w]);
-    }
-    dataVar/=nData;
-    errStd/=nData;
-    errStd = sqrt(errStd);
-  }
-  else if(doEstimateGlobalScale==true)
-   errStd = errOptScale;
-
-  if(doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise) {
+  if (doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise) {
     //
     // Pretabulate correlations
     //
@@ -888,24 +945,24 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       cov.writeToFile(fileName);
     }
 
-    if(doEstimateLocalShift)
+    if (doEstimateLocalShift)
       estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, simbox,wells, nWells);
 
-    if(doEstimateLocalScale)
+    if (doEstimateLocalScale)
       estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
 
-    if(doEstimateLocalNoise) {
+    if (doEstimateLocalNoise) {
       float errStdLN;
-      if(doEstimateSNRatio==true)
+      if (doEstimateSNRatio)
         errStdLN = errStd;
       else //SNRatio given in model file
         errStdLN = sqrt(dataVar/SNRatio);
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale
-        for(int w=0; w<nWells; w++)
+        for(int w=0 ; w < nWells ; w++)
           errVarWell[w] = sqrt(errVarWell[w]);
         estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, simbox,wells, nWells);
       }
-      else if(doEstimateGlobalScale==true && doEstimateLocalScale==false) // global wavelet scale
+      else if (doEstimateGlobalScale==true && doEstimateLocalScale==false) // global wavelet scale
         estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, simbox,wells, nWells);
       else
         estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, simbox,wells, nWells);
@@ -913,11 +970,11 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   }
 
   float empSNRatio = dataVar/(errStd*errStd);
-  if(doEstimateSNRatio==true)
+  if (doEstimateSNRatio==true)
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else
   {
-    if(nWells>0) {
+    if(nWells > 0) {
       LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
       LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
       float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
@@ -925,9 +982,9 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
-        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
       else
-        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(maxSN,1)+"\n");
       }
     }
   }
@@ -1016,49 +1073,56 @@ Wavelet1D::findOptimalWaveletScale(fftw_real               ** synt_seis_r,
 
   int   optInd=0;
   float optValue=error[0];
-  for(int i=1;i<nScales;i++)
+  for(int i=1;i<nScales;i++) {
     if(error[i]<optValue) {
       optValue=error[i];
       optInd=i;
     }
+  }
+  delete [] error;
 
-    delete [] error;
+  bool noGlobalScale = false;
+  if (optInd == 0 || optInd == nScales - 1)
+    noGlobalScale = true;
 
-    err = sqrt(optValue/static_cast<float>(totCount));
-    optScale = scales[optInd];
+  err = sqrt(optValue/static_cast<float>(totCount));
+  optScale = scales[optInd];
 
-    for(int i=0;i<nWells;i++) {
-      if(counter[i]>0)
-        errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
-      else
-        errWell[i] = 0.0f;
+  for(int i=0;i<nWells;i++) {
+    if(counter[i]>0)
+      errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
+    else
+      errWell[i] = 0.0f;
+  }
+
+  for(int i=0;i<nWells;i++) {
+    if(wellWeight[i]>0) {
+      optValue = resNorm[i][0];
+      optInd=0;
+      for(int j=1;j<nScales;j++)
+        if(resNorm[i][j]<optValue) {
+          optValue=resNorm[i][j];
+          optInd=j;
+        }
+      scaleOptWell[i]    = scales[optInd];
+      errWellOptScale[i] = sqrt(optValue/float(counter[i]));
     }
-
-    for(int i=0;i<nWells;i++) {
-      if(wellWeight[i]>0) {
-        optValue = resNorm[i][0];
-        optInd=0;
-        for(int j=1;j<nScales;j++)
-          if(resNorm[i][j]<optValue) {
-            optValue=resNorm[i][j];
-            optInd=j;
-          }
-          scaleOptWell[i]    = scales[optInd];
-          errWellOptScale[i] = sqrt(optValue/float(counter[i]));
-      }
-      else {
-        scaleOptWell[i]    = 0.0f;
-        errWellOptScale[i] = 0.0f;
-      }
+    else {
+      scaleOptWell[i]    = 0.0f;
+      errWellOptScale[i] = 0.0f;
     }
+  }
 
-    for (int i=0; i<nWells; i++)
-      delete [] resNorm[i];
-    delete [] resNorm;
-    delete [] seisNorm;
-    delete [] counter;
-    delete [] scales;
+  for (int i=0; i<nWells; i++)
+    delete [] resNorm[i];
+  delete [] resNorm;
+  delete [] seisNorm;
+  delete [] counter;
+  delete [] scales;
 
+  if (noGlobalScale)
+    return RMISSING;
+  else
     return optScale;
 }
 
@@ -1415,7 +1479,57 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
 }
 
 void
-Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
+Wavelet1D::adjustLowfrequency(fftw_real                * vec_r,
+                             float                       dz,
+                             int                         nzp,
+                             float                       waveletLength) const
+{
+  assert(nzp==nzp_);
+
+  fftw_real              * taper_r;
+  taper_r                = new fftw_real[rnzp_];
+  fftw_complex * taper_c = reinterpret_cast<fftw_complex*>(taper_r);
+  fftw_complex * vec_c;
+  float wHL              = float( waveletLength/2.0);
+  float weight,dist;
+
+  taper_r[0]=1;
+  for(int i=1;i<nzp_;i++) {
+    dist = std::min(i,nzp_-i)*dz;
+    if(dist < wHL) {
+      weight  = float(1.0/NRLib::Pi*fabs(sin(NRLib::Pi*(dist)/wHL)));
+      weight += float((1-fabs(dist)/wHL)*cos(NRLib::Pi*dist/wHL));
+    }
+    else
+    {
+      vec_r[i]=0;
+      weight=0;
+    }
+    taper_r[i]=weight;
+  }
+  Utils::fft(taper_r, taper_c, nzp_);
+
+  vec_c=reinterpret_cast<fftw_complex*>(vec_r);
+  Utils::fft(vec_r,vec_c, nzp_);
+  float baseScale = sqrt((vec_c[0].re*vec_c[0].re+vec_c[0].im*vec_c[0].im)/(taper_c[0].re*taper_c[0].re+taper_c[0].im*taper_c[0].im));
+  vec_c[0].re = 0.0f;
+  vec_c[0].im = 0.0f;
+  for(int i=1;i<cnzp_;i++) {
+    float modFac = baseScale* sqrt(taper_c[i].re*taper_c[i].re + taper_c[i].im*taper_c[i].im);   // vec_c[0].im is allways zero
+    float curFac = sqrt(vec_c[i].re*vec_c[i].re + vec_c[i].im*vec_c[i].im);
+    float adjustFac =(curFac-modFac)/curFac;
+    vec_c[i].re = adjustFac * vec_c[i].re;
+    vec_c[i].im = adjustFac * vec_c[i].im;
+  }
+  Utils::fftInv(vec_c,vec_r, nzp_);
+
+  delete [] taper_r;
+}
+
+
+
+void
+Wavelet1D::findWavelet(fftw_real               ** ccor_seis_cpp_r,
                       fftw_real               ** cor_cpp_r,
                       fftw_real               ** wavelet_r,
                       const std::vector<float> & wellWeight,
@@ -1436,8 +1550,10 @@ Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
       wav    = reinterpret_cast<fftw_complex*>(wavelet_r[w]);
 
       for(int i=0;i<cnzp;i++)
-      {
-        wav[i].re=c_sc[i].re/c_cc[i].re;//note c_cc[i].im =0
+      {// NOTE c_cc is a strictly non negative function which has been smoothed,
+       // Thus the minimum value is not likely to be very small.
+       // Hence it is unlikely that this division will cause instability
+        wav[i].re=c_sc[i].re/c_cc[i].re; //note c_cc[i].im =0
         wav[i].im=c_sc[i].im/c_cc[i].re;
       }
       Utils::fftInv(c_sc,ccor_seis_cpp_r[w],nt);

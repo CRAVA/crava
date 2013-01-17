@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef MODELSETTINGS_H
 #define MODELSETTINGS_H
 
@@ -161,6 +165,7 @@ public:
   bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_                   ;}
   bool                             getGenerateBackgroundFromRockPhysics()const{ return backgroundFromRockPhysics_                 ;}
   bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
+  bool                             getMultizoneBackground()             const { return multizoneBackground_                       ;}
   bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_                        ;}
   bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_                        ;}
   bool                             getFaciesProbFromRockPhysics(void)   const { return faciesProbFromRockPhysics_                 ;}
@@ -197,6 +202,9 @@ public:
   const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_               ;}
   const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_                 ;}
   const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_                 ;}
+  std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
+  std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
+  std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
 
 
   void rotateVariograms(float angle);
@@ -240,6 +248,7 @@ public:
 
   void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
   void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
+  void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addReservoirVariable(std::string variable, std::vector<DistributionWithTrendStorage *> dist) { reservoirVariable_[variable] = dist ;}
@@ -345,6 +354,7 @@ public:
   void setEstimationMode(bool estimationMode)             { estimationMode_           = estimationMode           ;}
   void setForwardModeling(bool forwardModeling)           { forwardModeling_          = forwardModeling          ;}
   void setGenerateSeismicAfterInv( bool generateSeismic)  { generateSeismicAfterInv_  = generateSeismic          ;}
+  void setMultizoneBackground(bool multizone)             { multizoneBackground_      = multizone                ;}
   void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
   void setBackgroundFromRockPhysics(bool backgroundFromRP){ backgroundFromRockPhysics_= backgroundFromRP         ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
@@ -632,6 +642,7 @@ private:
   bool                              estimationMode_;             ///< Estimation
   bool                              generateSeismicAfterInv_;    ///< Synthetic seismic from inversion result
   bool                              generateBackground_;         ///< Make background model
+  bool                              multizoneBackground_;        ///< Make multizone background model
   bool                              estimateFaciesProb_;         ///< Shall facies probabilites be estimated?
   bool                              faciesProbRelative_;         ///< Use relative elastic parameters for facies prob estimation?
   bool                              faciesProbFromRockPhysics_;  ///< Calculate facies probabilities using rock physics models
@@ -659,6 +670,7 @@ private:
 
   std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
   std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
+  std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
 

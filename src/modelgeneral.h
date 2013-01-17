@@ -1,9 +1,14 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef MODELGENERAL_H
 #define MODELGENERAL_H
 
 #include <stdio.h>
 
 #include "nrlib/surface/regularsurface.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
@@ -57,6 +62,33 @@ public:
   TimeLine                    * getTimeLine()                  const {return(timeLine_) ;}
   std::vector<WellData *>     & getWells()                 /*const*/ { return wells_    ;}
 
+  static void         readSegyFile(const std::string       & fileName,
+                                   FFTGrid                *& target,
+                                   Simbox                  * timeSimbox,
+                                   Simbox                  * timeCutSimbox,
+                                   ModelSettings          *& modelSettings,
+                                   const SegyGeometry     *& geometry,
+                                   int                       gridType,
+                                   const std::string       & parName,
+                                   float                     offset,
+                                   const TraceHeaderFormat * format,
+                                   std::string             & errText,
+                                   bool                      nopadding = false);
+  static void         checkThatDataCoverGrid(SegY        * segy,
+                                             float         offset,
+                                             Simbox      * timeCutSimbox,
+                                             float         guard_zone,
+                                             std::string & errText);
+  static void         readStormFile(const std::string  & fileName,
+                                    FFTGrid           *& target,
+                                    const int            gridType,
+                                    const std::string  & parName,
+                                    Simbox             * timeSimbox,
+                                    ModelSettings     *& modelSettings,
+                                    std::string        & errText,
+                                    bool                 isStorm  = true,
+                                    bool                 nopadding = true);
+
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_            ;}
@@ -76,6 +108,7 @@ public:
                                   int nyp,
                                   int nzp,
                                   bool fileGrid);
+
   static void       readGridFromFile(const std::string       & fileName,
                                      const std::string       & parName,
                                      const float               offset,
@@ -88,6 +121,7 @@ public:
                                      const ModelSettings     * modelSettings,
                                      std::string             & errorText,
                                      bool                      nopadding = false);
+
   static void       readSegyFile(const std::string       & fileName,
                                  FFTGrid                *& target,
                                  const Simbox            * timeSimbox,
@@ -95,10 +129,12 @@ public:
                                  const ModelSettings     * modelSettings,
                                  const SegyGeometry     *& geometry,
                                  int                       gridType,
+                                 const std::string       & parName,
                                  float                     offset,
                                  const TraceHeaderFormat * format,
                                  std::string             & errText,
                                  bool                      nopadding = false);
+
   static void       checkThatDataCoverGrid(const SegY   * segy,
                                            float         offset,
                                            const Simbox * timeCutSimbox,
@@ -261,22 +297,22 @@ private:
   void              printSettings(ModelSettings    * modelSettings,
                                   const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  double          * findPlane(Surface * surf); //Finds plane l2-closest to surface.
+  NRLib::Vector      findPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface         * createPlaneSurface(double  * planeParams,
-                                       Surface * templateSurf);
-  void              writeAreas(const SegyGeometry * areaParams,
-                               Simbox             * timeSimbox,
-                               std::string        & text);
-  void              findSmallestSurfaceGeometry(const double   x0,
-                                               const double   y0,
-                                               const double   lx,
-                                               const double   ly,
-                                               const double   rot,
-                                               double       & xMin,
-                                               double       & yMin,
-                                               double       & xMax,
-                                               double       & yMax);
+  Surface          * createPlaneSurface(const NRLib::Vector & planeParams,
+                                        Surface             * templateSurf);
+  void               writeAreas(const SegyGeometry * areaParams,
+                                Simbox             * timeSimbox,
+                                std::string        & text);
+  void               findSmallestSurfaceGeometry(const double   x0,
+                                                 const double   y0,
+                                                 const double   lx,
+                                                 const double   ly,
+                                                 const double   rot,
+                                                 double       & xMin,
+                                                 double       & yMin,
+                                                 double       & xMax,
+                                                 double       & yMax);
   void              getGeometryFromGridOnFile(const std::string         seismicFile,
                                               const TraceHeaderFormat * thf,
                                               SegyGeometry           *& geometry,

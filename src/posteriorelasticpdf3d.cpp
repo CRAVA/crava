@@ -152,16 +152,16 @@ PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>          
                                              double                                  d2_max,
                                              double                                  t1_min,
                                              double                                  t1_max,
-                                             int                                     ind):
-n1_(n1),
-n2_(n2),
-n3_(n3),
-x_min_(d1_min),
-x_max_(d1_max),
-y_min_(d2_min),
-y_max_(d2_max),
-z_min_(t1_min),
-z_max_(t1_max)
+                                             int                                     ind)
+: n1_(n1),
+  n2_(n2),
+  n3_(n3),
+  x_min_(d1_min),
+  x_max_(d1_max),
+  y_min_(d2_min),
+  y_max_(d2_max),
+  z_min_(t1_min),
+  z_max_(t1_max)
 {
   // We assume that the input vectors are of the same length
   if (d1.size()!=d2.size() || d2.size()!=d3.size() || d3.size()!=t1.size())
@@ -286,12 +286,11 @@ z_max_(t1_max)
 
 
 PosteriorElasticPDF3D::PosteriorElasticPDF3D(int n1,
-                               int n2,
-                               int n3)
-                               :
-n1_(n1),
-n2_(n2),
-n3_(n3)
+                                             int n2,
+                                             int n3)
+: n1_(n1),
+  n2_(n2),
+  n3_(n3)
 {
 }
 

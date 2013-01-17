@@ -1,8 +1,10 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-
-#include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
@@ -273,7 +275,8 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   LogKit::LogFormatted(LogKit::DebugHigh,"KrigAll finished\n");
 }
 
-void CKrigingAdmin::KrigBlock(Gamma gamma) {
+void CKrigingAdmin::KrigBlock(Gamma gamma)
+{
   // search for neighbours
   LogKit::LogFormatted(LogKit::DebugHigh,"FindDataInDataBlockLoop(gamma) called next\n");
   FindDataInDataBlockLoop(gamma);
@@ -299,18 +302,68 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
     return;
   }
 
-  AllocateSpaceForMatrixEq();
-  // set kriging matrix based on data finds
-  SetMatrix(gamma);
-  DoCholesky();
+  int n = sizeAlpha_ + sizeBeta_ + sizeRho_;
+
+  NRLib::Matrix krigMatrix(n, n);
+  NRLib::Vector residual(n);
+
+  // Set kriging matrix based on data finds
+
+  SetMatrix(krigMatrix,
+            residual,
+            gamma);
+
+  NRLib::SymmetricMatrix K(n);
+
+  for (int j = 0 ; j < n ; j++) {
+    for (int i = 0 ; i <= j ; i++) {
+      K(i,j) = krigMatrix(i,j);
+    }
+  }
+
+  FFTGrid * pGrid = 0;
+
+  switch(gamma) {
+  case ALPHA_KRIG :
+    pGrid = trendAlpha_;
+    break;
+  case BETA_KRIG :
+    pGrid = trendBeta_;
+    break;
+  case RHO_KRIG :
+    pGrid = trendRho_;
+    break;
+  default :
+    Require(false, "switch failed");
+  } // end switch
+
+  NRLib::Vector x(n);
+  // NBNB-PAL: Add try/catch loop around CholeskySolve call with a regularization term.
+  NRLib::CholeskySolve(K, residual, x);
+
+  NRLib::Vector kVec(n);
 
   for (k_ = kMin; k_ <= kMax; k_++) {
     for (j_ = jMin; j_ <= jMax; j_++) {
       for (i_ = iMin; i_ <= iMax; i_++) {
+
         // set kriging vector
-        SetKrigVector(gamma);
+        SetKrigVector(kVec, gamma);
+
         // kriging
-        SolveKrigingEq(gamma);
+        float result = pGrid->getRealValue(i_, j_, k_);
+        if (result == RMISSING) {
+          noRMissing_++;
+        }
+        else {
+          result += static_cast<float>(kVec * x);
+
+          if(pGrid->setRealValue(i_, j_, k_, result))
+            Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
+
+          noSolvedMatrixEq_++;
+        }
+
         noKrigedCells_++;
         // return result
         if (noKrigedCells_%monitorSize_ == 0) {
@@ -320,7 +373,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
       } // end for i
     } // end for j
   } // end for k
-  DeAllocateSpaceForMatrixEq();
+
 }
 
 FFTGrid* CKrigingAdmin::CreateValidGrid() const
@@ -528,37 +581,9 @@ int CKrigingAdmin::NBlocks(int dBlocks, int lSBox) const {
   return lSBox/dBlocks + 1;
 }
 
-void CKrigingAdmin::AllocateSpaceForMatrixEq() {
-  int i;
-
-  const int maxData = sizeAlpha_ + sizeBeta_ + sizeRho_;
-  krigMatrix_  = new double*[maxData];
-  krigMatrix2_ = new double*[maxData];
-  for (i = 0; i < maxData; i++) {
-    krigMatrix_[i]  = new double[maxData];
-    krigMatrix2_[i] = new double[maxData];
-  }
-
-  krigVector_     = new double[maxData];
-  krigDataVector_ = new float[maxData];
-}
-
-void CKrigingAdmin::DeAllocateSpaceForMatrixEq() {
-  const int maxData = sizeAlpha_ + sizeBeta_ + sizeRho_;
-  int i;
-  for (i = 0; i < maxData; i++) {
-    delete [] krigMatrix_[i];
-    delete [] krigMatrix2_[i];
-  }
-
-  delete [] krigMatrix_; delete [] krigMatrix2_;
-  krigMatrix_ = krigMatrix2_ = 0;
-  delete [] krigVector_; delete [] krigDataVector_;
-  krigVector_ = 0;
-  krigDataVector_ = 0;
-}
-
-void CKrigingAdmin::SetMatrix(Gamma gamma) {
+void CKrigingAdmin::SetMatrix(NRLib::Matrix & krigMatrix,
+                              NRLib::Vector & residual,
+                              Gamma           gamma) {
   assert(gamma >= 0);
   if (!totalNoDataInCurrKrigBlock_)
     return;
@@ -579,8 +604,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
 
-      krigMatrix_[krigRowIndex][a2] =
-        covAlpha_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex,a2) = covAlpha_.GetGamma2(i, j, k, i2, j2, k2);
     } // end a2
 
     // K_ab
@@ -588,8 +612,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexB2 = pIndexBeta_[b2];
       int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] =
-        covCrAlphaBeta_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex, b2 + sizeAlpha_) = covCrAlphaBeta_.GetGamma2(i, j, k, i2, j2, k2);
     } // end b2
 
     // K_ar
@@ -597,8 +620,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexR2 = pIndexRho_[r2];
       int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
-        covCrAlphaRho_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex, r2 + sizeAlpha_ + sizeBeta_) = covCrAlphaRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end a
 
@@ -613,8 +635,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexA2 = pIndexAlpha_[a2];
       int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][a2] =
-        covCrAlphaBeta_.GetGamma2(i2, j2, k2, i, j, k); // flip
+      krigMatrix(krigRowIndex,a2) = covCrAlphaBeta_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end a2
 
     // K_bb
@@ -622,8 +643,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexB2 = pIndexBeta_[b2];
       int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] =
-        covBeta_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex, b2 + sizeAlpha_) = covBeta_.GetGamma2(i, j, k, i2, j2, k2);
     } // end b2
 
     // K_br
@@ -631,8 +651,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexR2 = pIndexRho_[r2];
       int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
-        covCrBetaRho_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex,r2 + sizeAlpha_ + sizeBeta_) = covCrBetaRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end b
   // third row
@@ -646,8 +665,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexA2 = pIndexAlpha_[a2];
       int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][a2] =
-        covCrAlphaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
+      krigMatrix(krigRowIndex, a2) = covCrAlphaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end a2
 
     // K_rb
@@ -655,8 +673,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexB2 = pIndexBeta_[b2];
       int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2  + sizeAlpha_] =
-        covCrBetaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
+      krigMatrix(krigRowIndex, b2  + sizeAlpha_) = covCrBetaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end b2
 
     // K_rr
@@ -664,37 +681,31 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
       int indexR2 = pIndexRho_[r2];
       int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
-        covRho_.GetGamma2(i, j, k, i2, j2, k2);
+      krigMatrix(krigRowIndex, r2 + sizeAlpha_ + sizeBeta_) = covRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end r
-//const int maxData = sizeAlpha_ + sizeBeta_ + sizeRho_;
-//int i,j;
-//for(i=0;i<maxData;i++){
-//for(j=0;j<maxData;j++)
-//LogKit::LogFormatted(LogKit::DebugLow,"%f ",krigMatrix_[i][j]);
-//LogKit::LogFormatted(LogKit::DebugLow,"\n");
-//}
 
   // Also calulates the kriging data vector
   for (a = 0; a < sizeAlpha_; a++) {
     int indexA = pIndexAlpha_[a];
-    krigDataVector_[a] = pBWellPt_[indexA]->GetAlpha();
+    residual(a) = pBWellPt_[indexA]->GetAlpha();
   } // end a
 
   for (b = 0; b < sizeBeta_; b++) {
     int indexB = pIndexBeta_[b];
-    krigDataVector_[sizeAlpha_ + b] = pBWellPt_[indexB]->GetBeta();
+    residual(sizeAlpha_ + b) = pBWellPt_[indexB]->GetBeta();
   } // end b
 
   for (r = 0; r < sizeRho_; r++) {
     int indexR = pIndexRho_[r];
-    krigDataVector_[sizeAlpha_ + sizeBeta_ + r] = pBWellPt_[indexR]->GetRho();
+    residual(sizeAlpha_ + sizeBeta_ + r) = pBWellPt_[indexR]->GetRho();
   } // end r
 
 }
 
-void CKrigingAdmin::SetKrigVector(Gamma gamma) {
+void CKrigingAdmin::SetKrigVector(NRLib::Vector & k,
+                                  Gamma           gamma)
+{
   int offsetB1, offsetR1;
   offsetB1 = sizeAlpha_; offsetR1 = sizeAlpha_ + sizeBeta_;
   const CovGridSeparated *pA = NULL, *pB = NULL, *pR = NULL;
@@ -729,14 +740,7 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
     int indexA2 = pIndexAlpha_[a2];
     int i2, j2, k2;
     pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-    krigVector_[a2] =
-      (!flipA ? pA->GetGamma2(i_, j_, k_, i2, j2, k2) :
-    pA->GetGamma2(i2, j2, k2, i_, j_, k_));
-
-    //printf("i,j,k i2,j2,k2  = %d %d %d %d %d %d\n",i_,j_,k_,i2,j2,k2);
-    //printf("a2=%d  krigVector[a2]=%10.6f\n\n",a2,krigVector_[a2]);
-    //exit(1);
-
+    k(a2) = (!flipA ? pA->GetGamma2(i_, j_, k_, i2, j2, k2) : pA->GetGamma2(i2, j2, k2, i_, j_, k_));
   } // end a2
 
   // k_b
@@ -745,9 +749,7 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
     int indexB2 = pIndexBeta_[b2];
     int i2, j2, k2;
     pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-    krigVector_[b2 + offsetB1] =
-      (!flipB ? pB->GetGamma2(i_, j_, k_, i2, j2, k2) :
-    pB->GetGamma2(i2, j2, k2, i_, j_, k_));
+    k(b2 + offsetB1) = (!flipB ? pB->GetGamma2(i_, j_, k_, i2, j2, k2) : pB->GetGamma2(i2, j2, k2, i_, j_, k_));
   } // end b2
 
   // k_r
@@ -756,50 +758,8 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
     int indexR2 = pIndexRho_[r2];
     int i2, j2, k2;
     pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-    krigVector_[r2 + offsetR1] =
-      (!flipR ? pR->GetGamma2(i_, j_, k_, i2, j2, k2) :
-    pR->GetGamma2(i2, j2, k2, i_, j_, k_));
+    k(r2 + offsetR1) = (!flipR ? pR->GetGamma2(i_, j_, k_, i2, j2, k2) : pR->GetGamma2(i2, j2, k2, i_, j_, k_));
   } // end r2
-}
-
-void CKrigingAdmin::SolveKrigingEq(Gamma gamma) {
-  int currMatrixDim = sizeAlpha_ + sizeBeta_ + sizeRho_;
-  FFTGrid* pGrid = 0;
-
-  switch(gamma) {
-  case ALPHA_KRIG :
-    pGrid = trendAlpha_;
-    break;
-  case BETA_KRIG :
-    pGrid = trendBeta_;
-    break;
-  case RHO_KRIG :
-    pGrid = trendRho_;
-    break;
-  default :
-    // should never arrive here
-    Require(false, "switch failed");
-
-  } // end switch
-
-  float result = pGrid->getRealValue(i_, j_, k_);
-  if (result == RMISSING) {
-    noRMissing_++;
-    return;
-  }
-
-  lib_matrAxeqbR(currMatrixDim, krigMatrix2_, krigVector_);
-  noSolvedMatrixEq_++;
-  int j;
-  //Require(result != RMISSING, "result != RMISSING");
-
-  for (j = 0; j < currMatrixDim; j++)
-    result += static_cast<float>(krigVector_[j]) * krigDataVector_[j];
-  //result += 1.0f;
-
-  //if(pGrid->setRealValue(i_, j_, k_, 1.0f))
-  if(pGrid->setRealValue(i_, j_, k_, result))
-    Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
 }
 
 void CKrigingAdmin::EstimateSizeOfBlock() {
@@ -1185,55 +1145,6 @@ const FFTGrid& CKrigingAdmin::CreateAndFillFFTGridWithCrCov() {
   return *pGrid;
 }
 
-/*
-double** CKrigingAdmin::CopyMatrix() {
-// only copy the part thats needed
-int currMatrixDim = sizeAlpha_ + sizeBeta_ + sizeRho_;
-int i,j;
-for (j = 0; j < currMatrixDim; j++) {
-for (i = 0; i < currMatrixDim; i++) {
-krigMatrix2_[i][j] = krigMatrix_[i][j];
-} // end i
-} // end j
-
-return krigMatrix2_;
-}
-*/
-
-double**
-CKrigingAdmin::CopyMatrix(double** inMatrix, double** outMatrix, int size) {
-  int i,j;
-  for (j = 0; j < size; j++) {
-    for (i = 0; i < size; i++) {
-      outMatrix[i][j] = inMatrix[i][j];
-    } // end i
-  } // end j
-
-  return outMatrix;
-}
-
-void CKrigingAdmin::DoCholesky() {
-  int currMatrixDim = sizeAlpha_ + sizeBeta_ + sizeRho_;
-  int counter = 0;
-  static const double cholesky_repair_factor = 1.01;
-
-  while (lib_matrCholR(currMatrixDim, CopyMatrix(krigMatrix_, krigMatrix2_, currMatrixDim))) {
-    int i;
-    for (i = 0; i < currMatrixDim; i++)
-      krigMatrix_[i][i] *= cholesky_repair_factor;
-
-    if (counter++ > maxCholeskyLoopCounter_) break;
-  }
-  if(counter > maxCholeskyLoopCounter_)
-  {
-    LogKit::LogFormatted(LogKit::DebugHigh,"Error: Kriging failed counter > maxCholeskyLoopCounter_.\n");
-    exit(1);
-  }
-  if (counter > 0)
-    LogKit::LogFormatted(LogKit::DebugHigh,"Cholesky decomposition looped: %d\n", counter);
-  noCholeskyDecomp_++;
-}
-
 void CKrigingAdmin::RotateVec(float& rx, float& ry, float& rz, const float mat[][3]) {
   float res[3] = {0.0f};
 
@@ -1265,7 +1176,8 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     // should never arrive here
     Require(false, "switch failed");
   } // end switch gamma
-  int size = 0;
+
+ int size = 0;
   double** ppKrigSmoothWeights = 0;
   switch (direction) {
   case 1 :
@@ -1285,27 +1197,22 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     Require(false, "switch failed");
   } // end switch direction
 
-
-
   // allocate
-  double ** ppMatrix = new double*[size];
-  double ** ppMatrix2 = new double*[size];
   int i;
-  double * pVec = new double[size];
+
+  NRLib::Vector pVec(size);
 
   for (i = 0; i < size; i++) {
-    ppMatrix[i] = new double[size];
-    ppMatrix2[i] = new double[size];
     //if (i > 0) {
     switch (direction) {
     case 1 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, i, 0, 0);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, i, 0, 0);
       break;
     case 2 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, 0, i, 0);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, 0, i, 0);
       break;
     case 3 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, 0, 0, i);
+      pVec(i) = pCov->GetGamma2(0, 0, 0, 0, 0, i);
       break;
     default :
       // should never arrive here
@@ -1316,43 +1223,61 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   //pVec[0] = 1.0;
   //pVec[0] = pCov
 
-  int a,b;
-  for (a = 0; a < size; a++) {
-    for (b = 0; b < size; b++) {
-      // set up matrix
-      ppMatrix[a][b] = pVec[abs(a - b)];
+
+  NRLib::SymmetricMatrix ppMatrix(size);
+
+  for (int a = 0 ; a < size ; a++) {
+    for (int b = 0 ; b <= a ; b++) {
+      ppMatrix(b, a) = pVec(std::abs(a - b));
       // noise
       if (a == b && a > 0 && a < size - 1)
-        ppMatrix[a][a] *= 1.2;
-    } // end b
-  } // end a
+        ppMatrix(a,a) *= 1.2;
+    }
+  }
 
   int counter = 0;
   static const double cholesky_repair_factor = 1.01;
-  while (lib_matrCholR(size, CopyMatrix(ppMatrix, ppMatrix2, size))) {
-    for (i = 0; i < size; i++)
-      ppMatrix[i][i] *= cholesky_repair_factor;
+  bool robustify = false;
 
-    if (counter++ > maxCholeskyLoopCounter_) break;
-  } // end while
+  NRLib::SymmetricMatrix ppMatrix2 = ppMatrix;
+  NRLib::Matrix          ppInv     = NRLib::IdentityMatrix(size);
+
+  try {
+    NRLib::CholeskySolve(ppMatrix2, ppInv);
+  }
+  catch (NRLib::IOError e) {
+    robustify = true;
+  }
+
+  while (robustify && counter < maxCholeskyLoopCounter_) {
+    for (i = 0 ; i < size ; i++) {
+      ppMatrix(i,i) *= cholesky_repair_factor;
+    }
+    ppMatrix2 = ppMatrix;
+    robustify = false;
+    try {
+      NRLib::CholeskySolve(ppMatrix2, ppInv);
+    }
+    catch (NRLib::Exception & e) {
+      robustify = true;
+    }
+    counter++;
+  }
+
   Require(counter <= maxCholeskyLoopCounter_, "counter <= maxCholeskyLoopCounter_");
 
-  int krigI;
-  for (krigI = 0; krigI < size - 2; krigI++) {
+  NRLib::Vector p(size);
+
+  for (int krigI = 0 ; krigI < size - 2 ; krigI++) {
+    for (int b = 0 ; b < size ; b++)
+      p(b) = pVec(std::abs(b - krigI - 1));
+
+    NRLib::Vector x = ppInv * p;
+
     double * const pWeights = ppKrigSmoothWeights[krigI];
-    for (b = 0; b < size; b++)
-      pWeights[b] = pVec[abs(b - krigI - 1)];
-
-    lib_matrAxeqbR(size, ppMatrix2, pWeights);
-  } // end krigI
-  // deallocate
-
-  for (i = 0; i < size; i++) {
-    delete [] ppMatrix[i];
-    delete [] ppMatrix2[i];
+    for (int b = 0; b < size; b++)
+      pWeights[b] = x(b);
   }
-  delete [] ppMatrix; delete [] ppMatrix2; delete [] pVec;
-
 }
 
 void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {

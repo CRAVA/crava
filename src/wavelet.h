@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #ifndef WAVELET_H
 #define WAVELET_H
 
@@ -86,7 +90,8 @@ public:
                             bool                                overrideDebug = false);
 
   void          writeWaveletToFile(const std::string          & fileName,
-                                   float                        approxDz);
+                                   float                        approxDz,
+                                   bool     makePrintedWaveletIntegralZero);
 
   void          setShiftGrid(Grid2D                           * grid);
 
@@ -171,7 +176,7 @@ protected:
   float          getLocalGainFactor(int                         i,
                                     int                         j) const;
 
-  float          findWaveletLength(float                        minRelativeAmp);
+  float          findWaveletLength(float                        minRelativeAmp,float minimumLength);
 
   void           convolve(fftw_complex                       * var1_c,
                           fftw_complex                       * var2_c,

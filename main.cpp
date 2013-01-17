@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <stdio.h>
 #include <time.h>
@@ -34,7 +38,6 @@
 #include "src/gridmapping.h"
 #include "src/simbox.h"
 #include "src/welldata.h"
-#include "src/filterwelllogs.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
 #include "src/tasklist.h"
@@ -149,8 +152,8 @@ int main(int argc, char** argv)
   LogKit::StartBuffering();
 
   Program program( 1,                     // Major version
-                   3,                     // Minor version
-                   0,                     // Patch number
+                   4,                     // Minor version
+                   0,                     // Patch number for bug fixes
                    //"",                  // Use empty string "" for release versions
                    " beta",               // Use empty string "" for release versions
                    -1,                    // Validity of licence in days (-1 = infinite)

@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -13,6 +17,9 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/well/norsarwell.hpp"
+#include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "nrlib/surface/surface.hpp"
+#include "nrlib/surface/regularsurface.hpp"
 
 #include "src/definitions.h"
 #include "src/welldata.h"
@@ -841,11 +848,59 @@ int WellData::checkSimbox(Simbox * simbox)
   if (error)
   {
     if (insideArea) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
       LogKit::LogFormatted(LogKit::Low,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
     }
-    else
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
+    }
+  }
+  return(error);
+}
+
+//----------------------------------------------------------------------------
+
+int WellData::checkStormgrid(StormContGrid & stormgrid) const
+{
+  bool insideArea = false;
+  int  error      = 1;
+
+  if(timemissing_ == 0) {
+
+    NRLib::Surface<double> & top  = stormgrid.GetTopSurface();
+    NRLib::Surface<double> & base = stormgrid.GetBotSurface();
+
+    for(int i=0;i<nd_;i++) {
+
+      if(stormgrid.IsInside(xpos_[i], ypos_[i])) {
+        insideArea = true;
+        //
+        // Correct handling of top and base checking.
+        //
+        double z_top  = top.GetZ(xpos_[i], ypos_[i]);
+        double z_base = base.GetZ(xpos_[i], ypos_[i]);
+
+        if(zpos_[i] > z_top && zpos_[i] < z_base) {
+          error = 0;
+          break;
+        }
+      }
+    }
+  }
+  else
+    error = 0;
+
+  if (error) {
+    if (insideArea) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+": ");
+      LogKit::LogFormatted(LogKit::Low,"IGNORED. Well does not hit the inversion volume.\n");
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+": ");
+      LogKit::LogFormatted(LogKit::Low,"IGNORED. Well is not inside the inversion area.\n");
+    }
   }
   return(error);
 }

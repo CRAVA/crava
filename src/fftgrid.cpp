@@ -1,3 +1,7 @@
+/***************************************************************************
+*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+***************************************************************************/
+
 #include <iostream>
 #include <fstream>
 #include <math.h>
@@ -194,10 +198,6 @@ FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
           fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
           fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-          float       dz_cut   = static_cast<float>(timeCutSimbox->getdz(refi, refj));
-          float       z0_cut   = static_cast<float>(timeCutSimbox->getTop(refi, refj));
-          float       zn_cut   = static_cast<float>(timeCutSimbox->getBot(refi, refj));
-
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
 
@@ -210,9 +210,6 @@ FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
                                  z0_data,
                                  zn_data,
                                  dz_data,
-                                 z0_cut,
-                                 zn_cut,
-                                 dz_cut,
                                  smooth_length,
                                  errText);
           resampleTrace(data_trace,
@@ -311,28 +308,23 @@ FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
                                 float                z0_data,
                                 float                zn_data,
                                 float                dz_data,
-                                float                ztop,
-                                float                zbase,
-                                float                dz,
                                 float                smooth_length,
                                 std::string        & errTxt)
 {
-  //
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.
-  // A wavelet is assumed 200ms.
   //
-  float guard_top = ztop    - z0_data + dz; // Add 0.5*dz to account for seismic data shift
-  float guard_bot = zn_data - zbase   + dz; // another half to get rid of numerical issues
-
-  if (guard_top < smooth_length || guard_bot < smooth_length) {
-    errTxt += "There is not enough seismic data above and/or below interval of interest. Minimum\n";
-    errTxt += "required guard zone is "+NRLib::ToString(smooth_length,1)+"ms on each side of the interval, ";
-    errTxt += "whereas the available\nguard zone is "+NRLib::ToString(guard_top,1)+"ms above";
-    errTxt += " and "+NRLib::ToString(guard_bot,1)+"ms below the interval.\n";
-  }
-
+  // By default, we have: guard_zone = smooth_length = 0.5*wavelet = 100ms
   //
+  // Originally, we checked here that the guard zone was larger than or equal
+  // to the smooth length. However, as a trace is generally not located in
+  // the center of the grid cell, we made an invalid comparison of z-values
+  // from different reference systems. Only when the top/base surface is flat
+  // such a comparison becomes valid. Instead, we hope and assume that the
+  // SegY volume made in ModelGeneral::readSegyFile() has been made with
+  // the correct guard zone in method.
+
+ //
   // k=n_smooth is the first sample within the simbox. For this sample
   // the smoothing factor (if it had been applied) should be one.
   //
@@ -667,8 +659,8 @@ FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
         grid_trace[k] = rAmpFine[l1];
       }
       else {
-        float w1 = dl - floor(dl);
-        float w2 = ceil(dl) - dl;
+        float w1 = ceil(dl) - dl;
+        float w2 = dl - floor(dl);
         grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
       }
     }
@@ -693,7 +685,10 @@ FFTGrid::setTrace(float value, size_t i, size_t j)
 }
 
 int
-FFTGrid::fillInFromSegY(const SegY* segy, const Simbox *simbox, bool padding)
+FFTGrid::fillInFromSegY(const SegY              * segy,
+                        const Simbox            * simbox,
+                        const std::string       & parName,
+                        bool                      padding)
 {
   assert(cubetype_  !=  CTMISSING);
 
@@ -742,7 +737,7 @@ FFTGrid::fillInFromSegY(const SegY* segy, const Simbox *simbox, bool padding)
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
@@ -1623,7 +1618,27 @@ FFTGrid::setNextComplex(fftw_complex value)
 }
 
 int
-FFTGrid::setNextReal(float  value)
+FFTGrid::SetNextComplex(std::complex<double> & value)
+{
+  assert(istransformed_==true);
+  assert(counterForSet_ < csize_);
+  counterForSet_ += 1;
+  if(counterForSet_==csize_)
+  {
+    counterForSet_=0;
+    cvalue_[csize_-1].re = static_cast<float>(value.real());
+    cvalue_[csize_-1].im = static_cast<float>(value.imag());
+  }
+  else {
+    cvalue_[counterForSet_-1].re = static_cast<float>(value.real());
+    cvalue_[counterForSet_-1].im = static_cast<float>(value.imag());
+  }
+
+  return(0);
+}
+
+int
+FFTGrid::setNextReal(float value)
 {
   assert(istransformed_== false);
   assert(counterForSet_ < rsize_);

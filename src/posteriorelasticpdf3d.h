@@ -15,38 +15,38 @@ class PosteriorElasticPDF3D : public PosteriorElasticPDF {
 public:
 
   // (i) Constructor with no dimension reduction: input: three elastic parameters
-  PosteriorElasticPDF3D(const std::vector<double>            & d1,          // first dimension of data points
-                 const std::vector<double>                   & d2,          // second dimension of data points
-                 const std::vector<double>                   & d3,          // third dimension of data points
-                 const double                     *const*const smoothvar,   // Gaussian smoothing kernel in 3D
-                 int                                           n1,          // resolution of density grid in dimension 1
-                 int                                           n2,          // resolution of density grid in dimension 2
-                 int                                           n3,          // resolution of density grid in dimension 3
-                 double                                        d1_min,
-                 double                                        d1_max,
-                 double                                        d2_min,
-                 double                                        d2_max,
-                 double                                        d3_min,
-                 double                                        d3_max,
-                 int                                           ind = 0);
+  PosteriorElasticPDF3D(const std::vector<double>                   & d1,          // first dimension of data points
+                        const std::vector<double>                   & d2,          // second dimension of data points
+                        const std::vector<double>                   & d3,          // third dimension of data points
+                        const double                   *const *const  smoothvar,   // Gaussian smoothing kernel in 3D
+                        int                                           n1,          // resolution of density grid in dimension 1
+                        int                                           n2,          // resolution of density grid in dimension 2
+                        int                                           n3,          // resolution of density grid in dimension 3
+                        double                                        d1_min,
+                        double                                        d1_max,
+                        double                                        d2_min,
+                        double                                        d2_max,
+                        double                                        d3_min,
+                        double                                        d3_max,
+                        int                                           ind = 0);
 
   // (ii) Constructor with dimension reduction: input: three elastic parameters and one trend variable
-  PosteriorElasticPDF3D(const std::vector<double>            & d1, // first dimension of data points
-                 const std::vector<double>                   & d2, // second dimension of data points
-                 const std::vector<double>                   & d3, // third dimension of data points
-                 const std::vector<int>                      & t1, // fourth dimension (trend parameters)
-                 const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
-                 const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
-                 int                                           n1,    // resolution of density grid in elastic dimension 1
-                 int                                           n2,    // resolution of density grid in elastic dimension 2
-                 int                                           nt,    // resolution of density grid in the trend dimension
-                 double                                        d1_min,
-                 double                                        d1_max,
-                 double                                        d2_min,
-                 double                                        d2_max,
-                 double                                        t1_min,
-                 double                                        t1_max,
-                 int                                           ind);
+  PosteriorElasticPDF3D(const std::vector<double>                   & d1, // first dimension of data points
+                        const std::vector<double>                   & d2, // second dimension of data points
+                        const std::vector<double>                   & d3, // third dimension of data points
+                        const std::vector<int>                      & t1, // fourth dimension (trend parameters)
+                        const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
+                        const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
+                        int                                           n1,    // resolution of density grid in elastic dimension 1
+                        int                                           n2,    // resolution of density grid in elastic dimension 2
+                        int                                           nt,    // resolution of density grid in the trend dimension
+                        double                                        d1_min,
+                        double                                        d1_max,
+                        double                                        d2_min,
+                        double                                        d2_max,
+                        double                                        t1_min,
+                        double                                        t1_max,
+                        int                                           ind);
 
   PosteriorElasticPDF3D(int                                    n1,
                         int                                    n2,

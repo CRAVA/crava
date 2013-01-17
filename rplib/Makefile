@@ -1,7 +1,7 @@
 include ../Makeheader
 
-INCLUDE =  -I.. -I ../fft/include
-CPPFLAGS += $(INCLUDE) -I../flens
+INCLUDE =  -I.. -I ../libs/fft/include -I ../libs
+CPPFLAGS += $(INCLUDE) -I../libs/flens 
 
 OBJDIR = ../obj
 CXXSRCS = $(wildcard *.cpp)
