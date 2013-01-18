@@ -4906,16 +4906,42 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
+    bool okWithoutWells = true;
+    std::string notOk;
+    //To run without wells, we need the following factors specified in the model file:
+    //1. Background.
+    if(inputFiles_->getBackFile(0) == "" && modelSettings_->getGenerateBackground() == true &&
+       modelSettings_->getGenerateBackgroundFromRockPhysics() == false)
+    {
+      okWithoutWells = false;
+      notOk += "- Background model must be specified for all parameters.\n";
+    }
+    //2. Wavelets
+    bool waveletOk = true;
     std::vector<bool> useRicker = modelSettings_->getUseRickerWavelet(0);
-    if ((inputFiles_->getBackFile(0)!="" || modelSettings_->getGenerateBackground() == false) &&
-        (inputFiles_->getWaveletFile(0,0)!="" || useRicker[0] == true) &&
-        inputFiles_->getTempCorrFile()!="" &&
-        inputFiles_->getParamCorrFile()!="" ||
-        modelSettings_->getGenerateBackgroundFromRockPhysics())
+    for(int i=0;i<inputFiles_->getNumberOfSeismicFiles(0);i++) {
+      if(inputFiles_->getWaveletFile(i,0) == "" && useRicker[i] == false)
+        waveletOk = false;
+    }
+    if(waveletOk == false) {
+      okWithoutWells = false;
+      notOk += "- Wavelets must be given for all angles.\n";
+    }
+    //3. Vertical correlation
+    if(inputFiles_->getTempCorrFile() == "") {
+      okWithoutWells = false;
+      notOk += "- Vertical correlation must be given.\n";
+    }
+    //4. Parameter correlation
+    if(inputFiles_->getParamCorrFile() == "" && modelSettings_->getGenerateBackgroundFromRockPhysics() == false) {
+      okWithoutWells = false;
+      notOk += "- Parameter correlation must be given.\n";
+    }
+    if(okWithoutWells == true)
       modelSettings_->setNoWellNeeded(true);
     else {
-      errTxt += "Wells are needed for the inversion. ";
-      errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
+      errTxt += "This inversion can not be run without wells:\n";
+      errTxt += notOk;
     }
     if (modelSettings_->getKrigingParameter()>0)
       errTxt += "Wells are needed for kriging.\n";
