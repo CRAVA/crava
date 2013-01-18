@@ -7,7 +7,6 @@
 
 DistributionsRockGassmann::DistributionsRockGassmann(const DistributionsDryRock            * distr_dryrock,
                                                      const DistributionsFluid              * distr_fluid,
-                                                     const std::vector<double>             & alpha,
                                                      const std::vector<double>             & s_min,
                                                      const std::vector<double>             & s_max)
 : DistributionsRock()
@@ -16,7 +15,6 @@ DistributionsRockGassmann::DistributionsRockGassmann(const DistributionsDryRock 
   distr_dryrock_ = distr_dryrock->Clone();
   distr_fluid_   = distr_fluid->Clone();
 
-  alpha_                    = alpha;               // alpha_ contains the one-year correlations for (inclusion_spectrums, inclusion_concentrations)
   s_min_                    = s_min;
   s_max_                    = s_max;
 

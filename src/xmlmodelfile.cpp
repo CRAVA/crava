@@ -1940,11 +1940,11 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   std::string                                 dummy = "";
   std::vector<DistributionWithTrendStorage *> total_porosity;
 
-  if(parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
+  if(given == 0 && parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
       errTxt += "The total porosity must be given for the dry-rock\n";
 
   std::string moduli;
-  if(parseMineralModuli(root, moduli, errTxt) == false)
+  if(given == 0 && parseMineralModuli(root, moduli, errTxt) == false)
     errTxt += "The mineral moduli must be given for the dry-rock\n";
 
   int constituent_type = ModelSettings::DRY_ROCK;

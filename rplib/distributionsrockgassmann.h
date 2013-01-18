@@ -15,7 +15,6 @@ public:
 
  DistributionsRockGassmann(const DistributionsDryRock            * distr_dryrock,
                            const DistributionsFluid              * distr_fluid,
-                           const std::vector<double>             & alpha,
                            const std::vector<double>             & s_min,
                            const std::vector<double>             & s_max);
 

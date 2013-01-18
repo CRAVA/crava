@@ -17,6 +17,7 @@
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/distributionsrockmix.h"
 #include "rplib/distributionsrockdem.h"
+#include "rplib/distributionsrockgassmann.h"
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionwithtrendstorage.h"
@@ -970,24 +971,78 @@ GassmannRockStorage::~GassmannRockStorage()
 }
 
 std::vector<DistributionsRock *>
-GassmannRockStorage::GenerateDistributionsRock(const int                                                   & /*n_vintages*/,
-                                               const std::string                                           & /*path*/,
-                                               const std::vector<std::string>                              & /*trend_cube_parameters*/,
-                                               const std::vector<std::vector<double> >                     & /*trend_cube_sampling*/,
+GassmannRockStorage::GenerateDistributionsRock(const int                                                   & n_vintages,
+                                               const std::string                                           & path,
+                                               const std::vector<std::string>                              & trend_cube_parameters,
+                                               const std::vector<std::vector<double> >                     & trend_cube_sampling,
                                                const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
-                                               const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
-                                               const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
-                                               const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
+                                               const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
+                                               const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
+                                               const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
                                                std::string                                                 & errTxt) const
 {
   LogKit::LogFormatted(LogKit::Low," Generating Gassmann rock physics model\n");
 
-  std::vector<DistributionsRock *> rock(1, NULL);
+  std::vector<double> s_min;
+  std::vector<double> s_max;
 
-  if(rock[0] == NULL)
-    errTxt += "The Gassmann model has not been implemented yet for rocks\n";
+  std::string tmpErrTxt = "";
 
-  return(rock);
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
+  std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
+
+  std::vector<DistributionsDryRock *> final_distr_dryrock (n_vintages);
+  std::vector<DistributionsDryRock *> distr_dryrock = ReadDryRock(n_vintages,
+                                                                  dry_rock_,
+                                                                  path,
+                                                                  trend_cube_parameters,
+                                                                  trend_cube_sampling,
+                                                                  model_dry_rock_storage,
+                                                                  model_solid_storage,
+                                                                  tmpErrTxt);
+
+  for(int i=0; i<n_vintages; i++) {
+    if(i < static_cast<int>(distr_dryrock.size()))
+      final_distr_dryrock[i] = distr_dryrock[i];
+    else
+      final_distr_dryrock[i] = final_distr_dryrock[i-1]->Clone();
+  }
+
+
+  std::vector<DistributionsFluid *> final_distr_fluid (n_vintages);
+  std::vector<DistributionsFluid *> distr_fluid = ReadFluid(n_vintages,
+                                                            fluid_,
+                                                            path,
+                                                            trend_cube_parameters,
+                                                            trend_cube_sampling,
+                                                            model_fluid_storage,
+                                                            tmpErrTxt);
+
+  for(int i=0; i<n_vintages; i++) {
+    if(i < static_cast<int>(distr_fluid.size()))
+      final_distr_fluid[i] = distr_fluid[i];
+    else
+      final_distr_fluid[i] = final_distr_fluid[i-1]->Clone();
+  }
+
+
+  if (tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsRock * rock = new DistributionsRockGassmann(final_distr_dryrock[i],
+                                                               final_distr_fluid[i],
+                                                               s_min,
+                                                               s_max);
+
+      dist_rock[i] = rock;
+    }
+  }
+  else {
+    errTxt += "\nProblems with the Gassmann rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
+  }
+
+  return(dist_rock);
 }
 
 //----------------------------------------------------------------------------------//
