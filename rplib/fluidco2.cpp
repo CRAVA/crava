@@ -32,11 +32,4 @@ FluidCO2::ComputeElasticParams(double temp, double pore_pressure)
   DEMTools::CalcCo2Prop(k_, rho_, temp, pore_pressure);
 }
 
-Fluid *
-FluidCO2::Evolve(const std::vector<int>             & /*delta_time*/,
-                 const std::vector< const Fluid * > & /*fluid*/) const
-{
-  return new FluidCO2(*this);
-}
-
 

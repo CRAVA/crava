@@ -42,9 +42,3 @@ DryRockTabulatedModulus::ComputeElasticParams(double & k, double & mu, double & 
   mu  = mu_;
   rho = rho_;
 }
-
-DryRock *
-DryRockTabulatedModulus::Evolve(const std::vector<int>             & /*delta_time*/,
-                                const std::vector< const DryRock * > & /*fluid*/) const {
-  return new DryRockTabulatedModulus(*this);  // Evolve when model is defined.
-}

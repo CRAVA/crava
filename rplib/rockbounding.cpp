@@ -54,14 +54,6 @@ RockBounding::Clone() const
   return new RockBounding(*this);
 }
 
-
-Rock *
-RockBounding::Evolve(const std::vector<int>         & /*delta_time*/,
-                     const std::vector< Rock * >    & /*rock*/) const
-{
-  return new RockBounding(*this);
-}
-
 void
 RockBounding::SetPorosity(double porosity)
 {

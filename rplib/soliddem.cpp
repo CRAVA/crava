@@ -68,44 +68,6 @@ SolidDEM::Clone() const {
   return r;
 }
 
-Solid *
-SolidDEM::Evolve(const std::vector<int>                & /*delta_time*/,
-                 const std::vector< const Solid * >    & /*solids*/) const
-{
-  return new SolidDEM(*this);
-
-  //old code, worked when solid_inc_ was a single Solid, not working now. Evolve when model is defined.
-  //size_t n_solids = solids.size();
-  //std::vector< const SolidDEM * > solid_incl(n_solids);
-  //std::vector< const Solid * > solid(n_solids);
-  //std::vector< const Solid * > solid_inc(n_solids);
-  //for (size_t i = 0; i < n_solids; ++i) {
-  //  solid_incl[i] = dynamic_cast<const SolidDEM*>(solids[i]);
-  //  assert(solid_incl[i] != NULL);
-  //  solid[i]      = solid_incl[i]->GetSolidHost();
-  //  solid_inc[i]  = solid_incl[i]->GetSolidInclusion();
-  //}
-  //Solid * solid_new     = solid_->Evolve(delta_time, solid);
-  //Solid * solid_inc_new = solid_inc_->Evolve(delta_time, solid_inc);
-
-  //// Change the assignment of the following three variables when a time develop model has been defined.
-  //std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
-  //std::vector<double> inclusion_concentration = inclusion_concentration_;
-
-  //Solid * solid_new2 = new SolidDEM(solid_new,
-  //                                  solid_inc_new,
-  //                                  inclusion_spectrum,
-  //                                  inclusion_concentration,
-  //                                  u_);
-
-  //// Deep copy taken by constructor of SolidDEM, hence delete
-  //// solid_new and solid_inc_new here:
-  //delete solid_new;
-  //delete solid_inc_new;
-
-  //return solid_new2;
-}
-
 void
 SolidDEM::ComputeElasticParams() {
 

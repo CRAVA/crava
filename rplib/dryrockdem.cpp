@@ -68,44 +68,6 @@ DryRockDEM::Clone() const {
   return r;
 }
 
-DryRock *
-DryRockDEM::Evolve(const std::vector<int>                & /*delta_time*/,
-                   const std::vector< const DryRock * >  & /*dryrocks*/) const
-{
-  return new DryRockDEM(*this);
-
-  //old code, worked when dryrock_inc_ was a single DryRock, not working now. Evolve when model is defined.
-  //size_t n_dryrocks = dryrocks.size();
-  //std::vector< const DryRockDEM * > dryrock_incl(n_dryrocks);
-  //std::vector< const DryRock * > dryrock(n_dryrocks);
-  //std::vector< const DryRock * > dryrock_inc(n_dryrocks);
-  //for (size_t i = 0; i < n_dryrocks; ++i) {
-  //  dryrock_incl[i] = dynamic_cast<const DryRockDEM*>(dryrocks[i]);
-  //  assert(dryrock_incl[i] != NULL);
-  //  dryrock[i]      = dryrock_incl[i]->GetDryRockHost();
-  //  dryrock_inc[i]  = dryrock_incl[i]->GetDryRockInclusion();
-  //}
-  //DryRock * dryrock_new     = dryrock_->Evolve(delta_time, dryrock);
-  //DryRock * dryrock_inc_new = dryrock_inc_->Evolve(delta_time, dryrock_inc);
-
-  //// Change the assignment of the following three variables when a time develop model has been defined.
-  //std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
-  //std::vector<double> inclusion_concentration = inclusion_concentration_;
-
-  //DryRock * dryrock_new2 = new DryRockDEM(dryrock_new,
-  //                                  dryrock_inc_new,
-  //                                  inclusion_spectrum,
-  //                                  inclusion_concentration,
-  //                                  u_);
-
-  //// Deep copy taken by constructor of DryRockDEM, hence delete
-  //// dryrock_new and dryrock_inc_new here:
-  //delete dryrock_new;
-  //delete dryrock_inc_new;
-
-  //return dryrock_new2;
-}
-
 void
 DryRockDEM::ComputeElasticParams() {
 

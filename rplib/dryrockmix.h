@@ -22,9 +22,6 @@ public:
 
   virtual DryRock                   * Clone() const;
 
-  virtual DryRock                   * Evolve(const std::vector<int>               & delta_time,
-                                             const std::vector< const DryRock * > & dryrock) const;
-
   DryRock                           * GetSubDryRock(size_t i) const { return dryrock_[i]; }
 
 private:

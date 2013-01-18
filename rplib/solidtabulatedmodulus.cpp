@@ -32,9 +32,3 @@ SolidTabulatedModulus::ComputeElasticParams(double & k, double & mu, double & rh
   mu  = mu_;
   rho = rho_;
 }
-
-Solid *
-SolidTabulatedModulus::Evolve(const std::vector<int>             & /*delta_time*/,
-                              const std::vector< const Solid * > & /*fluid*/) const {
-  return new SolidTabulatedModulus(*this);  // Evolve when model is defined.
-}

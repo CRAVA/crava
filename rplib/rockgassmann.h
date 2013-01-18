@@ -29,9 +29,6 @@ RockGassmann();
   const Fluid                         * GetFluid()                                              const { return fluid_; }
   const DryRock                       * GetDryRock()                                            const { return dryrock_; }
 
-  virtual Rock                        * Evolve(const std::vector<int>         & delta_time,
-                                               const std::vector< Rock * >    & rock)           const;
-
   virtual void                          SetPorosity(double porosity);
 
 private:

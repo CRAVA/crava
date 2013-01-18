@@ -33,9 +33,6 @@ RockDEM();
   const std::vector<Fluid*>           & GetFluid()                                              const {return fluid_;}
   const Fluid                         * GetFluid(size_t i)                                      const {return fluid_[i];} // no error checking on valid index range
 
-  virtual Rock                        * Evolve(const std::vector<int>         & delta_time,
-                                               const std::vector< Rock * >    & rock)           const;
-
   virtual void                          SetPorosity(double porosity);
 
 private:

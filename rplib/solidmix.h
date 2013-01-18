@@ -22,9 +22,6 @@ public:
 
   virtual Solid                   * Clone() const;
 
-  virtual Solid                   * Evolve(const std::vector<int>             & delta_time,
-                                           const std::vector< const Solid * > & solid) const;
-
   Solid                           * GetSubSolid(size_t i) const { return solid_[i]; }
 
 private:

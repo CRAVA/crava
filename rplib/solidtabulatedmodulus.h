@@ -24,9 +24,6 @@ public:
 
   virtual void                        ComputeElasticParams(double & k, double & mu, double & rho) const;
 
-  virtual Solid                     * Evolve(const std::vector<int>             & /*delta_time*/,
-                                             const std::vector< const Solid * > & /*fluid*/) const;
-
 };
 
 #endif

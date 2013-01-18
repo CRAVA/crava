@@ -25,9 +25,6 @@ public:
 
   virtual Rock              * Clone() const;
 
-  virtual Rock *              Evolve(const std::vector<int>              & delta_time,
-                                     const std::vector< Rock * >         & rock)                         const;
-
   virtual void                SetPorosity(double porosity);
 
   Rock                      * GetSubRock(size_t i) const { return rock_[i]; }
@@ -64,9 +61,6 @@ public:
   RockMixOfSolidAndFluid              & operator=(const RockMixOfSolidAndFluid& rhs);
 
   virtual Rock                        * Clone()                                                                    const;
-
-  virtual Rock *                        Evolve(const std::vector<int>              & delta_time,
-                                               const std::vector< Rock * >         & /*rock*/)                     const;
 
   virtual void                          SetPorosity(double porosity);
 

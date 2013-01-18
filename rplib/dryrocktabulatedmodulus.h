@@ -26,9 +26,6 @@ public:
 
   virtual void                          ComputeElasticParams(double & k, double & mu, double & rho) const;
 
-  virtual DryRock                     * Evolve(const std::vector<int>               & /*delta_time*/,
-                                               const std::vector< const DryRock * > & /*fluid*/) const;
-
 };
 
 #endif

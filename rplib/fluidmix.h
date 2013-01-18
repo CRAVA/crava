@@ -19,9 +19,6 @@ public:
 
   virtual Fluid *                   Clone() const;
 
-  virtual Fluid *                   Evolve(const std::vector<int>             & delta_time,
-                                           const std::vector< const Fluid * > & fluid) const;
-
   Fluid *                           GetSubFluid(size_t i) const { return fluid_[i]; }
 
 private:

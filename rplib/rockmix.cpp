@@ -86,25 +86,6 @@ RockMixOfRock& RockMixOfRock::operator=(const RockMixOfRock& rhs)
   return *this;
 }
 
-Rock *
-RockMixOfRock::Evolve(const std::vector<int>          & delta_time,
-                      const std::vector< Rock * >     & rock) const
-{
-  size_t n_rocks = rock_.size();
-  std::vector<Rock*> rock_new(n_rocks);
-  for (size_t i = 0; i < n_rocks; ++i)
-    rock_new[i] = rock_[i]->Evolve(delta_time, rock);
-
-  std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Rock * rock_mixed_new = new RockMixOfRock(rock_new, volume_fraction, u_, mix_method_);
-
-  // Deep copy taken by constructor of RockMixOfRock, hence delete rock_new here:
-  for (size_t i = 0; i < n_rocks; ++i)
-    delete rock_new[i];
-
-  return rock_mixed_new;
-}
-
 void
 RockMixOfRock::ComputeSeismicVariables()
 {
@@ -263,39 +244,6 @@ RockMixOfSolidAndFluid& RockMixOfSolidAndFluid::operator=(const RockMixOfSolidAn
       fluid_[i] = rhs.fluid_[i]->Clone();
   }
   return *this;
-}
-
-Rock *
-RockMixOfSolidAndFluid::Evolve(const std::vector<int>          & delta_time,
-                               const std::vector< Rock * >     & /*rock*/) const
-{
-  size_t n_solids = solid_.size();
-  std::vector<Solid*> solid_new(n_solids);
-
-  //NBNB fjellvoll convert the rock to solid and fluid
-  std::vector< const Solid* > solid;
-  std::vector< const Fluid* > fluid;
-
-  for (size_t i = 0; i < n_solids; ++i)
-    solid_new[i] = solid_[i]->Evolve(delta_time, solid);
-
-  size_t n_fluids = fluid_.size();
-  std::vector<Fluid*> fluid_new(n_fluids);
-  for (size_t i = 0; i < n_fluids; ++i)
-    fluid_new[i] = fluid_[i]->Evolve(delta_time, fluid);
-
-  std::vector<double> volume_fraction_solid = volume_fraction_solid_; // Evolve when model is defined.
-  std::vector<double> volume_fraction_fluid = volume_fraction_fluid_; // Evolve when model is defined.
-  Rock * rock_mixed_new = new RockMixOfSolidAndFluid(solid_new, fluid_new, volume_fraction_solid, volume_fraction_fluid, u_, mix_method_);
-
-  // Deep copy taken by constructor of RockMixOfSolidAndFluid, hence delete solid_new, fluid_new here:
-  for (size_t i = 0; i < n_solids; ++i)
-    delete solid_new[i];
-
-  for (size_t i = 0; i < n_fluids; ++i)
-    delete fluid_new[i];
-
-  return rock_mixed_new;
 }
 
 void

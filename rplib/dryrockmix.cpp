@@ -104,21 +104,3 @@ DryRockMix& DryRockMix::operator=(const DryRockMix& rhs)
   return *this;
 }
 
-DryRock *
-DryRockMix::Evolve(const std::vector<int>               & delta_time,
-                   const std::vector< const DryRock * > & dryrock) const {
-  size_t n_dryrocks = dryrock_.size();
-  std::vector<DryRock*> dryrock_new(n_dryrocks);
-  for (size_t i = 0; i < n_dryrocks; ++i)
-    dryrock_new[i] = dryrock_[i]->Evolve(delta_time, dryrock);
-
-  std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  DryRock * dryrock_mixed_new = new DryRockMix(dryrock_new, volume_fraction, u_, mix_method_);
-
-  // Deep copy taken by constructor of DryRockMix, hence delete dryrock_new here:
-  for (size_t i = 0; i < n_dryrocks; ++i)
-    delete dryrock_new[i];
-
-  return dryrock_mixed_new;
-}
-

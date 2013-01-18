@@ -65,13 +65,6 @@ RockGassmann::GetElasticParams(double & k, double & mu, double & rho) const {
   rho = rho_;
 }
 
-Rock *
-RockGassmann::Evolve(const std::vector<int>         & /*delta_time*/,
-                     const std::vector< Rock * >    & /*rock*/) const {
-
-  return new RockGassmann(*this); //function will be removed later
-}
-
 void
 RockGassmann::SetPorosity(double porosity) {
   dryrock_->SetTotalPorosity(porosity);

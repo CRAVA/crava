@@ -78,41 +78,6 @@ RockDEM::GetElasticParams(double & k, double & mu, double & rho) const {
   rho = rho_;
 }
 
-Rock *
-RockDEM::Evolve(const std::vector<int>         & /*delta_time*/,
-                const std::vector< Rock * >    & /*rock*/) const {
-
-  return new RockDEM(*this); //old code, worked when fluid_ was a single Fluid, not working now. Evolve when model is defined.
-  //size_t n_rocks = rock.size();
-  //std::vector< RockDEM * > rock_incl(n_rocks);
-  //std::vector< const Solid * > solid(n_rocks);
-  //std::vector< const Fluid * > fluid(n_rocks);
-  //for (size_t i = 0; i < n_rocks; ++i) {
-  //  rock_incl[i] = dynamic_cast<RockDEM*>(rock[i]);
-  //  assert(rock_incl[i] != NULL);
-  //  solid[i] = rock_incl[i]->GetSolid();
-  //  fluid[i] = rock_incl[i]->GetFluid();
-  //}
-  //Solid * solid_new = solid_->Evolve(delta_time, solid);
-  //Fluid * fluid_new = fluid_->Evolve(delta_time, fluid);
-
-  //// Change the assignment of the following three variables when a time develop model has been defined.
-  //std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
-  //std::vector<double> inclusion_concentration = inclusion_concentration_;
-
-  //Rock * rock_new = new RockDEM(solid_new,
-  //                                    fluid_new,
-  //                                    inclusion_spectrum,
-  //                                    inclusion_concentration,
-  //                                    u_);
-
-  //// Deep copy taken by constructor of RockDEM, hence delete
-  //// solid_new and fluid_new here:
-  //delete solid_new;
-  //delete fluid_new;
-  //return rock_new;
-}
-
 void
 RockDEM::SetPorosity(double porosity) {
   // the following assumes inclusions are fluids

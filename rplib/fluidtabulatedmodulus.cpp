@@ -27,9 +27,3 @@ Fluid *
 FluidTabulatedModulus::Clone() const {
   return new FluidTabulatedModulus(*this);
 }
-
-Fluid *
-FluidTabulatedModulus::Evolve(const std::vector<int>             & /*delta_time*/,
-                              const std::vector< const Fluid * > & /*fluid*/) const {
-  return new FluidTabulatedModulus(*this);  // Evolve when model is defined.
-}

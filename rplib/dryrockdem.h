@@ -31,9 +31,6 @@ public:
   const std::vector<DryRock*>           & GetDryRockInclusion() const {return dryrock_inc_;}
   const DryRock                         * GetDryRockInclusion(size_t i) const { return dryrock_inc_[i]; } // no error checking on valid index range
 
-  virtual DryRock                       * Evolve(const std::vector<int>               & delta_time,
-                                                 const std::vector< const DryRock * > & dryrocks) const;
-
 private:
   //Copy constructor for getting base class variables , used by Clone:
   DryRockDEM(const DryRockDEM & rhs) : DryRock(rhs) {}

@@ -23,9 +23,6 @@ public:
 
   virtual Rock                        * Clone()                                                 const;
 
-  virtual Rock                        * Evolve(const std::vector<int>         & delta_time,
-                                               const std::vector< Rock * >    & rock)           const;
-
   virtual void                          SetPorosity(double porosity);
 
   Rock                                * GetUpperRock() const { return upper_rock_; }

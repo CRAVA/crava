@@ -23,9 +23,6 @@ public:
 
   void                            ComputeElasticParams(double temp, double pore_pressure);
 
-  virtual Fluid *                 Evolve(const std::vector<int>             & /*delta_time*/,
-                                         const std::vector< const Fluid * > & /*fluid*/) const;
-
 private:
   double                          ComputeBulkModulusOfFluidBatzleWangFromTPS(double temp, double pore_pressure, double salinity) const;
 

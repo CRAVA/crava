@@ -94,23 +94,3 @@ FluidMix& FluidMix::operator=(const FluidMix& rhs)
 }
 
 
-Fluid *
-FluidMix::Evolve(const std::vector<int>             & delta_time,
-                 const std::vector< const Fluid * > & fluid) const
-{
-  size_t n_fluids = fluid_.size();
-  std::vector<Fluid*> fluid_new(n_fluids);
-  for (size_t i = 0; i < n_fluids; ++i)
-    fluid_new[i] = fluid_[i]->Evolve(delta_time, fluid);
-
-  std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Fluid * fluid_mixed_new = new FluidMix(fluid_new, volume_fraction, u_, mix_method_);
-
-  // Deep copy taken by constructor of FluidMix, hence delete fluid_new here:
-  for (size_t i = 0; i < n_fluids; ++i)
-    delete fluid_new[i];
-
-  return fluid_mixed_new;
-}
-
-

@@ -34,12 +34,6 @@ FluidBatzleWang::ComputeElasticParams(double temp, double pore_pressure) {
   rho_ = ComputeDensityOfFluidBatzleWangFromTPS(temp, pore_pressure, salinity_);
 }
 
-Fluid *
-FluidBatzleWang::Evolve(const std::vector<int>             & /*delta_time*/,
-                        const std::vector< const Fluid * > & /*fluid*/) const {
-  return new FluidBatzleWang(*this);
-}
-
 double
 FluidBatzleWang::ComputeBulkModulusOfFluidBatzleWangFromTPS(double temp, double pore_pressure, double salinity) const
 {

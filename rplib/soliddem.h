@@ -31,9 +31,6 @@ public:
   const std::vector<Solid*>           & GetSolidInclusion() const {return solid_inc_;}
   const Solid                         * GetSolidInclusion(size_t i) const { return solid_inc_[i]; } // no error checking on valid index range
 
-  virtual Solid                       * Evolve(const std::vector<int>               & delta_time,
-                                               const std::vector< const Solid * >   & solids) const;
-
 private:
   //Copy constructor for getting base class variables , used by Clone:
   SolidDEM(const SolidDEM & rhs) : Solid(rhs) {}

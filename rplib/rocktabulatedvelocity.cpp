@@ -38,14 +38,6 @@ RockTabulatedVelocity::Clone() const
   return new RockTabulatedVelocity(*this);
 }
 
-
-Rock *
-RockTabulatedVelocity::Evolve(const std::vector<int>         & /*delta_time*/,
-                              const std::vector< Rock * >    & /*rock*/) const
-{
-  return new RockTabulatedVelocity(*this);
-}
-
 void
 RockTabulatedVelocity::SetPorosity(double /*porosity*/)
 {

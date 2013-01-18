@@ -16,13 +16,6 @@ public:
                                       vp = vp_; vs = vs_; rho = rho_;
                                     }
 
-                                    // Input parameters:
-                                    //      delta_time : the set of previous and present incremental time steps
-                                    //      rock : the set of previous rock samples
-                                    // Recommended in implementation: assert(delta_time.size() == rock.size() + 1);
-  virtual                           Rock * Evolve(const std::vector<int>         & delta_time,
-                                                  const std::vector< Rock * >    & rock)          const = 0;
-
   // Important:SetPorosity is not a "simple" set function. It triggers a recalculation of a lot of the member variables.
   // See children classes for examples.
   virtual void                      SetPorosity(double porosity)                                        = 0;
