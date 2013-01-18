@@ -75,12 +75,27 @@ DistributionsDryRockTabulated::DistributionsDryRockTabulated(const Distributions
   corr_elastic2_density_(dist.corr_elastic2_density_),
   tabulated_method_(dist.tabulated_method_)
 {
-  elastic1_         = dist.elastic1_->Clone();
-  elastic2_         = dist.elastic1_->Clone();
-  density_          = dist.density_ ->Clone();
-  mineral_          = dist.mineral_->Clone();
-  total_porosity_   = dist.total_porosity_->Clone();
+  if(dist.elastic1_->GetIsShared() == false)
+    elastic1_ = dist.elastic1_->Clone();
+  else
+    elastic1_ = dist.elastic1_;
 
+  if(dist.elastic2_->GetIsShared() == false)
+    elastic2_ = dist.elastic2_->Clone();
+  else
+    elastic2_ = dist.elastic2_;
+
+  if(dist.density_->GetIsShared() == false)
+    density_  = dist.density_ ->Clone();
+  else
+    density_ = dist.density_;
+
+  mineral_          = dist.mineral_->Clone();
+
+  if(dist.total_porosity_->GetIsShared() == false)
+    total_porosity_ = dist.total_porosity_->Clone();
+  else
+    total_porosity_ = dist.total_porosity_;
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = elastic1_;
