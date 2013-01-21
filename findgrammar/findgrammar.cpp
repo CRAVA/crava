@@ -2,14 +2,15 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include "../nrlib/iotools/fileio.hpp"
-#include "../nrlib/tinyxml/tinyxml.h"
+#include "../libs/nrlib/iotools/fileio.hpp"
+#include "../libs/nrlib/tinyxml/tinyxml.h"
 
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <set>
 
 std::string
 FindPreceedingString(const std::string & file, std::string::size_type end)
@@ -75,7 +76,20 @@ GetPath(const TiXmlNode * node)
 
 
 TiXmlElement *
-ProcessCodeLevel(const std::string & file, const std::string & command, std::string & errTxt)
+ProcessCodeLevelTerminating(const std::string & file, const std::string & command, std::string & errTxt)
+{
+  std::string::size_type init  = file.find(command);
+  std::string::size_type start = file.find("\"", init);
+  std::string::size_type end   = file.find("\"", start+1);
+  std::string name = file.substr(start+1,end-start-1);
+  TiXmlElement * node = new TiXmlElement(name);
+  return(node);
+}
+
+
+TiXmlElement *
+ProcessCodeLevel(const std::string & file, const std::string & command, std::string & errTxt,
+                 std::vector<std::string> parents) //Note that last element is transferred as a copy.
 {
   std::string::size_type init  = file.find(command);
   std::string::size_type term  = file.find("checkForJunk",init);
@@ -83,7 +97,16 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
   std::string::size_type end   = file.find("\"", start+1);
   std::string name = file.substr(start+1,end-start-1);
   TiXmlElement * node = new TiXmlElement(name);
-  TiXmlElement * child;
+
+  if(find(parents.begin(), parents.end(), name) != parents.end()) {
+    errTxt = errTxt+"Error: Command <"+name+"> occurs in a loop. Command sequence:\n";
+    for(size_t i=0;i<parents.size();i++)
+      errTxt = errTxt+"<"+parents[i]+">";
+    errTxt = errTxt+"<"+name+">\nTalk to Ragnar.\n";
+    return(node);
+  }
+  else
+    parents.push_back(name);
 
   std::string::size_type lStart = file.find("legalCommands", end+1);
   start = file.find("parse",end);
@@ -96,19 +119,28 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
     lStart = file.find("legalCommands", end+1);
   }
 
+  TiXmlElement * child;
   while(start < term) {
     end = file.find("(",start);
     name = file.substr(start,end-start+1);
     if(name == "parseValue(" || name == "parseFileName(" || name == "parseBool(" ||
        name == "parseVariogram(" || name == "parseTraceHeaderFormat(" ||
-       name == "parseRockTrends(") {
+       name == "parseDistributionWithTrend(")
+    {
       start = file.find("\"",end);
       end   = file.find("\"",start+1);
       name  = file.substr(start+1,end-start-1);
       child = new TiXmlElement(name);
     }
+    else if(name == "parseConstituent(" ||
+            name == "parseDEMHost(" || name == "parseDEMInclusion(" ||
+            name == "parseUpperBound(" || name == "parseLowerBound(" ||
+            node->ValueStr() == "gassmann")
+    {
+      child = ProcessCodeLevelTerminating(file, "::"+name, errTxt);
+    }
     else
-      child = ProcessCodeLevel(file, "::"+name, errTxt);
+      child = ProcessCodeLevel(file, "::"+name, errTxt, parents);
 
     if(node->FirstChildElement(child->ValueStr()) != NULL)
       errTxt = errTxt+"Error: Command <"+node->ValueStr()+"><"+child->ValueStr()+"> is implemented twice.\n";
@@ -152,9 +184,12 @@ ProcessDocLevel(const std::string & file, int level, const std::vector<std::stri
     start = file.find("{", start);      //Jump to position before command name.
     end   = file.find("}", start+1);
     std::string name = file.substr(start+1,end-start-1);
-    if(name == "variogram-keyword" || name == "trend-parameters")
+    if(name == "variogram-keyword" || name == "value-assignments")
       return(NULL);
     node = new TiXmlElement(name);
+    if(name == "constituent" || name == "host" || name == "inclusion" ||
+       name == "upper-bound" || name == "lower-bound" || name == "variable")
+      return(node);
   }
 
   if(level < 6) {
@@ -257,7 +292,8 @@ int main(int argc, char** argv)
   }
   infile.close();
 
-  root = ProcessCodeLevel(file, "::parseCrava(", errTxt);
+  std::vector<std::string> parents;
+  root = ProcessCodeLevel(file, "::parseCrava(", errTxt, parents);
   if(errTxt.size() > 0) {
     if (fileOutput) {
       std::ofstream outfile;

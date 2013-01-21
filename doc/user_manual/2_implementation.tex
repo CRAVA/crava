@@ -509,3 +509,26 @@ The maximum memory usage is thus the largest of the actual peaks. The
 maximum number of allocated padded grids will occur at either $P_1$ or
 $P_2$, whereas the largest number of other grids are allocated at
 $P_3$.
+
+\section{Implementation of the rock physics template model}
+The rock physics template model is very flexible, and requires an equally flexible implementation. There are four main elements:
+\begin{enumerate}
+\item Fluids.
+\item Solids.
+\item Rocks.
+\item Dry-rocks.
+\end{enumerate}
+We handle these by a dual set of corresponding classes, the distribution classes and the sample classes. We have the set of DistributionFluid, DistributionSolid etc. base classes. These describe the prior distribution for different elements. From these, we can generate samples of the element. These samples are of base classes Fluid, Solid etc., and correspond directly to the Distribution-classes.
+
+Under the base classes, we have a set of derived classes, based on different rock physics models for mixing. These aoos exist on both distribution and sample version. Thus, the tree-like structure of a rock physics template model is mirrored here, with each prior distribution being built as a tree of Distribution... objects, and capable of generating a sample that is a similar tree of sample objects. The sample tree computes it properties as it is built, so the top level knows the resulting elastic parameters.
+
+A feature of the rock physics implementation is that we can update a sample to generate a new sample. This new sample will be highly correlated with the initial sample. This is utlised to generate synthetic well data (for filtering), and when doing 4D modelling. In order to do this updating, each sample stores all the quantiles for the randomly drawn parameters in the sample. When updating a sample, each quantile $u$ is pertubated to a quantile $u_p$ as follows:
+\begin{eqnarray}
+x = \Phi^{-1}(u) \\
+x_p = x + \epsilon \\
+u_p = \Phi(x_p).
+\end{eqnarray}
+Here, $\epsilon$ is normally distributed with expectation 0, and a variance based on the desired correlation. This sampling models the realtion between the existing and new value as a Gaussian pair copula, with a given correlation parameter.
+
+The correlation parameter is controlled in different ways, depending on wheteher we are generating synthetic wells or setting up a 4D model. In the former case, we use a constant correlation for all random parameters in the sample-tree. This correlation is tuned to obtain the desired correlation between neighbouring samples. In the 4D setting, each random parameter is assigned a yearly correlation (on the distribution level). From this, the correlation for the relevant time step is computed and used for updating. By setting most parameters perfectly correlated, this allows us to update only parameters that are changing in a 4D setting, such as saturation.
+

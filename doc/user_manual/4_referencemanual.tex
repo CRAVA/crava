@@ -58,6 +58,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 0
  \elist
 
+\paragraph{\hbracket{seed-file}}  \newkw{seed-file}
+ \slist
+   \item \Description An ASCII-file with a number used to initialise the random generator. Running a model file with a given seed will give the same simulation results each time.
+   \item \Argument File name
+   \item \Default Using 0 as seed
+ \elist
+
 \paragraph{\hbracket{number-of-simulations}}  \newkw{number-of-simulations}
  \slist
    \item \Description Integer value giving the number of stochastic realizations to generate.
@@ -1945,6 +1952,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
+
 \paragraph{\hbracket{zone}}\newkw{zone}
  \slist
    \item \Description Information about the different zones in the multizone background model
@@ -1957,6 +1965,12 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description Name of a base surface file. The base surface files need to be given in descending order such that surfaces that are higher in the reservoir comes in before surfaces that are further down.
    \item \Argument File name
    \item \Default
+ \elist
+
+\subparagraph{\hbracket{surface-uncertainty}}\newkw{surface-uncertainty}
+ \slist
+   \item \Description Uncertainty of this base surface, given as the maximum deviation from the values in the file. Note: Must be 0 i last zone.
+   \item \Argument Value
  \elist
 
 \subparagraph{\hbracket{erosion-priority}}\newkw{erosion-priority}

@@ -1740,7 +1740,7 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("rock");
   legalCommands.push_back("trend-cube");
 
-  // The order of the parse-commands should not be changed
+  // The order of the parsing-commands should not be changed
   parseReservoir(root, errTxt);
   while(parseEvolve(root, errTxt));
   parsePredefinitions(root, errTxt);
@@ -1859,8 +1859,6 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  //legalCommands.push_back("hashin-shtrikman");
-  //legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -1917,8 +1915,6 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  //legalCommands.push_back("hashin-shtrikman");
-  //legalCommands.push_back("walton");
   legalCommands.push_back("total-porosity");
   legalCommands.push_back("mineral-moduli");
 
@@ -1984,8 +1980,6 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("batzle-wang-brine");
-  //legalCommands.push_back("hashin-shtrikman");
-  //legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -2739,12 +2733,9 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
   else
     correlation_shear_density.push_back(0.0);
 
-
+  assert(constituent != ModelSettings::FLUID);
   if(use_vp) {
-    if(constituent == ModelSettings::FLUID) {
-      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
-    }
-    else if(constituent == ModelSettings::SOLID) {
+    if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
       modelSettings_->addSolid(label, solid);
     }
@@ -2758,10 +2749,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
     }
   }
   else {
-    if(constituent == ModelSettings::FLUID) {
-      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
-    }
-    else if(constituent == ModelSettings::SOLID) {
+    if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
       modelSettings_->addSolid(label, solid);
     }
@@ -2843,24 +2831,14 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   else
     correlation_bulk_density.push_back(0.0);
 
-
+  assert(constituent == ModelSettings::FLUID);
   if(use_vp) {
-    if(constituent == ModelSettings::FLUID) {
-      DistributionsFluidStorage * fluid = new TabulatedVelocityFluidStorage(vp, density, correlation_vp_density);
-      modelSettings_->addFluid(label, fluid);
-    }
-    else {
-      errTxt += "Implementation error: parseTabulatedFluid() can only be used for fluids. Use parseTabulated()\n";
-    }
+    DistributionsFluidStorage * fluid = new TabulatedVelocityFluidStorage(vp, density, correlation_vp_density);
+    modelSettings_->addFluid(label, fluid);
   }
   else {
-    if(constituent == ModelSettings::FLUID) {
-      DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_bulk_density);
-      modelSettings_->addFluid(label, fluid);
-    }
-    else {
-      errTxt += "Implementation error: parseTabulatedFluid() can only be used for fluids. Use parseTabulated()\n";
-    }
+    DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_bulk_density);
+    modelSettings_->addFluid(label, fluid);
   }
 
   checkForJunk(root, errTxt, legalCommands);
