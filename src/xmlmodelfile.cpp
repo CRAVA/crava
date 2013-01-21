@@ -1156,6 +1156,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background");
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("temporal-correlation");
+  legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("parameter-correlation");
   legalCommands.push_back("correlation-direction");
   legalCommands.push_back("facies-probabilities");
@@ -1175,8 +1176,19 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   }
 
   std::string filename;
-  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true)
+  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true){
     inputFiles_->setTempCorrFile(filename);
+  }
+
+  float tempCorrRange;
+  if(parseValue(root,"temporal-correlation-range", tempCorrRange, errTxt) == true){
+    modelSettings_->setTempCorrRange(tempCorrRange);
+    modelSettings_->setUseVerticalVariogram(true);
+  }
+
+  // check that not both a file and a range for temporal correlation is given
+  if(filename!="" && modelSettings_->getUseVerticalVariogram())
+    errTxt += "Both a temporal correlation file and a temporal variogram range are given as input. Please specify only one of them.\n";
 
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
     inputFiles_->setParamCorrFile(filename);

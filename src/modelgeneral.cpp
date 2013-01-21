@@ -3618,7 +3618,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     const std::string & corrTFile    = inputFiles->getTempCorrFile();
 
     bool estimateParamCov = paramCovFile == "";
-    bool estimateTempCorr = corrTFile    == "";
+    bool estimateTempCorr = (corrTFile    == "" && modelSettings->getUseVerticalVariogram() == false);
 
     //
     // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
@@ -3674,21 +3674,32 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     bool failedTempCorr = false;
     if(!estimateTempCorr)
     {
-      std::string tmpErrText("");
-      float ** corrMat = ModelAVODynamic::readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
-      if(corrMat == NULL)
-      {
-        errText += "Reading of file '"+corrTFile+"' for temporal correlation failed\n";
-        errText += tmpErrText;
-        failedTempCorr = true;
+      if(modelSettings->getUseVerticalVariogram() == true) {
+        corrT = new float[nCorrT];
+        float tempCorrRange = modelSettings->getTemporalCorrelationRange();
+        float dz = timeSimbox->getdz();
+        for(int i=0; i<nCorrT; i++){
+          //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
+          corrT[i] = exp(-3*dz*i/tempCorrRange);
+        }
       }
-      corrT = new float[nCorrT];
-      if (!failedTempCorr)
-      {
-        for(int i=0;i<nCorrT;i++)
-          corrT[i] = corrMat[0][i+1];
-        delete [] corrMat[0];
-        delete [] corrMat;
+      else{
+        std::string tmpErrText("");
+        float ** corrMat = ModelAVODynamic::readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
+        if(corrMat == NULL)
+        {
+          errText += "Reading of file '"+corrTFile+"' for temporal correlation failed\n";
+          errText += tmpErrText;
+          failedTempCorr = true;
+        }
+        corrT = new float[nCorrT];
+        if (!failedTempCorr)
+        {
+          for(int i=0;i<nCorrT;i++)
+            corrT[i] = corrMat[0][i+1];
+          delete [] corrMat[0];
+          delete [] corrMat;
+        }
       }
     }
 

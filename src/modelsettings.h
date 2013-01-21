@@ -88,6 +88,7 @@ public:
   const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_                                 ;}
   int                              getNumberOfWells(void)               const { return nWells_                                    ;}
   int                              getNumberOfSimulations(void)         const { return nSimulations_                              ;}
+  float                            getTemporalCorrelationRange(void)    const { return temporalCorrelationRange_                  ;}
   float                            getAlphaMin(void)                    const { return alpha_min_                                 ;}
   float                            getAlphaMax(void)                    const { return alpha_max_                                 ;}
   float                            getBetaMin(void)                     const { return beta_min_                                  ;}
@@ -165,6 +166,7 @@ public:
   bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_                   ;}
   bool                             getGenerateBackgroundFromRockPhysics()const{ return backgroundFromRockPhysics_                 ;}
   bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
+  bool                             getUseVerticalVariogram(void)        const { return useVerticalVariogram_                      ;}
   bool                             getMultizoneBackground()             const { return multizoneBackground_                       ;}
   bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_                        ;}
   bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_                        ;}
@@ -375,6 +377,8 @@ public:
   void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_   = smooth                   ;}
   void setRunFromPanel(bool panel)                        { runFromPanel_             = panel                    ;}
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
+  void setUseVerticalVariogram(bool useVerticalVariogram) { useVerticalVariogram_     = useVerticalVariogram     ;}
+  void setTempCorrRange(float tempCorrRange)              { temporalCorrelationRange_  = tempCorrRange           ;}
   void addVintage(int year, int month, int day);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
   void addTimeGradientSettings(float distance, float alpha);
@@ -565,6 +569,8 @@ private:
   float                             ref_depth_;                  ///< z0 - reference depth for target area
   float                             average_velocity_;           ///< v0 - average velocity in target area
 
+  float                             temporalCorrelationRange_;   ///< Temporal correlation range for exponential variogram
+
   float                             maxHz_background_;           ///< Background resolution (high cut frequency)
   float                             maxHz_seismic_;              ///< Seismic resolution (high cut frequency)
 
@@ -637,7 +643,7 @@ private:
   bool                              fileGrid_;                   ///< Indicator telling if grids are to be kept on file
   bool                              outputGridsDefault_;         ///< Indicator telling if grid output has been actively controlled
   bool                              waveletFormatManual_;        ///< True if wavelet format is decided in the model file
-
+  bool                              useVerticalVariogram_;       ///< True if a vertical variogram is used to estimate temporal correlation
   bool                              forwardModeling_;            ///< Forward modelling
   bool                              estimationMode_;             ///< Estimation
   bool                              generateSeismicAfterInv_;    ///< Synthetic seismic from inversion result

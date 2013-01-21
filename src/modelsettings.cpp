@@ -141,7 +141,7 @@ ModelSettings::ModelSettings(void)
   debugFlag_               =        0;
   fileGrid_                =    false;
   waveletFormatManual_     =    false;
-
+  useVerticalVariogram_    =    false;
   do4DInversion_           =    false;
   backgroundFromRockPhysics_=   false;
   estimationMode_          =    false;
