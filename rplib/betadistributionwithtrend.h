@@ -18,7 +18,7 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
                              const NRLib::Trend * var,
                              const double       & lower_limit,
                              const double       & upper_limit,
-                             bool                 shared);
+                             int                  shared);
 
    BetaDistributionWithTrend(const BetaDistributionWithTrend & dist);
 
@@ -26,12 +26,16 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
 
    virtual DistributionWithTrend    * Clone() const                           { return new BetaDistributionWithTrend(*this) ;}
 
-   virtual bool                       GetIsShared() const                     { return(is_shared_)                          ;}
+   virtual bool                       GetIsShared() const                     { return(share_level_ > None)                 ;}
    virtual bool                       GetIsDistribution() const               { return(true)                                ;}
    virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                     ;}
 
-   virtual double                     ReSample(double s1, double s2) const;
-   virtual double                     GetQuantileValue(double u, double s1, double s2) const;
+   //Triggers resampling for share_level_ <= level_. Not necessary for share_level_ = 0/None
+   virtual void                       TriggerNewSample(int level)             {if(share_level_<=level)
+                                                                                 resample_ = true; }
+
+   virtual double                     ReSample(double s1, double s2);
+   virtual double                     GetQuantileValue(double u, double s1, double s2);
 
  private:
    void CalculateAlpha(const double & mean,
@@ -46,17 +50,19 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
                       const double & upper_limit,
                       double       & beta) const;
 
-  NRLib::Grid2D<NRLib::Distribution<double> *>              * beta_distribution_;
-  const NRLib::Trend                                        * mean_;
-  const NRLib::Trend                                        * var_;
-  const bool                                                  is_shared_;       // Use is_shared_ like in DistributionWithTrendStorage to know if we have a reservoir variable.
-  std::vector<bool>                                           use_trend_cube_;   // First element true if first trend cube is used, second true if second is used, and both true if both are used
-  int                                                         ni_;
-  int                                                         nj_;
-  std::vector<double>                                         mean_sampling_;
-  std::vector<double>                                         var_sampling_;
-  int                                                         n_samples_mean_;
-  int                                                         n_samples_var_;
+  NRLib::Grid2D<NRLib::Distribution<double> *> * beta_distribution_;
+  const NRLib::Trend                           * mean_;
+  const NRLib::Trend                           * var_;
+  std::vector<bool>                              use_trend_cube_;   // First element true if first trend cube is used, second true if second is used, and both true if both are used
+  int                                            ni_;
+  int                                            nj_;
+  std::vector<double>                            mean_sampling_;
+  std::vector<double>                            var_sampling_;
+  int                                            n_samples_mean_;
+  int                                            n_samples_var_;
+  const int                                      share_level_;      // Use like in DistributionWithTrendStorage to know if we have a reservoir variable.
+  double                                         current_u_;        // Quantile of current sample.
+  bool                                           resample_;         // If false, and share_level_ > 0, reuse current_u_
 
 };
 #endif

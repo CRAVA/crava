@@ -56,21 +56,10 @@ DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                   
   alpha_                    = alpha;               // alpha_ contains the one-year correlations for (inclusion_spectrums, inclusion_concentrations)
   s_min_                    = s_min;
   s_max_                    = s_max;
-
-  SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockDEM::DistributionsRockDEM(const DistributionsRockDEM & dist)
-: DistributionsRock(dist),
-  expectation_old_(dist.expectation_old_),
-  covariance_old_(dist.covariance_old_)
+: DistributionsRock(dist)
 {
   int n_inclusions = static_cast<int>(dist.distr_incl_spectrum_.size());
 
@@ -133,7 +122,7 @@ DistributionsRockDEM::Clone() const
 
 
 Rock *
-DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockDEM::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
   Solid * solid = distr_solid_->GenerateSample(trend_params);
 
@@ -258,7 +247,7 @@ Rock *
 DistributionsRockDEM::GetSample(const std::vector<double>  & u,
                                 const std::vector<double>  & trend_params,
                                 const Solid                * solid,
-                                const std::vector< Fluid *>& fluid) const
+                                const std::vector< Fluid *>& fluid)
 {
   size_t n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);
@@ -296,7 +285,7 @@ Rock *
 DistributionsRockDEM::UpdateSample(double                      corr_param,
                                    bool                        param_is_time,
                                    const std::vector<double> & trend,
-                                   const Rock                * sample) const
+                                   const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

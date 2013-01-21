@@ -43,11 +43,13 @@ CorrelatedRockSamples::CreateSamples(int                                     i_m
   const std::vector<double> trend_params_dummy(2,0);
   // Finding the sets of correlated samples.
   // Each set of samples for a specific i are correlated in time.
+  dist_rock[0]->SetResamplingLevel(DistributionWithTrend::Full);
   for (int i = 0; i < i_max; ++i){
     rock[0][i] = dist_rock[0]->GenerateSample(trend_params_dummy);
     rock[0][i]->GetSeismicParams(m[0][i][0], m[0][i][1], m[0][i][2]);
     std::vector< Rock * > rock_seen(1, rock[0][i]);
     for (int k = 1; k < k_max; ++k){
+      dist_rock[k]->SetResamplingLevel(DistributionWithTrend::Full);
       rock[k][i] = dist_rock[k]->EvolveSample(delta_time[k][k], *(rock[k-1][i])); // delta_time info also for the rock to be found.
       rock[k][i]->GetSeismicParams(m[k][i][0], m[k][i][1], m[k][i][2]);
       rock_seen.push_back(rock[k][i]);

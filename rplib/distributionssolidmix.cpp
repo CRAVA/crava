@@ -79,7 +79,7 @@ DistributionsSolidMix::Clone() const
 }
 
 Solid *
-DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params)
 {
   size_t n_solids = distr_solid_.size();
 
@@ -106,7 +106,7 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
 Solid *
 DistributionsSolidMix::GetSample(const std::vector<double>  & u,
                                  const std::vector<double>  & trend_params,
-                                 const std::vector<Solid *> & solid_samples) const
+                                 const std::vector<Solid *> & solid_samples)
 {
   size_t n_solids = solid_samples.size();
 
@@ -191,8 +191,8 @@ Solid *
 DistributionsSolidMix::UpdateSample(double                      corr_param,
                                     bool                        param_is_time,
                                     const std::vector<double> & trend,
-                                    const Solid               * sample) const {
-
+                                    const Solid               * sample)
+{
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
 

@@ -21,7 +21,7 @@ public:
 
   virtual DistributionsDryRock                    * Clone() const;
 
-  virtual DryRock                                 * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual DryRock                                 * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                                      HasDistribution() const;
 
@@ -30,14 +30,14 @@ public:
   virtual DryRock *                                 UpdateSample(double                      corr_param,
                                                                  bool                        param_is_time,
                                                                  const std::vector<double> & trend,
-                                                                 const DryRock             * sample) const;
+                                                                 const DryRock             * sample);
 protected:
 
 private:
 
   DryRock                                         * GetSample(const std::vector<double>    & u,
                                                               const std::vector<double>    & trend_params,
-                                                              const std::vector<DryRock *> & dryrock_samples) const;
+                                                              const std::vector<DryRock *> & dryrock_samples);
 
   std::vector< DistributionsDryRock * >           distr_dryrock_;     // Pointers to external objects.
   std::vector< DistributionWithTrend * >          distr_vol_frac_;  // Pointers to external objects.

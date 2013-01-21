@@ -7,9 +7,9 @@
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/random/distribution.hpp"
 
-DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTrend * elastic1,
-                                                       const DistributionWithTrend * elastic2,
-                                                       const DistributionWithTrend * density,
+DistributionsRockTabulated::DistributionsRockTabulated(DistributionWithTrend       * elastic1,
+                                                       DistributionWithTrend       * elastic2,
+                                                       DistributionWithTrend       * density,
                                                        double                        corr_elastic1_elastic2,
                                                        double                        corr_elastic1_density,
                                                        double                        corr_elastic2_density,
@@ -43,7 +43,7 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
   s_max_ = s_max;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(3);
+  std::vector<DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = elastic1_;
   elastic_variables[1] = elastic2_;
   elastic_variables[2] = density_;
@@ -61,13 +61,6 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionWithTre
   corr_matrix(2,1) = corr_elastic2_density_;
 
   tabulated_ = new Tabulated(elastic_variables, corr_matrix);
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTabulated & dist)
@@ -93,7 +86,7 @@ DistributionsRockTabulated::DistributionsRockTabulated(const DistributionsRockTa
     density_ = dist.density_;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(3);
+  std::vector<DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = elastic1_;
   elastic_variables[1] = elastic2_;
   elastic_variables[2] = density_;
@@ -140,7 +133,7 @@ DistributionsRockTabulated::Clone() const
 }
 
 Rock *
-DistributionsRockTabulated::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockTabulated::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
   std::vector<double> u(3);
 
@@ -154,7 +147,7 @@ DistributionsRockTabulated::GenerateSample(const std::vector<double> & trend_par
 
 Rock *
 DistributionsRockTabulated::GetSample(const std::vector<double> & u,
-                                      const std::vector<double> & trend_params) const
+                                      const std::vector<double> & trend_params)
 {
   std::vector<double> sample;
 
@@ -226,7 +219,7 @@ Rock *
 DistributionsRockTabulated::UpdateSample(double                      corr_param,
                                          bool                        param_is_time,
                                          const std::vector<double> & trend,
-                                         const Rock                * sample) const
+                                         const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

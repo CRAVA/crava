@@ -79,7 +79,11 @@ DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::stri
 
     NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, is_shared_);
+    int share_level = DistributionWithTrend::None;
+    if(is_shared_ == true)
+      share_level = DistributionWithTrend::SingleSample;
+
+    distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, share_level);
 
     delete mean_trend;
   }
@@ -147,7 +151,11 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
     NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
     NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, is_shared_);
+    int share_level = DistributionWithTrend::None;
+    if(is_shared_ == true)
+      share_level = DistributionWithTrend::SingleSample;
+
+    distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, share_level);
 
     delete mean_trend;
     delete variance_trend;
@@ -223,7 +231,11 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
 
     CheckBetaConsistency(mean_trend, variance_trend, errTxt);
 
-    distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, is_shared_);
+    int share_level = DistributionWithTrend::None;
+    if(is_shared_ == true)
+      share_level = DistributionWithTrend::SingleSample;
+
+    distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, share_level);
 
     delete mean_trend;
     delete variance_trend;

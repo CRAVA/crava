@@ -236,8 +236,8 @@ ModelGeneral::~ModelGeneral(void)
       delete rock[i];
   }
 
-  for(std::map<std::string, std::vector<const DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    std::vector<const DistributionWithTrend *> variable = it->second;
+  for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    std::vector<DistributionWithTrend *> variable = it->second;
     for(size_t i=0; i<variable.size(); i++)
       delete variable[i];
   }
@@ -2338,11 +2338,10 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
       std::vector<DistributionWithTrendStorage *> storage = it->second;
-      std::vector<const DistributionWithTrend *> dist_vector(storage.size());
+      std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++) {
-        const DistributionWithTrend  * dist = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-        dist_vector[i]                      = dist;
+        dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
       }
 
       reservoir_variables_[it->first] = dist_vector;
@@ -2367,6 +2366,16 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
       const std::map<std::string, DistributionsDryRockStorage *>& dry_rock_storage = modelSettings->getDryRockStorage();
       const std::map<std::string, DistributionsRockStorage    *>& rock_storage     = modelSettings->getRockStorage();
+
+      // Map out reservoir variables for using in rocks to access resampling trigger.
+      size_t nVintages = reservoir_variables_.begin()->second.size();
+      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(nVintages);
+      for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
+          var_it != reservoir_variables_.end();var_it++)
+      {
+        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
+      }
 
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
 
@@ -2397,6 +2406,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
           for(int i=0; i<n_vintages; i++) {
             if(n_vintages > 1)
               LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
+
+            //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
+            rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
 
             std::vector<bool> has_trends = rock[i]->HasTrend();
             bool              has_trend = false;

@@ -15,22 +15,22 @@ public:
 
   virtual DistributionsSolid  * Clone()                                                      const = 0;
 
-  virtual Solid *               GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
+  virtual Solid *               GenerateSample(const std::vector<double> & /*trend_params*/)       = 0;
 
   std::vector< Solid* >         GenerateWellSample(const  std::vector<double> & trend_params,
-                                                   double                       corr)        const;
+                                                   double                       corr);
 
   virtual bool                  HasDistribution()                                            const = 0;
 
   virtual std::vector<bool>     HasTrend()                                                   const = 0;
 
   Solid *                       EvolveSample(double         time,
-                                             const Solid &  solid)                           const;
+                                             const Solid &  solid);
 
   virtual Solid *               UpdateSample(double                      corr_param,
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
-                                             const Solid               * sample)            const = 0;
+                                             const Solid               * sample)                  = 0;
 
 protected:
   std::vector< double >         alpha_;

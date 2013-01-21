@@ -16,16 +16,16 @@ class DistributionsDryRockTabulated : public DistributionsDryRock {
 public:
 
   //NB: Class is not completed
-  DistributionsDryRockTabulated(const DistributionWithTrend * elastic1,
-                                const DistributionWithTrend * elastic2,
-                                const DistributionWithTrend * density,
-                                const DistributionsSolid    * mineral,
-                                const DistributionWithTrend * total_porosity,
-                                double                        corr_elastic1_elastic2,
-                                double                        corr_elastic1_density,
-                                double                        corr_elastic2_density,
-                                DEMTools::TabulatedMethod     method,
-                                std::vector<double>         & alpha);
+  DistributionsDryRockTabulated(DistributionWithTrend     * elastic1,
+                                DistributionWithTrend     * elastic2,
+                                DistributionWithTrend     * density,
+                                DistributionsSolid        * mineral,
+                                DistributionWithTrend     * total_porosity,
+                                double                      corr_elastic1_elastic2,
+                                double                      corr_elastic1_density,
+                                double                      corr_elastic2_density,
+                                DEMTools::TabulatedMethod   method,
+                                std::vector<double>       & alpha);
 
   DistributionsDryRockTabulated(const DistributionsDryRockTabulated & dist);
 
@@ -35,7 +35,7 @@ public:
 
   virtual DistributionsDryRock  * Clone() const;
 
-  virtual DryRock               * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual DryRock               * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                    HasDistribution() const;
 
@@ -45,23 +45,23 @@ protected:
   virtual DryRock *               UpdateSample(double                      corr_param,
                                                bool                        param_is_time,
                                                const std::vector<double> & trend,
-                                               const DryRock             * sample) const;
+                                               const DryRock             * sample);
 
 private:
   DryRock                       * GetSample(const std::vector<double> & u,
                                             const std::vector<double> & u2,
-                                            const std::vector<double> & trend_params) const;
+                                            const std::vector<double> & trend_params);
 
-  const DistributionWithTrend   * elastic1_;
-  const DistributionWithTrend   * elastic2_;
-  const DistributionWithTrend   * density_;
-  const DistributionsSolid       * mineral_;
-  const DistributionWithTrend   * total_porosity_;
-  double                          corr_elastic1_elastic2_;
-  double                          corr_elastic1_density_;
-  double                          corr_elastic2_density_;
-  Tabulated                     * tabulated_;
-  DEMTools::TabulatedMethod       tabulated_method_;
+  DistributionWithTrend      * elastic1_;
+  DistributionWithTrend      * elastic2_;
+  DistributionWithTrend      * density_;
+  DistributionsSolid         * mineral_;
+  DistributionWithTrend      * total_porosity_;
+  double                       corr_elastic1_elastic2_;
+  double                       corr_elastic1_density_;
+  double                       corr_elastic2_density_;
+  Tabulated                  * tabulated_;
+  DEMTools::TabulatedMethod    tabulated_method_;
 };
 
 #endif

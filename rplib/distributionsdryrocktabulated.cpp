@@ -6,16 +6,16 @@
 
 #include "nrlib/random/distribution.hpp"
 
-DistributionsDryRockTabulated::DistributionsDryRockTabulated(const DistributionWithTrend * elastic1,
-                                                             const DistributionWithTrend * elastic2,
-                                                             const DistributionWithTrend * density,
-                                                             const DistributionsSolid    * mineral,
-                                                             const DistributionWithTrend * total_porosity,
-                                                             double                        corr_elastic1_elastic2,
-                                                             double                        corr_elastic1_density,
-                                                             double                        corr_elastic2_density,
-                                                             DEMTools::TabulatedMethod     method,
-                                                             std::vector<double>         & alpha)
+DistributionsDryRockTabulated::DistributionsDryRockTabulated(DistributionWithTrend     * elastic1,
+                                                             DistributionWithTrend     * elastic2,
+                                                             DistributionWithTrend     * density,
+                                                             DistributionsSolid        * mineral,
+                                                             DistributionWithTrend     * total_porosity,
+                                                             double                      corr_elastic1_elastic2,
+                                                             double                      corr_elastic1_density,
+                                                             double                      corr_elastic2_density,
+                                                             DEMTools::TabulatedMethod   method,
+                                                             std::vector<double>       & alpha)
 : DistributionsDryRock()
 {
   if (elastic1->GetIsShared() == true)
@@ -47,7 +47,7 @@ DistributionsDryRockTabulated::DistributionsDryRockTabulated(const DistributionW
   alpha_                  = alpha;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(3);
+  std::vector<DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = elastic1_;
   elastic_variables[1] = elastic2_;
   elastic_variables[2] = density_;
@@ -97,7 +97,7 @@ DistributionsDryRockTabulated::DistributionsDryRockTabulated(const Distributions
   else
     total_porosity_ = dist.total_porosity_;
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(3);
+  std::vector<DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = elastic1_;
   elastic_variables[1] = elastic2_;
   elastic_variables[2] = density_;
@@ -143,7 +143,7 @@ DistributionsDryRockTabulated::Clone() const
 }
 
 DryRock *
-DistributionsDryRockTabulated::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsDryRockTabulated::GenerateSample(const std::vector<double> & trend_params)
 {
   std::vector<double> u(3);
 
@@ -163,7 +163,7 @@ DistributionsDryRockTabulated::GenerateSample(const std::vector<double> & trend_
 DryRock *
 DistributionsDryRockTabulated::GetSample(const std::vector<double> & u,
                                          const std::vector<double> & u2,
-                                         const std::vector<double> & trend_params) const
+                                         const std::vector<double> & trend_params)
 {
 
   std::vector<double> seismic_sample;
@@ -237,7 +237,7 @@ DryRock *
 DistributionsDryRockTabulated::UpdateSample(double                      corr_param,
                                             bool                        param_is_time,
                                             const std::vector<double> & trend,
-                                            const DryRock             * sample) const
+                                            const DryRock             * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);

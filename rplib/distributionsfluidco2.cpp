@@ -7,9 +7,9 @@
 
 #include "nrlib/random/distribution.hpp"
 
-DistributionsFluidCO2::DistributionsFluidCO2(const DistributionWithTrend       * distr_temperature,
-                                             const DistributionWithTrend       * distr_pore_pressure,
-                                             std::vector<double>               & alpha)
+DistributionsFluidCO2::DistributionsFluidCO2(DistributionWithTrend       * distr_temperature,
+                                             DistributionWithTrend       * distr_pore_pressure,
+                                             std::vector<double>         & alpha)
 : DistributionsFluid()
 {
   if (distr_temperature->GetIsShared() == true)
@@ -57,7 +57,7 @@ DistributionsFluidCO2::Clone() const
 }
 
 Fluid *
-DistributionsFluidCO2::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsFluidCO2::GenerateSample(const std::vector<double> & trend_params)
 {
   std::vector<double> u(2);
   for (size_t i = 0; i < u.size(); i++)
@@ -99,7 +99,7 @@ Fluid *
 DistributionsFluidCO2::UpdateSample(double                      corr_param,
                                     bool                        param_is_time,
                                     const std::vector<double> & trend,
-                                    const Fluid               * sample) const
+                                    const Fluid               * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
@@ -110,7 +110,7 @@ DistributionsFluidCO2::UpdateSample(double                      corr_param,
 
 Fluid *
 DistributionsFluidCO2::GetSample(const std::vector<double> & u,
-                                 const std::vector<double> & trend_params) const
+                                 const std::vector<double> & trend_params)
 {
   double  temperature   = distr_temperature_  ->GetQuantileValue(u[0], trend_params[0], trend_params[1]);
   double  pore_pressure = distr_pore_pressure_->GetQuantileValue(u[1], trend_params[0], trend_params[1]);

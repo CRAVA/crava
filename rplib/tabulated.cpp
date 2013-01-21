@@ -10,8 +10,8 @@ Tabulated::Tabulated()
 {
 }
 
-Tabulated::Tabulated(std::vector<const DistributionWithTrend *> elastic,
-                     NRLib::Grid2D<double>                      correlation_matrix)
+Tabulated::Tabulated(std::vector<DistributionWithTrend *> elastic,
+                     NRLib::Grid2D<double>                correlation_matrix)
 {
   n_variables_ = static_cast<int>(elastic.size());
 
@@ -31,7 +31,7 @@ Tabulated::~Tabulated()
 }
 
 std::vector<double>
-Tabulated::GetQuantileValues(const std::vector<double> u, double s1, double s2) const
+Tabulated::GetQuantileValues(const std::vector<double> u, double s1, double s2)
 {
 
   NRLib::Vector ind_normal_samples(n_variables_);
@@ -69,7 +69,7 @@ Tabulated::GetQuantileValues(const std::vector<double> u, double s1, double s2) 
 }
 
 std::vector<double>
-Tabulated::GenerateSample(std::vector<double> & u, double s1, double s2) const
+Tabulated::GenerateSample(std::vector<double> & u, double s1, double s2)
 {
   u.resize(n_variables_);
 

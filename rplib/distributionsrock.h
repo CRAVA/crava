@@ -2,9 +2,9 @@
 #define DISTRIBUTIONSROCK_H
 
 #include "nrlib/grid/grid2d.hpp"
+#include "rplib/distributionwithtrend.h"
 
 class Rock;
-
 
 // Abstract class for holding all t = 0 distribution functions for rock physics parameters and saturation.
 // One derived class for each rock physics model, the latter specified in a parallel, derived Rock class.
@@ -12,22 +12,22 @@ class Rock;
 class DistributionsRock {
 public:
 
-                                        DistributionsRock(){}
+                                        DistributionsRock(){resampling_level_ = DistributionWithTrend::SingleSample;}
 
   virtual                               ~DistributionsRock(){}
 
   virtual DistributionsRock           * Clone()                                                           const = 0;
 
-  virtual Rock                        * GenerateSample(const std::vector<double> & trend_params)          const = 0;
+  Rock                                * GenerateSample(const std::vector<double> & trend_params);
 
   void                                  GenerateWellSample(double                 corr,
                                                            std::vector<double> &  vp,
                                                            std::vector<double> &  vs,
                                                            std::vector<double> &  rho,
-                                                           std::vector<double> &  trend_params)           const;
+                                                           std::vector<double> &  trend_params);
 
   Rock                                * EvolveSample(double       time,
-                                                     const Rock & rock)                                   const;
+                                                     const Rock & rock);
 
   std::vector<double>                   GetLogExpectation(const std::vector<double> & trend_params)       const;
 
@@ -46,17 +46,26 @@ public:
   virtual Rock                        * UpdateSample(double                      corr_param,
                                                      bool                        param_is_time,
                                                      const std::vector<double> & trend,
-                                                     const Rock                * sample)    const = 0;
+                                                     const Rock                * sample) = 0;
+
+  //Top level objects (those accessed from outside the rock physics model) need more parameters set, so call this.
+  void                                  CompleteTopLevelObject(std::vector<DistributionWithTrend *> res_var);
+
+  void                                  SetResamplingLevel(int level) {resampling_level_ = level;}
 
 protected:
+  //Since there is a common start of generate sample here, that is the public function.
+  //The public function then calls this overloaded function to get the specific object.
+  virtual Rock                        * GenerateSamplePrivate(const std::vector<double> & trend_params) = 0;
                                         //This function should be called last step in constructor
                                         //for all children classes.
-  void                                  SetupExpectationAndCovariances(NRLib::Grid2D<std::vector<double> >   & expectation,
+  void                                  SetupExpectationAndCovariances();
+                                                                     /*NRLib::Grid2D<std::vector<double> >   & expectation,
                                                                        NRLib::Grid2D<NRLib::Grid2D<double> > & covariance,
                                                                        std::vector<double>                   & tabulated_s0,
                                                                        std::vector<double>                   & tabulated_s1,
                                                                        const std::vector<double>             & s_min,
-                                                                       const std::vector<double>             & s_max);
+                                                                       const std::vector<double>             & s_max);*/
 
   void                                  FindTabulatedTrendParams(std::vector<double>       & tabulated_s0,
                                                                  std::vector<double>       & tabulated_s1,
@@ -126,6 +135,9 @@ protected:
 
   std::vector<double>                   s_min_;
   std::vector<double>                   s_max_;
+
+  std::vector<DistributionWithTrend *> reservoir_variables_;    //Note: These are stored elsewhere, no delete responsibility
+  int                                  resampling_level_;
 };
 
 #endif

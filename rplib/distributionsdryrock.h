@@ -17,17 +17,17 @@ public:
 
   virtual DistributionsDryRock  * Clone()                                                      const = 0;
 
-  virtual DryRock *               GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
+  virtual DryRock *               GenerateSample(const std::vector<double> & /*trend_params*/)       = 0;
 
   std::vector< DryRock* >         GenerateWellSample(const  std::vector<double> & trend_params,
-                                                     double                       corr)        const;
+                                                     double                       corr);
 
   virtual bool                    HasDistribution()                                            const = 0;
 
   virtual std::vector<bool>       HasTrend()                                                   const = 0;
 
   DryRock *                       EvolveSample(double           time,
-                                               const DryRock &  dryrock)                       const
+                                               const DryRock &  dryrock)
                                   {
                                     const std::vector<double> trend(2);
                                     return UpdateSample(time, true, trend, &dryrock);
@@ -36,7 +36,7 @@ public:
   virtual DryRock *               UpdateSample(double                      corr_param,
                                                bool                        param_is_time,
                                                const std::vector<double> & trend,
-                                               const DryRock             * sample)             const = 0;
+                                               const DryRock             * sample)                   = 0;
 
 protected:
   std::vector< double >           alpha_;

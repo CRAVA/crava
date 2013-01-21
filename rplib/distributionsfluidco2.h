@@ -9,9 +9,9 @@ class FluidCO2;
 class DistributionsFluidCO2 : public DistributionsFluid {
 public:
 
-  DistributionsFluidCO2(const DistributionWithTrend       * distr_temperature,
-                        const DistributionWithTrend       * distr_pore_pressure,
-                        std::vector<double>               & alpha);
+  DistributionsFluidCO2(DistributionWithTrend       * distr_temperature,
+                        DistributionWithTrend       * distr_pore_pressure,
+                        std::vector<double>         & alpha);
 
   DistributionsFluidCO2(const DistributionsFluidCO2 & dist);
 
@@ -19,7 +19,7 @@ public:
 
   virtual DistributionsFluid        * Clone() const;
 
-  virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                        HasDistribution() const;
 
@@ -28,14 +28,14 @@ public:
   virtual Fluid *                     UpdateSample(double                      corr_param,
                                                    bool                        param_is_time,
                                                    const std::vector<double> & trend,
-                                                   const Fluid               * sample) const;
+                                                   const Fluid               * sample);
 
 private:
   Fluid                             * GetSample(const std::vector<double> & u,
-                                                const std::vector<double> & trend_params) const;
+                                                const std::vector<double> & trend_params);
 
-  const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
-  const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
+  DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
+  DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
 };
 
 #endif

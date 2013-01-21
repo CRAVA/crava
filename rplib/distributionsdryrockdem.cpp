@@ -98,7 +98,7 @@ DistributionsDryRockDEM::Clone() const
 }
 
 DryRock *
-DistributionsDryRockDEM::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsDryRockDEM::GenerateSample(const std::vector<double> & trend_params)
 {
   DryRock * dryrock     = distr_dryrock_->GenerateSample(trend_params);
 
@@ -195,7 +195,7 @@ DryRock *
 DistributionsDryRockDEM::UpdateSample(double                      corr_param,
                                       bool                        param_is_time,
                                       const std::vector<double> & trend,
-                                      const DryRock             * sample) const
+                                      const DryRock             * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
@@ -231,7 +231,7 @@ DryRock *
 DistributionsDryRockDEM::GetSample(const std::vector<double>    & u,
                                    const std::vector<double>    & trend_params,
                                    const DryRock                * dryrock,
-                                   const std::vector< DryRock* >& dryrock_inc) const
+                                   const std::vector< DryRock* >& dryrock_inc)
 {
   size_t  n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);

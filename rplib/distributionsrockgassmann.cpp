@@ -4,6 +4,7 @@
 #include "rplib/rockgassmann.h"
 
 #include <cassert>
+#include <typeinfo>
 
 DistributionsRockGassmann::DistributionsRockGassmann(const DistributionsDryRock            * distr_dryrock,
                                                      const DistributionsFluid              * distr_fluid,
@@ -17,13 +18,6 @@ DistributionsRockGassmann::DistributionsRockGassmann(const DistributionsDryRock 
 
   s_min_                    = s_min;
   s_max_                    = s_max;
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockGassmann::DistributionsRockGassmann(const DistributionsRockGassmann & dist)
@@ -54,7 +48,7 @@ DistributionsRockGassmann::Clone() const
 
 
 Rock *
-DistributionsRockGassmann::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockGassmann::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
   DryRock * dryrock = distr_dryrock_->GenerateSample(trend_params);
   Fluid   * fluid   = distr_fluid_->GenerateSample(trend_params);
@@ -96,7 +90,7 @@ DistributionsRockGassmann::HasTrend() const
 
 Rock *
 DistributionsRockGassmann::GetSample(const DryRock              * dryrock,
-                                     const Fluid                * fluid) const
+                                     const Fluid                * fluid)
 {
 
   return new RockGassmann(fluid, dryrock);
@@ -106,7 +100,7 @@ Rock *
 DistributionsRockGassmann::UpdateSample(double                      corr_param,
                                         bool                        param_is_time,
                                         const std::vector<double> & trend,
-                                        const Rock                * sample) const
+                                        const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

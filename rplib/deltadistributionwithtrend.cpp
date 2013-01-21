@@ -8,15 +8,14 @@
 #include "rplib/deltadistributionwithtrend.h"
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend()
-: is_shared_(false)
+: share_level_(None)
 {
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean,
-                                                       bool                 shared)
-: is_shared_(shared)
+                                                       int                  shared)
+: share_level_(shared)
 {
-
   mean_ = mean->Clone();
 
   dirac_ = new NRLib::Delta();
@@ -30,8 +29,8 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWithTrend & dist)
-: is_shared_(dist.is_shared_),
-  use_trend_cube_(dist.use_trend_cube_)
+  : use_trend_cube_(dist.use_trend_cube_),
+  share_level_(dist.share_level_)
 {
   dirac_ = dist.dirac_->Clone();
   mean_  = dist.mean_ ->Clone();
@@ -44,7 +43,7 @@ DeltaDistributionWithTrend::~DeltaDistributionWithTrend()
 }
 
 double
-DeltaDistributionWithTrend::ReSample(double s1, double s2) const
+DeltaDistributionWithTrend::ReSample(double s1, double s2)
 {
 
   // There is no random element in the Delta distribution
@@ -57,7 +56,7 @@ DeltaDistributionWithTrend::ReSample(double s1, double s2) const
 }
 
 double
-DeltaDistributionWithTrend::GetQuantileValue(double /*u*/, double s1, double s2) const
+DeltaDistributionWithTrend::GetQuantileValue(double /*u*/, double s1, double s2)
 {
 
   // Want sample from Y(s1, s2) ~ Delta(mu(s1, s2)) which is one in mu(s1, s2) and zero otherwise; hence sample is equal to mean value

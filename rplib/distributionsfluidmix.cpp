@@ -83,7 +83,7 @@ DistributionsFluidMix::Clone() const
 }
 
 Fluid *
-DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params)
 {
   size_t n_fluids = distr_fluid_.size();
 
@@ -110,7 +110,7 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
 Fluid *
 DistributionsFluidMix::GetSample(const std::vector<double>  & u,
                                  const std::vector<double>  & trend_params,
-                                 const std::vector<Fluid *> & fluid_samples) const
+                                 const std::vector<Fluid *> & fluid_samples)
 {
   size_t n_fluids = fluid_samples.size();
 
@@ -190,7 +190,7 @@ Fluid *
 DistributionsFluidMix::UpdateSample(double                      corr_param,
                                     bool                        param_is_time,
                                     const std::vector<double> & trend,
-                                    const Fluid               * sample) const
+                                    const Fluid               * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

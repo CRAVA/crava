@@ -24,12 +24,10 @@ public:
 
   virtual DistributionsRock                    * Clone() const;
 
-  virtual Rock                                 * GenerateSample(const std::vector<double> & trend_params) const;
-
   virtual Rock                                 * UpdateSample(double                      corr_param,
                                                               bool                        param_is_time,
                                                               const std::vector<double> & trend,
-                                                              const Rock                * sample) const;
+                                                              const Rock                * sample);
 
   virtual bool                                   HasDistribution() const;
 
@@ -38,9 +36,10 @@ public:
   virtual bool                                   GetIsOkForBounding()                                                  const { return false; }
 
 private:
+  virtual Rock                                 * GenerateSamplePrivate(const std::vector<double> & trend_params);
 
   Rock                                         * GetSample(const DryRock              * dryrock,
-                                                           const Fluid                * fluid) const;
+                                                           const Fluid                * fluid);
 
   DistributionsDryRock                         * distr_dryrock_;
   DistributionsFluid                           * distr_fluid_;

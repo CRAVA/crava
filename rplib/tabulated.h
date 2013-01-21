@@ -41,13 +41,13 @@ public:
 
   Tabulated();
 
-  Tabulated(std::vector<const DistributionWithTrend *> elastic,
-            NRLib::Grid2D<double>                      correlation_matrix);
+  Tabulated(std::vector<DistributionWithTrend *> elastic,
+            NRLib::Grid2D<double>                correlation_matrix);
 
   ~Tabulated();
 
-  std::vector<double> GenerateSample(std::vector<double> & u, double s1, double s2) const;
-  std::vector<double> GetQuantileValues(const std::vector<double> u, double s1, double s2) const;
+  std::vector<double> GenerateSample(std::vector<double> & u, double s1, double s2);
+  std::vector<double> GetQuantileValues(const std::vector<double> u, double s1, double s2);
 
 private:
 
@@ -55,7 +55,7 @@ private:
 
 
 
-  std::vector<const DistributionWithTrend *>   elastic_variables_;
+  std::vector<DistributionWithTrend *>   elastic_variables_;
 
   int                                          n_variables_;
 

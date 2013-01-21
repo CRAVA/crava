@@ -16,9 +16,9 @@ class DistributionsSolidTabulated : public DistributionsSolid {
 public:
 
   //NB: Class is not completed
-  DistributionsSolidTabulated(const DistributionWithTrend * elastic1,
-                              const DistributionWithTrend * elastic2,
-                              const DistributionWithTrend * density,
+  DistributionsSolidTabulated(DistributionWithTrend       * elastic1,
+                              DistributionWithTrend       * elastic2,
+                              DistributionWithTrend       * density,
                               double                        corr_elastic1_elastic2,
                               double                        corr_elastic1_density,
                               double                        corr_elastic2_density,
@@ -33,7 +33,7 @@ public:
 
   virtual DistributionsSolid  * Clone() const;
 
-  virtual Solid               * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Solid               * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                  HasDistribution() const;
 
@@ -43,14 +43,14 @@ protected:
   virtual Solid *               UpdateSample(double                      corr_param,
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
-                                             const Solid               * sample) const;
+                                             const Solid               * sample);
 
 private:
-  Solid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+  Solid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params);
 
-  const DistributionWithTrend   * elastic1_;
-  const DistributionWithTrend   * elastic2_;
-  const DistributionWithTrend   * density_;
+  DistributionWithTrend         * elastic1_;
+  DistributionWithTrend         * elastic2_;
+  DistributionWithTrend         * density_;
   double                          corr_elastic1_elastic2_;
   double                          corr_elastic1_density_;
   double                          corr_elastic2_density_;

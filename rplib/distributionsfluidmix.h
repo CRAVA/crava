@@ -22,7 +22,7 @@ public:
 
   virtual DistributionsFluid                    * Clone() const;
 
-  virtual Fluid                                 * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Fluid                                 * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                                    HasDistribution() const;
 
@@ -31,7 +31,7 @@ public:
   virtual Fluid                                 * UpdateSample(double                      corr_param,
                                                                bool                        param_is_time,
                                                                const std::vector<double> & trend,
-                                                               const Fluid               * sample) const;
+                                                               const Fluid               * sample);
 
 protected:
 
@@ -39,7 +39,7 @@ private:
 
   Fluid                                         * GetSample(const std::vector<double>  & u,
                                                             const std::vector<double>  & trend_params,
-                                                            const std::vector<Fluid *> & fluid_samples) const;
+                                                            const std::vector<Fluid *> & fluid_samples);
 
   std::vector< DistributionsFluid * >             distr_fluid_;     // Pointers to external objects.
   std::vector< DistributionWithTrend * >          distr_vol_frac_;  // Pointers to external objects.

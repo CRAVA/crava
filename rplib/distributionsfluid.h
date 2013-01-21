@@ -15,10 +15,10 @@ public:
 
   virtual DistributionsFluid  * Clone()                                                       const = 0;
 
-  virtual Fluid *               GenerateSample(const std::vector<double> & /*trend_params*/)  const = 0;
+  virtual Fluid *               GenerateSample(const std::vector<double> & /*trend_params*/)        = 0;
 
   std::vector< Fluid* >         GenerateWellSample(const  std::vector<double> & trend_params,
-                                                   double                       corr)         const;
+                                                   double                       corr);
 
   virtual bool                  HasDistribution()                                             const = 0;
 
@@ -27,10 +27,10 @@ public:
   virtual Fluid *               UpdateSample(double                      corr_param,
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
-                                             const Fluid               * sample)             const = 0;
+                                             const Fluid               * sample)                   = 0;
 
   Fluid *                       EvolveSample(double         time,
-                                             const Fluid &  fluid)                            const;
+                                             const Fluid &  fluid);
 
 protected:
   std::vector< double >         alpha_;

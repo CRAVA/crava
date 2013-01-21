@@ -9,11 +9,11 @@
 
 #include <cmath>
 
-DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithTrend * elastic,
-                                                         const DistributionWithTrend * density,
-                                                         double                        corr_elastic_density,
-                                                         DEMTools::TabulatedMethod     method,
-                                                         std::vector<double>         & alpha)
+DistributionsFluidTabulated::DistributionsFluidTabulated(DistributionWithTrend     * elastic,
+                                                         DistributionWithTrend     * density,
+                                                         double                      corr_elastic_density,
+                                                         DEMTools::TabulatedMethod   method,
+                                                         std::vector<double>       & alpha)
 : DistributionsFluid()
 {
   if (elastic->GetIsShared() == true)
@@ -31,7 +31,7 @@ DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithT
   alpha_                = alpha;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(2);
+  std::vector<DistributionWithTrend *> elastic_variables(2);
   elastic_variables[0] = elastic_;
   elastic_variables[1] = density_;
 
@@ -63,7 +63,7 @@ DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionsFlui
     density_ = dist.density_;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> elastic_variables(2);
+  std::vector<DistributionWithTrend *> elastic_variables(2);
   elastic_variables[0] = elastic_;
   elastic_variables[1] = density_;
 
@@ -97,7 +97,7 @@ DistributionsFluidTabulated::Clone() const
 }
 
 Fluid *
-DistributionsFluidTabulated::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsFluidTabulated::GenerateSample(const std::vector<double> & trend_params)
 {
   std::vector<double> u(2);
 
@@ -110,7 +110,7 @@ DistributionsFluidTabulated::GenerateSample(const std::vector<double> & trend_pa
 }
 
 Fluid *
-DistributionsFluidTabulated::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const
+DistributionsFluidTabulated::GetSample(const std::vector<double> & u, const std::vector<double> & trend_params)
 {
   std::vector<double> seismic_sample;
 
@@ -161,7 +161,7 @@ Fluid *
 DistributionsFluidTabulated::UpdateSample(double                      corr_param,
                                           bool                        param_is_time,
                                           const std::vector<double> & trend,
-                                          const Fluid               * sample) const
+                                          const Fluid               * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

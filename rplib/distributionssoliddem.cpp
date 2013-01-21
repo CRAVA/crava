@@ -108,7 +108,7 @@ DistributionsSolidDEM::Clone() const
 }
 
 Solid *
-DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsSolidDEM::GenerateSample(const std::vector<double> & trend_params)
 {
   Solid * solid     = distr_solid_->GenerateSample(trend_params);
 
@@ -205,7 +205,7 @@ Solid *
 DistributionsSolidDEM::UpdateSample(double                      corr_param,
                                     bool                        param_is_time,
                                     const std::vector<double> & trend,
-                                    const Solid               * sample) const
+                                    const Solid               * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
@@ -239,7 +239,7 @@ Solid *
 DistributionsSolidDEM::GetSample(const std::vector<double>  & u,
                                  const std::vector<double>  & trend_params,
                                  const Solid                * solid,
-                                 const std::vector< Solid* >& solid_inc) const
+                                 const std::vector< Solid* >& solid_inc)
 {
   size_t  n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);

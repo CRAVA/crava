@@ -6,10 +6,10 @@
 
 #include "nrlib/random/distribution.hpp"
 
-DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(const DistributionWithTrend        * distr_temperature,
-                                                           const DistributionWithTrend        * distr_pore_pressure,
-                                                           const DistributionWithTrend        * distr_salinity,
-                                                           std::vector<double>                & alpha)
+DistributionsFluidBatzleWang::DistributionsFluidBatzleWang(DistributionWithTrend        * distr_temperature,
+                                                           DistributionWithTrend        * distr_pore_pressure,
+                                                           DistributionWithTrend        * distr_salinity,
+                                                           std::vector<double>          & alpha)
 : DistributionsFluid()
 {
   if (distr_temperature->GetIsShared() == true)
@@ -70,7 +70,7 @@ DistributionsFluidBatzleWang::Clone() const
 }
 
 Fluid *
-DistributionsFluidBatzleWang::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsFluidBatzleWang::GenerateSample(const std::vector<double> & trend_params)
 {
   std::vector<double> u(3);
   for(int i=0; i<3; i++)
@@ -83,7 +83,7 @@ DistributionsFluidBatzleWang::GenerateSample(const std::vector<double> & trend_p
 
 Fluid *
 DistributionsFluidBatzleWang::GetSample(const std::vector<double> & u,
-                                        const std::vector<double> & trend_params) const
+                                        const std::vector<double> & trend_params)
 {
   double  salinity      = distr_salinity_     ->GetQuantileValue(u[0], trend_params[0], trend_params[1]);
   double  temperature   = distr_temperature_  ->GetQuantileValue(u[1], trend_params[0], trend_params[1]);
@@ -126,7 +126,7 @@ Fluid *
 DistributionsFluidBatzleWang::UpdateSample(double                      corr_param,
                                            bool                        param_is_time,
                                            const std::vector<double> & trend,
-                                           const Fluid               * sample) const
+                                           const Fluid               * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);

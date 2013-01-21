@@ -70,7 +70,7 @@ DistributionsDryRockMix::Clone() const
 }
 
 DryRock *
-DistributionsDryRockMix::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsDryRockMix::GenerateSample(const std::vector<double> & trend_params)
 {
   size_t n_dryrocks = distr_dryrock_.size();
 
@@ -97,7 +97,7 @@ DistributionsDryRockMix::GenerateSample(const std::vector<double> & trend_params
 DryRock *
 DistributionsDryRockMix::GetSample(const std::vector<double>    & u,
                                    const std::vector<double>    & trend_params,
-                                   const std::vector<DryRock *> & dryrock_samples) const
+                                   const std::vector<DryRock *> & dryrock_samples)
 {
   size_t n_dryrocks = dryrock_samples.size();
 
@@ -182,8 +182,8 @@ DryRock *
 DistributionsDryRockMix::UpdateSample(double                      corr_param,
                                       bool                        param_is_time,
                                       const std::vector<double> & trend,
-                                      const DryRock             * sample) const {
-
+                                      const DryRock             * sample)
+{
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time);
 

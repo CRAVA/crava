@@ -14,11 +14,11 @@ class Tabulated;
 class DistributionsFluidTabulated : public DistributionsFluid {
 public:
 
-  DistributionsFluidTabulated(const DistributionWithTrend * elastic,
-                              const DistributionWithTrend * density,
-                              double                        corr_elastic_density,
-                              DEMTools::TabulatedMethod     method,
-                              std::vector<double>         & alpha);
+  DistributionsFluidTabulated(DistributionWithTrend     * elastic,
+                              DistributionWithTrend     * density,
+                              double                      corr_elastic_density,
+                              DEMTools::TabulatedMethod   method,
+                              std::vector<double>       & alpha);
 
   DistributionsFluidTabulated(const DistributionsFluidTabulated & dist);
 
@@ -28,7 +28,7 @@ public:
 
   virtual DistributionsFluid  * Clone() const;
 
-  virtual Fluid               * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Fluid               * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                  HasDistribution() const;
 
@@ -37,17 +37,17 @@ public:
   virtual Fluid               * UpdateSample(double                      corr_param,
                                              bool                        param_is_time,
                                              const std::vector<double> & trend,
-                                             const Fluid               * sample) const;
+                                             const Fluid               * sample);
 
 private:
 
-  Fluid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+  Fluid                       * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params);
 
-  const DistributionWithTrend * elastic_;
-  const DistributionWithTrend * density_;
-  double                        corr_elastic_density_;
-  Tabulated                   * tabulated_;
-  DEMTools::TabulatedMethod     tabulated_method_;
+  DistributionWithTrend     * elastic_;
+  DistributionWithTrend     * density_;
+  double                      corr_elastic_density_;
+  Tabulated                 * tabulated_;
+  DEMTools::TabulatedMethod   tabulated_method_;
 
 };
 

@@ -10,10 +10,10 @@ class DistributionWithTrend;
 class DistributionsFluidBatzleWang : public DistributionsFluid {
 public:
 
-  DistributionsFluidBatzleWang(const DistributionWithTrend * distr_temperature,
-                               const DistributionWithTrend * distr_pore_pressure,
-                               const DistributionWithTrend * distr_salinity,
-                               std::vector<double>         & alpha);
+  DistributionsFluidBatzleWang(DistributionWithTrend * distr_temperature,
+                               DistributionWithTrend * distr_pore_pressure,
+                               DistributionWithTrend * distr_salinity,
+                               std::vector<double>   & alpha);
 
   DistributionsFluidBatzleWang(const DistributionsFluidBatzleWang & dist);
 
@@ -21,7 +21,7 @@ public:
 
   virtual DistributionsFluid        * Clone() const;
 
-  virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                        HasDistribution() const;
 
@@ -31,16 +31,16 @@ protected:
   virtual Fluid *                     UpdateSample(double                      corr_param,
                                                    bool                        param_is_time,
                                                    const std::vector<double> & trend,
-                                                   const Fluid               * sample) const;
+                                                   const Fluid               * sample);
 
 private:
 
   Fluid                             * GetSample(const std::vector<double> & u,
-                                                const std::vector<double> & trend_params) const;
+                                                const std::vector<double> & trend_params);
 
-  const DistributionWithTrend       * distr_salinity_;      // Pointer to external object.
-  const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
-  const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
+  DistributionWithTrend       * distr_salinity_;      // Pointer to external object.
+  DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
+  DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
 };
 
 #endif

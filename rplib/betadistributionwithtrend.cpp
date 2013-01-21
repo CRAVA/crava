@@ -10,7 +10,8 @@
 #include "rplib/betadistributionwithtrend.h"
 
 BetaDistributionWithTrend::BetaDistributionWithTrend()
-: is_shared_(false)
+: share_level_(None),
+  resample_(true)
 {
 }
 
@@ -18,8 +19,9 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
                                                      const NRLib::Trend * var,
                                                      const double       & lower_limit,
                                                      const double       & upper_limit,
-                                                     bool                 shared)
-: is_shared_(shared)
+                                                     int                  shared)
+: share_level_(shared),
+  resample_(true)
 {
   mean_ = mean->Clone();
   var_  = var->Clone();
@@ -98,14 +100,16 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
-: is_shared_(dist.is_shared_),
-  use_trend_cube_(dist.use_trend_cube_),
+: use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
   nj_(dist.nj_),
   mean_sampling_(dist.mean_sampling_),
   var_sampling_(dist.var_sampling_),
   n_samples_mean_(dist.n_samples_mean_),
-  n_samples_var_(dist.n_samples_var_)
+  n_samples_var_(dist.n_samples_var_),
+  share_level_(dist.share_level_),
+  current_u_(dist.current_u_),
+  resample_(dist.resample_)
 {
   beta_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
 
@@ -133,7 +137,7 @@ BetaDistributionWithTrend::~BetaDistributionWithTrend()
 }
 
 double
-BetaDistributionWithTrend::ReSample(double s1, double s2) const
+BetaDistributionWithTrend::ReSample(double s1, double s2)
 {
   double uniform = NRLib::Random::Unif01();
   double value   = GetQuantileValue(uniform, s1, s2);
@@ -142,7 +146,7 @@ BetaDistributionWithTrend::ReSample(double s1, double s2) const
 }
 
 double
-BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) const
+BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 {
   // Want sample from Y(s1, s2) ~ Beta(0, 1, alpha(s1,s2), beta(s1,s2))
   // Generate sample from Z ~ Uniform(0, 1)
@@ -150,6 +154,13 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) cons
   // Calculate y(s1, s2) by interpolating between the generated X_{ij}
 
   double y;
+
+  if(share_level_ > None && resample_ == false)
+    u = current_u_;
+  else {
+    current_u_ = u;
+    resample_ = false;
+  }
 
   if(ni_ == 1 && nj_ == 1)
     y = (*beta_distribution_)(0,0)->Quantile(u);
@@ -196,6 +207,7 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) cons
     NRLib::RegularSurface<double> surf(mean_sampling_[ix], var_sampling_[jy], li, lj, quantile_grid);
 
     y = surf.GetZ(mean_trend, var_trend);
+
   }
 
   return(y);

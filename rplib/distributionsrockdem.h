@@ -32,12 +32,10 @@ public:
 
   virtual DistributionsRock                    * Clone() const;
 
-  virtual Rock                                 * GenerateSample(const std::vector<double> & trend_params) const;
-
   virtual Rock                                 * UpdateSample(double                      corr_param,
                                                               bool                        param_is_time,
                                                               const std::vector<double> & trend,
-                                                              const Rock                * sample) const;
+                                                              const Rock                * sample);
 
   virtual bool                                   HasDistribution() const;
 
@@ -46,23 +44,20 @@ public:
   virtual bool                                   GetIsOkForBounding()                                                  const { return false; }
 
 private:
+  virtual Rock                                 * GenerateSamplePrivate(const std::vector<double> & trend_params);
+
   void                                           SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
                                                                                        NRLib::Grid2D<double> & covariance);
 
   Rock                                         * GetSample(const std::vector<double>  & u,
                                                            const std::vector<double>  & trend_params,
                                                            const Solid                * solid,
-                                                           const std::vector< Fluid *>& fluid) const;
+                                                           const std::vector< Fluid *>& fluid);
 
   DistributionsSolid                           * distr_solid_;              // Pointer to external object.
   std::vector< DistributionsFluid *>             distr_fluid_;              // Pointer to external object.
   std::vector< DistributionWithTrend * >         distr_incl_spectrum_;      // Pointers to external objects.
   std::vector< DistributionWithTrend * >         distr_incl_concentration_; // Pointers to external objects.
-
-  //NBNB fjellvoll dummy to be removed soon
-  std::vector<double>                            expectation_old_;
-  NRLib::Grid2D<double>                          covariance_old_;
-
 };
 
 #endif

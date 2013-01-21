@@ -11,9 +11,9 @@ class DistributionWithTrend;
 class DistributionsRockTabulated : public DistributionsRock {
 public:
 
-  DistributionsRockTabulated(const DistributionWithTrend * elastic1,
-                             const DistributionWithTrend * elastic2,
-                             const DistributionWithTrend * density,
+  DistributionsRockTabulated(DistributionWithTrend       * elastic1,
+                             DistributionWithTrend       * elastic2,
+                             DistributionWithTrend       * density,
                              double                        corr_elastic1_elastic2,
                              double                        corr_elastic1_density,
                              double                        corr_elastic2_density,
@@ -28,13 +28,10 @@ public:
 
   virtual DistributionsRock        * Clone() const;
 
-  // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;
-
   virtual Rock                     * UpdateSample(double                      corr_param,
                                                   bool                        param_is_time,
                                                   const std::vector<double> & trend,
-                                                  const Rock                * sample)       const;
+                                                  const Rock                * sample);
 
   virtual bool                       HasDistribution() const;
 
@@ -43,12 +40,14 @@ public:
   virtual bool                       GetIsOkForBounding() const;
 
 private:
+  // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
+  virtual Rock                     * GenerateSamplePrivate(const std::vector<double> & trend_params);
 
-  Rock                             * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params) const;
+  Rock                             * GetSample(const std::vector<double> & u, const std::vector<double> & trend_params);
 
-  const DistributionWithTrend * elastic1_;
-  const DistributionWithTrend * elastic2_;
-  const DistributionWithTrend * density_;
+  DistributionWithTrend       * elastic1_;
+  DistributionWithTrend       * elastic2_;
+  DistributionWithTrend       * density_;
   double                        corr_elastic1_elastic2_;
   double                        corr_elastic1_density_;
   double                        corr_elastic2_density_;

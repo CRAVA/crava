@@ -7,14 +7,16 @@
 #include "rplib/normaldistributionwithtrend.h"
 
 NormalDistributionWithTrend::NormalDistributionWithTrend()
-: is_shared_(false)
+: share_level_(None),
+  resample_(true)
 {
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * mean,
                                                          const NRLib::Trend * var,
-                                                         bool                 shared)
-: is_shared_(shared)
+                                                         int                  shared)
+: share_level_(shared),
+  resample_(true)
 {
 
   mean_ = mean->Clone();
@@ -32,8 +34,10 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
-: is_shared_(dist.is_shared_),
-  use_trend_cube_(dist.use_trend_cube_)
+: use_trend_cube_(dist.use_trend_cube_),
+  share_level_(dist.share_level_),
+  current_u_(dist.current_u_),
+  resample_(dist.resample_)
 {
   gaussian_ = dist.gaussian_->Clone();
   mean_     = dist.mean_    ->Clone();
@@ -48,7 +52,7 @@ NormalDistributionWithTrend::~NormalDistributionWithTrend()
 }
 
 double
-NormalDistributionWithTrend::ReSample(double s1, double s2) const
+NormalDistributionWithTrend::ReSample(double s1, double s2)
 {
 
   double u = NRLib::Random::Unif01();
@@ -59,7 +63,7 @@ NormalDistributionWithTrend::ReSample(double s1, double s2) const
 }
 
 double
-NormalDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) const
+NormalDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 {
 
   // Want sample from Y(s1, s2) ~ Normal(mu(s1, s2), var(s1,s2))
@@ -67,6 +71,13 @@ NormalDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) co
   // Calculate y(s1, s2) = mu(s1, s2) + z*sqrt(var(s1,s2))
 
   double dummy = 0;
+
+  if(share_level_ > None && resample_ == false)
+    u = current_u_;
+  else {
+    current_u_ = u;
+    resample_ = false;
+  }
 
   double z = gaussian_->Quantile(u);
 

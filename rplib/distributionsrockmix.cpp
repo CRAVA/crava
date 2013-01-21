@@ -45,13 +45,6 @@ DistributionsRockMixOfRock::DistributionsRockMixOfRock(const std::vector< Distri
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction)
   s_min_ = s_min;
   s_max_ = s_max;
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockMixOfRock::DistributionsRockMixOfRock(const DistributionsRockMixOfRock & dist)
@@ -101,7 +94,7 @@ DistributionsRockMixOfRock::Clone() const
 }
 
 Rock *
-DistributionsRockMixOfRock::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockMixOfRock::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
 
   size_t n_rocks      =    distr_rock_.size();
@@ -129,7 +122,7 @@ DistributionsRockMixOfRock::GenerateSample(const std::vector<double> & trend_par
 Rock *
 DistributionsRockMixOfRock::GetSample(const std::vector<double> & u,
                                       const std::vector<double> & trend_params,
-                                      const std::vector<Rock *> & sample_rock) const
+                                      const std::vector<Rock *> & sample_rock)
 {
 
   size_t n_rocks      =    sample_rock.size();
@@ -208,7 +201,7 @@ Rock *
 DistributionsRockMixOfRock::UpdateSample(double                      corr_param,
                                          bool                        param_is_time,
                                          const std::vector<double> & trend,
-                                         const Rock                * sample)       const
+                                         const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
@@ -282,13 +275,6 @@ DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const s
   alpha_ = alpha;               // alpha_ contains the one-year correlations for (distr_vol_fraction_solid, distr_vol_fraction_fluid)
   s_min_ = s_min;
   s_max_ = s_max;
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockMixOfSolidAndFluid::DistributionsRockMixOfSolidAndFluid(const DistributionsRockMixOfSolidAndFluid & dist)
@@ -363,7 +349,7 @@ DistributionsRockMixOfSolidAndFluid::Clone() const
 }
 
 Rock *
-DistributionsRockMixOfSolidAndFluid::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockMixOfSolidAndFluid::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
   size_t n_fluids      =   distr_fluid_.size();
   size_t n_solids      =   distr_solid_.size();
@@ -406,7 +392,7 @@ Rock *
 DistributionsRockMixOfSolidAndFluid::GetSample(const std::vector<double>  & u,
                                                const std::vector<double>  & trend_params,
                                                const std::vector<Solid *> & solid_sample,
-                                               const std::vector<Fluid *> & fluid_sample) const
+                                               const std::vector<Fluid *> & fluid_sample)
 {
   size_t n_fluids      =   fluid_sample.size();
   size_t n_solids      =   solid_sample.size();
@@ -561,7 +547,7 @@ Rock *
 DistributionsRockMixOfSolidAndFluid::UpdateSample(double                      corr_param,
                                                   bool                        param_is_time,
                                                   const std::vector<double> & trend,
-                                                  const Rock                * sample)    const
+                                                  const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

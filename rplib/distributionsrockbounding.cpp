@@ -11,15 +11,15 @@
 
 #include <cassert>
 
-DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock     * upper_rock,
-                                                     const DistributionsRock     * lower_rock,
-                                                     const DistributionWithTrend * porosity,
-                                                     const DistributionWithTrend * bulk_weight,
-                                                     const DistributionWithTrend * shear_weight,
-                                                     double                        correlation_weights,
-                                                     const std::vector<double>   & alpha,
-                                                     const std::vector<double>   & s_min,
-                                                     const std::vector<double>   & s_max)
+DistributionsRockBounding::DistributionsRockBounding(DistributionsRock         * upper_rock,
+                                                     DistributionsRock         * lower_rock,
+                                                     DistributionWithTrend     * porosity,
+                                                     DistributionWithTrend     * bulk_weight,
+                                                     DistributionWithTrend     * shear_weight,
+                                                     double                      correlation_weights,
+                                                     const std::vector<double> & alpha,
+                                                     const std::vector<double> & s_min,
+                                                     const std::vector<double> & s_max)
   : correlation_weights_(correlation_weights)
 {
   upper_rock_ = upper_rock  ->Clone();
@@ -45,7 +45,7 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   s_max_ = s_max;
 
   // Generate tabulated_
-  std::vector<const DistributionWithTrend *> variables(3);
+  std::vector<DistributionWithTrend *> variables(3);
   variables[0] = porosity_;
   variables[1] = K_weight_;
   variables[2] = G_weight_;
@@ -65,13 +65,6 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
   corr_matrix(2,1) = correlation_weights_;
 
   tabulated_ = new Tabulated(variables, corr_matrix);
-
-  SetupExpectationAndCovariances(expectation_,
-                                 covariance_,
-                                 tabulated_s0_,
-                                 tabulated_s1_,
-                                 s_min_,
-                                 s_max_);
 }
 
 DistributionsRockBounding::DistributionsRockBounding(const DistributionsRockBounding & dist)
@@ -128,7 +121,7 @@ DistributionsRockBounding::Clone() const
 }
 
 Rock *
-DistributionsRockBounding::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockBounding::GenerateSamplePrivate(const std::vector<double> & trend_params)
 {
   Rock * sample_upper_rock = upper_rock_->GenerateSample(trend_params);
   Rock * sample_lower_rock = lower_rock_->GenerateSample(trend_params);
@@ -149,7 +142,7 @@ Rock *
 DistributionsRockBounding::GetSample(const std::vector<double> & u,
                                      const std::vector<double> & trend_params,
                                      const Rock                * sample_upper_rock,
-                                     const Rock                * sample_lower_rock) const
+                                     const Rock                * sample_lower_rock)
 {
   std::vector<double> sample;
 
@@ -214,7 +207,7 @@ Rock *
 DistributionsRockBounding::UpdateSample(double                      corr_param,
                                         bool                        param_is_time,
                                         const std::vector<double> & trend,
-                                        const Rock                * sample) const
+                                        const Rock                * sample)
 {
   std::vector<double> u = sample->GetU();
   DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);

@@ -7,11 +7,22 @@
 #include "nrlib/statistics/statistics.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
+
+Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params)
+{
+  //Note: If this is not a top level rock, reservoir_variables_ are not set, so the loop is skipped.
+  for(size_t i=0;i<reservoir_variables_.size();i++)
+    reservoir_variables_[i]->TriggerNewSample(resampling_level_);
+
+  Rock * result = GenerateSamplePrivate(trend_params);
+  return(result);
+}
+
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
                                            std::vector<double>  & rho,
-                                           std::vector<double>  & trend_params) const
+                                           std::vector<double>  & trend_params)
 {
   Rock * rock = GenerateSample(trend_params);
   rock->GetSeismicParams(vp[0],vs[0],rho[0]);
@@ -27,43 +38,42 @@ void DistributionsRock::GenerateWellSample(double                 corr,
 }
 
 Rock * DistributionsRock::EvolveSample(double       time,
-                                       const Rock & rock) const
+                                       const Rock & rock)
 {
-    const std::vector<double> trend(2);
-    return UpdateSample(time, true, trend, &rock);
+  //Note: If this is not a top level rock, reservoir_variables_ are not set, so the loop is skipped.
+  for(size_t i=0;i<reservoir_variables_.size();i++)
+    reservoir_variables_[i]->TriggerNewSample(resampling_level_);
+
+  const std::vector<double> trend(2);
+  return UpdateSample(time, true, trend, &rock);
 }
 
 
 //-----------------------------------------------------------------------------------------------------------
-void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vector<double> >   & expectation,
-                                                        NRLib::Grid2D<NRLib::Grid2D<double> > & covariance,
-                                                        std::vector<double>                   & tabulated_s0,
-                                                        std::vector<double>                   & tabulated_s1,
-                                                        const std::vector<double>             & s_min,
-                                                        const std::vector<double>             & s_max)
+void  DistributionsRock::SetupExpectationAndCovariances()
 //-----------------------------------------------------------------------------------------------------------
 {
   int n  = 1024; // Number of samples generated for each distribution
   int m  =   10; // Number of samples to use when sampling from s_min to s_max
 
-  FindTabulatedTrendParams(tabulated_s0,
-                           tabulated_s1,
+  FindTabulatedTrendParams(tabulated_s0_,
+                           tabulated_s1_,
                            HasTrend(),
-                           s_min,
-                           s_max,
+                           s_min_,
+                           s_max_,
                            m);
 
-  int mi = static_cast<int>(tabulated_s0.size());
-  int mj = static_cast<int>(tabulated_s1.size());
+  int mi = static_cast<int>(tabulated_s0_.size());
+  int mj = static_cast<int>(tabulated_s1_.size());
 
-  expectation.Resize(mi, mj);
-  covariance.Resize(mi, mj);
+  expectation_.Resize(mi, mj);
+  covariance_.Resize(mi, mj);
 
   NRLib::Grid2D<std::vector<double> > trend_params;
 
   SetupTrendMesh(trend_params,
-                 tabulated_s0,
-                 tabulated_s1);
+                 tabulated_s0_,
+                 tabulated_s1_);
 
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
@@ -123,8 +133,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
         }
       }
 
-      expectation(i,j) = expectation_small;
-      covariance(i,j) = covariance_small;
+      expectation_(i,j) = expectation_small;
+      covariance_(i,j) = covariance_small;
     }
   }
 
@@ -135,8 +145,8 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
     for(int i = 0 ; i < mi ; i++) {
       for(int j = 0 ; j < mj ; j++) {
 
-        std::vector<double>   this_expectation = expectation(i,j);
-        NRLib::Grid2D<double> this_covariance  = covariance(i,j);
+        std::vector<double>   this_expectation = expectation_(i,j);
+        NRLib::Grid2D<double> this_covariance  = covariance_(i,j);
 
         for(int k=0; k<3; k++)
           mean_log_expectation_[k] += this_expectation[k];
@@ -156,7 +166,6 @@ void  DistributionsRock::SetupExpectationAndCovariances(NRLib::Grid2D<std::vecto
       for(int l=0; l<3; l++)
         mean_log_covariance_(k,l) /= (mi*mj);
     }
-
   }
 }
 
@@ -486,4 +495,12 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
   // Interpolate ...
   //
   cov(p,q) = w00*v00 + w10*v10 + w01*v01 + w11*v11;
+}
+
+
+void DistributionsRock::CompleteTopLevelObject(std::vector<DistributionWithTrend *> res_var)
+{
+  reservoir_variables_ = res_var;
+  SetResamplingLevel(DistributionWithTrend::Full);
+  SetupExpectationAndCovariances();
 }

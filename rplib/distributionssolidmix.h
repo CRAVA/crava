@@ -21,7 +21,7 @@ public:
 
   virtual DistributionsSolid                    * Clone() const;
 
-  virtual Solid                                 * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Solid                                 * GenerateSample(const std::vector<double> & trend_params);
 
   virtual bool                                    HasDistribution() const;
 
@@ -30,14 +30,14 @@ public:
   virtual Solid *                                 UpdateSample(double                      corr_param,
                                                                bool                        param_is_time,
                                                                const std::vector<double> & trend,
-                                                               const Solid               * sample) const;
+                                                               const Solid               * sample);
 protected:
 
 private:
 
   Solid                                         * GetSample(const std::vector<double>  & u,
                                                             const std::vector<double>  & trend_params,
-                                                            const std::vector<Solid *> & solid_samples) const;
+                                                            const std::vector<Solid *> & solid_samples);
 
   std::vector< DistributionsSolid * >             distr_solid_;     // Pointers to external objects.
   std::vector< DistributionWithTrend * >          distr_vol_frac_;  // Pointers to external objects.
