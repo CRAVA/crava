@@ -19,7 +19,7 @@ OPT         = -O2
 EXTRALFLAGS = -static
 DEBUG       =
 PURIFY      =
-ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran
+ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
 mode        = all
 
 ifeq ($(GCCNEW),1)

@@ -7,6 +7,7 @@
 #include "rplib/demmodelling.h"
 
 #include <vector>
+#include <cstring>
 
 class DryRockDEM : public DryRock {
 public:
@@ -19,17 +20,17 @@ public:
 
   DryRockDEM();
 
-  virtual         ~DryRockDEM();
+  virtual ~DryRockDEM();
 
   // Assignment operator.
   DryRockDEM                            & operator=(const DryRockDEM& rhs);
 
   virtual DryRock                       * Clone() const;
 
-  const DryRock                         * GetDryRockHost()      const {return dryrock_;}
+  const DryRock                         * GetDryRockHost()              const { return dryrock_        ;}
 
-  const std::vector<DryRock*>           & GetDryRockInclusion() const {return dryrock_inc_;}
-  const DryRock                         * GetDryRockInclusion(size_t i) const { return dryrock_inc_[i]; } // no error checking on valid index range
+  const std::vector<DryRock*>           & GetDryRockInclusion()         const { return dryrock_inc_    ;}
+  const DryRock                         * GetDryRockInclusion(size_t i) const { return dryrock_inc_[i] ;} // no error checking on valid index range
 
 private:
   //Copy constructor for getting base class variables , used by Clone:

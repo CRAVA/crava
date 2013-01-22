@@ -3,6 +3,7 @@
 #include "rplib/distributionsfluid.h"
 #include "rplib/rockgassmann.h"
 
+#include <typeinfo>
 #include <cassert>
 #include <typeinfo>
 

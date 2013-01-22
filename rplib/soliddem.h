@@ -6,6 +6,7 @@
 
 #include "rplib/demmodelling.h"
 
+#include <cstring>
 #include <vector>
 
 class SolidDEM : public Solid {

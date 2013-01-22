@@ -4,6 +4,7 @@
 #include "rplib/rock.h"
 #include "rplib/demmodelling.h"
 
+#include <cstring>
 #include <vector>
 
 class Solid;

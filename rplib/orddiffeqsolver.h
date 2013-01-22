@@ -1,6 +1,7 @@
 #ifndef RPLIB_ORDDIFFEQSOLVER_H
 #define RPLIB_ORDDIFFEQSOLVER_H
 
+#include <cstring>
 #include <vector>
 
 class OrdDiffEqSolver {

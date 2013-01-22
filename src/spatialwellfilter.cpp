@@ -411,7 +411,11 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
       //
       NRLib::Matrix Aw;
       NRLib::Matrix I = NRLib::IdentityMatrix(3*n);
+
+      //NBNB-PAL: NRLib::WriteMatrixToFile("Sprior", Sprior);
+
       NRLib::CholeskySolve(Sprior, I);
+
       Aw = Spost * I;
       Aw = Aw * (-1);
       for(int i=0 ; i<3*n ; i++) {

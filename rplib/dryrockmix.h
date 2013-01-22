@@ -2,6 +2,7 @@
 #define RPLIB_DRYROCK_MIX_H
 
 #include <vector>
+#include <cstring>
 
 #include "rplib/dryrock.h"
 #include "rplib/demmodelling.h"

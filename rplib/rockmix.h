@@ -1,6 +1,7 @@
 #ifndef RPLIB_ROCKMIX_H
 #define RPLIB_ROCKMIX_H
 
+#include <cstring>
 #include <vector>
 
 #include "rplib/rock.h"

@@ -2,6 +2,7 @@
 #define RPLIB_SOLIDMIX_H
 
 #include <vector>
+#include <cstring>
 
 #include "rplib/solid.h"
 #include "rplib/demmodelling.h"
