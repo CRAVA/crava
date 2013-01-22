@@ -85,8 +85,10 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
       std::vector<double> sampling(n_samples_);
 
-      for(int j=0; j<n_samples_; j++)
+      for(int j=0; j<n_samples_-1; j++)
         sampling[j] = min + j*increment;
+
+      sampling[n_samples_-1] = max;
 
       trend_cube_sampling_.push_back(sampling);
 

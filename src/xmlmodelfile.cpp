@@ -4918,7 +4918,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       notOk += "- Wavelets must be given for all angles.\n";
     }
     //3. Vertical correlation
-    if(inputFiles_->getTempCorrFile() == "") {
+    if(inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false) {
       okWithoutWells = false;
       notOk += "- Vertical correlation must be given.\n";
     }
@@ -4969,8 +4969,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if(modelSettings_->getNumberOfWells() > 0)
       errTxt += "No wells should be given when the rock physics prior model is used\n";
 
-    if(inputFiles_->getTempCorrFile() == "")
-      errTxt += "The temporal correlation needs to be given when the rock physics prior model is used\n";
+    if(inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false)
+      errTxt += "The temporal correlation file or temporal correlation range needs to be given when the rock physics prior model is used\n";
 
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
       errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";

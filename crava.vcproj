@@ -6544,10 +6544,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\rplib\distributionssolidinclusion.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\rplib\distributionssolidmix.cpp"
 						>
 					</File>
@@ -6921,11 +6917,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\filesystem\config.hpp"
+						RelativePath=".\libs\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\system\config.hpp"
+						RelativePath=".\libs\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7642,10 +7638,6 @@
 					</File>
 					<File
 						RelativePath=".\rplib\distributionssoliddem.h"
-						>
-					</File>
-					<File
-						RelativePath=".\rplib\distributionssolidinclusion.h"
 						>
 					</File>
 					<File

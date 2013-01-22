@@ -305,12 +305,12 @@ void DistributionsRock::CheckOrResetS(double                    & s,
     double smin = tabulated_s[0];
     double smax = tabulated_s[n-1];
     if (s < smin) {
-      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"ERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", s, smin);
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"\nERROR: First trend parameter (%.2f) is smaller than assumed lowest value (%.2f)\n", s, smin);
       NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"       Setting trend parameter to lowest value.\n");
       s = smin;
     }
     if (s > smax) {
-      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"ERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", s, smax);
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"\nERROR: First trend parameter (%.2f) is larger than assumed largest value (%.2f)\n", s, smax);
       NRLib::LogKit::LogFormatted(NRLib::LogKit::Error,"       Setting trend parameter to largest value.\n");
 
       std::cout << std::setprecision(12) << s << " " << smax << std::endl;
