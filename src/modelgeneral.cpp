@@ -3629,6 +3629,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     std::string tmpErrText("");
     if(!estimateParamCov) {
       paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
+      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
     }
     else if(variancesFromRockPhysics.size() > 0) {
       estimateParamCov = false;
@@ -3646,7 +3647,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       paramCorr[1][2] = static_cast<float>(variancesFromRockPhysics[5]);
       paramCorr[2][1] = static_cast<float>(variancesFromRockPhysics[5]);
     }
-    if(!estimateParamCov && paramCorr == NULL)
+    if(!estimateParamCov && (paramCorr == NULL || tmpErrText != ""))
     {
       errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
       errText += tmpErrText;
@@ -3769,6 +3770,78 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     Timings::setTimePriorCorrelation(wall,cpu);
   }
 }
+
+void ModelGeneral::validateCorrelationMatrix(float               ** C,
+                                             const ModelSettings *  modelSettings,
+                                             std::string         &  errTxt)
+{
+  float minAlpha = modelSettings->getVarAlphaMin();
+  float maxAlpha = modelSettings->getVarAlphaMax();
+  float minBeta  = modelSettings->getVarBetaMin();
+  float maxBeta  = modelSettings->getVarBetaMax();
+  float minRho   = modelSettings->getVarRhoMin();
+  float maxRho   = modelSettings->getVarRhoMax();
+
+  float C00      = C[0][0];
+  float C11      = C[1][1];
+  float C22      = C[2][2];
+  float C01      = C[0][1];
+  float C10      = C[1][0];
+  float C02      = C[0][2];
+  float C20      = C[2][0];
+  float C12      = C[1][2];
+  float C21      = C[2][1];
+
+  if (C00 < minAlpha || C00 > maxAlpha) {
+    errTxt += "The prior Vp variance read from file is outside valid range:\n";
+    errTxt += "  Given value   : " + NRLib::ToString(C00) + "\n";
+    errTxt += "  Minimum value : " + NRLib::ToString(minAlpha) + "\n";
+    errTxt += "  Maximum value : " + NRLib::ToString(maxAlpha) + "\n";
+  }
+  if (C11 < minBeta || C11 > maxBeta) {
+    errTxt += "The prior Vs variance read from file is outside valid range:\n";
+    errTxt += "  Given value   : " + NRLib::ToString(C11) + "\n";
+    errTxt += "  Minimum value : " + NRLib::ToString(minBeta) + "\n";
+    errTxt += "  Maximum value : " + NRLib::ToString(maxBeta) + "\n";
+  }
+  if (C22 < minRho || C22 > maxRho) {
+    errTxt += "The prior density variance read from file is outside valid range:\n";
+    errTxt += "  Given value   : " + NRLib::ToString(C22) + "\n";
+    errTxt += "  Minimum value : " + NRLib::ToString(minRho) + "\n";
+    errTxt += "  Maximum value : " + NRLib::ToString(maxRho) + "\n";
+  }
+
+  float corr01 = C01/(std::sqrt(C00)*std::sqrt(C11));
+  float corr02 = C02/(std::sqrt(C00)*std::sqrt(C22));
+  float corr12 = C12/(std::sqrt(C11)*std::sqrt(C22));
+
+  if (corr01 < -1.0 || corr01 > 1.0) {
+    errTxt += "The prior Vp-Vs correlation read from file is illegal (" + NRLib::ToString(corr01) + ")\n";
+  }
+  if (corr02 < -1.0 || corr02 > 1.0) {
+    errTxt += "The prior Vp-Rho correlation read from file is illegal (" + NRLib::ToString(corr02) + ")\n";
+  }
+  if (corr12 < -1.0 || corr12 > 1.0) {
+    errTxt += "The prior Vs-Rho correlation read from file is illegal (" + NRLib::ToString(corr12) + ")\n";
+  }
+
+  if (std::abs(C01 - C10) > 0.0f) {
+    errTxt += "The prior covariance matrix is not symmetric in Vp and Vs\n";
+    errTxt += "  Corr(Vp,Vs) : " + NRLib::ToString(C01) + "\n";
+    errTxt += "  Corr(Vs,Vp) : " + NRLib::ToString(C10) + "\n";
+  }
+  if (std::abs(C02 - C20) > 0.0f) {
+    errTxt += "The prior covariance matrix is not symmetric in Vp and Rho\n";
+    errTxt += "  Corr(Vp,Rho) : " + NRLib::ToString(C02) + "\n";
+    errTxt += "  Corr(Rho,Vp) : " + NRLib::ToString(C20) + "\n";
+  }
+  if (std::abs(C12 - C21) > 0.0f) {
+    errTxt += "The prior covariance matrix is not symmetric in Vs and Rho\n";
+    errTxt += "  Corr(Vs,Rho) : " + NRLib::ToString(C12) + "\n";
+    errTxt += "  Corr(Rho,Vs) : " + NRLib::ToString(C21) + "\n";
+  }
+}
+
 Surface *
 ModelGeneral::findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
 {
