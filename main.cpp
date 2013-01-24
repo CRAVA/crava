@@ -114,7 +114,9 @@ CravaAppl::Main(int /*argc*/, char ** /*argv*/) {
 
 int main(int argc, char** argv)
 {
+  bool AddLicenceInformation = true;
 #if defined(COMPILE_STORM_MODULES_FOR_RMS)
+  AddLicenceInformation = false;
   //* The Appl is static, otherwise it is not deleted upon call to exit().
   //* TODO: checkUsage() must not call exit(), either return a status, or
   //* throw an exception that is caught here.
@@ -157,9 +159,9 @@ int main(int argc, char** argv)
                    //"",                  // Use empty string "" for release versions
                    " beta",               // Use empty string "" for release versions
                    -1,                    // Validity of licence in days (-1 = infinite)
-                   //"Roxar",
-                   //"NORSAR");
-                   "Norsk Regnesentral/Statoil");  // Who this copy of CRAVA is licensed to
+                   //"NORSAR",            // Who this copy of CRAVA is licensed to
+                   "Norsk Regnesentral/Statoil",
+                   AddLicenceInformation);
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

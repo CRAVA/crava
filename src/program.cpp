@@ -16,7 +16,8 @@ Program::Program(const unsigned int  major,
                  const unsigned int  patch,
                  const std::string & extra_text,
                  const int           licence_days,
-                 const std::string & licensed_to)
+                 const std::string & licensed_to,
+                 const bool          add_licence_info)
   : major_(major),
     minor_(minor),
     patch_(patch),
@@ -37,7 +38,8 @@ Program::Program(const unsigned int  major,
   bool release = (extra_text == "");
   CheckForLicenceExpiration(licence_days_,
                             licensed_to_,
-                            release);
+                            release,
+                            add_licence_info);
 
   LogKit::LogFormatted(LogKit::Low,"Log written by                             : "+SystemCall::getUserName()+"\n");
   LogKit::LogFormatted(LogKit::Low,"Date and time                              : "+SystemCall::getCurrentTime());
@@ -51,7 +53,8 @@ Program::~Program(void)
 void
 Program::CheckForLicenceExpiration(const int           licence_days,
                                    const std::string & licensed_to,
-                                   const bool          release) const
+                                   const bool          release,
+                                   const bool          add_licence_info) const
 {
   if (licence_days >= 0) {
     time_t now = time(0);
@@ -68,8 +71,8 @@ Program::CheckForLicenceExpiration(const int           licence_days,
     }
     else {
       int days_left_of_licence = licence_days - days_since_compilation;
-      LogKit::LogFormatted(LogKit::Error,"License expires in                         : %d days\n",days_left_of_licence);
-      LogKit::LogFormatted(LogKit::Error,"Licensed to                                : %s\n\n",licensed_to.c_str());
+      LogKit::LogFormatted(LogKit::Low,"License expires in                         : %d days\n",days_left_of_licence);
+      LogKit::LogFormatted(LogKit::Low,"Licensed to                                : %s\n\n",licensed_to.c_str());
     }
   }
   else
@@ -77,8 +80,10 @@ Program::CheckForLicenceExpiration(const int           licence_days,
     if (!release) {
       LogKit::LogFormatted(LogKit::Low,"Compiled: %s/%s\n\n",SystemCall::getDate().c_str(),SystemCall::getTime().c_str());
     }
-    LogKit::LogFormatted(LogKit::Error,"License expiration                         : Never\n");
-    LogKit::LogFormatted(LogKit::Error,"Licensed to                                : %s\n\n",licensed_to.c_str());
+    if (add_licence_info) { // We don't want licence info to be displayed when used by Roxar/RMS
+      LogKit::LogFormatted(LogKit::Low,"License expiration                         : Never\n");
+      LogKit::LogFormatted(LogKit::Low,"Licensed to                                : %s\n\n",licensed_to.c_str());
+    }
   }
 }
 
