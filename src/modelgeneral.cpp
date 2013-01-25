@@ -2491,20 +2491,27 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   else
     LogKit::LogFormatted(LogKit::Low,"\nEstimated expectation and covariance:\n");
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Expectation    ln Vp      ln Vs      ln Rho         \n");
-  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"               %5.4f     %5.4f     %5.4f \n",expectation[0], expectation[1], expectation[2]);
+  LogKit::LogFormatted(LogKit::Low,"Expectation            Vp        Vs       Rho\n");
+  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"                  %7.2f   %7.2f   %7.3f \n",
+                       std::exp(expectation[0]), std::exp(expectation[1]), std::exp(expectation[2]));
 
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Covariance | ln Vp           ln Vs           ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-----------+----------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp      | %.2e     %.2e      %.2e \n",covariance(0,0), covariance(0,1), covariance(0,2));
-  LogKit::LogFormatted(LogKit::Low,"ln Vs      | %.2e     %.2e      %.2e \n",covariance(1,0), covariance(1,1), covariance(1,2));
-  LogKit::LogFormatted(LogKit::Low,"ln Rho     | %.2e     %.2e      %.2e \n",covariance(2,0), covariance(2,1), covariance(2,2));
+  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho\n");
+  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"                  %.1e   %.1e   %.1e\n", covariance(0,0), covariance(1,1), covariance(2,2));
 
+  float corr01 = covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1)));
+  float corr02 = covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2)));
+  float corr12 = covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2)));
+
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
 }
-
-
 
 void
 ModelGeneral::loadVelocity(FFTGrid           *& velocity,
@@ -2858,16 +2865,16 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
                                               double                                           & crossVpVs,
                                               double                                           & crossVpRho,
                                               double                                           & crossVsRho,
-                                              std::string                                      & /*errTxt*/)
+                                              std::string                                      & errTxt)
 {
   // Set up of expectations grids and computation of covariance sums given rock physics.
 
   // Variables for looping through FFTGrids
-  const int nzp = vp.getNzp();
-  const int nyp = vp.getNyp();
-  const int nz  = vp.getNz();
-  const int ny  = vp.getNy();
-  const int nx  = vp.getNx();
+  const int nzp  = vp.getNzp();
+  const int nyp  = vp.getNyp();
+  const int nz   = vp.getNz();
+  const int ny   = vp.getNy();
+  const int nx   = vp.getNx();
   const int rnxp = vp.getRNxp();
 
   int modulus = static_cast<int>(std::ceil(nx*ny*nz/1000.0f));
@@ -2909,9 +2916,9 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
 
   int n_samples = 0;
   // Loop through all cells in the FFTGrids
-  for(int k = 0; k < nzp; k++) {
-    for(int j = 0; j < nyp; j++) {
-      for(int i = 0; i < rnxp; i++) {
+  for (int k = 0; k < nzp; k++) {
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < rnxp; i++) {
 
         // If outside/If in the padding in x- and y-direction, set expectation equal to 0
         if(i >= nx || j >= ny) {
@@ -3013,12 +3020,17 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   rho.endAccess();
 
   // Setting output variables
-  varVp      = sumVariance(0,0)/n_samples;
-  varVs      = sumVariance(1,1)/n_samples;
-  varRho     = sumVariance(2,2)/n_samples;
-  crossVpVs  = sumVariance(0,1)/n_samples;
-  crossVpRho = sumVariance(0,2)/n_samples;
-  crossVsRho = sumVariance(1,2)/n_samples;
+  if (n_samples > 0) {
+    varVp      = sumVariance(0,0)/n_samples;
+    varVs      = sumVariance(1,1)/n_samples;
+    varRho     = sumVariance(2,2)/n_samples;
+    crossVpVs  = sumVariance(0,1)/n_samples;
+    crossVpRho = sumVariance(0,2)/n_samples;
+    crossVsRho = sumVariance(1,2)/n_samples;
+  }
+  else {
+    errTxt += "Could not build a covariance structure from rock physics.\n";
+  }
 }
 
 void
@@ -3631,7 +3643,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
       validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
     }
-    else if(variancesFromRockPhysics.size() > 0) {
+    else if (variancesFromRockPhysics.size() > 0) {
       estimateParamCov = false;
       paramCorr = new float * [3];
       for(int i=0;i<3;i++) {
@@ -3646,6 +3658,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       paramCorr[2][0] = static_cast<float>(variancesFromRockPhysics[4]);
       paramCorr[1][2] = static_cast<float>(variancesFromRockPhysics[5]);
       paramCorr[2][1] = static_cast<float>(variancesFromRockPhysics[5]);
+      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
     }
     if(!estimateParamCov && (paramCorr == NULL || tmpErrText != ""))
     {

@@ -665,6 +665,7 @@ ModelAVODynamic::processBackground(Background           *& background,
 
       double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
       // filling in the backModel in Background
+      std::string errorText("");
       modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributionTime0(),
                                                     priorProbability,
                                                     *backModel[0],
@@ -676,18 +677,22 @@ ModelAVODynamic::processBackground(Background           *& background,
                                                     crVpVs,
                                                     crVpRho,
                                                     crVsRho,
-                                                    errText);
-
-      background = new Background(backModel);
-
-      // keeping variances for later use in paramCorr in ModelGeneral::processPriorCorrelations
-      variancesFromRockPhysics.resize(6);
-      variancesFromRockPhysics[0] = varVp;
-      variancesFromRockPhysics[1] = varVs;
-      variancesFromRockPhysics[2] = varRho;
-      variancesFromRockPhysics[3] = crVpVs;
-      variancesFromRockPhysics[4] = crVpRho;
-      variancesFromRockPhysics[5] = crVsRho;
+                                                    errorText);
+      if(errorText != "") {
+        errText += errorText;
+        failed = true;
+      }
+      else {
+        background = new Background(backModel);
+        // keeping variances for later use in paramCorr in ModelGeneral::processPriorCorrelations
+        variancesFromRockPhysics.resize(6);
+        variancesFromRockPhysics[0] = varVp;
+        variancesFromRockPhysics[1] = varVs;
+        variancesFromRockPhysics[2] = varRho;
+        variancesFromRockPhysics[3] = crVpVs;
+        variancesFromRockPhysics[4] = crVpRho;
+        variancesFromRockPhysics[5] = crVsRho;
+      }
     }
   }
   else {
