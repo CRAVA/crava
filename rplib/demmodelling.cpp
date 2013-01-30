@@ -377,26 +377,24 @@ DEMTools::CalcDensityOfWaterFromTP(double temperature,
 }
 
 void
-DEMTools::CalcSeismicParamsFromElasticParams(double bulk_modulus,
-                                             double shear_modulus,
-                                             const double density,
-                                             double & vp,
-                                             double & vs)
+DEMTools::CalcSeismicParamsFromElasticParams(const double & bulk_modulus,
+                                             const double & shear_modulus,
+                                             const double & density,
+                                             double       & vp,
+                                             double       & vs)
 {
   assert(density != 0.0);
 
-  vp = (bulk_modulus + 4.0/3.0 * shear_modulus) / density;
-  vp = sqrt(vp);
-  vs = shear_modulus / density;
-  vs = sqrt(vs);
+  vp = std::sqrt((bulk_modulus + 4.0/3.0 * shear_modulus) / density);
+  vs = std::sqrt(shear_modulus / density);
 }
 
 void
-DEMTools::CalcElasticParamsFromSeismicParams(const double vp,
-                                             const double vs,
-                                             const double density,
-                                             double & bulk_modulus,
-                                             double & shear_modulus)
+DEMTools::CalcElasticParamsFromSeismicParams(const double & vp,
+                                             const double & vs,
+                                             const double & density,
+                                             double       & bulk_modulus,
+                                             double       & shear_modulus)
 {
   bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);

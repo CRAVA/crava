@@ -2448,21 +2448,43 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
             std::string varErrTxt = "";
             if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
-              varErrTxt += "Var(Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
-              varErrTxt += "Var(Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
+              varErrTxt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
+              varErrTxt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
             }
             if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
-              varErrTxt += "Var(Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
-              varErrTxt += "Var(Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
+              varErrTxt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
+              varErrTxt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
             }
             if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
-              varErrTxt += "Var(Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
-              varErrTxt += "Var(Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
+              varErrTxt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
+              varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
             }
 
             if(varErrTxt != "") {
               errTxt += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
               errTxt += varErrTxt;
+            }
+
+            // Check correlations
+            float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+            float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+            float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
+
+            NRLib::SymmetricMatrix corr(3);
+            corr(0,0) = 1;
+            corr(1,1) = 1;
+            corr(2,2) = 1;
+            corr(0,1) = corr01;
+            corr(0,2) = corr02;
+            corr(1,2) = corr12;
+
+            try {
+              NRLib::CholeskyInvert(corr);
+            }
+            catch (NRLib::Exception & e) {
+              errTxt += e.what();
+              errTxt += " for rock '"+iter->first+"':\n";
+              errTxt += "  The variabels in the rock model are probably linearly dependent\n";
             }
 
             if(varErrTxt != "" || tmpErrTxt != "")
@@ -2501,9 +2523,9 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   LogKit::LogFormatted(LogKit::Low,"----------------------------------------------\n");
   LogKit::LogFormatted(LogKit::Low,"                  %.1e   %.1e   %.1e\n", covariance(0,0), covariance(1,1), covariance(2,2));
 
-  float corr01 = covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1)));
-  float corr02 = covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2)));
-  float corr12 = covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2)));
+  float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+  float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+  float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
 
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
@@ -2854,20 +2876,13 @@ ModelGeneral::computeTime(int year, int month, int day) const
 }
 
 void
-ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
+ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
                                               const std::vector<double>                        & probability,
                                               FFTGrid                                          & vp,
                                               FFTGrid                                          & vs,
-                                              FFTGrid                                          & rho,
-                                              double                                           & varVp,
-                                              double                                           & varVs,
-                                              double                                           & varRho,
-                                              double                                           & crossVpVs,
-                                              double                                           & crossVpRho,
-                                              double                                           & crossVsRho,
-                                              std::string                                      & errTxt)
+                                              FFTGrid                                          & rho)
 {
-  // Set up of expectations grids and computation of covariance sums given rock physics.
+  // Set up of expectations grids
 
   // Variables for looping through FFTGrids
   const int nzp  = vp.getNzp();
@@ -2876,8 +2891,6 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   const int ny   = vp.getNy();
   const int nx   = vp.getNx();
   const int rnxp = vp.getRNxp();
-
-  int modulus = static_cast<int>(std::ceil(nx*ny*nz/1000.0f));
 
   LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
 
@@ -2898,23 +2911,10 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   NRLib::Grid2D<float> baseVs (nx, ny, 0.0);
   NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
 
-  // Local storage for summed combined variances
-  NRLib::Grid2D<double> sumVariance(3,3,0);
-
-  // Make a vector of rock objects instead of a map
-  // Find a better solution of using rock_distribution map later
-  std::vector<DistributionsRock *> rock_vector(rock.size());
-  size_t i=0;
-  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock.begin(); it != rock.end(); it++){
-    rock_vector[i] = it->second;
-    i++;
-  }
-
   vp.setAccessMode(FFTGrid::WRITE);
   vs.setAccessMode(FFTGrid::WRITE);
   rho.setAccessMode(FFTGrid::WRITE);
 
-  int n_samples = 0;
   // Loop through all cells in the FFTGrids
   for (int k = 0; k < nzp; k++) {
     for (int j = 0; j < nyp; j++) {
@@ -2948,7 +2948,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
 
           std::vector<std::vector<double> > expectation_m(number_of_facies);
           for(size_t f = 0; f < number_of_facies; f++)
-            expectation_m[f] = rock_vector[f]->GetLogExpectation(trend_position);
+            expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
 
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
           for(size_t f = 0; f < number_of_facies; f++){
@@ -2973,36 +2973,6 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
             baseVs(i,j)  = expectations[1];
             baseRho(i,j) = expectations[2];
           }
-
-          // Compute combined variance for all facies in the given grid cell.
-          // Calculation of variance for a set of pdfs with given probability in the rock physics model:
-          //
-          // Var(X) = E([X-E(X)]^2) = E([X - E(X|facies)]^2) + E([E(X|facies) -E(X)]^2) = E(Var(X|facies)) + Var(E(X|facies))
-          //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
-          // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
-          //
-          if(((i+1)*(j+1)*(k+1)) % modulus == 0) {
-            // For all facies: Summing up expected value of variances and variance of expected values
-            NRLib::Grid2D<double> sigma_sum(3,3,0);
-
-            for(size_t f = 0; f < number_of_facies; f++) {
-              NRLib::Grid2D<double> sigma = rock_vector[f]->GetLogCovariance(trend_position);
-              NRLib::Grid2D<double> sigma_weigth(3,3,0);
-
-              // For all elements in the 3x3 matrix of the combined variance
-              for(size_t a=0; a<3; a++){
-                for(size_t b=0; b<3; b++){
-                  sigma_weigth(a,b) = probability[f]*sigma(a,b) + probability[f]*(expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]);
-                  sigma_sum(a,b)   += sigma_weigth(a,b);
-                }
-              }
-            }
-            for(size_t a=0; a<3; a++){
-              for(size_t b=0; b<3; b++)
-                sumVariance(a,b) += sigma_sum(a,b);
-            }
-            n_samples++;
-          }
         }
       }
     }
@@ -3018,29 +2988,165 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
   vp.endAccess();
   vs.endAccess();
   rho.endAccess();
+}
 
-  // Setting output variables
-  if (n_samples > 0) {
-    varVp      = sumVariance(0,0)/n_samples;
-    varVs      = sumVariance(1,1)/n_samples;
-    varRho     = sumVariance(2,2)/n_samples;
-    crossVpVs  = sumVariance(0,1)/n_samples;
-    crossVpRho = sumVariance(0,2)/n_samples;
-    crossVsRho = sumVariance(1,2)/n_samples;
+void
+ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+                                                  const std::vector<double>                        & probability,
+                                                  NRLib::Grid2D<double>                            & param_corr,
+                                                  std::string                                      & errTxt)
+{
+
+  LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
+
+  bool has_trend = false;
+  for(size_t i=0; i<rock_distribution.size(); i++) {
+    std::vector<bool> rock_has_trend = rock_distribution[i]->HasTrend();
+
+    for(int j=0; j<2; j++) {
+      if(rock_has_trend[j] == true)
+        has_trend = true;
+    }
   }
+
+  if(has_trend == true) {
+
+    std::vector<int> trend_cube_size = trend_cubes_.GetSizeTrendCubes();
+
+    const int nx = trend_cube_size[0];
+    const int ny = trend_cube_size[1];
+    const int nz = trend_cube_size[2];
+
+    int modulus = 100;
+
+    float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+    float nextMonitor = monitorSize;
+    std::cout
+      << "\n  0%       20%       40%       60%       80%      100%"
+      << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+      << "\n  ^";
+
+
+    // Local storage for summed combined variances
+    NRLib::Grid2D<double> sumVariance(3,3,0);
+
+    int n_samples = 0;
+
+    for (int k = 0; k < nz; k++) {
+      for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+
+          if( ( (i+1)*(j+1)*(k+1) ) % modulus == 0) {
+
+            std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
+
+            NRLib::Grid2D<double> sigma_sum(3,3,0);
+
+            calculateCovarianceInTrendPosition(rock_distribution,
+                                               probability,
+                                               trend_position,
+                                               sigma_sum);
+
+
+            for(size_t a=0; a<3; a++){
+              for(size_t b=0; b<3; b++)
+                sumVariance(a,b) += sigma_sum(a,b);
+            }
+
+            n_samples++;
+          }
+        }
+      }
+
+      // Log progress
+      if (k+1 >= static_cast<int>(nextMonitor) && k < nz) {
+        nextMonitor += monitorSize;
+        std::cout << "^";
+        fflush(stdout);
+      }
+    }
+
+    if (n_samples > 0) {
+      for (int i=0; i<3; i++) {
+        for (int j=0; j<3; j++)
+          param_corr(i,j) = sumVariance(i,j)/n_samples;
+      }
+    }
+
+    else
+      errTxt += "Could not build a covariance structure from rock physics.\n";
+  }
+
   else {
-    errTxt += "Could not build a covariance structure from rock physics.\n";
+    std::vector<double> trend_position(2, 0.0);
+
+    NRLib::Grid2D<double> sigma_sum(3,3,0);
+
+    calculateCovarianceInTrendPosition(rock_distribution,
+                                       probability,
+                                       trend_position,
+                                       sigma_sum);
+
+
+    for (int i=0; i<3; i++) {
+      for (int j=0; j<3; j++)
+        param_corr(i,j) = sigma_sum(i,j);
+    }
+
   }
 }
 
 void
-ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+                                                 const std::vector<double>              & probability,
+                                                 const std::vector<double>              & trend_position,
+                                                 NRLib::Grid2D<double>                  & sigma_sum) const
+{
+  int number_of_facies = static_cast<int>(rock_distribution.size());
+
+  std::vector<std::vector<double> > expectation_m(number_of_facies);
+
+  for(int f = 0; f < number_of_facies; f++)
+    expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
+
+  // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
+  std::vector<float> expectations(3, 0);
+  for(int f = 0; f < number_of_facies; f++){
+    expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
+    expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
+    expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
+  }
+
+  // Compute combined variance for all facies in the given grid cell.
+  // Calculation of variance for a set of pdfs with given probability in the rock physics model:
+  //
+  // Var(X) = E([X-E(X)]^2) = E([X - E(X|facies)]^2) + E([E(X|facies) -E(X)]^2) = E(Var(X|facies)) + Var(E(X|facies))
+  //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
+  // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
+  //
+  // For all facies: Summing up expected value of variances and variance of expected values
+
+  for(int f = 0; f < number_of_facies; f++) {
+    NRLib::Grid2D<double> sigma = rock_distribution[f]->GetLogCovariance(trend_position);
+
+    // For all elements in the 3x3 matrix of the combined variance
+    for(size_t a=0; a<3; a++) {
+      for(size_t b=0; b<3; b++) {
+        double sigma_weigth = probability[f] * (sigma(a,b) + (expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]));
+        sigma_sum(a,b)     += sigma_weigth;
+      }
+    }
+  }
+}
+
+
+void
+ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
                                         const std::vector<double>                        & probability,
                                         const Simbox                                     & timeSimbox,
                                         const ModelSettings                              & modelSettings,
                                         State4D                                          & state4d,
-                                        std::vector<double>                              & variancesFromRockPhysics,
-                                        std::string                                      & errTxt)
+                                        std::string                                      & /*errTxt*/)
 {
   // Allocates the static mu grid: 3 grids.
 
@@ -3048,14 +3154,6 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, Distribution
   FFTGrid * vp_stat;
   FFTGrid * vs_stat;
   FFTGrid * rho_stat;
-
-  // Variance coefficients which will be set in generateRockPhysics3DBackground
-  double varVp;
-  double varVs;
-  double varRho;
-  double crVpVs;
-  double crVpRho;
-  double crVsRho;
 
   // Parameters for generating new FFTGrids
   const int nx    = timeSimbox.getnx();
@@ -3075,7 +3173,7 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, Distribution
   rho_stat->createRealGrid();
 
   // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho, errTxt);
+  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat);
 
   vp_stat ->setType(FFTGrid::PARAMETER);
   vs_stat ->setType(FFTGrid::PARAMETER);
@@ -3083,24 +3181,15 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::map<std::string, Distribution
 
   state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
 
-  variancesFromRockPhysics[0] = varVp;
-  variancesFromRockPhysics[1] = varVs;
-  variancesFromRockPhysics[2] = varRho;
-  variancesFromRockPhysics[3] = crVpVs;
-  variancesFromRockPhysics[4] = crVpRho;
-  variancesFromRockPhysics[5] = crVsRho;
 }
 
 void
-ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                              const std::vector<double>                        & probability,
-                                              int                                                lowCut,
-                                              Corr                                             & correlations, //The grids here get/set correctly.
+ModelGeneral::generateRockPhysics4DBackground(int                                                lowCut,
+                                              Corr                                             * correlations, //The grids here get/set correctly.
                                               const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
                                               State4D                                          & state4d,
-                                              std::vector<double>                                variancesFromRockPhycics,
-                                              std::string                                      & errTxt)
+                                              std::string                                      & /*errTxt*/)
 {
   // Allocates the static sigma grids: 6 grids.
 
@@ -3138,20 +3227,21 @@ ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, Distri
   // Correlations
   float corrGradI, corrGradJ;
   ModelGeneral::getCorrGradIJ(corrGradI, corrGradJ);
-  vp_vp_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
-  vp_vs_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
-  vp_rho_stat ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
-  vs_vs_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
-  vs_rho_stat ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
-  rho_rho_stat->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  vp_vp_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  vp_vs_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  vp_rho_stat ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  vs_vs_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  vs_rho_stat ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  rho_rho_stat->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
 
   // Multiply covariance grids with scalar variance coefficients
-  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[0]));
-  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[3]));
-  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[4]));
-  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[1]));
-  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[5]));
-  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhycics[2]));
+  float ** variancesFromRockPhysics = correlations->getPriorVar0_old();
+  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][0]));
+  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][1]));
+  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][2]));
+  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[1][1]));
+  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[1][2]));
+  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[2][2]));
 
   //Set grid type.
   vp_vp_stat  ->setType(FFTGrid::COVARIANCE);
@@ -3613,7 +3703,6 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
                                        const ModelSettings     * modelSettings,
                                        FFTGrid                ** seisCube,
                                        const InputFiles        * inputFiles,
-                                       std::vector<double>       variancesFromRockPhysics,
                                        std::string             & errText,
                                        bool                    & failed)
 {
@@ -3642,29 +3731,61 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     if(!estimateParamCov) {
       paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
       validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
+      if(paramCorr == NULL || tmpErrText != "") {
+        errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
+        errText += tmpErrText;
+        failedParamCorr = true;
+      }
     }
-    else if (variancesFromRockPhysics.size() > 0) {
+    else if (modelSettings->getFaciesProbFromRockPhysics() == true) {
       estimateParamCov = false;
       paramCorr = new float * [3];
       for(int i=0;i<3;i++) {
         paramCorr[i] = new float[3];
       }
-      paramCorr[0][0] = static_cast<float>(variancesFromRockPhysics[0]);
-      paramCorr[1][1] = static_cast<float>(variancesFromRockPhysics[1]);
-      paramCorr[2][2] = static_cast<float>(variancesFromRockPhysics[2]);
-      paramCorr[0][1] = static_cast<float>(variancesFromRockPhysics[3]);
-      paramCorr[1][0] = static_cast<float>(variancesFromRockPhysics[3]);
-      paramCorr[0][2] = static_cast<float>(variancesFromRockPhysics[4]);
-      paramCorr[2][0] = static_cast<float>(variancesFromRockPhysics[4]);
-      paramCorr[1][2] = static_cast<float>(variancesFromRockPhysics[5]);
-      paramCorr[2][1] = static_cast<float>(variancesFromRockPhysics[5]);
-      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
-    }
-    if(!estimateParamCov && (paramCorr == NULL || tmpErrText != ""))
-    {
-      errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
-      errText += tmpErrText;
-      failedParamCorr = true;
+
+      int n_facies = static_cast<int>(faciesNames_.size());
+
+      std::vector<double> priorProbability(n_facies);
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings->getPriorFaciesProb();
+
+      for(int i=0;i<n_facies;i++) {
+        mapType::iterator iter = myMap.find(faciesNames_[i]);
+        if(iter!=myMap.end())
+          priorProbability[i] = iter->second;
+      }
+
+      std::vector<DistributionsRock *> rock_distribution(n_facies);
+      typedef std::map<std::string, DistributionsRock *> rfMapType;
+      rfMapType rfMap = getRockDistributionTime0();
+
+      for(int i=0; i<n_facies; i++) {
+        rfMapType::iterator iter = rfMap.find(faciesNames_[i]);
+        if(iter != rfMap.end())
+          rock_distribution[i] = iter->second;
+      }
+
+      NRLib::Grid2D<double> param_corr(3,3);
+      calculateCovariancesFromRockPhysics(rock_distribution,
+                                          priorProbability,
+                                          param_corr,
+                                          errText);
+
+
+      for(int i=0; i<3; i++) {
+        for(int j=0; j<3; j++)
+          paramCorr[i][j] = static_cast<float>(param_corr(i,j));
+      }
+
+      //validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
+
+      if (tmpErrText != "")
+      {
+        errText += "Parameter covariance matrix from rock physics failed\n";
+        errText += tmpErrText;
+        failedParamCorr = true;
+      }
     }
 
     //
@@ -3691,7 +3812,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       if(modelSettings->getUseVerticalVariogram() == true) {
         corrT = new float[nCorrT];
         float tempCorrRange = modelSettings->getTemporalCorrelationRange();
-        float dz = timeSimbox->getdz();
+        float dz = static_cast<float>(timeSimbox->getdz());
         for(int i=0; i<nCorrT; i++){
           //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
           corrT[i] = exp(-3*dz*i/tempCorrRange);
@@ -3806,19 +3927,19 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
   float C21      = C[2][1];
 
   if (C00 < minAlpha || C00 > maxAlpha) {
-    errTxt += "The prior Vp variance read from file is outside valid range:\n";
+    errTxt += "The prior Vp variance is outside valid range:\n";
     errTxt += "  Given value   : " + NRLib::ToString(C00) + "\n";
     errTxt += "  Minimum value : " + NRLib::ToString(minAlpha) + "\n";
     errTxt += "  Maximum value : " + NRLib::ToString(maxAlpha) + "\n";
   }
   if (C11 < minBeta || C11 > maxBeta) {
-    errTxt += "The prior Vs variance read from file is outside valid range:\n";
+    errTxt += "The prior Vs variance is outside valid range:\n";
     errTxt += "  Given value   : " + NRLib::ToString(C11) + "\n";
     errTxt += "  Minimum value : " + NRLib::ToString(minBeta) + "\n";
     errTxt += "  Maximum value : " + NRLib::ToString(maxBeta) + "\n";
   }
   if (C22 < minRho || C22 > maxRho) {
-    errTxt += "The prior density variance read from file is outside valid range:\n";
+    errTxt += "The prior density variance is outside valid range:\n";
     errTxt += "  Given value   : " + NRLib::ToString(C22) + "\n";
     errTxt += "  Minimum value : " + NRLib::ToString(minRho) + "\n";
     errTxt += "  Maximum value : " + NRLib::ToString(maxRho) + "\n";
@@ -3829,13 +3950,13 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
   float corr12 = C12/(std::sqrt(C11)*std::sqrt(C22));
 
   if (corr01 < -1.0 || corr01 > 1.0) {
-    errTxt += "The prior Vp-Vs correlation read from file is illegal (" + NRLib::ToString(corr01) + ")\n";
+    errTxt += "The prior Vp-Vs correlation is illegal (" + NRLib::ToString(corr01) + ")\n";
   }
   if (corr02 < -1.0 || corr02 > 1.0) {
-    errTxt += "The prior Vp-Rho correlation read from file is illegal (" + NRLib::ToString(corr02) + ")\n";
+    errTxt += "The prior Vp-Rho correlation is illegal (" + NRLib::ToString(corr02) + ")\n";
   }
   if (corr12 < -1.0 || corr12 > 1.0) {
-    errTxt += "The prior Vs-Rho correlation read from file is illegal (" + NRLib::ToString(corr12) + ")\n";
+    errTxt += "The prior Vs-Rho correlation is illegal (" + NRLib::ToString(corr12) + ")\n";
   }
 
   if (std::abs(C01 - C10) > 0.0f) {
@@ -4341,40 +4462,45 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
 
   int n_facies = static_cast<int>(faciesNames_.size());
 
-  // Get prior probabilities for the facies in a vector
-  /*
-  std::vector<double> priorProbability;
-  priorProbability.resize(n_facies);
+  std::vector<double> priorProbability(n_facies);
   typedef std::map<std::string,float> mapType;
   mapType myMap = modelSettings->getPriorFaciesProb();
 
-  for(int i=0;i<n_facies;i++)
-  {
+  for(int i=0;i<n_facies;i++) {
     mapType::iterator iter = myMap.find(faciesNames_[i]);
     if(iter!=myMap.end())
       priorProbability[i] = iter->second;
   }
-  */
-  typedef std::map<std::string,float> mapType;
-  mapType myMap = modelSettings->getPriorFaciesProb();
 
-  n_facies = static_cast<int>(myMap.size());
-  std::vector<double> priorProbability;
-  priorProbability.resize(n_facies);
+  std::vector<DistributionsRock *> rock_distribution(n_facies);
+  typedef std::map<std::string, DistributionsRock *> rfMapType;
+  rfMapType rfMap = getRockDistributionTime0();
 
-  int i = 0;
-  for(mapType::iterator iter=myMap.begin();iter!=myMap.end();iter++){
-    priorProbability[i] = iter->second;
-    i++;
+  for(int i=0; i<n_facies; i++) {
+    rfMapType::iterator iter = rfMap.find(faciesNames_[i]);
+    if(iter != rfMap.end())
+      rock_distribution[i] = iter->second;
   }
+
   std::string tmpError = "";
-  std::vector<double> variancesFromRockPhysics(6);
-  setUp3DPartOf4DBackground(getRockDistributionTime0(), priorProbability, timeSimbox_, *modelSettings, state4d_, variancesFromRockPhysics, tmpError);
+  setUp3DPartOf4DBackground(rock_distribution,
+                            priorProbability,
+                            timeSimbox_,
+                            *modelSettings,
+                            state4d_,
+                            tmpError);
 
-  processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
-                           seisCube, inputFiles, variancesFromRockPhysics, errText, failedPriorCorr);
+  processPriorCorrelations(correlations,
+                           background,
+                           wells_,
+                           timeSimbox_,
+                           modelSettings,
+                           seisCube,
+                           inputFiles,
+                           errText,
+                           failedPriorCorr);
 
-  generateRockPhysics4DBackground(getRockDistributionTime0(), priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4d_, variancesFromRockPhysics, tmpError);
+  generateRockPhysics4DBackground(lowCut, correlations, timeSimbox_, *modelSettings, state4d_, tmpError);
 
   if(tmpError != "") {
     errText += tmpError;

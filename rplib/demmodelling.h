@@ -57,17 +57,17 @@ namespace DEMTools {
   double CalcDensityOfWaterFromTP(double temperature,
                                   double pressure);
 
-  void CalcSeismicParamsFromElasticParams(double bulk_modulus,
-                                          double shear_modulus,
-                                          const double density,
-                                          double & vp,
-                                          double & vs);
+  void CalcSeismicParamsFromElasticParams(const double & bulk_modulus,
+                                          const double & shear_modulus,
+                                          const double & density,
+                                          double       & vp,
+                                          double       & vs);
 
-  void CalcElasticParamsFromSeismicParams(const double vp,
-                                          const double vs,
-                                          const double density,
-                                          double & bulk_modulus,
-                                          double & shear_modulus);
+  void CalcElasticParamsFromSeismicParams(const double & vp,
+                                          const double & vs,
+                                          const double & density,
+                                          double       & bulk_modulus,
+                                          double       & shear_modulus);
 
   //list of debug/testing functions
   void DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,

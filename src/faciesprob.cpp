@@ -2057,10 +2057,10 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   nx   = alphagrid->getNx();
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
-  std::vector<std::vector<int> >  trendGridSizes;
+  std::vector<int> trendGridSize;
   if (nDimensions>3){
-    trendGridSizes =  trend_cubes.GetSizeTrendCubes();
-    assert(trendGridSizes[0][0] == nx && trendGridSizes[0][1] == ny && trendGridSizes[0][2] == nz);
+    trendGridSize =  trend_cubes.GetSizeTrendCubes();
+    assert(trendGridSize[0] == nx && trendGridSize[1] == ny && trendGridSize[2] == nz);
   }
 
   faciesProb_ = new FFTGrid*[nFacies_];
@@ -2146,9 +2146,9 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
         rho = rhogrid->getNextReal();
         if(faciesProbFromRockPhysics && nDimensions>3){
           int ii, jj, kk;
-          ii = std::min(i, trendGridSizes[0][2]-1);
-          jj = std::min(j, trendGridSizes[0][1]-1);
-          kk = std::min(k, trendGridSizes[0][0]-1);
+          ii = std::min(i, trendGridSize[2]-1);
+          jj = std::min(j, trendGridSize[1]-1);
+          kk = std::min(k, trendGridSize[0]-1);
           std::vector<double> trend_values = trend_cubes.GetTrendPosition(kk,jj,ii);
           t1 = static_cast<float>(trend_values[0]);
           t2 = static_cast<float>(trend_values[1]);

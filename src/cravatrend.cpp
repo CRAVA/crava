@@ -54,6 +54,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
         failed     = true;
       }
 
+      //Note that all trend cubes have the same sampling as the timeSimbox
       const int rnxp = trend_cube->getRNxp();
       const int nyp  = trend_cube->getNyp();
       const int nzp  = trend_cube->getNzp();
@@ -106,9 +107,10 @@ CravaTrend::~CravaTrend()
 {
 }
 
-std::vector<double>  CravaTrend::GetTrendPosition(const int & i,
-                                                   const int & j,
-                                                   const int & k) const
+std::vector<double>
+CravaTrend::GetTrendPosition(const int & i,
+                             const int & j,
+                             const int & k) const
 {
   // Find position of the trend corresponding to the value in (i,j,k) of the trend cubes.
   // As all trends are sampled from min to max of the trend cube, using increment_ in the sampling,
@@ -122,19 +124,17 @@ std::vector<double>  CravaTrend::GetTrendPosition(const int & i,
   return trend_cube_values;
 }
 
-std::vector<std::vector<int> >    CravaTrend::GetSizeTrendCubes() const{
+std::vector<int>
+CravaTrend::GetSizeTrendCubes() const
+{
+  std::vector<int> gridSize(3);
 
-  std::vector<std::vector<int> >  gridSizes;
-  gridSizes.resize(n_trend_cubes_);
+  int nI = static_cast<int>(trend_cubes_[0].GetNI());
+  int nJ = static_cast<int>(trend_cubes_[0].GetNJ());
+  int nK = static_cast<int>(trend_cubes_[0].GetNK());
+  gridSize[0] = nI;
+  gridSize[1] = nJ;
+  gridSize[2] = nK;
 
-  for(int m=0; m<n_trend_cubes_; m++){
-    int nI = static_cast<int>(trend_cubes_[m].GetNI());
-    int nJ = static_cast<int>(trend_cubes_[m].GetNJ());
-    int nK = static_cast<int>(trend_cubes_[m].GetNK());
-    gridSizes[m].push_back(nI);
-    gridSizes[m].push_back(nJ);
-    gridSizes[m].push_back(nK);
-  }
-  return gridSizes;
-
+  return gridSize;
 }

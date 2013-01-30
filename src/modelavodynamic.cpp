@@ -99,8 +99,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
 
   std::string errText("");
 
-  std::vector<double> variancesFromRockPhysics(0);   // Length will be set in processBackground
-
   if(!failedSimbox)
   {
     //
@@ -108,10 +106,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
     //
     if (modelSettings->getForwardModeling() == true)
     {
-      processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
-                        timeDepthMapping, timeCutMapping,
-                        modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
-                        errText, failedBackground);
+      processBackground(background_,
+                        modelGeneral->getWells(),
+                        timeSimbox,
+                        timeBGSimbox,
+                        timeDepthMapping,
+                        timeCutMapping,
+                        modelSettings,
+                        modelGeneral,
+                        inputFiles,
+                        errText,
+                        failedBackground);
+
       if (!failedBackground)
       {
         processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
@@ -141,10 +147,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getOptimizeWellLocation() == true)
           {
-            processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
-                              timeDepthMapping, timeCutMapping,
-                              modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
-                              errText, failedBackground);
+            processBackground(background_,
+                              modelGeneral->getWells(),
+                              timeSimbox,
+                              timeBGSimbox,
+                              timeDepthMapping,
+                              timeCutMapping,
+                              modelSettings,
+                              modelGeneral,
+                              inputFiles,
+                              errText,
+                              failedBackground);
+
             backgroundDone = true;
           }
           if(failedBackground == false && backgroundDone == true &&
@@ -206,10 +220,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getEstimateWaveletNoise() == true)
           {
-            processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
-                              timeDepthMapping, timeCutMapping,
-                              modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
-                              errText, failedBackground);
+            processBackground(background_,
+                              modelGeneral->getWells(),
+                              timeSimbox,
+                              timeBGSimbox,
+                              timeDepthMapping,
+                              timeCutMapping,
+                              modelSettings,
+                              modelGeneral,
+                              inputFiles,
+                              errText,
+                              failedBackground);
+
             backgroundDone = true;
           }
         }
@@ -218,8 +240,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
            failedSeismic == false && failedReflMat == false &&
            (estimationMode == false || modelSettings->getEstimateCorrelations() == true))
         {
-          modelGeneral->processPriorCorrelations(correlations_, background_, modelGeneral->getWells(), timeSimbox, modelSettings,
-                                                 seisCube_, inputFiles, variancesFromRockPhysics, errText, failedPriorCorr);
+          modelGeneral->processPriorCorrelations(correlations_,
+                                                 background_,
+                                                 modelGeneral->getWells(),
+                                                 timeSimbox,
+                                                 modelSettings,
+                                                 seisCube_,
+                                                 inputFiles,
+                                                 errText,
+                                                 failedPriorCorr);
         }
 
         if(failedSeismic == false && failedBackground == false &&
@@ -577,7 +606,6 @@ ModelAVODynamic::processBackground(Background           *& background,
                                    const ModelSettings   * modelSettings,
                                    ModelGeneral          * modelGeneral,
                                    const InputFiles      * inputFiles,
-                                   std::vector<double>   & variancesFromRockPhysics,
                                    std::string           & errText,
                                    bool                  & failed)
 {
@@ -663,36 +691,25 @@ ModelAVODynamic::processBackground(Background           *& background,
           priorProbability[i] = iter->second;
       }
 
-      double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
+      std::vector<DistributionsRock *> rock_distribution(n_facies);
+      typedef std::map<std::string, DistributionsRock *> rfMapType;
+      rfMapType rfMap = modelGeneral->getRockDistributionTime0();
+
+      for(int i=0; i<n_facies; i++) {
+        rfMapType::iterator iter = rfMap.find(facies_names[i]);
+        if(iter != rfMap.end())
+          rock_distribution[i] = iter->second;
+      }
+
       // filling in the backModel in Background
-      std::string errorText("");
-      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributionTime0(),
+      modelGeneral->generateRockPhysics3DBackground(rock_distribution,
                                                     priorProbability,
                                                     *backModel[0],
                                                     *backModel[1],
-                                                    *backModel[2],
-                                                    varVp,
-                                                    varVs,
-                                                    varRho,
-                                                    crVpVs,
-                                                    crVpRho,
-                                                    crVsRho,
-                                                    errorText);
-      if(errorText != "") {
-        errText += errorText;
-        failed = true;
-      }
-      else {
-        background = new Background(backModel);
-        // keeping variances for later use in paramCorr in ModelGeneral::processPriorCorrelations
-        variancesFromRockPhysics.resize(6);
-        variancesFromRockPhysics[0] = varVp;
-        variancesFromRockPhysics[1] = varVs;
-        variancesFromRockPhysics[2] = varRho;
-        variancesFromRockPhysics[3] = crVpVs;
-        variancesFromRockPhysics[4] = crVpRho;
-        variancesFromRockPhysics[5] = crVsRho;
-      }
+                                                    *backModel[2]);
+
+      background = new Background(backModel);
+
     }
   }
   else {

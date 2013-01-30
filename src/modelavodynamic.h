@@ -101,18 +101,17 @@ private:
                                   std::string       & errText,
                                   bool              & failed);
 
-  void             processBackground(Background           *& background,
-                                     const std::vector<WellData *> & wells,
-                                     const Simbox          * timeSimbox,
-                                     const Simbox          * timeBGSimbox,
-                                     GridMapping          *& timeDepthMapping,
-                                     const GridMapping     * timeCutMapping,
-                                     const ModelSettings   * modelSettings,
-                                     ModelGeneral          * modelGeneral,
-                                     const InputFiles      * inputFile,
-                                     std::vector<double>   & coefFromRPForVariances,
-                                     std::string           & errText,
-                                     bool                  & failed);
+  void             processBackground(Background                    *& background,
+                                     const std::vector<WellData *>  & wells,
+                                     const Simbox                   * timeSimbox,
+                                     const Simbox                   * timeBGSimbox,
+                                     GridMapping                   *& timeDepthMapping,
+                                     const GridMapping              * timeCutMapping,
+                                     const ModelSettings            * modelSettings,
+                                     ModelGeneral                   * modelGeneral,
+                                     const InputFiles               * inputFile,
+                                     std::string                    & errText,
+                                     bool                           & failed);
 
   void             processReflectionMatrix(float               **& reflectionMatrix,
                                            const Background      * background,

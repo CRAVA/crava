@@ -171,7 +171,6 @@ public:
                                              const ModelSettings   * modelSettings,
                                              FFTGrid              ** seisCube,
                                              const InputFiles      * inputFiles,
-                                             std::vector<double>     coefFromRPForVariances,
                                              std::string           & errText,
                                              bool                  & failed);
 
@@ -184,18 +183,16 @@ public:
                                           std::string                  & errTxt,
                                           const InputFiles             * inputFiles);
 
-  void              generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
+  void              generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
                                                     const std::vector<double>                        & probability,
                                                     FFTGrid                                          & vp,
                                                     FFTGrid                                          & vs,
-                                                    FFTGrid                                          & rho,
-                                                    double                                           & varVp,
-                                                    double                                           & varVs,
-                                                    double                                           & varRho,
-                                                    double                                           & crossVpVs,
-                                                    double                                           & crossVpRho,
-                                                    double                                           & crossVsRho,
-                                                    std::string                                      & errTxt);
+                                                    FFTGrid                                          & rho);
+
+  void              calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
+                                                        const std::vector<double>                        & probability,
+                                                        NRLib::Grid2D<double>                            & param_corr,
+                                                        std::string                                      & errTxt);
 
   void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
 
@@ -218,27 +215,28 @@ private:
 
   void              setFaciesNamesFromRockPhysics();
 
-  void              setUp3DPartOf4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+  void              setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
                                               const std::vector<double>                        & probability,
                                               const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
                                               State4D                                          & state4d,
-                                              std::vector<double>                              & variancesFromRockPhysics,
                                               std::string                                      & errTxt);
 
-  void              generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
-                                                    const std::vector<double>                        & probability,
-                                                    int                                                lowCut,
-                                                    Corr                                             & correlations, //The grids here get/set correctly.
+  void              generateRockPhysics4DBackground(int                                                lowCut,
+                                                    Corr                                             * correlations, //The grids here get/set correctly.
                                                     const Simbox                                     & timeSimbox,
                                                     const ModelSettings                              & modelSettings,
                                                     State4D                                          & state4d,
-                                                    std::vector<double>                                variancesFromRockPhycis,
                                                     std::string                                      & errTxt);
   bool              process4DBackground(ModelSettings     *& modelSettings,
                                         const InputFiles   * inputFiles,
                                         std::string        & errText,
                                         bool               & failed);
+
+  void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+                                                       const std::vector<double>              & probability,
+                                                       const std::vector<double>              & trend_position,
+                                                       NRLib::Grid2D<double>                  & sigma_sum) const;
 
   void              makeTimeSimboxes(Simbox          *& timeSimbox,
                                      Simbox          *& timeCutSimbox,
