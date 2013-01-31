@@ -4910,7 +4910,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     bool waveletOk = true;
     std::vector<bool> useRicker = modelSettings_->getUseRickerWavelet(0);
     for(int i=0;i<inputFiles_->getNumberOfSeismicFiles(0);i++) {
-      if(inputFiles_->getWaveletFile(i,0) == "" && useRicker[i] == false)
+      if(inputFiles_->getWaveletFile(0,i) == "" && useRicker[i] == false)
         waveletOk = false;
     }
     if(waveletOk == false) {
