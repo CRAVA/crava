@@ -194,7 +194,7 @@ DistributionsSolidMix::UpdateSample(double                      corr_param,
                                     const Solid               * sample)
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
   const SolidMix * core_sample = dynamic_cast<const SolidMix *>(sample);
 

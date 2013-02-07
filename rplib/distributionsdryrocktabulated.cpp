@@ -240,7 +240,7 @@ DistributionsDryRockTabulated::UpdateSample(double                      corr_par
                                             const DryRock             * sample)
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
   std::vector<double> u1(3);
   std::vector<double> u2(2);

@@ -102,7 +102,7 @@ DistributionsFluidCO2::UpdateSample(double                      corr_param,
                                     const Fluid               * sample)
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
   Fluid * updated_sample = GetSample(u, trend);
 
   return updated_sample;

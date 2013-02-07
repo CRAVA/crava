@@ -1199,10 +1199,10 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //
 //}
 
-void DEMTools::UpdateU(std::vector<double> & u,
-                       double                corr_param,
-                       bool                  param_is_time,
-                       std::vector<double>   alpha)
+void DEMTools::UpdateU(std::vector<double>          & u,
+                       double                         corr_param,
+                       bool                           param_is_time,
+                       const std::vector<double>    & alpha)
 
 {
   std::vector<double> corr(u.size());

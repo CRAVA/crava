@@ -198,7 +198,7 @@ DistributionsDryRockDEM::UpdateSample(double                      corr_param,
                                       const DryRock             * sample)
 {
   std::vector<double> u = sample->GetU();
-  DEMTools::UpdateU(u, corr_param, param_is_time);
+  DEMTools::UpdateU(u, corr_param, param_is_time, alpha_);
 
   assert(typeid(*sample) == typeid(DryRockDEM));
   const DryRockDEM * core_sample = dynamic_cast<const DryRockDEM *>(sample);
