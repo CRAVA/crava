@@ -29,8 +29,8 @@ public:
   Background(FFTGrid                       ** grids,
              const std::vector<WellData *>  & wells,
              FFTGrid                       *& velocity,
-             const Simbox                  * timeSimbox,
-             const Simbox                  * timeBGSimbox,
+             const Simbox                   * timeSimbox,
+             const Simbox                   * timeBGSimbox,
              const ModelSettings            * modelSettings);
 
   Background(FFTGrid                       ** grids,

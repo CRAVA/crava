@@ -32,12 +32,12 @@
 #include "src/gridmapping.h"
 #include "src/io.h"
 
-Background::Background(FFTGrid              ** grids,
-                       const std::vector<WellData *> & wells,
-                       FFTGrid              *& velocity,
-                       const Simbox          * timeSimbox,
-                       const Simbox          * timeBGSimbox,
-                       const ModelSettings   * modelSettings)
+Background::Background(FFTGrid                       ** grids,
+                       const std::vector<WellData *>  & wells,
+                       FFTGrid                       *& velocity,
+                       const Simbox                   * timeSimbox,
+                       const Simbox                   * timeBGSimbox,
+                       const ModelSettings            * modelSettings)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {

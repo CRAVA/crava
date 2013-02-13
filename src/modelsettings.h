@@ -174,7 +174,7 @@ public:
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
-  const std::map<std::string,float>& getPriorFaciesProb(void)             const { return priorFaciesProb_                           ;}
+  const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
@@ -200,10 +200,10 @@ public:
   const std::vector<int>           findSortedVintages(void)             const;
   const std::vector<std::string> & getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
   const std::map<std::string, std::vector<DistributionWithTrendStorage *> > & getReservoirVariable() const { return reservoirVariable_ ;}
-  const std::map<std::string, DistributionsRockStorage *>                   & getRockStorage()       const { return rockStorage_                  ;}
-  const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_               ;}
-  const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_                 ;}
-  const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_                 ;}
+  const std::map<std::string, DistributionsRockStorage *>                   & getRockStorage()       const { return rockStorage_       ;}
+  const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_    ;}
+  const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_      ;}
+  const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_      ;}
   std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}

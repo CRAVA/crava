@@ -1521,11 +1521,11 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
   for(int i=0; i<nHorizons; i++) {
     int place = erosion[i]-1;
     if(place < 0) {
-      errTxt += "The ersoion priorities need to be larger than zero in the multizone background model\n";
+      errTxt += "The erosion priorities need to be larger than zero in the multizone background model\n";
       break;
     }
     else if(place > nHorizons-1) {
-      errTxt += "The ersorion priorities need to be given executive numbers, \n"
+      errTxt += "The erosion priorities need to be given executive numbers, \n"
                 "such that the largest number is equal to the number of surfaces in the multizone background model\n";
       break;
     }
@@ -1533,7 +1533,7 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
       sorted[place] = 1;
     }
     else
-      errTxt += "All horizons need to be given a unique ersosion priority in the multizone background model\n";
+      errTxt += "All horizons need to be given a unique erosion priority in the multizone background model\n";
   }
 
   // Check horizon uncertainty consistency
