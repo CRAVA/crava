@@ -29,7 +29,14 @@ Kriging1D::krigVector(float * data,
   int md;
   locateValidData(data, index, nd, md);
 
-  if (md < nd) {
+  if (md == 0) {
+    // With no data we cannot do any kriging. Use trend vector
+    for (int i = 0 ; i < nd ; i++) {
+      data[i] = trend[i];
+    }
+  }
+  else if (md < nd) {
+    // If md = nd we don't need to do any kriging, hence this test
     subtractTrend(data, trend, index, md);
 
     double ** K;  // Kriging matrix
@@ -81,7 +88,7 @@ Kriging1D::locateValidData(float * data,
   }
   if (count == 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
+    LogKit::LogFormatted(LogKit::Low,"Only undefined values found in data vector.\n");
   }
   md = count;
 

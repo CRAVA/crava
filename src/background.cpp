@@ -1923,7 +1923,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float firstValue = trend[firstNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(firstValue),firstNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(firstValue),firstNonmissing);
       for (int k = 0 ; k < firstNonmissing ; k++) {
         trend[k] = firstValue;
       }
@@ -1933,7 +1933,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float lastValue = trend[lastNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(lastValue),lastNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(lastValue),lastNonmissing);
       for (int k = lastNonmissing + 1 ; k < nz ; k++) {
         trend[k] = lastValue;
       }
