@@ -873,8 +873,8 @@ ModelAVODynamic::processReflectionMatrix(float               **& reflectionMatri
 }
 
 void
-ModelAVODynamic::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
-                                              double          vsvp,
+ModelAVODynamic::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+                                              double                vsvp,
                                               const ModelSettings * modelSettings)
 {
   int      i;
@@ -928,14 +928,15 @@ ModelAVODynamic::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
 }
 
 double ModelAVODynamic::vsvpFromWells(const std::vector<WellData *> & wells,
-                                      int                     nWells)
+                                      int                             nWells)
 {
   int   N      = 0;
   float VsVp   = 0.0f;
 
   for(int i=0 ; i < nWells ; i++) {
-    N    += wells[i]->getNumberOfVsVpSamples();
-    VsVp += wells[i]->getMeanVsVp()*N;
+    int n = wells[i]->getNumberOfVsVpSamples();
+    N    += n;
+    VsVp += wells[i]->getMeanVsVp()*n;
   }
   VsVp /= N;
 
