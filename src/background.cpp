@@ -597,8 +597,9 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   bgRho  ->setAccessMode(FFTGrid::RANDOMACCESS);
 
   // Beta distributed uncertainty on each surface
+  // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
   std::vector<NRLib::Beta> horizon_distributions(nZones+1);
-  for(int zone=0; zone<nZones+1; zone++) {
+  for(int zone=1; zone<nZones; zone++) {
     horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
   }
 
@@ -696,12 +697,17 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
 
   int nZones = static_cast<int>(zone_probability.size());
 
+  std::vector<double> horizon_cdf(nZones+1, 0);
+  horizon_cdf[0] = 1; //The lower surface has cdf 1, whereas the upper surface has cdf 0
+  for(int i=1; i<nZones; i++)
+    horizon_cdf[i] = horizon_distributions[i].Cdf(z[i]);
+
   for(int zone=0; zone<nZones; zone++) {
     //Initialize with probability that we are below top surface for zone
-    double prob = horizon_distributions[zone].Cdf(z[zone]);
+    double prob = horizon_cdf[zone];
 
     //Multiply with probability that we are above base surface for zone
-    prob *= (1-horizon_distributions[zone+1].Cdf(z[zone+1]));
+    prob *= (1-horizon_cdf[zone+1]);
 
     //We may be eroded from above. Must consider the surfaces that
     //1. Are above top in the standard sequence.
@@ -710,8 +716,8 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
     int min_erosion = erosion_priority[zone];
     for(int prev_hor = zone-1; prev_hor >=0; prev_hor--) {
       if(erosion_priority[prev_hor] < min_erosion) {
-        prob *= horizon_distributions[prev_hor].Cdf(z[prev_hor]);
-        min_erosion = erosion_priority[prev_hor]; //Those with higher number stop in this
+        prob        *= horizon_cdf[prev_hor];
+        min_erosion  = erosion_priority[prev_hor]; //Those with higher number stop in this
       }
     }
 
@@ -722,8 +728,8 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
     min_erosion = erosion_priority[zone+1];
     for(int late_hor = zone+2; late_hor < nZones+1; late_hor++) {
       if(erosion_priority[late_hor] < min_erosion) {
-        prob *= (1-horizon_distributions[late_hor].Cdf(z[late_hor]));
-        min_erosion = erosion_priority[late_hor]; //Those with higher number stop in this
+        prob        *= (1-horizon_cdf[late_hor]);
+        min_erosion  = erosion_priority[late_hor]; //Those with higher number stop in this
       }
     }
 

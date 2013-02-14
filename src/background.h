@@ -276,10 +276,10 @@ private:
                            const bool  expTrans,
                            const bool  fileGrid) const;
 
-  void        ComputeZoneProbability(const std::vector<double>       & z,
-                                      const std::vector<NRLib::Beta> & horizon_distributions,
-                                      const std::vector<int>         & erosion_priority,
-                                      std::vector<double>            & zone_probability) const;
+  void        ComputeZoneProbability(const std::vector<double>      & z,
+                                     const std::vector<NRLib::Beta> & horizon_distributions,
+                                     const std::vector<int>         & erosion_priority,
+                                     std::vector<double>            & zone_probability) const;
 
   void         ErodeSurface(Surface       *& surface,
                             const Surface *  priority_surface,
