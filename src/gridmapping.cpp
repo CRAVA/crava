@@ -307,6 +307,7 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDepth();
   std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDepth();
   simbox_->writeTopBotGrids(topSurf, baseSurf, IO::PathToInversionResults(), outputFormat);
+  simbox_->setTopBotName(topSurf, baseSurf, outputFormat);
 
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int status = simbox_->calculateDz(dummyLzLimit,errText);
