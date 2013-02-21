@@ -6,6 +6,7 @@
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
+#include "src/modeltraveltimedynamic.h"
 #include "src/inputfiles.h"
 #include "src/modelgeneral.h"
 #include "src/seismicparametersholder.h"
@@ -122,6 +123,27 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
   delete modelAVOdynamic;
+
+  return(failedLoadingModel);
+}
+
+bool
+doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
+                               const ModelGeneral            * modelGeneral,
+                               const InputFiles              * inputFiles,
+                               const int                     & vintage,
+                               SeismicParametersHolder       & /*seismicParameters*/)
+{
+  ModelTravelTimeDynamic * modelTravelTimeDynamic = NULL;
+
+  modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
+                                                      modelGeneral,
+                                                      inputFiles,
+                                                      vintage);
+
+  bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
+
+  delete modelTravelTimeDynamic;
 
   return(failedLoadingModel);
 }

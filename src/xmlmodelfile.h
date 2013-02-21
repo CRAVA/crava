@@ -45,13 +45,15 @@ private:
   bool   parseWellMoveDataInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parseSurvey(TiXmlNode * node, std::string & errTxt);
-  bool   parseAngleGather(TiXmlNode * node, std::string & errTxt);
-  bool     parseSeismicData(TiXmlNode * node, std::string & errTxt);
-  bool     parseWavelet(TiXmlNode * node, std::string & errTxt);
-  bool       parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
-  bool       parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
-  bool     parseWavelet3D(TiXmlNode * node, std::string & errTxt);
-  bool     parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
+  bool parseAngleGather(TiXmlNode * node, std::string & errTxt);
+  bool parseSeismicData(TiXmlNode * node, std::string & errTxt);
+  bool parseWavelet(TiXmlNode * node, std::string & errTxt);
+  bool parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
+  bool parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool parseWavelet3D(TiXmlNode * node, std::string & errTxt);
+  bool parseTravelTime(TiXmlNode * node, std::string & errTxt);
+  bool parseRMSVelocities(TiXmlNode * node, std::string & errTxt);
+  bool parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
   bool parseVintage(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);

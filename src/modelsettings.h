@@ -38,6 +38,7 @@ public:
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
+  TraceHeaderFormat              * getTravelTimeTraceHeaderFormat(int i)const { return travelTimeTHF_[i]                          ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
@@ -136,6 +137,7 @@ public:
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
   const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
+  float                            getTravelTimeSegyOffset(int i)       const { return travelTimeSegyOffset_[i]                   ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
@@ -220,6 +222,7 @@ public:
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
   void setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
+  void addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void setKrigingParameter(int krigingParameter)          { krigingParameter_         = krigingParameter         ;}
   void setConstBackValue(int i, float constBackValue)     { constBackValue_[i]        = constBackValue           ;}
   void setUseAIBackground(bool useAIBackground)           { useAIBackground_          = useAIBackground          ;}
@@ -329,6 +332,7 @@ public:
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
+  void addTravelTimeSegyOffset(float offset)              { travelTimeSegyOffset_.push_back(offset)              ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
@@ -389,6 +393,8 @@ public:
   void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
   void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}
 
+  void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
+
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
 
   void clearTimeLapse(void)                               { angle_.clear();
@@ -425,7 +431,6 @@ public:
                                                             timeLapseEstimateSNRatio_.push_back(estimateSNRatio_);
                                                             timeLapseSNRatio_.push_back(SNRatio_);
                                                             timeLapseUseLocalNoise_.push_back(useLocalNoise_);}
-
 
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
   void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
@@ -469,6 +474,8 @@ private:
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
+  std::vector<TraceHeaderFormat *>  travelTimeTHF_;              // traceheader for travel time data, time lapse vector
+  std::vector<float>                travelTimeSegyOffset_;       // Local segy offset for travel time data, one for each time lapse
 
   std::vector<int>                  seismicType_;                ///< PP- or PS- seismic
   std::vector<float>                angle_;                      ///< Angles

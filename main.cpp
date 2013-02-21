@@ -222,6 +222,7 @@ int main(int argc, char** argv)
       modelGeneral->getTimeLine()->ReSet();
       modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
       switch(eventType) {
+
       case TimeLine::AVO :
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
@@ -232,15 +233,23 @@ int main(int argc, char** argv)
         // In case of 3D inversion
         else{
           failedFirst = doFirstAVOInversion(modelSettings,
-                                          modelGeneral,
-                                          modelAVOstatic,
-                                          seismicParameters,
-                                          inputFiles,
-                                          eventIndex,
-                                          timeBGSimbox);
+                                            modelGeneral,
+                                            modelAVOstatic,
+                                            seismicParameters,
+                                            inputFiles,
+                                            eventIndex,
+                                            timeBGSimbox);
         }
         break;
+
       case TimeLine::TRAVEL_TIME :
+        failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
+                                                     modelGeneral,
+                                                     inputFiles,
+                                                     eventIndex,
+                                                     seismicParameters);
+        break;
+
       case TimeLine::GRAVITY :
         errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
         break;
@@ -264,6 +273,12 @@ int main(int argc, char** argv)
           failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
           break;
         case TimeLine::TRAVEL_TIME :
+          failed = doTimeLapseTravelTimeInversion(modelSettings,
+                                                  modelGeneral,
+                                                  inputFiles,
+                                                  eventIndex,
+                                                  seismicParameters);
+          break;
         case TimeLine::GRAVITY :
           failed = true;
           break;

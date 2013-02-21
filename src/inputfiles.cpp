@@ -35,7 +35,8 @@ InputFiles::addInputPathAndCheckFiles()
 {
   unsigned int i;
   int          t;
-  int          nTimeLapse = static_cast<int>(timeLapseSeismicFiles_.size());
+  int          nTimeLapse           = static_cast<int>(timeLapseSeismicFiles_.size());
+  int          nTimeLapseTravelTime = static_cast<int>(rmsVelocities_.size());
 
   std::string errTxt = addPathAndCheck(seedFile_);
   for(i=0;i<wellFiles_.size();i++)
@@ -61,6 +62,14 @@ InputFiles::addInputPathAndCheckFiles()
       errTxt += addPathAndCheck(timeLapseWaveletScaleFiles_[t][i]);
     for(i=0;i<timeLapseLocalNoiseFiles_[t].size();i++)
       errTxt += addPathAndCheck(timeLapseLocalNoiseFiles_[t][i]);
+  }
+  for(i=0; i<travelTimeHorizons_.size(); i++)
+    errTxt += addPathAndCheck(travelTimeHorizons_[i]);
+  for(i=0; i<rmsVelocities_.size(); i++)
+    errTxt += addPathAndCheck(rmsVelocities_[i]);
+  for(t=0; t<nTimeLapseTravelTime; t++) {
+    for(i=0; i<timeLapseTravelTimeHorizons_[t].size(); i++)
+      errTxt += addPathAndCheck(timeLapseTravelTimeHorizons_[t][i]);
   }
   for(i=0;i<waveletFilterFiles_.size(); i++)
     errTxt += addPathAndCheck(waveletFilterFiles_[i]);

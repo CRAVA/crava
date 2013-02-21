@@ -776,6 +776,12 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
 \elist
 
+\subparagraph{\hbracket{rms-velocities}}\newkw{rms-velocities}
+ \slist
+   \item \Description Original RMS velocity travel time data
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
 
 \subsubsection{\hbracket{well-output}}\newkw{well-output}
  \slist
@@ -1197,7 +1203,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description Global start time for segy cubes. This is used if no individual time is given for a segy-cube.
    \item \Argument Value
-   \item \Default
+   \item \Default 0
  \elist
 
 \subsection{\hbracket{angle-gather}\necessary}\newkw{angle-gather}
@@ -1231,7 +1237,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \paragraph{\hbracket{start-time}}\newkw{start-time}
  \slist
-   \item \Description Value giving the start time for this segy file.
+   \item \Description Value giving the start time for this segy file. If not given, the start time is taken from \kw{segy-start-time}.
    \item \Argument Value
    \item \Default
  \elist
@@ -1465,6 +1471,97 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description File name for standard surface file giving the base of the time interval used for wavelet estimation.
    \item \Argument File name
    \item \Default
+ \elist
+
+\subsection{\hbracket{travel-time}}\newkw{travel-time}
+ \slist
+   \item \Description Travel time data
+   \item \Argument The standard deviation and the minimum distance
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+ \slist
+   \item \Description Elements controlling the RMS velocities $U^2$
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{rms-velocities-file-name}
+ \slist
+   \item \Description File name for the RMS velocities
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{segy-start-time}}\rnewkw{segy-start-time}{rms-velocities-segy-start-time}
+ \slist
+   \item \Description Start time for the rms velocities. If not given, the start time is taken from \kw{segy-start-time}.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{rms-velocities-segy-format}
+ \slist
+   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma. See Table \ref{tab:segyformats}.
+   \item \Argument Elements containing information about the segy format
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{standard-format}}\rnewkw{standard-format}{rms-velocities-standard-format}
+ \slist
+   \item \Description Giving the starting format for modifications.
+   \item \Argument 'seisworks', 'iesx', 'charisma' or 'SIP'
+   \item \Default 'seisworks'
+ \elist
+
+\subparagraph{\hbracket{location-x}}\rnewkw{location-x}{rms-velocities-location-x}
+ \slist
+   \item \Description The byte location for the x-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-y}}\rnewkw{location-y}{rms-velocities-location-y}
+ \slist
+   \item \Description The byte location for the y-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-il}}\rnewkw{location-il}{rms-velocities-location-il}
+ \slist
+   \item \Description The byte location for the inline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-xl}}\rnewkw{location-xl}{rms-velocities-location-xl}
+ \slist
+   \item \Description The byte location for the crossline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{rms-velocities-bypass-coordinate-scaling}
+ \slist
+   \item \Description Indicates whether coordinate scaling information should be used.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-scaling-coefficient}}\rnewkw{location-scaling-coefficient}{rms-velocities-location-scaling-coefficient}
+ \slist
+   \item \Description
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{horizon-file}}\newkw{horizon-file}
+ \slist
+   \item \Description Repeated command, one for each horizon file. File name of the horizon file corresponding a the zone log of a well
+   \item \Argument File name
+   \item \Default 
  \elist
 
 \subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}

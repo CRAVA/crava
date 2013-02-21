@@ -31,6 +31,12 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              SeismicParametersHolder & seismicParameters,
                              int                       sortedVintage);
 
+bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
+                                    const ModelGeneral            * modelGeneral,
+                                    const InputFiles              * inputFiles,
+                                    const int                     & vintage,
+                                    SeismicParametersHolder       & seismicParameters);
+
 // Possibly misplaced function. Open for better suggestion of where to place the function!
 bool allocate4DGrids(SeismicParametersHolder   & seismicParameters,
                      ModelSettings             * modelSettings,

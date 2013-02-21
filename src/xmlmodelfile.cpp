@@ -618,6 +618,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-start-time");
   legalCommands.push_back("angle-gather");
   legalCommands.push_back("wavelet-estimation-interval");
+  legalCommands.push_back("travel-time");
   legalCommands.push_back("time-gradient-settings");
   legalCommands.push_back("vintage");
 
@@ -648,6 +649,15 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addDefaultWaveletEstIntFileTop();
     inputFiles_->addDefaultWaveletEstIntFileBase();
   }
+
+  inputFiles_->clearTimeLapseTravelTime();
+  if(parseTravelTime(root, errTxt) == false) {
+    inputFiles_->addTravelTimeHorizon("");
+    inputFiles_->addRmsVelocity("");
+    modelSettings_->addTravelTimeTraceHeaderFormat(NULL);
+    modelSettings_->addDefaultTravelTimeSegyOffset();
+  }
+  inputFiles_->addTimeLapseTravelTime();
 
   if(parseTimeGradientSettings(root,errTxt) == false)
     modelSettings_->addDefaultTimeGradientSettings();
@@ -1078,6 +1088,66 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+
+bool
+XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("travel-time");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("horizon-file");
+
+  if(parseRMSVelocities(root, errTxt) == false)
+    errTxt += "<travel-time><rms-velocities> needs to be given\n";
+
+  std::string horizon;
+  int n_horizons = 0;
+  while(parseFileName(root, "horizon-file", horizon, errTxt, true) == true) {
+    inputFiles_->addTravelTimeHorizon(horizon);
+    n_horizons++;
+  }
+  if(n_horizons == 0)
+    inputFiles_->addTravelTimeHorizon("");
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("segy-start-time");
+  legalCommands.push_back("segy-format");
+
+  std::string rms_file;
+  if(parseFileName(root, "file-name", rms_file, errTxt) == true)
+    inputFiles_->addRmsVelocity(rms_file);
+  else
+    errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
+
+  float start_time;
+  if(parseValue(root, "segy-start-time", start_time, errTxt) == true)
+    modelSettings_->addTravelTimeSegyOffset(start_time);
+  else
+    modelSettings_->addDefaultTravelTimeSegyOffset();
+
+  TraceHeaderFormat * thf = NULL;
+  parseTraceHeaderFormat(root, "segy-format", thf, errTxt);
+  modelSettings_->addTravelTimeTraceHeaderFormat(thf);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
 bool
 XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
 {
@@ -4111,6 +4181,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
+  legalCommands.push_back("rms-velocities");
 
   bool facies           = true;
   bool faciesUndef      = false;
@@ -4149,7 +4220,8 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
   if(parseBool(root, "seismic-quality-grid", value, errTxt) == true && value == true)
     paramFlag += IO::SEISMIC_QUALITY_GRID;
-
+  if(parseBool(root, "rms-velocities", value, errTxt ) == true && value == true)
+    paramFlag += IO::RMS_VELOCITIES;
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);

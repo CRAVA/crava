@@ -51,22 +51,22 @@
 #include "nrlib/volume/volume.hpp"
 
 
-ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
-                                 const InputFiles     * inputFiles,
-                                 std::vector<bool>      failedGeneralDetails,
-                                 std::vector<bool>      failedStaticDetails,
-                                 const Simbox         * timeSimbox,
-                                 const Simbox         * timeBGSimbox,
-                                 const Surface        * correlationDirection,
-                                 RandomGen            * /*randomGen*/,
-                                 GridMapping          * timeDepthMapping,
-                                 const GridMapping    * timeCutMapping,
+ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
+                                 const InputFiles             * inputFiles,
+                                 std::vector<bool>              failedGeneralDetails,
+                                 std::vector<bool>              failedStaticDetails,
+                                 const Simbox                 * timeSimbox,
+                                 const Simbox                 * timeBGSimbox,
+                                 const Surface                * correlationDirection,
+                                 RandomGen                    * /*randomGen*/,
+                                 GridMapping                  * timeDepthMapping,
+                                 const GridMapping            * timeCutMapping,
                                  const std::vector<Surface *> & waveletEstimInterval,
                                  const std::vector<Surface *> & /*wellMoveInterval*/,
                                  const std::vector<Surface *> & /*faciesEstimInterval*/,
-                                 ModelAVOStatic       * modelAVOstatic,
-                                 ModelGeneral         * modelGeneral,
-                                 int                    t)
+                                 ModelAVOStatic               * modelAVOstatic,
+                                 ModelGeneral                 * modelGeneral,
+                                 int                          t)
 {
   background_             = NULL;
   correlations_           = NULL;
@@ -476,14 +476,14 @@ ModelAVODynamic::readMatrix(const std::string & fileName, int n1, int n2,
 }
 
 void
-ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
-                                const Simbox     * timeSimbox,
-                                const GridMapping * timeDepthMapping,
-                                const GridMapping * timeCutMapping,
-                                const ModelSettings * modelSettings,
-                                const InputFiles * inputFiles,
-                                std::string      & errText,
-                                bool             & failed)
+ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
+                                const Simbox          * timeSimbox,
+                                const GridMapping     * timeDepthMapping,
+                                const GridMapping     * timeCutMapping,
+                                const ModelSettings   * modelSettings,
+                                const InputFiles      * inputFiles,
+                                std::string           & errText,
+                                bool                  & failed)
 {
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

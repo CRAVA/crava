@@ -22,6 +22,8 @@ public:
   const std::string              & getShiftFile(int i, int j)    const { return timeLapseWaveletShiftFiles_[i][j] ;}
   const std::string              & getScaleFile(int i, int j)    const { return timeLapseWaveletScaleFiles_[i][j] ;}
   const std::string              & getLocalNoiseFile(int i, int j)const{ return timeLapseLocalNoiseFiles_[i][j]   ;}
+  const std::vector<std::string> & getTravelTimeHorizons(int i)  const { return timeLapseTravelTimeHorizons_[i]   ;}
+  const std::string              & getRmsVelocities(int i)       const { return rmsVelocities_[i]                 ;}
   const std::string              & getWaveletEstIntFileTop(int i)const { return waveletEstIntFileTop_[i]          ;}
   const std::string              & getWaveletEstIntFileBase(int i)const{ return waveletEstIntFileBase_[i]         ;}
   const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFiles_[i];}
@@ -51,6 +53,8 @@ public:
   void setSeedFile(const std::string & seedFile)                          { seedFile_             = seedFile          ;}
   void addWellFile(const std::string & wellFile)                          { wellFiles_.push_back(wellFile)            ;}
   void addSeismicFile(const std::string & seismicFile)                    { seismicFiles_.push_back(seismicFile)      ;}
+  void addRmsVelocity(const std::string & rmsVelocityFile)                { rmsVelocities_.push_back(rmsVelocityFile) ;}
+  void addTravelTimeHorizon(const std::string & horizon)                  { travelTimeHorizons_.push_back(horizon)    ;}
   void addWaveletFile(const std::string & waveletFile)                    { waveletFiles_.push_back(waveletFile)      ;}
   void addShiftFile(const std::string & shiftFile)                        { waveletShiftFiles_.push_back(shiftFile)   ;}
   void addScaleFile(const std::string & scaleFile)                        { waveletScaleFiles_.push_back(scaleFile)   ;}
@@ -93,12 +97,18 @@ public:
                                                                            timeLapseWaveletFiles_.push_back(waveletFiles_);
                                                                            timeLapseLocalNoiseFiles_.push_back(localNoiseFiles_)   ;}
 
+  void clearTimeLapseTravelTime()                                        { travelTimeHorizons_.clear()                             ;}
+
+  void addTimeLapseTravelTime()                                          { timeLapseTravelTimeHorizons_.push_back(travelTimeHorizons_);}
+
 private:
   std::string addPathAndCheck(std::string & fileName, const bool possiblyNumber = false);
 
   std::string                seedFile_;              ///< File specifying the seed
   std::vector<std::string>   wellFiles_;             ///< File names: wells
   std::vector<std::string>   seismicFiles_;          ///< File names: seismic data
+  std::vector<std::string>   rmsVelocities_;         ///< File names: RMS velocities U^2, vector over time lapses
+  std::vector<std::string>   travelTimeHorizons_;    ///< File names: Horizons used in travel time inversion
   std::vector<std::string>   waveletFiles_;          ///< File names: wavelets
   std::vector<std::string>   waveletShiftFiles_;     ///< File names: wavelets
   std::vector<std::string>   waveletScaleFiles_;     ///< File names: wavelets
@@ -132,6 +142,8 @@ private:
   std::vector<std::vector<std::string> > timeLapseWaveletFiles_;      ///< File names: wavelets for each time lapse and angle gather
   std::vector<std::vector<std::string> > timeLapseSeismicFiles_;      ///< File names: seismic data for each time lapse and angle gather
   std::vector<std::vector<std::string> > timeLapseLocalNoiseFiles_;   ///< File names: local noise for each time lapse and angle gather
+
+  std::vector<std::vector<std::string> > timeLapseTravelTimeHorizons_;///< File names: Horizons for each travel time time lapse
 };
 
 #endif

@@ -209,6 +209,14 @@ ModelSettings::~ModelSettings(void)
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
 
+  for(size_t i=0; i<timeLapseLocalTHF_.size(); i++) {
+    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++)
+      delete timeLapseLocalTHF_[i][j];
+  }
+
+  for(size_t i=0; i<travelTimeTHF_.size(); i++)
+    delete travelTimeTHF_[i];
+
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
     delete storage;
@@ -376,6 +384,12 @@ void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
   localTHF_.push_back(traceHeaderFormat);
+}
+
+void
+ModelSettings::addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
+{
+  travelTimeTHF_.push_back(traceHeaderFormat);
 }
 
 void
