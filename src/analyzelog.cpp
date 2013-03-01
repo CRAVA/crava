@@ -54,8 +54,8 @@ Analyzelog::~Analyzelog(void)
 //
 void
 Analyzelog::estimate(const ModelSettings * modelSettings,
-                     Background    * background,
-                     std::string   & errTxt)
+                     Background          * background,
+                     std::string         & errTxt)
 {
   float ** lnDataAlpha = new float*[nwells_];
   float ** lnDataBeta  = new float*[nwells_];

@@ -27,16 +27,19 @@ class GridMapping;
 class ModelSettings;
 class Corr;
 class SpatialWellFilter;
+class SeismicParametersHolder;
 
 
 class Crava
 {
 public:
-  Crava(ModelSettings     * modelSettings,
-        ModelGeneral      * modelGeneral,
-        ModelAVOStatic    * modelAVOstatic,
-        ModelAVODynamic   * modelAVOdynamic,
-        SpatialWellFilter * spatwellfilter);
+  Crava(ModelSettings           * modelSettings,
+        ModelGeneral            * modelGeneral,
+        ModelAVOStatic          * modelAVOstatic,
+        ModelAVODynamic         * modelAVOdynamic,
+        SpatialWellFilter       * spatwellfilter,
+        SeismicParametersHolder & seismicParameters);
+
   ~Crava();
 
   Corr             * getCorrelations()        const { return correlations_;}

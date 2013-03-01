@@ -5027,7 +5027,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
     errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";
   }
-  if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false)
+  if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false && modelSettings_->getDo4DInversion() == false)
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
   if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";

@@ -31,22 +31,23 @@ class SeismicParametersHolder;
 class ModelAVODynamic
 {
 public:
-  ModelAVODynamic(ModelSettings       *& modelSettings,
-                  const InputFiles     * inputFiles,
-                  std::vector<bool>      failedGeneralDetails,
-                  std::vector<bool>      failedStaticDetails,
-                  const Simbox         * timeSimbox,
-                  const Simbox         * timeBGSimbox,
-                  const Surface        * correlationDirection,
-                  RandomGen            * /*randomGen*/,
-                  GridMapping          * timeDepthMapping,
-                  const GridMapping    * timeCutMapping,
+  ModelAVODynamic(ModelSettings               *& modelSettings,
+                  const InputFiles             * inputFiles,
+                  std::vector<bool>              failedGeneralDetails,
+                  std::vector<bool>              failedStaticDetails,
+                  const Simbox                 * timeSimbox,
+                  const Simbox                 * timeBGSimbox,
+                  const Surface                * correlationDirection,
+                  RandomGen                    * /*randomGen*/,
+                  GridMapping                  * timeDepthMapping,
+                  const GridMapping            * timeCutMapping,
                   const std::vector<Surface *> & waveletEstimInterval,
                   const std::vector<Surface *> & /*wellMoveInterval*/,
                   const std::vector<Surface *> & /*faciesEstimInterval*/,
-                  ModelAVOStatic       * modelAVOstatic,
-                  ModelGeneral         * modelGeneral,
-                  int                    t);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
+                  ModelAVOStatic               * modelAVOstatic,
+                  ModelGeneral                 * modelGeneral,
+                  int                            t,
+                  SeismicParametersHolder      & seismicParameters);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
 
   ModelAVODynamic(ModelSettings          *& modelSettings,
                   const InputFiles        * inputFiles,
@@ -61,9 +62,6 @@ public:
 
   ~ModelAVODynamic();
 
-  FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}
-  FFTGrid                     * getBackBeta()              const { return background_->getBeta()  ;}
-  FFTGrid                     * getBackRho()               const { return background_->getRho()   ;}
   Corr                        * getCorrelations()          const { return correlations_           ;}
   FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet                    ** getWavelets()              const { return wavelet_                ;}
@@ -83,7 +81,7 @@ public:
   int                           getNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
 
 
-  void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
+  void                          releaseGrids();                        // Cuts connection to SeisCube_
 
   static float  ** readMatrix(const std::string & fileName,
                               int                 n1,
@@ -91,6 +89,18 @@ public:
                               const std::string & readReason,
                               std::string       & errText);
 
+  static void             processBackground(Background                    *& background,
+                                            const std::vector<WellData *>  & wells,
+                                            const Simbox                   * timeSimbox,
+                                            const Simbox                   * timeBGSimbox,
+                                            GridMapping                   *& timeDepthMapping,
+                                            const GridMapping              * timeCutMapping,
+                                            const ModelSettings            * modelSettings,
+                                            ModelGeneral                   * modelGeneral,
+                                            const InputFiles               * inputFile,
+                                            const int                      & thisTimeLapse,
+                                            std::string                    & errText,
+                                            bool                           & failed);
 private:
   void             processSeismic(FFTGrid         **& seisCube,
                                   const Simbox      * timeSimbox,
@@ -101,17 +111,6 @@ private:
                                   std::string       & errText,
                                   bool              & failed);
 
-  void             processBackground(Background                    *& background,
-                                     const std::vector<WellData *>  & wells,
-                                     const Simbox                   * timeSimbox,
-                                     const Simbox                   * timeBGSimbox,
-                                     GridMapping                   *& timeDepthMapping,
-                                     const GridMapping              * timeCutMapping,
-                                     const ModelSettings            * modelSettings,
-                                     ModelGeneral                   * modelGeneral,
-                                     const InputFiles               * inputFile,
-                                     std::string                    & errText,
-                                     bool                           & failed);
 
   void             processReflectionMatrix(float               **& reflectionMatrix,
                                            const Background      * background,
@@ -199,7 +198,6 @@ private:
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
   int                       numberOfAngles_;
-  Background              * background_;            ///< Holds the background model.
   Corr                    * correlations_;          ///<
   FFTGrid                ** seisCube_;              ///< Seismic data cubes
   Wavelet                ** wavelet_;               ///< Wavelet for angle

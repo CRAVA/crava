@@ -21,6 +21,10 @@ public:
                             FFTGrid  * muRho,
                             Corr     * correlations);
 
+  void setBackgroundParameters(FFTGrid  * muAlpha,
+                               FFTGrid  * muBeta,
+                               FFTGrid  * muRho);
+
   void allocateGrids(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
 
   FFTGrid * GetMuAlpha()        { return muAlpha_        ;}

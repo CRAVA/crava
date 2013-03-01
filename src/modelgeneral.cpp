@@ -193,6 +193,9 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
         if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
+
+          setFaciesNamesFromRockPhysics();
+
           process4DBackground(modelSettings, inputFiles, errText, failedBackground);
           timeEvolution_ = TimeEvolution(1000, *timeLine_, rock_distributions_.begin()->second);
         }
@@ -3148,6 +3151,8 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
                                         State4D                                          & state4d,
                                         std::string                                      & /*errTxt*/)
 {
+  LogKit::WriteHeader("Prior Expectations / Background Model");
+
   // Allocates the static mu grid: 3 grids.
 
   // Static grids for 4D inversion, filled with 3D rock physics background
@@ -3164,16 +3169,16 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
   const int nzPad = modelSettings.getNZpad();
 
   // Creating grids for mu static
-  vp_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vs_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  rho_stat = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  rho_stat = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
 
   vp_stat ->createRealGrid();
   vs_stat ->createRealGrid();
   rho_stat->createRealGrid();
 
   // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat);
+  generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat);
 
   vp_stat ->setType(FFTGrid::PARAMETER);
   vs_stat ->setType(FFTGrid::PARAMETER);
@@ -4121,7 +4126,7 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
                                      std::string                  & errTxt,
                                      const InputFiles             * inputFiles)
 {
-  if (modelSettings->getEstimateFaciesProb())
+  if (modelSettings->getEstimateFaciesProb() || modelSettings->getDo4DInversion())
   {
     LogKit::WriteHeader("Prior Facies Probabilities");
 

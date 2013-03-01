@@ -66,9 +66,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                                  const std::vector<Surface *> & /*faciesEstimInterval*/,
                                  ModelAVOStatic               * modelAVOstatic,
                                  ModelGeneral                 * modelGeneral,
-                                 int                          t)
+                                 int                            t,
+                                 SeismicParametersHolder      & seismicParameters)
 {
-  background_             = NULL;
   correlations_           = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
@@ -97,6 +97,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
 
   bool failedLoadingModel = false;
 
+  Background * background = NULL;
+
   std::string errText("");
 
   if(!failedSimbox)
@@ -106,7 +108,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
     //
     if (modelSettings->getForwardModeling() == true)
     {
-      processBackground(background_,
+      processBackground(background,
                         modelGeneral->getWells(),
                         timeSimbox,
                         timeBGSimbox,
@@ -115,12 +117,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                         modelSettings,
                         modelGeneral,
                         inputFiles,
+                        thisTimeLapse_,
                         errText,
                         failedBackground);
 
       if (!failedBackground)
       {
-        processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
+        processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                 inputFiles, errText, failedReflMat);
         if (!failedReflMat)
         {
@@ -147,7 +150,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getOptimizeWellLocation() == true)
           {
-            processBackground(background_,
+            processBackground(background,
                               modelGeneral->getWells(),
                               timeSimbox,
                               timeBGSimbox,
@@ -156,6 +159,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                               modelSettings,
                               modelGeneral,
                               inputFiles,
+                              thisTimeLapse_,
                               errText,
                               failedBackground);
 
@@ -165,7 +169,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
-            processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
+            processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
           }
           else if(estimationMode == true &&
@@ -173,7 +177,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                   modelSettings->getEstimateBackground() == false &&
                   modelSettings->getEstimateCorrelations() == false)
           {
-            processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
+            processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
@@ -203,7 +207,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
           // locations need to be estimated before the background model is processed.
           //
         {
-          processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
+          processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                     inputFiles, errText, failedReflMat);
           if (failedReflMat == false && failedExtraSurf == false)
           {
@@ -220,7 +224,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getEstimateWaveletNoise() == true)
           {
-            processBackground(background_,
+            processBackground(background,
                               modelGeneral->getWells(),
                               timeSimbox,
                               timeBGSimbox,
@@ -229,6 +233,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                               modelSettings,
                               modelGeneral,
                               inputFiles,
+                              thisTimeLapse_,
                               errText,
                               failedBackground);
 
@@ -241,7 +246,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
            (estimationMode == false || modelSettings->getEstimateCorrelations() == true))
         {
           modelGeneral->processPriorCorrelations(correlations_,
-                                                 background_,
+                                                 background,
                                                  modelGeneral->getWells(),
                                                  timeSimbox,
                                                  modelSettings,
@@ -277,6 +282,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
       }
     }
   }
+
+  if(failedBackground == false) {
+    seismicParameters.setBackgroundParameters(background->getAlpha(), background->getBeta(), background->getRho());
+    background->releaseGrids();
+    delete background;
+  }
+
   failedLoadingModel = failedSeismic    || failedPriorCorr  ||  failedReflMat   ||
                        failedBackground || failedWavelet;
 
@@ -305,7 +317,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  const GridMapping       * timeCutMapping,
                                  int                       t)
 { //Time lapse constructor
-  background_             = NULL;
   correlations_           = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
@@ -326,6 +337,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   bool failedPriorCorr    = false;
   bool failedLoadingModel = false;
 
+  Background * background = NULL;
+
   std::string errText("");
 
   bool estimationMode = modelSettings->getEstimationMode();
@@ -336,10 +349,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     backModel[1] = seismicParameters.GetMuBeta();
     backModel[2] = seismicParameters.GetMuRho();
 
-    background_ = new Background(backModel);
+    background = new Background(backModel);
   }
   if(estimationMode == false || modelSettings->getEstimateWaveletNoise() ){
-    processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
+    processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                               inputFiles, errText, failedReflMat);
   }
 
@@ -365,6 +378,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
   if(estimationMode)
     modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
+
+  if(background != NULL) {
+    // New background model has not been made, and background is owned by seismicParameters
+    background->releaseGrids();
+    delete background;
+  }
 
   failedLoadingModel = failedSeismic || failedPriorCorr || failedReflMat || failedWavelet;
 
@@ -415,9 +434,6 @@ ModelAVODynamic::~ModelAVODynamic(void)
 void
 ModelAVODynamic::releaseGrids(void)
 {
-  background_->releaseGrids();
-  delete background_;
-  background_ = NULL;
   seisCube_ = NULL;
 }
 
@@ -597,17 +613,18 @@ ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
 
 
 void
-ModelAVODynamic::processBackground(Background           *& background,
-                                   const std::vector<WellData *> & wells,
-                                   const Simbox          * timeSimbox,
-                                   const Simbox          * timeBGSimbox,
-                                   GridMapping          *& timeDepthMapping,
-                                   const GridMapping    * timeCutMapping,
-                                   const ModelSettings   * modelSettings,
-                                   ModelGeneral          * modelGeneral,
-                                   const InputFiles      * inputFiles,
-                                   std::string           & errText,
-                                   bool                  & failed)
+ModelAVODynamic::processBackground(Background                    *& background,
+                                   const std::vector<WellData *>  & wells,
+                                   const Simbox                   * timeSimbox,
+                                   const Simbox                   * timeBGSimbox,
+                                   GridMapping                   *& timeDepthMapping,
+                                   const GridMapping              * timeCutMapping,
+                                   const ModelSettings            * modelSettings,
+                                   ModelGeneral                   * modelGeneral,
+                                   const InputFiles               * inputFiles,
+                                   const int                      & thisTimeLapse,
+                                   std::string                    & errText,
+                                   bool                           & failed)
 {
   if (modelSettings->getForwardModeling())
     LogKit::WriteHeader("Earth Model");
@@ -738,7 +755,7 @@ ModelAVODynamic::processBackground(Background           *& background,
         {
           const SegyGeometry      * dummy1 = NULL;
           const TraceHeaderFormat * dummy2 = NULL;
-          const float               offset = modelSettings->getSegyOffset(thisTimeLapse_);
+          const float               offset = modelSettings->getSegyOffset(thisTimeLapse);
           std::string errorText("");
           ModelGeneral::readGridFromFile(backFile,
                                          parName[i],

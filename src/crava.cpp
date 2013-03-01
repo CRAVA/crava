@@ -47,11 +47,12 @@
 #include <time.h>
 #include <string>
 
-Crava::Crava(ModelSettings     * modelSettings,
-             ModelGeneral      * modelGeneral,
-             ModelAVOStatic    * modelAVOstatic,
-             ModelAVODynamic   * modelAVOdynamic,
-             SpatialWellFilter * spatwellfilter)
+Crava::Crava(ModelSettings           * modelSettings,
+             ModelGeneral            * modelGeneral,
+             ModelAVOStatic          * modelAVOstatic,
+             ModelAVODynamic         * modelAVOdynamic,
+             SpatialWellFilter       * spatwellfilter,
+             SeismicParametersHolder & seismicParameters)
 {
 
 
@@ -71,12 +72,12 @@ Crava::Crava(ModelSettings     * modelSettings,
   modelAVOstatic_    = modelAVOstatic;
   modelAVOdynamic_   = modelAVOdynamic;
 
-  nx_                = modelAVOdynamic_->getBackAlpha()->getNx();
-  ny_                = modelAVOdynamic_->getBackAlpha()->getNy();
-  nz_                = modelAVOdynamic_->getBackAlpha()->getNz();
-  nxp_               = modelAVOdynamic_->getBackAlpha()->getNxp();
-  nyp_               = modelAVOdynamic_->getBackAlpha()->getNyp();
-  nzp_               = modelAVOdynamic_->getBackAlpha()->getNzp();
+  nx_                = seismicParameters.GetMuAlpha()->getNx();
+  ny_                = seismicParameters.GetMuAlpha()->getNy();
+  nz_                = seismicParameters.GetMuAlpha()->getNz();
+  nxp_               = seismicParameters.GetMuAlpha()->getNxp();
+  nyp_               = seismicParameters.GetMuAlpha()->getNyp();
+  nzp_               = seismicParameters.GetMuAlpha()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
@@ -91,9 +92,9 @@ Crava::Crava(ModelSettings     * modelSettings,
   nSim_              = modelSettings_->getNumberOfSimulations();
   wells_             = modelGeneral_->getWells();
   simbox_            = modelGeneral_->getTimeSimbox();
-  meanAlpha_         = modelAVOdynamic_->getBackAlpha();
-  meanBeta_          = modelAVOdynamic_->getBackBeta();
-  meanRho_           = modelAVOdynamic_->getBackRho();
+  meanAlpha_         = seismicParameters.GetMuAlpha();
+  meanBeta_          = seismicParameters.GetMuBeta();
+  meanRho_           = seismicParameters.GetMuRho();
   correlations_      = modelAVOdynamic_->getCorrelations();
   random_            = modelGeneral_->getRandomGen();
   seisWavelet_       = modelAVOdynamic_->getWavelets();

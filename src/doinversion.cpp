@@ -59,7 +59,8 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
                                         modelAVOstatic->getFaciesEstimInterval(),
                                         modelAVOstatic,
                                         modelGeneral,
-                                        vintage);
+                                        vintage,
+                                        seismicParameters);
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
@@ -71,12 +72,12 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
     if(!modelSettings->getForwardModeling()){
       if (modelSettings->getDoInversion()){
         spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
-        crava          = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
+        crava          = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
         seismicParameters.setSeismicParameters(crava->getPostAlpha(), crava->getPostBeta(), crava->getPostRho(), crava->getCorrelations());
       }
     }
     else
-      crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
+      crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
 
     delete crava;
     delete spatwellfilter;
@@ -116,7 +117,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
     Crava             * crava          = NULL;
     SpatialWellFilter * spatwellfilter = NULL;
 
-    crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
+    crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
 
     delete crava;
   }
@@ -148,8 +149,8 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
   return(failedLoadingModel);
 }
 
-bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeSimbox){
-
+bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeSimbox)
+{
   // Parameters for generating new FFTGrids
   const int nx    = timeSimbox->getnx();
   const int ny    = timeSimbox->getny();

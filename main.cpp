@@ -226,8 +226,10 @@ int main(int argc, char** argv)
       case TimeLine::AVO :
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
-          bool failedAllocating = 0;
-          failedAllocating      = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, modelGeneral->getTimeSimbox());
+          bool failedAllocating = false;
+          if(seismicParameters.GetMuAlpha() == NULL)
+            failedAllocating = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, modelGeneral->getTimeSimbox());
+
           failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
         }
         // In case of 3D inversion
@@ -261,8 +263,7 @@ int main(int argc, char** argv)
       if(failedFirst == true || errTxt != "")
         return(1);
 
-      if(timeBGSimbox != NULL)
-        delete timeBGSimbox;
+      delete timeBGSimbox;
 
       int time;
       while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {

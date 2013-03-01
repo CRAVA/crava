@@ -59,6 +59,16 @@ SeismicParametersHolder::setSeismicParameters(FFTGrid  * muAlpha,
 }
 
 void
+SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muAlpha,
+                                                 FFTGrid  * muBeta,
+                                                 FFTGrid  * muRho)
+{
+  muAlpha_   = muAlpha;
+  muBeta_    = muBeta;
+  muRho_     = muRho;
+}
+
+void
 SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
 {
   muAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
