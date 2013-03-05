@@ -6692,6 +6692,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\rplib\distributionsdryrockwalton.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\dryrockdem.cpp"
 						>
 					</File>
@@ -6701,6 +6705,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\dryrocktabulatedmodulus.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\dryrockwalton.cpp"
 						>
 					</File>
 				</Filter>
@@ -7749,6 +7757,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\rplib\distributionsdryrockwalton.h"
+						>
+					</File>
+					<File
 						RelativePath=".\rplib\dryrock.h"
 						>
 					</File>
@@ -7762,6 +7774,10 @@
 					</File>
 					<File
 						RelativePath=".\rplib\dryrocktabulatedmodulus.h"
+						>
+					</File>
+					<File
+						RelativePath=".\rplib\dryrockwalton.h"
 						>
 					</File>
 				</Filter>

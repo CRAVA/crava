@@ -43,10 +43,6 @@ DistributionsDryRockDEM::DistributionsDryRockDEM(DistributionsDryRock           
     }
   }
 
-  distr_dryrock_              = distr_dryrock;
-  distr_dryrock_inc_          = distr_dryrock_inc;
-  distr_incl_spectrum_        = distr_incl_spectrum;
-  distr_incl_concentration_   = distr_incl_concentration;
   alpha_                      = alpha;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
 
 }
@@ -59,14 +55,22 @@ DistributionsDryRockDEM::DistributionsDryRockDEM(const DistributionsDryRockDEM &
   for(size_t i=0; i<dist.distr_dryrock_inc_.size(); i++)
     distr_dryrock_inc_.push_back(dist.distr_dryrock_inc_[i]->Clone());
 
-  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++)
-    distr_incl_spectrum_.push_back(dist.distr_incl_spectrum_[i]->Clone());
-
-  for(size_t i=0; i<dist.distr_incl_concentration_.size(); i++) {
-    if (dist.distr_incl_concentration_[i] != NULL)
-      distr_incl_concentration_.push_back(dist.distr_incl_concentration_[i]->Clone());
+  for(size_t i=0; i<dist.distr_incl_spectrum_.size(); i++) {
+    if(dist.distr_incl_spectrum_[i]->GetIsShared() == false)
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i]->Clone();
     else
-      distr_incl_concentration_.push_back(NULL);
+      distr_incl_spectrum_[i] = dist.distr_incl_spectrum_[i];
+  }
+
+  size_t n_inclusions = dist.distr_dryrock_inc_.size();
+  distr_incl_concentration_.resize(n_inclusions+1, NULL);
+  for(size_t i=0; i<n_inclusions+1; i++) {
+    if(dist.distr_incl_concentration_[i] != NULL) {
+      if(dist.distr_incl_concentration_[i]->GetIsShared() == false)
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i]->Clone();
+      else
+        distr_incl_concentration_[i] = dist.distr_incl_concentration_[i];
+    }
   }
 
   alpha_ = dist.alpha_;   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions

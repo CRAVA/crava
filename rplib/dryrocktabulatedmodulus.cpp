@@ -15,7 +15,7 @@ DryRockTabulatedModulus::DryRockTabulatedModulus(const double                   
   total_porosity_  = total_porosity;
   mineral_moduli_k_= mineral_moduli_k;
 
-  u_               = u;   // u contains correlated samples used in quantiles of (k,mu,rho) and  uncorrelated total_porosity.
+  u_               = u;   // u contains correlated samples used in quantiles of (k,mu,rho) and  uncorrelated total_porosity and mineral_moduli_k.
 }
 
 DryRockTabulatedModulus::DryRockTabulatedModulus(const DryRockTabulatedModulus & rhs)

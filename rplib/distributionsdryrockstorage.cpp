@@ -250,7 +250,8 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
   }
 
   for(int i=0; i<n_vintages; i++) {
-    DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(vp_dist_with_trend[i],
+    DistributionsDryRock * dryrock = NULL; // NBNB fjellvoll must change solid to DistributionWithTrend
+    /*DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(vp_dist_with_trend[i],
                                                                        vs_dist_with_trend[i],
                                                                        density_dist_with_trend[i],
                                                                        distr_solid[i],
@@ -259,7 +260,7 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
                                                                        corr_vp_density[i],
                                                                        corr_vs_density[i],
                                                                        DEMTools::Velocity,
-                                                                       alpha);
+                                                                       alpha);*/
 
 
 
@@ -276,7 +277,6 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
     if(porosity_dist_with_trend[i]->GetIsShared() == false)
       delete porosity_dist_with_trend[i];
   }
-
   return(dist_dryrock);
 }
 
@@ -424,7 +424,8 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
 
 
   for(int i=0; i<n_vintages; i++) {
-    DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(bulk_dist_with_trend[i],
+    DistributionsDryRock * dryrock = NULL; // NBNB fjellvoll must change solid to DistributionWithTrend
+    /*DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(bulk_dist_with_trend[i],
                                                                        shear_dist_with_trend[i],
                                                                        density_dist_with_trend[i],
                                                                        distr_solid[i],
@@ -433,7 +434,7 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
                                                                        corr_bulk_density[i],
                                                                        corr_shear_density[i],
                                                                        DEMTools::Modulus,
-                                                                       alpha);
+                                                                       alpha);*/
 
     dist_dryrock[i] = dryrock;
   }
