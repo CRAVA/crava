@@ -2793,7 +2793,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 \paragraph{\hbracket{dry-rock}}\newkw{dry-rock}
  \slist
    \item \Description Dry rocks are a particular type of solid, as they have a defined porosity, yet no fluids added, so they are not rocks according to the rock-definition in \kw{rock}. In addition to the density and effective elastic moduli for the specified porosity, they also contain information about the effective mineral properties. 
-Dry rocks are specified with <dry-rock>, followed by <label> or <use>. If <label> is given, it is followed by a theory for calculating the effective elastic moduli. Then the <total-porosity> and <mineral-moduli> (i.e. bulk and shear moduli of the effective mineral) are defined. An implicit part of the theories is that the density is calculated using the arithmetic average of the constituents.
+Dry rocks are specified with <dry-rock>, followed by <label> or <use>. If <label> is given, it is followed by a theory for calculating the effective elastic moduli. Then the <total-porosity> and <mineral-bulk-modulus> (i.e. bulk of the effective mineral) are defined. An implicit part of the theories is that the density is calculated using the arithmetic average of the constituents.
    \item \Argument 
    \item \Default 
  \elist
@@ -3044,17 +3044,10 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{mineral-moduli}}\newkw{mineral-moduli}
+\subparagraph{\hbracket{mineral-bulk-modulus}}\newkw{mineral-bulk-modulus}
  \slist
-   \item \Description Mineral moduli, i.e., the bulk and shear moduli of the effective mineral of the dry-rock
+   \item \Description Mineral bulk modulus, i.e., the bulk modulus of the effective mineral of the dry-rock
    \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
-   \item \Default 
- \elist
-
-\subsubparagraph{\hbracket{use}}\rnewkw{use}{use-mineral-moduli}
- \slist
-   \item \Description The name of the variable giving the mineral moduli
-   \item \Argument 
    \item \Default 
  \elist
 

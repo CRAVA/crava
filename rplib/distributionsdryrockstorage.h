@@ -48,7 +48,7 @@ public:
                                   std::vector<double>                         correlation_vp_density,
                                   std::vector<double>                         correlation_vs_density,
                                   std::vector<DistributionWithTrendStorage *> total_porosity,
-                                  std::string                                 moduli);
+                                  std::vector<DistributionWithTrendStorage *> mineral_k);
 
   virtual ~TabulatedVelocityDryRockStorage();
 
@@ -57,7 +57,7 @@ public:
                                                                            const std::vector<std::string>                            & trend_cube_parameters,
                                                                            const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                                            const std::map<std::string, DistributionsDryRockStorage *>& /*model_dryrock_storage*/,
-                                                                           const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                                                           const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
                                                                            std::string                                               & errTxt)                    const;
 
 private:
@@ -68,7 +68,7 @@ private:
   std::vector<double>                         correlation_vp_density_;
   std::vector<double>                         correlation_vs_density_;
   std::vector<DistributionWithTrendStorage *> total_porosity_;
-  std::string                                 mineral_moduli_;
+  std::vector<DistributionWithTrendStorage *> mineral_k_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -81,7 +81,7 @@ public:
                                  std::vector<double>                         correlation_bulk_density,
                                  std::vector<double>                         correlation_shear_density,
                                  std::vector<DistributionWithTrendStorage *> total_porosity,
-                                 std::string                                 moduli);
+                                 std::vector<DistributionWithTrendStorage *> mineral_k);
 
   virtual ~TabulatedModulusDryRockStorage();
 
@@ -101,16 +101,14 @@ private:
   std::vector<double>                         correlation_bulk_density_;
   std::vector<double>                         correlation_shear_density_;
   std::vector<DistributionWithTrendStorage *> total_porosity_;
-  std::string                                 mineral_moduli_;
+  std::vector<DistributionWithTrendStorage *> mineral_k_;
 };
 
 //----------------------------------------------------------------------------------//
 class ReussDryRockStorage : public DistributionsDryRockStorage {
 public:
   ReussDryRockStorage(std::vector<std::string>                                  constituent_label,
-                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                      std::vector<DistributionWithTrendStorage *>               total_porosity,
-                      std::string                                               moduli);
+                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~ReussDryRockStorage();
 
@@ -125,17 +123,13 @@ public:
 private:
   std::vector<std::string>                                    constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
-  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
-  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class VoigtDryRockStorage : public DistributionsDryRockStorage {
 public:
   VoigtDryRockStorage(std::vector<std::string>                                  constituent_label,
-                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                      std::vector<DistributionWithTrendStorage *>               total_porosity,
-                      std::string                                               moduli);
+                      std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~VoigtDryRockStorage();
 
@@ -150,17 +144,13 @@ public:
 private:
   std::vector<std::string>                                    constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
-  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
-  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
 class HillDryRockStorage : public DistributionsDryRockStorage {
 public:
   HillDryRockStorage(std::vector<std::string>                                  constituent_label,
-                     std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                     std::vector<DistributionWithTrendStorage *>               total_porosity,
-                     std::string                                               moduli);
+                     std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
 
   virtual ~HillDryRockStorage();
 
@@ -175,8 +165,6 @@ public:
 private:
   std::vector<std::string >                                   constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> >   constituent_volume_fraction_;
-  std::vector<DistributionWithTrendStorage *>                 total_porosity_;
-  std::string                                                 mineral_moduli_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -187,9 +175,7 @@ public:
                     std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
                     std::vector<std::string>                                  inclusion_label,
                     std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
-                    std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
-                    std::vector<DistributionWithTrendStorage *>               total_porosity,
-                    std::string                                               moduli);
+                    std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio);
 
   virtual ~DEMDryRockStorage();
 
@@ -207,8 +193,6 @@ private:
   std::vector<std::string>                                  inclusion_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio_;
-  std::vector<DistributionWithTrendStorage *>               total_porosity_;
-  std::string                                               mineral_moduli_;
 };
 
 #endif

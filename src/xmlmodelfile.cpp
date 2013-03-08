@@ -1900,17 +1900,17 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & label, std::string & err
   int constituent_type = ModelSettings::ROCK;
 
   std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
-  std::string                                 dummy_moduli   = "";
+  std::vector<DistributionWithTrendStorage *> dummy_moduli(1, NULL);
 
   if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseDEM(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
     given++;
   if(parseGassmann(root, constituent_type, label, errTxt) == true)
     given++;
@@ -1960,17 +1960,17 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   int constituent_type = ModelSettings::SOLID;
 
   std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
-  std::string                                 dummy_moduli = "";
+  std::vector<DistributionWithTrendStorage *> dummy_moduli(1, NULL);
 
   if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseDEM(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
     given++;
 
   if(given == 0)
@@ -1998,7 +1998,7 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
   legalCommands.push_back("total-porosity");
-  legalCommands.push_back("mineral-moduli");
+  legalCommands.push_back("mineral-bulk-modulus");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -2021,21 +2021,21 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   if(given == 0 && parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
       errTxt += "The total porosity must be given for the dry-rock\n";
 
-  std::string moduli;
-  if(given == 0 && parseMineralModuli(root, moduli, errTxt) == false)
-    errTxt += "The mineral moduli must be given for the dry-rock\n";
+  std::vector<DistributionWithTrendStorage *> mineral_k;
+  if(given == 0 && parseDistributionWithTrend(root, "mineral-bulk-modulus", mineral_k, dummy, false, errTxt) == false)
+    errTxt += "The mineral mineral_k must be given for the dry-rock\n";
 
   int constituent_type = ModelSettings::DRY_ROCK;
 
-  if(parseTabulated(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
+  if(parseTabulated(root, constituent_type, label, total_porosity, mineral_k, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseDEM(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
     given++;
 
  if(given == 0)
@@ -2080,16 +2080,13 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
 
   int constituent_type = ModelSettings::FLUID;
 
-  std::vector<DistributionWithTrendStorage *> dummy_porosity;
-  std::string                                 dummy_moduli = "";
-
   if(parseTabulatedFluid(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseReuss(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseVoigt(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseHill(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+  if(parseHill(root, constituent_type, label, errTxt) == true)
     given++;
   if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
     given++;
@@ -2107,8 +2104,6 @@ bool
 XmlModelFile::parseReuss(TiXmlNode                                   * node,
                          int                                           constituent,
                          std::string                                   label,
-                         std::vector<DistributionWithTrendStorage *>   total_porosity,
-                         std::string                                   moduli,
                          std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("reuss");
@@ -2142,7 +2137,7 @@ XmlModelFile::parseReuss(TiXmlNode                                   * node,
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new ReussDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new ReussDryRockStorage(constituent_label, constituent_fraction);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
@@ -2157,8 +2152,6 @@ bool
 XmlModelFile::parseVoigt(TiXmlNode                                   * node,
                          int                                           constituent,
                          std::string                                   label,
-                         std::vector<DistributionWithTrendStorage *>   total_porosity,
-                         std::string                                   moduli,
                          std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("voigt");
@@ -2192,7 +2185,7 @@ XmlModelFile::parseVoigt(TiXmlNode                                   * node,
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new VoigtDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new VoigtDryRockStorage(constituent_label, constituent_fraction);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
@@ -2207,8 +2200,6 @@ bool
 XmlModelFile::parseHill(TiXmlNode                                   * node,
                         int                                           constituent,
                         std::string                                   label,
-                        std::vector<DistributionWithTrendStorage *>   total_porosity,
-                        std::string                                   moduli,
                         std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("hill");
@@ -2242,7 +2233,7 @@ XmlModelFile::parseHill(TiXmlNode                                   * node,
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new HillDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new HillDryRockStorage(constituent_label, constituent_fraction);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
@@ -2340,8 +2331,6 @@ bool
 XmlModelFile::parseDEM(TiXmlNode                                  * node,
                        int                                          constituent,
                        std::string                                  label,
-                       std::vector<DistributionWithTrendStorage *>  total_porosity,
-                       std::string                                  moduli,
                        std::string                                & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("dem");
@@ -2406,7 +2395,7 @@ XmlModelFile::parseDEM(TiXmlNode                                  * node,
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
@@ -2657,30 +2646,11 @@ XmlModelFile::parseLowerBound(TiXmlNode * node, std::string & label, std::string
 }
 
 bool
-XmlModelFile::parseMineralModuli(TiXmlNode * node, std::string & moduli, std::string & errTxt)
-{
-
-  TiXmlNode * root = node->FirstChildElement("mineral-moduli");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("use");
-
-  moduli = "";
-  if(parseValue(root, "use", moduli, errTxt) == false)
-    errTxt += "The mineral moduli in the dry rock must be specified with a variable using <use>\n";
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
-
-bool
 XmlModelFile::parseTabulated(TiXmlNode                                   * node,
                              int                                           constituent,
                              std::string                                   label,
                              std::vector<DistributionWithTrendStorage *>   total_porosity,
-                             std::string                                   moduli,
+                             std::vector<DistributionWithTrendStorage *>   mineral_k,
                              std::string                                 & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("tabulated");
@@ -2822,7 +2792,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       modelSettings_->addSolid(label, solid);
     }
     else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, moduli);
+      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
@@ -2836,7 +2806,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       modelSettings_->addSolid(label, solid);
     }
     else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, moduli);
+      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {

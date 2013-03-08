@@ -127,7 +127,7 @@ TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(std::vector<Dis
                                                                  std::vector<double>                         correlation_vp_density,
                                                                  std::vector<double>                         correlation_vs_density,
                                                                  std::vector<DistributionWithTrendStorage *> total_porosity,
-                                                                 std::string                                 moduli)
+                                                                 std::vector<DistributionWithTrendStorage *> mineral_k)
 : vp_(vp),
   vs_(vs),
   density_(density),
@@ -135,7 +135,7 @@ TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(std::vector<Dis
   correlation_vp_density_(correlation_vp_density),
   correlation_vs_density_(correlation_vs_density),
   total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  mineral_k_(mineral_k)
 {
 }
 
@@ -152,6 +152,9 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
 
   if(total_porosity_[0]->GetIsShared() == false)
     delete total_porosity_[0];
+
+  if(mineral_k_[0]->GetIsShared() == false)
+    delete mineral_k_[0];
 }
 
 std::vector<DistributionsDryRock *>
@@ -160,7 +163,7 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
                                                               const std::vector<std::string>                            & trend_cube_parameters,
                                                               const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                               const std::map<std::string, DistributionsDryRockStorage *>& /*model_dryrock_storage*/,
-                                                              const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                                              const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
                                                               std::string                                               & errTxt) const
 {
   std::vector<double> alpha(3);
@@ -172,6 +175,7 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
   int n_vintages_vs         = static_cast<int>(vs_.size());
   int n_vintages_density    = static_cast<int>(density_.size());
   int n_vintages_porosity   = static_cast<int>(total_porosity_.size());
+  int n_vintages_mineral_k  = static_cast<int>(mineral_k_.size());
   int n_vintages_vp_vs      = static_cast<int>(correlation_vp_vs_.size());
   int n_vintages_vp_density = static_cast<int>(correlation_vs_density_.size());
   int n_vintages_vs_density = static_cast<int>(correlation_vs_density_.size());
@@ -181,6 +185,7 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
   std::vector<DistributionWithTrend *> vs_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> mineral_k_dist_with_trend(n_vintages, NULL);
 
   std::vector<double> corr_vp_vs;
   std::vector<double> corr_vp_density;
@@ -201,6 +206,11 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
       density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+
+    if(i < n_vintages_mineral_k)
+      mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      mineral_k_dist_with_trend[i] = mineral_k_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_porosity)
       porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
@@ -233,34 +243,17 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
     }
   }
 
-  std::vector<DistributionsSolid *> final_distr_solid (n_vintages);
-  std::vector<DistributionsSolid *> distr_solid = ReadSolid(n_vintages,
-                                                            mineral_moduli_,
-                                                            path,
-                                                            trend_cube_parameters,
-                                                            trend_cube_sampling,
-                                                            model_solid_storage,
-                                                            errTxt);
-
   for(int i=0; i<n_vintages; i++) {
-    if(i < static_cast<int>(distr_solid.size()))
-      final_distr_solid[i] = distr_solid[i];
-    else
-      final_distr_solid[i] = final_distr_solid[i-1]->Clone();
-  }
-
-  for(int i=0; i<n_vintages; i++) {
-    DistributionsDryRock * dryrock = NULL; // NBNB fjellvoll must change solid to DistributionWithTrend
-    /*DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(vp_dist_with_trend[i],
+    DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(vp_dist_with_trend[i],
                                                                        vs_dist_with_trend[i],
                                                                        density_dist_with_trend[i],
-                                                                       distr_solid[i],
+                                                                       mineral_k_dist_with_trend[i],
                                                                        porosity_dist_with_trend[i],
                                                                        corr_vp_vs[i],
                                                                        corr_vp_density[i],
                                                                        corr_vs_density[i],
                                                                        DEMTools::Velocity,
-                                                                       alpha);*/
+                                                                       alpha);
 
 
 
@@ -276,6 +269,8 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
       delete density_dist_with_trend[i];
     if(porosity_dist_with_trend[i]->GetIsShared() == false)
       delete porosity_dist_with_trend[i];
+    if(mineral_k_dist_with_trend[i]->GetIsShared() == false)
+      delete mineral_k_dist_with_trend[i];
   }
   return(dist_dryrock);
 }
@@ -288,7 +283,7 @@ TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(std::vector<Distr
                                                                std::vector<double>                         correlation_bulk_density,
                                                                std::vector<double>                         correlation_shear_density,
                                                                std::vector<DistributionWithTrendStorage *> total_porosity,
-                                                               std::string                                 moduli)
+                                                               std::vector<DistributionWithTrendStorage *> mineral_k)
 : bulk_modulus_(bulk_modulus),
   shear_modulus_(shear_modulus),
   density_(density),
@@ -296,7 +291,7 @@ TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(std::vector<Distr
   correlation_bulk_density_(correlation_bulk_density),
   correlation_shear_density_(correlation_shear_density),
   total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  mineral_k_(mineral_k)
 {
 }
 
@@ -314,6 +309,9 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
 
   if(total_porosity_[0]->GetIsShared() == false)
     delete total_porosity_[0];
+
+  if(mineral_k_[0]->GetIsShared() == false)
+    delete mineral_k_[0];
 }
 
 std::vector<DistributionsDryRock *>
@@ -322,7 +320,7 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
                                                              const std::vector<std::string>                            & trend_cube_parameters,
                                                              const std::vector<std::vector<double> >                   & trend_cube_sampling,
                                                              const std::map<std::string, DistributionsDryRockStorage *>& /*model_dryrock_storage*/,
-                                                             const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                                             const std::map<std::string, DistributionsSolidStorage *>  & /*model_solid_storage*/,
                                                              std::string                                               & errTxt) const
 {
   std::vector<double> alpha(3);
@@ -334,6 +332,7 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
   int n_vintages_shear         = static_cast<int>(shear_modulus_.size());
   int n_vintages_density       = static_cast<int>(density_.size());
   int n_vintages_porosity      = static_cast<int>(total_porosity_.size());
+  int n_vintages_mineral_k     = static_cast<int>(mineral_k_.size());
   int n_vintages_bulk_shear    = static_cast<int>(correlation_bulk_shear_.size());
   int n_vintages_bulk_density  = static_cast<int>(correlation_bulk_density_.size());
   int n_vintages_shear_density = static_cast<int>(correlation_shear_density_.size());
@@ -343,6 +342,7 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
   std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> mineral_k_dist_with_trend(n_vintages, NULL);
 
   std::vector<double> corr_bulk_shear;
   std::vector<double> corr_bulk_density;
@@ -368,6 +368,11 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
       porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     else
       porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
+
+    if(i < n_vintages_mineral_k)
+      mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      mineral_k_dist_with_trend[i] = mineral_k_dist_with_trend[i-1]->Clone();
 
 
     double lower_mega = 1.0e+5; //Finn grenser fra modelsettings
@@ -406,35 +411,18 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
     }
   }
 
-  std::vector<DistributionsSolid *> final_distr_solid (n_vintages);
-  std::vector<DistributionsSolid *> distr_solid = ReadSolid(n_vintages,
-                                                            mineral_moduli_,
-                                                            path,
-                                                            trend_cube_parameters,
-                                                            trend_cube_sampling,
-                                                            model_solid_storage,
-                                                            errTxt);
 
   for(int i=0; i<n_vintages; i++) {
-    if(i < static_cast<int>(distr_solid.size()))
-      final_distr_solid[i] = distr_solid[i];
-    else
-      final_distr_solid[i] = final_distr_solid[i-1]->Clone();
-  }
-
-
-  for(int i=0; i<n_vintages; i++) {
-    DistributionsDryRock * dryrock = NULL; // NBNB fjellvoll must change solid to DistributionWithTrend
-    /*DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(bulk_dist_with_trend[i],
+    DistributionsDryRock * dryrock = new DistributionsDryRockTabulated(bulk_dist_with_trend[i],
                                                                        shear_dist_with_trend[i],
                                                                        density_dist_with_trend[i],
-                                                                       distr_solid[i],
+                                                                       mineral_k_dist_with_trend[i],
                                                                        porosity_dist_with_trend[i],
                                                                        corr_bulk_shear[i],
                                                                        corr_bulk_density[i],
                                                                        corr_shear_density[i],
                                                                        DEMTools::Modulus,
-                                                                       alpha);*/
+                                                                       alpha);
 
     dist_dryrock[i] = dryrock;
   }
@@ -448,6 +436,8 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
       delete density_dist_with_trend[i];
     if(porosity_dist_with_trend[i]->GetIsShared() == false)
       delete porosity_dist_with_trend[i];
+    if(mineral_k_dist_with_trend[i]->GetIsShared() == false)
+      delete mineral_k_dist_with_trend[i];
 
   }
 
@@ -456,13 +446,9 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
 
 //----------------------------------------------------------------------------------//
 ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string >                                 constituent_label,
-                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                                         std::vector<DistributionWithTrendStorage *>               total_porosity,
-                                         std::string                                               moduli)
+                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction),
-  total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  constituent_volume_fraction_(constituent_volume_fraction)
 {
 }
 
@@ -471,8 +457,6 @@ ReussDryRockStorage::~ReussDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
     delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_[0]->GetIsShared() == false)
-    delete total_porosity_[0];
 }
 
 std::vector<DistributionsDryRock *>
@@ -499,13 +483,9 @@ ReussDryRockStorage::GenerateDistributionsDryRock(const int                     
 
 //----------------------------------------------------------------------------------//
 VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>                                  constituent_label,
-                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                                         std::vector<DistributionWithTrendStorage *>               total_porosity,
-                                         std::string                                               moduli)
+                                         std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction),
-  total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  constituent_volume_fraction_(constituent_volume_fraction)
 {
 }
 
@@ -514,8 +494,6 @@ VoigtDryRockStorage::~VoigtDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
     delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_[0]->GetIsShared() == false)
-    delete total_porosity_[0];
 }
 
 std::vector<DistributionsDryRock *>
@@ -542,13 +520,9 @@ VoigtDryRockStorage::GenerateDistributionsDryRock(const int                     
 
 //----------------------------------------------------------------------------------//
 HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                                  constituent_label,
-                                       std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
-                                       std::vector<DistributionWithTrendStorage *>               total_porosity,
-                                       std::string                                               moduli)
+                                       std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction),
-  total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  constituent_volume_fraction_(constituent_volume_fraction)
 {
 }
 
@@ -557,8 +531,6 @@ HillDryRockStorage::~HillDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
     delete constituent_volume_fraction_[0][i];
 
-  if(total_porosity_[0]->GetIsShared() == false)
-    delete total_porosity_[0];
 }
 
 std::vector<DistributionsDryRock *>
@@ -589,16 +561,12 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
                                      std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
                                      std::vector<std::string>                                  inclusion_label,
                                      std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
-                                     std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
-                                     std::vector<DistributionWithTrendStorage *>               total_porosity,
-                                     std::string                                               moduli)
+                                     std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
-  inclusion_aspect_ratio_(inclusion_aspect_ratio),
-  total_porosity_(total_porosity),
-  mineral_moduli_(moduli)
+  inclusion_aspect_ratio_(inclusion_aspect_ratio)
 {
 }
 
@@ -616,9 +584,6 @@ DEMDryRockStorage::~DEMDryRockStorage()
     if(inclusion_aspect_ratio_[0][i]->GetIsShared() == false)
       delete inclusion_aspect_ratio_[0][i];
   }
-
-  if(total_porosity_[0]->GetIsShared() == false)
-    delete total_porosity_[0];
 }
 
 std::vector<DistributionsDryRock *>
