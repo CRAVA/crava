@@ -10,7 +10,6 @@
 
 #include "fftgrid.h"
 
-class Corr;
 class Wavelet;
 class Simbox;
 class GridMapping;

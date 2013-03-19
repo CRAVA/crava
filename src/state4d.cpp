@@ -3,32 +3,36 @@
 #include "src/timeevolution.h"
 #include "lib/lib_matr.h"
 
-State4D::State4D(){
-
-  // Initilizing the 27 grids. All grids initialize to NULL.
-  mu_static_.resize(3, NULL);
-  mu_dynamic_.resize(3, NULL);
-  sigma_static_static_.resize(6, NULL);
-  sigma_dynamic_dynamic_.resize(6, NULL);
-  sigma_static_dynamic_.resize(9, NULL);
+State4D::State4D()
+{
 }
 
-State4D::~State4D(){
+State4D::~State4D()
+{
 }
 
-void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho){
+void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
+{
+  mu_dynamic_.resize(3);
+
   mu_dynamic_[0] = vp;
   mu_dynamic_[1] = vs;
   mu_dynamic_[2] = rho;
 }
 
-void State4D::setStaticMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho){
+void State4D::setStaticMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
+{
+  mu_static_.resize(3);
+
   mu_static_[0] = vp;
   mu_static_[1] = vs;
   mu_static_[2] = rho;
 }
 
-void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho){
+void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
+{
+  sigma_static_static_.resize(6);
+
   sigma_static_static_[0] = vpvp;
   sigma_static_static_[1] = vpvs;
   sigma_static_static_[2] = vprho;
@@ -37,7 +41,10 @@ void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGr
   sigma_static_static_[5] = rhorho;
 }
 
-void State4D::setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho){
+void State4D::setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
+{
+  sigma_dynamic_dynamic_.resize(6);
+
   sigma_dynamic_dynamic_[0] = vpvp;
   sigma_dynamic_dynamic_[1] = vpvs;
   sigma_dynamic_dynamic_[2] = vprho;
@@ -45,7 +52,11 @@ void State4D::setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTG
   sigma_dynamic_dynamic_[4] = vsrho;
   sigma_dynamic_dynamic_[5] = rhorho;
 }
-void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho){
+
+void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho)
+{
+  sigma_static_dynamic_.resize(9);
+
   sigma_static_dynamic_[0] = vpvp;
   sigma_static_dynamic_[1] = vpvs;
   sigma_static_dynamic_[2] = vprho;

@@ -1,6 +1,5 @@
 #include <time.h>
 
-#include "src/corr.h"
 #include "src/crava.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
@@ -12,15 +11,16 @@
 #include "src/seismicparametersholder.h"
 #include "src/simbox.h"
 
-void setupStaticModels(ModelGeneral   *& modelGeneral,
-                       ModelAVOStatic *& modelAVOstatic,
-                       ModelSettings   * modelSettings,
-                       InputFiles      * inputFiles,
-                       Simbox         *& timeBGSimbox)
+void setupStaticModels(ModelGeneral            *& modelGeneral,
+                       ModelAVOStatic          *& modelAVOstatic,
+                       ModelSettings            * modelSettings,
+                       InputFiles               * inputFiles,
+                       SeismicParametersHolder  & seismicParameters,
+                       Simbox                  *& timeBGSimbox)
 {
   // Construct ModelGeneral object first.
   // For each data type, construct the static model class before the dynamic.
-  modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
+  modelGeneral    = new ModelGeneral(modelSettings, inputFiles, seismicParameters, timeBGSimbox);
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
                                        modelGeneral,
                                        inputFiles,
@@ -66,24 +66,13 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
 
   if(failedLoadingModel == false){
 
-    Crava             * crava          = NULL;
-    SpatialWellFilter * spatwellfilter = NULL;
-
-    if(!modelSettings->getForwardModeling()){
-      if (modelSettings->getDoInversion()){
-        spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
-        crava          = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
-        seismicParameters.setSeismicParameters(crava->getPostAlpha(), crava->getPostBeta(), crava->getPostRho(), crava->getCorrelations());
-      }
-    }
-    else
-      crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
+    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     delete crava;
-    delete spatwellfilter;
   }
 
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
+ 
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
@@ -112,17 +101,15 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
-  if(failedLoadingModel == false){
+  if(failedLoadingModel == false) {
 
-    Crava             * crava          = NULL;
-    SpatialWellFilter * spatwellfilter = NULL;
-
-    crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter, seismicParameters);
-
+    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
+   
     delete crava;
   }
 
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
+  
   delete modelAVOdynamic;
 
   return(failedLoadingModel);

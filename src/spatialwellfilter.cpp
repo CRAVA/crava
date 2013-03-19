@@ -21,8 +21,8 @@
 #include "src/welldata.h"
 #include "src/timings.h"
 #include "src/modelsettings.h"
-#include "src/corr.h"
 #include "src/crava.h"
+#include "src/seismicparametersholder.h"
 
 SpatialWellFilter::SpatialWellFilter(int nwells)
 {
@@ -95,6 +95,8 @@ void SpatialWellFilter::setPriorSpatialCorrSyntWell(FFTGrid             * parSpa
 
 void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr)
 {
+  float constant = parSpatialCorr->getRealValue(0, 0, 0);
+
   int n = well->getBlockedLogsOrigThick()->getNumberOfBlocks();
   priorSpatialCorr_[wellnr] = new double *[n];
   n_[wellnr] = n;
@@ -115,16 +117,17 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
       i2 = ipos[l2];
       j2 = jpos[l2];
       k2 = kpos[l2];
-      priorSpatialCorr_[wellnr][l1][l2] = parSpatialCorr->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      priorSpatialCorr_[wellnr][l1][l2] = parSpatialCorr->getRealValueCyclic(i1-i2,j1-j2,k1-k2) / constant;
       priorSpatialCorr_[wellnr][l2][l1] = priorSpatialCorr_[wellnr][l1][l2];
     }
   }
 }
 
-void SpatialWellFilter::doFilteringSyntWells(Corr                                     * corr,
-                                             std::vector<SyntWellData *>              & syntWellData,
+void SpatialWellFilter::doFilteringSyntWells(std::vector<SyntWellData *>              & syntWellData,
                                              const std::vector<std::vector<double> >  & v,
-                                             int                                        nWells)
+                                             SeismicParametersHolder                  & seismicParameters,
+                                             int                                        nWells,
+                                             const NRLib::Matrix                      & priorVar0)
 {
   (void) v;
 
@@ -154,6 +157,8 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
     }
     sigmaeSynt_[0] = Se;
   }
+
+  NRLib::Matrix priorCov0 = priorVar0;
 
   bool no_wells_filtered = true;
 
@@ -190,12 +195,13 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
     const int *jpos = syntWellData[w1]->getJpos();
     const int *kpos = syntWellData[w1]->getKpos();
     float regularization = Definitions::SpatialFilterRegularisationValue();
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha(), n, 0, 0);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta(), n, n, n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCovRho(), n, 2*n, 2*n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0, n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho(), n, 0, 2*n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho(), n, 2*n, n);
+
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovAlpha(),       n, 0,   0);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovBeta(),        n, n,   n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovRho(),         n, 2*n, 2*n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaBeta(), n, 0,   n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaRho(),  n, 0,   2*n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovBetaRho(),   n, 2*n, n);
 
     // In case the synthetic well is longer than the vertical size of covgrid,
     // set correlation for the relevant grid points to 0
@@ -218,9 +224,9 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
         sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
         sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
         sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
-        sigmapri [l1      ][l2      ] = corr->getPriorVar0_old()[0][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0_old()[1][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0_old()[2][2]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1      ][l2      ] = priorCov0(0,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + n  ][l2 + n  ] = priorCov0(1,1)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + 2*n][l2 + 2*n] = priorCov0(2,2)*priorSpatialCorr_[w1][l1][l2];
         if(l1==l2){
           sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
           sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
@@ -229,12 +235,12 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
           sigmapri [l1 + n  ][l2 + n  ] += regularization;
           sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
         }
-        sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0_old()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0_old()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0_old()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0_old()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0_old()[2][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0_old()[2][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + n  ][l2      ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + n  ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + 2*n][l2      ] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + 2*n] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + n  ][l2 + 2*n] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2 + 2*n][l1 + n  ] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
       }
     }
 
@@ -293,13 +299,13 @@ void SpatialWellFilter::doFilteringSyntWells(Corr                               
 }
 
 //--------------------------------------------------------------------------------
-void SpatialWellFilter::doFiltering(Corr                        * corr,
-                                    std::vector<WellData  *>      wells,
-                                    int                           nWells,
-                                    bool                          useVpRhoFilter,
-                                    int                           nAngles,
-                                    const Crava                 * cravaResult,
-                                    const std::vector<Grid2D *> & noiseScale)
+void SpatialWellFilter::doFiltering(std::vector<WellData  *>        wells,
+                                    int                             nWells,
+                                    bool                            useVpRhoFilter,
+                                    int                             nAngles,
+                                    const Crava                   * cravaResult,
+                                    const std::vector<Grid2D *>   & noiseScale,
+                                    SeismicParametersHolder       & seismicParameters)
 //-------------------------------------------------------------------------------
 {
   LogKit::WriteHeader("Creating spatial multi-parameter filter");
@@ -329,6 +335,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
     }
   }
 
+  NRLib::Matrix priorCov0 = cravaResult->getPriorVar0();
+
   bool no_wells_filtered = true;
 
   for(int w1=0 ; w1 < nWells ; w1++)
@@ -354,21 +362,21 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
 
       float regularization = Definitions::SpatialFilterRegularisationValue();
 
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha()      , n, 0  , 0   );
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta()       , n, n  , n   );
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovRho()        , n, 2*n, 2*n );
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0  , n   );
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho() , n, 0  , 2*n );
-      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho()  , n, 2*n, n   );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovAlpha()      , n, 0  , 0   );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovBeta()       , n, n  , n   );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovRho()        , n, 2*n, 2*n );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaBeta(), n, 0  , n   );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaRho() , n, 0  , 2*n );
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovBetaRho()  , n, 2*n, n   );
 
       for(int l1=0 ; l1 < n ; l1++) {
         for(int l2=0 ; l2 < n ; l2++) {
           sigmapost[l2 + n  ][l1      ] = sigmapost[l1      ][l2 + n  ];
           sigmapost[l2 + 2*n][l1      ] = sigmapost[l1      ][l2 + 2*n];
           sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[l1 + 2*n][l2 + n  ];
-          sigmapri [l1      ][l2      ] = corr->getPriorVar0_old()[0][0]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0_old()[1][1]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0_old()[2][2]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri [l1      ][l2      ] = priorCov0(0,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri [l1 + n  ][l2 + n  ] = priorCov0(1,1)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri [l1 + 2*n][l2 + 2*n] = priorCov0(2,2)*priorSpatialCorr_[w1][l1][l2];
           if(l1==l2)
           {
             sigmapost[l1      ][l2      ] += regularization*sigmapost[l1      ][l2      ]/sigmapri[l1      ][l2      ];
@@ -378,12 +386,12 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
             sigmapri [l1 + n  ][l2 + n  ] += regularization;
             sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
           }
-          sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0_old()[1][0]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0_old()[1][0]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0_old()[2][0]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0_old()[2][0]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0_old()[2][1]*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0_old()[2][1]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l1 + n  ][l2      ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2      ][l1 + n  ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l1 + 2*n][l2      ] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2      ][l1 + 2*n] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l1 + n  ][l2 + 2*n] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2 + 2*n][l1 + n  ] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
         }
       }
 
@@ -436,6 +444,7 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
       for(int i=0;i<3*n;i++)
       {
         delete [] sigmapost[i];
+        delete [] sigmapri[i];
       }
       delete [] sigmapri;
       delete [] sigmapost;
@@ -843,7 +852,7 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
       maxScale[angle] = maxS/minS;
     }
 
-    NRLib::Matrix sigmaPri0 = cravaResult->getPriorVar0();// not to be deleted
+    NRLib::Matrix sigmaPri0 = cravaResult->getPriorVar0();
 
     NRLib::SymmetricMatrix priCovVpRho(2);
     priCovVpRho(0,0) = sigmaPri0(0,0);

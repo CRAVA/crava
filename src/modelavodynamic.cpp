@@ -20,7 +20,6 @@
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/corr.h"
 #include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
@@ -69,7 +68,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                                  int                            t,
                                  SeismicParametersHolder      & seismicParameters)
 {
-  correlations_           = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
   reflectionMatrix_       = NULL;
@@ -245,13 +243,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
            failedSeismic == false && failedReflMat == false &&
            (estimationMode == false || modelSettings->getEstimateCorrelations() == true))
         {
-          modelGeneral->processPriorCorrelations(correlations_,
-                                                 background,
+          modelGeneral->processPriorCorrelations(background,
                                                  modelGeneral->getWells(),
                                                  timeSimbox,
                                                  modelSettings,
                                                  seisCube_,
                                                  inputFiles,
+                                                 seismicParameters,
                                                  errText,
                                                  failedPriorCorr);
         }
@@ -317,7 +315,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  const GridMapping       * timeCutMapping,
                                  int                       t)
 { //Time lapse constructor
-  correlations_           = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
   reflectionMatrix_       = NULL;
@@ -359,10 +356,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   if(failedReflMat == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() ))
     processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
                    modelSettings, inputFiles, errText, failedSeismic);
-
-
-  if(failedSeismic == false && failedReflMat == false && estimationMode == false)
-    correlations_ = new Corr(modelSettings->getNZpad(), static_cast<float>(timeSimbox->getdz()), seismicParameters);
 
   if(failedSeismic == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() )){
     modelAVOstatic->addSeismicLogs(modelGeneral->getWells(), seisCube_, modelSettings, numberOfAngles_);
@@ -420,9 +413,6 @@ ModelAVODynamic::~ModelAVODynamic(void)
     if (localNoiseScale_[i] != NULL)
       delete localNoiseScale_[i];
   }
-
-  if (correlations_ != NULL)
-    delete correlations_;
 
   if(seisCube_ != NULL) {
     for(int i=0;i<numberOfAngles_;i++)

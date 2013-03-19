@@ -31,7 +31,6 @@
 
 #include "src/program.h"
 #include "src/definitions.h"
-#include "src/corr.h"
 #include "src/wavelet.h"
 #include "src/crava.h"
 #include "src/fftgrid.h"
@@ -197,6 +196,7 @@ int main(int argc, char** argv)
                       modelAVOstatic,
                       modelSettings,
                       inputFiles,
+                      seismicParameters,
                       timeBGSimbox);
 
     if(modelGeneral   == NULL || modelGeneral->getFailed()   ||

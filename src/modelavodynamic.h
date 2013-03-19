@@ -16,7 +16,6 @@
 #include "src/inputfiles.h"
 
 struct irapgrid;
-class Corr;
 class Wavelet;
 class Simbox;
 class WellData;
@@ -62,7 +61,6 @@ public:
 
   ~ModelAVODynamic();
 
-  Corr                        * getCorrelations()          const { return correlations_           ;}
   FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet                    ** getWavelets()              const { return wavelet_                ;}
   float                      ** getAMatrix()               const { return reflectionMatrix_       ;}
@@ -198,7 +196,6 @@ private:
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
   int                       numberOfAngles_;
-  Corr                    * correlations_;          ///<
   FFTGrid                ** seisCube_;              ///< Seismic data cubes
   Wavelet                ** wavelet_;               ///< Wavelet for angle
 

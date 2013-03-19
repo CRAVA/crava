@@ -569,42 +569,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="src\corr.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath=".\src\correlatedrocksamples.cpp"
 					>
 				</File>
@@ -6746,10 +6710,6 @@
 					>
 				</File>
 				<File
-					RelativePath="src\corr.h"
-					>
-				</File>
-				<File
 					RelativePath=".\src\correlatedrocksamples.h"
 					>
 				</File>
@@ -6933,11 +6893,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\filesystem\config.hpp"
+						RelativePath=".\libs\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\libs\boost\system\config.hpp"
+						RelativePath=".\libs\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File

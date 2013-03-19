@@ -19,7 +19,6 @@
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/corr.h"
 #include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
@@ -38,6 +37,7 @@
 #include "src/state4d.h"
 #include "src/modelavodynamic.h"
 #include "src/cravatrend.h"
+#include "src/seismicparametersholder.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -59,7 +59,10 @@
 #include "rplib/distributionsrock.h"
 
 
-ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
+ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
+                           const InputFiles         * inputFiles,
+                           SeismicParametersHolder  & seismicParameters,
+                           Simbox                  *& timeBGSimbox)
 {
   timeSimbox_             = new Simbox();
   timeSimboxConstThick_   = NULL;
@@ -196,7 +199,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 
           setFaciesNamesFromRockPhysics();
 
-          process4DBackground(modelSettings, inputFiles, errText, failedBackground);
+          process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground);
           timeEvolution_ = TimeEvolution(1000, *timeLine_, rock_distributions_.begin()->second);
         }
       }
@@ -258,6 +261,8 @@ ModelGeneral::~ModelGeneral(void)
       if(wells_[i] != NULL)
         delete wells_[i];
   }
+   
+   delete priorCorrXY_;
 
 }
 
@@ -3189,10 +3194,9 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
 }
 
 void
-ModelGeneral::generateRockPhysics4DBackground(int                                                lowCut,
-                                              Corr                                             * correlations, //The grids here get/set correctly.
-                                              const Simbox                                     & timeSimbox,
+ModelGeneral::generateRockPhysics4DBackground(const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
+                                              const SeismicParametersHolder                    & seismicParameters,
                                               State4D                                          & state4d,
                                               std::string                                      & /*errTxt*/)
 {
@@ -3215,12 +3219,12 @@ ModelGeneral::generateRockPhysics4DBackground(int                               
   const int nzPad = modelSettings.getNZpad();
 
   // Creating grids for sigma static
-  vp_vp_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vp_vs_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vp_rho_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vs_vs_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vs_rho_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  rho_rho_stat = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_vp_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_vs_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_rho_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_vs_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_rho_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  rho_rho_stat = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
 
   vp_vp_stat  ->createRealGrid();
   vp_vs_stat  ->createRealGrid();
@@ -3231,22 +3235,25 @@ ModelGeneral::generateRockPhysics4DBackground(int                               
 
   // Correlations
   float corrGradI, corrGradJ;
-  ModelGeneral::getCorrGradIJ(corrGradI, corrGradJ);
-  vp_vp_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
-  vp_vs_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
-  vp_rho_stat ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
-  vs_vs_stat  ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
-  vs_rho_stat ->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
-  rho_rho_stat->fillInParamCorr(correlations, lowCut, corrGradI, corrGradJ);
+  getCorrGradIJ(corrGradI, corrGradJ);
+
+  fftw_real * circCorrT = seismicParameters.extractParamCorrFromCovAlpha(nzPad);
+  vp_vp_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  vp_vs_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  vp_rho_stat ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  vs_vs_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  vs_rho_stat ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  rho_rho_stat->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
+  fftw_free(circCorrT);
 
   // Multiply covariance grids with scalar variance coefficients
-  float ** variancesFromRockPhysics = correlations->getPriorVar0_old();
-  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][0]));
-  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][1]));
-  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[0][2]));
-  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[1][1]));
-  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[1][2]));
-  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhysics[2][2]));
+  NRLib::Matrix variancesFromRockPhysics = seismicParameters.getPriorVar0();
+  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,0)));
+  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,1)));
+  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,2)));
+  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(1,1)));
+  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(1,2)));
+  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(2,2)));
 
   //Set grid type.
   vp_vp_stat  ->setType(FFTGrid::COVARIANCE);
@@ -3701,15 +3708,15 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
    }
 }
 void
-ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
-                                       Background              * background,
-                                       std::vector<WellData *>   wells,
-                                       const Simbox            * timeSimbox,
-                                       const ModelSettings     * modelSettings,
-                                       FFTGrid                ** seisCube,
-                                       const InputFiles        * inputFiles,
-                                       std::string             & errText,
-                                       bool                    & failed)
+ModelGeneral::processPriorCorrelations(Background                     * background,
+                                       std::vector<WellData *>          wells,
+                                       const Simbox                   * timeSimbox,
+                                       const ModelSettings            * modelSettings,
+                                       FFTGrid                       ** seisCube,
+                                       const InputFiles               * inputFiles,
+                                       SeismicParametersHolder        & seismicParameters,
+                                       std::string                    & errText,
+                                       bool                           & failed)
 {
   bool printResult = ((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                       modelSettings->getEstimationMode() == true);
@@ -3783,8 +3790,6 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
           paramCorr[i][j] = static_cast<float>(param_corr(i,j));
       }
 
-      //validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
-
       if (tmpErrText != "")
       {
         errText += "Parameter covariance matrix from rock physics failed\n";
@@ -3796,12 +3801,12 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     //
     // Estimate lateral correlation from seismic data
     //
-    Surface * CorrXY = findCorrXYGrid(timeSimbox, modelSettings);
+    priorCorrXY_ = findCorrXYGrid(timeSimbox, modelSettings);
 
     if(modelSettings->getLateralCorr()==NULL) // NBNB-PAL: this will never be true (default lateral corr)
     {
       int timelapse = 0; // Setting timelapse = 0 as this is the generation of prior model
-      estimateCorrXYFromSeismic(CorrXY, seisCube, modelSettings->getNumberOfAngles(timelapse));
+      estimateCorrXYFromSeismic(priorCorrXY_, seisCube, modelSettings->getNumberOfAngles(timelapse));
     }
 
     int nCorrT = modelSettings->getNZpad();
@@ -3809,13 +3814,14 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       nCorrT = nCorrT/2+1;
     else
       nCorrT = nCorrT/2;
-    float * corrT = NULL;
+
+    std::vector<float> corrT;
 
     bool failedTempCorr = false;
     if(!estimateTempCorr)
     {
       if(modelSettings->getUseVerticalVariogram() == true) {
-        corrT = new float[nCorrT];
+        corrT.resize(nCorrT);
         float tempCorrRange = modelSettings->getTemporalCorrelationRange();
         float dz = static_cast<float>(timeSimbox->getdz());
         for(int i=0; i<nCorrT; i++){
@@ -3832,7 +3838,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
           errText += tmpErrText;
           failedTempCorr = true;
         }
-        corrT = new float[nCorrT];
+        corrT.resize(nCorrT);
         if (!failedTempCorr)
         {
           for(int i=0;i<nCorrT;i++)
@@ -3866,7 +3872,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
 
       float * estCorrT = analyze->getCorrT();
       if(estimateTempCorr) {
-        corrT = new float[nCorrT];
+        corrT.resize(nCorrT);
         int nEst = analyze->getNumberOfLags();
         int i, max = nEst;
         if(max > nCorrT)
@@ -3889,18 +3895,46 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
       failed = true;
 
     if (!failed) {
-      correlations = new Corr(pointVar0,
-                              paramCorr,
-                              corrT,
-                              nCorrT,
-                              static_cast<float>(timeSimbox->getdz()),
-                              CorrXY);
+
+      const int nx        = timeSimbox->getnx();
+      const int ny        = timeSimbox->getny();
+      const int nz        = timeSimbox->getnz();
+      const int nxPad     = modelSettings->getNXpad();
+      const int nyPad     = modelSettings->getNYpad();
+      const int nzPad     = modelSettings->getNZpad();
+
+      float dt = static_cast<float>(timeSimbox->getdz());
+      float lowCut = modelSettings->getLowCut();
+      int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+     
+      float corrGradI;
+      float corrGradJ;
+      getCorrGradIJ(corrGradI, corrGradJ);
+
+      seismicParameters.setCorrelationParameters(paramCorr,
+                                                 corrT,
+                                                 priorCorrXY_,
+                                                 lowIntCut,
+                                                 corrGradI,
+                                                 corrGradJ,
+                                                 nx,
+                                                 ny,
+                                                 nz,
+                                                 nxPad,
+                                                 nyPad,
+                                                 nzPad);
+
+      for(int i=0; i<3; i++)
+        delete [] paramCorr[i];
+      delete [] paramCorr;
+
       if(printResult)
-        correlations->writeFilePriorVariances(modelSettings);
-      correlations->printPriorVariances();
+        seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);
+      seismicParameters.printPriorVariances();
     }
 
-    if(failedTempCorr == false && failedParamCorr == false && correlations == NULL)
+
+    if(failedTempCorr == true || failedParamCorr == true)
     {
       errText += "Could not construct prior covariance. Unknown why...\n";
       failed = true;
@@ -4449,20 +4483,18 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
 }
 
 bool
-ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
-                                  const InputFiles     *  inputFiles,
-                                  std::string          &  errText,
-                                  bool                 &  failed)
+ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
+                                  const InputFiles         * inputFiles,
+                                  SeismicParametersHolder  & seismicParameters,
+                                  std::string              & errText,
+                                  bool                     & failed)
 {
   bool failedPriorCorr               = false;
   bool failedRockPhysics4DBackground = false;
 
   // Variables to be created in this function
-  Corr       * correlations;
-
   Background * background = NULL;
 
-  int lowCut         = -1;    // vet ikke hva denne skal være
   FFTGrid **seisCube = NULL;  // vet ikke hva denne skal være
 
   int n_facies = static_cast<int>(faciesNames_.size());
@@ -4495,17 +4527,17 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
                             state4d_,
                             tmpError);
 
-  processPriorCorrelations(correlations,
-                           background,
+  processPriorCorrelations(background,
                            wells_,
                            timeSimbox_,
                            modelSettings,
                            seisCube,
                            inputFiles,
+                           seismicParameters,
                            errText,
                            failedPriorCorr);
 
-  generateRockPhysics4DBackground(lowCut, correlations, timeSimbox_, *modelSettings, state4d_, tmpError);
+  generateRockPhysics4DBackground(timeSimbox_, *modelSettings, seismicParameters, state4d_, tmpError);
 
   if(tmpError != "") {
     errText += tmpError;
@@ -4619,5 +4651,6 @@ void
 ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters)
 {
   state4d_.merge(seismicParameters);
-  seismicParameters.invFFT(); //merge gives FFT-transformed version, need the standard for now.
+  seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
+  seismicParameters.updatePriorVar();
 }

@@ -15,7 +15,6 @@
 #include "src/inputfiles.h"
 
 struct irapgrid;
-class Corr;
 class Wavelet;
 class Vario;
 class Simbox;

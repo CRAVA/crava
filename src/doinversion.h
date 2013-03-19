@@ -9,12 +9,14 @@ class ModelAVOStatic;
 class ModelGeneral;
 class InputFiles;
 class Simbox;
+class SeismicParametersHolder;
 
-void setupStaticModels(ModelGeneral   *& modelGeneral,
-                       ModelAVOStatic *& modelAVOstatic,
-                       ModelSettings   * modelSettings,
-                       InputFiles      * inputFiles,
-                       Simbox         *& timeBGSimbox);
+void setupStaticModels(ModelGeneral            *& modelGeneral,
+                       ModelAVOStatic          *& modelAVOstatic,
+                       ModelSettings            * modelSettings,
+                       InputFiles               * inputFiles,
+                       SeismicParametersHolder  & seismicParameters,
+                       Simbox                  *& timeBGSimbox);
 
 bool doFirstAVOInversion(ModelSettings           * modelSettings,
                          ModelGeneral            * modelGeneral,

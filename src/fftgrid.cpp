@@ -25,13 +25,13 @@
 #include "nrlib/segy/segy.hpp"
 
 #include "src/fftgrid.h"
-#include "src/corr.h"
 #include "src/simbox.h"
 #include "src/timings.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/io.h"
 #include "src/tasklist.h"
+#include "src/seismicparametersholder.h"
 
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
@@ -926,26 +926,6 @@ FFTGrid::fillInConstant(float value, bool add)
 }
 
 void
-FFTGrid::fillInTest(float value1,float value2)
-{
-  createRealGrid();
-  int i,j,k;
-  float value;
-  setAccessMode(WRITE);
-  for( k = 0; k < nzp_; k++)
-    for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)
-      {
-        if(k > nz_/2 && k < (nz_+nzp_)/2) value = value2; else value = value1;
-        if(i<nxp_)
-          setNextReal(value);
-        else
-          setNextReal(RMISSING);
-      }
-      endAccess();
-}
-
-void
 FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nxp=2*nx, nyp=2*ny, nzp=2*nz
 {
   if(rvalue_ == NULL) // if(rvalue_ != NULL), the grid is already created
@@ -1068,70 +1048,16 @@ FFTGrid::setUndefinedCellsToGlobalAverage() // Used for background model
   }
 }
 
-
-fftw_real*
-FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
-{
-  assert(corr->getnx() == nxp_);
-  assert(corr->getny() == nyp_);
-  assert(istransformed_== false);
-
-  int i,j,k,baseK,cycleI,cycleJ;
-  float value,subK;
-  fftw_real* circCorrT;
-  circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
-  corr->computeCircCorrT(circCorrT, nzp_);
-  corr->makeCircCorrTPosDef(circCorrT, minIntFq, nzp_);
-
-  setAccessMode(WRITE);
-  for( k = 0; k < nzp_; k++)
-    for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)
-      {
-        if(i < nxp_)  // computes the index reference from the cube puts it in value
-        {
-          cycleI = i-nxp_;
-          if(i < -cycleI)
-            cycleI = i;
-          cycleJ = j-nyp_;
-          if(j < -cycleJ)
-            cycleJ = j;
-
-          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation.
-          baseK =  int(floor(subK));
-          subK  -= baseK;
-          while(baseK < 0)
-            baseK += nzp_;       //Use cyclicity
-          while(baseK >= nzp_)
-            baseK -= nzp_;       //Use cyclicity
-          value = (1-subK)*circCorrT[baseK];
-          if(baseK != nzp_-1)
-            value += subK*circCorrT[baseK+1];
-          else
-            value += subK*circCorrT[0];
-          value *= float( (*(corr->getPriorCorrXY()))(i+nxp_*j));
-        }
-        else
-          value = RMISSING;
-
-        setNextReal(value);
-      } //for k,j,i
-
-  endAccess();
-  return circCorrT;//fftw_free(circCorrT);
-}
-
-
 void
-FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
+FFTGrid::fillInErrCorr(const Surface * priorCorrXY,
+                       float           gradI,
+                       float           gradJ)
 {
   // Note:  this contain the latteral correlation and the multiplyers for the
   // time correlation. The time correlation is further adjusted by the wavelet
   // and the derivative of the wavelet.
   // the angular correlation is given by a functional Expression elsewhere
 
-  assert(parCorr->getnx() == nxp_);
-  assert(parCorr->getny() == nyp_);
   assert(istransformed_== false);
 
   int i,j,k,baseK,cycleI,cycleJ;
@@ -1163,7 +1089,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
               baseK = -1-baseK;
               subK  = 1-subK;
             }
-            value = (1-subK)* float( (*(parCorr->getPriorCorrXY()))(i+nxp_*j) );
+            value = (1-subK)* float( (*(priorCorrXY))(i+nxp_*j) );
           }
           else
             value = 0;
@@ -1175,36 +1101,43 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
       } //for k,j,i
       endAccess();
 }
+
 void
-FFTGrid::fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ)
+FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
+                         const fftw_real * circCorrT,
+                         float             gradI,
+                         float             gradJ)
 {
   assert(istransformed_== false);
+
+  int baseK,cycleI,cycleJ;
+  float value,subK;
+
   setAccessMode(WRITE);
-  covAlpha->setAccessMode(RANDOMACCESS);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+        if(i < nxp_) {  // computes the index reference from the cube puts it in value
+          cycleI = i-nxp_;
+          if(i < -cycleI)
+            cycleI = i;
+          cycleJ = j-nyp_;
+          if(j < -cycleJ)
+            cycleJ = j;
 
-  int   cycleI;
-  int   cycleJ;
-  int   range    = 1;
-  float value;
-  float subK;
-  float constant = covAlpha->getRealValue(0, 0, 0, true);
-
-  for( int k = 0; k < nzp_; k++){
-    for( int j = 0; j < nyp_; j++){
-      for( int i = 0; i < rnxp_; i++){
-        cycleI = i-nxp_;
-        if(i < -cycleI)
-          cycleI = i;
-        cycleJ = j-nyp_;
-        if(j < -cycleJ)
-          cycleJ = j;
-
-        subK  =  k+cycleI*gradI+cycleJ*gradJ;
-        if(i < nxp_) {
-          if(fabs(subK) < range*1.0f || fabs(subK-nzp_) < range*1.0f)
-            value = covAlpha->getRealValue(i, j, 0, true) / constant;
+          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation.
+          baseK =  int(floor(subK));
+          subK  -= baseK;
+          while(baseK < 0)
+            baseK += nzp_;       //Use cyclicity
+          while(baseK >= nzp_)
+            baseK -= nzp_;       //Use cyclicity
+          value = (1-subK)*circCorrT[baseK];
+          if(baseK != nzp_-1)
+            value += subK*circCorrT[baseK+1];
           else
-            value = 0;
+            value += subK*circCorrT[0];
+          value *= float( (*(priorCorrXY))(i+nxp_*j));
         }
         else
           value = RMISSING;
@@ -1215,9 +1148,7 @@ FFTGrid::fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ)
   }
 
   endAccess();
-  covAlpha->endAccess();
 }
-
 
 void
 FFTGrid::fillInComplexNoise(RandomGen * ranGen)

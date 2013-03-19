@@ -18,7 +18,6 @@
 
 #include <map>
 
-class Corr;
 class FFTGrid;
 class Crava;
 class Simbox;
@@ -31,6 +30,7 @@ class WellData;
 class SpatialWellFilter;
 class ModelGeneral;
 class CravaTrend;
+class SeismicParametersHolder;
 
 class FaciesProb
 {
@@ -50,7 +50,7 @@ public:
              const double                        dz,
              bool                                relative,
              bool                                noVs,
-             Crava                              *cravaResult,
+             Crava                             * cravaResult,
              const std::vector<Grid2D *>       & noiseScale,
              const ModelSettings               * modelSettings,
              FFTGrid                           * seismicLH,
@@ -68,14 +68,12 @@ public:
              const std::vector<std::string>                     & facies_names,
              const std::vector<Surface *>                       & faciesEstimInterval,
              Crava                                              * cravaResult,
+             SeismicParametersHolder                            & seismicParameters,
              const std::vector<Grid2D *>                        & noiseScale,
              const ModelSettings                                * modelSettings,
              SpatialWellFilter                                  * filteredlogs,
              std::vector<WellData *>                              wells,
              CravaTrend                                         & trend_cubes,
-             int                                                  lowIntCut,
-             float                                                corrGradI,
-             float                                                corrGradJ,
              int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
@@ -132,6 +130,7 @@ private:
                                         const float                      * priorFacies,
                                         FFTGrid                         ** priorFaciesCubes,
                                         Crava                            * cravaResult,
+                                        const SeismicParametersHolder    & seismicParameters,
                                         const std::vector<Grid2D *>      & noiseScale,
                                         const ModelSettings              * modelSettings,
                                         FFTGrid                          * seismicLH);
@@ -139,7 +138,7 @@ private:
   int                    MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
                                                             std::vector<Simbox*>                                   & volume,
                                                             Crava                                                  * cravaResult,
-                                                            //SpatialWellFilter                                      * filteredlogs,
+                                                            SeismicParametersHolder                                & seismicParameters,
                                                             std::vector<FFTGrid *>                                 & priorFaciesCubes,
                                                             const ModelSettings                                    * modelSettings,
                                                             const std::map<std::string, DistributionsRock *>       & rock_distributions,
@@ -149,10 +148,7 @@ private:
                                                             const double                                           & trend1_max,
                                                             const double                                           & trend2_min,
                                                             const double                                           & trend2_max,
-                                                            bool                                                     useFilter,
-                                                            int                                                      lowIntCut,
-                                                            float                                                    corrGradI,
-                                                            float                                                    corrGradJ);
+                                                            bool                                                     useFilter);
   void                   checkProbabilities(const std::vector<std::string>  & faciesNames,
                                             FFTGrid                        ** faciesProb,
                                             int                               nFacies) const;
@@ -312,9 +308,9 @@ private:
                                                        bool                           & lowProbs,
                                                        int                            * faciesCount = NULL);
 
-  void                   FillSigmaPriAndSigmaPost(Crava                               * cravaResult,
-                                                  double                             ** sigma_pri_temp,
-                                                  double                             ** sigma_post_temp);
+  void                   FillSigmaPriAndSigmaPost(Crava   * cravaResult,
+                                                  double ** sigma_pri_temp,
+                                                  double ** sigma_post_temp);
 
   void    SolveGEVProblem(double                           ** sigma_prior,
                           double                           ** sigma_posterior,

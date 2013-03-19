@@ -13,11 +13,11 @@
 #include "rfftw.h"
 #include "definitions.h"
 
-class Corr;
 class Wavelet;
 class Simbox;
 class RandomGen;
 class GridMapping;
+class SeismicParametersHolder;
 
 class FFTGrid
 {
@@ -91,14 +91,18 @@ public:
                                        bool                scale = false,
                                        bool                nopadding = false);    // No mode
   void                 fillInConstant(float value, bool add = true);              // No mode
-  fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
-                                       float gradI, float gradJ);// No mode
-  void                 fillInErrCorr(Corr* parCorr,              // No mode
-                                     float gradI, float gradJ);  // No mode
-  void                 fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ);
+
+  void                 fillInErrCorr(const Surface * priorCorrXY,
+                                     float           gradI,
+                                     float           gradJ);
+
+  void                 fillInParamCorr(const Surface   * priorCorrXY,
+                                       const fftw_real * circCorrT,
+                                       float             gradI,
+                                       float             gradJ);// No mode
+
   virtual void         fillInComplexNoise(RandomGen * ranGen);   // No mode/randomaccess
 
-  void                 fillInTest(float value1, float value2);   // No mode /DEBUG
   void                 fillInFromArray(float *value);
   void                 calculateStatistics();                    // min,max, avg
   void                 setUndefinedCellsToGlobalAverage();      // For BG model

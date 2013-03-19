@@ -8,11 +8,11 @@
 #include "src/definitions.h"
 #include "rplib/syntwelldata.h"
 
-class Corr;
 class FFTGrid;
 class Crava;
 class WellData;
 class BlockedLogs;
+class SeismicParametersHolder;
 
 class SpatialWellFilter
 {
@@ -29,21 +29,21 @@ public:
                                                WellData   * well,
                                                int          wellnr);
 
-  void                     doFiltering(Corr                        * corr,
-                                       std::vector<WellData *>       wells,
-                                       int                           nWells,
-                                       bool                          useVpRhoFilter,
-                                       int                           nAngles,
-                                       const Crava                 * cravaResult,
-                                       const std::vector<Grid2D *> & noiseScale);
+  void                     doFiltering(std::vector<WellData *>         wells,
+                                       int                             nWells,
+                                       bool                            useVpRhoFilter,
+                                       int                             nAngles,
+                                       const Crava                   * cravaResult,
+                                       const std::vector<Grid2D *>   & noiseScale,
+                                       SeismicParametersHolder       & seismicParameters);
 
-  void                     doFilteringSyntWells(Corr                                      * corr,
-                                                std::vector<SyntWellData *>               & syntWellData,
-                                                const std::vector<std::vector<double> >   & v,
-                                                int                                         nWells);
+  void                     doFilteringSyntWells(std::vector<SyntWellData *>              & syntWellData,
+                                                const std::vector<std::vector<double> >  & v,
+                                                SeismicParametersHolder                  & seismicParameters,
+                                                int                                        nWells,
+                                                const NRLib::Matrix                      & priorVar0);
 
-  void                         doFiltering(Corr                        * corr,
-                                           WellData                   ** wells,
+  void                         doFiltering(WellData                   ** wells,
                                            int                           nWells,
                                            bool                          useVpRhoFilter,
                                            int                           nAngles,

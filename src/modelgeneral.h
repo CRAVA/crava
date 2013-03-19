@@ -35,13 +35,15 @@ class GridMapping;
 class InputFiles;
 class TimeLine;
 class WellData;
+class SeismicParameters;
 
 class ModelGeneral
 {
 public:
-  ModelGeneral(ModelSettings    *& modelSettings,
-               const InputFiles  * inputFiles,
-               Simbox           *& timeBGSimbox);
+  ModelGeneral(ModelSettings           *& modelSettings,
+               const InputFiles         * inputFiles,
+               SeismicParametersHolder  & seismicParameters,
+               Simbox                  *& timeBGSimbox);
   ~ModelGeneral();
 
   Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
@@ -51,6 +53,7 @@ public:
   GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
   CravaTrend               & getTrendCubes()                  { return trend_cubes_            ;}
   CravaTrend                 getTrendCubes()            const { return trend_cubes_            ;}
+  Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
 
   bool                       getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool                       getFailed()                const { return failed_                 ;}
@@ -164,15 +167,15 @@ public:
                                         ModelSettings                * modelSettings,
                                         const std::vector<Surface *> & interval);              // Changes wells
 
-  void              processPriorCorrelations(Corr                 *& correlations,
-                                             Background            * background,
-                                             std::vector<WellData *> wells,
-                                             const Simbox          * timeSimbox,
-                                             const ModelSettings   * modelSettings,
-                                             FFTGrid              ** seisCube,
-                                             const InputFiles      * inputFiles,
-                                             std::string           & errText,
-                                             bool                  & failed);
+  void              processPriorCorrelations(Background                     * background,
+                                             std::vector<WellData *>          wells,
+                                             const Simbox                   * timeSimbox,
+                                             const ModelSettings            * modelSettings,
+                                             FFTGrid                       ** seisCube,
+                                             const InputFiles               * inputFiles,
+                                             SeismicParametersHolder        & seismicParameters,
+                                             std::string                    & errText,
+                                             bool                           & failed);
 
    void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           std::vector<WellData *>        wells,
@@ -222,16 +225,17 @@ private:
                                               State4D                                          & state4d,
                                               std::string                                      & errTxt);
 
-  void              generateRockPhysics4DBackground(int                                                lowCut,
-                                                    Corr                                             * correlations, //The grids here get/set correctly.
-                                                    const Simbox                                     & timeSimbox,
+  void              generateRockPhysics4DBackground(const Simbox                                     & timeSimbox,
                                                     const ModelSettings                              & modelSettings,
+                                                    const SeismicParametersHolder                    & seismicParameters,
                                                     State4D                                          & state4d,
                                                     std::string                                      & errTxt);
-  bool              process4DBackground(ModelSettings     *& modelSettings,
-                                        const InputFiles   * inputFiles,
-                                        std::string        & errText,
-                                        bool               & failed);
+
+  bool              process4DBackground(ModelSettings           *& modelSettings,
+                                        const InputFiles         * inputFiles,
+                                        SeismicParametersHolder  & seismicParameters,
+                                        std::string              & errText,
+                                        bool                     & failed);
 
   void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<double>              & probability,
@@ -380,6 +384,9 @@ private:
   std::vector<std::string>  faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
 
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
+
+  Surface                 * priorCorrXY_;                ///< Lateral correlation
+
 };
 
 #endif

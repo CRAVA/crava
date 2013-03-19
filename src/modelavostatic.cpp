@@ -19,7 +19,6 @@
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/corr.h"
 #include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
