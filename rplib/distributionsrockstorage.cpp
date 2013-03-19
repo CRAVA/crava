@@ -911,7 +911,8 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
           all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
       }
       else
-        all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+        if(all_volume_fractions[i-1][s] != NULL)
+          all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
     }
 
     CheckVolumeConsistency(all_volume_fractions[i], tmpErrTxt);
