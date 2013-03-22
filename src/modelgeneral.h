@@ -203,6 +203,9 @@ public:
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
 
+  void              advanceTime(int time_step, SeismicParametersHolder & seismicParameters);
+
+
 private:
   void              processWells(std::vector<WellData *> & wells,
                                  Simbox                  * timeSimbox,

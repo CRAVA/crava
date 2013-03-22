@@ -266,8 +266,10 @@ int main(int argc, char** argv)
       delete timeBGSimbox;
 
       int time;
+      int time_index = 0;
       while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-        //Advance time (time-oldTime);
+        modelGeneral->advanceTime(time_index, seismicParameters);
+        time_index++;
         bool failed;
         switch(eventType) {
         case TimeLine::AVO :

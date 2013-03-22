@@ -4654,3 +4654,13 @@ ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameter
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
   seismicParameters.updatePriorVar();
 }
+
+
+void
+ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters)
+{
+  state4d_.split(seismicParameters);
+  state4d_.evolve(time_step, timeEvolution_);
+  state4d_.merge(seismicParameters);
+  seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
+}
