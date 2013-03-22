@@ -4664,3 +4664,4 @@ ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParame
   state4d_.merge(seismicParameters);
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
+
