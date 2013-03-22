@@ -963,6 +963,12 @@
     <ClCompile Include="rplib\dryrocktabulatedmodulus.cpp">
       <Filter>Source Files\rplib\dryrock</Filter>
     </ClCompile>
+    <ClCompile Include="rplib\distributionsdryrockwalton.cpp">
+      <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\dryrockwalton.cpp">
+      <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1608,6 +1614,12 @@
       <Filter>Header Files\rplib\dryrock</Filter>
     </ClInclude>
     <ClInclude Include="rplib\dryrocktabulatedmodulus.h">
+      <Filter>Header Files\rplib\dryrock</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\distributionsdryrockwalton.h">
+      <Filter>Header Files\rplib\dryrock</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\dryrockwalton.h">
       <Filter>Header Files\rplib\dryrock</Filter>
     </ClInclude>
   </ItemGroup>

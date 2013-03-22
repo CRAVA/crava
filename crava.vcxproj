@@ -259,6 +259,8 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="rplib\distributionsdryrockwalton.cpp" />
+    <ClCompile Include="rplib\dryrockwalton.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1349,6 +1351,8 @@
     <ClCompile Include="rplib\dryrocktabulatedmodulus.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="rplib\distributionsdryrockwalton.h" />
+    <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
     <ClInclude Include="src\background.h" />

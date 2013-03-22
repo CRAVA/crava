@@ -2,12 +2,9 @@
 
 #include "rplib/solid.h"
 
+#include "nrlib/math/constants.hpp"
+
 #include <cassert>
-
-#ifndef _USE_MATH_DEFINES
-  #define _USE_MATH_DEFINES
-#endif
-
 #include <cmath>
 
 
@@ -19,7 +16,7 @@ DryRockWalton::DryRockWalton(const Solid                       * solid,
                              const std::vector<double>         & u)
 : DryRock()
 {
-  u_ = u; // u contains independent samples used in quantiles of ? //NBNB fjellvoll fill in later
+  u_ = u; // u contains independent samples used in quantiles of friction_weight, pressure, porosity, coord_number
 
   solid_ = solid->Clone();
 
@@ -95,7 +92,7 @@ DryRockWalton::SetTotalPorosity(double porosity) {
 
 void
 DryRockWalton::ComputeElasticParams() {
-  static const double pi      = M_PI;
+  static const double pi      = NRLib::Pi;
   static const double pi4_inv = 1.0/(4*pi);
 
   double mu_solid, k_solid, rho_solid;

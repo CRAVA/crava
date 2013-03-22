@@ -2327,6 +2327,72 @@ XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::strin
   return(true);
 }
 
+bool 
+XmlModelFile::parseWalton(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("walton");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.reserve(5);
+  legalCommands.push_back("solid");
+  legalCommands.push_back("no-slip");
+  legalCommands.push_back("pressure");
+  legalCommands.push_back("porosity");
+  legalCommands.push_back("coord-nr");
+
+  if (parseSolid(root, label, errTxt) == false) {
+    errTxt += "<solid> needs to be given in <dry-rock><walton>.\n";
+  }
+
+  std::string dummy;
+  std::vector<DistributionWithTrendStorage *> no_slip;
+  if(parseDistributionWithTrend(root, "no-slip", no_slip, dummy, false, errTxt, true) == false)
+    errTxt += "<no-slip> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> pressure;
+  if(parseDistributionWithTrend(root, "pressure", pressure, dummy, false, errTxt, true) == false)
+    errTxt += "<pressure> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> porosity;
+  if(parseDistributionWithTrend(root, "porosity", porosity, dummy, false, errTxt, true) == false)
+    errTxt += "<porosity> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> coord_nr;
+  if(parseDistributionWithTrend(root, "coord-nr", coord_nr, dummy, false, errTxt, true) == false) {
+    double interpolation_flag = -1.0;
+    coord_nr.push_back(new DeltaDistributionWithTrendStorage(interpolation_flag, false));
+
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Walton model can not be used to make a fluid.\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Walton model can not be used to make a solid.\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    //DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, shear_weight, correlation);
+    //modelSettings_->addRock(label, rock);
+    
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    errTxt += "Implementation error: The Walton model can not be used to make a rock.\n";
+  }
+
+  
+
+
+
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+
+
+
+}
+
 bool
 XmlModelFile::parseDEM(TiXmlNode                                  * node,
                        int                                          constituent,

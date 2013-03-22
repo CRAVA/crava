@@ -9,6 +9,7 @@
 #include "rplib/distributionsdryrocktabulated.h"
 #include "rplib/distributionsdryrockdem.h"
 #include "rplib/distributionsdryrockmix.h"
+#include "rplib/distributionsdryrockwalton.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
@@ -737,4 +738,148 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const int                       
   }
 
   return(final_dist_dryrock);
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------//
+
+WaltonDryRockStorage::
+WaltonDryRockStorage(const std::string                                                & solid_label,
+                     std::vector<DistributionWithTrendStorage *>                      & distr_friction_weight,
+                     std::vector<DistributionWithTrendStorage *>                      & distr_pressure,
+                     std::vector<DistributionWithTrendStorage *>                      & distr_porosity,
+                     std::vector<DistributionWithTrendStorage *>                      & distr_coord_number):
+
+solid_label_(solid_label),
+distr_friction_weight_(distr_friction_weight),
+distr_pressure_(distr_pressure),
+distr_porosity_(distr_porosity),
+distr_coord_number_(distr_coord_number)
+{
+}
+
+WaltonDryRockStorage::
+~WaltonDryRockStorage()
+{
+  for(size_t i = 0; i < distr_coord_number_.size(); i++) {
+    if(distr_coord_number_[i]->GetIsShared() == false)
+      delete distr_coord_number_[i];
+  }
+
+  for(size_t i = 0; i < distr_porosity_.size(); i++) {
+    if(distr_porosity_[i]->GetIsShared() == false)
+      delete distr_porosity_[i];
+  }
+
+  for(size_t i = 0; i < distr_pressure_.size(); i++) {
+    if(distr_pressure_[i]->GetIsShared() == false)
+      delete distr_pressure_[i];
+  }
+
+  for(size_t i = 0; i < distr_friction_weight_.size(); i++) {
+    if(distr_friction_weight_[i]->GetIsShared() == false)
+      delete distr_friction_weight_[i];
+  }
+
+}
+
+std::vector<DistributionsDryRock *>
+WaltonDryRockStorage::
+GenerateDistributionsDryRock(const int                                                 & n_vintages,
+                              const std::string                                         & path,
+                              const std::vector<std::string>                            & trend_cube_parameters,
+                              const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                              const std::map<std::string, DistributionsDryRockStorage *>& /*model_dryrock_storage*/,
+                              const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                              std::string                                               & errTxt) const
+{
+    std::vector<double> alpha(4);
+    // order: friction_weight, pressure, porosity, coord_number
+    alpha[0] = distr_friction_weight_[0]->GetOneYearCorrelation();
+    alpha[1] = distr_pressure_[0]->GetOneYearCorrelation();
+    alpha[2] = distr_porosity_[0]->GetOneYearCorrelation();
+    alpha[3] = distr_coord_number_[0]->GetOneYearCorrelation();
+
+    int n_vintages_friction_weight          = static_cast<int>(distr_friction_weight_.size());
+    int n_vintages_pressure                 = static_cast<int>(distr_pressure_.size());
+    int n_vintages_porosity                 = static_cast<int>(distr_porosity_.size());
+    int n_vintages_coord_number             = static_cast<int>(distr_coord_number_.size());
+
+    std::vector<DistributionsDryRock *>    dist_solid(n_vintages, NULL);
+    std::vector<DistributionWithTrend *>   dwt_friction_weight(n_vintages, NULL);
+    std::vector<DistributionWithTrend *>   dwt_pressure(n_vintages, NULL);
+    std::vector<DistributionWithTrend *>   dwt_porosity(n_vintages, NULL);
+    std::vector<DistributionWithTrend *>   dwt_coord_number(n_vintages, NULL);
+
+
+  for(int i=0; i<n_vintages; i++) {
+    if(i < n_vintages_friction_weight)
+      dwt_friction_weight[i] = distr_friction_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      dwt_friction_weight[i] = dwt_friction_weight[i-1]->Clone();
+
+    if(i < n_vintages_pressure)
+      dwt_pressure[i] = distr_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      dwt_pressure[i] = dwt_pressure[i-1]->Clone();
+
+    if(i < n_vintages_porosity)
+      dwt_porosity[i] = distr_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      dwt_porosity[i] = dwt_porosity[i-1]->Clone();
+
+    if(i < n_vintages_coord_number)
+      dwt_coord_number[i] = distr_coord_number_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    else
+      dwt_coord_number[i] = dwt_coord_number[i-1]->Clone();
+ }
+
+  std::vector<DistributionsSolid *> final_distr_solid(n_vintages);
+
+  std::vector<DistributionsSolid *> distr_solid = ReadSolid(n_vintages,
+                                                            solid_label_,
+                                                            path,
+                                                            trend_cube_parameters,
+                                                            trend_cube_sampling,
+                                                            model_solid_storage,
+                                                            errTxt);
+
+  int n_vintages_solid = static_cast<int>(distr_solid.size());
+
+  for(int i=0; i<n_vintages; i++) {
+    if(i < n_vintages_solid)
+      final_distr_solid[i] = distr_solid[i];
+    else
+      final_distr_solid[i] = final_distr_solid[i-1]->Clone();
+  }
+
+  std::vector<DistributionsDryRock*> distr_dryrock(n_vintages, NULL);
+
+  for(int i=0; i<n_vintages; i++) {
+    DistributionsDryRock * dryrock = new DistributionsDryRockWalton(distr_solid[i],
+                                                                    dwt_friction_weight[i],
+                                                                    dwt_pressure[i],
+                                                                    dwt_porosity[i],
+                                                                    dwt_coord_number[i],
+                                                                    alpha);
+
+    distr_dryrock[i] = dryrock;
+  }
+
+  //clean up
+  for(int i=0; i<n_vintages; i++) {
+    if (dwt_friction_weight[i]->GetIsShared() == false)
+      delete dwt_friction_weight[i];
+
+    if (dwt_pressure[i]->GetIsShared() == false)
+      delete dwt_pressure[i];
+
+    if (dwt_porosity[i]->GetIsShared() == false)
+      delete dwt_porosity[i];
+
+    if (dwt_coord_number[i]->GetIsShared() == false)
+      delete dwt_coord_number[i];
+
+  }
+
+  return(distr_dryrock);
 }

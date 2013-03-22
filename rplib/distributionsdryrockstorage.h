@@ -10,6 +10,9 @@
 
 class DistributionsSolidStorage;
 
+class DistributionsRockStorage;
+class DistributionsFluidStorage;
+
 class DistributionsDryRockStorage {
 public:
   DistributionsDryRockStorage();
@@ -193,6 +196,34 @@ private:
   std::vector<std::string>                                  inclusion_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio_;
+};
+
+//--------------------------------------------------------------------------------------------------------------------------------------//
+class WaltonDryRockStorage : public DistributionsDryRockStorage {
+public:
+  WaltonDryRockStorage(const std::string                                                & solid_label,
+                       std::vector<DistributionWithTrendStorage *>                      & distr_friction_weight,
+                       std::vector<DistributionWithTrendStorage *>                      & distr_pressure,
+                       std::vector<DistributionWithTrendStorage *>                      & distr_porosity,
+                       std::vector<DistributionWithTrendStorage *>                      & distr_coord_number);
+
+  virtual ~WaltonDryRockStorage();
+
+  virtual std::vector<DistributionsDryRock *> GenerateDistributionsDryRock(const int                                                 & n_vintages,
+                                                                           const std::string                                         & path,
+                                                                           const std::vector<std::string>                            & trend_cube_parameters,
+                                                                           const std::vector<std::vector<double> >                   & trend_cube_sampling,
+                                                                           const std::map<std::string, DistributionsDryRockStorage *>& /*model_dryrock_storage*/,
+                                                                           const std::map<std::string, DistributionsSolidStorage *>  & model_solid_storage,
+                                                                           std::string                                               & errTxt) const;
+
+private:
+  std::string                                   solid_label_;
+  std::vector<DistributionWithTrendStorage *>   distr_friction_weight_;
+  std::vector<DistributionWithTrendStorage *>   distr_pressure_;
+  std::vector<DistributionWithTrendStorage *>   distr_porosity_;
+  std::vector<DistributionWithTrendStorage *>   distr_coord_number_;
+
 };
 
 #endif
