@@ -1,7 +1,12 @@
 #include "src/state4d.h"
 #include "src/seismicparametersholder.h"
 #include "src/timeevolution.h"
+#include "src/simbox.h"
 #include "lib/lib_matr.h"
+#include "src/correlatedrocksamples.h"
+#include "rplib/distributionsrock.h"
+#include "src/rockphysicsinversion4d.h"
+#include <string>
 
 State4D::State4D()
 {
@@ -67,6 +72,29 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
   sigma_static_dynamic_[7] = rhovs;
   sigma_static_dynamic_[8] = rhorho;
 }
+
+void State4D::deleteCovariances()
+{
+  for(int i=0;i<6;i++)
+    delete sigma_static_static_[i];
+
+  for(int i=0;i<6;i++)
+    delete sigma_dynamic_dynamic_[i];
+  
+  for(int i=0;i<9;i++)
+    delete sigma_static_dynamic_[i];
+}
+
+void State4D::SaveMeans()
+{
+  printf("State4D::SaveMeans(),Not implemented");
+}
+
+void State4D::SaveCovariances()
+{
+  printf("State4D::SaveCovariances(),Not implemented");
+}
+
 
 void State4D::merge(SeismicParametersHolder & current_state )
 {
@@ -677,4 +705,170 @@ State4D::FFT()
     sigma_dynamic_dynamic_[i]->fftInPlace();
   for(int i = 0; i<9; i++)
     sigma_static_dynamic_[i]->fftInPlace();
+}
+
+void
+State4D::iFFT()
+{
+  for(int i = 0; i<3; i++)
+    mu_static_[i]->invFFTInPlace();
+  for(int i = 0; i<3; i++)
+    mu_dynamic_[i]->invFFTInPlace();
+  for(int i = 0; i<6; i++)
+    sigma_static_static_[i]->invFFTInPlace();
+  for(int i = 0; i<6; i++)
+    sigma_dynamic_dynamic_[i]->invFFTInPlace();
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->invFFTInPlace();
+}
+
+
+void
+State4D::iFFTMean()
+{
+  for(int i = 0; i<3; i++)
+    mu_static_[i]->invFFTInPlace();
+  for(int i = 0; i<3; i++)
+    mu_dynamic_[i]->invFFTInPlace();
+}
+
+void
+State4D::iFFTCov()
+{
+  for(int i = 0; i<6; i++)
+    sigma_static_static_[i]->invFFTInPlace();
+  for(int i = 0; i<6; i++)
+    sigma_dynamic_dynamic_[i]->invFFTInPlace();
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->invFFTInPlace();
+}
+
+
+
+std::vector<FFTGrid*>   
+State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<DistributionsRock *> rock_distributions,  TimeEvolution timeEvolution)
+{
+  // inverse transform posterior
+  iFFT();
+ 
+  int nSim=10000;
+  // Note rockSample contains rock sample for all time steps.
+  std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
+  
+  NRLib::Vector fullPriorMean = timeEvolution.computePriorMeanStaticAndDynamicLastTimeStep();
+  NRLib::Matrix fullPriorCov  = timeEvolution.computePriorCovStaticAndDynamicLastTimeStep();
+
+  NRLib::Matrix fullPosteriorCov=GetFullCov();
+
+  //int nTimeSteps=rockSample.size();
+  //nSim=rockSample[0].size();
+  int nParam=rockSample[0][0].size();
+  int nM = 3;  // number of seismic parameters.
+  int nRockProperties = nParam-nM; // number of rock parameters 
+
+
+  std::vector<std::vector<double> > mSamp = makeSeismicParamsFromrockSample(rockSample); 
+  RockPhysicsInversion4D rockPhysicsInv =  RockPhysicsInversion4D(fullPriorMean,fullPriorCov,fullPosteriorCov,mSamp);
+  
+  std::vector<FFTGrid*> prediction(nRockProperties);
+
+
+  for(int i=0;i<nRockProperties;i++)
+  {
+    std::vector<double> rSamp = getRockPropertiesFromRockSample(rockSample,i); 
+    rockPhysicsInv.makeNewPredictionTable(mSamp,rSamp);
+    prediction[i] = rockPhysicsInv.makePredictions(mu_static_, mu_dynamic_ );
+  }
+
+  return prediction;
+}
+
+NRLib::Matrix 
+State4D::GetFullCov()
+{
+
+  NRLib::Matrix covMat(6,6);
+  covMat=0.0;
+
+  for(int i=0;i<6;i++)
+    sigma_static_static_[i]->setAccessMode(FFTGrid::READ);
+   
+  covMat(0,0) = sigma_static_static_[0]->getNextReal();  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all static)
+  covMat(0,1) = sigma_static_static_[1]->getNextReal(); 
+  covMat(0,2) = sigma_static_static_[2]->getNextReal(); 
+  covMat(1,1) = sigma_static_static_[3]->getNextReal(); 
+  covMat(1,2) = sigma_static_static_[4]->getNextReal(); 
+  covMat(2,2) = sigma_static_static_[5]->getNextReal(); 
+  covMat(1,0) = covMat(0,2);
+  covMat(2,0) = covMat(0,2);
+  covMat(2,1) = covMat(1,2); 
+  for(int i=0;i<6;i++)
+    sigma_static_static_[i]->endAccess();
+
+  for(int i=0;i<6;i++)
+    sigma_dynamic_dynamic_[i]->setAccessMode(FFTGrid::READ);
+
+  covMat(3,3) = sigma_dynamic_dynamic_[0]->getNextReal();  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all static)
+  covMat(3,4) = sigma_dynamic_dynamic_[1]->getNextReal(); 
+  covMat(3,5) = sigma_dynamic_dynamic_[2]->getNextReal(); 
+  covMat(4,4) = sigma_dynamic_dynamic_[3]->getNextReal(); 
+  covMat(4,5) = sigma_dynamic_dynamic_[4]->getNextReal(); 
+  covMat(5,5) = sigma_dynamic_dynamic_[5]->getNextReal(); 
+  covMat(4,3) = covMat(3,4);
+  covMat(5,3) = covMat(3,5);
+  covMat(5,4) = covMat(4,5); 
+  for(int i=0;i<6;i++)
+    sigma_dynamic_dynamic_[i]->endAccess();
+
+  int counter=0;
+
+  for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
+    {
+      sigma_dynamic_dynamic_[counter]->setAccessMode(FFTGrid::READ);
+      counter=i+3*j;
+      covMat(i,j+3) = sigma_static_dynamic_[counter]->getNextReal(); // [0] = vpStat_vpDyn, [1] = vpStat_vsDyn, [2] = vpStat_rhoDyn ,[3] = vsStat_vpDyn,  
+      covMat(j+3,i) = covMat(i,j+3); // NBNB OK sjekk
+      sigma_dynamic_dynamic_[counter]->endAccess();
+    }
+
+  return covMat;
+}
+
+
+std::vector<std::vector<double> >
+State4D::makeSeismicParamsFromrockSample(std::vector<std::vector<std::vector<double> > > rS)
+{
+  int k_max = int(rS.size());// number of surveys
+  int i_max = int(rS[0].size());// number of samples
+//  int dim   = int(rS[0][0].size());// 3 + number of reservoir variables
+
+  std::vector<std::vector<double> > m(6,i_max);
+
+  for(int i=0;i<i_max;i++)
+  {
+    m[0][i]=rS[0][i][0];
+    m[1][i]=rS[0][i][1];
+    m[2][i]=rS[0][i][2];
+    m[3][i]=rS[k_max-1][i][0]-rS[0][i][0];
+    m[4][i]=rS[k_max-1][i][1]-rS[0][i][1];
+    m[5][i]=rS[k_max-1][i][2]-rS[0][i][2];
+  }
+
+  return m;
+}
+
+std::vector<double> 
+State4D::getRockPropertiesFromRockSample(std::vector<std::vector<std::vector<double> > > rS,int varNumber)
+{
+
+  int k_max = int(rS.size());// number of surveys
+  int i_max = int(rS[0].size());// number of samples
+  //int dim   = int(rS[0][0].size());// 3 + number of reservoir variables
+
+  std::vector<double>  r(i_max);
+  for(int i=0;i<i_max;i++)
+    r[i]=rS[k_max-1][i][3+varNumber];
+
+  return r;
 }

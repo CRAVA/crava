@@ -64,6 +64,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                            const InputFiles         * inputFiles,
                            SeismicParametersHolder  & seismicParameters,
                            Simbox                  *& timeBGSimbox)
+                           :do4DInversion_(modelSettings->getDo4DInversion()),
+                          do4DRockPhysicsInversion_(modelSettings->getDo4DRockPhysicsInversion())
 {
   timeSimbox_             = new Simbox();
   timeSimboxConstThick_   = NULL;
