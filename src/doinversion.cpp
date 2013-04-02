@@ -136,6 +136,8 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
   return(failedLoadingModel);
 }
 
+
+
 bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeSimbox)
 {
   // Parameters for generating new FFTGrids

@@ -100,10 +100,10 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
       final_dist_solid[i] = new DistributionsSolidMix(distr_solid[i], all_volume_fractions[i], mix_method, alpha);
 
     for(int i=0; i<n_vintages; i++) {
-      for(size_t s=0; s<distr_solid.size(); s++)
+      for(size_t s=0; s<distr_solid[i].size(); s++)
         delete distr_solid[i][s];
 
-      for(size_t s=0; s<all_volume_fractions.size(); s++) {
+      for(size_t s=0; s<all_volume_fractions[i].size(); s++) {
         if(all_volume_fractions[i][s] != NULL) {
           if(all_volume_fractions[i][s]->GetIsShared() == false)
             delete all_volume_fractions[i][s];
@@ -310,14 +310,14 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    double lower_mega = 1.0e+5; //Finn grenser fra modelsettings
-    double upper_mega = 1.0e+8;
+    double lower_mega_solid = 5.0e+6; //Finn grenser fra modelsettings
+    double upper_mega_solid = 1.0e+8;
     double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
     double test_shear = shear_dist_with_trend[0]->ReSample(0,0);
-    if(test_bulk < lower_mega || test_bulk > upper_mega)
-      errTxt += "Bulk modulus need to be given in megaPa\n";
-    if(test_shear < lower_mega || test_shear > upper_mega)
-      errTxt += "Shear modulus need to be given in megaPa\n";
+    if(test_bulk < lower_mega_solid || test_bulk > upper_mega_solid)
+      errTxt += "Bulk modulus need to be given in kPa\n";
+    if(test_shear < lower_mega_solid || test_shear > upper_mega_solid)
+      errTxt += "Shear modulus need to be given in kPa\n";
 
     if(i < n_vintages_bulk_shear)
       corr_bulk_shear.push_back(correlation_bulk_shear_[i]);

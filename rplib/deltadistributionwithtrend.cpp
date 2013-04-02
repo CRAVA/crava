@@ -8,13 +8,13 @@
 #include "rplib/deltadistributionwithtrend.h"
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend()
-: share_level_(None)
+: DistributionWithTrend()
 {
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean,
                                                        int                  shared)
-: share_level_(shared)
+: DistributionWithTrend(shared,true)
 {
   mean_ = mean->Clone();
 
@@ -29,8 +29,8 @@ DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const DeltaDistributionWithTrend & dist)
-  : use_trend_cube_(dist.use_trend_cube_),
-  share_level_(dist.share_level_)
+  : DistributionWithTrend(dist.share_level_,dist.current_u_,dist.resample_),
+  use_trend_cube_(dist.use_trend_cube_)
 {
   dirac_ = dist.dirac_->Clone();
   mean_  = dist.mean_ ->Clone();

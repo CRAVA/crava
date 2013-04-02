@@ -25,7 +25,7 @@ DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >
     distr_solid_[i] = distr_solid[i]->Clone();
 
   for (size_t i = 0; i < distr_vol_frac.size(); ++i) {
-    if(distr_vol_frac_[i] != NULL) {
+    if(distr_vol_frac[i] != NULL) {
       if(distr_vol_frac[i]->GetIsShared() == false)
         distr_vol_frac_[i] = distr_vol_frac[i]->Clone();
       else

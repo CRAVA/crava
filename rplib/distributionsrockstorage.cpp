@@ -514,14 +514,14 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    double lower_mega = 1.0e+5;
-    double upper_mega = 1.0e+8;
+    double lower_mega = 1.0e+6;
+    double upper_mega = 1.6e+8;
     double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
     double test_shear = shear_dist_with_trend[0]->ReSample(0,0);
     if(test_bulk < lower_mega || test_bulk > upper_mega)
-      tmpErrTxt += "Bulk modulus need to be given in megaPa\n";
+      tmpErrTxt += "Bulk modulus need to be given in kPa\n";
     if(test_shear < lower_mega || test_shear > upper_mega)
-      tmpErrTxt += "Shear modulus need to be given in megaPa\n";
+      tmpErrTxt += "Shear modulus need to be given in kPa\n";
 
     if(i < n_vintages_bulk_shear)
       corr_bulk_shear.push_back(correlation_bulk_shear_[i]);

@@ -7,16 +7,13 @@
 #include "rplib/normaldistributionwithtrend.h"
 
 NormalDistributionWithTrend::NormalDistributionWithTrend()
-: share_level_(None),
-  resample_(true)
 {
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * mean,
                                                          const NRLib::Trend * var,
                                                          int                  shared)
-: share_level_(shared),
-  resample_(true)
+: DistributionWithTrend(shared,true)
 {
 
   mean_ = mean->Clone();
@@ -34,10 +31,8 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 }
 
 NormalDistributionWithTrend::NormalDistributionWithTrend(const NormalDistributionWithTrend & dist)
-: use_trend_cube_(dist.use_trend_cube_),
-  share_level_(dist.share_level_),
-  current_u_(dist.current_u_),
-  resample_(dist.resample_)
+: DistributionWithTrend(dist.share_level_,dist.current_u_,dist.resample_),
+use_trend_cube_(dist.use_trend_cube_)
 {
   gaussian_ = dist.gaussian_->Clone();
   mean_     = dist.mean_    ->Clone();

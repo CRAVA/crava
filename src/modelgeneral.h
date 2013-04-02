@@ -102,7 +102,7 @@ public:
   void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel) ;}
   void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)   ;}
 
-  bool getIs4DActive() const {return(state4d_.isActive());}
+  bool getIs4DActive() const {return(do4DInversion_);}
 
   static FFTGrid  * createFFTGrid(int nx,
                                   int ny,
@@ -200,6 +200,7 @@ public:
   void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
 
   void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
+  bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
 
@@ -282,6 +283,8 @@ private:
                                        bool                         & failed,
                                        std::string                  & errTxt,
                                        const InputFiles             * inputFiles);
+  
+  
 
   void              printExpectationAndCovariance(const std::vector<double>   & expectation,
                                                   const NRLib::Grid2D<double> & covariance,
@@ -386,6 +389,8 @@ private:
   std::vector<int>          faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
   std::vector<std::string>  faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
 
+  bool                      do4DInversion_;
+  bool                      do4DRockPhysicsInversion_;
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
   Surface                 * priorCorrXY_;                ///< Lateral correlation

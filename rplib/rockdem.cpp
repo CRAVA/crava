@@ -103,6 +103,7 @@ RockDEM::ComputeSeismicAndElasticParams() {
 
   for (size_t i = 0; i < fluid_.size(); ++i)
     fluid_[i]->GetElasticParams(fluid_k[i], fluid_rho[i]);
+   
 
   double solid_rho, solid_k, solid_mu;
   solid_->GetElasticParams(solid_k, solid_mu, solid_rho);

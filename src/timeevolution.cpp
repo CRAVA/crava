@@ -25,6 +25,18 @@ TimeEvolution::TimeEvolution(int                                     i_max,
 }
 
 
+std::vector<std::vector<std::vector<double> > >
+
+  TimeEvolution::returnCorrelatedSample(int                                   i_max,
+                                      TimeLine                              & time_line,
+                                      const std::vector<DistributionsRock*> & dist_rock)
+{
+  CorrelatedRockSamples correlated_rock_samples;
+  std::vector<std::vector<std::vector<double> > > sample= correlated_rock_samples.CreateSamplesExtended(i_max, time_line, dist_rock);
+  // The dimension of m_ik[k][i] is expected to be equal to 3, in other words we do not return samples splitted into dynamic and static parts.
+  return sample;
+}
+
 void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>           & evolution_matrix,
                                            std::vector< NRLib::Matrix>           & cov_correction_term,
                                            std::vector< NRLib::Vector>           & mean_correction_term,
@@ -70,6 +82,9 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
   std::vector<NRLib::Vector> m_k(dim);
   std::vector<NRLib::Vector> m_km1(dim);
 
+  static_cov_.resize(dim,dim);
+  static_mean_.resize(dim);
+  
   // For all time steps, find A_k, delta_k, delta_mu_k
   for (int k = 1; k < K; ++k)
   {
@@ -91,6 +106,8 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
     {
       E_mk(d1)   = NRLib::Mean(m_k[d1]);
       E_mkm1(d1) = NRLib::Mean(m_km1[d1]);
+      if(k==1)
+        static_mean_(d1)=E_mkm1(d1);
 
       for (int d2=0; d2<dim; d2++)
       {
@@ -99,6 +116,8 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
         Cov_mkm1_mkm1(d1,d2) = NRLib::Cov(m_km1[d1], m_km1[d2]);
       }
     }
+    if(k==1)
+      static_cov_=Cov_mkm1_mkm1;
 
     NRLib::Matrix SigmaInv;
     double adjustment_factor = 0.001;         // To be changed if DoRobustInversion() produce warnings.
@@ -280,16 +299,16 @@ void TimeEvolution::AdjustMatrixDeltaForm(NRLib::Matrix & delta_k, int dim)
 
 
 
-void TimeEvolution::SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik)
+void TimeEvolution::SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik) const
 {
   // Splits according to the convention that for a given set of time correlated seismic parameters.
   // the first time instance is considered static and all the rest deviates from this static part by a dynamic component.
   // That is: m_ik[0][i] is the static component, m_ik[k][i] - m_ik[0][i] is the dynamic component for time instance k.
 
   // Order of indices: m_ik[k][i][d]
-  int k_max = int(m_ik.size());
-  int i_max = int(m_ik[0].size());
-  int dim   = int(m_ik[0][0].size());
+  int k_max = int(m_ik.size());// number of surveys
+  int i_max = int(m_ik[0].size());// number of samples
+  int dim   = int(m_ik[0][0].size());// 3 when vp, vs,rho
 
   std::vector<double> m_static(dim), m_dynamic(dim);
   for (int i = 0; i < i_max; ++i) {
@@ -333,4 +352,39 @@ void TimeEvolution::PrintToScreen(NRLib::Vector v, int dim, std::string name)
   }
   std::cout << strs.str() << std::endl;
   std::cout << std::endl;
+}
+
+NRLib::Vector TimeEvolution::computePriorMeanStaticAndDynamicLastTimeStep()
+{
+ NRLib::Vector priorMean(6);
+ priorMean=0.0;
+ for(int i=0;i<3;i++)
+   priorMean(i)=static_mean_(i);
+ for(int time_step=0;time_step<number_of_timesteps_;time_step++)
+ {
+    NRLib::Matrix evolution_matrix     = getEvolutionMatrix(time_step);
+    NRLib::Vector mean_correction_term = getMeanCorrectionTerm(time_step);
+    priorMean =evolution_matrix*priorMean+mean_correction_term;//
+ }
+ return priorMean;
+}
+
+NRLib::Matrix TimeEvolution::computePriorCovStaticAndDynamicLastTimeStep()
+{
+  NRLib::Matrix priorCov(6,6);
+  priorCov=0.0;
+  for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
+      priorCov(i,j)=static_cov_(i,j);
+
+  for(int time_step=0;time_step<number_of_timesteps_;time_step++)
+  {
+    NRLib::Matrix evolution_matrix     = getEvolutionMatrix(time_step);
+    NRLib::Matrix cov_correction_term  = getCovarianceCorrectionTerm(time_step);
+    priorCov=evolution_matrix*priorCov;
+    priorCov=priorCov*transpose(evolution_matrix)+ cov_correction_term;
+  }
+
+
+  return priorCov;
 }

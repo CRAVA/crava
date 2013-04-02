@@ -25,17 +25,21 @@ public:
   NRLib::Matrix getEvolutionMatrix(int time_step)          const { return evolution_matrix_[time_step]; }
   NRLib::Vector getMeanCorrectionTerm(int time_step)       const { return mean_correction_term_[time_step];}
   NRLib::Matrix getCovarianceCorrectionTerm(int time_step) const { return cov_correction_term_[time_step]; }
+  std::vector<std::vector<std::vector<double> > > returnCorrelatedSample(int i_max,TimeLine & time_line,   const std::vector<DistributionsRock*> & dist_rock);
+  NRLib::Vector computePriorMeanStaticAndDynamicLastTimeStep();
+  NRLib::Matrix computePriorCovStaticAndDynamicLastTimeStep();
 
 private:
   int number_of_timesteps_;
-
+  
+  NRLib::Matrix static_cov_;
+  NRLib::Vector static_mean_;
   std::vector< NRLib::Matrix> evolution_matrix_;
   std::vector< NRLib::Vector> mean_correction_term_;
   std::vector< NRLib::Matrix> cov_correction_term_;
-
+  
   //Expand every 3-vector into a 6-vector of 3 static and 3 dynamic elements.
-  void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik);
-
+  void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik) const;
 
   // Estimate time evolution matrices and correction term mean and covariance:
   void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          & evolution_matrix,

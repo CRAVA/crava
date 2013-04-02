@@ -39,9 +39,9 @@ class DeltaDistributionWithTrend : public DistributionWithTrend {
   const NRLib::Distribution<double> * dirac_;
   const NRLib::Trend                * mean_;
   std::vector<bool>                   use_trend_cube_;   // First element true if first trend cube is used, second true if second is used, and both true if both are used
-  const int                           share_level_;      // Use like in DistributionWithTrendStorage to know if we have a reservoir variable.
-  double                              current_u_;        // Quantile of current sample.
-  bool                                resample_;         // If false, and share_level_ > 0, reuse current_u_
+ // const int                           share_level_;      // Use like in DistributionWithTrendStorage to know if we have a reservoir variable.
+ // double                              current_u_;        // Quantile of current sample.
+ // bool                                resample_;         // If false, and share_level_ > 0, reuse current_u_
 
 };
 #endif

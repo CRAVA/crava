@@ -242,11 +242,11 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    double lower_mega = 1.0e+5;
-    double upper_mega = 1.0e+8;
+    double lower_mega_fluid = 1.0e+4;
+    double upper_mega_fluid = 1.0e+7;
     double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
-    if(test_bulk < lower_mega || test_bulk > upper_mega)
-      errTxt += "Bulk modulus need to be given in megaPa\n";
+    if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
+      errTxt += "Bulk modulus need to be given in kPa\n";
 
     if(i < n_vintages_bulk_density)
       corr_bulk_density.push_back(correlation_bulk_density_[i]);

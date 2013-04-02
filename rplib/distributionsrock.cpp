@@ -8,15 +8,35 @@
 #include <nrlib/flens/nrlib_flens.hpp>
 
 
-Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params)
+Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar )
 {
+  size_t nResVar=reservoir_variables_.size();
+  resVar.resize(nResVar);
   //Note: If this is not a top level rock, reservoir_variables_ are not set, so the loop is skipped.
-  for(size_t i=0;i<reservoir_variables_.size();i++)
+  for(size_t i=0;i<nResVar;i++)
     reservoir_variables_[i]->TriggerNewSample(resampling_level_);
+  Rock * result = GenerateSamplePrivate(trend_params);
+  
+  for(size_t i=0;i<nResVar;i++)
+    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend_params); 
 
+  return(result);
+}
+
+
+Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params )
+{
+  size_t nResVar=reservoir_variables_.size();
+  //Note: If this is not a top level rock, reservoir_variables_ are not set, so the loop is skipped.
+  for(size_t i=0;i<nResVar;i++)
+    reservoir_variables_[i]->TriggerNewSample(resampling_level_);
   Rock * result = GenerateSamplePrivate(trend_params);
   return(result);
 }
+
+
+
+
 
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
@@ -49,11 +69,33 @@ Rock * DistributionsRock::EvolveSample(double       time,
 }
 
 
+Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
+                                       const Rock & rock,
+                                       std::vector<double> &resVar )
+{
+  size_t nResVar=reservoir_variables_.size();
+  resVar.resize(nResVar);
+  //Note: If this is not a top level rock, reservoir_variables_ are not set, so the loop is skipped.
+  for(size_t i=0;i<reservoir_variables_.size();i++)
+    reservoir_variables_[i]->TriggerNewSample(resampling_level_);
+
+  const std::vector<double> trend(2);
+  Rock * rock_update = UpdateSample(time, true, trend, &rock);
+
+  for(size_t i=0;i<nResVar;i++)
+    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend); 
+
+  return  rock_update;
+
+}
+
+
+
 //-----------------------------------------------------------------------------------------------------------
 void  DistributionsRock::SetupExpectationAndCovariances()
 //-----------------------------------------------------------------------------------------------------------
 {
-  int n  = 1024; // Number of samples generated for each distribution
+  int n  = 1024*16; // Number of samples generated for each distribution
   int m  =   10; // Number of samples to use when sampling from s_min to s_max
 
   FindTabulatedTrendParams(tabulated_s0_,
@@ -77,9 +119,9 @@ void  DistributionsRock::SetupExpectationAndCovariances()
 
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
-  std::vector<double>   a(n);
-  std::vector<double>   b(n);
-  std::vector<double>   c(n);
+//  std::vector<double>   a(n);
+ // std::vector<double>   b(n);
+ // std::vector<double>   c(n);
 
   bool failed = false;
 

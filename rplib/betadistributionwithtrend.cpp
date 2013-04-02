@@ -10,8 +10,7 @@
 #include "rplib/betadistributionwithtrend.h"
 
 BetaDistributionWithTrend::BetaDistributionWithTrend()
-: share_level_(None),
-  resample_(true)
+: DistributionWithTrend()
 {
 }
 
@@ -20,8 +19,7 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
                                                      const double       & lower_limit,
                                                      const double       & upper_limit,
                                                      int                  shared)
-: share_level_(shared),
-  resample_(true)
+: DistributionWithTrend(shared,true)
 {
   mean_ = mean->Clone();
   var_  = var->Clone();
@@ -100,16 +98,14 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
-: use_trend_cube_(dist.use_trend_cube_),
+: DistributionWithTrend(dist.share_level_,dist.current_u_,dist.resample_),
+  use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
   nj_(dist.nj_),
   mean_sampling_(dist.mean_sampling_),
   var_sampling_(dist.var_sampling_),
   n_samples_mean_(dist.n_samples_mean_),
-  n_samples_var_(dist.n_samples_var_),
-  share_level_(dist.share_level_),
-  current_u_(dist.current_u_),
-  resample_(dist.resample_)
+  n_samples_var_(dist.n_samples_var_)
 {
   beta_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
 

@@ -643,7 +643,10 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   modelSettings_->addTimeLapse();
   inputFiles_->addTimeLapse();
   if(modelSettings_->getNumberOfTimeLapses() > 1)
+  {
     modelSettings_->setDo4DInversion(true);
+    modelSettings_->setDo4DRockPhysicsInversion(true);  
+  }
 
   if(parseWaveletEstimationInterval(root, errTxt) == false){
     inputFiles_->addDefaultWaveletEstIntFileTop();

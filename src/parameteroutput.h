@@ -36,6 +36,7 @@ public:
                                const std::string & fileName,
                                const std::string & sgriLabel);
 
+
 private:
   static void      computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
                                             FFTGrid * Alpha, FFTGrid * Rho,

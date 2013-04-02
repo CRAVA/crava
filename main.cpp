@@ -230,7 +230,8 @@ int main(int argc, char** argv)
           if(seismicParameters.GetMuAlpha() == NULL)
             failedAllocating = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, modelGeneral->getTimeSimbox());
 
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex); 
+
         }
         // In case of 3D inversion
         else{
@@ -289,6 +290,19 @@ int main(int argc, char** argv)
           failed = true;
           break;
         }
+        if(failed)
+          return(1);
+      }
+    }
+
+    if(modelSettings->getDo4DInversion())
+    { 
+      bool failed;
+      if(modelSettings->getDo4DRockPhysicsInversion())
+      {
+        
+        failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
+
         if(failed)
           return(1);
       }

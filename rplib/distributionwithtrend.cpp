@@ -2,8 +2,24 @@
 
 
 DistributionWithTrend::DistributionWithTrend()
+: share_level_(None),
+  resample_(true)
 {
 }
+
+DistributionWithTrend::DistributionWithTrend(const int shareLevel,bool reSample)
+: share_level_(shareLevel),
+  resample_(reSample)
+{
+}
+
+DistributionWithTrend::DistributionWithTrend(const int shareLevel,double currentU,bool reSample)
+: share_level_(shareLevel),
+  current_u_(currentU),
+  resample_(reSample)
+{
+}
+
 
 DistributionWithTrend::~DistributionWithTrend()
 {
@@ -21,4 +37,12 @@ DistributionWithTrend::FindUseTrendCube(std::vector<bool> & use_trend_cube,
     use_trend_cube[0] = true;
     use_trend_cube[1] = true;
   }
+}
+
+double
+DistributionWithTrend::GetCurrentSample(const std::vector<double> & trend_params)
+{
+  double samples;
+  samples=GetQuantileValue(current_u_, trend_params[0], trend_params[1]);
+  return samples;
 }

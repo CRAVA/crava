@@ -39,6 +39,7 @@ bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSetting
                                     const int                     & vintage,
                                     SeismicParametersHolder       & seismicParameters);
 
+
 // Possibly misplaced function. Open for better suggestion of where to place the function!
 bool allocate4DGrids(SeismicParametersHolder   & seismicParameters,
                      ModelSettings             * modelSettings,

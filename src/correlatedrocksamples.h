@@ -20,6 +20,9 @@ public:
   std::vector< std::vector< std::vector<double> > > CreateSamples(int                                     i_max,
                                                                   TimeLine                              & time_line,
                                                                   const std::vector<DistributionsRock*> & dist_rock);
+  std::vector< std::vector< std::vector<double> > > CreateSamplesExtended(int                                     i_max,
+                                                                          TimeLine                              & time_line,
+                                                                          const std::vector<DistributionsRock*> & dist_rock);
 };
 
 #endif

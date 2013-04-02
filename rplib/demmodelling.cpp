@@ -298,7 +298,6 @@ DEMTools::CalcEffectiveBulkAndShearModulus(const std::vector<double>&       bulk
                                            double                           shear_modulus_bg,
                                            double&                    effective_bulk_modulus,
                                            double&                    effective_shear_modulus) {
-
   DEM dem(bulk_modulus,
           shear_modulus,
           aspect_ratio,
@@ -308,7 +307,6 @@ DEMTools::CalcEffectiveBulkAndShearModulus(const std::vector<double>&       bulk
 
   effective_bulk_modulus = effective_shear_modulus = 0;
   dem.CalcEffectiveModulus(effective_bulk_modulus, effective_shear_modulus);
-
 }
 
 
@@ -383,8 +381,13 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double & bulk_modulus,
                                              double       & vp,
                                              double       & vs)
 {
+  // INPUT
+  // bulk_modulus shear_modulus in MPa, 
+  // density in g/ccm 
+  // OUTPUT
+  // vp, vs in m/s 
   assert(density != 0.0);
-
+  
   vp = std::sqrt((bulk_modulus + 4.0/3.0 * shear_modulus) / density);
   vs = std::sqrt(shear_modulus / density);
 }
@@ -396,6 +399,11 @@ DEMTools::CalcElasticParamsFromSeismicParams(const double & vp,
                                              double       & bulk_modulus,
                                              double       & shear_modulus)
 {
+  // INPUT
+  // vp, vs in m/s 
+  // density in g/ccm 
+  // OUTPUT 
+  // bulk_modulus shear_modulus in MPa, 
   bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);
 }
@@ -409,12 +417,12 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
   // Specifications
   // Mineral properties
   // (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
-  double quartz_k                = 37;   // gpa
-  double quartz_mu               = 44;   // gpa
+  double quartz_k                = 37000000;   // kpa
+  double quartz_mu               = 44000000;   // kpa
   double quartz_rho              = 2.65; // g/ccm
 
-  double clay_k                  = 21;   // gpa
-  double clay_mu                 = 7;    // gpa
+  double clay_k                  = 21000000;   // kpa
+  double clay_mu                 = 7000000;    // kpa
   double clay_rho                = 2.6;  // g/ccm
 
   // Fluid properties
@@ -424,7 +432,7 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
   double temperature             = 50;   // °c
 
   double brine_salinity          = 0.05; // 100*//
-  double brine_k                 = CalcBulkModulusOfBrineFromTPS(temperature, porepressure, brine_salinity)*0.001 /*gpa*/;
+  double brine_k                 = CalcBulkModulusOfBrineFromTPS(temperature, porepressure, brine_salinity)*1000; /*kpa*/
 
   double brine_rho               = CalcDensityOfBrineFromTPS(temperature, porepressure, brine_salinity); // g/ccm
 
@@ -432,6 +440,7 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
   double co2_rho;
 
   CalcCo2Prop(co2_k, co2_rho, temperature, porepressure);
+  co2_k*=1000000; // kpa
 
 
 
@@ -534,8 +543,6 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
                                    solid_mu,
                                    effective_bulk_modulus,
                                    effective_shear_modulus);
-
-
 }
 
 

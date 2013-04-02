@@ -28,7 +28,6 @@ protected:
   double                            vs_;
   double                            rho_;
   std::vector<double>               u_;
-
 };
 
 #endif

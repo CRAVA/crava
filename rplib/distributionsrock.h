@@ -19,6 +19,7 @@ public:
   virtual DistributionsRock           * Clone()                                                           const = 0;
 
   Rock                                * GenerateSample(const std::vector<double> & trend_params);
+  Rock                                * GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar );
 
   void                                  GenerateWellSample(double                 corr,
                                                            std::vector<double> &  vp,
@@ -28,6 +29,10 @@ public:
 
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock);
+  
+  Rock                                * EvolveSampleAndReservoirVaribles(double             time,
+                                                                         const              Rock & rock,
+                                                                         std::vector<double> &resVar );
 
   std::vector<double>                   GetLogExpectation(const std::vector<double> & trend_params)       const;
 

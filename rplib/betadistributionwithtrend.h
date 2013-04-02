@@ -60,9 +60,5 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
   std::vector<double>                            var_sampling_;
   int                                            n_samples_mean_;
   int                                            n_samples_var_;
-  const int                                      share_level_;      // Use like in DistributionWithTrendStorage to know if we have a reservoir variable.
-  double                                         current_u_;        // Quantile of current sample.
-  bool                                           resample_;         // If false, and share_level_ > 0, reuse current_u_
-
 };
 #endif

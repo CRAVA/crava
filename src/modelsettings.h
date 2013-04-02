@@ -66,7 +66,8 @@ public:
   bool                             getEstimateLocalShift(int i, int j)  const { return timeLapseEstimateLocalShift_[i][j]         ;}
   bool                             getEstimateLocalNoise(int i, int j)  const { return timeLapseEstimateLocalNoise_[i][j]         ;}
   bool                             getEstimateGlobalWaveletScale(int i, int j) const { return timeLapseEstimateGlobalWaveletScale_[i][j];}
-  bool                             getDo4DInversion(void)                     { return do4DInversion_                             ;}
+  bool                             getDo4DInversion(void)               const { return do4DInversion_                             ;}
+  bool                             getDo4DRockPhysicsInversion(void)    const { return do4DRockPhysicsInversion_                  ;}
   bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
@@ -263,6 +264,7 @@ public:
   void addFluid(std::string label, DistributionsFluidStorage * fluid)                  { fluidStorage_[label]   = fluid                   ;}
 
   void setDo4DInversion(bool do4DInversion)               { do4DInversion_            = do4DInversion            ;}
+  void setDo4DRockPhysicsInversion(bool do4DRockPhysicsInversion)                      {do4DRockPhysicsInversion_= do4DRockPhysicsInversion;}
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
   void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_     = estimateCorrelations     ;}
   void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_     = estimateWaveletNoise     ;}
@@ -522,8 +524,9 @@ private:
   std::vector<float>                estRangeX_;                  ///< Estimation range in x-direction for 3D-wavelet
   std::vector<float>                estRangeY_;                  ///< Estimation range in y-direction for 3D-wavelet
 
-  bool                              do4DInversion_;              // True if CRAVA is to run a 4D inversion
-  bool                              backgroundFromRockPhysics_;  //< True if background is to be generated from rock physics. Is this relevant? Or same as faciesProbFromRockPhysics_?
+  bool                              do4DInversion_;              ///< True if CRAVA is to run a 4D inversion
+  bool                              do4DRockPhysicsInversion_;   ///< True if we should do rockpysics inversion, only active for 4D inversion
+  bool                              backgroundFromRockPhysics_;  ///< True if background is to be generated from rock physics. Is this relevant? Or same as faciesProbFromRockPhysics_?
   bool                              estimateBackground_;         ///< In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;       ///< As above, but correlations.
   bool                              estimateWaveletNoise_;       ///< As above, but for wavelet and noise parameters.

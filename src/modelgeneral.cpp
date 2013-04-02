@@ -38,6 +38,7 @@
 #include "src/modelavodynamic.h"
 #include "src/cravatrend.h"
 #include "src/seismicparametersholder.h"
+#include "src/parameteroutput.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -200,7 +201,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           setFaciesNamesFromRockPhysics();
 
           process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground);
-          timeEvolution_ = TimeEvolution(1000, *timeLine_, rock_distributions_.begin()->second);
+          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second);
         }
       }
     }
@@ -2536,11 +2537,11 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
 
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"Corr   |  ln Vp       ln Vs      ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f      %5.4f      %5.4f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |              %5.4f      %5.4f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                           %5.4f \n",1.0f);
 }
 
 void
@@ -4665,3 +4666,29 @@ ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParame
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
 
+
+bool
+ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
+{
+
+  
+  std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*timeLine_, rock_distributions_.begin()->second,  timeEvolution_);
+  int nParamOut =predictions.size();
+  std::vector<std::string>  label(nParamOut);
+  for(int i=0;i<nParamOut;i++)
+  {
+    //label[i]=rock_distributions_.begin->second
+  }
+
+  std::string  outPath =  IO::getOutputPath();
+
+  for(int i=0;i<nParamOut;i++)
+  {
+     std::string fileName;
+     fileName= outPath +label[i];
+     ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, label[i]);
+  }
+
+
+  return 0;
+}

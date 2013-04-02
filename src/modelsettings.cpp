@@ -143,6 +143,7 @@ ModelSettings::ModelSettings(void)
   waveletFormatManual_     =    false;
   useVerticalVariogram_    =    false;
   do4DInversion_           =    false;
+  do4DRockPhysicsInversion_=    false;
   backgroundFromRockPhysics_=   false;
   estimationMode_          =    false;
   forwardModeling_         =    false;

@@ -963,6 +963,9 @@
     <ClCompile Include="rplib\dryrocktabulatedmodulus.cpp">
       <Filter>Source Files\rplib\dryrock</Filter>
     </ClCompile>
+    <ClCompile Include="src\rockphysicsinversion4d.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
     <ClCompile Include="rplib\distributionsdryrockwalton.cpp">
       <Filter>Source Files\rplib\dryrock</Filter>
     </ClCompile>
@@ -990,6 +993,9 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\bWellPt.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\corr.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\correlatedrocksamples.h">
@@ -1616,6 +1622,9 @@
     <ClInclude Include="rplib\dryrocktabulatedmodulus.h">
       <Filter>Header Files\rplib\dryrock</Filter>
     </ClInclude>
+    <ClInclude Include="src\rockphysicsinversion4d.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
     <ClInclude Include="rplib\distributionsdryrockwalton.h">
       <Filter>Header Files\rplib\dryrock</Filter>
     </ClInclude>
@@ -1739,5 +1748,6 @@
       <Filter>Header Files\libs\flens</Filter>
     </None>
     <None Include="nrlib\random\module.mk" />
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
 </Project>

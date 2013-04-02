@@ -381,9 +381,9 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
     double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
     double test_shear = shear_dist_with_trend[0]->ReSample(0,0);
     if(test_bulk < lower_mega || test_bulk > upper_mega)
-      errTxt += "Bulk modulus need to be given in megaPa\n";
+      errTxt += "Bulk modulus need to be given in kPa\n";
     if(test_shear < lower_mega || test_shear > upper_mega)
-      errTxt += "Shear modulus need to be given in megaPa\n";
+      errTxt += "Shear modulus need to be given in kPa\n";
 
     if(i < n_vintages_bulk_shear)
       corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
