@@ -1,5 +1,5 @@
-#ifndef RPLIB_BETADISTRIBUTIONWITHTREND_H
-#define RPLIB_BETADISTRIBUTIONWITHTREND_H
+#ifndef RPLIB_BETAENDMASSDISTRIBUTIONWITHTREND_H
+#define RPLIB_BETAENDMASSDISTRIBUTIONWITHTREND_H
 
 #include "rplib/distributionwithtrend.h"
 
@@ -9,22 +9,24 @@ namespace NRLib {
   class Grid2D;
 }
 
-class BetaDistributionWithTrend : public DistributionWithTrend {
+class BetaEndMassDistributionWithTrend : public DistributionWithTrend {
  public:
 
-   BetaDistributionWithTrend();
+   BetaEndMassDistributionWithTrend();
 
-   BetaDistributionWithTrend(const NRLib::Trend * mean,
-                             const NRLib::Trend * var,
-                             const double       & lower_limit,
-                             const double       & upper_limit,
-                             int                  shared);
+   BetaEndMassDistributionWithTrend(const NRLib::Trend * mean,
+                                    const NRLib::Trend * var,
+                                    const double       & lower_limit,
+                                    const double       & upper_limit,
+                                    const double       & prob_lower,
+                                    const double       & prob_upper,
+                                    int                  shared);
 
-   BetaDistributionWithTrend(const BetaDistributionWithTrend & dist);
+   BetaEndMassDistributionWithTrend(const BetaEndMassDistributionWithTrend & dist);
 
-   virtual ~BetaDistributionWithTrend();
+   virtual ~BetaEndMassDistributionWithTrend();
 
-   virtual DistributionWithTrend    * Clone() const                           { return new BetaDistributionWithTrend(*this) ;}
+   virtual DistributionWithTrend    * Clone() const                           { return new BetaEndMassDistributionWithTrend(*this) ;}
 
    virtual bool                       GetIsShared() const                     { return(share_level_ > None)                 ;}
    virtual bool                       GetIsDistribution() const               { return(true)                                ;}
@@ -37,20 +39,8 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
    virtual double                     ReSample(double s1, double s2);
    virtual double                     GetQuantileValue(double u, double s1, double s2);
 
-   static void CalculateAlpha(const double & mean,
-                       const double & var,
-                       const double & lower_limit,
-                       const double & upper_limit,
-                       double       & alpha);
-
-   static void CalculateBeta(const double & mean,
-                      const double & var,
-                      const double & lower_limit,
-                      const double & upper_limit,
-                      double       & beta);
-
 private:
-  NRLib::Grid2D<NRLib::Distribution<double> *> * beta_distribution_;
+  NRLib::Grid2D<NRLib::Distribution<double> *> * beta_endmass_distribution_;
   const NRLib::Trend                           * mean_;
   const NRLib::Trend                           * var_;
   std::vector<bool>                              use_trend_cube_;   // First element true if first trend cube is used, second true if second is used, and both true if both are used

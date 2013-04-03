@@ -250,12 +250,14 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp" />
     <ClCompile Include="rplib\distributionsdryrockwalton.cpp" />
     <ClCompile Include="rplib\dryrockwalton.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
@@ -1342,6 +1344,8 @@
     <ClCompile Include="rplib\dryrocktabulatedmodulus.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />

@@ -1,6 +1,6 @@
 
 #include "nrlib/random/distribution.hpp"
-#include "nrlib/random/beta.hpp"
+#include "nrlib/random/betawithendmass.hpp"
 #include "nrlib/random/uniform.hpp"
 #include "nrlib/trend/trend.hpp"
 #include "nrlib/surface/regularsurface.hpp"
@@ -8,17 +8,20 @@
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/betadistributionwithtrend.h"
+#include "rplib/betaendmassdistributionwithtrend.h"
 
-BetaDistributionWithTrend::BetaDistributionWithTrend()
+BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend()
 : DistributionWithTrend()
 {
 }
 
-BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
-                                                     const NRLib::Trend * var,
-                                                     const double       & lower_limit,
-                                                     const double       & upper_limit,
-                                                     int                  shared)
+BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend(const NRLib::Trend * mean,
+                                                                   const NRLib::Trend * var,
+                                                                   const double       & lower_limit,
+                                                                   const double       & upper_limit,
+                                                                   const double       & prob_lower,
+                                                                   const double       & prob_upper,
+                                                                   int                  shared)
 : DistributionWithTrend(shared,true)
 {
   mean_ = mean->Clone();
@@ -78,26 +81,26 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
   double a;
   double b;
 
-  beta_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
+  beta_endmass_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
 
   for(int i=0; i<n_samples_mean_; i++) {
     for(int j=0; j<n_samples_var_; j++) {
 
-      CalculateAlpha(mean_sampling_[i], var_sampling_[j], lower_limit, upper_limit, a);
-      CalculateBeta(mean_sampling_[i],  var_sampling_[j], lower_limit, upper_limit, b);
+      BetaDistributionWithTrend::CalculateAlpha(mean_sampling_[i], var_sampling_[j], lower_limit, upper_limit, a);
+      BetaDistributionWithTrend::CalculateBeta(mean_sampling_[i],  var_sampling_[j], lower_limit, upper_limit, b);
 
       NRLib::Distribution<double> * dist = NULL;
 
       if(a > 0 && b > 0)
-        dist = new NRLib::Beta(lower_limit, upper_limit, a, b);
+        dist = new NRLib::BetaWithEndMass(lower_limit, upper_limit, prob_lower, prob_upper, a, b);
 
-      (*beta_distribution_)(i,j) = dist;
+      (*beta_endmass_distribution_)(i,j) = dist;
 
     }
   }
 }
 
-BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithTrend & dist)
+BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend(const BetaEndMassDistributionWithTrend & dist)
 : DistributionWithTrend(dist.share_level_,dist.current_u_,dist.resample_),
   use_trend_cube_(dist.use_trend_cube_),
   ni_(dist.ni_),
@@ -107,33 +110,33 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const BetaDistributionWithT
   n_samples_mean_(dist.n_samples_mean_),
   n_samples_var_(dist.n_samples_var_)
 {
-  beta_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
+  beta_endmass_distribution_ = new NRLib::Grid2D<NRLib::Distribution<double> *>(n_samples_mean_, n_samples_var_, NULL);
 
-  NRLib::Grid2D<NRLib::Distribution<double> *> * dist_beta = dist.beta_distribution_;
+  NRLib::Grid2D<NRLib::Distribution<double> *> * dist_beta = dist.beta_endmass_distribution_;
 
   for(int i=0; i<n_samples_mean_; i++) {
     for(int j=0; j<n_samples_var_; j++)
-      (*beta_distribution_)(i,j) = (*dist_beta)(i,j)->Clone();
+      (*beta_endmass_distribution_)(i,j) = (*dist_beta)(i,j)->Clone();
   }
 
   mean_ = dist.mean_->Clone();
   var_  = dist.var_ ->Clone();
 }
 
-BetaDistributionWithTrend::~BetaDistributionWithTrend()
+BetaEndMassDistributionWithTrend::~BetaEndMassDistributionWithTrend()
 {
   for(int i=0; i<n_samples_mean_; i++) {
     for(int j=0; j<n_samples_var_; j++)
-      delete (*beta_distribution_)(i,j);
+      delete (*beta_endmass_distribution_)(i,j);
   }
-  delete beta_distribution_;
+  delete beta_endmass_distribution_;
 
   delete mean_;
   delete var_;
 }
 
 double
-BetaDistributionWithTrend::ReSample(double s1, double s2)
+BetaEndMassDistributionWithTrend::ReSample(double s1, double s2)
 {
   double uniform = NRLib::Random::Unif01();
   double value   = GetQuantileValue(uniform, s1, s2);
@@ -142,7 +145,7 @@ BetaDistributionWithTrend::ReSample(double s1, double s2)
 }
 
 double
-BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
+BetaEndMassDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 {
   // Want sample from Y(s1, s2) ~ Beta(0, 1, alpha(s1,s2), beta(s1,s2))
   // Generate sample from Z ~ Uniform(0, 1)
@@ -159,7 +162,7 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
   }
 
   if(ni_ == 1 && nj_ == 1)
-    y = (*beta_distribution_)(0,0)->Quantile(u);
+    y = (*beta_endmass_distribution_)(0,0)->Quantile(u);
 
   else {
     double dummy = 0;
@@ -195,7 +198,7 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 
     for(int i=0; i<ni_; i++) {
       for(int j=0; j<nj_; j++) {
-        NRLib::Distribution<double> * dist = (*beta_distribution_)(ix+i, jy+j);
+        NRLib::Distribution<double> * dist = (*beta_endmass_distribution_)(ix+i, jy+j);
         quantile_grid(i,j) = dist->Quantile(u);
       }
     }
@@ -207,32 +210,4 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
   }
 
   return(y);
-}
-
-void
-BetaDistributionWithTrend::CalculateAlpha(const double & mean,
-                                          const double & var,
-                                          const double & lower_limit,
-                                          const double & upper_limit,
-                                          double       & alpha)
-{
-  double diff = upper_limit-lower_limit;
-  double moved_mean = (mean-lower_limit) / diff;
-  double moved_var  = var / std::pow(diff,2);
-
-  alpha = moved_mean * (moved_mean*(1-moved_mean)/moved_var - 1);
-}
-
-void
-BetaDistributionWithTrend::CalculateBeta(const double & mean,
-                                         const double & var,
-                                         const double & lower_limit,
-                                         const double & upper_limit,
-                                         double       & beta)
-{
-  double diff = upper_limit-lower_limit;
-  double moved_mean = (mean-lower_limit) / diff;
-  double moved_var  = var / std::pow(diff,2);
-
-  beta = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
 }

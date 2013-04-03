@@ -35,9 +35,6 @@
     <Filter Include="Source Files\rplib">
       <UniqueIdentifier>{272f4592-37d0-4c2f-8860-ca3436a167b6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\rplib\solid">
-      <UniqueIdentifier>{e388d98c-3409-458c-b469-e0b970095bfc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\rplib\fluid">
       <UniqueIdentifier>{ec092033-aa58-47be-a083-3ec32c9133dc}</UniqueIdentifier>
     </Filter>
@@ -90,6 +87,9 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{f6d9c81e-4b1e-4d43-be50-a3c721a693b2}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="Source Files\rplib\rock\solid">
+      <UniqueIdentifier>{e388d98c-3409-458c-b469-e0b970095bfc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -850,28 +850,28 @@
       <Filter>Source Files\rplib</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionssolid.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionssoliddem.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionssolidmix.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionssolidstorage.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionssolidtabulated.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\soliddem.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\solidmix.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\solidtabulatedmodulus.cpp">
-      <Filter>Source Files\rplib\solid</Filter>
+      <Filter>Source Files\rplib\rock\solid</Filter>
     </ClCompile>
     <ClCompile Include="rplib\distributionsfluid.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
@@ -971,6 +971,12 @@
     </ClCompile>
     <ClCompile Include="rplib\dryrockwalton.cpp">
       <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\random\betawithendmass.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp">
+      <Filter>Source Files\rplib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1630,6 +1636,12 @@
     </ClInclude>
     <ClInclude Include="rplib\dryrockwalton.h">
       <Filter>Header Files\rplib\dryrock</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\random\betawithendmass.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
+      <Filter>Header Files\rplib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
