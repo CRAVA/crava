@@ -175,15 +175,75 @@ public:
   virtual const double                     GetLowerLimit() const                     { return lower_limit_                 ;}
   virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
 
-private:
-  void                                     CheckBetaConsistency(NRLib::Trend * mean,
-                                                                NRLib::Trend * variance,
-                                                                std::string  & errTxt) const;
 
+  static void                              CheckBetaConsistency(NRLib::Trend * mean,
+                                                                NRLib::Trend * variance,
+                                                                double       & lower_limit,
+                                                                double       & upper_limit,
+                                                                std::string  & errTxt);
+
+private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
   double                                 lower_limit_;
   double                                 upper_limit_;
+  DistributionWithTrend                * distribution_with_trend_;
+  const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+  int                                    vintage_year_;
+  double                                 one_year_correlation_;
+};
+
+//--------------------------------------------------------------//
+
+class BetaEndMassDistributionWithTrendStorage : public DistributionWithTrendStorage
+{
+public:
+
+  BetaEndMassDistributionWithTrendStorage();
+
+  BetaEndMassDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                          const NRLib::TrendStorage * variance,
+                                          const double              & lower_limit,
+                                          const double              & upper_limit,
+                                          const double              & lower_probability,
+                                          const double              & upper_probability,
+                                          bool                        is_shared);
+
+  BetaEndMassDistributionWithTrendStorage(const BetaEndMassDistributionWithTrendStorage & dist);
+
+  virtual ~BetaEndMassDistributionWithTrendStorage();
+
+  virtual DistributionWithTrendStorage   * Clone() const                             { return new BetaEndMassDistributionWithTrendStorage(*this) ;}
+
+  virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
+                                                                         const std::vector<std::string>          & trend_cube_parameters,
+                                                                         const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         std::string                             & errTxt);
+
+  virtual NRLib::TrendStorage            * CloneMean() const;
+
+  virtual void                             SetVintageYear(int year)                  { vintage_year_ = year                ;}
+
+  virtual void                             SetOneYearCorrelation(double correlation) { one_year_correlation_ = correlation ;}
+
+  virtual bool                             GetIsShared() const                       { return is_shared_                   ;}
+
+  virtual int                              GetVintageYear()                          { return vintage_year_                ;}
+
+  virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
+
+  virtual const double                     GetLowerLimit() const                     { return lower_limit_                 ;}
+  virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
+  virtual const double                     GetLowerProbability() const               { return lower_probability_           ;}
+  virtual const double                     GetUpperProbability() const               { return upper_probability_           ;}
+
+private:
+  const NRLib::TrendStorage            * mean_;
+  const NRLib::TrendStorage            * variance_;
+  double                                 lower_limit_;
+  double                                 upper_limit_;
+  double                                 lower_probability_;
+  double                                 upper_probability_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;

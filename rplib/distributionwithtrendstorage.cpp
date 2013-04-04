@@ -4,6 +4,7 @@
 #include "rplib/deltadistributionwithtrend.h"
 #include "rplib/normaldistributionwithtrend.h"
 #include "rplib/betadistributionwithtrend.h"
+#include "rplib/betaendmassdistributionwithtrend.h"
 
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
@@ -229,7 +230,7 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
     NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
     NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    CheckBetaConsistency(mean_trend, variance_trend, errTxt);
+    CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
@@ -254,12 +255,14 @@ BetaDistributionWithTrendStorage::CloneMean() const
 void
 BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
                                                        NRLib::Trend * variance,
-                                                       std::string  & errTxt) const
+                                                       double       & lower_limit,
+                                                       double       & upper_limit,
+                                                       std::string  & errTxt)
 {
 
   bool mean_outside = false;
-  if(mean->GetMinValue() < lower_limit_ || mean->GetMaxValue() > upper_limit_) {
-    errTxt += "The mean values of the Beta distribution must be in the interval ["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
+  if(mean->GetMinValue() < lower_limit || mean->GetMaxValue() > upper_limit) {
+    errTxt += "The mean values of the Beta distribution must be in the interval ["+NRLib::ToString(lower_limit)+","+NRLib::ToString(upper_limit)+"]\n";
     mean_outside = true;
   }
 
@@ -315,15 +318,15 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
   for(int i=0; i<n_samples_mean; i++) {
     for(int j=0; j<n_samples_var; j++) {
 
-      double diff       = upper_limit_-lower_limit_;
-      double moved_mean = (mean_sampling[i] - lower_limit_) / diff;
+      double diff       = upper_limit-lower_limit;
+      double moved_mean = (mean_sampling[i] - lower_limit) / diff;
       double moved_var  = var_sampling[j] / std::pow(diff,2);
 
       double alpha =    moved_mean  * (moved_mean*(1-moved_mean)/moved_var - 1);
       double beta  = (1-moved_mean) * (moved_mean*(1-moved_mean)/moved_var - 1);
 
       if(alpha <= 0 || beta <= 0) {
-        errTxt += "The combination mean="+NRLib::ToString(mean_sampling[i])+", variance="+NRLib::ToString(var_sampling[j])+" in [a,b]=["+NRLib::ToString(lower_limit_)+","+NRLib::ToString(upper_limit_)+"]\n";
+        errTxt += "The combination mean="+NRLib::ToString(mean_sampling[i])+", variance="+NRLib::ToString(var_sampling[j])+" in [a,b]=["+NRLib::ToString(lower_limit)+","+NRLib::ToString(upper_limit)+"]\n";
         errTxt += "  provides alpha<=0 and/or beta<=0 in the Beta distribution\n";
         if(mean_outside == true)
           errTxt += "  Check that the upper and lower limits in the Beta distribution are correct\n";
@@ -336,4 +339,90 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
       }
     }
   }
+}
+//--------------------------------------------------------------//
+
+BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage()
+: is_shared_(false),
+  vintage_year_(1),
+  one_year_correlation_(1.0)
+{
+}
+
+BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                                                                 const NRLib::TrendStorage * variance,
+                                                                                 const double              & lower_limit,
+                                                                                 const double              & upper_limit,
+                                                                                 const double              & lower_probability,
+                                                                                 const double              & upper_probability,
+                                                                                 bool                        is_shared)
+: lower_limit_(lower_limit),
+  upper_limit_(upper_limit),
+  lower_probability_(lower_probability),
+  upper_probability_(upper_probability),
+  is_shared_(is_shared),
+  vintage_year_(1),
+  one_year_correlation_(1.0)
+{
+  mean_                     = mean->Clone();
+  variance_                 = variance->Clone();
+  distribution_with_trend_  = NULL;
+}
+
+BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage(const BetaEndMassDistributionWithTrendStorage & dist)
+: lower_limit_(dist.upper_limit_),
+  upper_limit_(dist.lower_limit_),
+  lower_probability_(dist.lower_probability_),
+  upper_probability_(dist.upper_probability_),
+  is_shared_(dist.is_shared_),
+  vintage_year_(dist.vintage_year_),
+  one_year_correlation_(dist.one_year_correlation_)
+{
+  mean_     = dist.mean_    ->Clone();
+  variance_ = dist.variance_->Clone();
+
+ if(dist.distribution_with_trend_ != NULL)
+    distribution_with_trend_  = dist.distribution_with_trend_->Clone();
+  else
+    distribution_with_trend_ = NULL;
+}
+
+BetaEndMassDistributionWithTrendStorage::~BetaEndMassDistributionWithTrendStorage()
+{
+  delete mean_;
+  delete variance_;
+  distribution_with_trend_ = NULL;
+}
+
+DistributionWithTrend *
+BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
+                                                                       const std::vector<std::string>          & trend_cube_parameters,
+                                                                       const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                       std::string                             & errTxt)
+{
+  if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
+
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+
+    BetaDistributionWithTrendStorage::CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
+
+    int share_level = DistributionWithTrend::None;
+    if(is_shared_ == true)
+      share_level = DistributionWithTrend::SingleSample;
+
+    distribution_with_trend_= new BetaEndMassDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, lower_probability_, upper_probability_, share_level);
+
+    delete mean_trend;
+    delete variance_trend;
+  }
+
+  return(distribution_with_trend_);
+}
+
+NRLib::TrendStorage *
+BetaEndMassDistributionWithTrendStorage::CloneMean() const
+{
+  NRLib::TrendStorage * cloned_mean = mean_->Clone();
+  return(cloned_mean);
 }

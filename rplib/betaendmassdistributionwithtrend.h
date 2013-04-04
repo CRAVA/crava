@@ -18,8 +18,8 @@ class BetaEndMassDistributionWithTrend : public DistributionWithTrend {
                                     const NRLib::Trend * var,
                                     const double       & lower_limit,
                                     const double       & upper_limit,
-                                    const double       & prob_lower,
-                                    const double       & prob_upper,
+                                    const double       & lower_probability,
+                                    const double       & upper_probability,
                                     int                  shared);
 
    BetaEndMassDistributionWithTrend(const BetaEndMassDistributionWithTrend & dist);

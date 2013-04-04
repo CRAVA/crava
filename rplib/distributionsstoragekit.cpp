@@ -299,6 +299,15 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
         if(lower_limit < 0 || lower_limit > 1 || upper_limit > 1 || lower_limit > upper_limit)
           errTxt += "The limits in the Beta distribution must be in [0,1] for "+type+"\n";
       }
+      else if(typeid(*(test_objects[i])) == typeid(BetaEndMassDistributionWithTrendStorage)) {
+        const BetaEndMassDistributionWithTrendStorage * beta = dynamic_cast<const BetaEndMassDistributionWithTrendStorage *>(test_objects[i]);
+
+        double lower_limit = beta->GetLowerLimit();
+        double upper_limit = beta->GetUpperLimit();
+
+        if(lower_limit < 0 || lower_limit > 1 || upper_limit > 1 || lower_limit > upper_limit)
+          errTxt += "The limits in the Beta-end-mass distribution must be in [0,1] for "+type+"\n";
+      }
       else
         errTxt += "The "+type+" must be in [0,1]. It should be given by a value or the Beta distribution with limits [0,1]\n";
     }

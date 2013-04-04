@@ -19,8 +19,8 @@ BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend(const NRLib::
                                                                    const NRLib::Trend * var,
                                                                    const double       & lower_limit,
                                                                    const double       & upper_limit,
-                                                                   const double       & prob_lower,
-                                                                   const double       & prob_upper,
+                                                                   const double       & lower_probability,
+                                                                   const double       & upper_probability,
                                                                    int                  shared)
 : DistributionWithTrend(shared,true)
 {
@@ -92,7 +92,7 @@ BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend(const NRLib::
       NRLib::Distribution<double> * dist = NULL;
 
       if(a > 0 && b > 0)
-        dist = new NRLib::BetaWithEndMass(lower_limit, upper_limit, prob_lower, prob_upper, a, b);
+        dist = new NRLib::BetaWithEndMass(lower_limit, upper_limit, lower_probability, upper_probability, a, b);
 
       (*beta_endmass_distribution_)(i,j) = dist;
 

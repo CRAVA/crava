@@ -92,6 +92,7 @@ private:
   bool parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & reservoir_variable, std::string & errTxt);
   bool parseGaussianWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
   bool parseBetaWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
+  bool parseBetaEndMassWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);

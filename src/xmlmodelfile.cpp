@@ -3147,6 +3147,7 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     legalCommands.push_back("gaussian");
     legalCommands.push_back("uniform");
     legalCommands.push_back("beta");
+    legalCommands.push_back("beta-end-mass");
   }
   legalCommands.push_back("divide");
 
@@ -3191,6 +3192,10 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
 
     std::string beta;
     if(parseBetaWithTrend(root, storage, is_shared, errTxt) == true)
+      trendGiven++;
+
+    std::string beta_end_mass;
+    if(parseBetaEndMassWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
     std::string uniform;
@@ -3343,6 +3348,95 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * n
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+
+bool
+XmlModelFile::parseBetaEndMassWithTrend(TiXmlNode                                   * node,
+                                        std::vector<DistributionWithTrendStorage *> & storage,
+                                        bool                                          is_shared,
+                                        std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("beta-end-mass");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+  legalCommands.push_back("lower-limit");
+  legalCommands.push_back("upper-limit");
+  legalCommands.push_back("lower-probability");
+  legalCommands.push_back("upper-probability");
+
+  std::vector<DistributionWithTrendStorage *> mean_storage;
+  std::string label;
+  bool ok = true;
+
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for beta distribution with end mass.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for beta distribution with end mass.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> lower_limit_storage;
+  std::vector<double>                         lower_limit;
+  if(parseDistributionWithTrend(root, "lower-limit", lower_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_limit_storage, "lower-limit", lower_limit, errTxt);
+    delete lower_limit_storage[0];
+  }
+  else
+    lower_limit.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_limit_storage;
+  std::vector<double>                         upper_limit;
+  if(parseDistributionWithTrend(root, "upper-limit", upper_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_limit_storage, "upper-limit", upper_limit, errTxt);
+    delete upper_limit_storage[0];
+  }
+  else
+    upper_limit.push_back(1.0);
+
+  std::vector<DistributionWithTrendStorage *> lower_probability_storage;
+  std::vector<double>                         lower_probability;
+  if(parseDistributionWithTrend(root, "lower-probability", lower_probability_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_probability_storage, "lower-probability", lower_probability, errTxt);
+    delete lower_probability_storage[0];
+  }
+  else
+    lower_probability.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_probability_storage;
+  std::vector<double>                         upper_probability;
+  if(parseDistributionWithTrend(root, "upper-probability", upper_probability_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_probability_storage, "upper-probability", upper_probability, errTxt);
+    delete upper_probability_storage[0];
+  }
+  else
+    upper_probability.push_back(1.0);
+
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+
+    delete mean_storage[0];
+    delete variance_storage[0];
+
+    DistributionWithTrendStorage * dist = new BetaEndMassDistributionWithTrendStorage(mean, variance, lower_limit[0], upper_limit[0],  lower_probability[0], upper_probability[0], is_shared);
+
+    delete mean;
+    delete variance;
+
+    storage.push_back(dist);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
 
 bool
 XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
