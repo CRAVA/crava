@@ -2793,7 +2793,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 \paragraph{\hbracket{dry-rock}}\newkw{dry-rock}
  \slist
    \item \Description Dry rocks are a particular type of solid, as they have a defined porosity, yet no fluids added, so they are not rocks according to the rock-definition in \kw{rock}. In addition to the density and effective elastic moduli for the specified porosity, they also contain information about the effective mineral properties. 
-Dry rocks are specified with <dry-rock>, followed by <label> or <use>. If <label> is given, it is followed by a theory for calculating the effective elastic moduli. Then the <total-porosity> and <mineral-bulk-modulus> (i.e. bulk of the effective mineral) are defined. An implicit part of the theories is that the density is calculated using the arithmetic average of the constituents.
+Dry rocks are specified with <dry-rock>, followed by <label> or <use>. If <label> is given, it is followed by a theory for calculating the effective elastic moduli.
    \item \Argument 
    \item \Default 
  \elist
@@ -2895,6 +2895,20 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Description Correlation between vs and density
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{total-porosity}}\newkw{total-porosity}
+ \slist
+   \item \Description Total porosity of the dry-rock
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{mineral-bulk-modulus}}\newkw{mineral-bulk-modulus}
+ \slist
+   \item \Description Mineral bulk modulus, i.e., the bulk modulus of the effective mineral of the dry-rock
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default 
  \elist
 
 \subparagraph{\hbracket{reuss}}\rnewkw{reuss}{reuss-dry-rock}
@@ -3037,18 +3051,46 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default
  \elist
 
-\subparagraph{\hbracket{total-porosity}}\newkw{total-porosity}
+\subparagraph{\hbracket{walton}}\rnewkw{walton}{walton-dry-rock}
  \slist
-   \item \Description Total porosity of the dry-rock
-   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Description The Walton (1987) is a contact model for spherical grain packing. It assumes the normal and shear deformation of a two-grain-combination occur simultaneosly. The effective elastic moduli can be modelled assuming no or a very large friction coefficient. The no-slip factor can be used to model friction coefficients between these two extremes.
+   \item \Argument
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{mineral-bulk-modulus}}\newkw{mineral-bulk-modulus}
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-dry-rock}
  \slist
-   \item \Description Mineral bulk modulus, i.e., the bulk modulus of the effective mineral of the dry-rock
-   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
-   \item \Default 
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{no-slip}}\rnewkw{no-slip}{no-slip-dry-rock}
+ \slist
+   \item \Description 0: no friction, 1: high friction and any value between is an arithmetic average between the two extremes.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}.
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{pressure}}\rnewkw{pressure}{pressure-dry-rock}
+ \slist
+   \item \Description Hydrostatic confining pressure (often substituted with effective pressure).
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}.
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{porosity}}\rnewkw{porosity}{porosity-dry-rock}
+ \slist
+   \item \Description Porosity.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}.
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{coord-nr}}\rnewkw{coord-nr}{coord-nr-dry-rock}
+ \slist
+   \item \Description Average contact points per grain.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}.
+   \item \Default Defaults to interpolate value from porosity and coordination measurements by Murphy (1982). Note that the dataset by Murphy is between 0.2 and 0.7 porosity, estimated values outside that range are extrapolations.
  \elist
 
 \subsubsection{\hbracket{rock}}\newkw{rock}

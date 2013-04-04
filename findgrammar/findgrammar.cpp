@@ -135,6 +135,7 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
     else if(name == "parseConstituent(" ||
             name == "parseDEMHost(" || name == "parseDEMInclusion(" ||
             name == "parseUpperBound(" || name == "parseLowerBound(" ||
+            /*name == "parseWalton(" ||*/
             node->ValueStr() == "gassmann")
     {
       child = ProcessCodeLevelTerminating(file, "::"+name, errTxt);

@@ -72,6 +72,7 @@ private:
   bool parseDryRock(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parseFluid(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parseTabulated(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::vector<DistributionWithTrendStorage *>   mineral_k, std::string & errTxt);
+  bool parseTabulatedDryRock(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::vector<DistributionWithTrendStorage *>   mineral_k, std::string & errTxt);
   bool parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseReuss(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseVoigt(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
