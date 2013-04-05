@@ -192,7 +192,7 @@ DistributionsDryRockTabulated::GetSample(const std::vector<double> & u,
   double total_porosity_sample    = total_porosity_->GetQuantileValue(u2[0], trend_params[0], trend_params[1]);
   double mineral_k_sample         = mineral_k_->GetQuantileValue(u2[1], trend_params[0], trend_params[1]);
 
-  std::vector<double> u_final(4);
+  std::vector<double> u_final(5);
 
   u_final[0] = u[0]; u_final[1] = u[1]; u_final[2] = u[2];
   u_final[3] = u2[0]; u_final[4] = u2[1];
