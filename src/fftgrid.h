@@ -13,11 +13,11 @@
 #include "rfftw.h"
 #include "definitions.h"
 
-class Corr;
 class Wavelet;
 class Simbox;
 class RandomGen;
 class GridMapping;
+class SeismicParametersHolder;
 
 class FFTGrid
 {
@@ -31,18 +31,18 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(SegY              * segy,
-                                      Simbox            * simbox,
-                                      const std::string & parName,
-                                      bool                nopadding = false ); // No mode
-  void                 fillInSeismicDataFromSegY(SegY        * segy,
-                                                 Simbox      * timeSimbox,
-                                                 Simbox      * timeCutSimbox,
+  int                  fillInFromSegY(const SegY              * segy,
+                                      const Simbox            * simbox,
+                                      const std::string       & parName,
+                                      bool                      nopadding = false ); // No mode
+  void                 fillInSeismicDataFromSegY(const SegY   * segy,
+                                                 const Simbox * timeSimbox,
+                                                 const Simbox * timeCutSimbox,
                                                  float         smooth_length,
-                                                 int         & missingTracesSimbox,
-                                                 int         & missingTracesPadding,
-                                                 int         & deadTracesSimbox,
-                                                 std::string & errTxt);
+                                                 int          & missingTracesSimbox,
+                                                 int          & missingTracesPadding,
+                                                 int          & deadTracesSimbox,
+                                                 std::string  & errTxt);
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
                                               float                z0_data,
                                               float                zn_data,
@@ -58,6 +58,24 @@ public:
                                      int                        rnt,
                                      int                        cmt,
                                      int                        rmt);
+
+  double               InterpolateTrilinear(double  x_min,
+                                   double           x_max,
+                                   double           y_min,
+                                   double           y_max,
+                                   double           z_min,
+                                   double           z_max,
+                                   double           x,
+                                   double           y,
+                                   double           z);
+
+  double              InterpolateBilinearXY(double x_min,
+                                            double x_max,
+                                            double y_min,
+                                            double y_max,
+                                            double x,
+                                            double y);
+
   void                 interpolateGridValues(std::vector<float> & grid_trace,
                                              float                z0_grid,
                                              float                dz_grid,
@@ -67,19 +85,24 @@ public:
                                              int                  n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  int                  fillInFromStorm(Simbox            * actSimBox,
+  int                  fillInFromStorm(const Simbox      * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
                                        bool                scale = false,
                                        bool                nopadding = false);    // No mode
   void                 fillInConstant(float value, bool add = true);              // No mode
-  fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
-                                       float gradI, float gradJ);// No mode
-  void                 fillInErrCorr(Corr* parCorr,              // No mode
-                                     float gradI, float gradJ);  // No mode
+
+  void                 fillInErrCorr(const Surface * priorCorrXY,
+                                     float           gradI,
+                                     float           gradJ);
+
+  void                 fillInParamCorr(const Surface   * priorCorrXY,
+                                       const fftw_real * circCorrT,
+                                       float             gradI,
+                                       float             gradJ);// No mode
+
   virtual void         fillInComplexNoise(RandomGen * ranGen);   // No mode/randomaccess
 
-  void                 fillInTest(float value1, float value2);   // No mode /DEBUG
   void                 fillInFromArray(float *value);
   void                 calculateStatistics();                    // min,max, avg
   void                 setUndefinedCellsToGlobalAverage();      // For BG model
@@ -119,6 +142,7 @@ public:
   int                  getNyp()     const {return(nyp_);}
   int                  getNzp()     const {return(nzp_);}
   int                  getRNxp()    const {return(rnxp_);}
+  int                  getCNxp()    const {return(cnxp_);}
   int                  getcsize()   const {return(csize_);}
   int                  getrsize()   const {return(rsize_);}
   float                getTheta()   const {return(theta_);}
@@ -126,7 +150,10 @@ public:
   float                getMinReal() const {return rValMin_;}
   float                getMaxReal() const {return rValMax_;}
   float                getAvgReal() const {return rValAvg_;}
+
   bool                 getIsTransformed() const {return(istransformed_);}
+  //For use when writing to a grid that may be in the wrong state.
+  void                 setTransformedStatus(bool status) {istransformed_ = status;}
 
   enum                 gridTypes{CTMISSING, DATA, PARAMETER, COVARIANCE, VELOCITY};
   enum                 accessMode{NONE, READ, WRITE, READANDWRITE, RANDOMACCESS};
@@ -140,8 +167,8 @@ public:
                                  const Simbox      * simbox,
                                  const std::string   sgriLabel = "NO_LABEL",
                                  const float         z0        = 0.0,
-                                 GridMapping       * depthMap  = NULL,
-                                 GridMapping       * timeMap   = NULL,
+                                 const GridMapping * depthMap  = NULL,
+                                 const GridMapping * timeMap   = NULL,
                                  const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
@@ -151,7 +178,7 @@ public:
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
-  virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName,
+  virtual void         writeResampledStormCube(const GridMapping *gridmapping, const std::string & fileName,
                                                const Simbox *simbox, const int format);
   virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   virtual void         readCravaFile(const std::string & fileName, std::string & errText, bool nopadding = false);
@@ -169,6 +196,8 @@ public:
   static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;}
   static int           findClosestFactorableNumber(int leastint);
 
+  static fftw_complex* fft1DzInPlace(fftw_real*  in, int nzp);
+  static fftw_real*    invFFT1DzInPlace(fftw_complex* in, int nzp);
 
   virtual void         createRealGrid(bool add = true);
   virtual void         createComplexGrid();
@@ -181,7 +210,7 @@ public:
   float                getDistToBoundary(int i, int n , int np);
   virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
-  std::vector<float>   getRealTrace2(int i, int j);
+  std::vector<float>   getRealTrace2(int i, int j) const;
 
 
   static void          reportFFTMemoryAndWait(const std::string & msg) {
@@ -191,6 +220,7 @@ public:
                          LogKit::LogFormatted(LogKit::High, "Memory used %4.0f MB, used outside grid %4.0f MB\n", tmp, tmp-FFTMemUse_/(1024.0f*1024.0f));
                        }
 
+  void                 createGrid();
 protected:
   //int                setPaddingSize(int n, float p);
   int                  getFillNumber(int i, int n, int np );
@@ -198,11 +228,6 @@ protected:
   int                  getXSimboxIndex(int i) { return (getFillNumber(i, nx_, nxp_ )) ;}
   int                  getYSimboxIndex(int j) { return (getFillNumber(j, ny_, nyp_ )) ;}
   int                  getZSimboxIndex(int k);
-  void                 computeCircCorrT(Corr* corr,fftw_real* CircCorrT);
-  void                 makeCircCorrTPosDef(fftw_real* CircularCorrT,int minIntFq);
-  fftw_complex*        fft1DzInPlace(fftw_real*  in);
-  fftw_real*           invFFT1DzInPlace(fftw_complex* in);
-  void                 createGrid();
 
   //Interpolation into SegY and sgri
   float                getRegularZInterpolatedRealValue(int i, int j, double z0Reg,

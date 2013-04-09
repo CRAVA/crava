@@ -23,9 +23,9 @@ KrigingData3D::KrigingData3D(int ntot)
 }
 
 //---------------------------------------------------------------------
-KrigingData3D::KrigingData3D(WellData ** wells,
-                             int         nWells,
-                             int         type)
+KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
+                             int                     nWells,
+                             int                     type)
   : data_(NULL),
     nd_(0)
 {

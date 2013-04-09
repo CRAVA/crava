@@ -64,13 +64,13 @@ public:
   void                      getVerticalTrend(const float * blockedLog, float * trend);
   void                      getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void                      getVerticalTrend(const int * blockedLog,int * trend);
-  void                      getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
+  void                      getBlockedGrid(const FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
   void                      setLogFromVerticalTrend(float * vertical_trend, double z0, double dz,
                                          int nz, std::string type, int iAngle = IMISSING);
   void                      setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
-  void                      writeWell(ModelSettings * modelSettings);       //Use this, will handle formats automatically.
-  void                      writeRMSWell(ModelSettings * modelSettings);
+  void                      writeWell(ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label);       //Use this, will handle formats automatically.
+  void                      writeRMSWell(ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label);
   void                      writeNorsarWell(ModelSettings * modelSettings);
 
   void                      setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg);
@@ -91,7 +91,7 @@ public:
                                                     int                        & iMove,
                                                     int                        & jMove,
                                                     float                      & kMove);
-  void                      generateSyntheticSeismic(float ** reflCoef,
+  void                      generateSyntheticSeismic(const float * const * reflCoef,
                                                      int nAngles,
                                                      Wavelet ** wavelet,
                                                      int nz,
@@ -106,13 +106,14 @@ public:
                                                  std::vector<double>        & yGradient);
 
   void                      setTimeGradientSettings(float distance, float sigma_m);
-  void                      findSeismicGradient(FFTGrid                  ** seisCube,
-                                                Simbox                   * timeSimbox,
+  void                      findSeismicGradient(const FFTGrid     * const * seisCube,
+                                                const Simbox              * timeSimbox,
                                                 int                        nAngles,
                                                 std::vector<double>       & xGradient,
                                                 std::vector<double>       & yGradient,
                                                 std::vector<std::vector<double> > &Sigma_gradient);
 
+  void           deleteDynamicBlockedLogs();
 private:
   void                      setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
                                                     float * vertical_trend, double z0, double dz, int nz);

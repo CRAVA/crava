@@ -525,8 +525,8 @@ FFTFileGrid::writeFile(const std::string & fileName,
                        const Simbox      * simbox,
                        const std::string   sgriLabel,
                        const float         z0,
-                       GridMapping       * depthMap,
-                       GridMapping       * timeMap,
+                       const GridMapping * depthMap,
+                       const GridMapping * timeMap,
                        const TraceHeaderFormat & thf)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -664,7 +664,7 @@ FFTFileGrid::genFileName()
 }
 
 void
-FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping,
+FFTFileGrid::writeResampledStormCube(const GridMapping * gridmapping,
                                      const std::string & fileName,
                                      const Simbox      * simbox,
                                      const int           format)

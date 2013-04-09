@@ -25,19 +25,19 @@ public:
             const NRLib::Grid2D<float>                 & refTimeGradY,
             const std::vector<std::vector<double> >    & tGradX,
             const std::vector<std::vector<double> >    & tGradY,
-            FFTGrid                                    * seisCube,
-            ModelSettings                              * modelSettings,
-            WellData                                  ** wells,
-            Simbox                                     * simBox,
-            float                                      * reflCoef,
+            const FFTGrid                              * seisCube,
+            const ModelSettings                        * modelSettings,
+            const std::vector<WellData *>              & wells,
+            const Simbox                               * simBox,
+            const float                                * reflCoef,
             int                                          angle_index,
             int                                        & errCode,
             std::string                                & errText);
 
   Wavelet3D(const std::string            & fileName,
             int                            fileFormat,
-            ModelSettings                * modelSettings,
-            float                        * reflCoef,
+            const ModelSettings          * modelSettings,
+            const float                  * reflCoef,
             float                          theta,
             int                          & errCode,
             std::string                  & errText,
@@ -55,28 +55,31 @@ public:
   float                  getLocalStretch(int i,int j);
 
   Wavelet1D            * createSourceWavelet();
-  Wavelet1D            * createAverageWavelet(Simbox * simBox);
+  Wavelet1D            * createAverageWavelet(const Simbox * simBox);
   Wavelet1D            * extractLocalWaveletByDip1D(double phi, double psi);
   void                   dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
   float                  GetLocalDepthGradientX(int i, int j){ return structureDepthGradX_(i,j);}
   float                  GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
-  float                  calculateSNRatio(Simbox                                   * simbox,
-                                          FFTGrid                                  * seisCube,
-                                          WellData                                ** wells,
-                                          ModelSettings                            * modelSettings,
+  float                  calculateSNRatio(const Simbox                             * simbox,
+                                          const FFTGrid                            * seisCube,
+                                          const std::vector<WellData *>            & wells,
+                                          const ModelSettings                      * modelSettings,
                                           std::string                              & errText,
                                           int                                      & error,
                                           const NRLib::Grid2D<float>               & refTimeGradX,
                                           const NRLib::Grid2D<float>               & refTimeGradY,
                                           const std::vector<std::vector<double> >  & tGradX,
                                           const std::vector<std::vector<double> >  & tGradY,
-                                          int                                        number);
+                                          int                                        number,
+                                          float                                      SNRatio,
+                                          bool                                       estimateSNRatio,
+                                          bool                                       estimateWavelet);
 
 private:
   void                   findLayersWithData(const std::vector<Surface *> & estimInterval,
                                             BlockedLogs                  * bl,
-                                            FFTGrid                      * seisCube,
+                                            const FFTGrid                * seisCube,
                                             const std::vector<float>     & az,
                                             const std::vector<float>     & bz,
                                             std::vector<bool>            & hasWellData) const;

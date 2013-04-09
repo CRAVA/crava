@@ -25,62 +25,74 @@ class KrigingData3D;
 class FaciesProb;
 class GridMapping;
 class ModelSettings;
-class Corr;
 class SpatialWellFilter;
+class SeismicParametersHolder;
 
 
 class Crava
 {
 public:
-  Crava(ModelSettings     * modelSettings,
-        ModelGeneral      * modelGeneral,
-        ModelAVOStatic    * modelAVOstatic,
-        ModelAVODynamic   * modelAVOdynamic,
-        SpatialWellFilter * spatwellfilter);
+  Crava(ModelSettings           * modelSettings,
+        ModelGeneral            * modelGeneral,
+        ModelAVOStatic          * modelAVOstatic,
+        ModelAVODynamic         * modelAVOdynamic,
+        SeismicParametersHolder & seismicParameters);
+
   ~Crava();
 
-  int                    computePostMeanResidAndFFTCov();
-  int                    computePostMeanResidAndFFTCov_flens();
-  int                    simulate( RandomGen * randomGen );
-  void                   computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
   int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+
   FFTGrid              * getPostAlpha() { return postAlpha_ ;}
   FFTGrid              * getPostBeta()  { return postBeta_  ;}
   FFTGrid              * getPostRho()   { return postRho_   ;}
 
   int                    getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
 
-  void                   printEnergyToScreen();
-  void                   computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
   int                    getRelative();
-
 
   void                   computeG(NRLib::Matrix & G) const;
   NRLib::Matrix          getPriorVar0() const;
   NRLib::Matrix          getPostVar0() const;
   NRLib::SymmetricMatrix getSymmetricPriorVar0() const;
   NRLib::SymmetricMatrix getSymmetricPostVar0() const;
-  void                   newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
-                                                  NRLib::Matrix & G,
-                                                  NRLib::Vector & scales,
-                                                  NRLib::Matrix & sigmamdnew) const;
+  void                   newPosteriorCovPointwise(NRLib::Matrix                 & sigmanew,
+                                                  NRLib::Matrix                 & G,
+                                                  NRLib::Vector                 & scales,
+                                                  NRLib::Matrix                 & sigmamdnew) const;
   NRLib::Matrix          computeFilter(NRLib::SymmetricMatrix & priorCov,
-                                   NRLib::SymmetricMatrix & posteriorCov) const;
-
-  void                   doPredictionKriging();
+                                       NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
   void                   computeDataVariance(void);
-  void                   setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
-  void                   computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
+  void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
+  
+  void                   computeVariances(fftw_real     * corrT,
+                                          ModelSettings * modelSettings);
+
   void                   writeBWPredicted(void);
   float                  getEmpSNRatio(int l)     const { return empSNRatio_[l]     ;}
   float                  getTheoSNRatio(int l)    const { return theoSNRatio_[l]    ;}
   float                  getSignalVariance(int l) const { return signalVariance_[l] ;}
   float                  getErrorVariance(int l)  const { return errorVariance_[l]  ;}
   float                  getDataVariance(int l)   const { return dataVariance_[l]   ;}
-  void                   computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A) const;
-  void                   computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
+  int                simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
+  int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
+  void               printEnergyToScreen();
+  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  void               computeFaciesProb(SpatialWellFilter       * filteredlogs,
+                                       bool                      useFilter,
+                                       SeismicParametersHolder & seismicParameters);
+  void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
+  //void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
+  void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
+  void               computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
+                                                           float     * corrT,
+                                                           float     * A) const;
+
+  void               computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
+                                                                float     * corrT,
+                                                                float     * A ) const ;
 
   int                    checkScale(void);
 
@@ -92,20 +104,25 @@ private:
   void                   fillInverseAbskWRobust_flens(int k, NRLib::ComplexVector & invkW, Wavelet1D** seisWaveletForNorm);
   void                   fillkWNorm_flens(int k, NRLib::ComplexVector & kWNorm, Wavelet1D** wavelet);
 
-  void                   computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
+  void                   computeAdjustmentFactor(fftw_complex                  * relativeWeights,
+                                                 Wavelet1D                     * wLocal,
+                                                 double                          scaleF,
+                                                 Wavelet                       * wGlobal, 
+                                                 const SeismicParametersHolder & seismicParameters,
+                                                 float                         * A,
+                                                 float                           errorVar);
 
   FFTGrid              * createFFTGrid();
   FFTGrid              * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
 
   float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
-  //float                computeWDCorrMVar (Wavelet* WD);
 
-  void                   divideDataByScaleWavelet();
+  void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
   void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
-  void                   doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
+  void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
-  void                   correctAlphaBetaRho(ModelSettings *modelSettings);
+  void                   correctAlphaBetaRho(ModelSettings * modelSettings);
 
   FFTGrid *              computeSeismicImpedance(FFTGrid * alpha,
                                                  FFTGrid * beta,
@@ -117,7 +134,14 @@ private:
   void                   SetComplexVector(NRLib::ComplexVector & V,
                                           fftw_complex         * v);
 
-
+  void                   getNextErrorVariance(fftw_complex **& errVar,
+                                              fftw_complex   * errMult1,
+                                              fftw_complex   * errMult2,
+                                              fftw_complex   * errMult3,
+                                              int              ntheta,
+                                              float            wnc,
+                                              double        ** errThetaCov,
+                                              bool             invert_frequency) const;
 
   bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox
@@ -127,8 +151,6 @@ private:
   int                nxp_;              // padded dimensions
   int                nyp_;
   int                nzp_;
-
-  Corr             * correlations_;     //
 
   int                ntheta_;           // number of seismic cubes and number of wavelets
   float              lowCut_;           // lowest frequency that is inverted
@@ -143,7 +165,6 @@ private:
   FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method
   FFTGrid          * meanBeta2_;
   FFTGrid          * meanRho2_;
-  float           ** parPointCov_;
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
@@ -160,13 +181,20 @@ private:
   float            * errorVariance_;
   float            * dataVariance_;
 
+  NRLib::Matrix      priorVar0_;
+  NRLib::Matrix      postVar0_;
+  std::vector<float> postCovAlpha00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float> postCovBeta00_;
+  std::vector<float> postCovRho00_;
+
   FFTGrid          * postAlpha_;        // posterior values
   FFTGrid          * postBeta_;
   FFTGrid          * postRho_;
+  FFTGrid          * errCorr_;
 
-  int                krigingParameter_;
-  WellData        ** wells_;
-  int                nWells_;
+  int                     krigingParameter_;
+  std::vector<WellData *> wells_;
+  int                     nWells_;
 
   int                scaleWarning_;
   std::string        scaleWarningText_;

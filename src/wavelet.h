@@ -38,16 +38,16 @@ public:
 
   Wavelet(const std::string & fileName,
           int                 fileFormat,
-          ModelSettings     * modelSettings,
-          float             * reflCoef,
+          const ModelSettings     * modelSettings,
+          const float             * reflCoef,
           float               theta,
           int                 dim,
           int               & errCode,
           std::string       & errText);
 
 
-  Wavelet(ModelSettings     * modelSettings,
-          float             * reflCoef,
+  Wavelet(const ModelSettings     * modelSettings,
+          const float             * reflCoef,
           float               theta,
           int                 dim,
           float               peakFrequency,
@@ -116,34 +116,45 @@ public:
 
 
 
-  virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/,
-                                               Simbox        * /*simbox*/,
-                                               FFTGrid       * /*seisCube*/,
-                                               WellData     ** /*wells*/) {return 1.0f;}
+  virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
+                                               const Simbox                * /*simbox*/,
+                                               const FFTGrid               * /*seisCube*/,
+                                               std::vector<WellData *> /*wells*/) {return 1.0f;}
 
   // for noise estimation
-  virtual float calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
-                                                FFTGrid       * /*seisCube*/,
-                                                WellData     ** /*wells*/,
-                                                ModelSettings * /*modelSettings*/,
-                                                std::string   & /*errText*/,
-                                                int           & /*error*/,
-                                                int             /*number*/,
-                                                Grid2D       *& /*noiseScaled*/,
-                                                Grid2D       *& /*shift*/,
-                                                Grid2D       *& /*gain*/) {return 1.0f;}
+  virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
+                                                const FFTGrid         * /*seisCube*/,
+                                                std::vector<WellData *> /*wells*/,
+                                                const ModelSettings   * /*modelSettings*/,
+                                                std::string           & /*errText*/,
+                                                int                   & /*error*/,
+                                                int                     /*number*/,
+                                                Grid2D               *& /*noiseScaled*/,
+                                                Grid2D               *& /*shift*/,
+                                                Grid2D               *& /*gain*/,
+                                                float                   /*SNRatio*/,
+                                                float                   /*waveletScale*/,
+                                                bool                    /*estimateSNRatio*/,
+                                                bool                    /*estimateGlobalScale*/,
+                                                bool                    /*estimateLocalNoise*/,
+                                                bool                    /*estimateLocalShift*/,
+                                                bool                    /*estimateLocalScale*/,
+                                                bool                    /*estimateWavelet*/) {return 1.0f;}
 
-  virtual float calculateSNRatio(Simbox                                   * /*simbox*/,
-                                 FFTGrid                                  * /*seisCube*/,
-                                 WellData                                ** /*wells*/,
-                                 ModelSettings                            * /*modelSettings*/,
+  virtual float calculateSNRatio(const Simbox                             * /*simbox*/,
+                                 const FFTGrid                            * /*seisCube*/,
+                                 const std::vector<WellData *>            & /*wells*/,
+                                 const ModelSettings                      * /*modelSettings*/,
                                  std::string                              & /*errText*/,
                                  int                                      & /*error*/,
                                  const NRLib::Grid2D<float>               & /*refTimeGradX*/,
                                  const NRLib::Grid2D<float>               & /*refTimeGradY*/,
                                  const std::vector<std::vector<double> >  & /*tGradX*/,
                                  const std::vector<std::vector<double> >  & /*tGradY*/,
-                                 int                                        /*i*/) {return 1.0f;}
+                                 int                                        /*i*/,
+                                 float                                      /*SNRatio*/,
+                                 bool                                       /*estimateSNRatio*/,
+                                 bool                                       /*estimateWavelet*/) {return 1.0f;}
 
  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
  void           nullOutsideFrequencyBand(float loCut ,float hiCut );

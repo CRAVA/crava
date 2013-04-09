@@ -32,12 +32,12 @@
 #include "src/gridmapping.h"
 #include "src/io.h"
 
-Background::Background(FFTGrid       ** grids,
-                       WellData      ** wells,
-                       FFTGrid       *& velocity,
-                       Simbox         * timeSimbox,
-                       Simbox         * timeBGSimbox,
-                       ModelSettings  * modelSettings)
+Background::Background(FFTGrid                       ** grids,
+                       const std::vector<WellData *>  & wells,
+                       FFTGrid                       *& velocity,
+                       const Simbox                   * timeSimbox,
+                       const Simbox                   * timeBGSimbox,
+                       const ModelSettings            * modelSettings)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
@@ -79,9 +79,9 @@ Background::Background(FFTGrid       ** grids,
 //-------------------------------------------------------------------------------
 
 Background::Background(FFTGrid                       ** grids,
-                       WellData                      ** wells,
-                       Simbox                         * timeSimbox,
-                       ModelSettings                  * modelSettings,
+                       const std::vector<WellData *>  & wells,
+                       const Simbox                   * timeSimbox,
+                       const ModelSettings            * modelSettings,
                        const std::vector<std::string> & surface_files)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
@@ -137,13 +137,13 @@ Background::releaseGrids()
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
-                                    FFTGrid      *& bgBeta,
-                                    FFTGrid      *& bgRho,
-                                    FFTGrid      *& velocity,
-                                    WellData     ** wells,
-                                    Simbox        * simbox,
-                                    ModelSettings * modelSettings)
+Background::generateBackgroundModel(FFTGrid                      *& bgAlpha,
+                                    FFTGrid                      *& bgBeta,
+                                    FFTGrid                      *& bgRho,
+                                    FFTGrid                      *& velocity,
+                                    const std::vector<WellData *> & wells,
+                                    const Simbox                  * simbox,
+                                    const ModelSettings           * modelSettings)
 {
   const int   nz     = simbox->getnz();
   const int   nWells = modelSettings->getNumberOfWells();
@@ -319,9 +319,9 @@ void
 Background::generateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
                                              FFTGrid                       *& bgBeta,
                                              FFTGrid                       *& bgRho,
-                                             WellData                      ** wells,
-                                             Simbox                         * simbox,
-                                             ModelSettings                  * modelSettings,
+                                             const std::vector<WellData *>  & wells,
+                                             const Simbox                   * simbox,
+                                             const ModelSettings            * modelSettings,
                                              const std::vector<std::string> & surface_files)
 {
   LogKit::LogFormatted(LogKit::Low,"Multizone background model:\n");
@@ -597,8 +597,9 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   bgRho  ->setAccessMode(FFTGrid::RANDOMACCESS);
 
   // Beta distributed uncertainty on each surface
+  // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
   std::vector<NRLib::Beta> horizon_distributions(nZones+1);
-  for(int zone=0; zone<nZones+1; zone++) {
+  for(int zone=1; zone<nZones; zone++) {
     horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
   }
 
@@ -696,12 +697,17 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
 
   int nZones = static_cast<int>(zone_probability.size());
 
+  std::vector<double> horizon_cdf(nZones+1, 0);
+  horizon_cdf[0] = 1; //The lower surface has cdf 1, whereas the upper surface has cdf 0
+  for(int i=1; i<nZones; i++)
+    horizon_cdf[i] = horizon_distributions[i].Cdf(z[i]);
+
   for(int zone=0; zone<nZones; zone++) {
     //Initialize with probability that we are below top surface for zone
-    double prob = horizon_distributions[zone].Cdf(z[zone]);
+    double prob = horizon_cdf[zone];
 
     //Multiply with probability that we are above base surface for zone
-    prob *= (1-horizon_distributions[zone+1].Cdf(z[zone+1]));
+    prob *= (1-horizon_cdf[zone+1]);
 
     //We may be eroded from above. Must consider the surfaces that
     //1. Are above top in the standard sequence.
@@ -710,8 +716,8 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
     int min_erosion = erosion_priority[zone];
     for(int prev_hor = zone-1; prev_hor >=0; prev_hor--) {
       if(erosion_priority[prev_hor] < min_erosion) {
-        prob *= horizon_distributions[prev_hor].Cdf(z[prev_hor]);
-        min_erosion = erosion_priority[prev_hor]; //Those with higher number stop in this
+        prob        *= horizon_cdf[prev_hor];
+        min_erosion  = erosion_priority[prev_hor]; //Those with higher number stop in this
       }
     }
 
@@ -722,8 +728,8 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
     min_erosion = erosion_priority[zone+1];
     for(int late_hor = zone+2; late_hor < nZones+1; late_hor++) {
       if(erosion_priority[late_hor] < min_erosion) {
-        prob *= (1-horizon_distributions[late_hor].Cdf(z[late_hor]));
-        min_erosion = erosion_priority[late_hor]; //Those with higher number stop in this
+        prob        *= (1-horizon_cdf[late_hor]);
+        min_erosion  = erosion_priority[late_hor]; //Those with higher number stop in this
       }
     }
 
@@ -884,14 +890,14 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & alpha_zones,
 
 //---------------------------------------------------------------------------
 void
-Background::calculateVelocityDeviations(FFTGrid   * velocity,
-                                        WellData ** wells,
-                                        Simbox    * simbox,
-                                        float    *& trendVel,
-                                        float    *& avgDevVel,
-                                        float     * avgDevAlpha,
-                                        int         outputFlag,
-                                        int         nWells)
+Background::calculateVelocityDeviations(FFTGrid               * velocity,
+                                        const std::vector<WellData *> & wells,
+                                        const Simbox          * simbox,
+                                        float                *& trendVel,
+                                        float                *& avgDevVel,
+                                        float                 * avgDevAlpha,
+                                        int                     outputFlag,
+                                        int                     nWells)
 {
   if((outputFlag & IO::BACKGROUND_TREND) > 0) {
     std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + "VpFromFile";
@@ -982,19 +988,19 @@ Background::calculateBackgroundTrend(float              * trend,
 }
 //---------------------------------------------------------------------------
 void
-Background::getKrigingWellTrends(std::vector<float *>     & blAlpha,
-                                 std::vector<float *>     & blBeta,
-                                 std::vector<float *>     & blRho,
-                                 std::vector<float *>     & vtAlpha,
-                                 std::vector<float *>     & vtBeta,
-                                 std::vector<float *>     & vtRho,
-                                 std::vector<const int *> & ipos,
-                                 std::vector<const int *> & jpos,
-                                 std::vector<const int *> & kpos,
-                                 std::vector<int>         & nBlocks,
-                                 int                      & totBlocks,
-                                 WellData                ** wells,
-                                 const int                & nWells) const
+Background::getKrigingWellTrends(std::vector<float *>          & blAlpha,
+                                 std::vector<float *>          & blBeta,
+                                 std::vector<float *>          & blRho,
+                                 std::vector<float *>          & vtAlpha,
+                                 std::vector<float *>          & vtBeta,
+                                 std::vector<float *>          & vtRho,
+                                 std::vector<const int *>      & ipos,
+                                 std::vector<const int *>      & jpos,
+                                 std::vector<const int *>      & kpos,
+                                 std::vector<int>              & nBlocks,
+                                 int                           & totBlocks,
+                                 const std::vector<WellData *> & wells,
+                                 const int                     & nWells) const
 {
   int maxBlocks = 0;
   totBlocks     = 0;
@@ -1108,11 +1114,11 @@ Background::getKrigingWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
 }
 //---------------------------------------------------------------------------
 void
-Background::getWellTrends(std::vector<float *> & wellTrend,
-                          std::vector<float *> & highCutWellTrend,
-                          WellData            ** wells,
-                          const int            & nz,
-                          const std::string    & name) const
+Background::getWellTrends(std::vector<float *>          & wellTrend,
+                          std::vector<float *>          & highCutWellTrend,
+                          const std::vector<WellData *> & wells,
+                          const int                     & nz,
+                          const std::string             & name) const
 {
   int nWells = static_cast<int>(wellTrend.size());
   int iWells = 0;
@@ -1172,7 +1178,7 @@ void
 Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                               std::vector<float *>              & wellTrend,
                               std::vector<float *>              & highCutWellTrend,
-                              WellData                         ** wells,
+                              const std::vector<WellData *>     & wells,
                               StormContGrid                     & eroded_zone,
                               const std::vector<bool>           & hitZone,
                               const int                         & nz,
@@ -1256,10 +1262,10 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
 }
 //---------------------------------------------------------------------------
 void
-Background::checkWellHitsZone(std::vector<bool>   & hitZone,
-                              WellData           ** wells,
-                              StormContGrid       & eroded_zone,
-                              const int           & nWells) const
+Background::checkWellHitsZone(std::vector<bool>             & hitZone,
+                              const std::vector<WellData *> & wells,
+                              StormContGrid                 & eroded_zone,
+                              const int                     & nWells) const
 {
   for(int w=0; w<nWells; w++) {
     if(wells[w]->checkStormgrid(eroded_zone) == 0) {
@@ -1272,7 +1278,7 @@ Background::checkWellHitsZone(std::vector<bool>   & hitZone,
 //---------------------------------------------------------------------------
 void
 Background::writeTrendsToFile(float             * trend,
-                              Simbox            * simbox,
+                              const Simbox      * simbox,
                               bool                write1D,
                               bool                write3D,
                               bool                hasVelocityTrend,
@@ -1307,7 +1313,7 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
                                        std::vector<StormContGrid> & alpha_trend_zone,
                                        std::vector<StormContGrid> & beta_trend_zone,
                                        std::vector<StormContGrid> & rho_trend_zone,
-                                       Simbox                     * simbox,
+                                       const Simbox               * simbox,
                                        const std::vector<int>     & erosion_priority,
                                        const std::vector<Surface> & surface,
                                        const std::vector<double>  & surface_uncertainty,
@@ -1454,7 +1460,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha
 
 //---------------------------------------------------------------------------
 const CovGrid2D &
-Background::makeCovGrid2D(Simbox * simbox,
+Background::makeCovGrid2D(const Simbox * simbox,
                           Vario  * vario,
                           int      debugFlag)
 {
@@ -1481,8 +1487,8 @@ Background::makeCovGrid2D(Simbox * simbox,
 void
 Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                  FFTGrid                         *& bgGrid,
-                                 float                            * trend,
-                                 Simbox                           * simbox,
+                                 const float                      * trend,
+                                 const Simbox                     * simbox,
                                  const CovGrid2D                  & covGrid2D,
                                  const std::string                & type,
                                  bool                               isFile) const
@@ -1617,14 +1623,14 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateVerticalTrend(std::vector<float *> wellTrend,
-                                   float              * trend,
-                                   float                logMin,
-                                   float                logMax,
-                                   float                maxHz,
-                                   int                  nz,
-                                   float                dz,
-                                   const std::string  & name)
+Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
+                                   float                * trend,
+                                   float                  logMin,
+                                   float                  logMax,
+                                   float                  maxHz,
+                                   int                    nz,
+                                   float                  dz,
+                                   const std::string    & name)
 {
   int     nWells       = static_cast<int>(wellTrend.size());
   float * filtered_log = new float[nz];
@@ -1923,7 +1929,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float firstValue = trend[firstNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(firstValue),firstNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(firstValue),firstNonmissing);
       for (int k = 0 ; k < firstNonmissing ; k++) {
         trend[k] = firstValue;
       }
@@ -1933,7 +1939,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float lastValue = trend[lastNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(lastValue),lastNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(lastValue),lastNonmissing);
       for (int k = lastNonmissing + 1 ; k < nz ; k++) {
         trend[k] = lastValue;
       }
@@ -2000,15 +2006,15 @@ Background::calculateDeviationFromVerticalTrend(std::vector<float *>   wellTrend
 
 //-------------------------------------------------------------------------------
 void
-Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
-                                             const float *  avg_dev_beta,
-                                             const float *  avg_dev_rho,
-                                             const float *  trend_alpha,
-                                             const float *  trend_beta,
-                                             const float *  trend_rho,
-                                             WellData    ** wells,
-                                             const int      nWells,
-                                             const int      nz)
+Background::writeDeviationsFromVerticalTrend(const float                   * avg_dev_alpha,
+                                             const float                   * avg_dev_beta,
+                                             const float                   * avg_dev_rho,
+                                             const float                   * trend_alpha,
+                                             const float                   * trend_beta,
+                                             const float                   * trend_rho,
+                                             const std::vector<WellData *> & wells,
+                                             const int                       nWells,
+                                             const int                       nz)
 {
   float global_mean_alpha = 0.0f;
   float global_mean_beta  = 0.0f;
@@ -2153,9 +2159,9 @@ void
 Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     FFTGrid      *& bgBeta,
                                     FFTGrid      *& bgRho,
-                                    Simbox        * timeBGSimbox,
-                                    Simbox        * timeSimbox,
-                                    ModelSettings * modelSettings)
+                                    const Simbox  * timeBGSimbox,
+                                    const Simbox  * timeSimbox,
+                                    const ModelSettings * modelSettings)
 {
   bool isFile = modelSettings->getFileGrid();
 
@@ -2217,8 +2223,8 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
 void
 Background::resampleParameter(FFTGrid *& pNew,        // Resample to
                               FFTGrid  * pOld,        // Resample from
-                              Simbox   * simboxNew,
-                              Simbox   * simboxOld,
+                              const Simbox   * simboxNew,
+                              const Simbox   * simboxOld,
                               bool       isFile)
 {
   int nx  = simboxNew->getnx();
@@ -2422,9 +2428,9 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox                  * simbox,
+Background::writeBackgrounds(const Simbox            * simbox,
                              GridMapping             * depthMapping,
-                             GridMapping             * timeMapping,
+                             const GridMapping       * timeMapping,
                              const bool                isFile,
                              const TraceHeaderFormat & thf) const
 {

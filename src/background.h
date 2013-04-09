@@ -26,16 +26,17 @@ class BlockedLogsForZone;
 class Background
 {
 public:
-  Background(FFTGrid       ** grids,
-             WellData      ** wells,
-             FFTGrid       *& velocity,
-             Simbox         * timeSimbox,
-             Simbox         * timeBGSimbox,
-             ModelSettings  * modelSettings);
   Background(FFTGrid                       ** grids,
-             WellData                      ** wells,
-             Simbox                         * timeSimbox,
-             ModelSettings                  * modelSettings,
+             const std::vector<WellData *>  & wells,
+             FFTGrid                       *& velocity,
+             const Simbox                   * timeSimbox,
+             const Simbox                   * timeBGSimbox,
+             const ModelSettings            * modelSettings);
+
+  Background(FFTGrid                       ** grids,
+             const std::vector<WellData *>  & wells,
+             const Simbox                   * timeSimbox,
+             const ModelSettings            * modelSettings,
              const std::vector<std::string> & correlation_files);
   Background(FFTGrid ** grids);
   ~Background(void);
@@ -43,41 +44,41 @@ public:
   FFTGrid    * getAlpha(void) { return backModel_[0]; }
   FFTGrid    * getBeta(void)  { return backModel_[1]; }
   FFTGrid    * getRho(void)   { return backModel_[2]; }
-  double       getMeanVsVp()  { return vsvp_;}
+  double       getMeanVsVp() const { return vsvp_;}
 
   void         setClassicVsVp(); //For debugging purposes.
 
-  void         writeBackgrounds(Simbox                  * simbox,
+  void         writeBackgrounds(const Simbox            * simbox,
                                 GridMapping             * depthMapping,
-                                GridMapping             * timeMapping,
+                                const GridMapping       * timeMapping,
                                 const bool                isFile,
                                 const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
 
   void         releaseGrids(); //backModel grids are now taken care of by other classes.
 
 private:
-  void         generateBackgroundModel(FFTGrid      *& bgAlpha,
-                                       FFTGrid      *& bgBeta,
-                                       FFTGrid      *& bgRho,
-                                       FFTGrid      *& velocity,
-                                       WellData     ** wells,
-                                       Simbox        * simbox,
-                                       ModelSettings * modelSettings);
+  void         generateBackgroundModel(FFTGrid              *& bgAlpha,
+                                       FFTGrid              *& bgBeta,
+                                       FFTGrid              *& bgRho,
+                                       FFTGrid              *& velocity,
+                                       const std::vector<WellData *> & wells,
+                                       const Simbox          * simbox,
+                                       const ModelSettings   * modelSettings);
 
   void         generateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
                                                 FFTGrid                       *& bgBeta,
                                                 FFTGrid                       *& bgRho,
-                                                WellData                      ** wells,
-                                                Simbox                         * simbox,
-                                                ModelSettings                  * modelSettings,
+                                                const std::vector<WellData *>  & wells,
+                                                const Simbox                   * simbox,
+                                                const ModelSettings            * modelSettings,
                                                 const std::vector<std::string> & surface_files);
 
   void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                        FFTGrid      *& bgBeta,
                                        FFTGrid      *& bgRho,
-                                       Simbox        * timeBGsimbox,
-                                       Simbox        * timeSimbox,
-                                       ModelSettings * modelSettings);
+                                       const Simbox  * timeBGsimbox,
+                                       const Simbox  * timeSimbox,
+                                       const ModelSettings * modelSettings);
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
@@ -95,19 +96,19 @@ private:
                                         std::vector<float *> highCutWellTrend,
                                         const std::string  & name);
 
-  void         getKrigingWellTrends(std::vector<float *>     & blAlpha,
-                                    std::vector<float *>     & blBeta,
-                                    std::vector<float *>     & blRho,
-                                    std::vector<float *>     & vtAlpha,
-                                    std::vector<float *>     & vtBeta,
-                                    std::vector<float *>     & vtRho,
-                                    std::vector<const int *> & ipos,
-                                    std::vector<const int *> & jpos,
-                                    std::vector<const int *> & kpos,
-                                    std::vector<int>         & nBlocks,
-                                    int                      & totBlocks,
-                                    WellData                ** wells,
-                                    const int                & nWells) const;
+  void         getKrigingWellTrends(std::vector<float *>          & blAlpha,
+                                    std::vector<float *>          & blBeta,
+                                    std::vector<float *>          & blRho,
+                                    std::vector<float *>          & vtAlpha,
+                                    std::vector<float *>          & vtBeta,
+                                    std::vector<float *>          & vtRho,
+                                    std::vector<const int *>      & ipos,
+                                    std::vector<const int *>      & jpos,
+                                    std::vector<const int *>      & kpos,
+                                    std::vector<int>              & nBlocks,
+                                    int                           & totBlocks,
+                                    const std::vector<WellData *> & wells,
+                                    const int                     & nWells) const;
 
   void         getKrigingWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                                         std::vector<float *>              & blAlpha,
@@ -123,29 +124,29 @@ private:
                                         int                               & totBlocks,
                                         const int                         & nz) const;
 
-  void         getWellTrends(std::vector<float *> & wellTrend,
-                             std::vector<float *> & highCutWellTrend,
-                             WellData            ** wells,
-                             const int            & nz,
-                             const std::string    & name) const;
+  void         getWellTrends(std::vector<float *>          & wellTrend,
+                             std::vector<float *>          & highCutWellTrend,
+                             const std::vector<WellData *> & wells,
+                             const int                     & nz,
+                             const std::string             & name) const;
 
   void         getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                                  std::vector<float *>              & wellTrend,
                                  std::vector<float *>              & highCutWellTrend,
-                                 WellData                         ** wells,
+                                 const std::vector<WellData *>     & wells,
                                  StormContGrid                     & eroded_zone,
                                  const std::vector<bool>           & hitZone,
                                  const int                         & nz,
                                  const std::string                 & name,
                                  const int                         & i) const;
 
-  void        checkWellHitsZone(std::vector<bool>   & hitZone,
-                                WellData           ** wells,
-                                StormContGrid       & eroded_zone,
-                                const int           & nWells) const;
+  void        checkWellHitsZone(std::vector<bool>             & hitZone,
+                                const std::vector<WellData *> & wells,
+                                StormContGrid                 & eroded_zone,
+                                const int                     & nWells) const;
 
   void         writeTrendsToFile(float             * trend,
-                                 Simbox            * simbox,
+                                 const Simbox      * simbox,
                                  bool                write1D,
                                  bool                write3D,
                                  bool                hasVelocityTrend,
@@ -158,15 +159,15 @@ private:
                                           std::vector<StormContGrid> & alpha_trend_zone,
                                           std::vector<StormContGrid> & beta_trend_zone,
                                           std::vector<StormContGrid> & rho_trend_zone,
-                                          Simbox                     * simbox,
+                                          const Simbox               * simbox,
                                           const std::vector<int>     & erosion_priority,
                                           const std::vector<Surface> & surface,
                                           const std::vector<double>  & surface_uncertainty,
                                           const bool                   isFile) const;
 
-  const CovGrid2D & makeCovGrid2D(Simbox * simbox,
-                                  Vario  * vario,
-                                  int      debugFlag);
+  const CovGrid2D & makeCovGrid2D(const Simbox * simbox,
+                                  Vario        * vario,
+                                  int            debugFlag);
 
   void         setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha,
                                   std::vector<KrigingData2D>     & krigingDataBeta,
@@ -191,8 +192,8 @@ private:
 
   void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                     FFTGrid                         *& bgGrid,
-                                    float                            * trend,
-                                    Simbox                           * simbox,
+                                    const float                      * trend,
+                                    const Simbox                     * simbox,
                                     const CovGrid2D                  & covGrid2D,
                                     const std::string                & type,
                                     bool                               isFile) const;
@@ -218,18 +219,18 @@ private:
                                        const bool                         isFile,
                                        const std::string                & type) const;
 
-  void         calculateVelocityDeviations(FFTGrid   * velocity,
-                                           WellData ** wells,
-                                           Simbox    * simbox,
-                                           float    *& trendVel,
-                                           float    *& avgDevVel,
-                                           float     * avgDevAlpha,
-                                           int         outputFlag,
-                                           int         nWells);
+  void         calculateVelocityDeviations(FFTGrid               * velocity,
+                                           const std::vector<WellData *> & wells,
+                                           const Simbox          * simbox,
+                                           float                *& trendVel,
+                                           float                *& avgDevVel,
+                                           float                 * avgDevAlpha,
+                                           int                     outputFlag,
+                                           int                     nWells);
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
-                                 Simbox   * simboxNew,
-                                 Simbox   * simboxOld,
+                                 const Simbox   * simboxNew,
+                                 const Simbox   * simboxOld,
                                  bool       isFile);
   void         calculateVerticalTrend(std::vector<float *> wellTrend,
                                       float              * trend,
@@ -249,15 +250,16 @@ private:
                                                    float               * avg_dev,
                                                    const int             nd);
 
-  void         writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
-                                                const float *  avg_dev_beta,
-                                                const float *  avg_dev_rho,
-                                                const float *  trend_alpha,
-                                                const float *  trend_beta,
-                                                const float *  trend_rho,
-                                                WellData    ** wells,
-                                                const int      nWells,
-                                                const int      nz);
+  void         writeDeviationsFromVerticalTrend(const float                   * avg_dev_alpha,
+                                                const float                   * avg_dev_beta,
+                                                const float                   * avg_dev_rho,
+                                                const float                   * trend_alpha,
+                                                const float                   * trend_beta,
+                                                const float                   * trend_rho,
+                                                const std::vector<WellData *> & wells,
+                                                const int                       nWells,
+                                                const int                       nz);
+
   void         smoothTrendWithLocalLinearRegression(float      * trend,
                                                     int        * count,
                                                     int          nWells,
@@ -274,10 +276,10 @@ private:
                            const bool  expTrans,
                            const bool  fileGrid) const;
 
-  void        ComputeZoneProbability(const std::vector<double>       & z,
-                                      const std::vector<NRLib::Beta> & horizon_distributions,
-                                      const std::vector<int>         & erosion_priority,
-                                      std::vector<double>            & zone_probability) const;
+  void        ComputeZoneProbability(const std::vector<double>      & z,
+                                     const std::vector<NRLib::Beta> & horizon_distributions,
+                                     const std::vector<int>         & erosion_priority,
+                                     std::vector<double>            & zone_probability) const;
 
   void         ErodeSurface(Surface       *& surface,
                             const Surface *  priority_surface,

@@ -12,15 +12,18 @@
 
 #include "lib/random.h"
 #include "lib/kriging1d.h"
+#include "lib/lib_matr.h"
 
 #include "nrlib/random/chisquared.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/trend/trend.hpp"
+#include "nrlib/exception/exception.hpp"
 
+#include "rplib/syntwelldata.h"
 #include "src/welldata.h"
 #include "src/faciesprob.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/corr.h"
 #include "src/crava.h"
 #include "src/simbox.h"
 #include "src/blockedlogs.h"
@@ -30,18 +33,25 @@
 #include "src/simbox.h"
 #include "src/io.h"
 #include "src/tasklist.h"
+#include "src/modelgeneral.h"
+#include "src/cravatrend.h"
+#include "rplib/distributionsrock.h"
+#include "src/posteriorelasticpdf.h"
+#include "src/posteriorelasticpdf3d.h"
+#include "src/posteriorelasticpdf4d.h"
+#include "src/seismicparametersholder.h"
+
 
 FaciesProb::FaciesProb(FFTGrid                           * alpha,
                        FFTGrid                           * beta,
                        FFTGrid                           * rho,
-                       const std::vector<std::string>    & faciesNames,
                        int                                 nFac,
                        float                               p_undef,
-                       const float                       * priorFacies,
-                       FFTGrid                          ** priorFaciesCubes,
+                       const std::vector<float>          & priorFacies,
+                       std::vector<FFTGrid *>              priorFaciesCubes,
                        const std::vector<NRLib::Matrix>  & sigmaEOrig,
                        bool                                useFilter,
-                       const WellData                   ** wells,
+                       std::vector<WellData *>             wells,
                        int                                 nWells,
                        const std::vector<Surface *>      & faciesEstimInterval,
                        const double                        dz,
@@ -49,18 +59,130 @@ FaciesProb::FaciesProb(FFTGrid                           * alpha,
                        bool                                noVs,
                        Crava                             * cravaResult,
                        const std::vector<Grid2D *>       & noiseScale,
-                       const ModelSettings *               modelSettings,
-                       FFTGrid                           * seismicLH)
+                       const ModelSettings               * modelSettings,
+                       FFTGrid                           * seismicLH,
+                       const std::vector<std::string>      facies_names)
 {
-  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells,
-                 faciesEstimInterval, dz, relative, noVs,
-                 p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
-                 modelSettings, seismicLH);
+  makeFaciesProb(nFac,
+                 alpha,
+                 beta,
+                 rho,
+                 sigmaEOrig,
+                 useFilter,
+                 wells,
+                 nWells,
+                 faciesEstimInterval,
+                 dz,
+                 relative,
+                 noVs,
+                 p_undef,
+                 priorFacies,
+                 priorFaciesCubes,
+                 cravaResult,
+                 noiseScale,
+                 modelSettings,
+                 seismicLH,
+                 facies_names);
 
-  checkProbabilities(faciesNames,
+  checkProbabilities(facies_names,
                      faciesProb_,
                      nFac);
 }
+
+
+FaciesProb::FaciesProb(FFTGrid                                            * alpha,
+                       FFTGrid                                            * beta,
+                       FFTGrid                                            * rho,
+                       int                                                  nFac,
+                       float                                                p_undef,
+                       const std::vector<float>                           & priorFacies,
+                       std::vector<FFTGrid *>                               priorFaciesCubes,
+                       FFTGrid                                            * seismicLH,
+                       const std::map<std::string, DistributionsRock *>   & rock_distributions,
+                       const std::vector<std::string>                     & facies_names,
+                       const std::vector<Surface *>                       & faciesEstimInterval,
+                       Crava                                              * cravaResult,
+                       SeismicParametersHolder                            & seismicParameters,
+                       const std::vector<Grid2D *>                        & noiseScale,
+                       const ModelSettings                                * modelSettings,
+                       SpatialWellFilter                                  * filteredLogs,
+                       std::vector<WellData *>                              wells,
+                       CravaTrend                                         & trend_cubes,
+                       int                                                  nWells,
+                       const double                                         dz,
+                       bool                                                 useFilter,
+                       bool                                                 relative,
+                       const double                                         trend1_min,
+                       const double                                         trend1_max,
+                       const double                                         trend2_min,
+                       const double                                         trend2_max)
+:nFacies_(nFac)
+{
+  int densdim = 0;
+  int nDimensions = 0;
+  std::vector<Simbox*>  volume;
+  std::vector<std::vector<PosteriorElasticPDF *> > posteriorPdf;
+  bool faciesProbFromRockPhysics = modelSettings->getFaciesProbFromRockPhysics();
+
+  if(!faciesProbFromRockPhysics){
+    const std::vector<NRLib::Matrix>  & sigmaEOrig = filteredLogs->getSigmae();
+    densdim = static_cast<int>(sigmaEOrig.size());
+    posteriorPdf.resize(densdim);
+    volume.resize(densdim);
+    for (int i=0;i<densdim;i++){
+      posteriorPdf[i].resize(nFacies_, NULL);
+    }
+    nDimensions = MakePosteriorElasticPDF3D(posteriorPdf,
+                                            volume,
+                                            filteredLogs->getSigmae(),
+                                            useFilter,
+                                            wells,
+                                            nWells,
+                                            faciesEstimInterval,
+                                            dz,
+                                            relative,
+                                            modelSettings->getNoVsFaciesProb(),
+                                            priorFaciesCubes,
+                                            cravaResult,
+                                            noiseScale,
+                                            modelSettings,
+                                            facies_names);
+
+  }else{
+    densdim = 1;
+    volume.resize(densdim);
+    syntWellLength_ = 100;
+    nBinsTrend_ = 20;
+    posteriorPdf.resize(1);
+    posteriorPdf[0].resize(nFacies_,NULL);
+    nDimensions = MakePosteriorElasticPDFRockPhysics(posteriorPdf,
+                                                     volume,
+                                                     cravaResult,
+                                                     seismicParameters,
+                                                     priorFaciesCubes,
+                                                     modelSettings,
+                                                     rock_distributions,
+                                                     facies_names,
+                                                     dz,
+                                                     trend1_min,
+                                                     trend1_max,
+                                                     trend2_min,
+                                                     trend2_max,
+                                                     useFilter);
+  }
+
+
+  CalculateFaciesProbFromPosteriorElasticPDF(alpha, beta, rho, posteriorPdf, volume, nDimensions,
+                      p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH, faciesProbFromRockPhysics, trend_cubes);
+
+  for(int i = 0 ; i < densdim ; i++) {
+    for(int j = 0 ; j < nFacies_ ; j++)
+      delete posteriorPdf[i][j];
+    delete volume[i];
+  }
+
+}
+
 
 FaciesProb::~FaciesProb()
 {
@@ -167,21 +289,20 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
   return hist;
 }
 
-void
-FaciesProb::makeFaciesDens(int nfac,
-                           const std::vector<NRLib::Matrix> & sigmaEOrig,
-                           bool                               useFilter,
-                           bool                               noVs,
-                           const std::vector<float>         & alphaFiltered,
-                           const std::vector<float>         & betaFiltered,
-                           const std::vector<float>         & rhoFiltered,
-                           const std::vector<int>           & faciesLog,
-                           std::vector<FFTGrid *>           & density,
-                           Simbox                          ** volume,
-                           int                                index,
-                           NRLib::Matrix                    & G,
-                           Crava                            * cravaResult,
-                           const std::vector<Grid2D *>      & noiseScale)
+void FaciesProb::makeFaciesDens(int                                nfac,
+                                const std::vector<NRLib::Matrix> & sigmaEOrig,
+                                bool                               useFilter,
+                                bool                               noVs,
+                                const std::vector<float>         & alphaFiltered,
+                                const std::vector<float>         & betaFiltered,
+                                const std::vector<float>         & rhoFiltered,
+                                const std::vector<int>           & faciesLog,
+                                std::vector<FFTGrid *>           & density,
+                                Simbox                          ** volume,
+                                int                                index,
+                                NRLib::Matrix                    & G,
+                                Crava                            * cravaResult,
+                                const std::vector<Grid2D *>      & noiseScale)
 {
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
   //      values outside the denisty table to the edge, any values should do in this dimension.
@@ -262,7 +383,7 @@ FaciesProb::makeFaciesDens(int nfac,
   float varAlpha = 0.0f;
   float varBeta  = 0.0f;
   float varRho   = 0.0f;
-  calculateVariances(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog,
+  CalculateVariances(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog,
                      varAlpha, varBeta, varRho);//sets varAlpha etc....
   if(noVs == true)
     varBeta = 5*varAlpha; //Must be large enough to make surface span possible beta values.
@@ -324,6 +445,7 @@ FaciesProb::makeFaciesDens(int nfac,
   Surface rhoMinSurf(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
   //Associate alpha with x, beta with y and rho with z.
   *volume  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho);
+
   density = makeFaciesHistAndSetPriorProb(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog, *volume);
 
   float *smooth = new float[nbinsa*nbinsb*nbinsr];
@@ -404,30 +526,660 @@ FaciesProb::makeFaciesDens(int nfac,
     density[i]->invFFTInPlace();
     density[i]->multiplyByScalar(float(sqrt(double(nbinsa*nbinsb*nbinsr))));
   }
+
+
+    for(int l=0;l<nFacies_;l++){
+      if(ModelSettings::getDebugLevel() >= 1) {
+        std::string baseName = "Smoothed_hist_" + NRLib::ToString(index) + NRLib::ToString(l) + IO::SuffixAsciiFiles();
+        std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+        density[l]->writeAsciiFile(fileName);
+      }
+    }
+
   delete smoother;
   delete [] smooth;
 }
 
+int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >         & posteriorPdf,
+                                                   std::vector<Simbox *>                                    & volume,
+                                                   Crava                                                    * cravaResult,
+                                                   SeismicParametersHolder                                  & seismicParameters,
+                                                   std::vector<FFTGrid *>                                   & priorFaciesCubes,
+                                                   const ModelSettings                                      * modelSettings,
+                                                   const std::map<std::string, DistributionsRock *>         & rock_distributions,
+                                                   const std::vector<std::string>                           & facies_names,
+                                                   const double                                             & dz,
+                                                   const double                                             & trend1_min,
+                                                   const double                                             & trend1_max,
+                                                   const double                                             & trend2_min,
+                                                   const double                                             & trend2_max,
+                                                   bool                                                       useFilter)
+{
+  double eps = 0.000001;
+  int nDimensions = 0;
 
-void FaciesProb::makeFaciesProb(int                                nfac,
-                                FFTGrid                          * postAlpha,
-                                FFTGrid                          * postBeta,
-                                FFTGrid                          * postRho,
-                                const std::vector<NRLib::Matrix> & sigmaEOrig,
-                                bool                               useFilter,
-                                const WellData                  ** wells,
-                                int                                nWells,
-                                const std::vector<Surface *>     & faciesEstimInterval,
-                                const double                       dz,
-                                bool                               relative,
-                                bool                               noVs,
-                                float                              p_undef,
-                                const float                      * priorFacies,
-                                FFTGrid                         ** priorFaciesCubes,
-                                Crava                            * cravaResult,
-                                const std::vector<Grid2D *>      & noiseScale,
-                                const ModelSettings              * modelSettings,
-                                FFTGrid                          * seismicLH)
+  std::vector<double> trend1;
+  std::vector<double> trend2;
+
+  if ((trend1_min>trend1_max) || (trend2_min > trend2_max)) {
+    throw NRLib::Exception("Facies probabilities: The given trend minimum value is larger than the trend maximum value");
+  }
+  else if((trend1_max-trend1_min)<eps && (trend2_max-trend2_min)>eps ){
+    throw NRLib::Exception("Facies probabilities: Trend 2 min/max values are given, but no trend 1 min/max values");
+  }
+
+  // CHECK INPUT AND DEDUCE POSTERIOR ELASTIC PDF CLASS ------------------------------------------
+
+  // both trend vectors have the same number of bins
+  if((trend2_max-trend2_min)>eps && (trend1_max-trend1_min)>eps){
+    nDimensions = 5;
+    // add one bin and subtract dx/10 to avoid numerical errors since the entire range is used
+    trend1.resize(nBinsTrend_+1);
+    trend2.resize(nBinsTrend_+1);
+    trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
+    trend2BinSize_ = (trend2_max - trend2_min)/nBinsTrend_;
+    for(int i=0; i<nBinsTrend_+1; i++){
+      trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
+      trend2[i] = trend2_min + i*trend2BinSize_ - trend1BinSize_/10;
+    }
+  //it is not possible to have a trend2 but no trend1
+  }else if((trend2_max-trend2_min)<eps && (trend1_max-trend1_min)>eps){
+    nDimensions = 4;
+    trend1.resize(nBinsTrend_+1);
+    trend2.resize(1,trend2_min);
+    trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
+    for(int i=0; i<nBinsTrend_+1; i++){
+      trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
+    }
+    // if trend2max==trend1min and trend1max==trend1min
+  }else{
+    trend1.resize(1,trend1_min);
+    trend2.resize(1,trend2_min);
+    nDimensions = 3;
+  }
+
+  // AUTOMATIC DIMENSION REDUCTION ----------------------------------------------
+
+  double ** sigma_pri_temp = new double *[3];
+  double ** sigma_post_temp = new double *[3];
+  for(int i=0; i<3; i++){
+    sigma_pri_temp[i] = new double[3];
+    sigma_post_temp[i] = new double[3];
+  }
+
+  // v is the transformation matrix for the elastic variables
+  std::vector<std::vector<double> > v;
+
+  FillSigmaPriAndSigmaPost(cravaResult, sigma_pri_temp, sigma_post_temp);
+  if(nDimensions>3) {
+    v.resize(2);
+    v[0].resize(3,0.0);
+    v[1].resize(3,0.0);
+    SolveGEVProblem(sigma_pri_temp,sigma_post_temp, v);
+  }
+  else {
+    v.resize(3);
+    v[0].push_back(1);
+    v[0].push_back(0);
+    v[0].push_back(0);
+    v[1].push_back(0);
+    v[1].push_back(1);
+    v[1].push_back(0);
+    v[2].push_back(0);
+    v[2].push_back(0);
+    v[2].push_back(1);
+  }
+
+  for(int i=0;i<3;i++){
+    delete [] sigma_pri_temp[i];
+    delete [] sigma_post_temp[i];
+  }
+  delete [] sigma_pri_temp;
+  delete [] sigma_post_temp;
+
+  // GENERATE SYNTHETIC WELLS -------------------------------------------------------------
+
+  //we filter only some synthetic wells to save cpu time
+  int nWellsToBeFiltered = 10;
+  int nWellsPerCombinationOfTrendParams = 10;
+
+  std::vector<SyntWellData *>    syntWellData;
+  syntWellData.resize(static_cast<int>(trend1.size()*trend2.size()*nWellsPerCombinationOfTrendParams),NULL);
+  GenerateSyntWellData(syntWellData, rock_distributions, facies_names, trend1, trend2, dz, nWellsPerCombinationOfTrendParams);
+
+  // CALCULATE SIGMA_E --------------------------------------------------------------------
+
+  SpatialWellFilter * spatWellFilter = new SpatialWellFilter(nWellsToBeFiltered);
+
+  // NB! EN doFilteringSyntWells can potentially invert 2N matrices instead
+  spatWellFilter->doFilteringSyntWells(syntWellData, v, seismicParameters, nWellsToBeFiltered, cravaResult->getPriorVar0());
+
+  // TRANSFORM SIGMA E ACCORDING TO DIMENSION REDUCTION MATRIX V --------------------------
+
+  const std::vector<double **> sigmaeSynt = spatWellFilter->getSigmaeSynt();
+  assert(sigmaeSynt.size() ==1 );
+
+  double ** sigmaeSyntCopy = new double *[3];
+  for (int i=0; i<3; i++){
+    sigmaeSyntCopy[i] = new double[3];
+  }
+  for(int i=0; i<3; i++){
+    for (int j=0; j<3; j++){
+      sigmaeSyntCopy[i][j] = sigmaeSynt[0][i][j];
+    }
+  }
+
+  int sizeOfV = static_cast<int>(v.size());
+  double ** sigmaeTransformed = new double *[sizeOfV];
+  double ** vCopy = new double *[sizeOfV];
+  double ** vTranspose = new double *[3];
+  for (int i=0; i<3; i++){
+    vTranspose[i] = new double[sizeOfV];
+  }
+  for (int i=0; i<sizeOfV; i++){
+    sigmaeTransformed[i] = new double[sizeOfV];
+    vCopy[i] = new double[3];
+  }
+  for (int i=0; i<sizeOfV; i++){
+    for (int j=0; j<3; j++){
+      vCopy[i][j] = v[i][j];
+      vTranspose[j][i] = v[i][j];
+    }
+  }
+  double ** tempMatrix = new double *[sizeOfV];
+  for(int i=0; i<sizeOfV; i++){
+    tempMatrix[i] = new double[3];
+  }
+  // Calculates V SigmaE Vtranspose
+  lib_matr_prod(vCopy, sigmaeSyntCopy, sizeOfV, 3, 3, tempMatrix);
+  lib_matr_prod(tempMatrix,vTranspose, sizeOfV, 3, sizeOfV, sigmaeTransformed);
+
+  for (int i = 0; i<3; i++){
+    delete [] sigmaeSyntCopy[i];
+  }
+  for (int i=0; i<sizeOfV;i++){
+    delete [] vCopy[i];
+    delete [] tempMatrix[i];
+  }
+  for(int i=0; i<3; i++)
+    delete [] vTranspose[i];
+
+  delete [] sigmaeSyntCopy;
+  delete [] vCopy;
+  delete [] vTranspose;
+  delete [] tempMatrix;
+
+  delete spatWellFilter;
+
+  //Set the grid to 100*100*50 for the elastic parameters
+  int nBinsX = 100;
+  int nBinsY = 100;
+  int nBinsZ = 50;
+
+  float kstda, kstdb, kstdr, hopt;
+  float varAlpha = 0.0f, varBeta = 0.0f, varRho = 0.0f;
+
+  // CALCULATE VARIANCES FOR ELASTIC PARAMETERS -------------------------------------------
+
+  int nData = 0;
+  for (int i=0; i<static_cast<int>(syntWellData.size()); i++){
+    nData+= syntWellData[i]->getWellLength();
+  }
+
+  // values from all wells in one vector
+  std::vector<float> vp, vs, rho;
+  std::vector<int> facies;
+  vp.resize(nData,RMISSING);
+  vs.resize(nData,RMISSING);
+  rho.resize(nData,RMISSING);
+  facies.resize(nData,IMISSING);
+  // one vector per well
+  std::vector<std::vector<double> > vp_matrix(nFacies_);
+  std::vector<std::vector<double> > vs_matrix(nFacies_);
+  std::vector<std::vector<double> > rho_matrix(nFacies_);
+  std::vector<std::vector<int> > trend1_matrix(nFacies_);
+  std::vector<std::vector<int> > trend2_matrix(nFacies_);
+
+  int totLength = 0;
+  for (int i=0; i<static_cast<int>(syntWellData.size()); i++){
+    int facies_temp = 0;
+    for (int j=0; j<syntWellData[i]->getWellLength(); j++){
+      vp[totLength+j] = syntWellData[i]->getAlpha(j);
+      vs[totLength+j] = syntWellData[i]->getBeta(j);
+      rho[totLength+j] = syntWellData[i]->getRho(j);
+      facies[totLength+j] = syntWellData[i]->getFacies(j);
+      facies_temp = syntWellData[i]->getFacies(j);
+      if(facies_temp!=IMISSING){
+        if(facies_temp<nFacies_){
+          vp_matrix[facies_temp].push_back(syntWellData[i]->getAlpha(j));
+          vs_matrix[facies_temp].push_back(syntWellData[i]->getBeta(j));
+          rho_matrix[facies_temp].push_back(syntWellData[i]->getRho(j));
+          if(nDimensions>3)
+            trend1_matrix[facies_temp].push_back(syntWellData[i]->getTrend1Ind());
+          if(nDimensions>4)
+            trend2_matrix[facies_temp].push_back(syntWellData[i]->getTrend2Ind());
+        }
+        else{
+          NRLib::Exception("Facies probabilities: Facies in simulated well does not exist");
+        }
+      }
+    }
+    totLength+= static_cast<int>(syntWellData[i]->getWellLength());
+  }
+
+  // Calculates variances for the synthetic wells over all trend values
+  CalculateVariances(vp, vs, rho, facies, varAlpha, varBeta, varRho);
+
+  int nobs   = 0;
+  for(int i=0; i<static_cast<int>(facies.size()); i++){
+    if(facies[i]!=IMISSING)
+      nobs++;
+  }
+
+  assert(nobs == static_cast<int>(facies.size()));
+
+  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
+  kstda = hopt*sqrt(varAlpha);
+  kstdb = hopt*sqrt(varBeta);
+  kstdr = hopt*sqrt(varRho);
+
+  // CREATE COVARIANCE MATRIX ------------------------------------------------------------
+
+  double ** sigmae = new double *[sizeOfV];
+  for(int j=0;j<sizeOfV;j++)
+    sigmae[j] = new double[sizeOfV];
+
+  if(useFilter == true) {
+    for(int i=0;i<sizeOfV;i++) {
+      for(int j=0;j<sizeOfV;j++)
+        sigmae[i][j] = sigmaeTransformed[i][j];
+    }
+  }
+  else{
+    for(int j=0;j<sizeOfV;j++) {
+      for(int k=0;k<sizeOfV;k++)
+        sigmae[j][k] = 0.0;
+    }
+  }
+
+  double ** kstdMat = new double *[sizeOfV];
+  for (int i=0; i<sizeOfV; i++){
+    kstdMat[i] = new double[sizeOfV];
+  }
+  for (int i=0; i<sizeOfV; i++){
+    kstdMat[i][i] = v[i][0]*v[i][0]*kstda*kstda + v[i][1]*v[i][1]*kstdb*kstdb + v[i][2]*v[i][2]*kstdr*kstdr;
+      //+ 2*v[i][0]*v[i][1]*kstda*kstdb + 2*v[i][0]*v[i][2]*kstda*kstdr + 2*v[i][1]*v[i][2]*kstdb*kstdr;
+    if (sigmae[i][i] < kstdMat[i][i])
+      sigmae[i][i] = kstdMat[i][i];
+  }
+
+  // FIND DENSITY GRID LIMITS -----------------------------------------------------------
+
+  double xMin = 0;
+  double xMax = 0;
+  double yMin = 0;
+  double yMax = 0;
+  double zMin = 0;
+  double zMax = 0;
+  double dX = 0;
+  double dY = 0;
+  double dZ = 0;
+  if (nDimensions==3){
+    //no dimension reduction
+    xMin  = *min_element(vp.begin(), vp.end()) - 5.0f*sqrt(sigmae[0][0]);
+    xMax  = *max_element(vp.begin(), vp.end()) + 5.0f*sqrt(sigmae[0][0]);
+    yMin  = *min_element(vs.begin(), vs.end()) - 5.0f*sqrt(sigmae[1][1]);
+    yMax  = *max_element(vs.begin(), vs.end()) + 5.0f*sqrt(sigmae[1][1]);
+    zMin  = *min_element(rho.begin(), rho.end()) - 5.0f*sqrt(sigmae[2][2]);
+    zMax  = *max_element(rho.begin(), rho.end()) + 5.0f*sqrt(sigmae[2][2]);
+    dX  = (xMax-xMin)/nBinsX;
+    dY  = (yMax-yMin)/nBinsY;
+    dZ =  (zMax-zMin)/nBinsZ;
+  }else if(nDimensions>3){
+    //reduction to two elastic dimensions
+    std::vector <double> x_transformed(nobs);
+    std::vector <double> y_transformed(nobs);
+    for(int i=0; i<nobs; i++){
+      x_transformed[i] = v[0][0]*vp[i] + v[0][1]*vs[i] +v[0][2]*rho[i];
+      y_transformed[i] = v[1][0]*vp[i] + v[1][1]*vs[i] +v[1][2]*rho[i];
+    }
+    xMin  = *min_element(x_transformed.begin(), x_transformed.end()) - 5.0f*sqrt(sigmae[0][0]);
+    xMax  = *max_element(x_transformed.begin(), x_transformed.end()) + 5.0f*sqrt(sigmae[0][0]);
+    yMin  = *min_element(y_transformed.begin(), y_transformed.end()) - 5.0f*sqrt(sigmae[1][1]);
+    yMax  = *max_element(y_transformed.begin(), y_transformed.end()) + 5.0f*sqrt(sigmae[1][1]);
+    dX  = (xMax-xMin)/nBinsX;
+    dY  = (yMax-yMin)/nBinsY;
+    dZ  = (zMax-zMin)/nBinsTrend_;
+  }
+
+  // Only needed if no trends or no dimension reduction
+  Surface rhoMinSurf(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, zMin);
+  volume[0]  = new Simbox(xMin, yMin, rhoMinSurf, xMax-xMin, yMax-yMin, zMax-zMin, 0, dX, dY, dZ);
+
+  if(nDimensions == 3){
+    for(int j=0; j<nFacies_; j++)
+      posteriorPdf[0][j] = new PosteriorElasticPDF3D(vp_matrix[j], vs_matrix[j], rho_matrix[j],
+        sigmae, nBinsX, nBinsY, nBinsZ, xMin, xMax, yMin, yMax, zMin, zMax,j);
+  }else if(nDimensions == 4){
+    for(int j=0; j<nFacies_; j++){
+      posteriorPdf[0][j] = new PosteriorElasticPDF3D(vp_matrix[j], vs_matrix[j], rho_matrix[j], trend1_matrix[j], v,
+        sigmae, nBinsX, nBinsY, nBinsTrend_+1, xMin, xMax, yMin, yMax, trend1[0], trend1[nBinsTrend_], j);
+    }
+  }else if(nDimensions == 5){
+    for(int j=0; j<nFacies_; j++){
+      posteriorPdf[0][j] = new PosteriorElasticPDF4D(vp_matrix[j], vs_matrix[j], rho_matrix[j], trend1_matrix[j],
+        trend2_matrix[j], v, sigmae, nBinsX, nBinsY, nBinsTrend_+1, nBinsTrend_+1, xMin, xMax, yMin, yMax, trend1[0], trend1[nBinsTrend_],
+        trend2[0], trend2[nBinsTrend_], j);
+    }
+  }else{
+    NRLib::Exception("Facies probabilities: Number of dimensions in posterior elastic PDF is wrong");
+  }
+
+  for(int j=0;j<sizeOfV;j++)
+    delete [] sigmae[j];
+  delete [] sigmae;
+
+  for(int i=0; i<sizeOfV; i++)
+    delete [] sigmaeTransformed[i];
+  delete [] sigmaeTransformed;
+
+  for(int i=0; i<sizeOfV; i++)
+    delete [] kstdMat[i];
+  delete [] kstdMat;
+
+  for (int j=0; j<static_cast<int>(syntWellData.size()); j++)
+    delete syntWellData[j];
+
+
+  // Only possible to call ResampleAndWriteDensity for an object with 3 elastic dimensions
+  if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && nDimensions == 3) {
+    if (nDimensions == 3){
+    Simbox * expVol = createExpVol(volume[0]);
+    for(int j=0; j<static_cast<int>(posteriorPdf[0].size()); j++) {
+      std::string baseName = "Rock_Physics_";
+      baseName = baseName + facies_names[0];
+      std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
+      bool writeSurface = (j==0); //writeSurface is true if j == 0.
+      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume[0], expVol, 0, writeSurface);
+
+    }
+    delete expVol;
+    }
+    else{
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: No implementation of resampling / file writing for elastic PDFs with trends or dimension reduction\n");
+    }
+  }
+
+  if(priorFaciesCubes.size() != 0)
+    normalizeCubes(priorFaciesCubes);
+
+  return nDimensions;
+}
+
+int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElasticPDF *> >   & posteriorPdf3d,
+                                          std::vector<Simbox *>                              & volume,
+                                          const std::vector<NRLib::Matrix>                   & sigmaEOrig,
+                                          bool                                                 useFilter,
+                                          std::vector<WellData *>                              wells,
+                                          int                                                  nWells,
+                                          const std::vector<Surface *>                       & faciesEstimInterval,
+                                          const double                                         dz,
+                                          bool                                                 relative,
+                                          bool                                                 noVs,
+                                          std::vector<FFTGrid *>                             & priorFaciesCubes,
+                                          Crava                                              * cravaResult,
+                                          const std::vector<Grid2D *>                        & noiseScale,
+                                          const ModelSettings                                * modelSettings,
+                                          const std::vector<std::string>                       facies_names)
+{
+  std::vector<float> alphaFiltered;
+  std::vector<float> betaFiltered;
+  std::vector<float> rhoFiltered;
+  std::vector<int>   faciesLog;
+
+  int densdim = static_cast<int>(sigmaEOrig.size());
+
+  setNeededLogsSpatial(wells, nWells, faciesEstimInterval, dz, relative, noVs, useFilter,
+                       alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
+
+  int nAng = static_cast<int>(noiseScale.size());
+  NRLib::Matrix G(nAng, 3);
+
+  cravaResult->computeG(G);
+
+  //Set the grid temporarily to 100*100*50
+  int nbinsa = 100;
+  int nbinsb = 100;
+  if(noVs == true)
+    nbinsb = 1; //Ignore what happens for Vs.
+  int nbinsr = 50;
+
+  int nobs   = 0;
+  for(int i=0;i<static_cast<int>(alphaFiltered.size());i++)
+  {
+    if(faciesLog[i]!=IMISSING)
+      nobs++;
+  }
+
+  std::vector<float> alphaFilteredNew(alphaFiltered.size());
+  std::vector<float> betaFilteredNew(betaFiltered.size());
+  std::vector<float> rhoFilteredNew(rhoFiltered.size());
+
+  for(int i=0;i<densdim;i++) {
+    if(i>0){
+      // Multiply alpha, beta, rho with scale
+      int nAng = static_cast<int>(noiseScale.size());
+
+      std::vector<double> maxScale(nAng);
+      double maxS, minS;
+      for(int angle=0;angle<nAng;angle++) {
+        minS = noiseScale[angle]->FindMin(RMISSING);
+        maxS = noiseScale[angle]->FindMax(RMISSING);
+        maxScale[angle] = maxS/minS;
+      }
+
+      //Compute H matrix
+      NRLib::Vector scale(nAng);
+      int factor = 1;
+      for(int angle=0; angle<nAng; angle++) {
+        if((i & factor) > 0)
+          scale(angle) = maxScale[angle];
+        else
+          scale(angle) = 1.0;
+        factor *= 2;
+      }
+
+      NRLib::Matrix H(3, 3);
+      NRLib::Matrix junk(3,3);
+
+      cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
+
+      NRLib::Vector h1(3);
+
+      for(int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++) {
+        h1(0) = static_cast<double>(alphaFiltered[i]);
+        h1(1) = static_cast<double>(betaFiltered[i]);
+        h1(2) = static_cast<double>(rhoFiltered[i]);
+
+        NRLib::Vector h2 = H * h1;
+
+        alphaFilteredNew[i] = static_cast<float>(h2(0));
+        betaFilteredNew[i]  = static_cast<float>(h2(1));
+        rhoFilteredNew[i]   = static_cast<float>(h2(2));
+      }
+    }
+
+    else{
+      for(int j=0;j<static_cast<int>(alphaFiltered.size());j++){
+        alphaFilteredNew[j] = alphaFiltered[j];
+        betaFilteredNew[j] = betaFiltered[j];
+        rhoFilteredNew[j] = rhoFiltered[j];
+      }
+    }
+
+    float kstda, kstdb, kstdr, hopt;
+    float varAlpha = 0.0f, varBeta = 0.0f, varRho = 0.0f;
+    CalculateVariances(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog,
+                     varAlpha, varBeta, varRho);//sets varAlpha etc....
+    if(noVs == true)
+      varBeta = 5*varAlpha; //Must be large enough to make surface span possible beta values.
+
+    hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
+    kstda = hopt*sqrt(varAlpha);
+    kstdb = hopt*sqrt(varBeta);
+    kstdr = hopt*sqrt(varRho);
+
+    NRLib::SymmetricMatrix sigmae(3);
+
+    if (useFilter == true) {
+      if (noVs == false) {
+        for (int j=0; j<3 ; j++) {
+          for (int k=0 ; k<=j ; k++)
+            sigmae(k,j) = sigmaEOrig[i](k,j);
+        }
+      }
+      else {
+        sigmae(0,0) = sigmaEOrig[i](0,0);
+        sigmae(0,1) = 0.0;
+        sigmae(1,1) = 0.0; //Will be overruled by reasonable value.
+        sigmae(0,2) = sigmaEOrig[i](0,1);
+        sigmae(1,2) = 0.0;
+        sigmae(2,2) = sigmaEOrig[i](1,1);
+      }
+    }
+
+    else {
+      for(int j=0; j<3; j++) {
+        for(int k=0; k<=j; k++)
+          sigmae(k,j) = 0.0;
+      }
+    }
+
+    if(sigmae(0,0) < kstda*kstda)
+      sigmae(0,0) = kstda*kstda;
+    if(sigmae(1,1) < kstdb*kstdb)
+      sigmae(1,1) = kstdb*kstdb;
+    if(sigmae(2,2) < kstdr*kstdr)
+      sigmae(2,2) = kstdr*kstdr;
+
+    // Create three elastic vectors per facies
+    std::vector<std::vector<double> > alpha_temp(nFacies_);
+    std::vector<std::vector<double> > beta_temp(nFacies_);
+    std::vector<std::vector<double> > rho_temp(nFacies_);
+    int facies;
+    for(int j=0; j<static_cast<int>(alphaFilteredNew.size()); j++){
+      if(faciesLog[j]!=IMISSING){
+        facies = faciesLog[j];
+        if(facies<nFacies_){
+          alpha_temp[facies].push_back(alphaFilteredNew[j]);
+          beta_temp[facies].push_back(betaFilteredNew[j]);
+          rho_temp[facies].push_back(rhoFilteredNew[j]);
+        }
+      }
+    }
+
+    //Establish limits before we invert sigma.
+    double alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae(0,0));
+    double alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae(0,0));
+    double betaMin  = *min_element(betaFilteredNew.begin() , betaFilteredNew.end())  - 5.0f*sqrt(sigmae(1,1));
+    double betaMax  = *max_element(betaFilteredNew.begin() , betaFilteredNew.end())  + 5.0f*sqrt(sigmae(1,1));
+    double rhoMin   = *min_element(rhoFilteredNew.begin()  , rhoFilteredNew.end())   - 5.0f*sqrt(sigmae(2,2));
+    double rhoMax   = *max_element(rhoFilteredNew.begin()  , rhoFilteredNew.end())   + 5.0f*sqrt(sigmae(2,2));
+
+    double dAlpha = (alphaMax-alphaMin)/nbinsa;
+    double dBeta  = (betaMax-betaMin)/nbinsb;
+    double dRho   = (rhoMax-rhoMin)/nbinsr;
+
+    Surface rhoMinSurf(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
+    //Associate alpha with x, beta with y and rho with z.
+    volume[i]  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho);
+
+    //Marit: Dette skal ikke brukes:
+    double ** v = new double *[3];
+     for(int j=0;j<3;j++)
+       v[j] = new double[3];
+
+    for(int j=0; j<3; j++) {
+      for(int k=0; k<=j; k++)
+        v[k][j] = sigmae(k,j);
+    }
+    v[1][0] = v[0][1];
+    v[2][0] = v[0][2];
+    v[2][1] = v[1][2];
+
+    for(int j=0; j<nFacies_; j++){
+      posteriorPdf3d[i][j] = new PosteriorElasticPDF3D(alpha_temp[j],
+                                                       beta_temp[j],
+                                                       rho_temp[j],
+                                                       v,
+                                                       nbinsa,
+                                                       nbinsb,
+                                                       nbinsr,
+                                                       alphaMin,
+                                                       alphaMax,
+                                                       betaMin,
+                                                       betaMax,
+                                                       rhoMin,
+                                                       rhoMax,
+                                                       j);
+
+    }
+
+    for(int j=0;j<3;j++)
+      delete [] v[j];
+    delete [] v;
+
+    //Fra MakeFaciesProb
+
+    if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && (i == 0 || i == densdim-1)) {
+      Simbox * expVol = createExpVol(volume[i]);
+      for(int j=0; j<static_cast<int>(posteriorPdf3d[i].size()); j++) {
+        std::string baseName;
+        if(densdim > 1) {
+          if(i == 0)
+            baseName = "Rock_Physics_Min_Noise_";
+          else
+            baseName = "Rock_Physics_Max_Noise_";
+        } else
+          baseName = "Rock_Physics_";
+        baseName = baseName + facies_names[i];
+        std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
+        bool writeSurface = (j==0); //writeSurface is true if j == 0.
+
+        posteriorPdf3d[i][j]->ResampleAndWriteDensity(fileName, volume[i], expVol, i, writeSurface);
+
+      }
+      delete expVol;
+    }
+
+  }
+
+  if(priorFaciesCubes.size() != 0)
+    normalizeCubes(priorFaciesCubes);
+
+  return 3;
+}
+
+void FaciesProb::makeFaciesProb(int                                 nFac,
+                                FFTGrid                           * postAlpha,
+                                FFTGrid                           * postBeta,
+                                FFTGrid                           * postRho,
+                                const std::vector<NRLib::Matrix>  & sigmaEOrig,
+                                bool                                useFilter,
+                                std::vector<WellData *>             wells,
+                                int                                 nWells,
+                                const std::vector<Surface *>      & faciesEstimInterval,
+                                const double                        dz,
+                                bool                                relative,
+                                bool                                noVs,
+                                float                               p_undef,
+                                const std::vector<float>          & priorFacies,
+                                std::vector<FFTGrid *>              priorFaciesCubes,
+                                Crava                             * cravaResult,
+                                const std::vector<Grid2D *>       & noiseScale,
+                                const ModelSettings               * modelSettings,
+                                FFTGrid                           * seismicLH,
+                                const std::vector<std::string>      facies_names)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;
@@ -441,6 +1193,7 @@ void FaciesProb::makeFaciesProb(int                                nfac,
   std::vector<std::vector<FFTGrid *> > density(densdim);
   std::vector<Simbox*>                 volume(densdim);
 
+
   for(int i = 0;i<densdim;i++)
     volume[i] = NULL;
 
@@ -451,8 +1204,20 @@ void FaciesProb::makeFaciesProb(int                                nfac,
   cravaResult->computeG(G);
 
   for(int i=0;i<densdim;i++) {
-    makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered,
-                   faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
+    makeFaciesDens(nFac,
+                   sigmaEOrig,
+                   useFilter,
+                   noVs,
+                   alphaFiltered,
+                   betaFiltered,
+                   rhoFiltered,
+                   faciesLog,
+                   density[i],
+                   &volume[i],
+                   i,
+                   G,
+                   cravaResult,
+                   noiseScale);
 
     if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && (i == 0 || i == densdim-1)) {
       Simbox * expVol = createExpVol(volume[i]);
@@ -466,7 +1231,7 @@ void FaciesProb::makeFaciesProb(int                                nfac,
         }
         else
           baseName = "Rock_Physics_";
-        baseName = baseName + modelSettings->getFaciesName(j);
+        baseName = baseName + facies_names[i];
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
         resampleAndWriteDensity(density[i][j], baseName, volume[i], expVol, i, writeSurface);
       }
@@ -474,17 +1239,73 @@ void FaciesProb::makeFaciesProb(int                                nfac,
     }
   }
 
-  if(priorFaciesCubes != NULL)
+
+  if(priorFaciesCubes.size() != 0)
     normalizeCubes(priorFaciesCubes);
 
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
                       p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH);
+
+  for(int l=0;l<nFacies_;l++){
+    if(ModelSettings::getDebugLevel() >= 1) {
+      std::string baseName = "FaciesProb_" + NRLib::ToString(l) + IO::SuffixAsciiFiles();
+      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+      faciesProb_[l]->writeAsciiFile(fileName);
+    }
+  }
+  if(ModelSettings::getDebugLevel() >= 1) {
+      std::string baseName = "FaciesProbUndef_" + IO::SuffixAsciiFiles();
+      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+      faciesProbUndef_->writeAsciiFile(fileName);
+    }
 
   for(int i = 0 ; i < densdim ; i++) {
     for(int j = 0 ; j < static_cast<int>(density[i].size()) ; j++)
       delete density[i][j];
     delete volume[i];
   }
+}
+
+float FaciesProb::FindDensityFromPosteriorPDF(const double                                           & alpha,
+                                              const double                                           & beta,
+                                              const double                                           & rho,
+                                              const double                                           & s1,
+                                              const double                                           & s2,
+                                              const std::vector<std::vector<PosteriorElasticPDF*> >  & posteriorPDF,
+                                              const int                                                facies,
+                                              const std::vector<Simbox *>                            & volume,
+                                              const std::vector<float>                               & t,
+                                              int                                                      nAng,
+                                              bool                                                     faciesProbFromRockPhysics)
+{
+  int dim = static_cast<int>(posteriorPDF.size());
+  std::vector<float> value(dim);
+  for(int i=0;i<dim;i++){
+    value[i] = static_cast<float>(posteriorPDF[i][facies]->FindDensity(alpha, beta, rho, s1, s2, volume[i]));
+  }
+
+  int factor = 1;
+  float valuesum = 0;
+  for(int i=0;i<dim;i++)
+  {
+    factor = 1;
+    if (!faciesProbFromRockPhysics){
+      for(int j=0;j<nAng;j++){
+        if(j>0)
+          factor*=2;
+        if((i & factor) > 0)
+          value[i]*=t[j];
+        else
+          value[i]*=(1-t[j]);
+      }
+    }
+    valuesum += value[i];
+  }
+
+  if (valuesum > 0.0)
+    return(valuesum);
+  else
+    return 0.0;
 }
 
 float FaciesProb::findDensity(float                                       alpha,
@@ -604,8 +1425,8 @@ float FaciesProb::findDensity(float                                       alpha,
 }
 
 
-void
-FaciesProb::resampleAndWriteDensity(const FFTGrid     * density,
+
+void FaciesProb::resampleAndWriteDensity(const FFTGrid     * const density,
                                     const std::string & fileName,
                                     const Simbox      * origVol,
                                     Simbox            * volume,
@@ -661,6 +1482,8 @@ FaciesProb::resampleAndWriteDensity(const FFTGrid     * density,
 }
 
 
+
+
 Simbox *
 FaciesProb::createExpVol(const Simbox * volume)
 {
@@ -683,7 +1506,7 @@ FaciesProb::createExpVol(const Simbox * volume)
 }
 
 
-void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells,
+void FaciesProb::calculateConditionalFaciesProb(std::vector<WellData *>          wells,
                                                 int                              nWells,
                                                 const std::vector<Surface *>   & faciesEstimInterval,
                                                 const std::vector<std::string> & faciesNames,
@@ -1090,8 +1913,8 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
                                      const std::vector<std::vector<FFTGrid *> > & density,
                                      const std::vector<Simbox *>                  volume,
                                      float                                        p_undefined,
-                                     const float                                * priorFacies,
-                                     FFTGrid                                   ** priorFaciesCubes,
+                                     const std::vector<float>                   & priorFacies,
+                                     std::vector<FFTGrid *>                     & priorFaciesCubes,
                                      const std::vector<Grid2D *>                & noiseScale,
                                      FFTGrid                                    * seismicLH)
 {
@@ -1100,12 +1923,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
 
+
   rnxp = alphagrid->getRNxp();
   nyp  = alphagrid->getNyp();
   nzp  = alphagrid->getNzp();
   nx   = alphagrid->getNx();
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
+
   faciesProb_ = new FFTGrid*[nFacies_];
   if(alphagrid->isFile()==1)
     faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
@@ -1132,7 +1957,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   if(seismicLH != NULL)
     seismicLH->setAccessMode(FFTGrid::WRITE);
 
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
@@ -1146,17 +1971,18 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   double maxS;
   double minS;
   std::vector<Grid2D *> tgrid(nAng);
-    for(int angle=0;angle<nAng;angle++) {
-      minS = noiseScale[angle]->FindMin(RMISSING);
-      maxS = noiseScale[angle]->FindMax(RMISSING);
-      tgrid[angle] = new Grid2D(noiseScale[0]->GetNI(), noiseScale[0]->GetNJ());
-      for(size_t ii=0;ii<tgrid[angle]->GetNI();ii++)
-        for(size_t jj=0;jj<tgrid[angle]->GetNJ();jj++)
-          if(minS==maxS)
-            (*tgrid[angle])(ii,jj) = 0.0;
-          else
+  for(int angle=0;angle<nAng;angle++) {
+    minS = noiseScale[angle]->FindMin(RMISSING);
+    maxS = noiseScale[angle]->FindMax(RMISSING);
+    tgrid[angle] = new Grid2D(noiseScale[0]->GetNI(), noiseScale[0]->GetNJ());
+
+    for(size_t ii=0;ii<tgrid[angle]->GetNI();ii++)
+      for(size_t jj=0;jj<tgrid[angle]->GetNJ();jj++)
+        if(minS==maxS)
+          (*tgrid[angle])(ii,jj) = 0.0;
+        else
           (*tgrid[angle])(ii,jj) = ((*noiseScale[angle])(ii,jj)-minS)/(maxS-minS);
-    }
+  }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
@@ -1189,9 +2015,10 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
                 t[angle] = float((*tgrid[angle])(k,j));
               dens = findDensity(alpha, beta, rho, density, l,volume, t, nAng);
             }
-            else
+            else{
               dens = 1.0;
-            if(priorFaciesCubes!=NULL)
+            }
+            if(priorFaciesCubes.size() != 0)
               value[l] = priorFaciesCubes[l]->getNextReal()*dens;
             else
               value[l] = priorFacies[l]*dens;
@@ -1231,7 +2058,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   }
   std::cout << "\n";
 
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
     {
       priorFaciesCubes[i]->endAccess();
@@ -1248,8 +2075,203 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   delete [] value;
 }
 
-void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
-                                             FFTGrid     ** priorFaciesCubes)
+
+void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                                   * alphagrid,
+                                                            FFTGrid                                                   * betagrid,
+                                                            FFTGrid                                                   * rhogrid,
+                                                            const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
+                                                            const std::vector<Simbox *>                               & volume,
+                                                            int                                                         nDimensions,
+                                                            float                                                       p_undefined,
+                                                            const std::vector<float>                                  & priorFacies,
+                                                            std::vector<FFTGrid *>                                    & priorFaciesCubes,
+                                                            const std::vector<Grid2D *>                               & noiseScale,
+                                                            FFTGrid                                                   * seismicLH,
+                                                            bool                                                        faciesProbFromRockPhysics,
+                                                            CravaTrend                                                & trend_cubes)
+{
+  assert (nDimensions == 3 || nDimensions == 4 || nDimensions == 5);
+  float * value = new float[nFacies_];
+  //int i,j,k,l;
+  int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
+  float alpha, beta, rho, sum;
+  float t1 = 0;
+  float t2 = 0;
+
+  rnxp = alphagrid->getRNxp();
+  nyp  = alphagrid->getNyp();
+  nzp  = alphagrid->getNzp();
+  nx   = alphagrid->getNx();
+  ny   = alphagrid->getNy();
+  nz   = alphagrid->getNz();
+  std::vector<int> trendGridSize;
+  if (nDimensions>3){
+    trendGridSize =  trend_cubes.GetSizeTrendCubes();
+    assert(trendGridSize[0] == nx && trendGridSize[1] == ny && trendGridSize[2] == nz);
+  }
+
+  faciesProb_ = new FFTGrid*[nFacies_];
+  if(alphagrid->isFile()==1)
+    faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+  else
+    faciesProbUndef_ = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  alphagrid->setAccessMode(FFTGrid::READ);
+  betagrid->setAccessMode(FFTGrid::READ);
+  rhogrid->setAccessMode(FFTGrid::READ);
+  for(int i=0;i<nFacies_;i++)
+  {
+    if(alphagrid->isFile()==1)
+    {
+      faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+    }
+    else
+    {
+      faciesProb_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    }
+    faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
+    faciesProb_[i]->createRealGrid(false);
+  }
+  faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
+  faciesProbUndef_->createRealGrid(false);
+  if(seismicLH != NULL)
+    seismicLH->setAccessMode(FFTGrid::WRITE);
+
+  if(priorFaciesCubes.size() != 0)
+    for(int i=0;i<nFacies_;i++)
+      priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
+
+  smallrnxp = faciesProb_[0]->getRNxp();
+
+  int nAng = 0;
+  std::vector<float> t(nAng);
+  double maxS;
+  double minS;
+  std::vector<Grid2D *> tgrid(nAng);
+
+  if(!faciesProbFromRockPhysics){
+    for(int i=0;i<int(noiseScale.size());i++)
+      if(noiseScale[i]!=NULL)
+        nAng++;
+
+    for(int angle=0;angle<nAng;angle++) {
+      minS = noiseScale[angle]->FindMin(RMISSING);
+      maxS = noiseScale[angle]->FindMax(RMISSING);
+      tgrid[angle] = new Grid2D(noiseScale[0]->GetNI(), noiseScale[0]->GetNJ());
+      for(size_t ii=0;ii<tgrid[angle]->GetNI();ii++)
+        for(size_t jj=0;jj<tgrid[angle]->GetNJ();jj++)
+          if(minS==maxS)
+            (*tgrid[angle])(ii,jj) = 0.0;
+          else
+            (*tgrid[angle])(ii,jj) = ((*noiseScale[angle])(ii,jj)-minS)/(maxS-minS);
+    }
+  }
+  LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
+  float help;
+  float dens;
+  float undefSum = 0.0;
+  if (nDimensions == 3 || nDimensions == 4){
+    undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*volume[0]->getnz());
+  }else if (nDimensions == 5){
+    undefSum = p_undefined/(nBinsTrend_*nBinsTrend_*volume[0]->getnx()*volume[0]->getny());
+  }
+
+  for(int i=0;i<nzp;i++)
+  {
+    for(int j=0;j<nyp;j++)
+    {
+      for(int k=0;k<rnxp;k++)
+      {
+        alpha = alphagrid->getNextReal();
+        beta = betagrid->getNextReal();
+        rho = rhogrid->getNextReal();
+        if(faciesProbFromRockPhysics && nDimensions>3){
+          int ii, jj, kk;
+          ii = std::min(i, trendGridSize[2]-1);
+          jj = std::min(j, trendGridSize[1]-1);
+          kk = std::min(k, trendGridSize[0]-1);
+          std::vector<double> trend_values = trend_cubes.GetTrendPosition(kk,jj,ii);
+          t1 = static_cast<float>(trend_values[0]);
+          t2 = static_cast<float>(trend_values[1]);
+        }
+        if(k<smallrnxp && j<ny && i<nz){
+          sum = undefSum;
+          for(int l=0;l<nFacies_;l++){
+            if(k<nx){
+              if(!faciesProbFromRockPhysics){
+                for(int angle = 0; angle<nAng; angle++)
+                  t[angle] = float((*tgrid[angle])(k,j));
+              }
+              dens = FindDensityFromPosteriorPDF(alpha, beta, rho, t1, t2, posteriorPdf, l, volume, t, nAng, faciesProbFromRockPhysics);
+            }
+            else
+              dens = 1.0;
+            if(priorFaciesCubes.size() != 0)
+              value[l] = priorFaciesCubes[l]->getNextReal()*dens;
+            else
+              value[l] = priorFacies[l]*dens;
+            sum = sum+value[l];
+          }
+          for(int l=0;l<nFacies_;l++)
+          {
+            help = value[l]/sum;
+            if(k<nx)
+            {
+              faciesProb_[l]->setNextReal(help);
+            }
+            else
+            {
+              faciesProb_[l]->setNextReal(RMISSING);
+            }
+          }
+          if(k<nx) {
+            faciesProbUndef_->setNextReal(undefSum/sum);
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(sum);
+          }
+          else {
+            faciesProbUndef_->setNextReal(RMISSING);
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(RMISSING);
+          }
+        }
+      }
+    }
+    // Log progress
+    if (i+1 >= static_cast<int>(nextMonitor)) {
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
+  }
+  std::cout << "\n";
+
+
+  if(priorFaciesCubes.size() != 0)
+    for(int i=0;i<nFacies_;i++)
+    {
+      priorFaciesCubes[i]->endAccess();
+    }
+  for(int i=0;i<nFacies_;i++)
+    faciesProb_[i]->endAccess();
+  alphagrid->endAccess();
+  betagrid->endAccess();
+  rhogrid->endAccess();
+  faciesProbUndef_->endAccess();
+  if(seismicLH != NULL)
+    seismicLH->endAccess();
+
+  delete [] value;
+}
+
+void FaciesProb::calculateFaciesProbGeomodel(const std::vector<float> & priorFacies,
+                                             std::vector<FFTGrid *>   priorFaciesCubes)
 {
   int i,j,k,l;
   int nx, ny, nz;
@@ -1261,7 +2283,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
   for(i=0;i<nFacies_;i++)
     faciesProb_[i]->setAccessMode(FFTGrid::READANDWRITE);
   faciesProbUndef_->setAccessMode(FFTGrid::READ);
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
   int smallrnxp = faciesProb_[0]->getRNxp();
@@ -1273,7 +2295,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
         undef = faciesProbUndef_->getNextReal();
         for(l=0;l<nFacies_;l++)
         {
-          if(priorFaciesCubes!=NULL)
+          if(priorFaciesCubes.size() != 0)
             value = priorFaciesCubes[l]->getNextReal()*undef+faciesProb_[l]->getNextReal();
           else
             value = priorFacies[l]*undef+faciesProb_[l]->getNextReal();
@@ -1288,13 +2310,13 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
   for(i=0;i<nFacies_;i++)
     faciesProb_[i]->endAccess();
   faciesProbUndef_->endAccess();
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->endAccess();
 
 }
 
-void FaciesProb::calculateVariances(const std::vector<float> & alpha,
+void FaciesProb::CalculateVariances(const std::vector<float> & alpha,
                                     const std::vector<float> & beta,
                                     const std::vector<float> & rho,
                                     const std::vector<int>   & facies,
@@ -1342,7 +2364,7 @@ void FaciesProb::calculateVariances(const std::vector<float> & alpha,
 }
 
 
-void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
+void FaciesProb::setNeededLogsSpatial(std::vector<WellData *>        wells,
                                       int                            nWells,
                                       const std::vector<Surface *> & faciesEstimInterval,
                                       const double                   dz,
@@ -1454,7 +2476,74 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
   faciesLog.resize(index);
 }
 
-void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
+void    FaciesProb::GenerateSyntWellData(std::vector<SyntWellData *>                            & syntWellData,
+                                         const std::map<std::string, DistributionsRock *>       & rock_distributions,
+                                         const std::vector<std::string>                         & facies_names,
+                                         const std::vector<double>                              & trend1,
+                                         const std::vector<double>                              & trend2,
+                                         double                                                   dz,
+                                         int                                                      nWellsPerCombinationOfTrendParams)
+{
+  // 10.0 is the desired mean length
+  double p = 0.0;
+  // lambda is set below, initialized to 1.0
+  double lambda = 1.0;
+  // corr is initially set to 0.5
+  double corr = 0.5;
+  if(dz < 10.0) { //Erik: dz<log(10)
+    // this ensures that the mean of the geometric distribution is 10.0/dz
+    p = dz/10.0; // Erik: exp(dz)/10.0;
+    // calculate lambda for the exponential distribution used below
+    lambda = - std::log((1.0-p));
+  }
+  else {
+    throw NRLib::Exception("Facies probabilities: dz is too large to generate synthetic well data");
+  }
+
+  int nWell = 0;
+  for (int i=0; i<static_cast<int>(trend1.size()); i++){
+    for (int j=0; j<static_cast<int>(trend2.size()); j++){
+      for (int m=0; m<nWellsPerCombinationOfTrendParams; m++){
+        std::vector<double> trend_params(2);
+        trend_params[0] = trend1[i];
+        trend_params[1] = trend2[j];
+        std::vector<float> alpha;
+        std::vector<float> beta;
+        std::vector<float> rho;
+        std::vector<int> facies;
+
+        int k = 0;
+        while (k<syntWellLength_ ){
+          // pick a random (uniform) facies
+          int randomFacies = static_cast<int>(floor(nFacies_*NRLib::Random::Unif01()));
+          // draw the facies length from a geometric distribution
+          double uRan = NRLib::Random::Unif01();
+          int randomFaciesLength = static_cast<int>(ceil(-std::log(uRan)/lambda));
+
+          std::vector<double> vp_temp(randomFaciesLength);
+          std::vector<double> vs_temp(randomFaciesLength);
+          std::vector<double> rho_temp(randomFaciesLength);
+          std::map<std::string, DistributionsRock *>::const_iterator iter = rock_distributions.find(facies_names[randomFacies]);
+          iter->second->GenerateWellSample(corr, vp_temp, vs_temp, rho_temp, trend_params);
+
+          for(int l = 0; l<randomFaciesLength; l++){
+            facies.push_back(randomFacies);
+            alpha.push_back(static_cast<float>(log(vp_temp[l])));
+            beta.push_back(static_cast<float>(log(vs_temp[l])));
+            rho.push_back(static_cast<float>(log(rho_temp[l])));
+          }
+
+          k+= randomFaciesLength;
+        }
+        syntWellData[nWell] = new SyntWellData(trend1[i], trend2[j], i, j, alpha, beta, rho, facies, facies_names);
+        nWell++;
+      }
+    }
+  }
+
+}
+
+void FaciesProb::normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes)
 {
   int   i,j,k,l;
   float sum;
@@ -1546,7 +2635,7 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
     priorFaciesCubes[i]->endAccess();
 }
 
-std::vector<double> FaciesProb::calculateChiSquareTest(WellData                    ** wells,
+std::vector<double> FaciesProb::calculateChiSquareTest(std::vector<WellData *>        wells,
                                                        int                            nWells,
                                                        const std::vector<Surface *> & faciesEstimInterval)
 {
@@ -1745,7 +2834,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
   return pValue;
 }
 
- void FaciesProb::writeBWFaciesProb(WellData ** wells,
+void FaciesProb::writeBWFaciesProb(std::vector<WellData *> wells,
                                     int         nWells)
 {
   int i, j;
@@ -1761,136 +2850,11 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
    }
 }
 
- void FaciesProb::calculateChiSquareAlternativeTest(WellData                    ** wells,
-                                                    int                            nWells,
-                                                    const std::vector<Surface *> & faciesEstimInterval,
-                                                    const ModelSettings          * modelSettings)
-{
-  // Alternative approach for evaluating facies fit.
-  // Is not being called, but is saved for later by approval from Ragnar.
-
-  int    i, j, k;
-  int    df;
-  int    bin;
-  double pValue;
-  double chi;
-
-  std::vector<float>  prob(nFacies_);
-  std::vector<int>    nPos(10);
-  std::vector<int>    nObs(10);
-
-  std::vector<std::vector<std::string> > fit(nWells,std::vector<std::string>(nFacies_));
-
-  for (i=0; i<nWells; i++)
-  {
-    BlockedLogs  * bw       = wells[i]->getBlockedLogsOrigThick();
-    const int      nBlocks  = bw->getNumberOfBlocks();
-    const int    * BWfacies = bw->getFacies();
-    const int    * ipos     = bw->getIpos();
-    const int    * jpos     = bw->getJpos();
-    const int    * kpos     = bw->getKpos();
-    const double   dz       = bw->getDz();
-    const double * xPos     = bw->getXpos();
-    const double * yPos     = bw->getYpos();
-    const double * zPos     = bw->getZpos();
-
-
-    std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
-    for (j = 0 ; j < nFacies_ ; j++)
-    {
-      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(k = 0 ; k < nBlocks ; k++)
-      {
-        BWfaciesProb[k][j] = faciesProb_[j]->getRealValue(ipos[k],jpos[k],kpos[k]);
-      }
-      faciesProb_[j]->endAccess();
-    }
-
-    for (k=0; k < nFacies_; k++)
-    {
-      for (j=0; j<10; j++)
-      {
-        nPos[j] = 0;
-        nObs[j] = 0;
-      }
-
-      for (j=0 ; j < nBlocks ; j++)
-      {
-        if (faciesEstimInterval.size() > 0)
-        {
-          const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
-          const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
-          if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
-          {
-            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
-            nObs[bin] += 1;
-            if (BWfacies[j] == k)
-              nPos[bin] += 1;
-          }
-        }
-        else
-        {
-          if (BWfacies[j]!=IMISSING)
-          {
-            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
-            nObs[bin] += 1;
-            if (BWfacies[j] == k)
-              nPos[bin] += 1;
-          }
-        }
-      }
-      chi = 0;
-      df  = 0;
-      for (j=0; j<10; j++)
-      {
-        if (nObs[j] > 0)
-        {
-          df  += 1;
-          chi += std::pow(nPos[j]        -nObs[j]   *(j*0.1+0.05) ,2)/(nObs[j]*   (j*0.1+0.05));
-          chi += std::pow(nObs[j]-nPos[j]-nObs[j]*(1-(j*0.1+0.05)),2)/(nObs[j]*(1-(j*0.1+0.05)));
-        }
-      }
-      NRLib::ChiSquared chisquared(df);
-      pValue = 1-chisquared.Cdf(chi);
-
-      if (pValue >= 0.05)
-        fit[i][k] = "good";
-      if (pValue < 0.05 && pValue >= 0.025)
-        fit[i][k] = "poor";
-      if (pValue < 0.025 && pValue >= 0.005)
-        fit[i][k] = "bad";
-      if (pValue < 0.005)
-        fit[i][k] = "very bad";
-    }
-  }
-
-  LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
-  LogKit::LogFormatted(LogKit::Medium,"\nWell                      ");
-  for (int i = 0 ; i < nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-  for (int i = 0 ; i < 24+13*nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::Medium,"-");
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-  for (int w = 0 ; w < nWells ; w++)
-  {
-    LogKit::LogFormatted(LogKit::Medium,"%-24s ",wells[w]->getWellname().c_str());
-    for (int i = 0 ; i < nFacies_ ; i++)
-    {
-      LogKit::LogFormatted(LogKit::Medium,"        ");
-      LogKit::LogFormatted(LogKit::Medium,fit[w][i]);
-    }
-      LogKit::LogFormatted(LogKit::Medium,"\n");
-  }
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-}
-
-
 FFTGrid *
 FaciesProb::createLHCube(FFTGrid     * likelihood,
                          int           fac,
-                         const float * priorFacies,
-                         FFTGrid    ** priorFaciesCubes)
+                         const std::vector<float> & priorFacies,
+                         std::vector<FFTGrid *>     priorFaciesCubes)
 {
   int nx = likelihood->getNx();
   int ny = likelihood->getNy();
@@ -1899,7 +2863,7 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
   result->createRealGrid(false);
   result->setAccessMode(FFTGrid::WRITE);
   faciesProb_[fac]->setAccessMode(FFTGrid::READ);
-  if(priorFaciesCubes != NULL)
+  if(priorFaciesCubes.size() != 0)
     priorFaciesCubes[fac]->setAccessMode(FFTGrid::READ);
 
   int i,j,k, rnx = likelihood->getRNxp();
@@ -1908,7 +2872,7 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
       for(k=0;k<rnx;k++) {
         float prob  = faciesProb_[fac]->getNextReal();
         float prior;
-        if(priorFaciesCubes != NULL)
+        if(priorFaciesCubes.size() != 0)
           prior = priorFaciesCubes[fac]->getNextReal();
         else
           prior = priorFacies[fac];
@@ -1925,8 +2889,136 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
   result->endAccess();
   likelihood->endAccess();
   faciesProb_[fac]->endAccess();
-  if(priorFaciesCubes != NULL)
+  if(priorFaciesCubes.size() != 0)
     priorFaciesCubes[fac]->endAccess();
 
   return(result);
+}
+
+void    FaciesProb::FillSigmaPriAndSigmaPost(Crava   * cravaResult,
+                                             double ** sigma_pri_temp,
+                                             double ** sigma_post_temp)
+{
+  NRLib::Matrix priorVar0 = cravaResult->getPriorVar0();
+
+  sigma_pri_temp[0][0] = priorVar0(0,0);
+  sigma_pri_temp[1][1] = priorVar0(1,1);
+  sigma_pri_temp[2][2] = priorVar0(2,2);
+  sigma_pri_temp[0][1] = priorVar0(0,1);
+  sigma_pri_temp[1][0] = priorVar0(1,0);
+  sigma_pri_temp[0][2] = priorVar0(0,2);
+  sigma_pri_temp[2][0] = priorVar0(2,0);
+  sigma_pri_temp[1][2] = priorVar0(1,2);
+  sigma_pri_temp[2][1] = priorVar0(2,1);
+
+  NRLib::Matrix postVar0 = cravaResult->getPostVar0();
+  sigma_post_temp[0][0] = postVar0(0,0);
+  sigma_post_temp[1][1] = postVar0(1,1);
+  sigma_post_temp[2][2] = postVar0(2,2);
+  sigma_post_temp[1][0] = postVar0(0,1);
+  sigma_post_temp[0][1] = postVar0(0,1);
+  sigma_post_temp[2][0] = postVar0(0,2);
+  sigma_post_temp[0][2] = postVar0(0,2);
+  sigma_post_temp[2][1] = postVar0(1,2);
+  sigma_post_temp[1][2] = postVar0(1,2);
+}
+
+void FaciesProb::SolveGEVProblem(double                           ** sigma_prior,
+                                 double                           ** sigma_posterior,
+                                 std::vector<std::vector<double> > & v){
+  //Compute transforms v1 and v2 ----------------------------------------
+
+  // Matrix inversion of sigma_prior
+  double **sigma_prior_inv = new double *[3];
+  for(int i=0; i<3; i++)
+    sigma_prior_inv[i] = new double [3];
+
+  for(int i=0; i<3; i++)
+    for(int j=0; j<3; j++)
+      if(i==j)
+        sigma_prior_inv[i][j] = 1.0;
+      else
+        sigma_prior_inv[i][j] = 0.0;
+
+  lib_matrCholR(3, sigma_prior);
+  lib_matrAXeqBMatR(3, sigma_prior, sigma_prior_inv, 3);
+
+  // compute product sigma_prior_inv * sigma_posterior
+
+  double **product_mat = new double *[3];
+
+  for (int i=0; i<3; i++)
+    product_mat[i] = new double[3];
+
+  lib_matr_prod(sigma_prior_inv,sigma_posterior,3,3,3,product_mat);
+
+  // compute eigenvalues of the product sigma_prior_inv * sigma_posterior
+
+  int     * error       = new int[1];
+  double  * eigval      = new double[3];
+  double ** eigvec      = new double *[3];
+
+  for(int i=0;i<3;i++)
+  {
+    eigvec[i]      = new double[3];
+  }
+
+  lib_matr_eigen(product_mat,3,eigvec,eigval,error);
+
+  std::vector<int> index_keep;
+
+
+  // Find index of max eigenvalue
+
+  int max_index = 0;
+  double max_eigvalue = 0.0;
+
+  for(int i=0; i<3; i++){
+    if (max_eigvalue<eigval[i]){
+      max_index = i;
+      max_eigvalue = eigval[i];
+    }
+  }
+
+  for(int j=0; j<3; j++){
+      if(j!=max_index)
+        index_keep.push_back(j);
+  }
+
+  // The vector index_keep should contain two and only two integers
+  assert (index_keep.size() == 2);
+
+
+  // fetch the corresponding eigenvectors into v1 and v2
+  for(int i = 0; i<3; i++){
+    v[0][i] = eigvec[index_keep[0]][i];
+    v[1][i] = eigvec[index_keep[1]][i];
+  }
+
+
+  delete [] error;
+  delete [] eigval;
+  for(int i=0;i<3;i++){
+    delete [] product_mat[i];
+    delete [] eigvec[i];
+    delete [] sigma_prior_inv[i];
+  }
+  delete [] product_mat;
+  delete [] sigma_prior_inv;
+  delete [] eigvec;
+}
+
+void FaciesProb::CalculateTransform2D(const std::vector<double>  & d1,
+                                      const std::vector<double>  & d2,
+                                      const std::vector<double>  & d3,
+                                      std::vector<double>        & x,
+                                      std::vector<double>        & y,
+                                      const std::vector<double>  & v1,
+                                      const std::vector<double>  & v2)
+{
+  int dim = static_cast<int>(d1.size());
+  for (int i=0; i<dim; i++){
+    x[i] = v1[i]*d1[i] + v1[i]*d2[i] + v1[i]*d3[i];
+    y[i] = v2[i]*d1[i] + v2[i]*d2[i] + v2[i]*d3[i];
+  }
 }

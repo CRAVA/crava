@@ -37,12 +37,12 @@ Wavelet1D::Wavelet1D()
 }
 
 
-Wavelet1D::Wavelet1D(Simbox                       * simbox,
-                     FFTGrid                      * seisCube,
-                     WellData                    ** wells,
+Wavelet1D::Wavelet1D(const Simbox                 * simbox,
+                     const FFTGrid                * seisCube,
+                     std::vector<WellData *>        wells,
                      const std::vector<Surface *> & estimInterval,
-                     ModelSettings                * modelSettings,
-                     float                        * reflCoef,
+                     const ModelSettings          * modelSettings,
+                     const float                  * reflCoef,
                      int                            iAngle,
                      int                          & errCode,
                      std::string                  & errTxt)
@@ -350,8 +350,8 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
 Wavelet1D::Wavelet1D(const std::string & fileName,
             int                 fileFormat,
-            ModelSettings     * modelSettings,
-            float             * reflCoef,
+            const ModelSettings     * modelSettings,
+            const float             * reflCoef,
             float               theta,
             int               & errCode,
             std::string       & errText)
@@ -483,8 +483,8 @@ Wavelet1D::~Wavelet1D()
 {
 }
 
-Wavelet1D::Wavelet1D(ModelSettings * modelSettings,
-                     float         * reflCoef,
+Wavelet1D::Wavelet1D(const ModelSettings * modelSettings,
+                     const float         * reflCoef,
                      float           theta,
                      float           peakFrequency,
                      int           & errCode)
@@ -598,10 +598,10 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 
 
 float
-Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
-                                          Simbox        * simbox,
-                                          FFTGrid       * seisCube,
-                                          WellData     ** wells)
+Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSettings,
+                                          const Simbox                * simbox,
+                                          const FFTGrid               * seisCube,
+                                          std::vector<WellData *> wells)
 {
   int nWells          = modelSettings->getNumberOfWells();
 //The reason why the next three variables are not taken from the class variables is that this function is called
@@ -676,28 +676,29 @@ Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
 
 
 float
-Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
-                                           FFTGrid       * seisCube,
-                                           WellData     ** wells,
-                                           ModelSettings * modelSettings,
-                                           std::string   & errText,
-                                           int           & error,
-                                           int             number,
-                                           Grid2D       *& noiseScaled,
-                                           Grid2D       *& shiftGrid,
-                                           Grid2D       *& gainGrid)
+Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
+                                           const FFTGrid         * seisCube,
+                                           std::vector<WellData *> wells,
+                                           const ModelSettings   * modelSettings,
+                                           std::string           & errText,
+                                           int                   & error,
+                                           int                     number,
+                                           Grid2D               *& noiseScaled,
+                                           Grid2D               *& shiftGrid,
+                                           Grid2D               *& gainGrid,
+                                           float                   SNRatio,
+                                           float                   waveletScale,
+                                           bool                    doEstimateSNRatio,
+                                           bool                    doEstimateGlobalScale,
+                                           bool                    doEstimateLocalNoise,
+                                           bool                    doEstimateLocalShift,
+                                           bool                    doEstimateLocalScale,
+                                           bool                    doEstimateWavelet)
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells");
 
   std::string angle                 = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   int         nWells                = modelSettings->getNumberOfWells();
-  bool        doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
-  bool        doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
-  bool        doEstimateLocalNoise  = modelSettings->getEstimateLocalNoise(number);
-  bool        doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
-  bool        doEstimateSNRatio     = modelSettings->getEstimateSNRatio(number);
-  bool        doEstimateWavelet     = modelSettings->getEstimateWavelet(number);
-
   bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
 
@@ -802,8 +803,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       }
     }
   }
-
-  float globalScale = modelSettings->getWaveletScale(number);
+  float globalScale = waveletScale;
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
   std::vector<float> errWell(nWells);
@@ -921,7 +921,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         text  = "\nWARNING: An optimal local gain cannot be established for well "+wells[w]->getWellname()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
         text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalGain,2)+", "+NRLib::ToString(maxLocalGain,2)+">.\n";
         LogKit::LogFormatted(LogKit::Warning, text);
-        if (modelSettings->getEstimateWavelet(number)) {
+        if (doEstimateWavelet) {
           TaskList::addTask("Well "+wells[w]->getWellname()+" should not be used in the wavelet estimation for angle stack "+angle+".");
         }
       }
@@ -956,7 +956,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       if (doEstimateSNRatio)
         errStdLN = errStd;
       else //SNRatio given in model file
-        errStdLN = sqrt(dataVar/modelSettings->getSNRatio(number));
+        errStdLN = sqrt(dataVar/SNRatio);
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale
         for(int w=0 ; w < nWells ; w++)
           errVarWell[w] = sqrt(errVarWell[w]);
@@ -974,13 +974,12 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else
   {
-    float SNRatio = modelSettings->getSNRatio(number);
     if(nWells > 0) {
       LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
       LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
       float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
       float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-      if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
+      if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
         TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
@@ -1154,8 +1153,8 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
                                      std::vector<float>        & scaleOptWell,
                                      std::vector<float>        & errWellOptScale,
                                      Grid2D                    * gain,
-                                     WellData                 ** wells,
-                                     Simbox                    * simbox) const
+                                     std::vector<WellData *>     wells,
+                                     const Simbox              * simbox) const
 {
   double *scale = new double[nWells];
   float error = 0.0;
@@ -1230,8 +1229,8 @@ Wavelet1D::estimateLocalShift(const CovGrid2D          & cov,
                               Grid2D                  *& shift,
                               const std::vector<float> & shiftWell,
                               const std::vector<int>   & nActiveData,
-                              Simbox                   * simbox,
-                              WellData                ** wells,
+                              const Simbox             * simbox,
+                              std::vector<WellData *>    wells,
                               int                        nWells)
 {
   //
@@ -1278,8 +1277,8 @@ Wavelet1D::estimateLocalGain(const CovGrid2D           & cov,
                              const std::vector<float>  & scaleOptWell,
                              float                       globalScale,
                              const std::vector<int>    & nActiveData,
-                             Simbox                    * simbox,
-                             WellData                 ** wells,
+                             const Simbox              * simbox,
+                             std::vector<WellData *>     wells,
                              int                         nWells)
 {
   //
@@ -1321,8 +1320,8 @@ Wavelet1D::estimateLocalNoise(const CovGrid2D          & cov,
                               float                      globalNoise,
                               const std::vector<float> & errWellOptScale,
                               const std::vector<int>   & nActiveData,
-                              Simbox                   * simbox,
-                              WellData                ** wells,
+                              const Simbox             * simbox,
+                              std::vector<WellData *>    wells,
                               int                        nWells)
 {
   //

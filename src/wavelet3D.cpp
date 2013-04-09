@@ -40,11 +40,11 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                      const NRLib::Grid2D<float>                 & refTimeGradY,
                      const std::vector<std::vector<double> >    & tGradX,
                      const std::vector<std::vector<double> >    & tGradY,
-                     FFTGrid                                    * seisCube,
-                     ModelSettings                              * modelSettings,
-                     WellData                                  ** wells,
-                     Simbox                                     * simBox,
-                     float                                      * reflCoef,
+                     const FFTGrid                              * seisCube,
+                     const ModelSettings                        * modelSettings,
+                     const std::vector<WellData *>              & wells,
+                     const Simbox                               * simBox,
+                     const float                                * reflCoef,
                      int                                          angle_index,
                      int                                        & errCode,
                      std::string                                & errText)
@@ -286,8 +286,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
 Wavelet3D::Wavelet3D(const std::string & fileName,
             int                 fileFormat,
-            ModelSettings     * modelSettings,
-            float             * reflCoef,
+            const ModelSettings * modelSettings,
+            const float         * reflCoef,
             float               theta,
             int               & errCode,
             std::string       & errText,
@@ -359,7 +359,7 @@ Wavelet3D::createLocalWavelet1D(int i, int j)// note Not robust towards padding
 }
 
 Wavelet1D*
-Wavelet3D::createAverageWavelet(Simbox * simBox)
+Wavelet3D::createAverageWavelet(const Simbox * simBox)
 {
   Wavelet1D*  w1;
   fftw_complex* average1;
@@ -462,17 +462,20 @@ Wavelet3D::createWavelet1DForErrorNorm(void)
 
 
 float
-Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
-                            FFTGrid                                  * seisCube,
-                            WellData                                ** wells,
-                            ModelSettings                            * modelSettings,
+Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
+                            const FFTGrid                            * seisCube,
+                            const std::vector<WellData *>            & wells,
+                            const ModelSettings                      * modelSettings,
                             std::string                              & errText,
                             int                                      & error,
                             const NRLib::Grid2D<float>               & refTimeGradX,
                             const NRLib::Grid2D<float>               & refTimeGradY,
                             const std::vector<std::vector<double> >  & tGradX,
                             const std::vector<std::vector<double> >  & tGradY,
-                            int                                        number)
+                            int                                        number,
+                            float                                      SNRatio,
+                            bool                                       estimateSNRatio,
+                            bool                                       estimateWavelet)
 {
   std::string angle    = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   unsigned int nWells  = modelSettings->getNumberOfWells();
@@ -708,15 +711,14 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
       LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
   }
 
-  if(modelSettings->getEstimateSNRatio(number))
+  if(estimateSNRatio)
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else {
-    float SNRatio = modelSettings->getSNRatio(number);
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
     LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
     float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
     float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-    if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
+    if ((SNRatio<minSN || SNRatio>maxSN) && estimateWavelet) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
         TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
@@ -726,7 +728,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
   }
 
   if (empSNRatio < 1.1f) {
-    if (modelSettings->getEstimateSNRatio(number)) {
+    if (estimateSNRatio) {
       LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
       LogKit::LogFormatted(LogKit::Warning,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
       LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
@@ -752,7 +754,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
 void
 Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
                               BlockedLogs                  * bl,
-                              FFTGrid                      * seisCube,
+                              const FFTGrid                * seisCube,
                               const std::vector<float>     & az,
                               const std::vector<float>     & bz,
                               std::vector<bool>            & hasWellData) const

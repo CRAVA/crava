@@ -7,8 +7,13 @@
 
 #include <stdio.h>
 
+#include "nrlib/segy/traceheader.hpp"
 #include "nrlib/tinyxml/tinyxml.h"
 #include "src/definitions.h"
+#include "nrlib/trend/trendstorage.hpp"
+#include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionssolidstorage.h"
 
 class Vario;
 class ModelSettings;
@@ -40,13 +45,16 @@ private:
   bool   parseWellMoveDataInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parseSurvey(TiXmlNode * node, std::string & errTxt);
-  bool   parseAngleGather(TiXmlNode * node, std::string & errTxt);
-  bool     parseSeismicData(TiXmlNode * node, std::string & errTxt);
-  bool     parseWavelet(TiXmlNode * node, std::string & errTxt);
-  bool       parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
-  bool       parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
-  bool     parseWavelet3D(TiXmlNode * node, std::string & errTxt);
-  bool     parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
+  bool parseAngleGather(TiXmlNode * node, std::string & errTxt);
+  bool parseSeismicData(TiXmlNode * node, std::string & errTxt);
+  bool parseWavelet(TiXmlNode * node, std::string & errTxt);
+  bool parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
+  bool parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool parseWavelet3D(TiXmlNode * node, std::string & errTxt);
+  bool parseTravelTime(TiXmlNode * node, std::string & errTxt);
+  bool parseRMSVelocities(TiXmlNode * node, std::string & errTxt);
+  bool parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
+  bool parseVintage(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
@@ -57,6 +65,38 @@ private:
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
+  bool parseRock(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);
+  bool parseSolid(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parseDryRock(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parseFluid(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parseTabulated(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::vector<DistributionWithTrendStorage *>   mineral_k, std::string & errTxt);
+  bool parseTabulatedDryRock(TiXmlNode * node, int constituent, std::string label, std::vector<DistributionWithTrendStorage *> total_porosity, std::vector<DistributionWithTrendStorage *>   mineral_k, std::string & errTxt);
+  bool parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseReuss(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseVoigt(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseHill(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseConstituent(TiXmlNode * node, std::string & constituent_label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
+  bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseWalton(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseDEM(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);
+  bool parseDEMInclusion(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & aspect_ratio, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);
+  bool parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseUpperBound(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parseLowerBound(TiXmlNode * node, std::string & label, std::string & errTxt);
+  bool parseInclusion(TiXmlNode * node, std::string & errTxt);
+  bool parseReservoir(TiXmlNode * node, std::string & errTxt);
+  bool parseEvolve(TiXmlNode * node, std::string & errTxt);
+  bool parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & reservoir_variable, std::string & errTxt);
+  bool parseGaussianWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
+  bool parseBetaWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
+  bool parseBetaEndMassWithTrend(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & storage, bool is_shared, std::string & errTxt);
+  bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
   bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);
@@ -86,10 +126,22 @@ private:
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
+  bool parseDistributionWithTrend(TiXmlNode                                   * node,
+                                  const std::string                           & keyword,
+                                  std::vector<DistributionWithTrendStorage *> & storage,
+                                  std::string                                 & label,
+                                  bool                                          is_shared,
+                                  std::string                                 & errTxt,
+                                  bool                                          allowDistribution = true);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
+
+  void FindDoubleValueFromDistributionWithTrend(const std::vector<DistributionWithTrendStorage *> & dist_with_trend,
+                                                std::string                                         type,
+                                                std::vector<double>                               & value,
+                                                std::string                                       & errTxt) const;
 
   void checkAngleConsistency(std::string & errTxt);
 
@@ -103,6 +155,7 @@ private:
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationConsistency(std::string & errTxt);
   void checkInversionConsistency(std::string & errTxt);
+  void checkTimeLapseConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
   void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
@@ -117,6 +170,7 @@ private:
   InputFiles     * inputFiles_;
 
   bool             failed_;                // Indicates whether errors ocuured during construction.
+  bool             surveyFailed_;
 };
 
 template <typename T>

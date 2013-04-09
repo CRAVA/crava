@@ -25,13 +25,13 @@
 #include "nrlib/segy/segy.hpp"
 
 #include "src/fftgrid.h"
-#include "src/corr.h"
 #include "src/simbox.h"
 #include "src/timings.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/io.h"
 #include "src/tasklist.h"
+#include "src/seismicparametersholder.h"
 
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
@@ -119,9 +119,9 @@ FFTGrid::~FFTGrid()
 }
 
 void
-FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
-                                   Simbox      * timeSimbox,
-                                   Simbox      * timeCutSimbox,
+FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
+                                   const Simbox * timeSimbox,
+                                   const Simbox * timeCutSimbox,
                                    float         smooth_length,
                                    int         & missingTracesSimbox,
                                    int         & missingTracesPadding,
@@ -406,6 +406,218 @@ FFTGrid::resampleTrace(const std::vector<float> & data_trace,
   }
 }
 
+
+// Trilinear interpolation
+double FFTGrid::InterpolateTrilinear(double x_min,
+                                     double x_max,
+                                     double y_min,
+                                     double y_max,
+                                     double z_min,
+                                     double z_max,
+                                     double x,
+                                     double y,
+                                     double z)
+{
+  int i1,j1,k1,i2,j2,k2;
+
+  double dx = (x_max - x_min)/nx_;
+  double dy = (y_max - y_min)/ny_;
+  double dz = (z_max - z_min)/nz_;
+
+  // If values are outside definition area return MISSING
+  if (z_min == z_max){
+    return InterpolateBilinearXY(x_min, x_max, y_min, y_max, x, y);
+  }
+  else if(x < x_min || x > x_max || y < y_min || y > y_max  || z<z_min || z> z_max){
+    return RMISSING;
+  // Can only interpolate from x_min+dx/2 to x_max-dx/2 etc.
+  } /*else if (x<x_min+dx/2 || x>x_max-dx/2 || y<y_min+dy/2 || y>y_max-dy/2 || z<z_min+dz/2 || z>z_max-dz/2 ){
+    return 0;
+  }*/
+  else{
+    // i1,j1,k1 can take values in the interval [0,nx],[0,ny],[0,nz]
+    i1 = static_cast<int>(floor((x-x_min-dx/2)/dx));
+    j1 = static_cast<int>(floor((y-y_min-dy/2)/dy));
+    k1 = static_cast<int>(floor((z-z_min-dz/2)/dz));
+    // i2,j2,k2 can take values in the interval [1,nx+1],[1,ny+1],[1,nz+1]
+    i2 = i1+1;
+    j2 = j1+1;
+    k2 = k1+1;
+  }
+  // TRILINEAR INTERPOLATION
+  double wi = (x - i1*dx-x_min-dx/2)/dx;
+  double wj = (y - j1*dy-y_min-dy/2)/dy;
+  double wk = (z - k1*dz-z_min-dz/2)/dz;
+
+  assert (wi>=0 && wi<=1 && wj>=0 && wj<=1 && wk>=0 && wk<=1);
+
+
+  double *value = new double[8];
+  value[0] = 0;
+  value[1] = 0;
+  value[2] = 0;
+  value[3] = 0;
+  value[4] = 0;
+  value[5] = 0;
+  value[6] = 0;
+  value[7] = 0;
+
+  if(i1<0 && j1<0 && k1<0){
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1<0 && k1>=0){
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1>=0 && k1>=0){
+    value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1<0 && j1>=0 && k1<0){
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1<0 && k1<0){
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1>=0 && k1<0){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1<0 && k1>=0){
+    value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+  else if(i1>=0 && j1>=0 && k1>=0){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,k1));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j1,k2));
+    value[2] = std::max<double>(0,this->getRealValue(i1,j2,k1));
+    value[3] = std::max<double>(0,this->getRealValue(i1,j2,k2));
+    value[4] = std::max<double>(0,this->getRealValue(i2,j1,k1));
+    value[5] = std::max<double>(0,this->getRealValue(i2,j1,k2));
+    value[6] = std::max<double>(0,this->getRealValue(i2,j2,k1));
+    value[7] = std::max<double>(0,this->getRealValue(i2,j2,k2));
+  }
+
+  //float value=0;
+  double returnvalue = 0;
+  returnvalue += (1.0f-wi)*(1.0f-wj)*(1.0f-wk)*value[0];
+  returnvalue += (1.0f-wi)*(1.0f-wj)*(     wk)*value[1];
+  returnvalue += (1.0f-wi)*(     wj)*(1.0f-wk)*value[2];
+  returnvalue += (1.0f-wi)*(     wj)*(     wk)*value[3];
+  returnvalue += (     wi)*(1.0f-wj)*(1.0f-wk)*value[4];
+  returnvalue += (     wi)*(1.0f-wj)*(     wk)*value[5];
+  returnvalue += (     wi)*(     wj)*(1.0f-wk)*value[6];
+  returnvalue += (     wi)*(     wj)*(     wk)*value[7];
+
+  delete [] value;
+
+  return returnvalue;
+}
+
+double FFTGrid::InterpolateBilinearXY(double x_min,
+                                      double x_max,
+                                      double y_min,
+                                      double y_max,
+                                      double x,
+                                      double y)
+{
+  int i1,j1,i2,j2;
+
+  double dx = (x_max - x_min)/nx_;
+  double dy = (y_max - y_min)/ny_;
+
+  // If values are outside definition area return RMISSING
+  if(x < x_min || x > x_max || y < y_min || y > y_max){
+    return RMISSING;
+  // Can only interpolate from x_min+dx/2 to x_max-dx/2 etc.
+  }
+  else{
+    // i1,j1,k1 can take values in the interval [-1,nx-1],[-1,ny-1]
+    i1 = static_cast<int>(floor((x-x_min-dx/2)/dx));
+    j1 = static_cast<int>(floor((y-y_min-dy/2)/dy));
+    // i2,j2,k2 can take values in the interval [0,nx],[0,ny]
+    i2 = i1+1;
+    j2 = j1+1;
+  }
+  // BILINEAR INTERPOLATION
+  double wi = (x - i1*dx-x_min-dx/2)/dx;
+  double wj = (y - j1*dy-y_min-dy/2)/dy;
+
+  assert (wi>=0 && wi<=1 && wj>=0 && wj<=1);
+
+  double *value = new double[4];
+  value[0] = 0;
+  value[1] = 0;
+  value[2] = 0;
+  value[3] = 0;
+
+  // all indexes inside grid
+  if(i1>=0 && j1>=0 && i2<nx_ && j2<ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // i1 and j1 outside grid
+  else if(i1<0 && j1<0 && i2<nx_ && j2<ny_){
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // j1 outside grid
+  else if(i1>=0 && j1<0 && i2<nx_ && j2<ny_){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+  // j1 and i2 outside grid
+  else if(i1>=0 && j1<0 && i2>=nx_ && j2<ny_){
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+  }
+  // i1 outside grid
+  else if(i1<0 && j1>=0 && i2<nx_ && j2<ny_){
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+    value[3] = std::max<double>(0,this->getRealValue(i2,j2,0));
+  }
+
+  // i2 outside grid
+  else if(i1>=0 && j1>=0 && i2>=nx_ && j2<ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[1] = std::max<double>(0,this->getRealValue(i1,j2,0));
+  }
+  // i1 and j2 outside grid
+  else if(i1<0 && j1>=0 && i2<nx_ && j2>=ny_){
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+  }
+  // j2 outside grid
+  else if(i1>=0 && j1>=0 && i2<nx_ && j2>=ny_){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+    value[2] = std::max<double>(0,this->getRealValue(i2,j1,0));
+  }
+  // i2 and j2 outside grid
+  else if(i1>=0 && j1>=0 && i2>=nx_ && j2>=ny_ ){
+    value[0] = std::max<double>(0,this->getRealValue(i1,j1,0));
+  }
+  else {
+    // something is wrong
+  }
+
+  double returnvalue = 0;
+  returnvalue += (1.0f-wi)*(1.0f-wj)*value[0];
+  returnvalue += (1.0f-wi)*(     wj)*value[1];
+  returnvalue += (     wi)*(1.0f-wj)*value[2];
+  returnvalue += (     wi)*(     wj)*value[3];
+
+  delete [] value;
+
+  return returnvalue;
+}
+
 void
 FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
                                float                z0_grid,
@@ -473,10 +685,10 @@ FFTGrid::setTrace(float value, size_t i, size_t j)
 }
 
 int
-FFTGrid::fillInFromSegY(SegY              * segy,
-                        Simbox            * simbox,
-                        const std::string & parName,
-                        bool                padding)
+FFTGrid::fillInFromSegY(const SegY              * segy,
+                        const Simbox            * simbox,
+                        const std::string       & parName,
+                        bool                      padding)
 {
   assert(cubetype_  !=  CTMISSING);
 
@@ -581,7 +793,7 @@ FFTGrid::fillInFromSegY(SegY              * segy,
 }
 
 int
-FFTGrid::fillInFromStorm(Simbox            * actSimBox,
+FFTGrid::fillInFromStorm(const Simbox      * actSimBox,
                          StormContGrid     * grid,
                          const std::string & parName,
                          bool                scale,
@@ -714,29 +926,11 @@ FFTGrid::fillInConstant(float value, bool add)
 }
 
 void
-FFTGrid::fillInTest(float value1,float value2)
-{
-  createRealGrid();
-  int i,j,k;
-  float value;
-  setAccessMode(WRITE);
-  for( k = 0; k < nzp_; k++)
-    for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)
-      {
-        if(k > nz_/2 && k < (nz_+nzp_)/2) value = value2; else value = value1;
-        if(i<nxp_)
-          setNextReal(value);
-        else
-          setNextReal(RMISSING);
-      }
-      endAccess();
-}
-
-void
 FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nxp=2*nx, nyp=2*ny, nzp=2*nz
 {
-  createRealGrid();
+  if(rvalue_ == NULL) // if(rvalue_ != NULL), the grid is already created
+    createRealGrid();
+
   cubetype_ = PARAMETER;
   int i,j,k, ii,jj,kk, iii, jjj, kkk;
   setAccessMode(WRITE);
@@ -854,70 +1048,16 @@ FFTGrid::setUndefinedCellsToGlobalAverage() // Used for background model
   }
 }
 
-
-fftw_real*
-FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
-{
-  assert(corr->getnx() == nxp_);
-  assert(corr->getny() == nyp_);
-  assert(istransformed_== false);
-
-  int i,j,k,baseK,cycleI,cycleJ;
-  float value,subK;
-  fftw_real* circCorrT;
-  circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
-  computeCircCorrT(corr,circCorrT);
-  makeCircCorrTPosDef(circCorrT, minIntFq);
-
-  setAccessMode(WRITE);
-  for( k = 0; k < nzp_; k++)
-    for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)
-      {
-        if(i < nxp_)  // computes the index reference from the cube puts it in value
-        {
-          cycleI = i-nxp_;
-          if(i < -cycleI)
-            cycleI = i;
-          cycleJ = j-nyp_;
-          if(j < -cycleJ)
-            cycleJ = j;
-
-          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation.
-          baseK =  int(floor(subK));
-          subK  -= baseK;
-          while(baseK < 0)
-            baseK += nzp_;       //Use cyclicity
-          while(baseK >= nzp_)
-            baseK -= nzp_;       //Use cyclicity
-          value = (1-subK)*circCorrT[baseK];
-          if(baseK != nzp_-1)
-            value += subK*circCorrT[baseK+1];
-          else
-            value += subK*circCorrT[0];
-          value *= float( (*(corr->getPriorCorrXY()))(i+nxp_*j));
-        }
-        else
-          value = RMISSING;
-
-        setNextReal(value);
-      } //for k,j,i
-
-  endAccess();
-  return circCorrT;//fftw_free(circCorrT);
-}
-
-
 void
-FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
+FFTGrid::fillInErrCorr(const Surface * priorCorrXY,
+                       float           gradI,
+                       float           gradJ)
 {
   // Note:  this contain the latteral correlation and the multiplyers for the
   // time correlation. The time correlation is further adjusted by the wavelet
   // and the derivative of the wavelet.
   // the angular correlation is given by a functional Expression elsewhere
 
-  assert(parCorr->getnx() == nxp_);
-  assert(parCorr->getny() == nyp_);
   assert(istransformed_== false);
 
   int i,j,k,baseK,cycleI,cycleJ;
@@ -949,7 +1089,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
               baseK = -1-baseK;
               subK  = 1-subK;
             }
-            value = (1-subK)* float( (*(parCorr->getPriorCorrXY()))(i+nxp_*j) );
+            value = (1-subK)* float( (*(priorCorrXY))(i+nxp_*j) );
           }
           else
             value = 0;
@@ -962,6 +1102,53 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
       endAccess();
 }
 
+void
+FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
+                         const fftw_real * circCorrT,
+                         float             gradI,
+                         float             gradJ)
+{
+  assert(istransformed_== false);
+
+  int baseK,cycleI,cycleJ;
+  float value,subK;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+        if(i < nxp_) {  // computes the index reference from the cube puts it in value
+          cycleI = i-nxp_;
+          if(i < -cycleI)
+            cycleI = i;
+          cycleJ = j-nyp_;
+          if(j < -cycleJ)
+            cycleJ = j;
+
+          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation.
+          baseK =  int(floor(subK));
+          subK  -= baseK;
+          while(baseK < 0)
+            baseK += nzp_;       //Use cyclicity
+          while(baseK >= nzp_)
+            baseK -= nzp_;       //Use cyclicity
+          value = (1-subK)*circCorrT[baseK];
+          if(baseK != nzp_-1)
+            value += subK*circCorrT[baseK+1];
+          else
+            value += subK*circCorrT[0];
+          value *= float( (*(priorCorrXY))(i+nxp_*j));
+        }
+        else
+          value = RMISSING;
+
+        setNextReal(value);
+      }
+    }
+  }
+
+  endAccess();
+}
 
 void
 FFTGrid::fillInComplexNoise(RandomGen * ranGen)
@@ -1239,7 +1426,7 @@ FFTGrid::getRealTrace(float * value, int i, int j)
 }
 
 std::vector<float>
-FFTGrid::getRealTrace2(int i, int j)
+FFTGrid::getRealTrace2(int i, int j) const
 {
   std::vector<float> value;
   for(int k = 0; k < nz_; k++)
@@ -1721,77 +1908,8 @@ FFTGrid::multiplyByScalar(float scalar)
   }
 }
 
-void
-FFTGrid::computeCircCorrT(Corr* corr,fftw_real* CircCorrT)
-{
-  int k,n,refk;
-  float dummy;
-  const float* CorrT;
-
-  CorrT = corr->getPriorCorrT(n,dummy);
-
-  assert(CorrT[0] != 0);
-
-  for(k = 0 ; k < 2*(nzp_/2+1) ; k++ )
-  {
-    if(k < nzp_)
-    {
-      if( k < nzp_/2+1)
-        refk = k;
-      else
-        refk = nzp_ - k;
-      if(refk < n)
-        CircCorrT[k] = CorrT[refk];
-      else
-        CircCorrT[k] = 0.0;
-    }
-    else
-    {
-      CircCorrT[k]=RMISSING;
-    }
-  }
-}
-
-
-void
-FFTGrid::makeCircCorrTPosDef(fftw_real* CircCorrT,int minIntFq)
-{
-  int k;
-  fftw_complex* fftCircCorrT;
-  fftCircCorrT = fft1DzInPlace(CircCorrT);
-  for(k = 0; k < nzp_/2+1; k++)
-  {
-    if(k <= minIntFq)
-      fftCircCorrT[k].re = 0.0 ;
-    else
-      fftCircCorrT[k].re = float(sqrt(fftCircCorrT[k].re * fftCircCorrT[k].re +
-      fftCircCorrT[k].im * fftCircCorrT[k].im ));
-    fftCircCorrT[k].im = 0.0;
-  }
-
-  CircCorrT   = invFFT1DzInPlace(fftCircCorrT);
-  //
-  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
-  //           do we avoid this, or how do we flag the problem?
-  //
-  float scale;
-  if (CircCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-    scale = float( 1.0/CircCorrT[0] );
-  else
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
-    exit(1);
-  }
-  for(k = 0; k < nzp_; k++)
-  {
-    CircCorrT[k] *= scale;
-  }
-}
-
-
 fftw_complex*
-FFTGrid::fft1DzInPlace(fftw_real*  in)
+FFTGrid::fft1DzInPlace(fftw_real*  in, int nzp)
 {
   // in is over vritten by out
   // not norm preservingtransform ifft(fft(funk))=N*funk
@@ -1803,7 +1921,7 @@ FFTGrid::fft1DzInPlace(fftw_real*  in)
   out = reinterpret_cast<fftw_complex*>(in);
 
   flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
-  plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
+  plan    = rfftwnd_create_plan(1, &nzp ,FFTW_REAL_TO_COMPLEX,flag);
   rfftwnd_one_real_to_complex(plan,in ,out);
   fftwnd_destroy_plan(plan);
 
@@ -1811,7 +1929,7 @@ FFTGrid::fft1DzInPlace(fftw_real*  in)
 }
 
 fftw_real*
-FFTGrid::invFFT1DzInPlace(fftw_complex* in)
+FFTGrid::invFFT1DzInPlace(fftw_complex* in, int nzp)
 {
   // in is over vritten by out
   // not norm preserving transform  ifft(fft(funk))=N*funk
@@ -1822,7 +1940,7 @@ FFTGrid::invFFT1DzInPlace(fftw_complex* in)
   out = reinterpret_cast<fftw_real*>(in);
 
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
-  plan= rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
+  plan= rfftwnd_create_plan(1,&nzp,FFTW_COMPLEX_TO_REAL,flag);
   rfftwnd_one_complex_to_real(plan,in,out);
   fftwnd_destroy_plan(plan);
   return out;
@@ -1847,8 +1965,8 @@ FFTGrid::writeFile(const std::string       & fName,
                    const Simbox            * simbox,
                    const std::string         label,
                    const float               z0,
-                   GridMapping             * depthMap,
-                   GridMapping             * timeMap,
+                   const GridMapping       * depthMap,
+                   const GridMapping       * timeMap,
                    const TraceHeaderFormat & thf)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
@@ -2051,7 +2169,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
 
 
 void
-FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
+FFTGrid::writeResampledStormCube(const GridMapping * gridmapping,
                                  const std::string & fileName,
                                  const Simbox      * simbox,
                                  const int           format)
@@ -2400,7 +2518,7 @@ FFTGrid::interpolateSeismic(float energyTreshold)
         index++;
       }
 
-      LogKit::LogFormatted(LogKit::Low,"%d of %d traces (%d with zero response)",
+      LogKit::LogFormatted(LogKit::Low,"\n%d of %d traces (%d with zero response)",
         nInter, nx_*ny_, nInter0);
       int curIndex = 0;
       for(j=0;j<ny_;j++)

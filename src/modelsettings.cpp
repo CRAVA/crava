@@ -9,6 +9,12 @@
 #include <map>
 #include "nrlib/iotools/logkit.hpp"
 
+#include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsrockstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
+#include "rplib/distributionssolidstorage.h"
+#include "rplib/distributionsfluidstorage.h"
+
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"
@@ -31,10 +37,8 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     logNames_(5),
-    inverseVelocity_(2),
-    faciesLabels_(0)
+    inverseVelocity_(2)
 {
-  angularCorr_             = new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)); // Power=1 range=10deg
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
   backgroundVario_         = new GenExpVario(1, 2000, 2000);
   localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately
@@ -86,9 +90,6 @@ ModelSettings::ModelSettings(void)
   maxWellShift_            =    11.0f;
   maxWellOffset_           =   250.0f;
 
-  distanceFromWell_        =   100.0f;
-  sigma_m_                 =     1.0f;
-
   defaultWaveletLength_    =   200.0f;
   guard_zone_              =  defaultWaveletLength_*0.5f;
   smooth_length_           =  defaultWaveletLength_*0.5f;
@@ -114,7 +115,6 @@ ModelSettings::ModelSettings(void)
   estimateXYPadding_       =     true;
   estimateZPadding_        =     true;
 
-  segyOffset_              =     0.0f;
   p_undef_                 =    0.01f;
 
   lzLimit_                 =     0.41;   // NB! This is a double ==> do not use 'f'.
@@ -141,7 +141,10 @@ ModelSettings::ModelSettings(void)
   debugFlag_               =        0;
   fileGrid_                =    false;
   waveletFormatManual_     =    false;
-
+  useVerticalVariogram_    =    false;
+  do4DInversion_           =    false;
+  do4DRockPhysicsInversion_=    false;
+  backgroundFromRockPhysics_=   false;
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;
@@ -151,13 +154,13 @@ ModelSettings::ModelSettings(void)
   useVpVsBackground_       =    false;
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
+  faciesProbFromRockPhysics_=   false;
   noVsFaciesProb_          =    false;
   useFilterForProb_        =     true;
   faciesLogGiven_          =    false;
   depthDataOk_             =    false;
   parallelTimeSurfaces_    =    false;
   useLocalWavelet_         =    false;
-  useLocalNoise_           =    false;
   optimizeWellLocation_    =    false;
   runFromPanel_            =    false;
   noWellNeeded_            =    false;
@@ -173,6 +176,7 @@ ModelSettings::ModelSettings(void)
   estimateWaveletNoise_    =     true;
   estimate3DWavelet_       =    false;
   hasTime3DMapping_        =    false;
+  use3DWavelet_            =    false;
 
   logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
@@ -182,8 +186,8 @@ ModelSettings::ModelSettings(void)
 
 ModelSettings::~ModelSettings(void)
 {
-  if (angularCorr_ != NULL)
-    delete angularCorr_;
+  for(size_t i = 0; i<angularCorr_.size(); i++)
+    delete angularCorr_[i];
 
   if (lateralCorr_ != NULL)
     delete lateralCorr_;
@@ -205,10 +209,42 @@ ModelSettings::~ModelSettings(void)
 
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
+
+  for(size_t i=0; i<timeLapseLocalTHF_.size(); i++) {
+    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++)
+      delete timeLapseLocalTHF_[i][j];
+  }
+
+  for(size_t i=0; i<travelTimeTHF_.size(); i++)
+    delete travelTimeTHF_[i];
+
+  for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
+    DistributionsRockStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, DistributionsDryRockStorage *>::iterator it = dryRockStorage_.begin(); it != dryRockStorage_.end(); it++) {
+    DistributionsDryRockStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solidStorage_.begin(); it != solidStorage_.end(); it++) {
+    DistributionsSolidStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluidStorage_.begin(); it != fluidStorage_.end(); it++) {
+    DistributionsFluidStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
+    std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
+    for(size_t i=0; i<vintageStorage.size(); i++) {
+      delete vintageStorage[i];
+    }
+  }
+
 }
 
 bool
-ModelSettings::getDoInversion(void)
+ModelSettings::getDoInversion(void) const
 {
   int elasticFlag  = 0;
   int otherFlag    = 0;
@@ -260,11 +296,12 @@ ModelSettings::rotateVariograms(float angle)
 }
 
 void
-ModelSettings::setAngularCorr(Vario * vario)
+ModelSettings::setLastAngularCorr(Vario * vario)
 {
-  if (angularCorr_ != NULL)
-    delete angularCorr_;
-  angularCorr_ = vario;
+  size_t i = angularCorr_.size()-1;
+  if (angularCorr_[i] != NULL)
+    delete angularCorr_[i];
+  angularCorr_[i] = vario;
 }
 
 void
@@ -351,32 +388,84 @@ ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 }
 
 void
-ModelSettings::setTimeGradientSettings(float distance, float sigma_m)
+ModelSettings::addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
-  distanceFromWell_  = distance;
-  sigma_m_ = sigma_m;
+  travelTimeTHF_.push_back(traceHeaderFormat);
 }
 
+void
+ModelSettings::addTimeGradientSettings(float distance, float sigma_m)
+{
+  distanceFromWell_.push_back(distance);
+  sigma_m_.push_back(sigma_m);
+}
 
 void
-ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m)
+ModelSettings::addDefaultTimeGradientSettings(void)
 {
-  distance = distanceFromWell_;
-  sigma_m = sigma_m_;
+  distanceFromWell_.push_back(100.0f);
+  sigma_m_.push_back(1.0f);
+}
+
+void
+ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m, int t)
+{
+  distance = distanceFromWell_[t];
+  sigma_m = sigma_m_[t];
+}
+
+void
+ModelSettings::addVintage(int year, int month, int day)
+{
+  vintageYear_.push_back(year);
+  vintageMonth_.push_back(month);
+  vintageDay_.push_back(day);
+}
+
+void
+ModelSettings::addDefaultVintage(void)
+{
+  vintageYear_.push_back(IMISSING);
+  vintageMonth_.push_back(IMISSING);
+  vintageDay_.push_back(IMISSING);
 }
 
 int
-ModelSettings::getEstimateNumberOfWavelets(void) const
+ModelSettings::getEstimateNumberOfWavelets(int t) const
 {
-  int n   = static_cast<int>(estimateWavelet_.size());
+  int n   = static_cast<int>(timeLapseEstimateWavelet_[t].size());
   int tot = 0;
 
   for (int i=0; i<n; i++)
   {
-    if (estimateWavelet_[i] == 1)
+    if (timeLapseEstimateWavelet_[t][i] == 1)
       tot++;
   }
   return tot;
+}
+
+const std::vector<int>
+ModelSettings::findSortedVintages(void) const
+{
+  int n = getNumberOfTimeLapses();
+
+  std::vector<int> index(n);
+  for(int i=0; i<n; i++)
+    index[i] = i;
+
+  int tmp;
+  for(int i=0; i<n; i++){
+    for(int j=i+1; j<n; j++){
+      if(vintageYear_[j]<vintageYear_[i] ||
+        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]<vintageMonth_[i]) ||
+        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]==vintageMonth_[i] && vintageDay_[j]<vintageDay_[i])){
+        tmp      = index[i];
+        index[i] = index[j];
+        index[j] = tmp;
+      }
+    }
+  }
+  return(index);
 }
 
 int  ModelSettings::debugFlag_  = 0;

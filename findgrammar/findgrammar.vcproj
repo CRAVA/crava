@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../nrlib"
+				AdditionalIncludeDirectories=".;../libs/nrlib;../libs"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -183,38 +183,38 @@
 				Name="nrlib"
 				>
 				<File
-					RelativePath="..\nrlib\iotools\fileio.cpp"
+					RelativePath="..\libs\nrlib\iotools\fileio.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\nrlib\tinyxml\tinyxml.cpp"
+					RelativePath="..\libs\nrlib\tinyxml\tinyxml.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\nrlib\tinyxml\tinyxmlerror.cpp"
+					RelativePath="..\libs\nrlib\tinyxml\tinyxmlerror.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\nrlib\tinyxml\tinyxmlparser.cpp"
+					RelativePath="..\libs\nrlib\tinyxml\tinyxmlparser.cpp"
 					>
 				</File>
 				<Filter
 					Name="boost"
 					>
 					<File
-						RelativePath="..\nrlib\boost\system\error_code.cpp"
+						RelativePath="..\libs\boost\system\error_code.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\nrlib\boost\filesystem\operations.cpp"
+						RelativePath="..\libs\boost\filesystem\operations.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\nrlib\boost\filesystem\path.cpp"
+						RelativePath="..\libs\boost\filesystem\path.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\nrlib\boost\filesystem\portability.cpp"
+						RelativePath="..\libs\boost\filesystem\portability.cpp"
 						>
 					</File>
 				</Filter>

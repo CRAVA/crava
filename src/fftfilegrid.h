@@ -10,7 +10,6 @@
 
 #include "fftgrid.h"
 
-class Corr;
 class Wavelet;
 class Simbox;
 class GridMapping;
@@ -51,15 +50,15 @@ public:
                          const Simbox      * simbox,
                          const std::string   sgriLabel = "NO_LABEL",
                          const float         z0        = 0.0,
-                         GridMapping       * depthMap  = NULL,
-                         GridMapping       * timeMap   = NULL,
+                         const GridMapping * depthMap  = NULL,
+                         const GridMapping * timeMap   = NULL,
                          const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
                              const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
-  void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName,
+  void         writeResampledStormCube(const GridMapping *gridmapping, const std::string & fileName,
                                        const Simbox *simbox, const int format);
   void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   void         readCravaFile(const std::string & fileName, std::string & error, bool nopadding = false);

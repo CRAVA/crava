@@ -24,7 +24,8 @@ public:
           const unsigned int  patch,
           const std::string & extra_text,
           const int           licence_days,
-          const std::string & licensed_to);
+          const std::string & licensed_to,
+          const bool          add_licence_info);
 
   ~Program(void);
 
@@ -37,7 +38,8 @@ public:
 private:
   void                 CheckForLicenceExpiration(const int           licence_days,
                                                  const std::string & licensed_to,
-                                                 const bool          release) const;
+                                                 const bool          release,
+                                                 const bool          add_licence_info) const;
   time_t               TimeOfCompilation(void) const;
 
   const unsigned int   major_;           ///< Major version number

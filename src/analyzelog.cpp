@@ -19,11 +19,11 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-Analyzelog::Analyzelog(WellData      ** wells,
-                       Background     * background,
-                       Simbox         * simbox,
-                       ModelSettings  * modelSettings,
-                       std::string    & errTxt)
+Analyzelog::Analyzelog(std::vector<WellData *> wells,
+                       Background            * background,
+                       const Simbox          * simbox,
+                       const ModelSettings   * modelSettings,
+                       std::string           & errTxt)
 {
   pointVar0_ = new float*[3];
   for(int i=0 ; i<3 ; i++)
@@ -53,9 +53,9 @@ Analyzelog::~Analyzelog(void)
 // Do the covariance and correlation estimation
 //
 void
-Analyzelog::estimate(ModelSettings * modelSettings,
-                     Background    * background,
-                     std::string   & errTxt)
+Analyzelog::estimate(const ModelSettings * modelSettings,
+                     Background          * background,
+                     std::string         & errTxt)
 {
   float ** lnDataAlpha = new float*[nwells_];
   float ** lnDataBeta  = new float*[nwells_];
@@ -74,9 +74,16 @@ Analyzelog::estimate(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Corr(Vp,Vs) and Corr(Vs,Rho) are set 0.7.\n");
   }
 
-  estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
-  estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
-  estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
+  if(background == NULL){
+    estimateLnData(lnDataAlpha, NULL, 0, errTxt);
+    estimateLnData(lnDataBeta,  NULL, 1, errTxt);
+    estimateLnData(lnDataRho,   NULL, 2, errTxt);
+  }
+  else{
+    estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
+    estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
+    estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
+  }
   if (errTxt != "")
     return;
 
@@ -171,7 +178,9 @@ Analyzelog::estimateLnData(float      **& lnData,
 {
   float globalMean = 0.0f;
   int tell = 0;
-  background->setAccessMode(FFTGrid::RANDOMACCESS);
+  if(background !=NULL)
+    background->setAccessMode(FFTGrid::RANDOMACCESS);
+
   for(int i=0 ; i<nwells_ ; i++)
   {
     int nd;
@@ -191,14 +200,18 @@ Analyzelog::estimateLnData(float      **& lnData,
               + std::string(" does not exist (Vp=1,Vs=2,Rho=3)\n");
 
     float * mean = new float[nd];
-    readMeanData(background, nd, xpos, ypos, zpos, mean);
+    int useBackgroundMean = 0;
+    if(background!=NULL){
+      readMeanData(background, nd, xpos, ypos, zpos, mean);
+      useBackgroundMean = 1;
+    }
 
     lnData[i] = new float[nd];
     for(int j=0 ; j<nd ; j++)
     {
       if(wLog[j]!= RMISSING && mean[j]!=RMISSING)
       {
-        lnData[i][j] = static_cast<float>(log(wLog[j])-mean[j]); //mean is ln(background)
+        lnData[i][j] = static_cast<float>(log(wLog[j])-useBackgroundMean*mean[j]); //mean is ln(background)
         globalMean += lnData[i][j];
         tell++;
       }
@@ -207,7 +220,8 @@ Analyzelog::estimateLnData(float      **& lnData,
     }
     delete [] mean;
   }
-  background->endAccess();
+  if(background!=NULL)
+    background->endAccess();
 
   //
   // Subtract global mean from data.
@@ -801,9 +815,9 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 }
 
 void
-Analyzelog::checkVariances(ModelSettings  * modelSettings,
-                           float         ** pointVar0,
-                           float         ** Var0,
+Analyzelog::checkVariances(const ModelSettings  * modelSettings,
+                           const float  * const * pointVar0,
+                           const float  * const * Var0,
                            float            dt,
                            std::string    & errTxt)
 {

@@ -6,32 +6,53 @@
 #define SPATIALWELLFILTER_H
 
 #include "src/definitions.h"
+#include "rplib/syntwelldata.h"
 
-class Corr;
 class FFTGrid;
 class Crava;
 class WellData;
 class BlockedLogs;
+class SeismicParametersHolder;
 
 class SpatialWellFilter
 {
 public:
   SpatialWellFilter(int nwells);
+
   ~SpatialWellFilter();
 
-  void                         setPriorSpatialCorr(FFTGrid  * parSpatialCorr,
-                                                   WellData * well,
-                                                   int        wellnr);
+  void                     setPriorSpatialCorrSyntWell(FFTGrid             * parSpatialCorr,
+                                                       SyntWellData        * well,
+                                                       int                   wellnr);
 
-  void                         doFiltering(Corr                        * corr,
-                                           WellData                   ** wells,
+  void                     setPriorSpatialCorr(FFTGrid    * parSpatialCorr,
+                                               WellData   * well,
+                                               int          wellnr);
+
+  void                     doFiltering(std::vector<WellData *>         wells,
+                                       int                             nWells,
+                                       bool                            useVpRhoFilter,
+                                       int                             nAngles,
+                                       const Crava                   * cravaResult,
+                                       const std::vector<Grid2D *>   & noiseScale,
+                                       SeismicParametersHolder       & seismicParameters);
+
+  void                     doFilteringSyntWells(std::vector<SyntWellData *>              & syntWellData,
+                                                const std::vector<std::vector<double> >  & v,
+                                                SeismicParametersHolder                  & seismicParameters,
+                                                int                                        nWells,
+                                                const NRLib::Matrix                      & priorVar0);
+
+  void                         doFiltering(WellData                   ** wells,
                                            int                           nWells,
                                            bool                          useVpRhoFilter,
                                            int                           nAngles,
                                            const Crava                 * cravaResult,
                                            const std::vector<Grid2D *> & noiseScale);
 
-  std::vector<NRLib::Matrix> & getSigmae(void) { return sigmae_ ;}
+  std::vector<NRLib::Matrix> & getSigmae(void)     { return sigmae_ ;}
+  std::vector<double **>     & getSigmaeSynt()     {return sigmaeSynt_;}
+
 
 private:
 
@@ -45,6 +66,8 @@ private:
                     const NRLib::Matrix & filter,
                     const NRLib::Matrix & Spost,
                     int                   n);
+
+  void updateSigmaeSynt(double ** filter, double ** postCov,  int n);
 
   void completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
                       int                           lastn,
@@ -61,6 +84,15 @@ private:
                            int                           lastn,
                            const Crava                 * cravaResult,
                            const std::vector<Grid2D *> & noiseScale);
+
+  void fillValuesInSigmapostSyntWell(double     ** sigmapost,
+                                     const int  *  ipos,
+                                     const int  *  jpos,
+                                     const int  *  kpos,
+                                     FFTGrid    *  covgrid,
+                                     int           n,
+                                     int           ni,
+                                     int           nj);
 
   void computeSigmaEAdjusted(NRLib::Matrix & sigmae,
                              NRLib::Matrix & sigmaE0,
@@ -90,11 +122,14 @@ private:
                              int          nj);
 
   std::vector<NRLib::Matrix> sigmae_;
+  std::vector<double **> sigmaeSynt_;
 
   int                        nData_;   ///< sum no blocks in all wells
   int                        nWells_;
   int                    *   n_;
   double                 *** priorSpatialCorr_;
+
+  std::vector<double **>     sigmaeVpRho_;
 
 };
 #endif

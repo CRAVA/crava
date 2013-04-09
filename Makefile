@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS        = src libs libs/lib libs/boost libs/fft/fftw libs/fft/rfftw
+DIRS        = src libs libs/lib libs/boost libs/fft/fftw libs/fft/rfftw rplib
 OBJDIR      = obj
 OBJLIBDIR   = obj/libs/lib
 OBJFFTDIR   = obj/libs/fft
@@ -65,7 +65,7 @@ cleanall:
 	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
-	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..
+	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(passive) $(case); cd ..
 
 help:
 	@echo ''
@@ -83,6 +83,10 @@ help:
 	@echo '  profile   : Compile and link with -g -pg'
 	@echo '  purify    : Compile and link with -g -p0 and link with purify. Executable becomes cravarun.purify'
 	@echo ''
-	@echo 'cases'
-	@echo '  n         : Comma-separated list of test case number (number given first in the test case directory name)'
+	@echo 'passive'
+	@echo '  true      : Run test suite in passive mode (do not run CRAVA)'
+	@echo ''
+	@echo 'case'
+	@echo '  n         : Comma-separated list of test case numbers (number given first in the test case'
+	@echo '              directory name) or a range give as 1-5'
 	@echo ''

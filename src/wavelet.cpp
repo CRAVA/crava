@@ -89,8 +89,8 @@ Wavelet::Wavelet(int       dim,
 
 Wavelet::Wavelet(const std::string & fileName,
                  int                 fileFormat,
-                 ModelSettings     * modelSettings,
-                 float             * reflCoef,
+                 const ModelSettings     * modelSettings,
+                 const float             * reflCoef,
                  float               theta,
                  int                 dim,
                  int               & errCode,
@@ -127,8 +127,8 @@ Wavelet::Wavelet(const std::string & fileName,
     }//end for i
   }
 }
-Wavelet::Wavelet(ModelSettings     * modelSettings,
-                 float             * reflCoef,
+Wavelet::Wavelet(const ModelSettings     * modelSettings,
+                 const float             * reflCoef,
                  float               theta,
                  int                 dim,
                  float               peakFrequency,

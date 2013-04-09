@@ -15,6 +15,10 @@
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
+#include "nrlib/trend/trendstorage.hpp"
+#include "nrlib/random/distribution.hpp"
+#include "nrlib/random/normal.hpp"
 
 #include "src/modelsettings.h"
 #include "src/xmlmodelfile.h"
@@ -26,11 +30,18 @@
 #include "tasklist.h"
 #include "src/io.h"
 
+#include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionssolidstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
+#include "rplib/distributionsrockstorage.h"
+#include "rplib/distributionwithtrendstorage.h"
+
 XmlModelFile::XmlModelFile(const std::string & fileName)
 {
   modelSettings_ = new ModelSettings();
   inputFiles_    = new InputFiles();
   failed_        = false;
+  surveyFailed_  = false;
 
   std::ifstream file;
   try {
@@ -69,15 +80,14 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
     std::string errTxt = "";
     if(parseCrava(&doc, errTxt) == false)
       errTxt = "'"+std::string(fileName)+"' is not a crava model file (lacks the <crava> keyword.)\n";
-
     std::vector<std::string> legalCommands(1);
     checkForJunk(&doc, errTxt, legalCommands);
-
     checkConsistency(errTxt);
 
-    setDerivedParameters(errTxt);
-
-    if(errTxt != "") {
+    if (errTxt == "") {
+      setDerivedParameters(errTxt);
+    }
+    if (errTxt != "") {
       LogKit::WriteHeader("Invalid model file");
       LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
       LogKit::LogMessage(LogKit::Error, errTxt);
@@ -108,7 +118,12 @@ XmlModelFile::parseCrava(TiXmlNode * node, std::string & errTxt)
 
   parseActions(root, errTxt);
   parseWellData(root, errTxt);
-  parseSurvey(root, errTxt);
+
+  size_t checkFailed = errTxt.size();
+  while(parseSurvey(root, errTxt) == true);
+  if(errTxt.size() > checkFailed)
+    surveyFailed_ = true;
+
   parseProjectSettings(root, errTxt);
   parsePriorModel(root, errTxt);
 
@@ -603,31 +618,57 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-start-time");
   legalCommands.push_back("angle-gather");
   legalCommands.push_back("wavelet-estimation-interval");
+  legalCommands.push_back("travel-time");
   legalCommands.push_back("time-gradient-settings");
+  legalCommands.push_back("vintage");
 
   Vario * vario = NULL;
+  modelSettings_->addDefaultAngularCorr();
   if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
     if (vario != NULL) {
       vario->convertRangesFromDegToRad();
-      modelSettings_->setAngularCorr(vario);
+      modelSettings_->setLastAngularCorr(vario);
     }
   }
 
   float value;
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
-    modelSettings_->setSegyOffset(value);
+    modelSettings_->addSegyOffset(value);
+  else
+    modelSettings_->addDefaultSegyOffset();
 
+  modelSettings_->clearTimeLapse();
+  inputFiles_->clearTimeLapse();
   while(parseAngleGather(root, errTxt) == true);
+  modelSettings_->addTimeLapse();
+  inputFiles_->addTimeLapse();
+  if(modelSettings_->getNumberOfTimeLapses() > 1)
+  {
+    modelSettings_->setDo4DInversion(true);
+    modelSettings_->setDo4DRockPhysicsInversion(true);  
+  }
 
-  if(modelSettings_->getNumberOfAngles() == 0)
-    errTxt +=  "Need at least one angle gather in command <"+root->ValueStr()+">"+
-    lineColumnText(root)+".\n";
+  if(parseWaveletEstimationInterval(root, errTxt) == false){
+    inputFiles_->addDefaultWaveletEstIntFileTop();
+    inputFiles_->addDefaultWaveletEstIntFileBase();
+  }
 
-  parseWaveletEstimationInterval(root, errTxt);
+  inputFiles_->clearTimeLapseTravelTime();
+  if(parseTravelTime(root, errTxt) == false) {
+    inputFiles_->addTravelTimeHorizon("");
+    inputFiles_->addRmsVelocity("");
+    modelSettings_->addTravelTimeTraceHeaderFormat(NULL);
+    modelSettings_->addDefaultTravelTimeSegyOffset();
+  }
+  inputFiles_->addTimeLapseTravelTime();
 
-  parseTimeGradientSettings(root,errTxt);
+  if(parseTimeGradientSettings(root,errTxt) == false)
+    modelSettings_->addDefaultTimeGradientSettings();
 
-  checkForJunk(root, errTxt, legalCommands);
+  if(parseVintage(root, errTxt) == false)
+    modelSettings_->addDefaultVintage();
+
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -665,6 +706,8 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   if(parseWavelet(root, errTxt) == false) {
     modelSettings_->addWaveletScale(1.0); // NBNB OK  why RMISSING here????
     modelSettings_->addEstimateGlobalWaveletScale(false);
+    modelSettings_->addUseRickerWavelet(false);
+    modelSettings_->addRickerPeakFrequency(RMISSING);
     inputFiles_->addShiftFile("");
     inputFiles_->addScaleFile("");
     modelSettings_->addEstimateLocalShift(false);
@@ -703,6 +746,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   }
   std::string fileName;
   bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
+  modelSettings_->setDefaultUseLocalNoise();
   if(localNoiseGiven) {
     inputFiles_->addNoiseFile(fileName);
     modelSettings_->setUseLocalNoise(true);
@@ -970,11 +1014,13 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
   legalCommands.push_back("top-surface-file");
   legalCommands.push_back("base-surface-file");
 
-  std::string filename;
-  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
-    inputFiles_->setWaveletEstIntFile(0, filename);
-  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
-    inputFiles_->setWaveletEstIntFile(1, filename);
+  std::string filenameTop  = "";
+  std::string filenameBase = "";
+  parseFileName(root, "top-surface-file", filenameTop, errTxt);
+  parseFileName(root, "base-surface-file", filenameBase, errTxt);
+
+  inputFiles_->addWaveletEstIntFileTop(filenameTop);
+  inputFiles_->addWaveletEstIntFileBase(filenameBase);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1040,10 +1086,71 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstRangeY(0.0);
 
   modelSettings_->addWaveletDim(Wavelet::THREE_D);
+  modelSettings_->setUse3DWavelet(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+
+bool
+XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("travel-time");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("horizon-file");
+
+  if(parseRMSVelocities(root, errTxt) == false)
+    errTxt += "<travel-time><rms-velocities> needs to be given\n";
+
+  std::string horizon;
+  int n_horizons = 0;
+  while(parseFileName(root, "horizon-file", horizon, errTxt, true) == true) {
+    inputFiles_->addTravelTimeHorizon(horizon);
+    n_horizons++;
+  }
+  if(n_horizons == 0)
+    inputFiles_->addTravelTimeHorizon("");
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("segy-start-time");
+  legalCommands.push_back("segy-format");
+
+  std::string rms_file;
+  if(parseFileName(root, "file-name", rms_file, errTxt) == true)
+    inputFiles_->addRmsVelocity(rms_file);
+  else
+    errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
+
+  float start_time;
+  if(parseValue(root, "segy-start-time", start_time, errTxt) == true)
+    modelSettings_->addTravelTimeSegyOffset(start_time);
+  else
+    modelSettings_->addDefaultTravelTimeSegyOffset();
+
+  TraceHeaderFormat * thf = NULL;
+  parseTraceHeaderFormat(root, "segy-format", thf, errTxt);
+  modelSettings_->addTravelTimeTraceHeaderFormat(thf);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
 bool
 XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
 {
@@ -1065,12 +1172,51 @@ XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
   else
     sigma_m = 1.0;
 
-  modelSettings_->setTimeGradientSettings(distance,sigma_m);
+  modelSettings_->addTimeGradientSettings(distance,sigma_m);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseVintage(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("vintage");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("year");
+  legalCommands.push_back("month");
+  legalCommands.push_back("day-of-month");
+
+  int value;
+  int year  = IMISSING;
+  int month = IMISSING;
+  int day   = IMISSING;
+
+  if(parseValue(root, "year", value, errTxt) == true)
+    year = value;
+
+  if(parseValue(root, "month", value, errTxt) == true){
+    if(year == IMISSING)
+      errTxt += "<year> needs to be specified if <month> is specified in <vintage>.\n";
+    else
+      month = value;
+  }
+
+  if(parseValue(root, "day-of-month", value, errTxt) == true){
+    if(year == IMISSING || month == IMISSING)
+      errTxt += "Both <year> and <month> need to be specified if <day-of-month> is specifeid in <vintage>.\n";
+    else
+      day = value;
+  }
+
+  modelSettings_->addVintage(year, month, day);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
@@ -1083,11 +1229,13 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background");
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("temporal-correlation");
+  legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("parameter-correlation");
   legalCommands.push_back("correlation-direction");
   legalCommands.push_back("facies-probabilities");
   legalCommands.push_back("earth-model");
   legalCommands.push_back("local-wavelet");
+  legalCommands.push_back("rock-physics");
 
   parseBackground(root, errTxt);
   parseEarthModel(root,errTxt);
@@ -1101,8 +1249,19 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   }
 
   std::string filename;
-  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true)
+  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true){
     inputFiles_->setTempCorrFile(filename);
+  }
+
+  float tempCorrRange;
+  if(parseValue(root,"temporal-correlation-range", tempCorrRange, errTxt) == true){
+    modelSettings_->setTempCorrRange(tempCorrRange);
+    modelSettings_->setUseVerticalVariogram(true);
+  }
+
+  // check that not both a file and a range for temporal correlation is given
+  if(filename!="" && modelSettings_->getUseVerticalVariogram())
+    errTxt += "Both a temporal correlation file and a temporal variogram range are given as input. Please specify only one of them.\n";
 
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
     inputFiles_->setParamCorrFile(filename);
@@ -1111,6 +1270,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setCorrDirFile(filename);
 
   parseFaciesProbabilities(root, errTxt);
+  parseRockPhysics(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1434,11 +1594,11 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
   for(int i=0; i<nHorizons; i++) {
     int place = erosion[i]-1;
     if(place < 0) {
-      errTxt += "The ersoion priorities need to be larger than zero in the multizone background model\n";
+      errTxt += "The erosion priorities need to be larger than zero in the multizone background model\n";
       break;
     }
     else if(place > nHorizons-1) {
-      errTxt += "The ersorion priorities need to be given executive numbers, \n"
+      errTxt += "The erosion priorities need to be given executive numbers, \n"
                 "such that the largest number is equal to the number of surfaces in the multizone background model\n";
       break;
     }
@@ -1446,7 +1606,7 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
       sorted[place] = 1;
     }
     else
-      errTxt += "All horizons need to be given a unique ersosion priority in the multizone background model\n";
+      errTxt += "All horizons need to be given a unique erosion priority in the multizone background model\n";
   }
 
   // Check horizon uncertainty consistency
@@ -1585,10 +1745,9 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   std::vector<std::string> legalCommands;
   legalCommands.push_back("facies");
 
-  float sum;
-  int status = 0;
-  sum = 0.0;
-  int oldStatus = 0;
+  float sum       = 0.0;
+  int   status    = 0;
+  int   oldStatus = 0;
 
   while(parseFacies(root,errTxt)==true)
   {
@@ -1651,6 +1810,1894 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
 
 }
+
+bool
+XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rock-physics");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("reservoir");
+  legalCommands.push_back("evolve");
+  legalCommands.push_back("predefinitions");
+  legalCommands.push_back("rock");
+  legalCommands.push_back("trend-cube");
+
+  // The order of the parsing-commands should not be changed
+  parseReservoir(root, errTxt);
+  while(parseEvolve(root, errTxt));
+  parsePredefinitions(root, errTxt);
+  std::string dummy;
+  while(parseRock(root, dummy, errTxt));
+
+  int count = 0;
+  while(parseTrendCube(root, errTxt) == true)
+    count++;
+  if(count > 2)
+    errTxt += "The maximum allowed number of trend cubes in <rock-physics><trend-cube> is two.\n";
+
+  modelSettings_->setFaciesProbFromRockPhysics(true);
+
+  modelSettings_->setFaciesProbRelative(false);
+
+  modelSettings_->setBackgroundFromRockPhysics(true);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("predefinitions");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("solid");
+  legalCommands.push_back("dry-rock");
+
+  std::string label;
+  while(parseFluid(root, label, errTxt));
+  while(parseSolid(root, label, errTxt));
+  while(parseDryRock(root, label, errTxt));
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseRock(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rock");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
+  legalCommands.push_back("dem");
+  legalCommands.push_back("gassmann");
+  legalCommands.push_back("bounding");
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  int given = 0;
+
+  std::string use = "";
+  parseValue(root, "use", use, errTxt);
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <rock>\n";
+  else if(use != "") {
+    label = use;
+    given++;
+  }
+  int constituent_type = ModelSettings::ROCK;
+
+  std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
+  std::vector<DistributionWithTrendStorage *> dummy_moduli(1, NULL);
+
+  if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+    given++;
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseHill(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseGassmann(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseBounding(root, constituent_type, label, errTxt) == true)
+    given++;
+
+  if(given == 0)
+    errTxt += "A theory or <use> needs to follow after <label> in <rock>\n";
+  else if(given > 1)
+    errTxt += "Only one theory or <use> can be given after <label> in <rock>\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("solid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
+  legalCommands.push_back("dem");
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  int given = 0;
+
+  std::string use = "";
+  parseValue(root, "use", use, errTxt);
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <solid>\n";
+  else if(use != "") {
+    label = use;
+    given++;
+  }
+
+  int constituent_type = ModelSettings::SOLID;
+
+  std::vector<DistributionWithTrendStorage *> dummy_porosity(1,NULL);
+  std::vector<DistributionWithTrendStorage *> dummy_moduli(1, NULL);
+
+  if(parseTabulated(root, constituent_type, label, dummy_porosity, dummy_moduli, errTxt) == true)
+    given++;
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseHill(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
+    given++;
+
+  if(given == 0)
+    errTxt += "A theory or <use> needs to follow after <label> in <solid>\n";
+  else if(given > 1)
+    errTxt += "Only one theory or <use> can be given after <label> in <solid>\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("dry-rock");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.reserve(10);
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
+  legalCommands.push_back("dem");
+  legalCommands.push_back("walton");
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  int given = 0;
+
+  std::string use = "";
+  parseValue(root, "use", use, errTxt);
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <dry-rock>\n";
+  else if(use != "") {
+    label = use;
+    given++;
+  }
+
+  std::string                                 dummy = "";
+  std::vector<DistributionWithTrendStorage *> total_porosity;
+  std::vector<DistributionWithTrendStorage *> mineral_k;
+
+  int constituent_type = ModelSettings::DRY_ROCK;
+
+  if(parseTabulatedDryRock(root, constituent_type, label, total_porosity, mineral_k, errTxt) == true)
+    given++;
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseHill(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseDEM(root, constituent_type, label, errTxt) == true)
+    given++;
+   if(parseWalton(root, constituent_type, label, errTxt) == true)
+    given++;
+
+ if(given == 0)
+    errTxt += "A theory or <use> needs to follow after <label> in <dry-rock>\n";
+  else if(given > 1)
+    errTxt += "Only one theory or <use> can be given after <label> in <dry-rock>\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("fluid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
+  legalCommands.push_back("batzle-wang-brine");
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  int given = 0;
+
+  std::string use = "";
+  parseValue(root, "use", use, errTxt);
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <fluid>\n";
+  else if(use != "") {
+    label = use;
+    given++;
+  }
+
+  int constituent_type = ModelSettings::FLUID;
+
+  if(parseTabulatedFluid(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseReuss(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseVoigt(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseHill(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
+    given++;
+
+  if(given == 0)
+    errTxt += "A theory or <use> needs to follow after <label> in <fluid>\n";
+  else if(given > 1)
+    errTxt += "Only one theory or <use> can be given after <label> in <fluid>\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseReuss(TiXmlNode                                   * node,
+                         int                                           constituent,
+                         std::string                                   label,
+                         std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("reuss");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
+
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
+  }
+
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Reuss rock physics model for "+label+"\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new ReussFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new ReussSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new ReussDryRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new ReussRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseVoigt(TiXmlNode                                   * node,
+                         int                                           constituent,
+                         std::string                                   label,
+                         std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("voigt");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
+
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
+  }
+
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Voigt rock physics model for "+label+"\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new VoigtFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new VoigtSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new VoigtDryRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new VoigtRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseHill(TiXmlNode                                   * node,
+                        int                                           constituent,
+                        std::string                                   label,
+                        std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("hill");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                                  constituent_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_fraction;
+
+  std::string                                 this_label;
+  std::vector<DistributionWithTrendStorage *> volume_fraction;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+    volume_fraction.clear();
+  }
+
+  if(constituent_label.size() < 2)
+    errTxt += "At least two constituents must be given in the Hill rock physics model for "+label+"\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new HillFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new HillSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new HillDryRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new HillRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseConstituent(TiXmlNode                                   * node,
+                               std::string                                 & constituent_label,
+                               std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                               std::string                                 & errTxt)
+{
+
+  TiXmlNode * root = node->FirstChildElement("constituent");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("volume-fraction");
+
+  int constituent_given = 0;
+  while(parseSolid(root, constituent_label, errTxt) == true)
+    constituent_given++;
+  while(parseFluid(root, constituent_label, errTxt) == true)
+    constituent_given++;
+  while(parseDryRock(root, constituent_label, errTxt) == true)
+    constituent_given++;
+
+  if(constituent_given == 0)
+    errTxt += "A solid, fluid or dry-rock needs to be given in each constituent of the rock physics model\n";
+  else if(constituent_given > 1)
+    errTxt += "There can only be one element in each constituent of the rock physics model\n";
+
+  std::string volume_label = "";
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, volume_label, false, errTxt) == false)
+    volume_fraction.push_back(NULL);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("batzle-wang-brine");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("pore-pressure");
+  legalCommands.push_back("temperature");
+  legalCommands.push_back("salinity");
+
+  std::string dummy;
+
+  std::vector<DistributionWithTrendStorage *> pore_pressure;
+  if(parseDistributionWithTrend(root, "pore-pressure", pore_pressure, dummy, false, errTxt) == false)
+    errTxt += "The pore pressure must be given in the Batzle-Wang brine model\n";
+
+  std::vector<DistributionWithTrendStorage *> temperature;
+  if(parseDistributionWithTrend(root, "temperature", temperature, dummy, false, errTxt) == false)
+    errTxt += "The temperature must be given in the Batzle-Wang brine model\n";
+
+  std::vector<DistributionWithTrendStorage *> salinity;
+  if(parseDistributionWithTrend(root, "salinity", salinity, dummy, false, errTxt) == false)
+    errTxt += "The salinity must be given in the Batzle-Wang brine model\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new BatzleWangFluidStorage(pore_pressure, temperature, salinity);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a rock\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseWalton(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("walton");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.reserve(5);
+  legalCommands.push_back("solid");
+  legalCommands.push_back("no-slip");
+  legalCommands.push_back("pressure");
+  legalCommands.push_back("porosity");
+  legalCommands.push_back("coord-nr");
+
+  std::string solid_label = "";
+  if (parseSolid(root, solid_label, errTxt) == false) {
+    errTxt += "<solid> needs to be given in <dry-rock><walton>.\n";
+  }
+
+  std::string dummy;
+  std::vector<DistributionWithTrendStorage *> no_slip;
+  if(parseDistributionWithTrend(root, "no-slip", no_slip, dummy, false, errTxt, true) == false)
+    errTxt += "<no-slip> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> pressure;
+  if(parseDistributionWithTrend(root, "pressure", pressure, dummy, false, errTxt, true) == false)
+    errTxt += "<pressure> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> porosity;
+  if(parseDistributionWithTrend(root, "porosity", porosity, dummy, false, errTxt, true) == false)
+    errTxt += "<porosity> needs to be given in <dry-rock><walton>.\n";
+
+  std::vector<DistributionWithTrendStorage *> coord_nr;
+  if(parseDistributionWithTrend(root, "coord-nr", coord_nr, dummy, false, errTxt, true) == false) {
+    double interpolation_flag = -1.0;
+    coord_nr.push_back(new DeltaDistributionWithTrendStorage(interpolation_flag, false));
+
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Walton model can not be used to make a fluid.\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Walton model can not be used to make a solid.\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new WaltonDryRockStorage(solid_label, no_slip, pressure, porosity, coord_nr);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    errTxt += "Implementation error: The Walton model can not be used to make a rock.\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+
+
+
+}
+
+bool
+XmlModelFile::parseDEM(TiXmlNode                                  * node,
+                       int                                          constituent,
+                       std::string                                  label,
+                       std::string                                & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("dem");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("host");
+  legalCommands.push_back("inclusion");
+
+  std::vector<DistributionWithTrendStorage *> host_volume;
+  std::string                                 host_label  = "";
+
+  bool missing_vol_frac_host = false;
+  if(parseDEMHost(root, host_label, host_volume, errTxt, missing_vol_frac_host) == false)
+    errTxt += "The host must be given in the DEM rock physics model for "+label+"\n";
+
+  if (missing_vol_frac_host == true)
+    host_volume = std::vector<DistributionWithTrendStorage* >(1, NULL);
+
+  std::vector<std::string>                                  inclusion_label;
+  std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume;
+  std::vector<std::vector<DistributionWithTrendStorage *> > aspect_ratio;
+
+  std::vector<DistributionWithTrendStorage *> volume;
+  std::vector<DistributionWithTrendStorage *> aspect;
+  std::string                                 this_label = "";
+
+  bool missing_vol_frac = false;
+  int  counter_missing_vol_frac = 0;
+
+  while(parseDEMInclusion(root, this_label, aspect, volume, errTxt, missing_vol_frac) == true) {
+    inclusion_label.push_back(this_label);
+    if (missing_vol_frac == true) {
+      counter_missing_vol_frac++;
+      inclusion_volume.push_back(std::vector<DistributionWithTrendStorage* >(1, NULL));
+    }
+    else
+      inclusion_volume.push_back(volume);
+
+    aspect_ratio.push_back(aspect);
+  }
+
+  //check missing volume fractions
+  if (missing_vol_frac_host == false) {
+    if (counter_missing_vol_frac != 1)
+      errTxt += "All the volume fractions except one must be given for the inclusions of the DEM model when the volume fraction for host is given.\n";
+  }
+  else {
+    if (counter_missing_vol_frac != 0)
+      errTxt += "All the volume fractions must be given for the inclusions of the DEM model when the volume fraction for host is not given.\n";
+  }
+
+  if(inclusion_label.size() < 1)
+    errTxt += "At least one inclusion must be given in the DEM rock physics model for "+label+"\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDEMHost(TiXmlNode                                   * node,
+                           std::string                                 & label,
+                           std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                           std::string                                 & errTxt,
+                           bool                                        & missing_vol_frac)
+{
+
+  TiXmlNode * root = node->FirstChildElement("host");
+  if(root == 0)
+    return(false);
+
+  missing_vol_frac = false;
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("volume-fraction");
+
+  int host_given = 0;
+  while(parseSolid(root, label, errTxt) == true)
+    host_given++;
+  while(parseFluid(root, label, errTxt) == true)
+    host_given++;
+  while(parseDryRock(root, label, errTxt) == true)
+    host_given++;
+
+  if(host_given > 1)
+    errTxt += "There can only be one constituent in the host of the DEM model\n";
+
+  std::string dummy;
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false) {
+    //errTxt += "The volume fraction must be given for the host of the DEM model\n";
+    missing_vol_frac = true;
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDEMInclusion(TiXmlNode                                   * node,
+                                std::string                                 & label,
+                                std::vector<DistributionWithTrendStorage *> & aspect_ratio,
+                                std::vector<DistributionWithTrendStorage *> & volume_fraction,
+                                std::string                                 & errTxt,
+                                bool                                        & missing_vol_frac)
+{
+  missing_vol_frac = false;
+  TiXmlNode * root = node->FirstChildElement("inclusion");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("volume-fraction");
+  legalCommands.push_back("aspect-ratio");
+
+  int inclusion_given = 0;
+  while(parseSolid(root, label, errTxt) == true)
+    inclusion_given++;
+  while(parseFluid(root, label, errTxt) == true)
+    inclusion_given++;
+  while(parseDryRock(root, label, errTxt) == true)
+    inclusion_given++;
+
+  if(inclusion_given > 1)
+    errTxt += "There can only be one constituent for each of the inclusions of the DEM model\n";
+
+  std::string dummy;
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false) {
+    //errTxt += "The volume fraction must be given for the inclusions of the DEM model\n";
+    missing_vol_frac = true;
+  }
+
+  if(parseDistributionWithTrend(root, "aspect-ratio", aspect_ratio, dummy, false, errTxt) == false)
+    errTxt += "The aspect ratio must be given for the inclusions of the DEM model\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("gassmann");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("fluid");
+
+  int dry_rock_given = 0;
+  std::string dry_rock;
+  while(parseDryRock(root, dry_rock, errTxt) == true)
+    dry_rock_given++;
+
+  if(dry_rock_given == 0)
+    errTxt += "A dry-rock must be given in the Gassmann model\n";
+  else if(dry_rock_given > 1)
+    errTxt += "Only one dry-rock can be given in the Gassmann model\n";
+
+  int fluid_given = 0;
+  std::string fluid;
+  while(parseFluid(root, fluid, errTxt) == true)
+    fluid_given++;
+
+  if(fluid_given == 0)
+    errTxt += "A fluid must be given in the Gassmann model\n";
+  else if(fluid_given > 1)
+    errTxt += "Only one fluid can be given in the Gassmann model\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new GassmannRockStorage(dry_rock, fluid);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("bounding");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("upper-bound");
+  legalCommands.push_back("lower-bound");
+  legalCommands.push_back("bulk-modulus-weight");
+  legalCommands.push_back("shear-modulus-weight");
+  legalCommands.push_back("correlation-weights");
+  legalCommands.push_back("porosity");
+
+  std::string upper_bound;
+  if(parseUpperBound(root, upper_bound, errTxt) == false)
+    errTxt += "<upper-bound> needs to be given in <rock><bounding>\n";
+
+  std::string lower_bound;
+  if(parseLowerBound(root, lower_bound, errTxt) == false)
+    errTxt += "<lower-bound> needs to be given in <rock><bounding>\n";
+
+  std::string dummy;
+  std::vector<DistributionWithTrendStorage *> bulk_weight;
+  if(parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true) == false)
+    errTxt += "<bulk-modulus-weight> needs to be given in <rock><bounding>\n";
+
+  std::vector<DistributionWithTrendStorage *> shear_weight;
+  if(parseDistributionWithTrend(root, "shear-modulus-weight", shear_weight, dummy, false, errTxt, true) == false)
+    errTxt += "<shear-weight> needs to be given in <rock><bounding>\n";
+
+  double correlation;
+  if(parseValue(root, "correlation-weights", correlation, errTxt) == false)
+    correlation = 0;
+
+  std::vector<DistributionWithTrendStorage *> porosity;
+  if(parseDistributionWithTrend(root, "porosity", porosity, dummy, false, errTxt, true) == false)
+    errTxt += "<porosity> needs to be given in <rock><bounding>\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Bounding model can not be used to make a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Bounding model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Boundning model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, shear_weight, correlation);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseUpperBound(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("upper-bound");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rock");
+
+  int rock_given = 0;
+  while(parseRock(root, label, errTxt) == true)
+    rock_given++;
+
+  if(rock_given == 0)
+    errTxt += "A rock must be given for the upper bound in the Bounding model\n";
+  else if(rock_given > 1)
+    errTxt += "Only one rock can be given for the upper bound in the Bounding model\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseLowerBound(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("lower-bound");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rock");
+
+  int rock_given = 0;
+  while(parseRock(root, label, errTxt) == true)
+    rock_given++;
+
+  if(rock_given == 0)
+    errTxt += "A rock must be given for the lower bound in the Bounding model\n";
+  else if(rock_given > 1)
+    errTxt += "Only one rock can be given for the lower bound in the Bounding model\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulated(TiXmlNode                                   * node,
+                             int                                           constituent,
+                             std::string                                   label,
+                             std::vector<DistributionWithTrendStorage *>   total_porosity,
+                             std::vector<DistributionWithTrendStorage *>   mineral_k,
+                             std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("tabulated");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.reserve(15);
+  legalCommands.push_back("density");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("vs");
+  legalCommands.push_back("correlation-vp-vs");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("correlation-vs-density");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("shear-modulus");
+  legalCommands.push_back("correlation-bulk-shear");
+  legalCommands.push_back("correlation-bulk-density");
+  legalCommands.push_back("correlation-shear-density");
+
+  std::string dummy;
+
+  bool use_vp      = false;
+  bool use_modulus = false;
+
+  std::vector<DistributionWithTrendStorage *> vp;
+  if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
+    use_vp = true;
+
+  std::vector<DistributionWithTrendStorage *> vs;
+  if(parseDistributionWithTrend(root, "vs", vs, dummy, false, errTxt, true) == false && use_vp == true)
+    errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> bulk_modulus;
+  if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
+    use_modulus = true;
+
+  std::vector<DistributionWithTrendStorage *> shear_modulus;
+  if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, false, errTxt, true) == false && use_modulus == true)
+    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
+
+  if(use_vp == true && use_modulus == true)
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <solid><tabulated>\n";
+  else if(use_vp == false && use_modulus == false)
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> density;
+  if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
+    errTxt += "<density> needs to be specified in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
+  std::vector<double>                         correlation_vp_vs;
+  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_with_trend, "correlation", correlation_vp_vs, errTxt);
+    for(size_t i=0; i<correlation_vp_vs.size(); i++) {
+      if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
+        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vp_vs_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_vs_with_trend[0];
+  }
+  else
+    correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
+
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
+  std::vector<double>                         correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
+    for(size_t i=0; i<correlation_vp_density.size(); i++) {
+      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_density_with_trend[0];
+  }
+  else
+    correlation_vp_density.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
+  std::vector<double>                         correlation_vs_density;
+  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vs_density_with_trend, "correlation", correlation_vs_density, errTxt);
+    for(size_t i=0; i<correlation_vs_density.size(); i++) {
+      if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
+        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vs_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vs_density_with_trend[0];
+  }
+  else
+    correlation_vs_density.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
+  std::vector<double>                         correlation_bulk_shear;
+  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_with_trend, "correlation", correlation_bulk_shear, errTxt);
+    for(size_t i=0; i<correlation_bulk_shear.size(); i++) {
+      if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
+        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_bulk_shear_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_shear_with_trend[0];
+  }
+  else
+    correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
+
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
+  std::vector<double>                         correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
+    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
+      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_density_with_trend[0];
+  }
+  else
+    correlation_bulk_density.push_back(0.0);
+
+
+  std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
+  std::vector<double>                         correlation_shear_density;
+  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_shear_density_with_trend, "correlation", correlation_shear_density, errTxt);
+    for(size_t i=0; i<correlation_shear_density.size(); i++) {
+      if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
+        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_shear_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_shear_density_with_trend[0];
+  }
+  else
+    correlation_shear_density.push_back(0.0);
+
+  assert(constituent != ModelSettings::FLUID);
+  if(use_vp) {
+    if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::DRY_ROCK) {
+      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
+      modelSettings_->addDryRock(label, dry_rock);
+  }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
+  else {
+    if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::DRY_ROCK) {
+      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
+      modelSettings_->addDryRock(label, dry_rock);
+  }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulatedDryRock(TiXmlNode                                   * node,
+                                    int                                           constituent,
+                                    std::string                                   label,
+                                    std::vector<DistributionWithTrendStorage *>   total_porosity,
+                                    std::vector<DistributionWithTrendStorage *>   mineral_k,
+                                    std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("tabulated");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.reserve(15);
+  legalCommands.push_back("density");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("vs");
+  legalCommands.push_back("correlation-vp-vs");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("correlation-vs-density");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("shear-modulus");
+  legalCommands.push_back("correlation-bulk-shear");
+  legalCommands.push_back("correlation-bulk-density");
+  legalCommands.push_back("correlation-shear-density");
+
+  if (constituent == ModelSettings::DRY_ROCK) {
+    legalCommands.push_back("total-porosity");
+    legalCommands.push_back("mineral-bulk-modulus");
+  }
+
+  std::string dummy;
+
+  bool use_vp      = false;
+  bool use_modulus = false;
+
+  if (constituent == ModelSettings::DRY_ROCK) {
+    if(parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
+      errTxt += "The total porosity must be given for the dry-rock\n";
+
+    if(parseDistributionWithTrend(root, "mineral-bulk-modulus", mineral_k, dummy, false, errTxt) == false)
+      errTxt += "The mineral mineral_k must be given for the dry-rock\n";
+  }
+
+  std::vector<DistributionWithTrendStorage *> vp;
+  if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
+    use_vp = true;
+
+  std::vector<DistributionWithTrendStorage *> vs;
+  if(parseDistributionWithTrend(root, "vs", vs, dummy, false, errTxt, true) == false && use_vp == true)
+    errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> bulk_modulus;
+  if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
+    use_modulus = true;
+
+  std::vector<DistributionWithTrendStorage *> shear_modulus;
+  if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, false, errTxt, true) == false && use_modulus == true)
+    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
+
+  if(use_vp == true && use_modulus == true)
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <solid><tabulated>\n";
+  else if(use_vp == false && use_modulus == false)
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> density;
+  if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
+    errTxt += "<density> needs to be specified in <solid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
+  std::vector<double>                         correlation_vp_vs;
+  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_with_trend, "correlation", correlation_vp_vs, errTxt);
+    for(size_t i=0; i<correlation_vp_vs.size(); i++) {
+      if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
+        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vp_vs_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_vs_with_trend[0];
+  }
+  else
+    correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
+
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
+  std::vector<double>                         correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
+    for(size_t i=0; i<correlation_vp_density.size(); i++) {
+      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_density_with_trend[0];
+  }
+  else
+    correlation_vp_density.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
+  std::vector<double>                         correlation_vs_density;
+  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vs_density_with_trend, "correlation", correlation_vs_density, errTxt);
+    for(size_t i=0; i<correlation_vs_density.size(); i++) {
+      if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
+        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vs_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vs_density_with_trend[0];
+  }
+  else
+    correlation_vs_density.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
+  std::vector<double>                         correlation_bulk_shear;
+  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_with_trend, "correlation", correlation_bulk_shear, errTxt);
+    for(size_t i=0; i<correlation_bulk_shear.size(); i++) {
+      if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
+        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_bulk_shear_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_shear_with_trend[0];
+  }
+  else
+    correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
+
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
+  std::vector<double>                         correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
+    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
+      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_density_with_trend[0];
+  }
+  else
+    correlation_bulk_density.push_back(0.0);
+
+
+  std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
+  std::vector<double>                         correlation_shear_density;
+  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_shear_density_with_trend, "correlation", correlation_shear_density, errTxt);
+    for(size_t i=0; i<correlation_shear_density.size(); i++) {
+      if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
+        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_shear_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_shear_density_with_trend[0];
+  }
+  else
+    correlation_shear_density.push_back(0.0);
+
+  assert(constituent != ModelSettings::FLUID);
+  if(use_vp) {
+    if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::DRY_ROCK) {
+      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
+      modelSettings_->addDryRock(label, dry_rock);
+  }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
+  else {
+    if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::DRY_ROCK) {
+      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
+      modelSettings_->addDryRock(label, dry_rock);
+  }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("tabulated");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("density");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("correlation-bulk-density");
+
+  std::string dummy;
+
+  bool use_vp      = false;
+  bool use_modulus = false;
+
+  std::vector<DistributionWithTrendStorage *> vp;
+  if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
+    use_vp = true;
+
+  std::vector<DistributionWithTrendStorage *> bulk_modulus;
+  if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
+    use_modulus = true;
+
+  if(use_vp == true && use_modulus == true)
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <fluid><tabulated>\n";
+  else if(use_vp == false && use_modulus == false)
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <fluid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> density;
+  if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
+    errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
+
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
+  std::vector<double>                         correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
+    for(size_t i=0; i<correlation_vp_density.size(); i++) {
+      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_vp_density_with_trend[0];
+  }
+  else
+    correlation_vp_density.push_back(0.0);
+
+
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
+  std::vector<double>                         correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
+    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
+      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+    }
+    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
+      delete correlation_bulk_density_with_trend[0];
+  }
+  else
+    correlation_bulk_density.push_back(0.0);
+
+  assert(constituent == ModelSettings::FLUID);
+  if(use_vp) {
+    DistributionsFluidStorage * fluid = new TabulatedVelocityFluidStorage(vp, density, correlation_vp_density);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else {
+    DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_bulk_density);
+    modelSettings_->addFluid(label, fluid);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+void
+XmlModelFile::FindDoubleValueFromDistributionWithTrend(const std::vector<DistributionWithTrendStorage *> & dist_with_trend,
+                                                       std::string                                         type,
+                                                       std::vector<double>                               & value,
+                                                       std::string                                       & errTxt) const
+{
+  int n_vintages = static_cast<int>(dist_with_trend.size());
+
+  value.resize(n_vintages);
+
+  for(int i=0; i<n_vintages; i++) {
+    if(typeid(*(dist_with_trend[i])) == typeid(DeltaDistributionWithTrendStorage)) {
+      const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(dist_with_trend[i]);
+      if(typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
+        const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
+        value[i] = t1->GetMean();
+      }
+    }
+    else {
+      if(n_vintages == 1)
+        errTxt += "All "+type+" variables need to be double values, not trends or distributions\n";
+      else
+        errTxt += "All "+type+" variables need to be double values in vintage "+NRLib::ToString(i+1)+", not trends or distributions\n";
+    }
+  }
+}
+
+bool
+XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("variable");
+
+  std::string label;
+  std::vector<DistributionWithTrendStorage *> distributionWithTrend; //Deleted in ~Modelsettings
+
+  while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, true, errTxt) == true) {
+    if(label == "")
+      errTxt += "All reservoir variables need to be defined using <label>\n";
+
+    modelSettings_->addReservoirVariable(label, distributionWithTrend);
+
+    for(size_t i=0; i<distributionWithTrend.size(); i++)
+      distributionWithTrend[i] = NULL;
+    distributionWithTrend.clear();
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("evolve");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("reservoir-variable");
+  legalCommands.push_back("one-year-correlation");
+  legalCommands.push_back("vintage");
+
+  std::string variable;
+  if(parseValue(root, "reservoir-variable", variable, errTxt) == false)
+    errTxt += "The keyword <reservoir-variable> telling which variable to be evolved needs to be given in evlove.\n";
+
+  typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
+  const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+  my_map::const_iterator it = reservoir_variable.find(variable);
+
+  std::vector<DistributionWithTrendStorage *> evolving_variable;
+
+  if(it != reservoir_variable.end())
+    evolving_variable = it->second;
+  else {
+    errTxt += "The variable "+variable+" used in <evolve> is not defined in <reservoir>.\n";
+    errTxt += "  Note that <reservoir> needs to be given before <evolve> in <rock-physics>\n";
+  }
+
+  while(parseEvolveVintage(root, evolving_variable, errTxt) == true);
+
+  double correlation;
+  if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
+    if(correlation <= -1 || correlation >= 1)
+      errTxt += "The <one-year-correlation> of the <reservoir-variable> should be in the interval (-1,1) in <evolve>\n";
+  }
+  else
+    correlation = 1.0;
+
+
+  for(size_t i=0; i<evolving_variable.size(); i++)
+    evolving_variable[i]->SetOneYearCorrelation(correlation);
+
+  modelSettings_->addReservoirVariable(variable, evolving_variable); //Replace the variable
+
+
+  // Check consistency
+  int evolve_size = static_cast<int>(evolving_variable.size());
+
+  std::vector<int> vintage_year(evolve_size);
+  for(int i=0; i<evolve_size; i++)
+    vintage_year[i] = evolving_variable[i]->GetVintageYear();
+
+  if(evolve_size > 1) {
+    if(vintage_year[0] < 1)
+      errTxt += "The vintage years need to be larger than zero in <evolve><vintage><vintage-year> in the rock physics model\n";
+
+    int compare = vintage_year[0];
+    for(int i=1; i<evolve_size; i++) {
+      if(vintage_year[i] <= compare) {
+        errTxt += "The vintage years need to be given in ascending order in <evolve><vintage><vintage-year> in the rock physics model\n";
+        break;
+      }
+      else
+        compare = vintage_year[i];
+    }
+  }
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseEvolveVintage(TiXmlNode * node, std::vector<DistributionWithTrendStorage *> & reservoir_variable, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("vintage");
+
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("distribution");
+  legalCommands.push_back("vintage-year");
+
+  std::string dummy_label;
+  if(parseDistributionWithTrend(root, "distribution", reservoir_variable, dummy_label, true, errTxt) == false)
+    errTxt += "<distribution> needs to be given in <evolve><vintage>.\n";
+
+  size_t variable_size = reservoir_variable.size();
+
+  int vintage_year;
+  if(parseValue(root, "vintage-year", vintage_year, errTxt) == false)
+    errTxt += "A unique integer vintage year needs to be defined for each <evolve><vintage>\n";
+
+  reservoir_variable[variable_size-1]->SetVintageYear(vintage_year);
+
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseDistributionWithTrend(TiXmlNode                                   * node,
+                                         const std::string                           & keyword,
+                                         std::vector<DistributionWithTrendStorage *> & storage,
+                                         std::string                                 & label,
+                                         bool                                          is_shared,       //True for the variables in reservoir
+                                         std::string                                 & errTxt,
+                                         bool                                          allowDistribution)
+{
+  TiXmlNode * root = node->FirstChildElement(keyword);
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("reservoir-variable");
+  legalCommands.push_back("value");
+  legalCommands.push_back("trend-1d");
+  legalCommands.push_back("trend-2d");
+  if(allowDistribution == true) {
+    legalCommands.push_back("gaussian");
+    legalCommands.push_back("uniform");
+    legalCommands.push_back("beta");
+    legalCommands.push_back("beta-end-mass");
+  }
+  legalCommands.push_back("divide");
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  DistributionWithTrendStorage * distWithTrend = NULL;
+
+  int trendGiven = 0;
+
+  double value;
+  if(root->FirstChildElement() == NULL) { //We have an explicit value
+    parseValue(node, keyword, value, errTxt);
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    storage.push_back(distWithTrend);
+    trendGiven++;
+    return(true);
+  }
+
+  if(parseValue(root, "value", value, errTxt) == true) {
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    storage.push_back(distWithTrend);
+    trendGiven++;
+  }
+
+  NRLib::TrendStorage * trend;
+  if(parse1DTrend(root, "trend-1d", trend, errTxt) == true) {
+    distWithTrend = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    storage.push_back(distWithTrend);
+    trendGiven++;
+  }
+
+  if(parse2DTrend(root, "trend-2d", trend, errTxt) == true) {
+    distWithTrend = new DeltaDistributionWithTrendStorage(trend, is_shared);
+    storage.push_back(distWithTrend);
+    trendGiven++;
+  }
+
+  if(allowDistribution == true) {
+    if(parseGaussianWithTrend(root, storage, is_shared, errTxt) == true)
+      trendGiven++;
+
+    std::string beta;
+    if(parseBetaWithTrend(root, storage, is_shared, errTxt) == true)
+      trendGiven++;
+
+    std::string beta_end_mass;
+    if(parseBetaEndMassWithTrend(root, storage, is_shared, errTxt) == true)
+      trendGiven++;
+
+    std::string uniform;
+    if(parseValue(root, "uniform", uniform, errTxt) == true)
+      errTxt += "The uniform distribution has not been implemented\n";
+  }
+
+  std::string variable;
+  if(parseValue(root, "reservoir-variable", variable, errTxt) == true) {
+    typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
+    const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+    my_map::const_iterator it = reservoir_variable.find(variable);
+    if(it != reservoir_variable.end()) {
+      std::vector<DistributionWithTrendStorage *> store = it->second;
+      for(size_t i=0; i<store.size(); i++)
+        storage.push_back(store[i]);
+      label = variable;
+      trendGiven++;
+    }
+    else {
+      errTxt += "The variable "+variable+" is not defined in <reservoir>.\n";
+      errTxt += "  Note that <reservoir> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
+    }
+  }
+
+  double divide;
+  if(parseValue(root, "divide", divide, errTxt) == true)
+    errTxt += "The <divide> functionality in 'DistributionWithTrend' has not been implemented by NR\n";
+
+  if(trendGiven == 0)
+    errTxt += "Need at least one definition for the variable in <"+keyword+">\n";
+  else if(trendGiven > 1)
+    errTxt += "There can only be one definition for the variable in <"+keyword+">\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseGaussianWithTrend(TiXmlNode                                   * node,
+                                     std::vector<DistributionWithTrendStorage *> & storage,
+                                     bool                                          is_shared,
+                                     std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("gaussian");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+
+  std::vector<DistributionWithTrendStorage *> mean_storage;
+  std::string label;
+  bool ok = true;
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
+
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+
+    delete mean_storage[0];
+    delete variance_storage[0];
+
+    DistributionWithTrendStorage * dist = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+
+    delete mean;
+    delete variance;
+
+    storage.push_back(dist);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBetaWithTrend(TiXmlNode                                   * node,
+                                 std::vector<DistributionWithTrendStorage *> & storage,
+                                 bool                                          is_shared,
+                                 std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("beta");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+  legalCommands.push_back("lower-limit");
+  legalCommands.push_back("upper-limit");
+
+  std::vector<DistributionWithTrendStorage *> mean_storage;
+  std::string label;
+  bool ok = true;
+
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for beta distribution.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for Gaussian distribution.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> lower_limit_storage;
+  std::vector<double>                         lower_limit;
+  if(parseDistributionWithTrend(root, "lower-limit", lower_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_limit_storage, "lower-limit", lower_limit, errTxt);
+    delete lower_limit_storage[0];
+  }
+  else
+    lower_limit.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_limit_storage;
+  std::vector<double>                         upper_limit;
+  if(parseDistributionWithTrend(root, "upper-limit", upper_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_limit_storage, "upper-limit", upper_limit, errTxt);
+    delete upper_limit_storage[0];
+  }
+  else
+    upper_limit.push_back(1.0);
+
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+
+    delete mean_storage[0];
+    delete variance_storage[0];
+
+    DistributionWithTrendStorage * dist = new BetaDistributionWithTrendStorage(mean, variance, lower_limit[0], upper_limit[0], is_shared);
+
+    delete mean;
+    delete variance;
+
+    storage.push_back(dist);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBetaEndMassWithTrend(TiXmlNode                                   * node,
+                                        std::vector<DistributionWithTrendStorage *> & storage,
+                                        bool                                          is_shared,
+                                        std::string                                 & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("beta-end-mass");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+  legalCommands.push_back("lower-limit");
+  legalCommands.push_back("upper-limit");
+  legalCommands.push_back("lower-probability");
+  legalCommands.push_back("upper-probability");
+
+  std::vector<DistributionWithTrendStorage *> mean_storage;
+  std::string label;
+  bool ok = true;
+
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <mean> is lacking"+lineColumnText(root)+" for beta distribution with end mass.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false) {
+    errTxt += "Keyword <variance> is lacking "+lineColumnText(root)+" for beta distribution with end mass.\n";
+    ok = false;
+  }
+
+  std::vector<DistributionWithTrendStorage *> lower_limit_storage;
+  std::vector<double>                         lower_limit;
+  if(parseDistributionWithTrend(root, "lower-limit", lower_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_limit_storage, "lower-limit", lower_limit, errTxt);
+    delete lower_limit_storage[0];
+  }
+  else
+    lower_limit.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_limit_storage;
+  std::vector<double>                         upper_limit;
+  if(parseDistributionWithTrend(root, "upper-limit", upper_limit_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_limit_storage, "upper-limit", upper_limit, errTxt);
+    delete upper_limit_storage[0];
+  }
+  else
+    upper_limit.push_back(1.0);
+
+  std::vector<DistributionWithTrendStorage *> lower_probability_storage;
+  std::vector<double>                         lower_probability;
+  if(parseDistributionWithTrend(root, "lower-probability", lower_probability_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(lower_probability_storage, "lower-probability", lower_probability, errTxt);
+    delete lower_probability_storage[0];
+  }
+  else
+    lower_probability.push_back(0.0);
+
+  std::vector<DistributionWithTrendStorage *> upper_probability_storage;
+  std::vector<double>                         upper_probability;
+  if(parseDistributionWithTrend(root, "upper-probability", upper_probability_storage, label, is_shared, errTxt, false) == true) {
+    FindDoubleValueFromDistributionWithTrend(upper_probability_storage, "upper-probability", upper_probability, errTxt);
+    delete upper_probability_storage[0];
+  }
+  else
+    upper_probability.push_back(1.0);
+
+  if (ok) {
+    const NRLib::TrendStorage * mean     = mean_storage[0]    ->CloneMean();
+    const NRLib::TrendStorage * variance = variance_storage[0]->CloneMean();
+
+    delete mean_storage[0];
+    delete variance_storage[0];
+
+    DistributionWithTrendStorage * dist = new BetaEndMassDistributionWithTrendStorage(mean, variance, lower_limit[0], upper_limit[0],  lower_probability[0], upper_probability[0], is_shared);
+
+    delete mean;
+    delete variance;
+
+    storage.push_back(dist);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-1d");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("reference-parameter");
+
+  std::string reference_parameter;
+  if(parseValue(root, "reference-parameter", reference_parameter, errTxt) == false)
+    errTxt += "The <reference-parameter> for <"+keyword+"> needs to be given in <trend-1d>\n";
+
+  std::string file_name;
+  if(parseValue(root, "file-name", file_name, errTxt) == false)
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d>\n";
+
+  trend = new NRLib::Trend1DStorage(file_name,reference_parameter);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-2d");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("reference-parameter-first-axis");
+  legalCommands.push_back("reference-parameter-second-axis");
+
+  std::string first_reference;
+  if(parseValue(root, "reference-parameter-first-axis", first_reference, errTxt) == false)
+    errTxt += "The <reference-parameter-first-axis> for <"+keyword+"> needs to be given in <trend-2d>\n";
+
+  std::string second_reference;
+  if(parseValue(root, "reference-parameter-second-axis", second_reference, errTxt) == false)
+    errTxt += "The <reference-parameter-second-axis> for <"+keyword+"> needs to be given in <trend-2d>n";
+
+  std::string file_name;
+  if(parseValue(root, "file-name", file_name, errTxt) == false)
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d>\n";
+
+  trend = new NRLib::Trend2DStorage(file_name, first_reference, second_reference);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-cube");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("parameter-name");
+  legalCommands.push_back("file-name");
+
+  std::string name;
+  if(parseValue(root, "parameter-name", name, errTxt) == true)
+    modelSettings_->addTrendCubeParameter(name);
+  else
+    errTxt += "<parameter-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
+
+  if(parseValue(root, "file-name", name, errTxt) == true)
+    inputFiles_->addTrendCubes(name);
+  else
+    errTxt += "<file-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
 bool
 XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
 {
@@ -2446,6 +4493,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
+  legalCommands.push_back("rms-velocities");
 
   bool facies           = true;
   bool faciesUndef      = false;
@@ -2484,7 +4532,8 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
   if(parseBool(root, "seismic-quality-grid", value, errTxt) == true && value == true)
     paramFlag += IO::SEISMIC_QUALITY_GRID;
-
+  if(parseBool(root, "rms-velocities", value, errTxt ) == true && value == true)
+    paramFlag += IO::RMS_VELOCITIES;
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -3074,24 +5123,30 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
   int areaSpecification;
   if(modelSettings_->getAreaParameters() != NULL) {
     areaSpecification = ModelSettings::AREA_FROM_UTM;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)>0)
+        errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+    }
     if (modelSettings_->getSnapGridToSeismicData()) {
       areaSpecification = ModelSettings::AREA_FROM_GRID_DATA_AND_UTM;
     }
   }
   else if(inputFiles_->getAreaSurfaceFile() != "") {
     areaSpecification = ModelSettings::AREA_FROM_SURFACE;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)>0)
+        errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+    }
     if (modelSettings_->getSnapGridToSeismicData()) {
       areaSpecification = ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE;
     }
   }
   else {
     areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()==0)
-      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)==0)
+        errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
+    }
   }
   modelSettings_->setAreaSpecification(areaSpecification);
 
@@ -3125,6 +5180,8 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
   checkMultizoneBackgroundConsistency(errTxt);
+  if(modelSettings_->getDo4DInversion() && surveyFailed_ == false)
+    checkTimeLapseConsistency(errTxt);
 
   if (inputFiles_->getReflMatrFile() != "") {
     if (modelSettings_->getVpVsRatio() != RMISSING) {
@@ -3134,7 +5191,6 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
       errTxt += "You cannot ask the Vp/Vs ratio to be calculated from well data when a reflection matrix is read from file";
     }
   }
-
   if (modelSettings_->getVpVsRatio() != RMISSING) {
     double vpvs    = modelSettings_->getVpVsRatio();
     double vpvsMin = modelSettings_->getVpVsRatioMin();
@@ -3153,23 +5209,30 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt)
 {
-  if (modelSettings_->getNumberOfAngles() == 0) {
+
+  if (modelSettings_->getDo4DInversion())
+    errTxt += "Forward modeling can not be done in 4D.\n";
+
+  if (modelSettings_->getNumberOfAngles(0) == 0) {
     errTxt+="At least one wavelet must be specified for forward modelling\n";
   }
 
-  if (modelSettings_->getNumberOfTraceHeaderFormats() == 0)
+  if (modelSettings_->getNumberOfTraceHeaderFormats(0) == 0)
     modelSettings_->addTraceHeaderFormat(NULL);
 
-  for(int i=0;i<modelSettings_->getNumberOfAngles();i++) {
-    modelSettings_->setEstimateSNRatio(i,false);
-    if(modelSettings_->getEstimateWavelet(i)==true)
-      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/NRLib::Pi),1)+".\n";
+  std::vector<float>  angle = modelSettings_->getAngle(0);
+  std::vector<bool> wavelet = modelSettings_->getEstimateWavelet(0);
 
-    if(inputFiles_->getSeismicFile(i)!="")
+  for(int i=0; i<modelSettings_->getNumberOfAngles(0); i++){
+    modelSettings_->setEstimateSNRatio(0,i,false);
+    if(wavelet[i] == true)
+      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
+
+    if(inputFiles_->getSeismicFile(0,i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
   }
 
-  if(modelSettings_->getUseLocalNoise()==true)
+  if(modelSettings_->getUseLocalNoise(0)==true)
     errTxt+="Local noise can not be used in forward modeling.\n";
 
   if(modelSettings_->getUseLocalWavelet()==true)
@@ -3200,7 +5263,7 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
     modelSettings_->setNoSeismicNeeded(true);
   else {
-    if (inputFiles_->getNumberOfSeismicFiles()==0) {
+    if (inputFiles_->getNumberOfSeismicFiles(0)==0) {
       if (modelSettings_->getOptimizeWellLocation())
         errTxt += "Seismic data are needed for optimizing well locations.\n";
       if (modelSettings_->getEstimateWaveletNoise())
@@ -3213,22 +5276,50 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles()==0)
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
-    if (inputFiles_->getBackFile(0)!="" &&
-        (inputFiles_->getWaveletFile(0)!="" || modelSettings_->getUseRickerWavelet(0) == true) &&
-        inputFiles_->getTempCorrFile()!="" &&
-        inputFiles_->getParamCorrFile()!="")
+    bool okWithoutWells = true;
+    std::string notOk;
+    //To run without wells, we need the following factors specified in the model file:
+    //1. Background.
+    if(inputFiles_->getBackFile(0) == "" && modelSettings_->getGenerateBackground() == true &&
+       modelSettings_->getGenerateBackgroundFromRockPhysics() == false)
+    {
+      okWithoutWells = false;
+      notOk += "- Background model must be specified for all parameters.\n";
+    }
+    //2. Wavelets
+    bool waveletOk = true;
+    std::vector<bool> useRicker = modelSettings_->getUseRickerWavelet(0);
+    for(int i=0;i<inputFiles_->getNumberOfSeismicFiles(0);i++) {
+      if(inputFiles_->getWaveletFile(0,i) == "" && useRicker[i] == false)
+        waveletOk = false;
+    }
+    if(waveletOk == false) {
+      okWithoutWells = false;
+      notOk += "- Wavelets must be given for all angles.\n";
+    }
+    //3. Vertical correlation
+    if(inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false) {
+      okWithoutWells = false;
+      notOk += "- Vertical correlation must be given.\n";
+    }
+    //4. Parameter correlation
+    if(inputFiles_->getParamCorrFile() == "" && modelSettings_->getGenerateBackgroundFromRockPhysics() == false) {
+      okWithoutWells = false;
+      notOk += "- Parameter correlation must be given.\n";
+    }
+    if(okWithoutWells == true)
       modelSettings_->setNoWellNeeded(true);
     else {
-      errTxt += "Wells are needed for the inversion. ";
-      errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
+      errTxt += "This inversion can not be run without wells:\n";
+      errTxt += notOk;
     }
     if (modelSettings_->getKrigingParameter()>0)
       errTxt += "Wells are needed for kriging.\n";
-    if (modelSettings_->getEstimateFaciesProb())
+    if (modelSettings_->getEstimateFaciesProb() && !modelSettings_->getFaciesProbFromRockPhysics())
       errTxt += "Wells are needed for facies probabilities.\n";
   }
 
@@ -3248,20 +5339,89 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
     errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";
   }
-  if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false)
+  if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false && modelSettings_->getDo4DInversion() == false)
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
   if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
+  if(modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
+    errTxt += "Seismic quality grid can not be estimated when facies probabilities are calculated using rock physics models\n";
+
+  //Rock physics consistency
+  if(modelSettings_->getFaciesProbFromRockPhysics()) {
+
+    // No wells should be given for now
+    if(modelSettings_->getNumberOfWells() > 0)
+      errTxt += "No wells should be given when the rock physics prior model is used\n";
+
+    if(inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false)
+      errTxt += "The temporal correlation file or temporal correlation range needs to be given when the rock physics prior model is used\n";
+
+    if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
+      errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";
+
+    const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+
+    // Compare names in rock physics model with names given in .xml-file
+    if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+      std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
+
+      for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+        if(iter == rock_storage.end())
+          errTxt += "Problem with rock physics prior model. Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+      }
+    }
+
+    // Compare names in rock physics model with names given as input in proability cubes
+    else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
+      const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
+
+      for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+        if (iter == rock_storage.end())
+          errTxt += "Problem with rock physics prior model. Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
+      }
+    }
+    else
+      errTxt += "Prior facies probabilities must be given in the prior model when rock physics models are used\n";
+  }
+
+  if(modelSettings_->getGenerateBackgroundFromRockPhysics()) {
+    // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
+    // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
+    if(inputFiles_->getParamCorrFile()!=""){
+      errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.";
+    }
+
+    if(modelSettings_->getGenerateBackground() == false) {
+      errTxt += "The background model can not be given when rock physics models are used.\n";
+      errTxt += "The background model is estimated from the rock physics models\n";
+    }
+
+    std::vector<bool> wavelet = modelSettings_->getEstimateWavelet(0);
+    std::vector<float>  angle = modelSettings_->getAngle(0);
+    for(int i=0; i<modelSettings_->getNumberOfAngles(0); i++) {
+      if(wavelet[i] == true) {
+        errTxt += "Wavelet must be given when rock physics models are used.\n";
+        errTxt += "  Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
+      }
+    }
+    if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
+      errTxt += "The backround trend can not be written to file when rock physics models are used\n";
+
+  }
 }
 
 void
-XmlModelFile::checkAngleConsistency(std::string & errTxt) {
+XmlModelFile::checkAngleConsistency(std::string & errTxt) { //Wells can not be moved for time lapse data
 
   float angle;
   int   i,j,w;
   int   nMoveAngles;
-  int   nSeismicAngles = modelSettings_->getNumberOfAngles();
+  int   nSeismicAngles = modelSettings_->getNumberOfAngles(0);
   int   nWells         = modelSettings_->getNumberOfWells();
+  std::vector<float> seismicAngle = modelSettings_->getAngle(0);
 
   for(w=0; w<nWells; w++){
     nMoveAngles = modelSettings_->getNumberOfWellAngles(w);
@@ -3272,9 +5432,9 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
       angle   = modelSettings_->getWellMoveAngle(w,i);
 
       for( j=0; j<nSeismicAngles; j++ ){
-        if( angle==modelSettings_->getAngle(j))
+        if( angle == seismicAngle[j])
         {
-          if (inputFiles_->getSeismicFile(j)=="")
+          if (inputFiles_->getSeismicFile(0,j)=="")
             errTxt += "Seismic data are needed for angle "+NRLib::ToString(angle/float(NRLib::Pi/180))+" to optimize the well locations.\n";
           compare[i] = true;
           break;
@@ -3287,11 +5447,101 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
   }
 }
 
+void
+XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
+{
+  int nTimeLapse = modelSettings_->getNumberOfTimeLapses();
+
+  if(modelSettings_->getEstimateFaciesProb())
+    errTxt += "Facies estimation is not allowed for time lapse data.\n";
+
+  for(int i=0; i<nTimeLapse-1; i++){
+    if(modelSettings_->getSegyOffset(i) != modelSettings_->getSegyOffset(i+1))
+      errTxt += "<segy-start-time> in <survey> need to be the same for all time lapses.\n";
+
+    if(inputFiles_->getWaveletEstIntFileTop(i) != inputFiles_->getWaveletEstIntFileTop(i+1))
+      errTxt += "When <top-surface-file> in <wavelet-estimation-interval> is given, it needs to be the same for all time lapses.\n";
+    if(inputFiles_->getWaveletEstIntFileBase(i) != inputFiles_->getWaveletEstIntFileBase(i+1))
+      errTxt += "When <base-surface-file> in <wavelet-estimation-interval> is given, it needs to be the same for all time lapses.\n";
+
+    if(modelSettings_->getUseLocalNoise(i) != modelSettings_->getUseLocalNoise(i+1))
+      errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
+  }
+  for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+    if(modelSettings_->getNumberOfAngles(i) == 0)
+      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getVintageYear(i) == RMISSING)
+      errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
+  }
+
+  if(modelSettings_->getUse3DWavelet()==true)
+    errTxt += "3D wavelets can not be used for time lapse data.\n";
+
+  if (modelSettings_->getOptimizeWellLocation())
+    errTxt += "The well locations can not be optimized with time lapse data.\n";
+
+  TraceHeaderFormat * thf1;
+  TraceHeaderFormat * thf2;
+  for(int i=0; i<nTimeLapse-1; i++){
+    int nThf1 = modelSettings_->getNumberOfAngles(i);
+    int nThf2 = modelSettings_->getNumberOfAngles(i+1);
+    int j = 0;
+    while(j<nThf1 && j<nThf2){
+      thf1 = modelSettings_->getTraceHeaderFormat(i,j);
+      thf2 = modelSettings_->getTraceHeaderFormat(i+1,j);
+      if(thf1 != NULL && thf2 != NULL){
+        if(thf1->GetUtmxLoc() != thf2->GetUtmxLoc())
+          errTxt +="When <location-x> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetUtmyLoc() != thf2->GetUtmyLoc())
+          errTxt += "When <location-y> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetInlineLoc() != thf2->GetInlineLoc())
+          errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
+          errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
+          errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetFormatName() != thf2->GetFormatName())
+          errTxt += "When <standard-format> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+      }
+      else if (thf1 != NULL && thf2 == NULL)
+        errTxt += "When <segy-format> in <seismic-data> is given, it needs to be identical for all time lapses.\n";
+      else if (thf1 == NULL && thf2 != NULL)
+        errTxt += "When <segy-format> in <seismic-data> is given, it needs to be identical for all time lapses.\n";
+      j++;
+    }
+  }
+
+  // Check vintages in <rock-physics><evolve>
+  // Compare vintages in <reservoir> with vintages in <survey>
+  int n_surveys = modelSettings_->getNumberOfVintages();
+
+  std::vector<int> survey_year(n_surveys);
+  for(int i=0; i<n_surveys; i++)
+    survey_year[i] = modelSettings_->getVintageYear(i);
+
+  std::sort(survey_year.begin(), survey_year.end());
+
+  typedef std::map<std::string, std::vector<DistributionWithTrendStorage *> > my_map;
+  const my_map& reservoir_variable = modelSettings_->getReservoirVariable();
+  for(my_map::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+    if(n_surveys != static_cast<int>(it->second.size()))
+      errTxt += "The number of vintages for reservoir variable '"+it->first+"' must be the same as the number of survey vintages\n";
+    else {
+      std::vector<DistributionWithTrendStorage *> reservoir_evolve = it->second;
+      for(int i=1; i<n_surveys; i++) {
+        if(reservoir_evolve[i]->GetVintageYear() != survey_year[i]) {
+          errTxt += "The vintage years for reservoir variable '"+it->first+"' must be the same as the <vintage><year> given in <survey>\n";
+          break;
+        }
+      }
+    }
+  }
+}
 
 void
 XmlModelFile::checkIOConsistency(std::string & errTxt)
 {
-  if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
+  if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise(0)==false) //When local noise is used, it is used for all time lapses
   {
     LogKit::LogFormatted(LogKit::Warning, "\nWarning: Local noise can not be written to file when <local-noise-scaled> or <estimate-local-noise> is not requested.");
     TaskList::addTask("Remove <local-noise> from <other-output> in the model file if local noise is not used.");

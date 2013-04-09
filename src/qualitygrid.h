@@ -21,20 +21,20 @@ class QualityGrid
 
 public:
   QualityGrid(const std::vector<double>   pValue,
-              WellData                 ** wells,
+              std::vector<WellData *>     wells,
               const Simbox              * simbox,
               const ModelSettings       * modelSettings,
               ModelGeneral              * modelGeneral);
 
 private:
 
-  void generateProbField(FFTGrid             *& grid,
-                         WellData            ** wells,
-                         const Simbox        *  simbox,
-                         const ModelSettings *  modelSettings) const;
+  void generateProbField(FFTGrid               *& grid,
+                         std::vector<WellData *> wells,
+                         const Simbox          * simbox,
+                         const ModelSettings   * modelSettings) const;
 
   void setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
-                          WellData                  ** wells,
+                          std::vector<WellData *>      wells,
                           const Simbox               * simbox,
                           const int                    nWells) const;
 
