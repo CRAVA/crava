@@ -54,6 +54,7 @@ private:
   bool parseTravelTime(TiXmlNode * node, std::string & errTxt);
   bool parseRMSVelocities(TiXmlNode * node, std::string & errTxt);
   bool parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
+  bool parseGravimetry(TiXmlNode * node, std::string & errTxt);
   bool parseVintage(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);

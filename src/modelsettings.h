@@ -47,6 +47,7 @@ public:
   bool                             getUseVpVsBackground(void)           const { return useVpVsBackground_                         ;}
   int                              getNumberOfAngles(int i)             const { return static_cast<int>(timeLapseAngle_[i].size());}
   int                              getNumberOfTimeLapses(void)          const { return static_cast<int>(timeLapseAngle_.size())   ;}
+  bool                             getGravityTimeLapse(int i)           const { return timeLapseGravimetry_[i]                    ;}
   int                              getNumberOfVintages(void)            const { return static_cast<int>(vintageYear_.size())      ;}
   int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}
   int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
@@ -434,6 +435,8 @@ public:
                                                             timeLapseSNRatio_.push_back(SNRatio_);
                                                             timeLapseUseLocalNoise_.push_back(useLocalNoise_);}
 
+  void addTimeLapseGravimetry(bool gravimetry)             {timeLapseGravimetry_.push_back(gravimetry)           ;}
+
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
   void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
   void setGradientSmoothingRange(double smoothingRange)   { gradientSmoothingRange_   = smoothingRange           ;}
@@ -498,6 +501,7 @@ private:
   std::vector<bool>                 estimateGlobalWaveletScale_;
   std::vector<bool>                 useRickerWavelet_;
   std::vector<bool>                 timeLapseUseLocalNoise_;
+  std::vector<bool>                 timeLapseGravimetry_;
 
   std::vector<std::vector<bool> >   timeLapseEstimateLocalShift_;// Estimate local wavelet shift
   std::vector<std::vector<bool> >   timeLapseEstimateLocalScale_;// Estimate local wavelet scale

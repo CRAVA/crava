@@ -620,6 +620,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("wavelet-estimation-interval");
   legalCommands.push_back("travel-time");
   legalCommands.push_back("time-gradient-settings");
+  legalCommands.push_back("gravimetry");
   legalCommands.push_back("vintage");
 
   Vario * vario = NULL;
@@ -664,6 +665,12 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
 
   if(parseTimeGradientSettings(root,errTxt) == false)
     modelSettings_->addDefaultTimeGradientSettings();
+
+  if(parseGravimetry(root, errTxt) == false) {
+    inputFiles_->addGravimetricObservationLocations("");
+    inputFiles_->addGravimetricData("");
+    modelSettings_->addTimeLapseGravimetry(false);
+  }
 
   if(parseVintage(root, errTxt) == false)
     modelSettings_->addDefaultVintage();
@@ -1173,6 +1180,35 @@ XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
     sigma_m = 1.0;
 
   modelSettings_->addTimeGradientSettings(distance,sigma_m);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseGravimetry(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("gravimetry");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("locations-file");
+  legalCommands.push_back("data-file");
+
+  std::string locations_file;
+  if(parseFileName(root, "locations-file", locations_file, errTxt) == true)
+    inputFiles_->addGravimetricObservationLocations(locations_file);
+  else
+    errTxt += "<gravimetry><locations-file> needs to be given\n";
+
+  std::string data_file;
+  if(parseFileName(root, "data-file", data_file, errTxt) == true)
+    inputFiles_->addGravimetricData(data_file);
+  else
+    errTxt += "<gravimetry><data-file> needs to be given\n";
+
+  modelSettings_->addTimeLapseGravimetry(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

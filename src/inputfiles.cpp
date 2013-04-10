@@ -71,6 +71,10 @@ InputFiles::addInputPathAndCheckFiles()
     for(i=0; i<timeLapseTravelTimeHorizons_[t].size(); i++)
       errTxt += addPathAndCheck(timeLapseTravelTimeHorizons_[t][i]);
   }
+  for(i=0; i<gravimetricLocations_.size(); i++)
+    errTxt += addPathAndCheck(gravimetricLocations_[i]);
+  for(i=0; i<gravimetricData_.size(); i++)
+    errTxt += addPathAndCheck(gravimetricData_[i]);
   for(i=0;i<waveletFilterFiles_.size(); i++)
     errTxt += addPathAndCheck(waveletFilterFiles_[i]);
   for(i=0;i<waveletCorrFiles_.size(); i++)

@@ -184,11 +184,22 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
         //                         modelSettings->getGravityDay[i]);
         //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
 
+        bool firstGravimetricEvent = true;
         for(int i=0;i<modelSettings->getNumberOfVintages();i++) {
           //Vintages may have both travel time and AVO
           int time = computeTime(modelSettings->getVintageYear(i),
                                  modelSettings->getVintageMonth(i),
                                  modelSettings->getVintageDay(i));
+           // Do gravity first
+           if(modelSettings->getGravityTimeLapse(i)){
+             if(firstGravimetricEvent){
+               // Do not save first gravity event in timeline
+               firstGravimetricEvent = false;
+             }
+             else{
+               timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
+             }
+          }
           //Activate below when travel time is ready.
           //Travel time ebefore AVO for same vintage.
           //if(travel time for this vintage)
