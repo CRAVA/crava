@@ -223,8 +223,8 @@ double
 RockPhysicsInversion4D::getPredictedValue(NRLib::Vector f)
 {
   double value;
-  std::vector<std::vector<int> > indLoHi(2,4);
-  std::vector<std::vector<double> > wLoHi(2,4);
+  std::vector<std::vector<int> > indLoHi(2,std::vector<int>(4));
+  std::vector<std::vector<double> > wLoHi(2,std::vector<double>(4));
   double w;
   int index;
   GetLowerIndexAndW(minf_(0),maxf_(0),nf_[0],f(0),index, w);
