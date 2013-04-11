@@ -78,6 +78,34 @@ void FindMixTypesForRock(std::vector<std::string>  constituent_label,
 }
 
 
+void FindMixTypesForDryRock(std::vector<std::string> constituent_label,
+                            int n_constituents,
+                            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                            const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                            bool & mix_dryrock,
+                            bool & mix_solid,
+                            std::vector<int> & constituent_type,
+                            std::string & tmpErrTxt)
+{
+  for(int i=0; i<n_constituents; i++) {
+    std::map<std::string, DistributionsDryRockStorage *>::const_iterator m = model_dry_rock_storage.find(constituent_label[i]);
+      if(m != model_dry_rock_storage.end()) {
+        constituent_type[i] = ModelSettings::DRY_ROCK;
+        mix_dryrock = true;
+      }
+      else {
+        std::map<std::string, DistributionsSolidStorage *>::const_iterator m = model_solid_storage.find(constituent_label[i]);
+        if(m != model_solid_storage.end()) {
+          constituent_type[i] = ModelSettings::SOLID;
+          mix_solid = true;
+        }
+        else
+          tmpErrTxt += "Failed to find label " + constituent_label[i] + "as a dryrock or a solid\n";
+      }
+  }
+}
+
+
 std::vector<DistributionsRock *>
 ReadRock(const int                                                   & n_vintages,
          const std::string                                           & target_rock,

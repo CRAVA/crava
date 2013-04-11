@@ -32,6 +32,15 @@ void FindMixTypesForRock(std::vector<std::string> constituent_label,
                          std::vector<int> & constituent_type,
                          std::string & tmpErrTxt);
 
+void FindMixTypesForDryRock(std::vector<std::string> constituent_label,
+                            int n_constituents,
+                            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                            const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                            bool & mix_dryrock,
+                            bool & mix_solid,
+                            std::vector<int> & constituent_type,
+                            std::string & tmpErrTxt);
+
 std::vector<DistributionsRock *>
 ReadRock(const int                                                   & n_vintages,
          const std::string                                           & target_rock,

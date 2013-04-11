@@ -113,9 +113,9 @@ DryRockWalton::ComputeElasticParams() {
   double mu_rough = (3.0/5.0)*k_rough*(5.0*b + a)/(2.0*b + a);
 
   double mu_smooth = x/10.0;
-  double k_smooth  = 5.0*mu_smooth/3.0;
+  //double k_smooth  = 5.0*mu_smooth/3.0; //== k_rough
 
-  k_    = friction_weight_*k_rough + (1.0 - friction_weight_)*k_smooth;
+  k_    = k_rough;
   mu_   = friction_weight_*mu_rough + (1.0 - friction_weight_)*mu_smooth;
 
   rho_  = (1-total_porosity_)*rho_solid;

@@ -108,7 +108,7 @@ DryRockDEM::ComputeElasticParams() {
     std::vector<double> dryrock_host_inc_moduli_k(dryrock_inc_.size() + 1);
     dryrock_host_inc_moduli_k[0] = dryrock_mineral_moduli_k;
     std::copy(mineral_moduli_k.begin(), mineral_moduli_k.end(), dryrock_host_inc_moduli_k.begin() + 1);
-    mineral_moduli_k_  = DEMTools::CalcEffectiveElasticModuliUsingVoigt(dryrock_host_inc_moduli_k, inclusion_concentration_);
+    mineral_moduli_k_  = DEMTools::CalcEffectiveElasticModuliUsingHill(dryrock_host_inc_moduli_k, inclusion_concentration_);
   }
 
   //remove host from inclusion vector

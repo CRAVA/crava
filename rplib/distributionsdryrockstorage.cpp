@@ -14,6 +14,8 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 
+#include "src/modelsettings.h"
+
 
 
 DistributionsDryRockStorage::DistributionsDryRockStorage()
@@ -36,88 +38,262 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
                                                            DEMTools::MixMethod                                               mix_method,
                                                            std::string                                                     & errTxt) const
 {
-
   int n_constituents = static_cast<int>(constituent_label.size());
 
-  std::vector<int> n_vintages_constit(n_constituents);
-  for(int i=0; i<n_constituents; i++)
-    n_vintages_constit[i] = static_cast<int>(constituent_volume_fraction[i].size());
+  bool mix_dryrock  = false;
+  bool mix_solid    = false;
 
-  std::vector<double> alpha(n_constituents);
-  for(int i=0; i<n_constituents; i++) {
-    if(constituent_volume_fraction[i][0] != NULL)
-      alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
-    else
-      alpha[i] = 1;
+  std::vector<int> constituent_type(n_constituents);
+
+  FindMixTypesForDryRock(constituent_label,
+                         n_constituents,
+                         model_solid_storage,
+                         model_dryrock_storage,
+                         mix_dryrock,
+                         mix_solid,
+                         constituent_type,
+                         errTxt);
+
+  if (mix_dryrock == true && mix_solid == false) { //mix of only dryrocks
+    std::vector<int> n_vintages_constit(n_constituents);
+    for(int i=0; i<n_constituents; i++)
+      n_vintages_constit[i] = static_cast<int>(constituent_volume_fraction[i].size());
+
+    std::vector<double> alpha(n_constituents);
+    for(int i=0; i<n_constituents; i++) {
+      if(constituent_volume_fraction[i][0] != NULL)
+        alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+      else
+        alpha[i] = 1;
+    }
+
+    std::vector<std::vector<DistributionsDryRock *> > distr_dryrock(n_vintages);
+    for(int i=0; i<n_vintages; i++)
+      distr_dryrock[i].resize(n_constituents, NULL);
+
+    for (int s = 0; s < n_constituents; s++) {
+      std::vector<DistributionsDryRock *> distr_dryrock_all_vintages = ReadDryRock(n_vintages,
+                                                                                   constituent_label[s],
+                                                                                   path,
+                                                                                   trend_cube_parameters,
+                                                                                   trend_cube_sampling,
+                                                                                   model_dryrock_storage,
+                                                                                   model_solid_storage,
+                                                                                   errTxt);
+
+      for(int i=0; i<n_vintages; i++) {
+        if(i < static_cast<int>(distr_dryrock_all_vintages.size()))
+          distr_dryrock[i][s] = distr_dryrock_all_vintages[i];
+        else
+          distr_dryrock[i][s] = distr_dryrock[i-1][s]->Clone();
+      }
+    }
+
+    for(int i=0; i<n_constituents; i++)
+      CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+    std::vector<DistributionsDryRock *>                  final_dist_dryrock(n_vintages, NULL);
+    std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+
+    for(int i=0; i<n_vintages; i++)
+      all_volume_fractions[i].resize(n_constituents, NULL);
+
+    for(int i=0; i<n_vintages; i++) {
+
+      for (int s=0; s<n_constituents; s++) {
+
+        if(i < n_vintages_constit[s]) {
+          if(constituent_volume_fraction[s][i] != NULL)
+            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        }
+        else {
+          if(all_volume_fractions[i-1][s] != NULL)
+            all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+        }
+      }
+
+      CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+    }
+
+    if (errTxt == "") {
+      for(int i=0; i<n_vintages; i++)
+        final_dist_dryrock[i] = new DistributionsDryRockMix(distr_dryrock[i], all_volume_fractions[i], mix_method, alpha);
+
+      for(int i=0; i<n_vintages; i++) {
+        for(size_t s=0; s<distr_dryrock.size(); s++)
+          delete distr_dryrock[i][s];
+
+        for(size_t s=0; s<all_volume_fractions.size(); s++) {
+          if(all_volume_fractions[i][s] != NULL) {
+            if(all_volume_fractions[i][s]->GetIsShared() == false)
+              delete all_volume_fractions[i][s];
+          }
+        }
+      }
+    }
+
+    return(final_dist_dryrock);
   }
+  else if (mix_dryrock == true && mix_solid == true) { //mix of dryrocks and solids
 
-  std::vector<std::vector<DistributionsDryRock *> > distr_dryrock(n_vintages);
-  for(int i=0; i<n_vintages; i++)
-    distr_dryrock[i].resize(n_constituents, NULL);
+    std::vector<std::vector<DistributionsDryRock *> >    distr_dryrock(n_vintages);
+    std::vector<std::vector<DistributionsSolid *> >      distr_solid(n_vintages);
+    std::vector<std::vector<DistributionWithTrend *> >   dryrock_volume_fractions(n_vintages);
+    std::vector<std::vector<DistributionWithTrend *> >   solid_volume_fractions(n_vintages);
+    std::vector<double>                                  solid_alpha;
+    std::vector<double>                                  dryrock_alpha;
 
-  for (int s = 0; s < n_constituents; s++) {
-    std::vector<DistributionsDryRock *> distr_dryrock_all_vintages = ReadDryRock(n_vintages,
+    std::vector<int> n_vintages_constit(n_constituents);
+    for(int i=0; i<n_constituents; i++)
+      n_vintages_constit[i] = static_cast<int>(constituent_volume_fraction[i].size());
+
+    std::vector<double> alpha(n_constituents);
+    for(int i=0; i<n_constituents; i++) {
+      if(constituent_volume_fraction[i][0] != NULL)
+        alpha[i] = constituent_volume_fraction[i][0]->GetOneYearCorrelation();
+      else
+        alpha[i] = 1;
+    }
+
+    std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+
+    for(int i=0; i<n_vintages; i++)
+      all_volume_fractions[i].resize(n_constituents, NULL);
+
+    for(int i=0; i<n_vintages; i++) {
+
+      for (int s=0; s<n_constituents; s++) {
+
+        if(i < n_vintages_constit[s]) {
+          if(constituent_volume_fraction[s][i] != NULL)
+            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        }
+        else {
+          if(all_volume_fractions[i-1][s] != NULL)
+            all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+        }
+      }
+
+      CheckVolumeConsistency(all_volume_fractions[i], errTxt);
+    }
+
+    for(int i=0; i<n_vintages; i++)
+      distr_dryrock[i].resize(n_constituents, NULL);
+
+    int n_dryrocks = 0;
+    int n_solids = 0;
+
+    for (int s = 0; s < n_constituents; s++) {
+      if (constituent_type[s] == ModelSettings::DRY_ROCK) {
+        std::vector<DistributionsDryRock *> distr_dryrock_all_vintages = ReadDryRock(n_vintages,
+                                                                                     constituent_label[s],
+                                                                                     path,
+                                                                                     trend_cube_parameters,
+                                                                                     trend_cube_sampling,
+                                                                                     model_dryrock_storage,
+                                                                                     model_solid_storage,
+                                                                                     errTxt);
+        int n_vintages_dryrock = static_cast<int>(distr_dryrock_all_vintages.size());
+
+        for(int i=0; i<n_vintages; i++)
+          distr_dryrock[i].resize(n_dryrocks+1);
+
+        for(int i=0; i<n_vintages; i++) {
+          if(i < n_vintages_dryrock)
+            distr_dryrock[i][n_dryrocks] = distr_dryrock_all_vintages[i];
+          else
+            distr_dryrock[i][n_dryrocks] = distr_dryrock[i-1][n_dryrocks]->Clone();
+        }
+
+        for(int i=0; i<n_vintages; i++)
+          dryrock_volume_fractions[i].push_back(all_volume_fractions[i][s]);
+
+        dryrock_alpha.push_back(alpha[s]);
+
+        n_dryrocks++;
+
+      }
+      else if (constituent_type[s] == ModelSettings::SOLID) {
+        std::vector<DistributionsSolid *> constit_solid_all_vintages = ReadSolid(n_vintages,
                                                                                  constituent_label[s],
                                                                                  path,
                                                                                  trend_cube_parameters,
                                                                                  trend_cube_sampling,
-                                                                                 model_dryrock_storage,
                                                                                  model_solid_storage,
                                                                                  errTxt);
 
-    for(int i=0; i<n_vintages; i++) {
-      if(i < static_cast<int>(distr_dryrock_all_vintages.size()))
-        distr_dryrock[i][s] = distr_dryrock_all_vintages[i];
-      else
-        distr_dryrock[i][s] = distr_dryrock[i-1][s]->Clone();
-    }
-  }
+        int n_vintages_solid = static_cast<int>(constit_solid_all_vintages.size());
 
-  for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        for(int i=0; i<n_vintages_solid; i++)
+          distr_solid[i].resize(n_solids+1);
 
-  std::vector<DistributionsDryRock *>                  final_dist_dryrock(n_vintages, NULL);
-  std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+        for(int i=0; i<n_vintages; i++) {
+          if(i < n_vintages_solid)
+            distr_solid[i][n_solids] = constit_solid_all_vintages[i];
+          else
+            distr_solid[i][n_solids] = distr_solid[i-1][n_solids]->Clone();
+        }
 
-  for(int i=0; i<n_vintages; i++)
-    all_volume_fractions[i].resize(n_constituents, NULL);
+        for(int i=0; i<n_vintages; i++)
+          solid_volume_fractions[i].push_back(all_volume_fractions[i][s]);
 
-  for(int i=0; i<n_vintages; i++) {
-
-    for (int s=0; s<n_constituents; s++) {
-
-      if(i < n_vintages_constit[s]) {
-        if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-      }
-      else {
-        if(all_volume_fractions[i-1][s] != NULL)
-          all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+        solid_alpha.push_back(alpha[s]);
+        n_solids++;
       }
     }
+    // Now we have read the subsolids and subdryrocks.
 
-    CheckVolumeConsistency(all_volume_fractions[i], errTxt);
-  }
+    for(int i=0; i<n_constituents; i++)
+      CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  if (errTxt == "") {
-    for(int i=0; i<n_vintages; i++)
-      final_dist_dryrock[i] = new DistributionsDryRockMix(distr_dryrock[i], all_volume_fractions[i], mix_method, alpha);
+    std::vector<DistributionsDryRock *>                  final_dist_dryrock(n_vintages, NULL);
 
-    for(int i=0; i<n_vintages; i++) {
-      for(size_t s=0; s<distr_dryrock.size(); s++)
-        delete distr_dryrock[i][s];
+    if (errTxt == "") {
+      // Reuse alpha, but now it is sorted
+      for(int i=0; i<n_solids; i++)
+        alpha[i] = solid_alpha[i];
+      for(int i=0; i<n_dryrocks; i++)
+        alpha[i+n_solids] = dryrock_alpha[i];
+      
+      for(int i=0; i<n_vintages; i++)
+        final_dist_dryrock[i] = new DistributionsDryRockMixOfDryRockAndSolid(distr_dryrock[i],
+                                                                             distr_solid[i],
+                                                                             dryrock_volume_fractions[i],
+                                                                             solid_volume_fractions[i],
+                                                                             mix_method,
+                                                                             alpha);
+                                                                     
 
-      for(size_t s=0; s<all_volume_fractions.size(); s++) {
-        if(all_volume_fractions[i][s] != NULL) {
-          if(all_volume_fractions[i][s]->GetIsShared() == false)
-            delete all_volume_fractions[i][s];
+      for(int i=0; i<n_vintages; i++) {
+        for(size_t s=0; s<distr_solid[i].size(); s++)
+          delete distr_solid[i][s];
+
+        for(size_t s=0; s<distr_dryrock[i].size(); s++)
+          delete distr_dryrock[i][s];
+
+        for(size_t s=0; s<solid_volume_fractions[i].size(); s++) {
+          if(solid_volume_fractions[i][s] != NULL) {
+            if(solid_volume_fractions[i][s]->GetIsShared() == false)
+              delete solid_volume_fractions[i][s];
+          }
+        }
+
+        for(size_t s=0; s<dryrock_volume_fractions[i].size(); s++) {
+          if(dryrock_volume_fractions[i][s] != NULL) {
+            if(dryrock_volume_fractions[i][s]->GetIsShared() == false)
+              delete dryrock_volume_fractions[i][s];
+          }
         }
       }
+
     }
+
+    return(final_dist_dryrock);
+  } // end if mix_dryrock == true && mix_solid == true
+  else {
+    errTxt += "Not valid mix of constituents for creating a dry rock\n";
+    return std::vector<DistributionsDryRock *>(n_vintages, NULL);
   }
-
-  return(final_dist_dryrock);
-
 }
 //----------------------------------------------------------------------------------//
 
@@ -867,6 +1043,8 @@ GenerateDistributionsDryRock(const int                                          
 
   //clean up
   for(int i=0; i<n_vintages; i++) {
+    delete distr_solid[i];
+
     if (dwt_friction_weight[i]->GetIsShared() == false)
       delete dwt_friction_weight[i];
 
