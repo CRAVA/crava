@@ -14,7 +14,7 @@ struct irapgrid;
 
 class Analyzelog {
 public:
-  Analyzelog(std::vector<WellData *> wells,   
+  Analyzelog(std::vector<WellData *> wells,
              Background            * background,
              const Simbox          * simbox,
              const ModelSettings   * modelSettings,
