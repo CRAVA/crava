@@ -3,25 +3,44 @@
 
 # Explicitly declare text files we want to always be normalized and converted
 # to native line endings on checkout.
-*.cpp text
-*.hpp text
-*.c text
-*.h text
+# Added ident to fill out $Id: $ parts in code files.
+*.cpp             text ident
+*.hpp             text ident
+*.c               text ident
+*.h               text ident
+*.cc              text
+*.pl              text
+
+Makefile          text
+Makeheader        text
+*.mk              text
+
+*.xml             text
+*.txt             text
+*.tex             text
+*.sty             text
 
 # Declare files that will always have CRLF line endings on checkout.
-# Setting binary equals (-crlf -diff)
-*.sln binary
-*.vcproj binary
+*.sln             text eol=crlf
+*.vcproj          text eol=crlf
+*.vcxproj         text eol=crlf
+*.vcxproj.filters text eol=crlf
 
 # Denote all files that are truly binary and should not be modified.
-*.gif binary
-*.png binary
-*.jpg binary
+*.gif             binary
+*.png             binary
+*.jpg             binary
+*.eps             binary
+*.doc             binary
+*.docx            binary
+*.pdf             binary
 
-*.sgy binary
-*.segy binary
-*.storm binary
+*.sgy             binary
+*.segy            binary
+*.storm           binary
 
-*.tar binary
-*.gz binary
-*.tgz binary
+*.tar             binary
+*.gz              binary
+*.tgz             binary 
+
+*.crava           binary
