@@ -777,6 +777,218 @@ Sgri-format. The parameter \kw{average-velocity} refers to the average
 velocity in the target area which is needed for the estimation of the
 pulse.  
 
+\section{Rock physics}
+\label{sec:rockPhysics}
+The idea behind the rock physics template is to be able to model the density and elastic properties of a fluid-filled \kw{rock} in a very flexible way, by selecting from and possibly combining many different rock physics theories. In order to do this, we need some basic building blocks. The basic building blocks here are \kw{fluid}, \kw{solid}, \kw{dry-rock} (a solid with porosity, but no fluid) and \kw{rock} (a combination of solid and fluid).
+
+In \crava, the rock physics models are used for generating the background model and covariance matrix used in the prior model, and for generating synthetic wells used for facies estimation. 
+
+\subsection{Structure of the rock physics template}
+The base structure of the rock physics template consists of the elements \kw{reservoir}, \kw{evolve}, \kw{predefinition}, \kw{rock} and \kw{trend-cube}, each of which contains sub-elements.
+
+The sub-elements will be basic building blocks (e.g. \kw{solid}, \kw{fluid}, \kw{dry-rock}), properties (e.g. temperature, pore-pressure, density, etc) and theories.
+
+\subsubsection{Reservoir}
+\kw{reservoir} contains reservoir properties, such as pressure, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword \kw{reservoir} are parameters common for all fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements in \kw{reservoir} are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. 
+After \kw{reservoir}, the command \kw{variable} follows. Whenever several building blocks use the same
+stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all
+the building blocks. Below is an example of how \kw{reservoir} can be defined:
+\svex{ex:Reservoir}
+<reservoir>
+  <variable>
+    <label> temperature </label>
+    <value> 50 </value>
+  </variable>
+
+  <variable>
+    <label> porosity </label>
+    <gaussian>
+      <mean> 0.5 </mean>
+      <variance> 0.1 </variance>
+    </gaussian>
+  </variable>
+</reservoir>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Evolve}
+\kw{evolve} controls the time development of the reservoir variables. Under the keyword \kw{evolve}, \rkw{reservoir-variable}{reservoir-variable-evolve}, \kw{one-year-correlation} and \rkw{vintage}{vintage-evolve} are given. \kw{reservoir-variable} needs to be the label of one of the variables defined in \kw{reservoir}. \kw{one-year-correlation} defines the correlation between the reservoir variable at two following years. \rkw{vintage}{vintage-evolve} is repeated for each vintage of the time development. In \rkw{vintage}{vintage-evolve}, \rkw{distribution}{distribution-vintage} and \kw{vintage-year} are given. \rkw{distribution}{distribution-vintage} is the distribution of the reservoir variable at the given vintage, and it needs to be one of the distributions given under \kw{value-assignments}. \kw{vintage-year} is the year of the given vintage of the reservoir variable.
+Below is an example with \kw{evolve} for the reservoir variable porosity:
+\svex{ex:evolve}
+<evolve>
+  <reservoir-variable> porosity </reservoir-variable>
+  <one-year-correlation> 0.7 </one-year-correlation>
+  <vintage>
+    <distribution>
+      <beta>
+        <mean> 0.1 </mean>
+        <variance> 0.01 </variance>
+      </beta>
+    </distribution>
+    <vintage-year> 2000 </vintage-year>
+  </vintage>
+
+  <vintage>
+    <distribution>
+      <beta>
+        <mean> 0.08 </mean>
+        <variance> 0.01 </variance>
+      </beta>
+    </distribution>
+    <vintage-year> 2002 </vintage-year>
+  </vintage>
+</evolve>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Predefinitions}
+\kw{predefinitions} is used for specifying and calculating the elastic properties of basic building blocks, being \kw{solid}, \kw{fluid} or \kw{dry-rock}, or elements and mixtures of these. It will typically use properties specified under \kw{reservoir}. 
+
+Each time a building block is defined, it is given a unique identifying name using the \kw{label} keyword. This is followed by a keyword specifying which theory we use for building this element, and inside that keyword block, the required parameters for the theory are given. 
+
+Inside the theory block, the required parameters for the theory are given. 
+The theories are used for calculating the bulk and shear moduli. In addition, they are implicitly used for calculating the density using the arithmetic average of the constituent densities. 
+
+If we want to use an element that is already defined, we can use the keyword \kw{use} instead of \kw{label}, followed by the unique name of the element. Thus, we can easily reuse elements once they are defined.
+
+The significant difference between elements in \kw{reservoir} and \kw{predefinitions} is that each element in \kw{reservoir} defines a single property, while it defines an object with several properties in \kw{predefinitions} (e.g. bulk modulus, shear modulus and density). These objects are typically used as inputs to various theories for calculating the effective properties of a mixed material.
+
+\svex{ex:predefinitions}
+<predefinitions>
+  <solid>
+    <label> quartz </label>
+    <tabulated>
+      <bulk-modulus> 37 </bulk-modulus>
+      <shear-modulus> 44 </shear-modulus>
+      <density> 2.65 </density>
+    </tabulated>
+  </solid>
+  <fluid>
+    <label> brine </label>
+    <batzle-wang-brine>
+      <pore-pressure> 20 </pore-pressure>
+      <temperature> 60 </temperature>
+      <salinity> 0.05 </salinity>
+    </batzle-wang-brine>
+  </fluid>
+</predefinitions>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Rock}
+\kw{rock} contains the final composition of the rock, and will typically use details specified in \kw{reservoir} and \kw{predefinitions}. The \kw{rock} command is followed by either \kw{label} or \kw{use}. If \kw{label} is used, the next keyword is a theory. 
+
+The rocks to be used in the facies estimation, need to correspond to the facies given in \kw{facies-probabilities}.
+
+Example:
+
+\svex{ex:rock}
+<rock>
+  <label> effective rock </label>
+  <gassmann>
+    <dry-rock>
+      <use> quality sand </use>
+    </dry-rock>
+    <fluid>
+      <use> brine </use>
+    </fluid>
+  </gassmann>
+</rock>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Trend cubes}
+<trend-cube> contains the trend cubes that can be used for defining a trend on the variables. Each variable defined by a trend may be related to one or two trend cubes. These trend cubes may for example be related to time and depth, and they need to be defined in the entire inversion volume. 
+
+\subsection{Value assignments in the rock physics template}
+All the properties and function parameters can use previously assigned values defined in <reservoir>, or be assigned values directly in <predefinitions>. The possible types of value assignments are value, trend or distribution. 
+
+\subsubsection{Value}
+The simplest form of deterministic value assignment is a single value. For the variables in <reservoir>, the value is given by the command <value>, while it may be given directly for the variable commands of <predefinitions>. Below is an example for each of these cases:
+\svex{ex:assignValue}
+<reservoir>
+  <variable> 
+    <label> temperature </label>
+    <value> 40 </value>
+  </variable>
+</reservoir>
+
+<predefinitions>
+  <solid>
+    <label> clay </label>
+    <tabulated>
+      <bulk-modulus> 21 </bulk-modulus>
+      <shear-modulus> 7 </shear-modulus>
+      <density> 2.6 </density>
+    </tabulated>
+  </solid>
+</predefinitions>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Distributions}
+The rock physics template supports the distribution functions \kw{gaussian}, \kw{beta} and \kw{beta-end-mass} for assigning probabilistic values to a variable. Whenever several building blocks use the same stochastic variable defined under <reservoir>, the same sample of the variable is used for all the building blocks. The required input variables for the different distributions are given in \autoref{sec:valueassignment}.
+
+Examples:
+\svex{ex:assignDistribution}
+<reservoir>
+  <variable>
+    <label> total-porosity </label>
+    <gaussian>
+      <mean> 0.25 </mean>
+      <variance> 0.05 </variance>
+    </gaussian>
+  </variable>
+
+  <variable>
+    <label> bulk-quartz </label>
+    <beta>
+      <mean> 63000000 </mean>
+      <variance> 30000 </variance>
+      <lower-limit> 10000000 </lower-limit>
+      <upper-limit>100000000</upper-limit>
+    </beta>
+  </variable>
+</reservoir>
+\end{verbatim}
+\end{example}
+
+\subsubsection{Assigning trends to the rock physics variables}
+The values of the variables may be given by a trend. The trends are named \kw{trend-1d} or \kw{trend-2d}, with the 1d and 2d endings telling if the property values should be related to one or two trend cubes. These trend cubes may for example be related to time and depth, and they need to be defined in the entire inversion volume. If the trend is to be used, trend cubes must be given on the same level as \kw{reservoir} using the command \kw{trend-cube} following the example below. 
+\svex{ex:assignTrend}
+<reservoir>
+  <variable> 
+    <label> temperature </label>
+    <trend-1d>
+      <file-name> trend1d.txt </file-name>
+      <reference-parameter> time </reference-parameter>
+    </trend-1d>
+  </variable>
+
+  <variable> 
+    <label> porosity </label>
+    <trend-2d> 
+      <file-name> trend2d.txt </file-name>
+      <reference-parameter-first-axis> time 
+      </reference-parameter-first-axis>
+      <reference-parameter-second-axis> depth 
+      </reference-parameter-second-axis>
+    </trend-2d>
+  </variable>
+</reservoir>
+
+<trend-cube>
+  <parameter-name> time </parameter-name>
+  <file-name> trendCubeTime.txt </file-name>
+</trend-cube>
+
+<trend-cube>
+  <parameter-name> depth </parameter-name>
+  <file-name> trendCubeDepth.txt </file-name>
+</trend-cube>
+\end{verbatim}
+\end{example}
+
 \section{Facies prediction}
 An important feature in \crava is the ability to create facies
 probabilities. This requires that \kw{mode} is set to "inversion", and
