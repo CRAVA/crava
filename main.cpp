@@ -133,7 +133,14 @@ int main(int argc, char** argv)
   Appl::Instance()->Main(argc, argv);
 #endif
 
-  /*if(0) {
+  if(0) {
+    //test of DEM RPM
+    double effective_bulk_modulus2;
+    double effective_shear_modulus2;
+    double effective_density2;
+    DEMTools::DebugTestCalcEffectiveModulus2(effective_bulk_modulus2,
+                                             effective_shear_modulus2,
+                                             effective_density2);
     double effective_bulk_modulus;
     double effective_shear_modulus;
     double effective_density;
@@ -143,7 +150,7 @@ int main(int argc, char** argv)
     float tmp10 = 5.0f;
 
 
-  }*/
+  }
 
   if (argc != 2) {
     printf("Usage: %s modelfile\n",argv[0]);

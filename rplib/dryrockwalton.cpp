@@ -21,7 +21,9 @@ DryRockWalton::DryRockWalton(const Solid                       * solid,
   solid_ = solid->Clone();
 
   friction_weight_ = friction_weight;
-  pressure_        = pressure;
+
+  //unit conversion MPa -> GPa
+  pressure_        = pressure/1000.0; 
   total_porosity_  = porosity;
 
   if (coord_number < 0) {
@@ -99,6 +101,11 @@ DryRockWalton::ComputeElasticParams() {
   solid_->GetElasticParams(k_solid, mu_solid, rho_solid);
   mineral_moduli_k_ = k_solid;
 
+  //unit conversion from kPa->GPa, pressure is stored in GPa so no conversion is necessary.
+  const double fac = 1000000.0;
+  k_solid   /= fac;
+  mu_solid  /= fac;
+  
   const double mu_solid_inv = 1.0/mu_solid;
   const double lambda       = k_solid - (2.0*mu_solid)/3.0;
 
@@ -117,6 +124,10 @@ DryRockWalton::ComputeElasticParams() {
 
   k_    = k_rough;
   mu_   = friction_weight_*mu_rough + (1.0 - friction_weight_)*mu_smooth;
+
+  //unit conversion from GPa -> kPa
+  k_  *= fac;
+  mu_ *= fac;
 
   rho_  = (1-total_porosity_)*rho_solid;
 }
