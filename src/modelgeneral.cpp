@@ -170,6 +170,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
                                  inputFiles, errText, failedDepthConv);
         }
+        
+        processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
         if(failedDepthConv == false)
           processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
@@ -207,7 +209,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
             timeLine_->AddEvent(time, TimeLine::AVO, i);
         }
-        processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
         if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
 

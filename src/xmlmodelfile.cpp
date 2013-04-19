@@ -423,6 +423,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-for-wavelet-estimation");
   legalCommands.push_back("use-for-background-trend");
   legalCommands.push_back("use-for-facies-probabilities");
+  legalCommands.push_back("use-for-rock-physics");
   legalCommands.push_back("synthetic-vs-log");
   legalCommands.push_back("optimize-position");
   legalCommands.push_back("filter-elastic-logs");
@@ -440,6 +441,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   int useForBackgroundTrend   = ModelSettings::NOTSET;
   int useForWaveletEstimation = ModelSettings::NOTSET;
   int useForFaciesProbability = ModelSettings::NOTSET;
+  int useForRockPhysics       = ModelSettings::NOTSET;
   int filterElasticLogs       = ModelSettings::NOTSET;
   int hasRealVs               = ModelSettings::NOTSET;
 
@@ -464,6 +466,13 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     else
       useForFaciesProbability = ModelSettings::NO;
   }
+    
+  if(parseBool(root, "use-for-rock-physics", use, tmpErr)) {
+    if(use)
+      useForRockPhysics = ModelSettings::YES;
+    else
+      useForRockPhysics = ModelSettings::NO;
+  }
 
   bool synth = false;
   if(parseBool(root, "synthetic-vs-log", synth, tmpErr)) {
@@ -483,8 +492,12 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   modelSettings_->addIndicatorBGTrend(useForBackgroundTrend);
   modelSettings_->addIndicatorWavelet(useForWaveletEstimation);
   modelSettings_->addIndicatorFacies(useForFaciesProbability);
+  modelSettings_->addIndicatorRockPhysics(useForRockPhysics);
   modelSettings_->addIndicatorRealVs(hasRealVs);
   modelSettings_->addIndicatorFilter(filterElasticLogs);
+
+  if(useForRockPhysics == ModelSettings::YES)
+    modelSettings_->setCalibrateRockPhysicsToWells(true);
 
   modelSettings_->clearMoveWell();
   while(parseOptimizeLocation(root, tmpErr) == true);
@@ -3368,7 +3381,6 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     legalCommands.push_back("beta");
     legalCommands.push_back("beta-end-mass");
   }
-  legalCommands.push_back("divide");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -3439,10 +3451,6 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
       errTxt += "  Note that <reservoir> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
     }
   }
-
-  double divide;
-  if(parseValue(root, "divide", divide, errTxt) == true)
-    errTxt += "The <divide> functionality in 'DistributionWithTrend' has not been implemented by NR\n";
 
   if(trendGiven == 0)
     errTxt += "Need at least one definition for the variable in <"+keyword+">\n";
@@ -5389,13 +5397,6 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   //Rock physics consistency
   if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
-    // No wells should be given for now
-    if(modelSettings_->getNumberOfWells() > 0)
-      errTxt += "No wells should be given when the rock physics prior model is used\n";
-
-    if(inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false)
-      errTxt += "The temporal correlation file or temporal correlation range needs to be given when the rock physics prior model is used\n";
-
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
       errTxt += "Rocks in the rock physics prior model should not be given \nwithout requesting facies probabilities under inversion settings.\n";
 
@@ -5439,14 +5440,6 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "The background model is estimated from the rock physics models\n";
     }
 
-    std::vector<bool> wavelet = modelSettings_->getEstimateWavelet(0);
-    std::vector<float>  angle = modelSettings_->getAngle(0);
-    for(int i=0; i<modelSettings_->getNumberOfAngles(0); i++) {
-      if(wavelet[i] == true) {
-        errTxt += "Wavelet must be given when rock physics models are used.\n";
-        errTxt += "  Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
-      }
-    }
     if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
       errTxt += "The backround trend can not be written to file when rock physics models are used\n";
 
