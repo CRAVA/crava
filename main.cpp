@@ -147,7 +147,7 @@ int main(int argc, char** argv)
     DEMTools::DebugTestCalcEffectiveModulus4(effective_bulk_modulus,
                                              effective_shear_modulus,
                                              effective_density);
-    float tmp10 = 5.0f;
+    //float tmp10 = 5.0f;
 
 
   }
