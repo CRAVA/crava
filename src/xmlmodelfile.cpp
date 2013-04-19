@@ -1647,6 +1647,10 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
 
   // Check horizon uncertainty consistency
   std::vector<double> uncertainty = modelSettings_->getSurfaceUncertainty();
+  for(int i=1; i<nHorizons-1; i++) {
+    if(uncertainty[i] <= 0)
+      errTxt += "All but the last surface need to be given surface uncertainty larger than zero in the multizone background model\n";
+  }
   if(uncertainty[nHorizons-1] != 0)
     errTxt += "The last surface needs to be given surface uncertainty zero in the multizone background model\n";
 

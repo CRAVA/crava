@@ -3,13 +3,14 @@
 
 # Explicitly declare text files we want to always be normalized and converted
 # to native line endings on checkout.
-# Added ident to fill out $Id: $ parts in code files.
-*.cpp             text ident
-*.hpp             text ident
-*.c               text ident
-*.h               text ident
+*.cpp             text
+*.hpp             text
+*.c               text
+*.h               text
 *.cc              text
 *.pl              text
+*.m               text
+*.py              text
 
 Makefile          text
 Makeheader        text
@@ -38,6 +39,7 @@ Makeheader        text
 *.sgy             binary
 *.segy            binary
 *.storm           binary
+*.Sgri            binary
 
 *.tar             binary
 *.gz              binary
