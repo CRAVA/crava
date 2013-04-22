@@ -3897,7 +3897,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-      makeCorr2DPositiveDefinite( priorCorrXY_);
+     // makeCorr2DPositiveDefinite( priorCorrXY_);
 
       seismicParameters.setCorrelationParameters(paramCorr,
                                                  corrT,
