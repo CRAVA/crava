@@ -3897,7 +3897,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-     // makeCorr2DPositiveDefinite( priorCorrXY_);
+      //makeCorr2DPositiveDefinite( priorCorrXY_);
 
       seismicParameters.setCorrelationParameters(paramCorr,
                                                  corrT,
@@ -4867,6 +4867,8 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
 
   helper.invFFTInPlace();
   double scale=1.0/double(helper.getRealValue(0,0,0));
+
+  printf("\nFix in latteral correlation in CRAVA results in a variance increase of %f %% (of 100%%) \n",(scale-1.0)*100);
 
   for(int i =0;i<nxp;i++)
     for(int j =0;j<nyp;j++)
