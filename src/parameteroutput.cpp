@@ -439,7 +439,8 @@ ParameterOutput::writeToFile(const Simbox      * simbox,
                              const ModelSettings     * modelSettings,
                              FFTGrid           * grid,
                              const std::string & fileName,
-                             const std::string & sgriLabel)
+                             const std::string & sgriLabel,
+                             bool padding)
 {
   GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
   GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();
@@ -453,5 +454,6 @@ ParameterOutput::writeToFile(const Simbox      * simbox,
                   seismicStartTime,
                   timeDepthMapping,
                   timeCutMapping,
-                  *format);
+                  *format,
+                  padding);
 }

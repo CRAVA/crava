@@ -81,6 +81,7 @@ Crava::Crava(ModelSettings           * modelSettings,
   wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
   energyTreshold_    = modelSettings_->getEnergyThreshold();
   ntheta_            = modelAVOdynamic->getNumberOfAngles();
+  doing4DInversion_  = modelSettings->getDo4DInversion();
   fileGrid_          = modelSettings_->getFileGrid();
   outputGridsSeismic_= modelSettings_->getOutputGridsSeismic();
   outputGridsElastic_= modelSettings_->getOutputGridsElastic();
@@ -151,11 +152,11 @@ Crava::Crava(ModelSettings           * modelSettings,
     errCorr_ = createFFTGrid();
     errCorr_ ->setType(FFTGrid::COVARIANCE);
     errCorr_ ->createRealGrid();
-    errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ);
+    errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
 
     for(int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
- 
+
     computeVariances(corrT, modelSettings_);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);
@@ -164,7 +165,7 @@ Crava::Crava(ModelSettings           * modelSettings,
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
       delete corrTFiltered;
-    } 
+    }
 
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet(seismicParameters);
@@ -225,7 +226,7 @@ Crava::Crava(ModelSettings           * modelSettings,
 
     if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0){
       seismicParameters.writeFilePostVariances(postVar0_, postCovAlpha00_, postCovBeta00_, postCovRho00_);
-      seismicParameters.writeFilePostCovGrids(modelGeneral->getTimeSimbox()); 
+      seismicParameters.writeFilePostCovGrids(modelGeneral->getTimeSimbox());
     }
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
@@ -268,7 +269,9 @@ Crava::Crava(ModelSettings           * modelSettings,
   postBeta_->fftInPlace();
   postRho_->fftInPlace();
 
+
   seismicParameters.setBackgroundParameters(postAlpha_, postBeta_, postRho_);
+  seismicParameters.FFTCovGrids();
 
   delete spatwellfilter;
 
@@ -283,7 +286,7 @@ Crava::~Crava()
   delete [] signalVariance_;
   delete [] errorVariance_;
   delete [] dataVariance_;
-  if(fprob_ != NULL) 
+  if(fprob_ != NULL)
     delete fprob_;
   delete errCorr_;
 
@@ -734,7 +737,7 @@ Crava::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
   rfftwnd_plan plan1  = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
   rcCovT = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
   fftw_complex * rcSpecIntens = reinterpret_cast<fftw_complex*>(rcCovT);
-  
+
   float * corrT = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
   computeReflectionCoefficientTimeCovariance(rcCovT, corrT, A);
   rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
@@ -973,7 +976,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);
   meanBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
   meanRho_  ->setAccessMode(FFTGrid::READANDWRITE);
- 
+
   FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
   FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
   FFTGrid * postCovRho         = seismicParameters.GetCovRho();
@@ -1169,7 +1172,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   postCrCovAlphaRho ->endAccess();
   postCrCovBetaRho  ->endAccess();
   errCorr_          ->endAccess();
- 
+
   postAlpha_->invFFTInPlace();
   postBeta_ ->invFFTInPlace();
   postRho_  ->invFFTInPlace();
@@ -1213,11 +1216,11 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     postAlpha_->logTransf();
     postAlpha_->endAccess();
   }
- 
+
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
   if(modelAVOdynamic_->getUseLocalNoise()) {
     seismicParameters.invFFTCovGrids();
-    
+
     seismicParameters.updatePriorVar();
 
     postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
@@ -1226,15 +1229,18 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     postCovRho00_         = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
- 
+
     correctAlphaBetaRho(modelSettings_);
   }
 
-  if(writePrediction_ == true)
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
-    outputGridsElastic_, fileGrid_, -1, false);
+  if(doing4DInversion_==false)
+  {
+    if(writePrediction_ == true )
+      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
+      outputGridsElastic_, fileGrid_, -1, false);
 
-  writeBWPredicted();
+    writeBWPredicted();
+  }
 
   delete [] seisData_;
   delete [] kW;
@@ -1295,7 +1301,7 @@ Crava::getNextErrorVariance(fftw_complex **& errVar,
 {
   fftw_complex ijkErrLam;
   fftw_complex ijkTmp;
-  
+
   ijkTmp = errCorr_->getNextComplex();
 
   ijkErrLam.re        = float( sqrt(ijkTmp.re * ijkTmp.re));
@@ -2077,19 +2083,19 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
   }
 }
 
-NRLib::Matrix 
+NRLib::Matrix
 Crava::getPriorVar0() const
 {
   return priorVar0_;
 }
 
-NRLib::Matrix 
+NRLib::Matrix
 Crava::getPostVar0(void) const
 {
   return postVar0_;
 }
 
-NRLib::SymmetricMatrix 
+NRLib::SymmetricMatrix
 Crava::getSymmetricPriorVar0() const
 {
   NRLib::SymmetricMatrix PriorVar0(3);
@@ -2102,7 +2108,7 @@ Crava::getSymmetricPriorVar0() const
   return PriorVar0;
 }
 
-NRLib::SymmetricMatrix 
+NRLib::SymmetricMatrix
 Crava::getSymmetricPostVar0(void) const
 {
   NRLib::SymmetricMatrix PostVar0(3);

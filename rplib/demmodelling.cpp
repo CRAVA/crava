@@ -382,12 +382,12 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double & bulk_modulus,
                                              double       & vs)
 {
   // INPUT
-  // bulk_modulus shear_modulus in MPa, 
-  // density in g/ccm 
+  // bulk_modulus shear_modulus in MPa,
+  // density in g/ccm
   // OUTPUT
-  // vp, vs in m/s 
+  // vp, vs in m/s
   assert(density != 0.0);
-  
+
   vp = std::sqrt((bulk_modulus + 4.0/3.0 * shear_modulus) / density);
   vs = std::sqrt(shear_modulus / density);
 }
@@ -400,10 +400,10 @@ DEMTools::CalcElasticParamsFromSeismicParams(const double & vp,
                                              double       & shear_modulus)
 {
   // INPUT
-  // vp, vs in m/s 
-  // density in g/ccm 
-  // OUTPUT 
-  // bulk_modulus shear_modulus in MPa, 
+  // vp, vs in m/s
+  // density in g/ccm
+  // OUTPUT
+  // bulk_modulus shear_modulus in MPa,
   bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);
 }
@@ -1232,7 +1232,7 @@ void DEMTools::UpdateU(std::vector<double>          & u,
   for(size_t i=0; i<u.size(); i++){
     if(u[i] != RMISSING) {
       normal0[i] = std.Quantile01(u[i]);
-      normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Unif01();
+      normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Norm01();
       u[i] = std.Cdf(normal1[i]);
     }
   }

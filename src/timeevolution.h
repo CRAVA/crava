@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <nrlib/flens/nrlib_flens.hpp>
+#include <string>
 
 class SeismicParametersHolder;
 class State4D;
@@ -28,16 +29,19 @@ public:
   std::vector<std::vector<std::vector<double> > > returnCorrelatedSample(int i_max,TimeLine & time_line,   const std::vector<DistributionsRock*> & dist_rock);
   NRLib::Vector computePriorMeanStaticAndDynamicLastTimeStep();
   NRLib::Matrix computePriorCovStaticAndDynamicLastTimeStep();
+  void SetInitialMean(NRLib::Vector initialMean){initial_mean_=initialMean;}
+  void SetInitialCov(NRLib::Matrix initialCov){initial_cov_=initialCov;}
+  int  GetNTimSteps(){return number_of_timesteps_;}
 
 private:
   int number_of_timesteps_;
-  
-  NRLib::Matrix static_cov_;
-  NRLib::Vector static_mean_;
+
+  NRLib::Matrix initial_cov_;
+  NRLib::Vector initial_mean_;
   std::vector< NRLib::Matrix> evolution_matrix_;
   std::vector< NRLib::Vector> mean_correction_term_;
   std::vector< NRLib::Matrix> cov_correction_term_;
-  
+
   //Expand every 3-vector into a 6-vector of 3 static and 3 dynamic elements.
   void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik) const;
 
@@ -53,9 +57,9 @@ private:
   // and adjusting the other matrices similarly to ensure block form of evolution
   // matrices and correction term covariance:
   void DoRobustInversion(NRLib::Matrix & SigmaInv,
-                         NRLib::Matrix & Cov_mk_mk,
-                         NRLib::Matrix & Cov_mk_mkm1,
-                         NRLib::Matrix & Cov_mkm1_mkm1,
+                       //  NRLib::Matrix & Cov_mk_mk,
+                       //  NRLib::Matrix & Cov_mk_mkm1,
+                         const NRLib::Matrix  Cov_mkm1_mkm1,
                          int             dim,
                          double          adjustment_factor);
   bool DiagonalOK(const NRLib::Matrix & A, int dim);

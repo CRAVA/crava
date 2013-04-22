@@ -1381,3 +1381,25 @@ void lib_matrDump(const char * fName, double ** mat, int n1, int n2)
     fclose(dump);
   }
 }
+
+ extern void lib_matrDumpCpx(const char * fName, fftw_complex **  mat, int n1, int n2)
+ {
+   int i,j;
+   FILE * dump = fopen(fName,"w");
+   if(dump != NULL) {
+    for(i=0;i<n1;i++) {
+      for(j=0;j<n2;j++)
+        fprintf(dump, "%f ", mat[i][j].re);
+      fprintf(dump,"\n");
+    }
+    for(i=0;i<n1;i++) {
+      for(j=0;j<n2;j++)
+        fprintf(dump, "%f ", mat[i][j].im);
+      fprintf(dump,"\n");
+    }
+
+    fclose(dump);
+  }
+
+ }
+

@@ -101,6 +101,12 @@ public:
                                        float             gradI,
                                        float             gradJ);// No mode
 
+  void                 fillInGenExpCorr(double Rx,double Ry,double Rz,
+                          float             gradI,
+                          float             gradJ);// No mode
+
+
+
   virtual void         fillInComplexNoise(RandomGen * ranGen);   // No mode/randomaccess
 
   void                 fillInFromArray(float *value);
@@ -169,7 +175,8 @@ public:
                                  const float         z0        = 0.0,
                                  const GridMapping * depthMap  = NULL,
                                  const GridMapping * timeMap   = NULL,
-                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                                 bool padding = false);
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                                       bool padding = false, bool flat = false);//No mode/randomaccess

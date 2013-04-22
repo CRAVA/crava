@@ -29,22 +29,21 @@ public:
   State4D();
 
   ~State4D();
-  void SaveMeans();
-  void SaveCovariances();
 
   void setStaticMu (FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
   void setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
-  
+
   void setStaticSigma (FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
   void setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
 
   void setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
   void deleteCovariances();
   NRLib::Matrix GetFullCov();
+  NRLib::Vector GetFullMean000();
 
   void   merge(SeismicParametersHolder & current_state );
   void   mergeCov(std::vector<FFTGrid * > & sigma);
-  void   split(const SeismicParametersHolder current_state );
+  void   split(SeismicParametersHolder & current_state );
   void   evolve(int time_step, const TimeEvolution timeEvolution );
   std::vector<FFTGrid*> doRockPhysicsInversion(TimeLine&  time_line, std::vector<DistributionsRock *> rock_distributions, const TimeEvolution timeEvolution);
 
@@ -85,6 +84,7 @@ public:
   FFTGrid * getCovRhoVsStaticDynamic(void)  { return sigma_static_dynamic_[7]; }
   FFTGrid * getCovRhoRhoStaticDynamic(void) { return sigma_static_dynamic_[8]; }
 
+
   void      FFT();
   void      iFFT();
   void      iFFTMean();
@@ -100,7 +100,6 @@ private:
                                                 // [4] = vsStat_vsDyn, [5] = vsStat_rhoDyn, [6]= rhoStat_vpDyn, [7] = rhoStat_vsDyn, [8] = rhoStat_rhoDyn
   std::vector<std::vector<double> >    makeSeismicParamsFromrockSample(std::vector<std::vector<std::vector<double> > > rS);
   std::vector<double>                  getRockPropertiesFromRockSample(std::vector<std::vector<std::vector<double> > > rS,int varNumber);
-
 };
 
 #endif

@@ -23,12 +23,13 @@ CorrelatedRockSamples::CreateSamples(int                                     i_m
 
   // Set up time vectors, the same for all sets of correlated samples.
   time_line.ReSet();
-  int et_dummy, edi_dummy, dt;
-  std::vector< std::vector<int> > delta_time(k_max);
+  int et_dummy, edi_dummy;
+  double dt;
+  std::vector< std::vector<double> > delta_time(k_max);
   for (int k = 0; k < k_max; ++k){
-    time_line.GetNextEvent(et_dummy, edi_dummy, dt);
+    time_line.GetNextEvent(et_dummy, edi_dummy, dt);// dt in days
     for (int l = k; l < k_max; ++l)
-      delta_time[l].push_back(dt);
+      delta_time[l].push_back(dt); // dt in years
   }
 
   // Set up data structures.
@@ -88,15 +89,16 @@ CorrelatedRockSamples::CreateSamplesExtended(int                                
 
   // Set up time vectors, the same for all sets of correlated samples.
   time_line.ReSet();
-  int et_dummy, edi_dummy, dt;
-  std::vector< std::vector<int> > delta_time(k_max);
+  int et_dummy, edi_dummy;
+  double dt_year;
+  std::vector< std::vector<double> > delta_time(k_max);
   for (int k = 0; k < k_max; ++k){
-    time_line.GetNextEvent(et_dummy, edi_dummy, dt);
+    time_line.GetNextEvent(et_dummy, edi_dummy, dt_year);
     for (int l = k; l < k_max; ++l)
-      delta_time[l].push_back(dt);
+      delta_time[l].push_back(dt_year);
   }
 
-  int nReservoirVariables = dist_rock.size();
+  int nReservoirVariables =  dist_rock[0]->GetNumberOfReservoirVariables();
 
   // Set up data structures.
   // The order of indices is chosen to make extraction of all samples for a given time instance easy.
@@ -106,7 +108,7 @@ CorrelatedRockSamples::CreateSamplesExtended(int                                
     m[k].resize(i_max);
     rock[k].resize(i_max);
     for (int i = 0; i < i_max; ++i)
-      m[k][i].resize(3+nReservoirVariables); 
+      m[k][i].resize(3+nReservoirVariables);
   }
 
   const std::vector<double> trend_params_dummy(2,0);

@@ -72,7 +72,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
   }
 
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
- 
+
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
@@ -104,12 +104,12 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   if(failedLoadingModel == false) {
 
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
-   
+
     delete crava;
   }
 
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
-  
+
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
@@ -134,29 +134,4 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
   delete modelTravelTimeDynamic;
 
   return(failedLoadingModel);
-}
-
-
-
-bool allocate4DGrids(SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings, ModelGeneral * modelGeneral, Simbox * timeSimbox)
-{
-  // Parameters for generating new FFTGrids
-  const int nx    = timeSimbox->getnx();
-  const int ny    = timeSimbox->getny();
-  const int nz    = timeSimbox->getnz();
-  const int nxPad = modelSettings->getNXpad();
-  const int nyPad = modelSettings->getNYpad();
-  const int nzPad = modelSettings->getNZpad();
-
-  // Allocate grids in seismicParameters. These are the 3 + 6 static grids.
-  seismicParameters.allocateGrids(nx, ny, nz, nxPad, nyPad, nzPad);
-  
-  // Alocate dynamic grids needed for 4D inversion. 3 + 6 + 9 dynamic grids.
-  // These grids are held by the class variable state4d_
-  modelGeneral->complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad);
-
-  // Merge the allocated 4D grids in the structure seismicParametersHolder
-  modelGeneral->getInitial3DPriorFrom4D(seismicParameters);
-
-  return false;
 }
