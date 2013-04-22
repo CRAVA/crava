@@ -254,7 +254,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
         alpha[i] = solid_alpha[i];
       for(int i=0; i<n_dryrocks; i++)
         alpha[i+n_solids] = dryrock_alpha[i];
-      
+
       for(int i=0; i<n_vintages; i++)
         final_dist_dryrock[i] = new DistributionsDryRockMixOfDryRockAndSolid(distr_dryrock[i],
                                                                              distr_solid[i],
@@ -262,7 +262,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
                                                                              solid_volume_fractions[i],
                                                                              mix_method,
                                                                              alpha);
-                                                                     
+
 
       for(int i=0; i<n_vintages; i++) {
         for(size_t s=0; s<distr_solid[i].size(); s++)

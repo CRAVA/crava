@@ -23,8 +23,8 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 
   priorVar0_.resize(3,3);
 }
-//--------------------------------------------------------------------
 
+//--------------------------------------------------------------------
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
   if(covAlpha_!=NULL)
@@ -32,25 +32,25 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
 
   if(covBeta_!=NULL)
     delete covBeta_;
-  
+
   if(covRho_!=NULL)
     delete covRho_;
 
   if(crCovAlphaBeta_!=NULL)
     delete crCovAlphaBeta_ ;
-  
+
   if(crCovAlphaRho_!=NULL)
     delete crCovAlphaRho_ ;
-  
+
   if(crCovBetaRho_!=NULL)
     delete crCovBetaRho_;
-  
+
   if(muAlpha_!=NULL)
     delete muAlpha_;
-  
+
   if(muBeta_!=NULL)
     delete muBeta_;
-  
+
   if(muRho_!=NULL)
     delete muRho_;
 
@@ -67,6 +67,26 @@ SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muAlpha,
   muRho_     = muRho;
 }
 //--------------------------------------------------------------------
+void
+SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muAlpha,
+                                                  FFTGrid  * muBeta,
+                                                  FFTGrid  * muRho)
+{
+  if(muAlpha_!=NULL)
+    delete muAlpha_;
+
+  if(muBeta_!=NULL)
+    delete muBeta_;
+
+  if(muRho_!=NULL)
+    delete muRho_;
+
+  muAlpha_= new FFTGrid(muAlpha);
+  muBeta_ = new FFTGrid(muBeta);
+  muRho_  = new FFTGrid(muRho);
+}
+
+
 
 void
 SeismicParametersHolder::setCorrelationParameters(float                    ** priorVar0,
@@ -94,8 +114,32 @@ SeismicParametersHolder::setCorrelationParameters(float                    ** pr
   priorVar0_(1,2) = static_cast<double>(priorVar0[1][2]);
   priorVar0_(2,2) = static_cast<double>(priorVar0[2][2]);
 
+
+  // check if covariance is well conditioned and robustify
+  NRLib::Vector eVals(3);
+  NRLib::Matrix eVec(3,3);
+  NRLib::Matrix tmp(3,3);
+  tmp=priorVar0_;
+  NRLib::ComputeEigenVectors(tmp,eVals,eVec);
+
+  double maxVal = eVals(0);
+
+  for(int i=1;i<3;i++)
+    if(maxVal<eVals(i))
+      maxVal=eVals(i);
+
+  for(int k=0;k<3;k++){
+    if(eVals(k)<maxVal*0.001){
+      for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+          priorVar0_(i,j)+= eVec(k,i)*eVec(k,j)*(maxVal*0.0011-eVals(k));
+    }
+  }
+  //tmp=priorVar0_;
+  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
+
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  
+
   initializeCorrelations(priorCorrXY,
                          priorCorrT,
                          corrGradI,
@@ -228,12 +272,33 @@ SeismicParametersHolder::invFFTAllGrids()
 
   if(muRho_->getIsTransformed())
     muRho_->invFFTInPlace();
+  LogKit::LogFormatted(LogKit::High,"...done\n");
 
   invFFTCovGrids();
-
-  LogKit::LogFormatted(LogKit::High,"...done\n");
 }
+
 //--------------------------------------------------------------------
+void
+SeismicParametersHolder::FFTAllGrids()
+{
+  LogKit::LogFormatted(LogKit::High,"\nTransforming background grids from time domain to FFT domain ...");
+
+  if(!muAlpha_->getIsTransformed())
+    muAlpha_->fftInPlace();
+
+  if(!muBeta_->getIsTransformed())
+    muBeta_->fftInPlace();
+
+  if(!muRho_->getIsTransformed())
+    muRho_->fftInPlace();
+  LogKit::LogFormatted(LogKit::High,"...done\n");
+
+  FFTCovGrids();
+
+
+}
+//-----------------------------------------------------------------------------------------
+
 void
 SeismicParametersHolder::invFFTCovGrids()
 {
@@ -263,8 +328,8 @@ SeismicParametersHolder::invFFTCovGrids()
 void
 SeismicParametersHolder::FFTCovGrids()
 {
-  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids from time domain to FFT domain...");
-  
+  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids in seismic parameters holder from time domain to FFT domain...");
+
   if (!covAlpha_->getIsTransformed())
     covAlpha_->fftInPlace();
 
@@ -316,7 +381,7 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 
   if(priorVar0_(0,1) != 0)
     ijTmp.re = ijTmp.re / static_cast<float>(priorVar0_(0,1));
-  
+
   if(priorVar0_(0,2) != 0)
     ikTmp.re = ikTmp.re / static_cast<float>(priorVar0_(0,2));
 
@@ -362,8 +427,8 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 }
 
 //--------------------------------------------------------------------
-fftw_real * 
-SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT, 
+fftw_real *
+SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT,
                                           const int                & minIntFq,
                                           const int                & nzp) const
 {
@@ -422,7 +487,7 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
   //
   float scale;
   if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-    scale = float( 1.0/circCorrT[0] );
+    scale = float( 1.0f/circCorrT[0] );
   else  {
     LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
     LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
@@ -432,6 +497,7 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
   for(int k=0; k<nzp; k++)
     circCorrT[k] *= scale;
 }
+
 
 //--------------------------------------------------------------------
 float *
@@ -504,7 +570,7 @@ SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
 }
 
 //--------------------------------------------------------------------
-void 
+void
 SeismicParametersHolder::writeFilePriorVariances(const ModelSettings      * modelSettings,
                                                  const std::vector<float> & priorCorrT,
                                                  const Surface            * priorCorrXY,
@@ -542,7 +608,7 @@ SeismicParametersHolder::writeFilePriorVariances(const ModelSettings      * mode
   IO::writeSurfaceToFile(*priorCorrXY, baseName3, IO::PathToCorrelations(), modelSettings->getOutputGridFormat());
 }
 //--------------------------------------------------------------------
-void 
+void
 SeismicParametersHolder::printPriorVariances(void) const
 {
   LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
@@ -557,9 +623,9 @@ SeismicParametersHolder::printPriorVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f     %5.4f     %5.4f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |            %5.4f     %5.4f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                       %5.4f \n",1.0f);
 
   if (std::abs(corr01) > 1.0) {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
@@ -591,9 +657,9 @@ SeismicParametersHolder::printPostVariances(const NRLib::Matrix & postVar0) cons
   float corr12 = static_cast<float>(postVar0(1,2)/(sqrt(postVar0(1,1)*postVar0(2,2))));
   LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f     %5.4f     %5.4f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |            %5.4f     %5.4f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                       %5.4f \n",1.0f);
 
   if (std::abs(corr01) > 1.0) {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
@@ -685,25 +751,15 @@ SeismicParametersHolder::extractParamCorrFromCovAlpha(int nzp) const
   covAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
 
   fftw_real * circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
-  int         refk;
+  //int         refk;
   float       constant = covAlpha_->getRealValue(0,0,0);
 
   for(int k = 0 ; k < 2*(nzp/2+1) ; k++ ){
-    if(k < nzp) {
-      if( k < nzp/2+1)
-        refk = k;
-      else
-        refk = nzp - k;
-      
-      circCorrT[k] = covAlpha_->getRealValue(0,0,refk)/constant;
-    }
+    if(k < nzp)
+      circCorrT[k] = covAlpha_->getRealValue(0,0,k,true)/constant;
     else
       circCorrT[k] = RMISSING;
   }
-  
-  int k = 2*(nzp/2+1);
-  circCorrT[k-2] = circCorrT[k-3]/2;
-  circCorrT[k-1] = 0.0;
 
   covAlpha_->endAccess();
 

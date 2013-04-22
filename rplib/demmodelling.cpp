@@ -382,12 +382,12 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double & bulk_modulus,
                                              double       & vs)
 {
   // INPUT
-  // bulk_modulus shear_modulus in kPa, 
-  // density in g/ccm 
+  // bulk_modulus shear_modulus in kPa,
+  // density in g/ccm
   // OUTPUT
-  // vp, vs in m/s 
+  // vp, vs in m/s
   assert(density != 0.0);
-  
+
   vp = std::sqrt((bulk_modulus + 4.0/3.0 * shear_modulus) / density);
   vs = std::sqrt(shear_modulus / density);
 }
@@ -400,10 +400,7 @@ DEMTools::CalcElasticParamsFromSeismicParams(const double & vp,
                                              double       & shear_modulus)
 {
   // INPUT
-  // vp, vs in m/s 
-  // density in g/ccm 
-  // OUTPUT 
-  // bulk_modulus shear_modulus in MPa, 
+  // bulk_modulus shear_modulus in kPa,
   bulk_modulus  = density * (std::pow(vp,2) - 4.0/3.0 * std::pow(vs,2));
   shear_modulus = density * std::pow(vs,2);
 }
@@ -668,7 +665,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   size_t n_var = inclusion_spectrum.size() + inclusion_concentration.size();
   std::vector<double> dummy_u_dem(n_var, 0.0);
 
-  std::vector<Fluid*> fluid_mix2(inclusion_concentration.size()-1);
+  std::vector<Fluid*> fluid_mix2(inclusion_concentration.size());
   for (size_t i = 0; i < fluid_mix2.size(); ++i)
     fluid_mix2[i] = fluid_mix.Clone();
 
@@ -924,7 +921,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
     dummy_alpha_dem.push_back(1);
   }
 
-  std::vector<DistributionsFluid*> distr_fluid_mixed2(distr_incl_spectrum.size());
+  std::vector<DistributionsFluid*> distr_fluid_mixed2(distr_incl_concentration.size());
   for (size_t i = 0; i < distr_fluid_mixed2.size(); ++i)
     distr_fluid_mixed2[i] = distr_fluid_mixed;
   //// Rock, distribution functions.
@@ -1238,7 +1235,7 @@ void DEMTools::UpdateU(std::vector<double>          & u,
   for(size_t i=0; i<u.size(); i++){
     if(u[i] != RMISSING) {
       normal0[i] = std.Quantile01(u[i]);
-      normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Unif01();
+      normal1[i] = corr[i]*normal0[i] + eps[i]*NRLib::Random::Norm01();
       u[i] = std.Cdf(normal1[i]);
     }
   }

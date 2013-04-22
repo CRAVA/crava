@@ -1151,6 +1151,53 @@ FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
 }
 
 void
+FFTGrid::fillInGenExpCorr(double Rx,
+                          double Ry,
+                          double Rz,
+                          float             gradI,
+                          float             gradJ)
+{
+  assert(istransformed_== false);
+
+  int cycleI,cycleJ;
+  float value,subK;
+  cubetype_=FFTGrid::COVARIANCE;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+        if(i < nxp_) {  // computes the index reference from the cube puts it in value
+          cycleI = i-nxp_;
+          if(i < -cycleI)
+            cycleI = i;
+          cycleJ = j-nyp_;
+          if(j < -cycleJ)
+            cycleJ = j;
+
+          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation
+          while(subK <  -nzp_/2.0)
+            subK += nzp_;       //Use cyclicity
+          while(subK >= nzp_/2.0)
+            subK -= nzp_;       //Use cyclicity
+
+          double qDist=float(cycleI*cycleI)/(Rx*Rx)+ (cycleJ*cycleJ)/(Ry*Ry) +(subK*subK)/(Rz*Rz);
+          double dist=std::sqrt( qDist  );
+          value=float(std::exp(-3.0*dist));
+        }
+        else
+          value = RMISSING;
+
+        setNextReal(value);
+      }
+    }
+  }
+
+  endAccess();
+}
+
+
+void
 FFTGrid::fillInComplexNoise(RandomGen * ranGen)
 {
   assert(ranGen);
@@ -1967,7 +2014,8 @@ FFTGrid::writeFile(const std::string       & fName,
                    const float               z0,
                    const GridMapping       * depthMap,
                    const GridMapping       * timeMap,
-                   const TraceHeaderFormat & thf)
+                   const TraceHeaderFormat & thf,
+                   bool padding)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
@@ -1976,9 +2024,9 @@ FFTGrid::writeFile(const std::string       & fName,
     if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
       if(timeMap == NULL) { //No resampling of storm
         if((formatFlag_ & IO::STORM) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, false);
+          FFTGrid::writeStormFile(fileName, simbox, false,padding);
         if((formatFlag_ & IO::ASCII) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, true);
+          FFTGrid::writeStormFile(fileName, simbox, true,padding);
       }
       else {
         FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);

@@ -213,8 +213,13 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 
           setFaciesNamesFromRockPhysics();
 
-          process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground);
-          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second);
+          NRLib::Vector initialMean(6);
+          NRLib::Matrix initialCov(6,6);
+          process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
+
+          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+          timeEvolution_.SetInitialMean(initialMean);
+          timeEvolution_.SetInitialCov(initialCov);
         }
       }
     }
@@ -275,7 +280,7 @@ ModelGeneral::~ModelGeneral(void)
       if(wells_[i] != NULL)
         delete wells_[i];
   }
-   
+
    delete priorCorrXY_;
 
 }
@@ -2553,8 +2558,8 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   LogKit::LogFormatted(LogKit::Low,"Corr   |  ln Vp       ln Vs      ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-------+---------------------------------\n");
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f      %5.4f      %5.4f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |              %5.4f      %5.4f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                           %5.4f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |             %5.4f      %5.4f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                         %5.4f \n",1.0f);
 }
 
 void
@@ -2907,11 +2912,12 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
   // Set up of expectations grids
 
   // Variables for looping through FFTGrids
-  const int nzp  = vp.getNzp();
-  const int nyp  = vp.getNyp();
   const int nz   = vp.getNz();
   const int ny   = vp.getNy();
   const int nx   = vp.getNx();
+  const int nzp  = vp.getNzp();
+  const int nyp  = vp.getNyp();
+  const int nxp = vp.getNxp();
   const int rnxp = vp.getRNxp();
 
   LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
@@ -2942,11 +2948,24 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
     for (int j = 0; j < nyp; j++) {
       for (int i = 0; i < rnxp; i++) {
 
-        // If outside/If in the padding in x- and y-direction, set expectation equal to 0
+        // If outside/If in the padding in x- and y-direction,
+        // set expectation equal to something at right scale
+        // (top value for closest edge)
+        // NBNB OK Can be made better linear interoplation between first and last value in i an j direction as well
         if(i >= nx || j >= ny) {
-          vp.setNextReal(0.0f);
-          vs.setNextReal(0.0f);
-          rho.setNextReal(0.0f);
+          int indexI;
+          int indexJ;
+          indexI = i > (nx+nxp)/2 ? 0   : nx-1;
+          indexJ = j > (ny+nyp)/2 ? 0   : ny-1;
+          indexI = std::min(i,indexI);
+          indexJ = std::min(j,indexJ);
+
+          float vpVal  = topVp(indexI,indexJ);
+          float vsVal  = topVs(indexI,indexJ);
+          float rhoVal = topRho(indexI,indexJ);
+          vp.setNextReal(vpVal);
+          vs.setNextReal(vsVal);
+          rho.setNextReal(rhoVal);
         }
 
         // If outside in z-direction, use linear interpolation between top and base values of the expectations
@@ -3167,6 +3186,7 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
                                         const std::vector<double>                        & probability,
                                         const Simbox                                     & timeSimbox,
                                         const ModelSettings                              & modelSettings,
+                                        SeismicParametersHolder                          & seismicParameters,
                                         State4D                                          & state4d,
                                         std::string                                      & /*errTxt*/)
 {
@@ -3205,14 +3225,13 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
 
   state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
 
+  seismicParameters.copyBackgroundParameters(vp_stat, vs_stat, rho_stat);
+
 }
 
 void
-ModelGeneral::generateRockPhysics4DBackground(const Simbox                                     & timeSimbox,
-                                              const ModelSettings                              & modelSettings,
-                                              const SeismicParametersHolder                    & seismicParameters,
-                                              State4D                                          & state4d,
-                                              std::string                                      & /*errTxt*/)
+ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                          & seismicParameters,
+                                       State4D                                          & state4d)
 {
   // Allocates the static sigma grids: 6 grids.
 
@@ -3224,62 +3243,16 @@ ModelGeneral::generateRockPhysics4DBackground(const Simbox                      
   FFTGrid * vs_rho_stat;
   FFTGrid * rho_rho_stat;
 
-  // Parameters for generating new FFTGrids
-  const int nx    = timeSimbox.getnx();
-  const int ny    = timeSimbox.getny();
-  const int nz    = timeSimbox.getnz();
-  const int nxPad = modelSettings.getNXpad();
-  const int nyPad = modelSettings.getNYpad();
-  const int nzPad = modelSettings.getNZpad();
 
-  // Creating grids for sigma static
-  vp_vp_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vp_vs_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vp_rho_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vs_vs_stat   = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  vs_rho_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
-  rho_rho_stat = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  // Copying grids for sigma static
+  vp_vp_stat   = new FFTGrid( seismicParameters.GetCovAlpha());
+  vp_vs_stat   = new FFTGrid( seismicParameters.GetCrCovAlphaBeta());
+  vp_rho_stat  = new FFTGrid( seismicParameters.GetCrCovAlphaRho());
+  vs_vs_stat   = new FFTGrid( seismicParameters.GetCovBeta());
+  vs_rho_stat  = new FFTGrid( seismicParameters.GetCrCovBetaRho());
+  rho_rho_stat = new FFTGrid( seismicParameters.GetCovRho());
 
-  vp_vp_stat  ->createRealGrid();
-  vp_vs_stat  ->createRealGrid();
-  vp_rho_stat ->createRealGrid();
-  vs_vs_stat  ->createRealGrid();
-  vs_rho_stat ->createRealGrid();
-  rho_rho_stat->createRealGrid();
-
-  // Correlations
-  float corrGradI, corrGradJ;
-  getCorrGradIJ(corrGradI, corrGradJ);
-
-  fftw_real * circCorrT = seismicParameters.extractParamCorrFromCovAlpha(nzPad);
-  vp_vp_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  vp_vs_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  vp_rho_stat ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  vs_vs_stat  ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  vs_rho_stat ->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  rho_rho_stat->fillInParamCorr(priorCorrXY_, circCorrT, corrGradI, corrGradJ);
-  fftw_free(circCorrT);
-
-  // Multiply covariance grids with scalar variance coefficients
-  NRLib::Matrix variancesFromRockPhysics = seismicParameters.getPriorVar0();
-  vp_vp_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,0)));
-  vp_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,1)));
-  vp_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(0,2)));
-  vs_vs_stat  ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(1,1)));
-  vs_rho_stat ->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(1,2)));
-  rho_rho_stat->multiplyByScalar(static_cast<float>(variancesFromRockPhysics(2,2)));
-
-  //Set grid type.
-  vp_vp_stat  ->setType(FFTGrid::COVARIANCE);
-  vp_vs_stat  ->setType(FFTGrid::COVARIANCE);
-  vp_rho_stat ->setType(FFTGrid::COVARIANCE);
-  vs_vs_stat  ->setType(FFTGrid::COVARIANCE);
-  vs_rho_stat ->setType(FFTGrid::COVARIANCE);
-  rho_rho_stat->setType(FFTGrid::COVARIANCE);
-
-  // Set the static grids in the state4d object
   state4d.setStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
-
 }
 
 void
@@ -3835,10 +3808,10 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
     if(!estimateTempCorr)
     {
       if(modelSettings->getUseVerticalVariogram() == true) {
-        corrT.resize(nCorrT);
+        corrT.resize(nCorrT+1);
         float tempCorrRange = modelSettings->getTemporalCorrelationRange();
         float dz = static_cast<float>(timeSimbox->getdz());
-        for(int i=0; i<nCorrT; i++){
+        for(int i=0; i<=nCorrT; i++){
           //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
           corrT[i] = exp(-3*dz*i/tempCorrRange);
         }
@@ -3920,10 +3893,11 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float dt = static_cast<float>(timeSimbox->getdz());
       float lowCut = modelSettings->getLowCut();
       int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
-     
+
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
+      //makeCorr2DPositiveDefinite( priorCorrXY_);
 
       seismicParameters.setCorrelationParameters(paramCorr,
                                                  corrT,
@@ -4501,7 +4475,9 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
                                   const InputFiles         * inputFiles,
                                   SeismicParametersHolder  & seismicParameters,
                                   std::string              & errText,
-                                  bool                     & failed)
+                                  bool                     & failed,
+                                  NRLib::Vector            & initialMean,
+                                  NRLib::Matrix            & initialCov)
 {
   bool failedPriorCorr               = false;
   bool failedRockPhysics4DBackground = false;
@@ -4538,6 +4514,7 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
                             priorProbability,
                             timeSimbox_,
                             *modelSettings,
+                            seismicParameters,
                             state4d_,
                             tmpError);
 
@@ -4551,7 +4528,16 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
                            errText,
                            failedPriorCorr);
 
-  generateRockPhysics4DBackground(timeSimbox_, *modelSettings, seismicParameters, state4d_, tmpError);
+
+  copyCorrelationsTo4DState( seismicParameters, state4d_);
+  const int nx    = timeSimbox_->getnx();
+  const int ny    = timeSimbox_->getny();
+  const int nz    = timeSimbox_->getnz();
+  const int nxPad = modelSettings->getNXpad();
+  const int nyPad = modelSettings->getNYpad();
+  const int nzPad = modelSettings->getNZpad();
+
+  complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad,initialMean,initialCov);
 
   if(tmpError != "") {
     errText += tmpError;
@@ -4565,7 +4551,7 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
 }
 
 void
-ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
+ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov)
 {
   // Static grids (3 + 6) are set in process4DBackground.
   // Dynamic grids (3 + 6 + 9) are set here.
@@ -4602,23 +4588,24 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   dynamicRho->setType(FFTGrid::PARAMETER);
 
   state4d_.setDynamicMu(dynamicVp, dynamicVs, dynamicRho);
+  initial_mean=state4d_.GetFullMean000();
 
-  dynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpVp->fillInConstant(0.0);
   dynamicVpVp->setType(FFTGrid::COVARIANCE);
-  dynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpVs->fillInConstant(0.0);
   dynamicVpVs->setType(FFTGrid::COVARIANCE);
-  dynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpRho->fillInConstant(0.0);
   dynamicVpRho->setType(FFTGrid::COVARIANCE);
-  dynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVsVs->fillInConstant(0.0);
   dynamicVsVs->setType(FFTGrid::COVARIANCE);
-  dynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVsRho->fillInConstant(0.0);
   dynamicVsRho->setType(FFTGrid::COVARIANCE);
-  dynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  dynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicRhoRho->fillInConstant(0.0);
   dynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
@@ -4626,31 +4613,31 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
                                         dynamicVsVs, dynamicVsRho,
                                                      dynamicRhoRho);
 
-  staticDynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpVp->fillInConstant(0.0);
   staticDynamicVpVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpVs->fillInConstant(0.0);
   staticDynamicVpVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpRho->fillInConstant(0.0);
   staticDynamicVpRho->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsVp->fillInConstant(0.0);
   staticDynamicVsVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsVs->fillInConstant(0.0);
   staticDynamicVsVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsRho->fillInConstant(0.0);
   staticDynamicVsRho->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoVp->fillInConstant(0.0);
   staticDynamicRhoVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoVs->fillInConstant(0.0);
   staticDynamicRhoVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, true);
+  staticDynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoRho->fillInConstant(0.0);
   staticDynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
@@ -4658,50 +4645,232 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
                                  staticDynamicVsVp,  staticDynamicVsVs,  staticDynamicVsRho,
                                  staticDynamicRhoVp, staticDynamicRhoVs, staticDynamicRhoRho);
 
+  initial_cov=state4d_.GetFullCov();
+
   state4d_.FFT();
 }
 
 void
-ModelGeneral::getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters)
+ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings)
 {
+  bool debug=false;
+  if(debug) dump4Dparameters(modelSettings, "_prior", time_step);  // note this prior should be equal to
+                                                                    // next_prior in previous step
+  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
+  state4d_.split(seismicParameters);
+  if(debug) dump4Dparameters(modelSettings, "_posterior", time_step);
+  state4d_.evolve(time_step, timeEvolution_); //NBNB grad I grad J
+  //if(debug) dump4Dparameters(modelSettings, "_next_prior", time_step+1);
   state4d_.merge(seismicParameters);
+  if(debug) dumpSeismicParameters(modelSettings,"_next_prior", time_step+1,seismicParameters);
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
-  seismicParameters.updatePriorVar();
 }
 
 
 void
-ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters)
+ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)
 {
-  state4d_.split(seismicParameters);
-  state4d_.evolve(time_step, timeEvolution_);
-  state4d_.merge(seismicParameters);
-  seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
-}
+  bool debug=true;
+  int time_step=timeEvolution_.GetNTimSteps()-1;
+  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
 
+  state4d_.split(seismicParameters);
+  dump4Dparameters(modelSettings, "_posterior", time_step);
+
+}
 
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 {
 
-  
   std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*timeLine_, rock_distributions_.begin()->second,  timeEvolution_);
   int nParamOut =predictions.size();
-  std::vector<std::string>  label(nParamOut);
-  for(int i=0;i<nParamOut;i++)
+
+  std::vector<std::string> labels(nParamOut);
+
+  int i=0;
+
+  for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++)
   {
-    //label[i]=rock_distributions_.begin->second
+    labels[i] = it->first;
+    i++;
   }
 
-  std::string  outPath =  IO::getOutputPath();
+  std::string  outPre =  "mu_";
 
   for(int i=0;i<nParamOut;i++)
   {
      std::string fileName;
-     fileName= outPath +label[i];
-     ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, label[i]);
+     fileName= outPre + labels[i];
+     ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, labels[i]);
   }
 
-
   return 0;
+}
+
+
+void
+ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
+{
+
+  std::string  label;
+  std::string fileName;
+  std::stringstream tag;
+  bool transformHere=false;
+
+  if(current_state.GetMuAlpha()->getIsTransformed())
+  {
+    transformHere=true;
+    current_state.invFFTAllGrids();
+  }
+
+  // write mu current
+  tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
+  tag.str(std::string());tag.clear();label = "mean_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetMuRho() , fileName, tag.str() ,true);
+  // */
+  // write sigma current
+  tag.str(std::string());tag.clear();label = "cov_vp_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovAlpha() , fileName,  tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "cov_vp_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovAlphaBeta() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vp_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovAlphaRho() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovBeta() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_rho_current_step_"; tag << label << timestep << identifyer ; fileName= tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovBetaRho() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovRho() , fileName,  tag.str(),true);
+  // */
+  if(transformHere)
+    current_state.FFTAllGrids();
+}
+
+void
+ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep)
+{
+  state4d_.iFFT();
+
+  std::string  outPath =  "";
+  std::string  label;
+  std::string fileName;
+  std::stringstream tag;
+
+  // write mu static
+  tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),true);
+
+  /*
+  tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),true);
+  tag.str(std::string());tag.clear();label = "mean_rho_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoStatic() , fileName, tag.str(),true);
+  // */
+  // write mu dynamic
+  tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),true);
+  tag.str(std::string());tag.clear();label = "mean_rho_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),true);
+  // */
+
+
+  // write sigma static - static
+  tag.str(std::string());tag.clear();label = "cov_vp_vp_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticStatic() , fileName,  tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "cov_vp_vs_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticStatic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vp_rho_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpRhoStaticStatic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_vs_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsVsStaticStatic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_rho_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsRhoStaticStatic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_rho_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovRhoRhoStaticStatic() , fileName,  tag.str(),true);
+     // */
+  // write sigma dynamic - dynamic
+  tag.str(std::string());tag.clear();label = "cov_vp_vp_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpDynamicDynamic() , fileName,  tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "cov_vp_vs_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsDynamicDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vp_rho_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpRhoDynamicDynamic(), fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_vs_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsVsDynamicDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_rho_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsRhoDynamicDynamic(), fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_rho_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovRhoRhoDynamicDynamic() , fileName,  tag.str(),true);
+  // */
+  // write sigma static - dynamic
+  tag.str(std::string());tag.clear();label = "cov_vp_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticDynamic() , fileName,  tag.str(),true);
+  /*
+  tag.str(std::string());tag.clear();label = "cov_vp_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticDynamic() , fileName, tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vp_rho_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpRhoStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsVpStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsVsStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_vs_rho_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVsRhoStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovRhoVpStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovRhoVsStaticDynamic() , fileName,  tag.str(),true);
+  tag.str(std::string());tag.clear();label = "cov_rho_rho_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovRhoRhoStaticDynamic() , fileName,  tag.str(),true);
+   // */
+  state4d_.FFT();
+}
+
+void
+ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
+{
+  int      nxp    = corrXY->GetNI();
+  int      nyp    = corrXY->GetNJ();
+  FFTGrid  helper = FFTGrid(nxp,nyp,1,nxp,nyp,1);
+  helper.createRealGrid();
+  helper.setType(FFTGrid::COVARIANCE);
+
+  for(int i =0;i<nxp;i++)
+    for(int j =0;j<nyp;j++)
+    {
+      float value = float((*corrXY)(i+j*nxp));
+      helper.setRealValue(i,j,0,value);
+    }
+
+  helper.fftInPlace();
+  int cnxp =helper.getCNxp();
+  for(int i =0;i<cnxp;i++)
+    for(int j =0;j<nyp;j++)
+    {
+      fftw_complex value;
+      value=helper.getComplexValue(i,j,0);
+      value.re=std::sqrt(value.re*value.re+value.im*value.im);
+      value.im=0.0f;
+      helper.setComplexValue(i,j,0,value);
+    }
+
+  helper.invFFTInPlace();
+  double scale=1.0/double(helper.getRealValue(0,0,0));
+
+  printf("\nFix in latteral correlation in CRAVA results in a variance increase of %f %% (of 100%%) \n",(scale-1.0)*100);
+
+  for(int i =0;i<nxp;i++)
+    for(int j =0;j<nyp;j++)
+       (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 }

@@ -66,7 +66,7 @@ public:
 private:
   void                   computeDataVariance(void);
   void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
-  
+
   void                   computeVariances(fftw_real     * corrT,
                                           ModelSettings * modelSettings);
 
@@ -107,7 +107,7 @@ private:
   void                   computeAdjustmentFactor(fftw_complex                  * relativeWeights,
                                                  Wavelet1D                     * wLocal,
                                                  double                          scaleF,
-                                                 Wavelet                       * wGlobal, 
+                                                 Wavelet                       * wGlobal,
                                                  const SeismicParametersHolder & seismicParameters,
                                                  float                         * A,
                                                  float                           errorVar);
@@ -202,6 +202,7 @@ private:
   int                outputGridsSeismic_; // See modelsettings.h for bit interpretation.
   int                outputGridsElastic_;
   bool               writePrediction_;  // Write prediction grids?
+  bool               doing4DInversion_;
 
   float              energyTreshold_;   // If energy in reflection trace divided by mean energy
                                         // in reflection trace is lower than this, the reflections

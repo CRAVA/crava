@@ -10,8 +10,8 @@ public:
   ~TimeLine();
 
   void AddEvent(int time, int event_type, int event_data_index);                 //Resets GetNext.
-  bool GetNextEvent(int & event_type, int & event_data_index, int & delta_time); //Returns false if no  more events.
-                                                                                 //Not const, since it advances iterators.
+  bool GetNextEvent(int & event_type, int & event_data_index, double & delta_time_year); //Returns false if no  more events.
+                                                                                   //Not const, since it advances iterators.
   void ReSet();
   void GetAllTimes(std::list<int> & time) const {time = time_;}
 
@@ -19,7 +19,7 @@ public:
 
 private:
 
-  std::list<int> time_;             //Measured in days. Parallel indexing of the three tables.
+  std::list<int> time_;           //Measured in days. Parallel indexing of the three tables.
   std::list<int> event_type_;
   std::list<int> event_data_index_; //Contains index number for data for this event type.
 

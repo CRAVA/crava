@@ -34,7 +34,8 @@ public:
                                const ModelSettings     * modelSettings,
                                FFTGrid           * grid,
                                const std::string & fileName,
-                               const std::string & sgriLabel);
+                               const std::string & sgriLabel,
+                               bool padding=false);
 
 
 private:

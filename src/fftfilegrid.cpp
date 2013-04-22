@@ -527,12 +527,13 @@ FFTFileGrid::writeFile(const std::string & fileName,
                        const float         z0,
                        const GridMapping * depthMap,
                        const GridMapping * timeMap,
-                       const TraceHeaderFormat & thf)
+                       const TraceHeaderFormat & thf,
+                       bool padding)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
