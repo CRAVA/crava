@@ -5424,24 +5424,22 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
           errTxt += "Problem with rock physics prior model. Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
       }
     }
-    else
-      errTxt += "Prior facies probabilities must be given in the prior model when rock physics models are used\n";
   }
 
   if(modelSettings_->getGenerateBackgroundFromRockPhysics()) {
     // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
     // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
     if(inputFiles_->getParamCorrFile()!=""){
-      errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.";
+      errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.\n";
     }
 
     if(modelSettings_->getGenerateBackground() == false) {
       errTxt += "The background model can not be given when rock physics models are used.\n";
-      errTxt += "The background model is estimated from the rock physics models\n";
+      errTxt += "  The background model is estimated from the rock physics models.\n";
     }
 
     if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
-      errTxt += "The backround trend can not be written to file when rock physics models are used\n";
+      errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
 
   }
 }

@@ -170,7 +170,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
                                  inputFiles, errText, failedDepthConv);
         }
-        
+
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
         if(failedDepthConv == false)
@@ -2396,19 +2396,34 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       const std::map<std::string, DistributionsRockStorage    *>& rock_storage     = modelSettings->getRockStorage();
 
       // Map out reservoir variables for using in rocks to access resampling trigger.
-      size_t nVintages = reservoir_variables_.begin()->second.size();
-      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(nVintages);
-      for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
+      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
+      if(reservoir_variables_.size() > 0) {
+        size_t nVintages = reservoir_variables_.begin()->second.size();
+        res_var_vintage.resize(nVintages);
+        for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
           var_it != reservoir_variables_.end();var_it++)
-      {
-        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
-          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
+        {
+          for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+            res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
+        }
       }
+
+      if(faciesNames_.size() == 0)
+        setFaciesNamesFromRockPhysics();
+
+      std::string tmpErrText = "";
+      checkFaciesNamesConsistency(modelSettings,
+                                  inputFiles,
+                                  tmpErrText);
+
+      if (tmpErrText != "")
+        errTxt += "Rock physics failed.\n"+tmpErrText;
 
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
 
-      for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+      for(size_t it=0; it<faciesNames_.size(); it++) {
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(faciesNames_[it]);
 
         LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
 
@@ -2434,6 +2449,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
           for(int i=0; i<n_vintages; i++) {
             if(n_vintages > 1)
               LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
+
 
             //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
             rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
@@ -2520,7 +2536,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
           }
 
-          rock_distributions_[it->first] = rock;
+          rock_distributions_[faciesNames_[it]] = rock;
         }
         else
           errTxt += rockErrTxt;
@@ -2561,6 +2577,7 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f      %5.4f      %5.4f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |             %5.4f      %5.4f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                         %5.4f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
 void
@@ -4152,9 +4169,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
   if (modelSettings->getEstimateFaciesProb() || modelSettings->getDo4DInversion())
   {
     LogKit::WriteHeader("Prior Facies Probabilities");
-
-    if(faciesNames_.size() == 0)
-      setFaciesNamesFromRockPhysics();
 
     std::string tmpErrText = "";
     checkFaciesNamesConsistency(modelSettings,

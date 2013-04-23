@@ -1789,8 +1789,4 @@ void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
 
   meanVsVp_ /= nVsVp_;
 
-  if (useInterval)
-    LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio in wavelet estimation interval is %5.3f.\n",1.0f/meanVsVp_);
-  else
-    LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio is %5.3f.\n",1.0f/meanVsVp_);
 }
