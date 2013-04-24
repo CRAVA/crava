@@ -9,6 +9,8 @@
 *.h               text
 *.cc              text
 *.pl              text
+*.m               text
+*.py              text
 
 Makefile          text
 Makeheader        text
@@ -37,6 +39,7 @@ Makeheader        text
 *.sgy             binary
 *.segy            binary
 *.storm           binary
+*.Sgri            binary
 
 *.tar             binary
 *.gz              binary
