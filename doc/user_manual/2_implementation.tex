@@ -169,6 +169,9 @@ from wells.
 \subsubsection{Multizone background model}
 In the \kw{multizone-model}, the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The full multizone background model is made from the zone background models by using Beta distributions with $\alpha = \beta =2$ for the transitions between the zones. The limits of the Beta distribution may be different for each surface, and they are given as input to the model. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
 
+\subsubsection{Background model from rock physics}
+When rock physics models are used, the background model is generated using these. Each facies is defined as a \kw{rock} possibly containing trends using the rock physics template model described in \autoref{sec:rockPhysics}. The resulting background model is generated as a weighted average of the rock models, where the weights are the corresponding facies \kw{prior-probabilities}. 
+
 \subsection{Covariance}
 \label{sec:correstimp}
 
@@ -188,7 +191,9 @@ grid, and then do standard correlation estimation using
 \end{equation}
 
 The parameter covariance matrix is simply estimated by using the
-covariances at time lag 0. In \autoref{fig:parameter-correlation}, we
+covariances at time lag 0. When rock physics models are used, the parameter covariance matrix is calculated from the expectation vector and parameter covariance matrix for each rock model weighted with the corresponding prior facies probability using standard statistical models. If trends are included in the rock physics models, the parameter covariance matrix is calculated in each reservoir position. The resulting parameter covariance matrix is then calculated as the average over these coveraince matrices. 
+
+In \autoref{fig:parameter-correlation}, we
 show cross plots of the parameter residuals ($x_i - \bar{x}$) for a
 sample field. The depicted distributions look similar to bivariate
 normal distributions, which supports the normal distribution
@@ -566,7 +571,7 @@ The final probability distribution is smoothed with the seismic uncertainty. Thi
 \begin{equation}
 \vect{\Sigma}_{e^*,w} = \vect{\Sigma}_{m,w|d} - \vect{\Sigma}_{m,w|d} \vect{\Sigma}_{m,w}^{-1} \vect{\Sigma}_{m,w|d}
 \end{equation}
-Each well is filtered independently. (...) The bins in the probability grids (one per facies) are then filled with the values from the wells and a Gaussian distribution with covariance in the elastic dimensions from the well filter is created. The facies probability grids are then convoluted with the Gaussian distribution by FFT. This gives $ \hat{p}(\hat{\vect{m}}_i|f_i,\vect{z}) $.
+Each well is filtered independently. The bins in the probability grids (one per facies) are then filled with the values from the wells and a Gaussian distribution with covariance in the elastic dimensions from the well filter is created. The facies probability grids are then convoluted with the Gaussian distribution by FFT. This gives $ \hat{p}(\hat{\vect{m}}_i|f_i,\vect{z}) $.
 \subsection{Calculating facies probabilities}
 The final lithology prediction is computed as
 \begin{equation}

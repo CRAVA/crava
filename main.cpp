@@ -133,17 +133,24 @@ int main(int argc, char** argv)
   Appl::Instance()->Main(argc, argv);
 #endif
 
-  /*if(0) {
+  if(0) {
+    //test of DEM RPM
+    double effective_bulk_modulus2;
+    double effective_shear_modulus2;
+    double effective_density2;
+    DEMTools::DebugTestCalcEffectiveModulus2(effective_bulk_modulus2,
+                                             effective_shear_modulus2,
+                                             effective_density2);
     double effective_bulk_modulus;
     double effective_shear_modulus;
     double effective_density;
     DEMTools::DebugTestCalcEffectiveModulus4(effective_bulk_modulus,
                                              effective_shear_modulus,
                                              effective_density);
-    float tmp10 = 5.0f;
+    //float tmp10 = 5.0f;
 
 
-  }*/
+  }
 
   if (argc != 2) {
     printf("Usage: %s modelfile\n",argv[0]);
@@ -217,7 +224,7 @@ int main(int argc, char** argv)
     else {
       int  eventType;
       int  eventIndex;
-      int  oldTime;
+      double  oldTime;
       bool failedFirst = false;
       modelGeneral->getTimeLine()->ReSet();
       modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
@@ -226,11 +233,7 @@ int main(int argc, char** argv)
       case TimeLine::AVO :
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
-          bool failedAllocating = false;
-          if(seismicParameters.GetMuAlpha() == NULL)
-            failedAllocating = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, modelGeneral->getTimeSimbox());
-
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex); 
+          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
 
         }
         // In case of 3D inversion
@@ -266,10 +269,10 @@ int main(int argc, char** argv)
 
       delete timeBGSimbox;
 
-      int time;
+      double time;
       int time_index = 0;
       while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-        modelGeneral->advanceTime(time_index, seismicParameters);
+        modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
         time_index++;
         bool failed;
         switch(eventType) {
@@ -296,11 +299,11 @@ int main(int argc, char** argv)
     }
 
     if(modelSettings->getDo4DInversion())
-    { 
+    {
       bool failed;
       if(modelSettings->getDo4DRockPhysicsInversion())
       {
-        
+
         failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
 
         if(failed)

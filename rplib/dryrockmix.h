@@ -48,7 +48,7 @@ public:
   DryRockMixOfDryRockAndSolid(const std::vector<DryRock*> &  dryrock,
                               const std::vector<Solid*>   &  solid,
                               const std::vector<double>   &  volume_fraction_dryrock,
-                              const std::vector<double>   &  volume_fraction_solid,                                                         
+                              const std::vector<double>   &  volume_fraction_solid,
                               const std::vector<double>   &  u,
                               DEMTools::MixMethod            mix_method);
 

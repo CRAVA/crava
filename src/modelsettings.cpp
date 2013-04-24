@@ -36,6 +36,7 @@ ModelSettings::ModelSettings(void)
     indBGTrend_(0),
     indWavelet_(0),
     indFacies_(0),
+    indRockPhysics_(0),
     logNames_(5),
     inverseVelocity_(2)
 {
@@ -145,6 +146,7 @@ ModelSettings::ModelSettings(void)
   do4DInversion_           =    false;
   do4DRockPhysicsInversion_=    false;
   backgroundFromRockPhysics_=   false;
+  calibrateRockPhysicsToWells_= false;
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;

@@ -36,7 +36,7 @@ public:
   void     DivideAndSmoothTable(int tableInd,std::vector<std::vector<double> > priorDistribution, std::vector<fftw_complex*> smoothingFilter);
   fftw_complex*        MakeSmoothingFilter(double posteriorVariance,double  df);
   std::vector<double>  MakeGaussKernel(double mean, double variance, double minf, double  df,int nf);
-  // another option is to use data reference 
+  // another option is to use data reference
 
 
   void     SolveGEVProblem( NRLib::Matrix sigma_prior,
@@ -45,8 +45,9 @@ public:
   double   GetGridValue(int TableNr,int i1,int i2,int i3,int i4);
   void     SetGridValue(int TableNr,int i1,int i2,int i3,int i4,double value);
   void     AddToGridValue(int TableNr, int i1,int i2,int i3,int i4,double value);
-  
-private: 
+  void     writeTableTofile(std::string fileName);
+
+private:
 
   void GetLowerIndexAndW(double minValue,double maxValue,int nValue,double value,int& index, double& w);
   int GetLowerIndex(double minValue,double maxValue,int nValue,double value);
@@ -56,16 +57,17 @@ private:
 
   std::vector<fftw_complex*> smoothingFilter_; // all have length nfp_/2+1
   std::vector<std::vector<double> > priorDistribution_;
-  //Linear transform 1 to 4 [f1 f2 f3 f4  ]=v_*m  (v_1 4x6 m 6x1 ), 
+  //Linear transform 1 to 4 [f1 f2 f3 f4  ]=v_*m  (v_1 4x6 m 6x1 ),
   NRLib::Matrix v_;
 
   // Grid resolution for the transformed variables.
   std::vector<int> nf_;
   int nfp_;
-  
+
   // Limits for factor  1 to 4
   NRLib::Vector minf_;
   NRLib::Vector maxf_;
+  NRLib::Vector meanf_;
   rfftwnd_plan fftplan1_;
   rfftwnd_plan fftplan2_;
 

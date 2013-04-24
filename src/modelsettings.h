@@ -86,6 +86,7 @@ public:
   int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]                             ;}
   int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]                             ;}
   int                              getIndicatorFacies(int i)            const { return indFacies_[i]                              ;}
+  int                              getIndicatorRockPhysics(int i)       const { return indRockPhysics_[i]                         ;}
   int                              getIndicatorRealVs(int i)            const { return indRealVs_[i]                              ;}
   int                              getIndicatorFilter(int i)            const { return indFilter_[i]                              ;}
   const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_                                 ;}
@@ -169,6 +170,7 @@ public:
   bool                             getForwardModeling(void)             const { return forwardModeling_                           ;}
   bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_                   ;}
   bool                             getGenerateBackgroundFromRockPhysics()const{ return backgroundFromRockPhysics_                 ;}
+  bool                             getCalibrateRockPhysicsToWells()     const { return calibrateRockPhysicsToWells_               ;}
   bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
   bool                             getUseVerticalVariogram(void)        const { return useVerticalVariogram_                      ;}
   bool                             getMultizoneBackground()             const { return multizoneBackground_                       ;}
@@ -282,6 +284,7 @@ public:
   void addIndicatorBGTrend(int indicator)                 { indBGTrend_.push_back(indicator)                     ;}
   void addIndicatorWavelet(int indicator)                 { indWavelet_.push_back(indicator)                     ;}
   void addIndicatorFacies(int indicator)                  { indFacies_.push_back(indicator)                      ;}
+  void addIndicatorRockPhysics(int indicator)             { indRockPhysics_.push_back(indicator)                 ;}
   void addIndicatorRealVs(int indicator)                  { indRealVs_.push_back(indicator)                      ;}
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
@@ -366,6 +369,7 @@ public:
   void setMultizoneBackground(bool multizone)             { multizoneBackground_      = multizone                ;}
   void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
   void setBackgroundFromRockPhysics(bool backgroundFromRP){ backgroundFromRockPhysics_= backgroundFromRP         ;}
+  void setCalibrateRockPhysicsToWells(bool calibrate)     { calibrateRockPhysicsToWells_ = calibrate             ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
   void setFaciesProbRelative(bool faciesProbRel)          { faciesProbRelative_       = faciesProbRel            ;}
   void setFaciesProbFromRockPhysics(bool rockPhysics)     { faciesProbFromRockPhysics_= rockPhysics              ;}
@@ -537,6 +541,7 @@ private:
   bool                              estimate3DWavelet_;          ///< True if a 3D wavelet is estimated for at least one angle.
   bool                              hasTime3DMapping_;           ///< True if command time-3D-mapping is used
   bool                              use3DWavelet_;               // True if 3D wavelet is used
+  bool                              calibrateRockPhysicsToWells_;///< True if rock physics models can be estimated from wells
 
   std::vector<float>                constBackValue_;             ///< Values set for constant background model
                                                                  ///< Negative value ==> read from file (actual value gives format).
@@ -549,6 +554,7 @@ private:
   std::vector<int>                  indBGTrend_;                 ///< Use well to estimate background trend?
   std::vector<int>                  indWavelet_;                 ///< Use well to estimate wavelet?
   std::vector<int>                  indFacies_;                  ///< Use well to estimate facies?
+  std::vector<int>                  indRockPhysics_;             ///< Use weel to estimate rock physics?
   std::vector<int>                  indRealVs_;                  ///< Treat Vs log as real?
   std::vector<int>                  indFilter_;                  ///< Filter elastic logs using spatial multi-parameter filter?
 

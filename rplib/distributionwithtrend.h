@@ -11,7 +11,7 @@ class DistributionWithTrend {
 
    virtual ~DistributionWithTrend();
    double                            GetCurrentSample(const std::vector<double> & trend_params);
-   
+
 
    virtual DistributionWithTrend    * Clone()                                             const = 0;
    bool                               GetIsShared() const                                 { return(share_level_ > None)                   ;}
@@ -24,8 +24,8 @@ class DistributionWithTrend {
 
    virtual double                     ReSample(double s1, double s2)                            = 0;
    virtual double                     GetQuantileValue(double u, double s1, double s2)          = 0;
-  
-   
+
+
 
    void                               FindUseTrendCube(std::vector<bool> & use_trend_cube,
                                                        int                 dim,

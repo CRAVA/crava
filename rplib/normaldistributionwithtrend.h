@@ -27,7 +27,7 @@ class NormalDistributionWithTrend : public DistributionWithTrend {
    virtual bool                       GetIsDistribution() const               { return(true)                                  ;}
    virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                       ;}
 
-   
+
 
    virtual double                     ReSample(double s1, double s2);
    virtual double                     GetQuantileValue(double u, double s1, double s2);

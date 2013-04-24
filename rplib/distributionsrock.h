@@ -29,10 +29,11 @@ public:
 
   Rock                                * EvolveSample(double       time,
                                                      const Rock & rock);
-  
+
   Rock                                * EvolveSampleAndReservoirVaribles(double             time,
                                                                          const              Rock & rock,
                                                                          std::vector<double> &resVar );
+  int                                   GetNumberOfReservoirVariables(){return reservoir_variables_.size();}
 
   std::vector<double>                   GetLogExpectation(const std::vector<double> & trend_params)       const;
 

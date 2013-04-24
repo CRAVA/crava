@@ -42,19 +42,19 @@ TimeLine::AddEvent(int time, int event_type, int event_data_index)
 }
 
 bool
-TimeLine::GetNextEvent(int & event_type,
-                       int & event_data_index,
-                       int & delta_time)
+TimeLine::GetNextEvent(int    & event_type,
+                       int    & event_data_index,
+                       double & delta_time_year) // NBNB returns delta_time in years
 {
   if(current_time_ != time_.end()) {
     event_type       = *current_event_;
     event_data_index = *current_index_;
     if(current_time_ == time_.begin())
-      delta_time = 0;
+      delta_time_year = 0;
     else {
       std::list<int>::const_iterator prev_time = current_time_;
       --prev_time;
-      delta_time = *current_time_ - *prev_time;
+      delta_time_year = double( *current_time_ - *prev_time)/365.24;
     }
     ++current_time_;
     ++current_event_;

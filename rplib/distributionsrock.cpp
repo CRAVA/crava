@@ -16,9 +16,9 @@ Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<
   for(size_t i=0;i<nResVar;i++)
     reservoir_variables_[i]->TriggerNewSample(resampling_level_);
   Rock * result = GenerateSamplePrivate(trend_params);
-  
+
   for(size_t i=0;i<nResVar;i++)
-    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend_params); 
+    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend_params);
 
   return(result);
 }
@@ -83,7 +83,7 @@ Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
   Rock * rock_update = UpdateSample(time, true, trend, &rock);
 
   for(size_t i=0;i<nResVar;i++)
-    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend); 
+    resVar[i]=reservoir_variables_[i]->GetCurrentSample(trend);
 
   return  rock_update;
 
@@ -95,7 +95,7 @@ Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
 void  DistributionsRock::SetupExpectationAndCovariances()
 //-----------------------------------------------------------------------------------------------------------
 {
-  int n  = 1024*16; // Number of samples generated for each distribution
+  int n  = 1024; // Number of samples generated for each distribution
   int m  =   10; // Number of samples to use when sampling from s_min to s_max
 
   FindTabulatedTrendParams(tabulated_s0_,

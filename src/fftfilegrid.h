@@ -52,7 +52,8 @@ public:
                          const float         z0        = 0.0,
                          const GridMapping * depthMap  = NULL,
                          const GridMapping * timeMap   = NULL,
-                         const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));  //Use this instead of the ones below.
+                         const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                         bool padding=false);  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,

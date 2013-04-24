@@ -197,15 +197,17 @@ public:
                                                         NRLib::Grid2D<double>                            & param_corr,
                                                         std::string                                      & errTxt);
 
-  void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad);
+  void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
-  void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
+  //void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
   bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
 
-  void              advanceTime(int time_step, SeismicParametersHolder & seismicParameters);
-
+  void              advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings);
+  void              lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
+  void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
+  void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:
   void              processWells(std::vector<WellData *> & wells,
@@ -226,20 +228,20 @@ private:
                                               const std::vector<double>                        & probability,
                                               const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
+                                              SeismicParametersHolder                          & seismicParameters,
                                               State4D                                          & state4d,
                                               std::string                                      & errTxt);
 
-  void              generateRockPhysics4DBackground(const Simbox                                     & timeSimbox,
-                                                    const ModelSettings                              & modelSettings,
-                                                    const SeismicParametersHolder                    & seismicParameters,
-                                                    State4D                                          & state4d,
-                                                    std::string                                      & errTxt);
+  void              copyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,
+                                              State4D                                    & state4d);
 
   bool              process4DBackground(ModelSettings           *& modelSettings,
                                         const InputFiles         * inputFiles,
                                         SeismicParametersHolder  & seismicParameters,
                                         std::string              & errText,
-                                        bool                     & failed);
+                                        bool                     & failed,
+                                        NRLib::Vector            & initialMean,
+                                        NRLib::Matrix            & initialCov);
 
   void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<double>              & probability,
@@ -283,8 +285,8 @@ private:
                                        bool                         & failed,
                                        std::string                  & errTxt,
                                        const InputFiles             * inputFiles);
-  
-  
+
+
 
   void              printExpectationAndCovariance(const std::vector<double>   & expectation,
                                                   const NRLib::Grid2D<double> & covariance,
@@ -351,6 +353,7 @@ private:
   void              validateCorrelationMatrix(float              ** C,
                                               const ModelSettings *  modelSettings,
                                               std::string         &  errTxt);
+  void              makeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
   Simbox                  * timeSimbox_;                 ///< Information about simulation area.
