@@ -3780,6 +3780,7 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
+  // add multizones
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval-two-surfaces");
   legalCommands.push_back("interval-one-surface");
