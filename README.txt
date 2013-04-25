@@ -9,7 +9,6 @@ DOCUMENTATION
 No efforts to provide documentation has been made yet.
 
 DOWNLOADING CRAVA
-git clone git://github.com/CRAVA/nrlib.git
 git clone git://github.com/CRAVA/crava.git
 
 BUILDING CRAVA
