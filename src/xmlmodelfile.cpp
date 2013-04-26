@@ -3269,7 +3269,7 @@ XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
 
   double correlation;
   if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
-    if(correlation <= -1 || correlation >= 1)
+    if(correlation < -1 || correlation > 1)
       errTxt += "The <one-year-correlation> of the <reservoir-variable> should be in the interval (-1,1) in <evolve>\n";
   }
   else
