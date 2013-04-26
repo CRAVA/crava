@@ -977,7 +977,7 @@ State4D::makeSeismicParamsFromrockSample(std::vector<std::vector<std::vector<dou
   int i_max = int(rS[0].size());// number of samples
 //  int dim   = int(rS[0][0].size());// 3 + number of reservoir variables
 
-  std::vector<std::vector<double> > m(6,i_max);
+  std::vector<std::vector<double> > m(6, std::vector<double>(i_max));
 
   for(int i=0;i<i_max;i++)
   {

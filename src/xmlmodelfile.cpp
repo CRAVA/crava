@@ -466,7 +466,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     else
       useForFaciesProbability = ModelSettings::NO;
   }
-    
+
   if(parseBool(root, "use-for-rock-physics", use, tmpErr)) {
     if(use)
       useForRockPhysics = ModelSettings::YES;
