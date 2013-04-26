@@ -31,6 +31,10 @@ FluidBatzleWang::Clone() const {
 void
 FluidBatzleWang::ComputeElasticParams(double temp, double pore_pressure) {
   k_   = ComputeBulkModulusOfFluidBatzleWangFromTPS(temp, pore_pressure, salinity_);
+
+  //unit conversion from GPa->kPa
+  k_ *= 1000000.0;
+
   rho_ = ComputeDensityOfFluidBatzleWangFromTPS(temp, pore_pressure, salinity_);
 }
 
