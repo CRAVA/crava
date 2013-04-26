@@ -16,10 +16,9 @@ GXXWARNING  = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-ca
 PROGRAM     = cravarun
 GRAMMAR     = grammar
 OPT         = -O2
-EXTRALFLAGS = -static
 DEBUG       =
 PURIFY      =
-ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
 mode        = all
 
 ifeq ($(GCCNEW),1)
