@@ -1098,35 +1098,39 @@ SegyGeometry::GetILXLSubGeometry(const std::vector<int> & ilxl,
                                  bool                   & interpolation,
                                  bool                   & aligned)
 {
-  int IL0    = IL0_;
-  int XL0    = XL0_;
-  int minIL  = minIL_;
-  int maxIL  = maxIL_;
-  int minXL  = minXL_;
-  int maxXL  = maxXL_;
-  int ILStep = ILStep_;
-  int XLStep = XLStep_;
+  int IL0      = IL0_;
+  int XL0      = XL0_;
+  int minIL    = minIL_;
+  int maxIL    = maxIL_;
+  int minXL    = minXL_;
+  int maxXL    = maxXL_;
+  int ILStep   = ILStep_;
+  int XLStep   = XLStep_;
 
   int minSubIL = ilxl[0];
-  if(minSubIL < 0)
-    minSubIL = minIL;
-  else if(minSubIL < minIL)
-    throw Exception("IL-start ("+ToString(minSubIL)+") is smaller than minimum IL in seismic cube ("+ToString(minIL)+").\n");
   int maxSubIL = ilxl[1];
-  if(maxSubIL < 0)
-    maxSubIL = maxIL;
-  else if(maxSubIL > maxIL)
-    throw Exception("IL-end ("+ToString(maxSubIL)+") is larger than maximum IL in seismic cube ("+ToString(maxIL)+").\n");
   int minSubXL = ilxl[2];
-  if(minSubXL < 0)
-    minSubXL = minXL;
-  else if(minSubXL < minXL)
-    throw Exception("XL-start ("+ToString(minSubXL)+") is smaller than minimum XL in seismic cube ("+ToString(minXL)+").\n");
   int maxSubXL = ilxl[3];
-  if(maxSubXL < 0)
-    maxSubXL = maxXL;
-  else if(maxSubXL > maxXL)
-    throw Exception("XL-end ("+ToString(maxSubXL)+") is larger than maximum XL in seismic cube ("+ToString(maxXL)+").\n");
+
+  if(minSubIL < minIL)
+    throw Exception("Requested IL-start ("+ToString(minSubIL)+") is smaller than minimum IL in seismic cube ("+ToString(minIL)+").\n");
+  else if(minSubIL > maxIL)
+    throw Exception("Requested IL-start ("+ToString(minSubIL)+") is larger than maximum IL in seismic cube ("+ToString(maxIL)+").\n");
+
+  if(maxSubIL < minIL)
+    throw Exception("Requested IL-end ("+ToString(maxSubIL)+") is smaller than minimum IL in seismic cube ("+ToString(minIL)+").\n");
+  else if(maxSubIL > maxIL)
+    throw Exception("Requested IL-end ("+ToString(maxSubIL)+") is larger than maximum IL in seismic cube ("+ToString(maxIL)+").\n");
+
+  if(minSubXL < minXL)
+    throw Exception("Requested XL-start ("+ToString(minSubXL)+") is smaller than minimum XL in seismic cube ("+ToString(minXL)+").\n");
+  else if(minSubXL > maxXL)
+    throw Exception("Requested XL-start ("+ToString(minSubXL)+") is larger than maximum XL in seismic cube ("+ToString(maxXL)+").\n");
+
+  if (maxSubXL < minXL)
+    throw Exception("Requested XL-end ("+ToString(maxSubXL)+") is smaller than minimum XL in seismic cube ("+ToString(minXL)+").\n");
+  else if (maxSubXL > maxXL)
+    throw Exception("Requested XL-end ("+ToString(maxSubXL)+") is larger than maximum XL in seismic cube ("+ToString(maxXL)+").\n");
 
   interpolation = false;
   int subILStep = ilxl[4];
@@ -1252,7 +1256,6 @@ SegyGeometry::GetILXLSubGeometry(const std::vector<int> & ilxl,
   if (modified)
   LogKit::LogFormatted(LogKit::Low, "Obtained     %5d %5d %5d      %5d %5d %5d\n",minSubIL, maxSubIL, subILStep, minSubXL, maxSubXL, subXLStep);
   SegyGeometry * result = new SegyGeometry(subX0, subY0, subDx, subDy, subNx, subNy, subIL0, subXL0, il_stepX_, il_stepY_, xl_stepX_, xl_stepY_, rot_);
-
   return(result);
 }
 
