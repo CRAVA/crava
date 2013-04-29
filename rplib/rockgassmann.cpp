@@ -88,7 +88,7 @@ RockGassmann::ComputeSeismicAndElasticParams() {
 
   k_ = k_dry + temp1/(total_porosity/k_fluid + (1 - total_porosity)/mineral_moduli_k + k_dry/(mineral_moduli_k*mineral_moduli_k));
 
-  rho_ = (1.0 - total_porosity)*rho_dry + total_porosity*rho_fluid;
+  rho_ = rho_dry + total_porosity*rho_fluid;
   DEMTools::CalcSeismicParamsFromElasticParams(k_, mu_, rho_, vp_, vs_);
 }
 

@@ -2425,6 +2425,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       for(size_t it=0; it<faciesNames_.size(); it++) {
         std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(faciesNames_[it]);
 
+        /*for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);*/
+
         LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
 
         std::string rockErrTxt = "";
@@ -2537,6 +2540,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
           }
 
           rock_distributions_[faciesNames_[it]] = rock;
+          //rock_distributions_[it->first] = rock;
         }
         else
           errTxt += rockErrTxt;
