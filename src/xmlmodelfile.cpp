@@ -466,7 +466,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     else
       useForFaciesProbability = ModelSettings::NO;
   }
-    
+
   if(parseBool(root, "use-for-rock-physics", use, tmpErr)) {
     if(use)
       useForRockPhysics = ModelSettings::YES;
@@ -4789,14 +4789,17 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   parseFFTGridPadding(root, errTxt);
 
   float ratio = RMISSING;
+  bool ratioInterval = false;
   if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
     modelSettings_->setVpVsRatio(ratio);
+  else if(parseVpVsRatio(root, errTxt) == true)
+    ratioInterval = true;
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
     modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
 
-  if (ratio_from_wells && ratio != RMISSING) {
+  if (ratio_from_wells && (ratio != RMISSING || ratioInterval == true)) {
     errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
               + ") and ask the ratio to be estimated from well data.\n";
   }
@@ -4905,6 +4908,83 @@ XmlModelFile::parseFFTGridPadding(TiXmlNode * node, std::string & errTxt)
     errTxt += "The lateral padding factors must either both be estimated or both given.";
   if (!estXpad && !estYpad)
     modelSettings_->setEstimateXYPadding(false);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("vp-vs-ratio");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("interval");
+
+
+  std::vector<std::string> interval_names;
+  std::string tmp_name;
+  while(parseIntervalVpVs(root, tmp_name, errTxt) == true) {
+    interval_names.push_back(tmp_name);
+  }
+
+  //Check if all intervals has gotten a new Vp-Vs-ratio value.
+  const std::vector<std::string> & current_interval_names = modelSettings_->getIntervalNames();
+
+  //Alternative: Check in parseIntervalVpVs when adding a new value if the current interval exists -> can only check size of the vectors here.
+  //int number_of_equal_intervals = 0;
+  //for(size_t i = 0; i < interval_names.size(); i++) {
+  //  for(size_t j = 0; j < current_interval_names.size(); j++) {
+  //    if(current_interval_names[j] == interval_names[i]) {
+  //      number_of_equal_intervals++;
+  //      break;
+  //    }
+  //  }
+  //}
+
+  if(current_interval_names.size() != interval_names.size())
+    errTxt += "The number of intervals given under " + root->ValueStr() + " (" + NRLib::ToString(interval_names.size()) + " ) is different from the number of intervals (" + NRLib::ToString(current_interval_names.size()) + ") previously defined.\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("ratio");
+
+  std::string name;
+  float ratio;
+
+  const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
+
+  if(parseValue(root, "name", name, errTxt) == true && parseValue(root, "ratio", ratio, errTxt) == true) {
+    interval_name = name;
+
+    //Check if name is contained in previously defined intervals.
+    bool interval_defined = false;
+    for(size_t i=0; i < current_interval_names.size(); i++) {
+      if(current_interval_names[i] == name) {
+        interval_defined = true;
+        std::pair<std::string, float> VpVsPar(name, ratio);
+        modelSettings_->addVpVsRatioInterval(VpVsPar);
+        //modelSettings_->addVpVsRatioInterval(name, ratio);
+        break;
+      }
+    }
+
+    if(interval_defined == false)
+      errTxt += "Interval " + name + " given in <vp-vs-ratio> is not inclued in the previously defined interval names.\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

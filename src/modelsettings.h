@@ -213,6 +213,7 @@ public:
   std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
 
   void rotateVariograms(float angle);
@@ -305,6 +306,8 @@ public:
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
   void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
+  void addVpVsRatioInterval(std::pair<std::string, float> VpVsPar) {VpVsRatioIntervals_.insert(VpVsPar)          ;}
+  //void addVpVsRatioInterval(std::string name, float ratio){ VpVsRatioIntervals_.insert(std::pair<std::string, float>(name,ratio));}
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -403,6 +406,8 @@ public:
   void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
 
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
+
+  void addInterValName(std::string name)                  { interval_names_.push_back(name)                      ;}
 
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
@@ -526,6 +531,9 @@ private:
   std::vector<std::vector<TraceHeaderFormat*> > timeLapseLocalTHF_;
 
   std::vector<float>                rickerPeakFrequency_;
+
+  std::vector<std::string>          interval_names_;
+  std::map<std::string, float>      VpVsRatioIntervals_;         // Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
 
   std::vector<int>                  waveletDim_;                 ///< Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
   std::vector<float>                stretchFactor_;              ///< Stretch factor for pulse in 3D-wavelet
