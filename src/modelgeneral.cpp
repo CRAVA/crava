@@ -12,6 +12,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <typeinfo>
+#include <algorithm>
 
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
@@ -2134,6 +2135,21 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         for (it = reservoir_storage.begin() ; it != reservoir_storage.end() ; it++)
           LogKit::LogFormatted(LogKit::Low,"  Reservoir variable                       : %10s\n",(it->first).c_str());
       }
+      {
+         std::vector<std::string> trend_param = modelSettings->getTrendCubeParameters();
+         std::vector<int>         cube_type   = modelSettings->getTrendCubeType();
+         if(trend_param.size() > 0) {
+           LogKit::LogFormatted(LogKit::Low,"  \nTrend cubes:\n");
+           for(size_t i=0; i<trend_param.size(); i++) {
+             if(cube_type[i] == ModelSettings::CUBE_FROM_FILE)
+               LogKit::LogFormatted(LogKit::Low,"   From file                               : %10s\n", (trend_param[i]).c_str());
+             else if(cube_type[i] == ModelSettings::STRATIGRAPHIC_DEPTH)
+               LogKit::LogFormatted(LogKit::Low,"   Stratigraphic                           : %10s\n", (trend_param[i]).c_str());
+             else if(cube_type[i] == ModelSettings::TWT)
+               LogKit::LogFormatted(LogKit::Low,"   TWT                                     : %10s\n", (trend_param[i]).c_str());
+           }
+         }
+      }
     }
 
     //
@@ -2408,142 +2424,143 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
         }
       }
 
-      if(faciesNames_.size() == 0)
-        setFaciesNamesFromRockPhysics();
-
-      std::string tmpErrText = "";
-      checkFaciesNamesConsistency(modelSettings,
-                                  inputFiles,
-                                  tmpErrText);
-
-      if (tmpErrText != "")
-        errTxt += "Rock physics failed.\n"+tmpErrText;
 
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
+      std::map<std::string, std::string> facies_cubes   = inputFiles->getPriorFaciesProbFile();
+      std::vector<std::string> all_facies_names         = faciesNames_;
 
+      for(std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
+        all_facies_names.push_back(it_prob->first);
+      for(std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
+        all_facies_names.push_back(it_cube->first);
 
-      for(size_t it=0; it<faciesNames_.size(); it++) {
-        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(faciesNames_[it]);
+      std::sort(all_facies_names.begin(), all_facies_names.end());
 
-        /*for(std::map<std::string, float>::iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);*/
+      std::string prev_facies = "";
+      for(size_t it=0; it<all_facies_names.size(); it++) {
+        if(all_facies_names[it] != prev_facies) {
+          prev_facies = all_facies_names[it];
 
-        LogKit::LogFormatted(LogKit::Low,"\nRock '"+iter->first+"':\n");
+          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
+          if(iter != rock_storage.end()) {
 
-        std::string rockErrTxt = "";
+            std::string rockErrTxt = "";
 
-        DistributionsRockStorage * storage    = iter   ->second;
-        std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
-                                                                                   path,
-                                                                                   trend_cube_parameters,
-                                                                                   trend_cube_sampling,
-                                                                                   rock_storage,
-                                                                                   solid_storage,
-                                                                                   dry_rock_storage,
-                                                                                   fluid_storage,
-                                                                                   rockErrTxt);
+            DistributionsRockStorage * storage    = iter   ->second;
+            std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
+                                                                                       path,
+                                                                                       trend_cube_parameters,
+                                                                                       trend_cube_sampling,
+                                                                                       rock_storage,
+                                                                                       solid_storage,
+                                                                                       dry_rock_storage,
+                                                                                       fluid_storage,
+                                                                                       rockErrTxt);
 
-        if(rockErrTxt == "") {
+            if(rockErrTxt == "") {
 
-          int n_vintages = static_cast<int>(rock.size());
-          if(n_vintages > 1)
-            LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
+              int n_vintages = static_cast<int>(rock.size());
+              if(n_vintages > 1)
+                LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
 
-          for(int i=0; i<n_vintages; i++) {
-            if(n_vintages > 1)
-              LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
+              for(int i=0; i<n_vintages; i++) {
+                if(n_vintages > 1)
+                  LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
 
+                //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
+                rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
 
-            //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-            rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
+                std::vector<bool> has_trends = rock[i]->HasTrend();
+                bool              has_trend = false;
+                for(size_t j=0; j<has_trends.size(); j++) {
+                  if(has_trends[j] == true) {
+                    has_trend = true;
+                    break;
+                  }
+                }
 
-            std::vector<bool> has_trends = rock[i]->HasTrend();
-            bool              has_trend = false;
-            for(size_t j=0; j<has_trends.size(); j++) {
-              if(has_trends[j] == true) {
-                has_trend = true;
-                break;
+                std::vector<double> expectation  = rock[i]->GetMeanLogExpectation();
+                NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
+
+                printExpectationAndCovariance(expectation, covariance, has_trend);
+
+                std::string tmpErrTxt = "";
+                if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
+                  tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
+                  tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
+                }
+                if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
+                  if(typeid(*(storage)) == typeid(ReussRockStorage))
+                    tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
+                  else
+                    tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
+                  tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
+                }
+                if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
+                  tmpErrTxt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
+                  tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
+                }
+
+                if(tmpErrTxt != "") {
+                  errTxt += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
+                  errTxt += tmpErrTxt;
+                }
+
+                std::string varErrTxt = "";
+                if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
+                  varErrTxt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
+                  varErrTxt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
+                }
+                if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
+                  varErrTxt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
+                  varErrTxt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
+                }
+                if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
+                  varErrTxt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
+                  varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
+                }
+
+                if(varErrTxt != "") {
+                  errTxt += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
+                  errTxt += varErrTxt;
+                }
+
+                // Check correlations
+                float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+                float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+                float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
+
+                NRLib::SymmetricMatrix corr(3);
+                corr(0,0) = 1;
+                corr(1,1) = 1;
+                corr(2,2) = 1;
+                corr(0,1) = corr01;
+                corr(0,2) = corr02;
+                corr(1,2) = corr12;
+
+                try {
+                  NRLib::CholeskyInvert(corr);
+                }
+                catch (NRLib::Exception & e) {
+                  errTxt += e.what();
+                  errTxt += " for rock '"+iter->first+"':\n";
+                  errTxt += "  The variabels in the rock model are probably linearly dependent\n";
+                }
+
+                if(varErrTxt != "" || tmpErrTxt != "")
+                  break;
+
               }
-            }
 
-            std::vector<double> expectation  = rock[i]->GetMeanLogExpectation();
-            NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
-
-            printExpectationAndCovariance(expectation, covariance, has_trend);
-
-            std::string tmpErrTxt = "";
-            if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
-              tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
-              tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
+              rock_distributions_[all_facies_names[it]] = rock;
             }
-            if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
-              if(typeid(*(storage)) == typeid(ReussRockStorage))
-                tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
-              else
-                tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
-              tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
-            }
-            if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
-              tmpErrTxt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
-              tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
-            }
-
-            if(tmpErrTxt != "") {
-              errTxt += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
-              errTxt += tmpErrTxt;
-            }
-
-            std::string varErrTxt = "";
-            if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
-              varErrTxt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
-              varErrTxt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
-            }
-            if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
-              varErrTxt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
-              varErrTxt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
-            }
-            if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
-              varErrTxt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
-              varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
-            }
-
-            if(varErrTxt != "") {
-              errTxt += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
-              errTxt += varErrTxt;
-            }
-
-            // Check correlations
-            float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
-            float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
-            float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
-
-            NRLib::SymmetricMatrix corr(3);
-            corr(0,0) = 1;
-            corr(1,1) = 1;
-            corr(2,2) = 1;
-            corr(0,1) = corr01;
-            corr(0,2) = corr02;
-            corr(1,2) = corr12;
-
-            try {
-              NRLib::CholeskyInvert(corr);
-            }
-            catch (NRLib::Exception & e) {
-              errTxt += e.what();
-              errTxt += " for rock '"+iter->first+"':\n";
-              errTxt += "  The variabels in the rock model are probably linearly dependent\n";
-            }
-
-            if(varErrTxt != "" || tmpErrTxt != "")
-              break;
-
+            else
+              errTxt += rockErrTxt;
           }
-
-          rock_distributions_[faciesNames_[it]] = rock;
+          else
+            errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
           //rock_distributions_[it->first] = rock;
         }
-        else
-          errTxt += rockErrTxt;
       }
     }
 
@@ -2926,7 +2943,7 @@ ModelGeneral::computeTime(int year, int month, int day) const
 
 void
 ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
-                                              const std::vector<double>                        & probability,
+                                              const std::vector<float>                         & probability,
                                               FFTGrid                                          & vp,
                                               FFTGrid                                          & vs,
                                               FFTGrid                                          & rho)
@@ -3055,7 +3072,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
 
 void
 ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                  const std::vector<double>                        & probability,
+                                                  const std::vector<float>                         & probability,
                                                   NRLib::Grid2D<double>                            & param_corr,
                                                   std::string                                      & errTxt)
 {
@@ -3161,7 +3178,7 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
 
 void
 ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
-                                                 const std::vector<double>              & probability,
+                                                 const std::vector<float>               & probability,
                                                  const std::vector<double>              & trend_position,
                                                  NRLib::Grid2D<double>                  & sigma_sum) const
 {
@@ -3205,7 +3222,7 @@ ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<Distributions
 
 void
 ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
-                                        const std::vector<double>                        & probability,
+                                        const std::vector<float>                         & probability,
                                         const Simbox                                     & timeSimbox,
                                         const ModelSettings                              & modelSettings,
                                         SeismicParametersHolder                          & seismicParameters,
@@ -3721,6 +3738,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
                                        std::vector<WellData *>          wells,
                                        const Simbox                   * timeSimbox,
                                        const ModelSettings            * modelSettings,
+                                       const std::vector<float>       & priorFacies,
                                        FFTGrid                       ** seisCube,
                                        const InputFiles               * inputFiles,
                                        SeismicParametersHolder        & seismicParameters,
@@ -3767,16 +3785,6 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
 
       int n_facies = static_cast<int>(faciesNames_.size());
 
-      std::vector<double> priorProbability(n_facies);
-      typedef std::map<std::string,float> mapType;
-      mapType myMap = modelSettings->getPriorFaciesProb();
-
-      for(int i=0;i<n_facies;i++) {
-        mapType::iterator iter = myMap.find(faciesNames_[i]);
-        if(iter!=myMap.end())
-          priorProbability[i] = iter->second;
-      }
-
       std::vector<DistributionsRock *> rock_distribution(n_facies);
       typedef std::map<std::string, DistributionsRock *> rfMapType;
       rfMapType rfMap = getRockDistributionTime0();
@@ -3789,7 +3797,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
 
       NRLib::Grid2D<double> param_corr(3,3);
       calculateCovariancesFromRockPhysics(rock_distribution,
-                                          priorProbability,
+                                          priorFacies,
                                           param_corr,
                                           errText);
 
@@ -4148,6 +4156,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& modelSetting
 }
 
 void
+
 ModelGeneral::setFaciesNamesFromRockPhysics()
 {
   typedef std::map<std::string, DistributionsRock *> mapType;
@@ -4173,6 +4182,9 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
   if (modelSettings->getEstimateFaciesProb() || modelSettings->getDo4DInversion())
   {
     LogKit::WriteHeader("Prior Facies Probabilities");
+
+    if(faciesNames_.size() == 0)
+      setFaciesNamesFromRockPhysics();
 
     std::string tmpErrText = "";
     checkFaciesNamesConsistency(modelSettings,
@@ -4508,14 +4520,14 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
 
   int n_facies = static_cast<int>(faciesNames_.size());
 
-  std::vector<double> priorProbability(n_facies);
+  std::vector<float> priorProbability(n_facies);
   typedef std::map<std::string,float> mapType;
   mapType myMap = modelSettings->getPriorFaciesProb();
 
   for(int i=0;i<n_facies;i++) {
     mapType::iterator iter = myMap.find(faciesNames_[i]);
     if(iter!=myMap.end())
-      priorProbability[i] = iter->second;
+      priorProbability[i] = static_cast<float>(iter->second);
   }
 
   std::vector<DistributionsRock *> rock_distribution(n_facies);
@@ -4541,6 +4553,7 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
                            wells_,
                            timeSimbox_,
                            modelSettings,
+                           priorProbability,
                            seisCube,
                            inputFiles,
                            seismicParameters,

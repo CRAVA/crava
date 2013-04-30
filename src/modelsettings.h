@@ -205,6 +205,7 @@ public:
   int                              getEstimateNumberOfWavelets(int t)   const;
   const std::vector<int>           findSortedVintages(void)             const;
   const std::vector<std::string> & getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
+  const std::vector<int>         & getTrendCubeType(void)               const { return trendCubeType_                       ;}
   const std::map<std::string, std::vector<DistributionWithTrendStorage *> > & getReservoirVariable() const { return reservoirVariable_ ;}
   const std::map<std::string, DistributionsRockStorage *>                   & getRockStorage()       const { return rockStorage_       ;}
   const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_    ;}
@@ -260,6 +261,7 @@ public:
   void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
+  void addTrendCubes(int trendCubeType)                                  { trendCubeType_.push_back(trendCubeType)                        ;}
   void addReservoirVariable(std::string variable, std::vector<DistributionWithTrendStorage *> dist) { reservoirVariable_[variable] = dist ;}
   void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]    = rock                    ;}
   void addDryRock(std::string label,  DistributionsDryRockStorage  * dry_rock)         { dryRockStorage_[label] = dry_rock                ;}
@@ -468,6 +470,11 @@ public:
                                  SOLID,
                                  DRY_ROCK,
                                  ROCK};
+
+  enum          trendCube{TWT,
+                          STRATIGRAPHIC_DEPTH,
+                          CUBE_FROM_FILE};
+
 private:
 
   std::vector<Vario*>               angularCorr_;                ///< Variogram for lateral error correlation, time lapse
@@ -699,6 +706,7 @@ private:
   std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
+  std::vector<int>                  trendCubeType_;               // Type of the trend cube
 
   std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
   std::map<std::string, DistributionsRockStorage *>                   rockStorage_;        // Rock physics rocks defined in predefinitions

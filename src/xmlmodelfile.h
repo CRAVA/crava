@@ -157,6 +157,7 @@ private:
   void checkEstimationConsistency(std::string & errTxt);
   void checkInversionConsistency(std::string & errTxt);
   void checkTimeLapseConsistency(std::string & errTxt);
+  void checkRockPhysicsConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
   void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
