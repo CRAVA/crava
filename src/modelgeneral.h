@@ -171,6 +171,7 @@ public:
                                              std::vector<WellData *>          wells,
                                              const Simbox                   * timeSimbox,
                                              const ModelSettings            * modelSettings,
+                                             const std::vector<float>       & priorFacies,
                                              FFTGrid                       ** seisCube,
                                              const InputFiles               * inputFiles,
                                              SeismicParametersHolder        & seismicParameters,
@@ -187,13 +188,13 @@ public:
                                           const InputFiles             * inputFiles);
 
   void              generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                    const std::vector<double>                        & probability,
+                                                    const std::vector<float>                         & probability,
                                                     FFTGrid                                          & vp,
                                                     FFTGrid                                          & vs,
                                                     FFTGrid                                          & rho);
 
   void              calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
-                                                        const std::vector<double>                        & probability,
+                                                        const std::vector<float>                         & probability,
                                                         NRLib::Grid2D<double>                            & param_corr,
                                                         std::string                                      & errTxt);
 
@@ -222,10 +223,11 @@ private:
                                             std::string                  & tmpErrText,
                                             int                          & error);
 
+
   void              setFaciesNamesFromRockPhysics();
 
   void              setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
-                                              const std::vector<double>                        & probability,
+                                              const std::vector<float>                         & probability,
                                               const Simbox                                     & timeSimbox,
                                               const ModelSettings                              & modelSettings,
                                               SeismicParametersHolder                          & seismicParameters,
@@ -244,7 +246,7 @@ private:
                                         NRLib::Matrix            & initialCov);
 
   void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
-                                                       const std::vector<double>              & probability,
+                                                       const std::vector<float>               & probability,
                                                        const std::vector<double>              & trend_position,
                                                        NRLib::Grid2D<double>                  & sigma_sum) const;
 

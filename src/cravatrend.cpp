@@ -7,6 +7,10 @@
 
 #include <string.h>
 
+CravaTrend::CravaTrend()
+{
+}
+
 CravaTrend::CravaTrend(Simbox                       * timeSimbox,
                        Simbox                       * timeCutSimbox,
                        ModelSettings                * modelSettings,
@@ -18,49 +22,101 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
   n_samples_ = 1000;
 
   const std::vector<std::string> trend_cube_parameters = modelSettings->getTrendCubeParameters();
+  const std::vector<int>         trend_cube_type       = modelSettings->getTrendCubeType();
   n_trend_cubes_                                       = static_cast<int>(trend_cube_parameters.size());
 
   std::vector<std::string> trendCubeNames(n_trend_cubes_);
 
-  if(n_trend_cubes_ > 0){
-    const SegyGeometry      * dummy1 = NULL;
-    const TraceHeaderFormat * dummy2 = NULL;
-    const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+  if(n_trend_cubes_ > 0) {
 
-    for(int i=0; i<n_trend_cubes_; i++){
+    std::string errorText  = "";
 
-      trendCubeNames[i] = inputFiles->getTrendCube(i);
+    const int nx   = timeSimbox->getnx();
+    const int ny   = timeSimbox->getny();
+    const int nz   = timeSimbox->getnz();
+    const int nxp  = nx;
+    const int nyp  = ny;
+    const int nzp  = nz;
+    const int rnxp = 2*(nxp/2 + 1);
 
-      FFTGrid           * trend_cube = NULL;
-      std::string         errorText  = "";
-      const std::string   log_name   = "trend cube '"+trend_cube_parameters[i]+"'";
+    for(int grid_number=0; grid_number<n_trend_cubes_; grid_number++) {
 
-      ModelGeneral::readGridFromFile(trendCubeNames[i],
-                                     log_name,
-                                     offset,
-                                     trend_cube,
-                                     dummy1,
-                                     dummy2,
-                                     FFTGrid::PARAMETER,
-                                     timeSimbox,
-                                     timeCutSimbox,
-                                     modelSettings,
-                                     errorText,
-                                     true);
+      FFTGrid * trend_cube = NULL;
 
-      if(errorText != ""){
-        errorText += "Reading of file \'"+trendCubeNames[i]+"\' failed\n";
-        errTxt    += errorText;
-        failed     = true;
+      const std::string   log_name   = "trend cube '"+trend_cube_parameters[grid_number]+"'";
+
+      if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {
+
+        trendCubeNames[grid_number] = inputFiles->getTrendCube(grid_number);
+
+        const SegyGeometry      * dummy1     = NULL;
+        const TraceHeaderFormat * dummy2     = NULL;
+        const float               offset     = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+
+        ModelGeneral::readGridFromFile(trendCubeNames[grid_number],
+                                       log_name,
+                                       offset,
+                                       trend_cube,
+                                       dummy1,
+                                       dummy2,
+                                       FFTGrid::PARAMETER,
+                                       timeSimbox,
+                                       timeCutSimbox,
+                                       modelSettings,
+                                       errorText,
+                                       true);
+
+        if(errorText != "") {
+          errorText += "Reading of file \'"+trendCubeNames[grid_number]+"\' failed\n";
+          errTxt    += errorText;
+          failed     = true;
+        }
       }
 
-      //Note that all trend cubes have the same sampling as the timeSimbox
-      const int rnxp = trend_cube->getRNxp();
-      const int nyp  = trend_cube->getNyp();
-      const int nzp  = trend_cube->getNzp();
-      const int nx   = trend_cube->getNx();
-      const int ny   = trend_cube->getNy();
-      const int nz   = trend_cube->getNz();
+      else if(trend_cube_type[grid_number] == ModelSettings::STRATIGRAPHIC_DEPTH) {
+
+        LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
+
+        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube->createRealGrid();
+        trend_cube->setAccessMode(FFTGrid::WRITE);
+
+        for(int k=0; k<nzp; k++) {
+          for(int j=0; j<nyp; j++) {
+            for(int i=0; i<rnxp; i++) {
+              if(i < nx)
+                trend_cube->setRealValue(i, j, k, static_cast<float>(k));
+              else
+                trend_cube->setRealValue(i, j, k, 0);
+            }
+          }
+        }
+
+        trend_cube->endAccess();
+      }
+
+      else if(trend_cube_type[grid_number] == ModelSettings::TWT) {
+
+        LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
+
+        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube->createRealGrid();
+        trend_cube->setAccessMode(FFTGrid::WRITE);
+
+        for(int k=0; k<nzp; k++) {
+          for(int j=0; j<nyp; j++) {
+            for(int i=0; i<rnxp; i++) {
+              if(i < nx) {
+                float value = static_cast<float>(timeSimbox->getTop(i,j) + timeSimbox->getdz(i,j)*k);
+                trend_cube->setRealValue(i, j, k, value);
+              }
+              else
+                trend_cube->setRealValue(i, j, k, 0);
+            }
+          }
+        }
+        trend_cube->endAccess();
+      }
 
       NRLib::Grid<double> grid_cube(nx, ny, nz);
 
@@ -74,6 +130,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
       }
 
       trend_cubes_.push_back(grid_cube);
+
 
       // Calculate trend_cube_sampling_
       // Sample all trends from min to max of the trend cube, using increment_ in the sampling
@@ -93,14 +150,16 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
       trend_cube_sampling_.push_back(sampling);
 
+
+      if(modelSettings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+        std::string fileName = IO::PrefixTrendCubes() + trend_cube_parameters[grid_number];
+        writeToFile(timeSimbox, trend_cube, fileName, "trend cube");
+      }
+
       delete trend_cube;
 
     }
   }
-}
-
-CravaTrend::CravaTrend()
-{
 }
 
 CravaTrend::~CravaTrend()
@@ -137,4 +196,23 @@ CravaTrend::GetSizeTrendCubes() const
   gridSize[2] = nK;
 
   return gridSize;
+}
+
+void
+CravaTrend::writeToFile(const Simbox        * timeSimbox,
+                        FFTGrid             * grid,
+                        const std::string   & fileName,
+                        const std::string   & sgriLabel)
+{
+
+
+  grid ->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  grid->writeFile(fileName,
+                  IO::PathToInversionResults(),
+                  timeSimbox,
+                  sgriLabel);
+
+  grid->endAccess();
+
 }

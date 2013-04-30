@@ -651,6 +651,11 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 
   SpatialWellFilter * spatWellFilter = new SpatialWellFilter(nWellsToBeFiltered);
 
+  FFTGrid * postCovAlpha = seismicParameters.GetCovAlpha();
+
+  for(int i=0; i<nWellsToBeFiltered; i++)
+    spatWellFilter->setPriorSpatialCorrSyntWell(postCovAlpha, syntWellData[i], i);
+
   // NB! EN doFilteringSyntWells can potentially invert 2N matrices instead
   spatWellFilter->doFilteringSyntWells(syntWellData, v, seismicParameters, nWellsToBeFiltered, cravaResult->getPriorVar0());
 

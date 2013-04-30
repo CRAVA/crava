@@ -783,6 +783,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
 \elist
 
+\subparagraph{\hbracket{trend-cubes}}\newkw{trend-cubes}
+ \slist
+   \item \Description Trend cubes used for trends in rock physics models
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
 \subsubsection{\hbracket{well-output}}\newkw{well-output}
  \slist
    \item \Description Collects all output that can be given in well format. Wells contain logs for vp, vs and density, each of these in four versions: Raw, filtered to background frequency, filtered to seismic frequency and seismic resolution. In addition, the facies log is written if found.
@@ -3527,7 +3534,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Argument String
    \item \Default 
  \elist
- 
+
+\paragraph{\hbracket{stratigraphic-depth}}\newkw{stratigraphic-depth}
+ \slist
+   \item \Description Generates a trend cube following stratigraphy of the inversion area
+   \item \Argument 'yes' or 'no
+   \item \Default 'no'
+ \elist
+
+\paragraph{\hbracket{twt}}\newkw{twt}
+ \slist
+   \item \Description Generates a trend cube following the two way travel time
+   \item \Argument 'yes' or 'no
+   \item \Default 'no'
+ \elist
+
 \section{Value assignments}\newkw{value-assignments}
 \label{sec:valueassignment}
 All the properties and function parameters can use previously assigned values in \kw{reservoir}, or be assigned values directly in \kw{predefinitions}. The possible types of value assignments are value, trend or distribution. Variables defined in \kw{reservoir} can also be used by the \kw{reservoir-variable} keyword.

@@ -7,10 +7,13 @@
 
 class Simbox;
 class InputFiles;
+class FFTGrid;
 
 class CravaTrend
 {
 public:
+
+  CravaTrend();
 
   CravaTrend(Simbox                       * timeSimbox,
              Simbox                       * timeCutSimbox,
@@ -18,8 +21,6 @@ public:
              bool                         & failed,
              std::string                  & errTxt,
              const InputFiles             * inputFiles);
-
-  CravaTrend();
 
   ~CravaTrend();
 
@@ -32,6 +33,10 @@ public:
   const std::vector<std::vector<double> >    & GetTrendCubeSampling()          const   { return trend_cube_sampling_;}
 
 private:
+  void                                         writeToFile(const Simbox        * timeSimbox,
+                                                           FFTGrid             * grid,
+                                                           const std::string   & fileName,
+                                                           const std::string   & sgriLabel);
 
   std::vector<NRLib::Grid<double> >    trend_cubes_;               ///< Trend cubes used in rock phyiscs prior model
   std::vector<std::vector<double> >    trend_cube_sampling_;       ///< Common sampling for all trends, corresponding to min/max-values of the trend cubes

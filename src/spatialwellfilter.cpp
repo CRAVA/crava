@@ -51,6 +51,7 @@ void SpatialWellFilter::setPriorSpatialCorrSyntWell(FFTGrid             * parSpa
                                                     SyntWellData        * well,
                                                     int                   wellnr)
 {
+  parSpatialCorr->setAccessMode(FFTGrid::RANDOMACCESS);
 
   double minValue = std::pow(10.0,-9);
   int nz = parSpatialCorr->getNz();
@@ -91,6 +92,7 @@ void SpatialWellFilter::setPriorSpatialCorrSyntWell(FFTGrid             * parSpa
       }
     }
   }
+  parSpatialCorr->endAccess();
 }
 
 void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr)

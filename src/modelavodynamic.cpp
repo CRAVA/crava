@@ -247,6 +247,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
                                                  modelGeneral->getWells(),
                                                  timeSimbox,
                                                  modelSettings,
+                                                 modelGeneral->getPriorFacies(),
                                                  seisCube_,
                                                  inputFiles,
                                                  seismicParameters,
@@ -688,15 +689,7 @@ ModelAVODynamic::processBackground(Background                    *& background,
       std::vector<std::string> facies_names = modelGeneral->getFaciesNames();
       int                      n_facies     = static_cast<int>(facies_names.size());
 
-      std::vector<double> priorProbability(n_facies);
-      typedef std::map<std::string,float> mapType;
-      mapType myMap = modelSettings->getPriorFaciesProb();
-
-      for(int i=0;i<n_facies;i++) {
-        mapType::iterator iter = myMap.find(facies_names[i]);
-        if(iter!=myMap.end())
-          priorProbability[i] = iter->second;
-      }
+      std::vector<float> priorProbability = modelGeneral->getPriorFacies();
 
       std::vector<DistributionsRock *> rock_distribution(n_facies);
       typedef std::map<std::string, DistributionsRock *> rfMapType;
