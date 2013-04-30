@@ -623,9 +623,10 @@ SeismicParametersHolder::printPriorVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f     %5.4f     %5.4f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |            %5.4f     %5.4f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                       %5.4f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
 
   if (std::abs(corr01) > 1.0) {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
@@ -657,9 +658,9 @@ SeismicParametersHolder::printPostVariances(const NRLib::Matrix & postVar0) cons
   float corr12 = static_cast<float>(postVar0(1,2)/(sqrt(postVar0(1,1)*postVar0(2,2))));
   LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f     %5.4f     %5.4f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |            %5.4f     %5.4f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                       %5.4f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
 
   if (std::abs(corr01) > 1.0) {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);

@@ -833,6 +833,34 @@ SegyGeometry::SegyGeometry(const RegularSurface<double> surf)
   firstAxisIL_ = false;
 }
 
+SegyGeometry::SegyGeometry(const RegularSurfaceRotated<double> surf)
+{
+  x0_          = surf.GetXRef();  // Use rotation origin and not minimum x-value
+  y0_          = surf.GetYRef();  // Use rotation origin and not minimum y-value
+  dx_          = surf.GetDX();
+  dy_          = surf.GetDY();
+  nx_          = surf.GetNI() - 1;
+  ny_          = surf.GetNJ() - 1;
+  rot_         = surf.GetAngle();
+  cos_rot_     = cos(rot_);
+  sin_rot_     = sin(rot_);
+  in_line0_    = -0.5; //Value in corner, gives 0 in center.
+  cross_line0_ = -0.5;
+  xl_stepX_    = cos_rot_/dx_;
+  xl_stepY_    = sin_rot_/dx_;
+  il_stepX_    = -sin_rot_/dy_;
+  il_stepY_    = cos_rot_/dy_;
+  IL0_         = IMISSING;
+  XL0_         = IMISSING;
+  minIL_       = IMISSING;
+  maxIL_       = IMISSING;
+  ILStep_      = IMISSING;
+  minXL_       = IMISSING;
+  maxXL_       = IMISSING;
+  XLStep_      = IMISSING;
+  firstAxisIL_ = false;
+}
+
 SegyGeometry::SegyGeometry(const SegyGeometry *geometry)
 {
   x0_          = geometry->x0_;

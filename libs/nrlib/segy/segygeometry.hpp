@@ -30,6 +30,7 @@
 #include "commonheaders.hpp"
 #include "../volume/volume.hpp"
 #include "../surface/regularsurface.hpp"
+#include "../surface/regularsurfacerotated.hpp"
 
 namespace NRLib {
 
@@ -50,6 +51,7 @@ public:
                double IL0, double XL0, double ilStepX, double ilStepY,
                double xlStepX, double xlStepY, double rot);
   SegyGeometry(const RegularSurface<double> surf);
+  SegyGeometry(const RegularSurfaceRotated<double> surf);
   SegyGeometry(const SegyGeometry *geometry);   ///< Copy constructor
   SegyGeometry() {}; //Empty constructor for use with SetupGeometry.
 
