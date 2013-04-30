@@ -65,6 +65,8 @@ private:
   bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
+  bool      parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parseRock(TiXmlNode * node, std::string & label, std::string & errTxt);
@@ -123,6 +125,8 @@ private:
   bool       parseOtherOutput(TiXmlNode * node, std::string & errTxt);
   bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
   bool     parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
+  bool     parseVpVsRatio(TiXmlNode * node, std::string & errTxt);
+  bool       parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt);
   bool     parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>

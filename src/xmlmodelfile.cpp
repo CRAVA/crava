@@ -466,7 +466,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     else
       useForFaciesProbability = ModelSettings::NO;
   }
-    
+
   if(parseBool(root, "use-for-rock-physics", use, tmpErr)) {
     if(use)
       useForRockPhysics = ModelSettings::YES;
@@ -1735,10 +1735,13 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-vs");
   legalCommands.push_back("use-prediction");
   legalCommands.push_back("use-absolute-elastic-parameters");
+  legalCommands.push_back("volume-fractions");
 
   parseFaciesEstimationInterval(root, errTxt);
 
   parsePriorFaciesProbabilities(root, errTxt);
+
+  parseVolumeFractions(root, errTxt);
 
   float value;
   if(parseValue(root, "uncertainty-level", value, errTxt) == true)
@@ -1797,6 +1800,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("facies");
+  legalCommands.push_back("interval");
 
   float sum       = 0.0;
   int   status    = 0;
@@ -1826,6 +1830,9 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
       errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
     }
   }
+
+  while(parseFaciesInterval(root,errTxt)==true)
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1858,10 +1865,92 @@ TiXmlNode * root = node->FirstChildElement("facies");
     inputFiles_->setPriorFaciesProb(faciesname,filename);
   }
 
- checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 
 
+}
+
+bool
+XmlModelFile::parseFaciesInterval(TiXmlNode * node, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("facies");
+
+  std::string intervalname;
+  float value;
+
+  std::map<std::string, float> facies_map;
+
+  parseValue(root, "name", intervalname, errTxt, true);
+
+  float prob;
+  float sum = 0.0;
+  while(parseFaciesPerInterval(root, facies_map, prob, errTxt)) {
+    sum += prob;
+  }
+
+  if(sum != 1.0)
+    errTxt+="Prior facies probabilities for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+
+
+  modelSettings_->addPriorFaciesProbInterval(intervalname, facies_map);
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("facies");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("facies");
+
+  std::string faciesname;
+  std::string filename;
+  float value;
+  parseValue(root, "name", faciesname, errTxt, true);
+  parseValue(root, "probability", value, errTxt, true);
+
+  prob = value;
+  facies_map.insert(std::pair<std::string, float>(faciesname, value));
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
+bool
+XmlModelFile::parseVolumeFractions(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("volume-fractions");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("facies");
+
+  std::string faciesname;
+  std::string filename;
+  float value;
+  parseValue(root, "name", faciesname, errTxt, true);
+  parseValue(root, "probability", value, errTxt, true);
+
+  prob = value;
+  facies_map.insert(std::pair<std::string, float>(faciesname, value));
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
 }
 
 bool
@@ -4789,14 +4878,17 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   parseFFTGridPadding(root, errTxt);
 
   float ratio = RMISSING;
+  bool ratioInterval = false;
   if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
     modelSettings_->setVpVsRatio(ratio);
+  else if(parseVpVsRatio(root, errTxt) == true)
+    ratioInterval = true;
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
     modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
 
-  if (ratio_from_wells && ratio != RMISSING) {
+  if (ratio_from_wells && (ratio != RMISSING || ratioInterval == true)) {
     errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
               + ") and ask the ratio to be estimated from well data.\n";
   }
@@ -4905,6 +4997,71 @@ XmlModelFile::parseFFTGridPadding(TiXmlNode * node, std::string & errTxt)
     errTxt += "The lateral padding factors must either both be estimated or both given.";
   if (!estXpad && !estYpad)
     modelSettings_->setEstimateXYPadding(false);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("vp-vs-ratio");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("interval");
+
+  std::vector<std::string> interval_names;
+  std::string tmp_name;
+  while(parseIntervalVpVs(root, tmp_name, errTxt) == true) {
+    interval_names.push_back(tmp_name);
+  }
+
+  //Check if all intervals has gotten a new Vp-Vs-ratio value.
+  const std::vector<std::string> & current_interval_names = modelSettings_->getIntervalNames();
+
+  //Move to checkInversionConsistency
+  //if(current_interval_names.size() != interval_names.size())
+  //  errTxt += "The number of intervals given under " + root->ValueStr() + " (" + NRLib::ToString(interval_names.size()) + " ) is different from the number of intervals (" + NRLib::ToString(current_interval_names.size()) + ") previously defined.\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("ratio");
+
+  std::string name;
+  float ratio;
+
+  const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
+
+  if(parseValue(root, "name", name, errTxt) == true && parseValue(root, "ratio", ratio, errTxt) == true) {
+    interval_name = name;
+
+    //Check if name is contained in previously defined intervals.
+    for(size_t i=0; i < current_interval_names.size(); i++) {
+      if(current_interval_names[i] == name) {
+        //std::pair<std::string, float> VpVsPar(name, ratio);
+        //modelSettings_->addVpVsRatioInterval(VpVsPar);
+        modelSettings_->addVpVsRatioInterval(name, ratio);
+        break;
+      }
+    }
+
+    //Move to checkInversionConsistency
+    //if(interval_defined == false)
+    //  errTxt += "Interval " + name + " given in <vp-vs-ratio> is not inclued in the previously defined interval names.\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -5443,6 +5600,43 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
 
   }
+
+
+  if(modelSettings_->getIntervalNames().size() > 0) { //Interval model is used
+
+    const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
+
+    const std::map<std::string, float> & vpvs_ratio_intervals = modelSettings_->getVpVsRatioIntervals();
+    if(vpvs_ratio_intervals.size() > 0) {
+      //Check that all intervals have gotten a value in vpvs_ratio_intervals.
+
+      if(interval_names.size() != vpvs_ratio_intervals.size())
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <vp-vs-ratio> (" + NRLib::ToString(vpvs_ratio_intervals.size()) + ").\n";
+
+      for(size_t i = 0; i < interval_names.size(); i++) {
+        if(vpvs_ratio_intervals.count(interval_names[i]) == 0) {
+          errTxt += "There is missing a vp-vs-ratio value for interval " + interval_names[i] + ".\n";
+        }
+      }
+    }
+
+    const std::map<std::string, std::map<std::string, float> > & prior_facies_prob_interval = modelSettings_->getPriorFaciesProbInterval();
+    if(prior_facies_prob_interval.size() > 0) {
+
+      if(interval_names.size() != vpvs_ratio_intervals.size())
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <prior-probabilities> (" + NRLib::ToString(vpvs_ratio_intervals.size()) + ").\n";
+
+      for(size_t i = 0; i < interval_names.size(); i++) {
+        if(vpvs_ratio_intervals.count(interval_names[i]) == 0) {
+          errTxt += "There is missing facies-probabilities under <prior-probabilities> for interval " + interval_names[i] + ".\n";
+        }
+      }
+    }
+
+
+  }
+
+
 }
 
 void

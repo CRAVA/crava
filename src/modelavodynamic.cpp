@@ -940,6 +940,9 @@ double ModelAVODynamic::vsvpFromWells(const std::vector<WellData *> & wells,
   int   N      = 0;
   float VsVp   = 0.0f;
 
+  //Change: Vp/Vs per interval. Only interval with wells.
+  //Get interval-names (modelSettings->getIntervalNames()), set setVpVsRatioInterval() per interval.
+
   for(int i=0 ; i < nWells ; i++) {
     int n = wells[i]->getNumberOfVsVpSamples();
     N    += n;
