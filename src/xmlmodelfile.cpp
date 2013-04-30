@@ -4923,7 +4923,6 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval");
 
-
   std::vector<std::string> interval_names;
   std::string tmp_name;
   while(parseIntervalVpVs(root, tmp_name, errTxt) == true) {
@@ -4933,19 +4932,9 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   //Check if all intervals has gotten a new Vp-Vs-ratio value.
   const std::vector<std::string> & current_interval_names = modelSettings_->getIntervalNames();
 
-  //Alternative: Check in parseIntervalVpVs when adding a new value if the current interval exists -> can only check size of the vectors here.
-  //int number_of_equal_intervals = 0;
-  //for(size_t i = 0; i < interval_names.size(); i++) {
-  //  for(size_t j = 0; j < current_interval_names.size(); j++) {
-  //    if(current_interval_names[j] == interval_names[i]) {
-  //      number_of_equal_intervals++;
-  //      break;
-  //    }
-  //  }
-  //}
-
-  if(current_interval_names.size() != interval_names.size())
-    errTxt += "The number of intervals given under " + root->ValueStr() + " (" + NRLib::ToString(interval_names.size()) + " ) is different from the number of intervals (" + NRLib::ToString(current_interval_names.size()) + ") previously defined.\n";
+  //Move to checkInversionConsistency
+  //if(current_interval_names.size() != interval_names.size())
+  //  errTxt += "The number of intervals given under " + root->ValueStr() + " (" + NRLib::ToString(interval_names.size()) + " ) is different from the number of intervals (" + NRLib::ToString(current_interval_names.size()) + ") previously defined.\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -4971,19 +4960,18 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std
     interval_name = name;
 
     //Check if name is contained in previously defined intervals.
-    bool interval_defined = false;
     for(size_t i=0; i < current_interval_names.size(); i++) {
       if(current_interval_names[i] == name) {
-        interval_defined = true;
-        std::pair<std::string, float> VpVsPar(name, ratio);
-        modelSettings_->addVpVsRatioInterval(VpVsPar);
-        //modelSettings_->addVpVsRatioInterval(name, ratio);
+        //std::pair<std::string, float> VpVsPar(name, ratio);
+        //modelSettings_->addVpVsRatioInterval(VpVsPar);
+        modelSettings_->addVpVsRatioInterval(name, ratio);
         break;
       }
     }
 
-    if(interval_defined == false)
-      errTxt += "Interval " + name + " given in <vp-vs-ratio> is not inclued in the previously defined interval names.\n";
+    //Move to checkInversionConsistency
+    //if(interval_defined == false)
+    //  errTxt += "Interval " + name + " given in <vp-vs-ratio> is not inclued in the previously defined interval names.\n";
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -5523,6 +5511,28 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
 
   }
+
+
+  if(modelSettings_->getIntervalNames().size() > 0) { //Interval model is used
+
+    const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
+
+    const std::map<std::string, float> & vpvs_ratio_intervals = modelSettings_->getVpVsRatioIntervals();
+    if(vpvs_ratio_intervals.size() > 0) {
+      //Check that all intervals have gotten a value in vpvs_ratio_intervals.
+
+      if(interval_names.size() != vpvs_ratio_intervals.size())
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <vp-vs-ratio> (" + NRLib::ToString(vpvs_ratio_intervals.size()) + ").\n";
+
+      for(size_t i = 0; i < interval_names.size(); i++) {
+        if(vpvs_ratio_intervals.count(interval_names[i]) == 0) {
+          errTxt += "There is missing a vp-vs-ratio value for interval " + interval_names[i] + ".\n";
+        }
+      }
+    }
+  }
+
+
 }
 
 void
