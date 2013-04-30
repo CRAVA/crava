@@ -215,6 +215,7 @@ public:
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
   std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
+  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
 
 
 
@@ -382,6 +383,7 @@ public:
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
+  void addPriorFaciesProbInterval(std::string name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_.insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)        { parallelTimeSurfaces_     = pTimeSurfaces            ;}
@@ -573,6 +575,7 @@ private:
 
   int                               priorFaciesProbGiven_;
   std::map<std::string, float>      priorFaciesProb_;
+  std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
 
   int                               nWells_;
   int                               nSimulations_;

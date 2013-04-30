@@ -65,6 +65,8 @@ private:
   bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
+  bool      parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parseRock(TiXmlNode * node, std::string & label, std::string & errTxt);
