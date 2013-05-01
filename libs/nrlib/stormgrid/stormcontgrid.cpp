@@ -227,15 +227,26 @@ void StormContGrid::FindXYIndex(double x, double y, size_t& i_out, size_t& j_out
   i_out = static_cast<size_t>(local_x / GetDX());
   j_out = static_cast<size_t>(local_y / GetDY());
 
-  if(i_out >= GetNI())
-    throw Exception("Index in x direction is too large.\n");
-  if(j_out >= GetNJ())
-   throw Exception("Index in y direction is too large.\n");
-  if(local_x < 0.0)
-    throw Exception("Index in x direction is too small.\n");
-  if(local_y < 0.0)
-   throw Exception("Index in y direction is too small.\n");
-
+  if(i_out >= GetNI()) {
+    std::string text ="StormContGrid::FindXYIndex: Index in x direction is too large.\n";
+    text += "  Index : "+ToString(i_out)+"\n";
+    text += "  Max   : "+ToString(GetNI())+"\n";
+    throw Exception(text);
+  }
+  if(j_out >= GetNJ()) {
+    std::string text ="StormContGrid::FindXYIndex: Index in y direction is too large.\n";
+    text += "  Index : "+ToString(j_out)+"\n";
+    text += "  Max   : "+ToString(GetNJ())+"\n";
+    throw Exception(text);
+  }
+  if(local_x < 0.0) {
+    std::string text ="StormContGrid::FindXYIndex: Local x-coordinate is too negative ("+NRLib::ToString(local_x, 2)+").\n";
+    throw Exception(text);
+  }
+  if(local_y < 0.0) {
+    std::string text ="StormContGrid::FindXYIndex: Local y-coordinate is too negative ("+NRLib::ToString(local_y, 2)+").\n";
+    throw Exception(text);
+  }
 }
 
 void StormContGrid::FindIndex(double x, double y, double z, size_t& i_out, size_t& j_out, size_t& k_out) const

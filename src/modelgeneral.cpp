@@ -657,7 +657,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
             templateGeometry = modelSettings->getAreaParameters();
           }
           else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-            Surface surf(inputFiles->getAreaSurfaceFile());
+            RotatedSurface surf(inputFiles->getAreaSurfaceFile());
             templateGeometry = new SegyGeometry(surf);
           }
           else {
