@@ -228,23 +228,23 @@ void StormContGrid::FindXYIndex(double x, double y, size_t& i_out, size_t& j_out
   j_out = static_cast<size_t>(local_y / GetDY());
 
   if(i_out >= GetNI()) {
-    std::string text ="StormContGrid::FindXYIndex: Index in x direction is too large.\n";
+    std::string text ="Trying to look up an xy-position outside grid. Index in x direction is too large.\n";
     text += "  Index : "+ToString(i_out)+"\n";
     text += "  Max   : "+ToString(GetNI())+"\n";
     throw Exception(text);
   }
   if(j_out >= GetNJ()) {
-    std::string text ="StormContGrid::FindXYIndex: Index in y direction is too large.\n";
+    std::string text ="Trying to look up an xy-position outside grid: Index in y direction is too large.\n";
     text += "  Index : "+ToString(j_out)+"\n";
     text += "  Max   : "+ToString(GetNJ())+"\n";
     throw Exception(text);
   }
   if(local_x < 0.0) {
-    std::string text ="StormContGrid::FindXYIndex: Local x-coordinate is too negative ("+NRLib::ToString(local_x, 2)+").\n";
+    std::string text ="Trying to look up an xy-position outside grid: Local x-coordinate is too small ("+NRLib::ToString(local_x, 2)+").\n";
     throw Exception(text);
   }
   if(local_y < 0.0) {
-    std::string text ="StormContGrid::FindXYIndex: Local y-coordinate is too negative ("+NRLib::ToString(local_y, 2)+").\n";
+    std::string text ="Trying to look up an xy-position outside grid: Local y-coordinate is too small ("+NRLib::ToString(local_y, 2)+").\n";
     throw Exception(text);
   }
 }

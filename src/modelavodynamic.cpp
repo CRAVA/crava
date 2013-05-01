@@ -760,7 +760,7 @@ ModelAVODynamic::processBackground(Background                    *& background,
                                          errorText);
           if(errorText != "")
           {
-            errorText += "Reading of file '"+backFile+"' for parameter '"+parName[i]+"' failed\n";
+            errorText += "Reading of file '"+backFile+"' for parameter '"+parName[i]+"' failed\n\n";
             errText += errorText;
             failed = true;
           }

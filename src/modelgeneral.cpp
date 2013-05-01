@@ -496,15 +496,15 @@ ModelGeneral::checkThatDataCoverGrid(const SegY   * segy,
 
 
 void
-ModelGeneral::readStormFile(const std::string  & fName,
-                            FFTGrid           *& target,
-                            const int            gridType,
-                            const std::string  & parName,
-                            const Simbox       * timeSimbox,
+ModelGeneral::readStormFile(const std::string   & fName,
+                            FFTGrid            *& target,
+                            const int             gridType,
+                            const std::string   & parName,
+                            const Simbox        * timeSimbox,
                             const ModelSettings * modelSettings,
-                            std::string        & errText,
-                            bool                 scale,
-                            bool                 nopadding)
+                            std::string         & errText,
+                            bool                  scale,
+                            bool                  nopadding)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -544,7 +544,13 @@ ModelGeneral::readStormFile(const std::string  & fName,
                            zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
-    outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+
+    try {
+      outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+    }
+    catch (NRLib::Exception & e) {
+      errText += std::string(e.what());
+    }
   }
 
   if (stormgrid != NULL)
