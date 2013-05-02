@@ -183,9 +183,9 @@ void NRLib::ReadIrapClassicAsciiSurf(const std::string & filename,
     // ----------- line shift --------------
     int ni       = ReadNext<int>(file, line);
     angle        = ReadNext<double>(file, line);
-    angle = NRLib::Degree*angle;
-    ReadNext<double>(file, line); // x_min repeated
-    ReadNext<double>(file, line); // y_min repeated
+    angle        = NRLib::Degree*angle;
+    ReadNext<double>(file, line); // rotation origin - x
+    ReadNext<double>(file, line); // rotation origin - y
     // ----------- line shift --------------
     ReadNext<int>(file, line);
     ReadNext<int>(file, line);
@@ -194,15 +194,24 @@ void NRLib::ReadIrapClassicAsciiSurf(const std::string & filename,
     ReadNext<int>(file, line);
     ReadNext<int>(file, line);
     ReadNext<int>(file, line);
-
-    double lx = x_max - x_min;
-    double ly = y_max - y_min;
+    double lx = (x_max - x_min)*cos(angle);
+    double ly = (y_max - y_min)*cos(angle);
 
     if (!NRLibPrivate::Equal(lx/(ni-1), dx)) {
-      throw FileFormatError("Inconsistent data in file. dx != lx/(nx-1).");
+      std::string text = "Inconsistent data in file. dx != lx/(nx-1).\n";
+      text += "dx        = "+NRLib::ToString(dx,2)+"\n";
+      text += "lx        = "+NRLib::ToString(lx,2)+"\n";
+      text += "nx        = "+NRLib::ToString(ni,0)+"\n";
+      text += "lx/(nx-1) = "+NRLib::ToString(lx/(ni - 1),2);
+      throw FileFormatError(text);
     }
     if (!NRLibPrivate::Equal(ly/(nj-1), dy)) {
-      throw FileFormatError("Inconsistent data in file. dy != ly/(ny-1).");
+      std::string text = "Inconsistent data in file. dy != ly/(ny-1).\n";
+      text += "dy        = "+NRLib::ToString(dy,2)+"\n";
+      text += "ly        = "+NRLib::ToString(ly,2)+"\n";
+      text += "ny        = "+NRLib::ToString(nj,0)+"\n";
+      text += "ly/(ny-1) = "+NRLib::ToString(ly/(nj - 1),2);
+      throw FileFormatError(text);
     }
 
     surface.Resize(ni, nj);

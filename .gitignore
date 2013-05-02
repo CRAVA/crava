@@ -1,2 +1,15 @@
+cravarun
+grammar
+
 *.o
+
 *~
+
+*.aux
+*.dvi
+*.idx
+*.log
+*.out
+*.toc
+
+test_suite/*/output

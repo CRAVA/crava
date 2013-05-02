@@ -2118,14 +2118,15 @@ FFTGrid::writeStormFile(const std::string & fileName,
     NRLib::OpenWrite(file, gfName);
     LogKit::LogFormatted(LogKit::Low,"\nWriting STORM ascii file "+gfName+"...");
     file << header;
-    file << std::fixed << std::setw(11) << std::setprecision(6);
+    file << std::fixed << std::setprecision(6);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
-        for(i=0;i<nx;i++) {
+        for(i=0;i<nx-1;i++) {
           value = getRealValue(i,j,k,true);
-          file << value << " ";
+          file << value << " ";              // Rearrangement to avoid trailing blanks
         }
-        file << "\n";
+        value = getRealValue(nx-1,j,k,true); // Rearrangement to avoid trailing blanks
+        file << value << "\n";
       }
     file << "0\n";
   }

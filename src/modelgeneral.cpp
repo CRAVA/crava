@@ -50,6 +50,7 @@
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/surface/surface.hpp"
 #include "nrlib/surface/regularsurface.hpp"
+#include "nrlib/surface/regularsurfacerotated.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
@@ -420,11 +421,11 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
           errText += "Grid in file "+fileName+" does not cover the inversion area.\n";
         }
         else {
-          LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(missingTracesSimbox)
-                             +" grid columns are outside the area defiend by the seismic data.");
+          LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(missingTracesSimbox)
+                             +" grid columns are outside the area defined by the seismic data.\n");
           std::string text;
           text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
-          text += "    the seismic data specified in file \'"+fileName+"\'.";
+          text += "   the seismic data specified in file \'"+fileName+"\'.";
           TaskList::addTask(text);
         }
       }
@@ -496,15 +497,15 @@ ModelGeneral::checkThatDataCoverGrid(const SegY   * segy,
 
 
 void
-ModelGeneral::readStormFile(const std::string  & fName,
-                            FFTGrid           *& target,
-                            const int            gridType,
-                            const std::string  & parName,
-                            const Simbox       * timeSimbox,
+ModelGeneral::readStormFile(const std::string   & fName,
+                            FFTGrid            *& target,
+                            const int             gridType,
+                            const std::string   & parName,
+                            const Simbox        * timeSimbox,
                             const ModelSettings * modelSettings,
-                            std::string        & errText,
-                            bool                 scale,
-                            bool                 nopadding)
+                            std::string         & errText,
+                            bool                  scale,
+                            bool                  nopadding)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -544,7 +545,13 @@ ModelGeneral::readStormFile(const std::string  & fName,
                            zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
-    outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+
+    try {
+      outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+    }
+    catch (NRLib::Exception & e) {
+      errText += std::string(e.what());
+    }
   }
 
   if (stormgrid != NULL)
@@ -560,7 +567,7 @@ ModelGeneral::readStormFile(const std::string  & fName,
         errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
       }
       else {
-        LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(outsideTraces)
+        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
                            + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
         TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
      }
@@ -621,7 +628,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+inputFiles->getAreaSurfaceFile()+"\'\n");
     areaType = "Surface";
-    Surface surf(inputFiles->getAreaSurfaceFile());
+    RotatedSurface surf(inputFiles->getAreaSurfaceFile());
     SegyGeometry geometry(surf);
     modelSettings->setAreaParameters(&geometry);
   }
@@ -657,7 +664,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
             templateGeometry = modelSettings->getAreaParameters();
           }
           else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-            Surface surf(inputFiles->getAreaSurfaceFile());
+            RotatedSurface surf(inputFiles->getAreaSurfaceFile());
             templateGeometry = new SegyGeometry(surf);
           }
           else {
@@ -806,7 +813,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       {
         if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
         {
-          LogKit::LogFormatted(LogKit::Warning,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
           TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
         }
 
@@ -2593,11 +2600,11 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
   float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
 
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Corr   |  ln Vp       ln Vs      ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.4f      %5.4f      %5.4f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |             %5.4f      %5.4f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                         %5.4f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
   LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
