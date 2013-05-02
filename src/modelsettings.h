@@ -181,6 +181,7 @@ public:
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
   const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
+  const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
@@ -383,7 +384,9 @@ public:
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
+  void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
   void addPriorFaciesProbInterval(std::string name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_.insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
+  void addVolumeFractionInterval(std::string name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_.insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)        { parallelTimeSurfaces_     = pTimeSurfaces            ;}
@@ -575,7 +578,9 @@ private:
 
   int                               priorFaciesProbGiven_;
   std::map<std::string, float>      priorFaciesProb_;
+  std::map<std::string, float>      volumeFractionProb_;
   std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
+  std::map<std::string, std::map<std::string, float> >      volumefractionInterval_;
 
   int                               nWells_;
   int                               nSimulations_;

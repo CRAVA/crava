@@ -1930,9 +1930,64 @@ TiXmlNode * root = node->FirstChildElement("facies");
 }
 
 bool
-XmlModelFile::parseVolumeFractions(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt)
+XmlModelFile::parseVolumeFractions(TiXmlNode * node, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("volume-fractions");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("facies");
+  legalCommands.push_back("interval");
+
+  float sum       = 0.0;
+
+  while(parseFaciesVolumeFractions(root,errTxt)==true);
+
+  typedef std::map<std::string,float> mapType;
+  //mapType myMap = modelSettings_->getPriorFaciesProb();
+  //std::map<std::string, float>
+  mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
+
+  for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
+    sum+=(*it).second;
+  }
+  if(sum != 1.0)
+    errTxt+="Volume fractions must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+
+  while(parseVolumeFractionsInterval(root,errTxt)==true)
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("facies");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("fraction");
+
+  std::string faciesname;
+  std::string filename;
+  float value;
+  parseValue(root, "name", faciesname, errTxt, true);
+
+  parseValue(root,"fraction", value, errTxt, true);
+  modelSettings_->addVolumeFractionProb(faciesname, value);
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
+bool
+XmlModelFile::parseVolumeFractionsInterval(TiXmlNode * node, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("interval");
   if(root == 0)
     return(false);
 
@@ -1940,18 +1995,57 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
   legalCommands.push_back("name");
   legalCommands.push_back("facies");
 
+  std::string intervalname;
+  float value;
+
+  std::map<std::string, float> volumefractions_map;
+
+  parseValue(root, "name", intervalname, errTxt, true);
+
+  float fraction;
+  float sum = 0.0;
+  while(parseVolumeFractionsPerInterval(root, volumefractions_map, fraction, errTxt)) {
+    sum += fraction;
+  }
+
+  if(sum != 1.0)
+    errTxt+="Volume fractions for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+
+  modelSettings_->addVolumeFractionInterval(intervalname, volumefractions_map);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float prob, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("facies");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("fraction");
+
   std::string faciesname;
   std::string filename;
   float value;
   parseValue(root, "name", faciesname, errTxt, true);
-  parseValue(root, "probability", value, errTxt, true);
+  parseValue(root, "fraction", value, errTxt, true);
 
   prob = value;
-  facies_map.insert(std::pair<std::string, float>(faciesname, value));
+  fraction_map.insert(std::pair<std::string, float>(faciesname, value));
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 }
+
+
+
+
+
+
 
 bool
 XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
