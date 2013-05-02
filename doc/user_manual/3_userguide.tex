@@ -789,10 +789,8 @@ The base structure of the rock physics template consists of the elements \kw{res
 The sub-elements will be basic building blocks (e.g. \kw{solid}, \kw{fluid}, \kw{dry-rock}), properties (e.g. temperature, pore-pressure, density, etc) and theories.
 
 \subsubsection{Reservoir}
-\kw{reservoir} contains reservoir properties, such as pressure, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword \kw{reservoir} are parameters common for all fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements in \kw{reservoir} are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. 
-After \kw{reservoir}, the command \kw{variable} follows. Whenever several building blocks use the same
-stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all
-the building blocks. Below is an example of how \kw{reservoir} can be defined:
+\kw{reservoir} contains reservoir properties, such as pressure, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword \kw{reservoir} are parameters common for fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements in \kw{reservoir} are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. 
+After \kw{reservoir}, the command \kw{variable} follows. Below is an example of how \kw{reservoir} can be defined:
 \svex{ex:Reservoir}
 <reservoir>
   <variable>
