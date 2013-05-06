@@ -1,4 +1,4 @@
-// $Id: trendstorage.hpp 1118 2012-11-13 12:58:17Z pdahle $
+// $Id: trendstorage.hpp 1166 2013-05-03 11:34:58Z ulvmoen $
 #ifndef NRLIB_TRENDSTORAGE_HPP
 #define NRLIB_TRENDSTORAGE_HPP
 
@@ -25,9 +25,12 @@ public:
 
 class TrendConstantStorage : public TrendStorage {
 public:
-  TrendConstantStorage(const double value);
-  TrendConstantStorage();
+  TrendConstantStorage(const double & value,
+                       const bool   & estimate);
+
   TrendConstantStorage(const TrendConstantStorage & trend_storage);
+
+  TrendConstantStorage();
 
   virtual ~TrendConstantStorage();
 
@@ -41,14 +44,17 @@ public:
 
 private:
   double mean_value_;
+  bool   estimate_;
 };
 
 //-------------------------------------------------------------------//
 
 class Trend1DStorage : public TrendStorage {
 public:
-  Trend1DStorage(const std::string file_name,
-                 const std::string reference_parameter);
+  Trend1DStorage(const std::string & file_name,
+                 const std::string & reference_parameter,
+                 const bool        & estimate);
+
   Trend1DStorage(const Trend1DStorage & trend_storage);
 
   Trend1DStorage();
@@ -66,15 +72,17 @@ private:
 
   std::string file_name_;
   std::string reference_parameter_;
+  bool        estimate_;
 };
 
 //-------------------------------------------------------------------//
 
 class Trend2DStorage : public TrendStorage {
 public:
-  Trend2DStorage(const std::string file_name,
-                 const std::string reference_parameter1,
-                 const std::string reference_parameter2);
+  Trend2DStorage(const std::string & file_name,
+                 const std::string & reference_parameter1,
+                 const std::string & reference_parameter2,
+                 const bool        & estimate);
 
   Trend2DStorage(const Trend2DStorage & trend_storage);
 
@@ -91,6 +99,8 @@ private:
   std::string file_name_;
   std::string reference_parameter_one_;
   std::string reference_parameter_two_;
+  bool        estimate_;
 };
+
 }
 #endif

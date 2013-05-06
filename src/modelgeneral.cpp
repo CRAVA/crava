@@ -2453,6 +2453,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
             std::string rockErrTxt = "";
 
+            std::string name = iter->first;
+            LogKit::LogFormatted(LogKit::Low, "\nRock \'"+name+"\':\n");
+
             DistributionsRockStorage * storage    = iter   ->second;
             std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
                                                                                        path,

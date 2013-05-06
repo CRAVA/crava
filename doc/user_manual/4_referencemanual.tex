@@ -3847,7 +3847,6 @@ All the properties and function parameters can use previously assigned values in
    \item \Default 
  \elist
 
-
 \subsection{\hbracket{trend-1d}}\newkw{trend-1d}
  \slist
    \item \Description Commands controlling a 1D-trend. Can not be used in combination with \kw{trend-2d}. When <trend-1d> is used, a corresponding trend cube must be given in \kw{trend-cube}
@@ -3866,6 +3865,13 @@ All the properties and function parameters can use previously assigned values in
  \slist
    \item \Description Name of the trend cube used as reference for the trend. Must be the same as \kw{parameter-name} in one of \kw{trend-cube}
    \item \Argument String
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{estimate}}\rnewkw{estimate}{estimate-1d}
+ \slist
+   \item \Description Estimate the 1D trend from well data. The wells used in the estimation are given by \kw{use-for-rock-physics}.
+   \item \Argument 'yes' or 'no'
    \item \Default 
  \elist
 
@@ -3894,6 +3900,20 @@ All the properties and function parameters can use previously assigned values in
  \slist
    \item \Description  Name of the trend cube used as reference for the trend corresponding to the first axis of the 2D trend file. Must be the same as \kw{parameter-name} in one of \kw{trend-cube}, but not the same as \kw{reference-parameter-first-axis}
    \item \Argument String
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{estimate}}\rnewkw{estimate}{estimate-2d}
+ \slist
+   \item \Description Estimate the 2D trend from well data. The wells used in the estimation are given by \kw{use-for-rock-physics}. Two trend cubes must be generated or given in \kw{trend-cube}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{estimate}}\newkw{estimate}
+ \slist
+   \item \Description Estimate a constant value from well data. The wells used in the estimation are given by \kw{use-for-rock-physics}.
+   \item \Argument 'yes' or 'no'
    \item \Default 
  \elist
 
