@@ -133,9 +133,44 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+\subsubsection{\hbracket{interval-one-surface}} \newkw{interval-one-surface}
+ \slist
+   \item \Description Using this command gives parallel top and base of inversion interval. This, \kw{multiple-intervals} or \kw{interval-two-surfaces} must be given.
+   \item \Argument Elements for parallel top and base inversion interval
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
+ \slist
+   \item \Description File name for standard surface file. The top and base surfaces for the inversion interval will be parallel to this.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{shift-to-interval-top}} \newkw{shift-to-interval-top}
+ \slist
+   \item \Description Value giving the distance from reference surface to top surface. This value is added to the reference surface to create the top surface.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{thickness}}\newkw{thickness}
+ \slist
+   \item \Description Value giving the thickness of the inversion interval. This value is added to the top surface to create the base surface.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{sample-density}}\newkw{sample-density}
+ \slist
+   \item \Description Value giving the thickness of a layer in the inversion interval. The thickness should be divisible by this value.
+   \item \Argument Value
+   \item \Default
+ \elist
+
 \subsubsection{\hbracket{interval-two-surfaces}} \newkw{interval-two-surfaces}
  \slist
-   \item \Description One way to give the top and bottom limitations. Must be used if output in depth domain is desired. This or \kw{interval-one-surface} must be given.
+   \item \Description One way to give the top and bottom limitations. Must be used if output in depth domain is desired. This, \kw{multiple-intervals} or \kw{interval-one-surface} must be given.
    \item \Argument
    \item \Default
  \elist
@@ -218,41 +253,96 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubsection{\hbracket{interval-one-surface}} \newkw{interval-one-surface}
+\subsubsection{\hbracket{multiple-intervals}} \newkw{multiple-intervals}
  \slist
-   \item \Description Using this command gives parallel top and base of inversion interval. This or \kw{interval-two-surfaces} must be given.
-   \item \Argument Elements for parallel top and base inversion interval
+   \item \Description One way to give the top and bottom limitations of the inversion intervals. Must be used if output in depth domain is desired. This, \kw{interval-one-surface} or \kw{interval-two-surfaces} must be given.
+   \item \Argument
    \item \Default
  \elist
 
-\paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
+\paragraph{\hbracket{top-surface}\necessary} \rnewkw{top-surface}{top-surface3}
  \slist
-   \item \Description File name for standard surface file. The top and base surfaces for the inversion interval will be parallel to this.
+   \item \Description File name(s) for top surface file(s).
+   \item \Argument Elements controlling the top surface
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{time-file}} \rnewkw{time-file}{time-file3}
+ \slist
+   \item \Description File name for standard surface file giving top surface in time. This or \rkw{time-value}{time-value3} must be given.
    \item \Argument File name
    \item \Default
  \elist
 
-\paragraph{\hbracket{shift-to-interval-top}} \newkw{shift-to-interval-top}
+\subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value3}
  \slist
-   \item \Description Value giving the distance from reference surface to top surface. This value is added to the reference surface to create the top surface.
+   \item \Description Value giving the top time for the inversion interval. This or \rkw{time-file}{time-file3} must be given.
    \item \Argument Value
    \item \Default
  \elist
 
-\paragraph{\hbracket{thickness}}\newkw{thickness}
+ \subparagraph{\hbracket{depth-file}} \rnewkw{depth-file}{depth-file3}
  \slist
-   \item \Description Value giving the thickness of the inversion interval. This value is added to the top surface to create the base surface.
+   \item \Description File name for standard surface file giving top surface in depth.
+   \item \Argument File name
+   \item \Default
+ \elist
+ 
+ \subparagraph{\hbracket{top-surface-erosion-priority} \necessary}\rnewkw{top-surface-erosion-priority}{top-surface-erosion-priority2}
+ \slist
+   \item \Description Priority of the top surface file. The top surface file and all base surface files in the inversion intervals need to given different priority.
+   \item \Argument Int
+   \item \Default
+ \elist
+ 
+\paragraph{\hbracket{interval} \necessary}  \newkw{interval}
+ \slist
+ 	\item \Description Repeatable command: defines an inversion interval.
+ 	\item \Argument Elements controlling the interval.
+ 	\item \Default
+ \elist
+
+ \subparagraph{\hbracket{name} \necessary} \rnewkw{name}{interval-name}
+ \slist
+   \item \Description Inversion interval name. Must be unique.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{base-surface} \necessary} \rnewkw{base-surface}{base-surface2}
+ \slist
+   \item \Description Base surface
+   \item \Argument File name
+   \item \Default
+ \elist
+ 
+\subsubparagraph{\hbracket{time-file}} \rnewkw{time-file}{time-file3}
+ \slist
+   \item \Description File name for standard surface file giving top surface in time. This or \rkw{time-value}{time-value3} must be given.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value3}
+ \slist
+   \item \Description Value giving the top time for the inversion interval. This or \rkw{time-file}{time-file3} must be given.
    \item \Argument Value
    \item \Default
  \elist
 
-\paragraph{\hbracket{sample-density}}\newkw{sample-density}
+ \subsubparagraph{\hbracket{depth-file}} \rnewkw{depth-file}{depth-file3}
  \slist
-   \item \Description Value giving the thickness of a layer in the inversion interval. The thickness should be divisible by this value.
-   \item \Argument Value
+   \item \Description File name for standard surface file giving top surface in depth.
+   \item \Argument File name
    \item \Default
  \elist
 
+\subsubparagraph{\hbracket{erosion-priority}} \rnewkw{erosion-priority}{erosion-priority2}
+ \slist
+   \item \Description Priority of the base surface file for this interval. The top surface file and all base surface files in the inversion intervals need to given different priority.
+   \item \Argument Int
+   \item \Default
+ \elist
 
 \subsubsection{\hbracket{area-from-surface}}\newkw{area-from-surface}
  \slist
@@ -1019,10 +1109,33 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Description Value of Vp/Vs ratio used in reflection
      matrix. By default, the Vp/Vs ratio is estimated from the
      background model.
+   \item \Argument Value OR a list of intervals with corresponding values.
+   \item \Default Not set
+   \elist
+   
+\paragraph{\hbracket{interval}}\rnewkw{interval}{interval-vpvs}
+ \slist
+   \item \Description Repeatable command. Defines the Vp/Vs ratio for the relevant interval. The Vp/Vs-ratio must be specified for either all or none of the intervals defined in \kw{multiple-intervals}.
+   \item \Argument Name and Vp/Vs-ratio for the interval.
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{name}}\rnewkw{name}{interval-name-vpvs}
+ \slist
+   \item \Description Name of the relevant inversion interval defined in \kw{multiple-intervals}.
+   \item \Argument String
+   \item \Default
+ \elist
+ 
+ \subparagraph{\hbracket{ratio}}\newkw{ratio}
+ \slist
+   \item \Description Value of Vp/Vs ratio used in reflection
+     matrix for this interval. By default, the Vp/Vs ratio is estimated from the
+     background model.
    \item \Argument Value
    \item \Default Not set
    \elist
-
+ 
 \subsubsection{\hbracket{vp-vs-ratio-from-wells}}\newkw{vp-vs-ratio-from-wells}
  \slist
    \item \Description If this command is given, the Vp/Vs ratio used
@@ -2219,14 +2332,91 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsection{\hbracket{correlation-direction}}\newkw{correlation-direction}
  \slist
-   \item \Description File name for the standard surface file giving the correlation direction for the inversion.
+   \item \Description Standard surface file giving the single correlation direction for the inversion OR top and base correlation directions OR a list of intervals with elements controlling the correlation directions.
+   \item \Argument File name for the top correlation surface and elements controlling the base correlation surface OR a list of inversion intervals with top and base correlation surfaces.
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{top-surface}}\rnewkw{top-surface}{cd-top-surface}
+ \slist
+   \item \Description Standard surface file giving the top correlation direction for the inversion. Cannot be used at the same time as \rkw{interval}{cd-interval} or with \kw{base-conform} set to 'yes'.
    \item \Argument File name
    \item \Default
  \elist
 
+\subsubsection{\hbracket{base-surface}}\rnewkw{base-surface}{cd-base-surface}
+ \slist
+   \item \Description Standard surface file giving the base correlation direction for the inversion. Cannot be used at the same time as \rkw{interval}{cd-interval} or with \kw{base-conform} set to 'yes'.
+   \item \Argument File name
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{top-conform}}\newkw{top-conform}
+ \slist
+   \item \Description Decides whether the top correlation direction should be equal to the top inversion surface. Cannot be set to 'yes' at the same time as \rkw{interval}{cd-interval}, nor with a single correlation surface file under \kw{correlation-direction}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+\subsubsection{\hbracket{base-conform}}\newkw{base-conform}
+ \slist
+   \item \Description Decides whether the base correlation direction should be equal to the base inversion surface. Cannot be set to 'yes' at the same time as \rkw{interval}{cd-interval}, nor with a single correlation surface file under \kw{correlation-direction}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+ 
+\subsubsection{\hbracket{interval}}\rnewkw{interval}{cd-interval}
+ \slist
+   \item \Description Commands controlling the correlation directions of the inversion intervals.
+   \item \Argument Elements controlling the correlation directions.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{name}}\rnewkw{name}{cd-interval-name}
+ \slist
+   \item \Description Interval name - must correspond to one specified in \rkw{name}{interval-name}.
+   \item \Argument String.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{single-surface}}\rnewkw{single-surface}{cd-interval-single-surface}
+ \slist
+   \item \Description Single correlation direction given as a standard surface file. Cannot be used simultaneously with \rkw{top-conform}{cd-interval-top-conform}, \rkw{base-conform}{cd-interval-base-conform}, \rkw{base-surface}{cd-interval-base-surface} or \rkw{top-surface}{cd-interval-top-surface}.
+   \item \Argument String.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{top-surface}}\rnewkw{top-surface}{cd-interval-top-surface}
+ \slist
+   \item \Description Top correlation direction given as a standard surface file. Cannot be used at the same time as \rkw{single-surface}{cd-interval-single-surface}.
+   \item \Argument File name.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{base-surface}}\rnewkw{base-surface}{cd-interval-base-surface}
+ \slist
+   \item \Description Base correlation direction given as a standard surface file. Cannot be used at the same time as \rkw{single-surface}{cd-interval-single-surface}.
+   \item \Argument File name.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{top-conform}}\rnewkw{top-conform}{cd-interval-top-conform}
+ \slist
+   \item \Description Decides whether the top correlation direction should be equal to the top inversion surface. Cannot be set to 'yes' at the same time as \rkw{top-surface}{cd-interval-top-surface} is given.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+\paragraph{\hbracket{base-conform}}\rnewkw{base-conform}{cd-interval-base-conform}
+ \slist
+   \item \Description Decides whether the base correlation direction should be equal to the base inversion surface. Cannot be set to 'yes' at the same time as \rkw{base-surface}{cd-interval-base-surface} is given.
+   \item \Argument 'yes or 'no'.
+   \item \Default 'no'
+ \elist
+
 \subsection{\hbracket{facies-probabilities}}\rnewkw{facies-probabilities}{facies-probabilities2}
  \slist
-   \item \Description Commands controlling the generating of facies probabilities.
+   \item \Description Commands controlling the generation of facies probabilities.
    \item \Argument Elements controlling facies probabilities
    \item \Default
  \elist
@@ -2234,14 +2424,14 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subsubsection{\hbracket{use-vs}}\newkw{use-vs}
 \slist
   \item \Description Decides whether \vs information is used when computing facies probabilities.
-  \item \Argument'yes' or 'no'.
+  \item \Argument 'yes' or 'no'.
   \item \Default 'yes'.
 \elist
 
 \subsubsection{\hbracket{use-prediction}}\newkw{use-prediction}
 \slist
   \item \Description Decides whether sampled inversion logs are used when computing facies probabilities. If not, filtered logs are used.
-  \item \Argument'yes' or 'no'.
+  \item \Argument 'yes' or 'no'.
   \item \Default 'no'.
 \elist
 
@@ -2281,7 +2471,7 @@ the vertical sampling interval we find the the number of parameters that is esti
      facies. Priors can be given as constant numbers or 3D
      cubes. If this command is not given, prior distribution is
      estimated from wells.
-   \item \Argument Elements controlling facies probabilities
+   \item \Argument Elements controlling facies probabilities OR elements controlling facies probabilities per interval.
    \item \Default
  \elist
 
@@ -2295,7 +2485,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subparagraph{\hbracket{name}}\newkw{name}
  \slist
    \item \Description Name of facies.
-   \item \Argument Facies name
+   \item \Argument String
    \item \Default
  \elist
 
@@ -2315,6 +2505,103 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
+\paragraph{\hbracket{interval}}\rnewkw{interval}{facies-prob-interval}
+ \slist
+   \item \Description Repeatable command, one for each interval. All intervals described in \kw{multiple-intervals} must be given here.
+   \item \Argument Elements containing information about the prior probabilities per interval.
+   \item \Default
+ \elist
+ 
+\subparagraph{\hbracket{name}}\rnewkw{name}{facies-prob-interval-name}
+ \slist
+   \item \Description Name of interval. Must correspond to one given in \kw{multiple-intervals}.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{facies}}\rnewkw{facies}{interval-facies}
+ \slist
+   \item \Description Repeatable command, one for each facies. 
+   \item \Argument Elements containing information about the facies
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{name}}\rnewkw{name}{interval-facies-name}
+ \slist
+   \item \Description Name of facies.
+   \item \Argument Facies name
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{probability}}\newkw{interval-probability}
+ \slist
+   \item \Description Probability for the facies given above.
+   \item \Argument Real numbers between 0 and 1. Numbers for all facies per interval must sum to one.
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{volume-fractions}}\newkw{volume-fractions}
+ \slist
+   \item \Description Posterior volume fractions per facies
+   \item \Argument Elements controlling volume fractions per facies OR elements controlling volume fractions per facies per interval.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{facies}}\rnewkw{facies}{vf-facies}
+ \slist
+   \item \Description Repeatable command, one for each facies. All facies present in well logs must be given.
+   \item \Argument Elements containing information about the facies
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{name}}\rnewkw{name}{vf-facies-name}
+ \slist
+   \item \Description Name of facies.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{fraction}}\rnewkw{fraction}{volume-fraction}
+ \slist
+   \item \Description Posterior volume fraction for the facies given above.
+   \item \Argument Real numbers between 0 and 1. Numbers for all facies must sum to one.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{interval}}\rnewkw{interval}{vf-interval}
+ \slist
+   \item \Description Repeatable command, one for each interval. All intervals described in \kw{multiple-intervals} must be given here.
+   \item \Argument Elements containing information about the volume fractions per interval.
+   \item \Default
+ \elist
+ 
+\subparagraph{\hbracket{name}}\rnewkw{name}{vf-interval-name}
+ \slist
+   \item \Description Name of interval. Must correspond to one given in \kw{multiple-intervals}.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{facies}}\rnewkw{facies}{interval-facies}
+ \slist
+   \item \Description Repeatable command, one for each facies. 
+   \item \Argument Elements containing information about the facies
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{name}}\rnewkw{name}{vf-interval-facies-name}
+ \slist
+   \item \Description Name of facies.
+   \item \Argument Facies name
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{fraction}}\newkw{interval-volume-fraction}
+ \slist
+   \item \Description Posterior volume fraction for the facies given above.
+   \item \Argument Real number between 0 and 1. Numbers for all facies per interval must sum to one.
+   \item \Default
+ \elist
 
 \subsubsection{\hbracket{uncertainty-level}}\newkw{uncertainty-level}
  \slist

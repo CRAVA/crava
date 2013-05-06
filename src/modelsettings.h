@@ -181,6 +181,7 @@ public:
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
   const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
+  const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
@@ -214,6 +215,10 @@ public:
   std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
+  std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
+  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
+
 
 
   void rotateVariograms(float angle);
@@ -307,6 +312,8 @@ public:
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
   void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
+  //void addVpVsRatioInterval(std::pair<std::string, float> VpVsPar) {vpvs_ratio_interval_.insert(VpVsPar)         ;}
+  void addVpVsRatioInterval(std::string name, float ratio){ vpvs_ratio_interval_.insert(std::pair<std::string, float>(name,ratio));}
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -379,6 +386,9 @@ public:
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
+  void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
+  void addPriorFaciesProbInterval(std::string name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_.insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
+  void addVolumeFractionInterval(std::string name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_.insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)        { parallelTimeSurfaces_     = pTimeSurfaces            ;}
@@ -405,6 +415,8 @@ public:
   void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
 
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
+
+  void addInterValName(std::string name)                  { interval_names_.push_back(name)                      ;}
 
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
@@ -534,6 +546,9 @@ private:
 
   std::vector<float>                rickerPeakFrequency_;
 
+  std::vector<std::string>          interval_names_;
+  std::map<std::string, float>      vpvs_ratio_interval_;         // Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
+
   std::vector<int>                  waveletDim_;                 ///< Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
   std::vector<float>                stretchFactor_;              ///< Stretch factor for pulse in 3D-wavelet
   std::vector<float>                estRangeX_;                  ///< Estimation range in x-direction for 3D-wavelet
@@ -570,6 +585,9 @@ private:
 
   int                               priorFaciesProbGiven_;
   std::map<std::string, float>      priorFaciesProb_;
+  std::map<std::string, float>      volumeFractionProb_;
+  std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
+  std::map<std::string, std::map<std::string, float> >      volumefractionInterval_;
 
   int                               nWells_;
   int                               nSimulations_;
