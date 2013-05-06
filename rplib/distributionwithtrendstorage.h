@@ -52,7 +52,8 @@ public:
   DeltaDistributionWithTrendStorage();
 
   DeltaDistributionWithTrendStorage(double mean,
-                                    bool   is_shared);
+                                    bool   is_shared,
+                                    bool   estimate);
 
   DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                     bool                        is_shared);

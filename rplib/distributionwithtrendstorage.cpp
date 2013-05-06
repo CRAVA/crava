@@ -29,14 +29,15 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
 }
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
-                                                                     bool   is_shared)
+                                                                     bool   is_shared,
+                                                                     bool   estimate)
 : is_shared_(is_shared),
   vintage_year_(1),
   one_year_correlation_(1.0)
 {
   //Use this constructor when mean_ is a double
 
-  mean_                    = new NRLib::TrendConstantStorage(mean);
+  mean_                    = new NRLib::TrendConstantStorage(mean, estimate);
   distribution_with_trend_ = NULL;
 }
 

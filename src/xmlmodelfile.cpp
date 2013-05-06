@@ -2415,7 +2415,7 @@ XmlModelFile::parseWalton(TiXmlNode * node, int constituent, std::string label, 
   std::vector<DistributionWithTrendStorage *> coord_nr;
   if(parseDistributionWithTrend(root, "coord-nr", coord_nr, dummy, false, errTxt, true) == false) {
     double interpolation_flag = -1.0;
-    coord_nr.push_back(new DeltaDistributionWithTrendStorage(interpolation_flag, false));
+    coord_nr.push_back(new DeltaDistributionWithTrendStorage(interpolation_flag, false, false));
 
   }
 
@@ -3375,6 +3375,7 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
   legalCommands.push_back("value");
   legalCommands.push_back("trend-1d");
   legalCommands.push_back("trend-2d");
+  legalCommands.push_back("estimate");
   if(allowDistribution == true) {
     legalCommands.push_back("gaussian");
     legalCommands.push_back("uniform");
@@ -3389,17 +3390,24 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
 
   int trendGiven = 0;
 
-  double value;
+  double value = 0;
   if(root->FirstChildElement() == NULL) { //We have an explicit value
     parseValue(node, keyword, value, errTxt);
-    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared, false);
     storage.push_back(distWithTrend);
     trendGiven++;
     return(true);
   }
 
   if(parseValue(root, "value", value, errTxt) == true) {
-    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared);
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared, false);
+    storage.push_back(distWithTrend);
+    trendGiven++;
+  }
+
+  bool estimate;
+  if(parseBool(root, "estimate", estimate, errTxt) == true) {
+    distWithTrend = new DeltaDistributionWithTrendStorage(value, is_shared, estimate);
     storage.push_back(distWithTrend);
     trendGiven++;
   }
@@ -3675,16 +3683,22 @@ XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib:
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
   legalCommands.push_back("reference-parameter");
+  legalCommands.push_back("estimate");
 
   std::string reference_parameter;
   if(parseValue(root, "reference-parameter", reference_parameter, errTxt) == false)
     errTxt += "The <reference-parameter> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
-  std::string file_name;
-  if(parseValue(root, "file-name", file_name, errTxt) == false)
-    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d>\n";
+  std::string file_name = "";
+  parseValue(root, "file-name", file_name, errTxt);
 
-  trend = new NRLib::Trend1DStorage(file_name,reference_parameter);
+  bool estimate = false;
+  parseBool(root, "estimate", estimate, errTxt);
+
+  if(file_name == "" && estimate == false)
+    errTxt += "One of <file-name> or <estimate> for <"+keyword+"> needs to be given in <trend-1d>\n";
+
+  trend = new NRLib::Trend1DStorage(file_name,reference_parameter, estimate);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -3702,19 +3716,25 @@ XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib:
   legalCommands.push_back("reference-parameter-first-axis");
   legalCommands.push_back("reference-parameter-second-axis");
 
-  std::string first_reference;
-  if(parseValue(root, "reference-parameter-first-axis", first_reference, errTxt) == false)
-    errTxt += "The <reference-parameter-first-axis> for <"+keyword+"> needs to be given in <trend-2d>\n";
+  std::string first_reference = "";
+  parseValue(root, "reference-parameter-first-axis", first_reference, errTxt);
 
-  std::string second_reference;
-  if(parseValue(root, "reference-parameter-second-axis", second_reference, errTxt) == false)
-    errTxt += "The <reference-parameter-second-axis> for <"+keyword+"> needs to be given in <trend-2d>n";
+  std::string second_reference = "";
+  parseValue(root, "reference-parameter-second-axis", second_reference, errTxt);
 
-  std::string file_name;
-  if(parseValue(root, "file-name", file_name, errTxt) == false)
-    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d>\n";
+  std::string file_name = "";
+  parseValue(root, "file-name", file_name, errTxt);
 
-  trend = new NRLib::Trend2DStorage(file_name, first_reference, second_reference);
+  bool estimate = false;
+  parseBool(root, "estimate", estimate, errTxt);
+
+  if(file_name == "" && estimate == false)
+    errTxt += "One of <file-name> or <estimate> for <"+keyword+"> needs to be given in <trend-2d>\n";
+
+  if((first_reference == "" || second_reference == "") && estimate == false)
+    errTxt += "Both <reference-parameter-first-axis> and <reference-parameter-second-axis> need to be given if <estimate> is not set for <"+keyword+"> in <trend-2d>\n";
+
+  trend = new NRLib::Trend2DStorage(file_name, first_reference, second_reference, estimate);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
