@@ -1,22 +1,25 @@
 These are the release notes for CRAVA
 
-CRAVA is a software package for seismic inversion and conditioning of geological reservoir models. CRAVA is copyrighted by Norwegian Computing Centre and Statoil and licensed under GPLv3+. See COPYING for details.
+CRAVA is a software package for seismic inversion and conditioning of
+  geological reservoir models. CRAVA is copyrighted by the Norwegian
+  Computing Center and Statoil and licensed under GPLv3+. See COPYING
+  for details.
 
 ON WHAT PLATFORMS DOES IT RUN?
-CRAVA is developep for GNU/Linux.
+  CRAVA is runs on GNU/Linux and Windows distributions where Intel MKL
+  or Atlas has been installed.
 
 DOCUMENTATION
-No efforts to provide documentation has been made yet.
+  doc/user_manual/CRAVA_user_manual.pdf
 
 DOWNLOADING CRAVA
-git clone git://github.com/CRAVA/crava.git
+  git clone git://github.com/CRAVA/crava.git
 
 BUILDING CRAVA
-Make a softlink to nrlib, e.g.,
- ln -s PATH/nrlib/nrlib PATH/crava/lib
-Compile CRAVA:
- cd PATH/crava
- make
-If you have the test-suite available, unpack it to PATH/crava and run
- cd PATH/crava
- make test
+  cd PATH/crava
+  make
+
+TEST THE BUILD
+  If you have the test-suite available, unpack it to PATH/crava and run
+  cd PATH/crava
+  make test
