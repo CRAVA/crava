@@ -6,8 +6,8 @@ CRAVA is a software package for seismic inversion and conditioning of
   for details.
 
 ON WHAT PLATFORMS DOES IT RUN?
-  CRAVA is runs on GNU/Linux and Windows distributions where Intel MKL
-  or Atlas has been installed.
+  CRAVA runs on GNU/Linux and Windows distributions where Intel MKL or
+  Atlas has been installed.
 
 DOCUMENTATION
   doc/user_manual/CRAVA_user_manual.pdf
