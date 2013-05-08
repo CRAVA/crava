@@ -83,7 +83,8 @@ public:
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
   void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
   std::string addInputPathAndCheckFiles();
-
+  void setIntervalBaseTimeSurface(const std::string & interval_name, const std::string & file_name)  { interval_base_time_surface_[interval_name] = file_name   ;}
+  void setIntervalBaseDepthSurface(const std::string & interval_name, const std::string & file_name) { interval_base_depth_surface_[interval_name] = file_name  ;}
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
   void addDefaultWaveletEstIntFileBase(void)                              { waveletEstIntFileBase_.push_back("")      ;}
 
@@ -140,6 +141,9 @@ private:
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise
   std::map<std::string, std::string> priorFaciesProb_; ///< File names for locally varying prior facies probability
   std::string                areaSurfaceFile_;
+
+  std::map<std::string, std::string>    interval_base_time_surface_;     ///< File names: Map between interval name and base time surface file name/value.
+  std::map<std::string, std::string>    interval_base_depth_surface_;    ///< File names: Map between interval name and base depth surface file name.
 
   std::vector<std::vector<std::string> > timeLapseWaveletShiftFiles_; ///< File names: wavelets for each time lapse and angle gather
   std::vector<std::vector<std::string> > timeLapseWaveletScaleFiles_; ///< File names: wavelets for each time lapse and angle gather
