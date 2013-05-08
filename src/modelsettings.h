@@ -147,6 +147,7 @@ public:
   double                           getTimeLz(void)                      const { return time_lz_                                   ;}
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   int                              getTimeNz(void)                      const { return time_nz_                                   ;}
+  int                              getTimeNzInterval(std::string name)  const { return time_nz_interval_.find(name)->second       ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
@@ -218,6 +219,9 @@ public:
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
   std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
   std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
+
+  int                              getErosionPriorityTopSurface()       const { return erosion_priority_top_surface_;}
+  int                              getErosionPriorityBaseSurface(const std::string & interval_name) const {return erosion_priority_interval_base_surface_.find(interval_name)->second;}
 
 
 
@@ -314,6 +318,8 @@ public:
   void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
   //void addVpVsRatioInterval(std::pair<std::string, float> VpVsPar) {vpvs_ratio_interval_.insert(VpVsPar)         ;}
   void addVpVsRatioInterval(std::string name, float ratio){ vpvs_ratio_interval_.insert(std::pair<std::string, float>(name,ratio));}
+  void setErosionPriorityTopSurface(int priority)         { erosion_priority_top_surface_= priority              ;}
+  void setErosionPriorityBaseSurface(const std::string & interval_name, int erosion_pri) { erosion_priority_interval_base_surface_[interval_name] = erosion_pri; }
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -354,6 +360,7 @@ public:
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
   void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
+  void setTimeNzInterval(std::string name, int time_nz)   { time_nz_interval_[name]   = time_nz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
@@ -415,6 +422,10 @@ public:
   void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
 
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
+
+  void addIntervalName(std::string name)                  { interval_names_.push_back(name)                      ;}
+  void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names        ;}
+  void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
   void addInterValName(std::string name)                  { interval_names_.push_back(name)                      ;}
 
@@ -546,7 +557,9 @@ private:
 
   std::vector<float>                rickerPeakFrequency_;
 
-  std::vector<std::string>          interval_names_;
+  int                               erosion_priority_top_surface_;// Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
+  std::map<std::string, int>        erosion_priority_interval_base_surface_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
+  std::vector<std::string>          interval_names_;              // Interval names for multiple interval inversion
   std::map<std::string, float>      vpvs_ratio_interval_;         // Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
 
   std::vector<int>                  waveletDim_;                 ///< Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
@@ -662,6 +675,7 @@ private:
   double                            time_dTop_;                  ///< Used when top and base surfaces are parallel
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
   double                            time_dz_;                    ///< Used when top and base surfaces are parallel
+  std::map<std::string, int>        time_nz_interval_;           ///< Number of layers for each interval
   int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 

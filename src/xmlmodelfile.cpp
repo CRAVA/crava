@@ -1871,6 +1871,52 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
 }
 
+bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legal_commands;
+  legal_commands.push_back("name");
+  legal_commands.push_back("base-surface");
+  legal_commands.push_back("number-of-layers");
+
+  std::string interval_name;
+  std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
+
+  bool success = parseValue(root, "name", interval_name, err_txt, false);
+  if(success == false){
+    err_txt += "Interval name not provided in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }else if(std::find(interval_names.begin(), interval_names.end(), interval_name) != interval_names.end()){
+    err_txt += "Interval name" + interval_name +" is already in use in command <"
+      +root->ValueStr()+"> " +lineColumnText(root)+".\n";
+  }else{
+    modelSettings_->addIntervalName(interval_name);
+  }
+
+  bool baseSurf = parseIntervalBaseSurface(root, interval_name, err_txt);
+  if(!baseSurf){
+    err_txt += "Base surface not provided in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  int number_of_layers = 0;
+  if(parseValue(root, "number-of-layers", number_of_layers, err_txt) == false)
+    err_txt += "Number of layers not specified for interval "+ interval_name + " in command <"+root->ValueStr()+">"
+      +lineColumnText(root)+".\n";
+  else
+  {
+    if (number_of_layers>0)
+      modelSettings_->setTimeNzInterval(interval_name,number_of_layers);
+    else
+      err_txt += "The number of layers needs to be larger than 0.\n";
+  }
+
+  checkForJunk(root, err_txt, legal_commands, true); //allow duplicates
+  return(true);
+}
+
 bool
 XmlModelFile::parseFaciesInterval(TiXmlNode * node, std::string & errTxt)
 {
@@ -3981,37 +4027,94 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  // add multizones
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("interval-two-surfaces");
-  legalCommands.push_back("interval-one-surface");
-  legalCommands.push_back("area-from-surface");
-  legalCommands.push_back("utm-coordinates");
-  legalCommands.push_back("inline-crossline-numbers");
+    legalCommands.push_back("multiple-intervals");
+    legalCommands.push_back("interval-two-surfaces");
+    legalCommands.push_back("interval-one-surface");
+    legalCommands.push_back("area-from-surface");
+    legalCommands.push_back("utm-coordinates");
+    legalCommands.push_back("inline-crossline-numbers");
 
-  bool interval = parseIntervalTwoSurfaces(root, errTxt);
+    bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
-  if(parseIntervalOneSurface(root, errTxt) == interval) { //Either both or none given
-    if(interval == true)
-      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
-        +lineColumnText(root)+".\n";
-    else
+    bool interval_1 = parseIntervalOneSurface(root, errTxt);
+
+    bool interval_m = parseMultipleIntervals(root, errTxt);
+
+    // one of the interval options must be used
+    if(interval_2 == false && interval_1 == false && interval_m == false) {
       errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
+
+    // but only one
+    } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
+      && !(interval_1 == false && interval_2 == true && interval_m == false)
+      && !(interval_1 == false && interval_2 == false && interval_m == true)){
+      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
+        +lineColumnText(root)+".\n";
+    }
+
+    bool area1 = parseAreaFromSurface(root, errTxt);
+    bool area2 = parseILXLArea(root, errTxt);
+    if(area1 && area2)
+      errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+    bool area3 = parseUTMArea(root, errTxt);
+    if(area1 && area3)
+      errTxt+= "Area can no be given both by a surface and by coordinates\n";
+    if(area2 && area3)
+      errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+
+    checkForJunk(root, errTxt, legalCommands);
+    return(true);
+}
+
+bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_txt){
+  TiXmlNode * root = node->FirstChildElement("multiple-intervals");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("interval");
+
+  modelSettings_->setParallelTimeSurfaces(false);
+  modelSettings_->setErosionPriorityTopSurface(1); //default is 1
+
+  if(parseTopSurface(root, err_txt) == false){
+    err_txt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
   }
 
-  bool area1 = parseAreaFromSurface(root, errTxt);
-  bool area2 = parseILXLArea(root, errTxt);
-  if(area1 && area2)
-    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
-  bool area3 = parseUTMArea(root, errTxt);
-  if(area1 && area3)
-    errTxt+= "Area can no be given both by a surface and by coordinates\n";
-  if(area2 && area3)
-    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+  int nIntervals = 0;
 
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
+  while(parseInterval(root,err_txt)==true){
+    nIntervals++;
+  }
+
+  if(nIntervals==0){
+    err_txt += "No input intervals given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  std::vector<int> erosion_priorities;
+  erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
+  std::vector<std::string> interval_names = modelSettings_->getIntervalNames();  
+  for (unsigned int i=0; i<interval_names.size(); i++){
+    erosion_priorities.push_back(modelSettings_->getErosionPriorityBaseSurface(interval_names[i]));
+  }
+
+  std::sort(erosion_priorities.begin(), erosion_priorities.end());
+  bool priorities_ok = true;
+  for (unsigned int i=1; i<erosion_priorities.size();i++){
+    if (erosion_priorities[i-1]>erosion_priorities[i])
+      priorities_ok = false;
+  }
+  if(priorities_ok == false){
+    err_txt += "The erosion priorities are not unique in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  return (true);
 }
 
 
@@ -4109,6 +4212,7 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-file");
   legalCommands.push_back("time-value");
   legalCommands.push_back("depth-file");
+  legalCommands.push_back("top-surface-erosion-priority");
 
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
@@ -4134,10 +4238,66 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
     inputFiles_->setDepthSurfFile(0, filename);
 
+  int erosion_priority;
+  if(parseValue(root, "top-surface-erosion-priority", erosion_priority, errTxt) == true){
+    modelSettings_->setErosionPriorityTopSurface(erosion_priority);
+  }else{
+    modelSettings_->setErosionPriorityTopSurface(1);
+  }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_name, std::string & err_txt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legal_commands;
+  legal_commands.push_back("time-file");
+  legal_commands.push_back("time-value");
+  legal_commands.push_back("depth-file");
+  legal_commands.push_back("erosion-priority");
+
+  std::string file_name;
+  bool time_file = parseFileName(root,"time-file", file_name, err_txt);
+  if(time_file == true)
+    inputFiles_->setIntervalBaseTimeSurface(interval_name, file_name);
+
+  float value;
+  bool time_value = parseValue(root,"time-value", value, err_txt);
+  if(time_value == true) {
+    if(time_file == false)
+      inputFiles_->setIntervalBaseTimeSurface(interval_name,NRLib::ToString(value) );
+    else
+      err_txt += "Both file and value given for base time in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(time_file == false) {
+    inputFiles_->setIntervalBaseTimeSurface(interval_name, "");
+    err_txt += "No time surface given for interval "+ interval_name +"in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  if(parseFileName(root,"depth-file", file_name, err_txt) == true)
+    inputFiles_->setIntervalBaseDepthSurface(interval_name, file_name);
+
+  // erosion priority is necessary for each surface
+  int erosion_priority;
+  if(parseValue(root, "erosion-priority", erosion_priority, err_txt)){
+    modelSettings_->setErosionPriorityBaseSurface(interval_name, erosion_priority);
+  }else{
+    err_txt += "No erosion priority given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+
+  checkForJunk(root, err_txt, legal_commands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
@@ -5732,7 +5892,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       }
     }
 
-
+    // Check that multizone background and multiple intervals are not used simultaneously
+    if (modelSettings_->getMultizoneBackground()){
+      errTxt += "Multizone background and multiple inversion intervals can not be used simultaneously.\n";
+    }
   }
 
 

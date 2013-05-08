@@ -111,6 +111,9 @@ private:
   bool       parseTopSurface(TiXmlNode * node, std::string & errTxt);
   bool       parseBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseMultipleIntervals(TiXmlNode * node, std::string & errTxt);
+  bool      parseInterval(TiXmlNode * node, std::string & errTxt);
+  bool        parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_name, std::string & errTxt);
   bool     parseAreaFromSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseUTMArea(TiXmlNode * node, std::string & errTxt);
   bool     parseILXLArea(TiXmlNode * node, std::string & errTxt);
