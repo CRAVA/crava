@@ -1746,50 +1746,46 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
       return(false);
   }
   else {
-  //End Temp
+    bool top_surface = false;
+    bool base_surface = false;
 
+    std::string filename;
+    if(parseFileName(root, "top-surface", filename, errTxt) == true) {
+      inputFiles_->setCorrDirTopSurfaceFile(filename);
+      top_surface = true;
+    }
 
-  bool top_surface = false;
-  bool base_surface = false;
+    if(parseFileName(root, "base-surface", filename, errTxt) == true) {
+      inputFiles_->setCorrDirBaseSurfaceFile(filename);
+      base_surface = true;
+    }
 
-  std::string filename;
-  if(parseFileName(root, "top-surface", filename, errTxt) == true) {
-    inputFiles_->setCorrDirTopSurfaceFile(filename);
-    top_surface = true;
-  }
+    bool top_conform = false;
+    if(parseBool(root, "top-conform", top_conform, errTxt) == true)
+      modelSettings_->setCorrDirTopConform(true);
 
-  if(parseFileName(root, "base-surface", filename, errTxt) == true) {
-    inputFiles_->setCorrDirBaseSurfaceFile(filename);
-    base_surface = true;
-  }
+    bool base_conform = false;
+    if(parseBool(root, "base-conform", top_conform, errTxt) == true)
+      modelSettings_->setCorrDirBaseConform(true);
 
-  bool top_conform = false;
-  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
-    modelSettings_->setCorrDirTopConform(true);
+    if(top_surface == true && top_conform == true)
+      errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  bool base_conform = false;
-  if(parseBool(root, "base-conform", top_conform, errTxt) == true)
-    modelSettings_->setCorrDirBaseConform(true);
+    if(base_surface == true && base_conform == true)
+      errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  if(top_surface == true && top_conform == true)
-    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
+    if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
+      errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
 
-  if(base_surface == true && base_conform == true)
-    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
+    if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
+      errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
-  if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
-    errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
+    if(top_conform == true && base_conform == true)
+      errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
+                + "where only one is allowed to be true.\n";
 
-  if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
-    errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
-
-  if(top_conform == true && base_conform == true)
-    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
-              + "where only one is allowed to be true.\n";
-
-  while(parseIntervalCorrelationDirection(root,errTxt)==true);
-
-  } //Temp
+    while(parseIntervalCorrelationDirection(root,errTxt)==true);
+  }//Temp
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -5308,7 +5304,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool ratioInterval = false;
   //std::string tmp_error;
 
-  if(parseVpVsRatio(root, errTxt) == false) { //Temporary solution: If both a value and intervals are given, it will only use the value.
+  if(parseVpVsRatio(root, errTxt) == false) { //Temporary solution: If both a value and intervals are given, it will only use what is defined first.
     parseValue(root,"vp-vs-ratio", ratio, errTxt);
     modelSettings_->setVpVsRatio(ratio);
   }
@@ -5466,10 +5462,8 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
 
   if(first_value != "interval") {
     return(false);
-    //modelSettings_->setVpVsRatio(ratio);
   }
   else {
-    std::string tmp_name;
     while(parseIntervalVpVs(root, errTxt) == true);
   }
 
@@ -5490,24 +5484,20 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string & errTxt)
 
   std::string name;
   float ratio = 0.0;
+  bool name_given = false;
+  bool ratio_given = false;
 
-  const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
+  if(parseValue(root, "name", name, errTxt) == true)
+    name_given = true;
+  if(parseValue(root, "ratio", ratio, errTxt) == true)
+    ratio_given = true;
 
-  if(parseValue(root, "name", name, errTxt) == true && parseValue(root, "ratio", ratio, errTxt) == true) {
-
-    bool interval_exists = false;
-    //Check if name is contained in previously defined intervals.
-    for(size_t i=0; i < current_interval_names.size(); i++) {
-      if(current_interval_names[i] == name) {
-        modelSettings_->addVpVsRatioInterval(name, ratio);
-        interval_exists = true;
-        break;
-      }
-    }
-    if(interval_exists == false)
-      errTxt += "Interval " + name + " under <vp-vs-ratio> does not exist in previously defined intervals.\n";
-
-  }
+  if(name_given == true && ratio_given == true)
+    modelSettings_->addVpVsRatioInterval(name, ratio);
+  else if(name_given == true && ratio_given == false)
+    errTxt += "<ratio> is missing under <vp-vs-ratio> for interval " + name +".\n";
+  else if(name_given == false && ratio_given == true)
+    errTxt += "<name> is missing under <vp-vs-ratio> for a interval.\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
