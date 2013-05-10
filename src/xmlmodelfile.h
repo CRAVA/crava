@@ -58,6 +58,8 @@ private:
   bool parseVintage(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
+    bool parseCorrelationDirection(TiXmlNode * node, std::string & errTxt);
+      bool parseIntervalCorrelationDirection(TiXmlNode * node, std::string & errTxt);
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
@@ -111,6 +113,9 @@ private:
   bool       parseTopSurface(TiXmlNode * node, std::string & errTxt);
   bool       parseBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseMultipleIntervals(TiXmlNode * node, std::string & errTxt);
+  bool      parseInterval(TiXmlNode * node, std::string & errTxt);
+  bool        parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_name, std::string & errTxt);
   bool     parseAreaFromSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseUTMArea(TiXmlNode * node, std::string & errTxt);
   bool     parseILXLArea(TiXmlNode * node, std::string & errTxt);
