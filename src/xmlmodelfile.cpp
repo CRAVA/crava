@@ -4160,13 +4160,12 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-    legalCommands.push_back("multiple-intervals");
     legalCommands.push_back("interval-two-surfaces");
     legalCommands.push_back("interval-one-surface");
     legalCommands.push_back("area-from-surface");
     legalCommands.push_back("utm-coordinates");
     legalCommands.push_back("inline-crossline-numbers");
-  legalCommands.push_back("multiple-intervals");
+    legalCommands.push_back("multiple-intervals");
 
     bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
@@ -4176,7 +4175,7 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
 
     // one of the interval options must be used
     if(interval_2 == false && interval_1 == false && interval_m == false) {
-      errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
+      errTxt += "No time intervals specified in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
 
     // but only one
@@ -4248,6 +4247,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
       +lineColumnText(root)+".\n";
   }
 
+  checkForJunk(root, err_txt, legalCommands);
   return (true);
 }
 
