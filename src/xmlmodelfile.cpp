@@ -1840,7 +1840,7 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     modelSettings_->setCorrDirIntervalTopConform(interval_name, true);
 
   bool base_conform = false;
-  if(parseBool(root, "base-conform", top_conform, errTxt) == true)
+  if(parseBool(root, "base-conform", base_conform, errTxt) == true)
     modelSettings_->setCorrDirIntervalBaseConform(interval_name, true);
 
   if(singel_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
