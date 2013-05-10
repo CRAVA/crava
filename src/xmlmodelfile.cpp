@@ -4178,11 +4178,10 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval-two-surfaces");
   legalCommands.push_back("interval-one-surface");
-  legalCommands.push_back("multiple-intervals");
   legalCommands.push_back("area-from-surface");
   legalCommands.push_back("utm-coordinates");
   legalCommands.push_back("inline-crossline-numbers");
-
+  legalCommands.push_back("multiple-intervals");
 
   bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
@@ -4192,29 +4191,35 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
 
   // one of the interval options must be used
   if(interval_2 == false && interval_1 == false && interval_m == false) {
-    errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
+    errTxt += "No time intervals specified in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
 
-  // but only one
-  } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
-    && !(interval_1 == false && interval_2 == true && interval_m == false)
-    && !(interval_1 == false && interval_2 == false && interval_m == true)){
-      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
+    // one of the interval options must be used
+    if(interval_2 == false && interval_1 == false && interval_m == false) {
+      errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
+
+    // but only one
+    } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
+      && !(interval_1 == false && interval_2 == true && interval_m == false)
+      && !(interval_1 == false && interval_2 == false && interval_m == true)){
+        errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+    }
   }
 
-  bool area1 = parseAreaFromSurface(root, errTxt);
-  bool area2 = parseILXLArea(root, errTxt);
-  if(area1 && area2)
-    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
-  bool area3 = parseUTMArea(root, errTxt);
-  if(area1 && area3)
-    errTxt+= "Area can no be given both by a surface and by coordinates\n";
-  if(area2 && area3)
-    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+    bool area1 = parseAreaFromSurface(root, errTxt);
+    bool area2 = parseILXLArea(root, errTxt);
+    if(area1 && area2)
+      errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+    bool area3 = parseUTMArea(root, errTxt);
+    if(area1 && area3)
+      errTxt+= "Area can no be given both by a surface and by coordinates\n";
+    if(area2 && area3)
+      errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
 
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
+    checkForJunk(root, errTxt, legalCommands);
+    return(true);
 }
 
 bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_txt)
@@ -4264,6 +4269,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
       +lineColumnText(root)+".\n";
   }
 
+  checkForJunk(root, err_txt, legalCommands);
   return (true);
 }
 
