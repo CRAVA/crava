@@ -147,6 +147,7 @@ public:
   double                           getTimeLz(void)                      const { return time_lz_                                   ;}
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   int                              getTimeNz(void)                      const { return time_nz_                                   ;}
+  int                              getTimeNzInterval(std::string name)  const { return time_nz_interval_.find(name)->second       ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
@@ -228,6 +229,7 @@ public:
   const std::map<std::string, bool>& getCorrDirIntervalTopConform(void)  const { return intervalTopConformCorrelation_ ;}
   const std::map<std::string, bool>& getCorrDirIntervalBaseConform(void) const { return intervalBaseConformCorrelation_ ;}
   bool                               getCorrDirIntervalUsed(void)        const { return intervalCorrelationUsed_ ;}
+
 
 
   void rotateVariograms(float angle);
@@ -323,6 +325,7 @@ public:
   void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
   void addVpVsRatioInterval(std::string interval_name, float ratio){ vpvs_ratio_interval_[interval_name] = ratio ;}
   void setErosionPriorityTopSurface(int priority)         { erosion_priority_top_surface_= priority              ;}
+  void setErosionPriorityBaseSurface(const std::string & interval_name, int erosion_pri) { erosion_priority_interval_base_surface_[interval_name] = erosion_pri; }
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -363,6 +366,7 @@ public:
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
   void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
+  void setTimeNzInterval(std::string name, int time_nz)   { time_nz_interval_[name]   = time_nz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
@@ -431,7 +435,8 @@ public:
   void setCorrDirIntervalBaseConform(const std::string & interval_name, bool intervalBaseConformCorrelation) { intervalBaseConformCorrelation_[interval_name] = intervalBaseConformCorrelation ;}
   void setCorrDirIntervalUsed(bool intervalCorrelationUsed) { intervalCorrelationUsed_ = intervalCorrelationUsed ;}
 
-  void addInterValName(std::string name)                  { interval_names_.push_back(name)                      ;}
+  void addIntervalName(std::string name)                  { interval_names_.push_back(name)                      ;}
+  void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
   void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
   void clearTimeLapse(void)                               { angle_.clear();
@@ -680,6 +685,7 @@ private:
   double                            time_dTop_;                  ///< Used when top and base surfaces are parallel
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
   double                            time_dz_;                    ///< Used when top and base surfaces are parallel
+  std::map<std::string, int>        time_nz_interval_;           ///< Number of layers for each interval
   int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 
