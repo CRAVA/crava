@@ -135,7 +135,7 @@ private:
   bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
   bool     parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
   bool     parseVpVsRatio(TiXmlNode * node, std::string & errTxt);
-  bool       parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt);
+  bool       parseIntervalVpVs(TiXmlNode * node, std::string & errTxt);
   bool     parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>

@@ -1315,8 +1315,10 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
     inputFiles_->setParamCorrFile(filename);
 
-  if(parseFileName(root, "correlation-direction", filename, errTxt) == true)
-    inputFiles_->setCorrDirFile(filename);
+  if(parseCorrelationDirection(root, errTxt) == false) {
+    if(parseFileName(root, "correlation-direction", filename, errTxt) == true)
+      inputFiles_->setCorrDirFile(filename);
+  }
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
@@ -1735,6 +1737,18 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("base-conform");
   legalCommands.push_back("interval");
 
+  //Temp
+  TiXmlNode * child = root->FirstChild();
+  std::string first_value = child->Value();
+
+  if(first_value != "interval" && first_value != "top-surface"  && first_value != "base-surface"
+    && first_value != "top-conform" && first_value != "base-conform") {
+      return(false);
+  }
+  else {
+  //End Temp
+
+
   bool top_surface = false;
   bool base_surface = false;
 
@@ -1775,7 +1789,9 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
 
   while(parseIntervalCorrelationDirection(root,errTxt)==true);
 
-  checkForJunk(root, errTxt, legalCommands);
+  } //Temp
+
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -1831,10 +1847,10 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     errTxt += "For interval " + interval_name + " a singel surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
 
   if(top_surface == true && top_conform == true)
-    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + "where only one is allowed.\n";
+    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + " where only one is allowed.\n";
 
   if(base_surface == true && base_conform == true)
-    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction>  for interval " + interval_name + "where only one is allowed.\n";
+    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction>  for interval " + interval_name + " where only one is allowed.\n";
 
   if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
     errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction> for interval " + interval_name
@@ -1849,7 +1865,7 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
               + "where only one is allowed to be true.\n";
 
 
-  checkForJunk(root, errTxt, legalCommands);
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -4160,45 +4176,45 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-    legalCommands.push_back("multiple-intervals");
-    legalCommands.push_back("interval-two-surfaces");
-    legalCommands.push_back("interval-one-surface");
-    legalCommands.push_back("area-from-surface");
-    legalCommands.push_back("utm-coordinates");
-    legalCommands.push_back("inline-crossline-numbers");
+  legalCommands.push_back("interval-two-surfaces");
+  legalCommands.push_back("interval-one-surface");
   legalCommands.push_back("multiple-intervals");
+  legalCommands.push_back("area-from-surface");
+  legalCommands.push_back("utm-coordinates");
+  legalCommands.push_back("inline-crossline-numbers");
 
-    bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
-    bool interval_1 = parseIntervalOneSurface(root, errTxt);
+  bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
-    bool interval_m = parseMultipleIntervals(root, errTxt);
+  bool interval_1 = parseIntervalOneSurface(root, errTxt);
 
-    // one of the interval options must be used
-    if(interval_2 == false && interval_1 == false && interval_m == false) {
-      errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
-        +lineColumnText(root)+".\n";
+  bool interval_m = parseMultipleIntervals(root, errTxt);
 
-    // but only one
-    } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
-      && !(interval_1 == false && interval_2 == true && interval_m == false)
-      && !(interval_1 == false && interval_2 == false && interval_m == true)){
+  // one of the interval options must be used
+  if(interval_2 == false && interval_1 == false && interval_m == false) {
+    errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+
+  // but only one
+  } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
+    && !(interval_1 == false && interval_2 == true && interval_m == false)
+    && !(interval_1 == false && interval_2 == false && interval_m == true)){
       errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
-    }
+  }
 
-    bool area1 = parseAreaFromSurface(root, errTxt);
-    bool area2 = parseILXLArea(root, errTxt);
-    if(area1 && area2)
-      errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
-    bool area3 = parseUTMArea(root, errTxt);
-    if(area1 && area3)
-      errTxt+= "Area can no be given both by a surface and by coordinates\n";
-    if(area2 && area3)
-      errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+  bool area1 = parseAreaFromSurface(root, errTxt);
+  bool area2 = parseILXLArea(root, errTxt);
+  if(area1 && area2)
+    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+  bool area3 = parseUTMArea(root, errTxt);
+  if(area1 && area3)
+    errTxt+= "Area can no be given both by a surface and by coordinates\n";
+  if(area2 && area3)
+    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
 
-    checkForJunk(root, errTxt, legalCommands);
-    return(true);
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
 }
 
 bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_txt)
@@ -5284,15 +5300,36 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   float ratio = RMISSING;
   bool ratioInterval = false;
+  //std::string tmp_error;
 
-  if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
+  if(parseVpVsRatio(root, errTxt) == false) { //Temporary solution: If both a value and intervals are given, it will only use the value.
+    parseValue(root,"vp-vs-ratio", ratio, errTxt);
     modelSettings_->setVpVsRatio(ratio);
-  else if(parseVpVsRatio(root, errTxt) == true)
+  }
+  else
     ratioInterval = true;
+
+  /*
+  parseValue(root,"vp-vs-ratio", ratio, tmp_error, true); //Gets error if <interval> is used under <vp-vs-ratio>
+
+  if(parseVpVsRatio(root, errTxt) == true)
+    ratioInterval = true;
+
+  if(tmp_error.size() == 0) {
+    if(ratioInterval == true)
+      errTxt += "You cannot both specify a Vp-Vs-ratio value and specify intervals";
+    else
+      modelSettings_->setVpVsRatio(ratio);
+  }
+
+  if(ratioInterval == false && tmp_error.size() > 0) //Error with the vp-vp-ratio value
+    errTxt += tmp_error;
+  */
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
     modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
+
 
   if (ratio_from_wells && (ratio != RMISSING || ratioInterval == true)) {
     errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
@@ -5418,10 +5455,16 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval");
 
-  std::vector<std::string> interval_names;
-  std::string tmp_name;
-  while(parseIntervalVpVs(root, tmp_name, errTxt) == true) {
-    interval_names.push_back(tmp_name);
+  TiXmlNode * child = root->FirstChild();
+  std::string first_value = child->Value();
+
+  if(first_value != "interval") {
+    return(false);
+    //modelSettings_->setVpVsRatio(ratio);
+  }
+  else {
+    std::string tmp_name;
+    while(parseIntervalVpVs(root, errTxt) == true);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -5429,7 +5472,7 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
-XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt)
+XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("interval");
   if(root == 0)
@@ -5445,18 +5488,22 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std
   const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
 
   if(parseValue(root, "name", name, errTxt) == true && parseValue(root, "ratio", ratio, errTxt) == true) {
-    interval_name = name;
 
+    bool interval_exists = false;
     //Check if name is contained in previously defined intervals.
     for(size_t i=0; i < current_interval_names.size(); i++) {
       if(current_interval_names[i] == name) {
         modelSettings_->addVpVsRatioInterval(name, ratio);
+        interval_exists = true;
         break;
       }
     }
+    if(interval_exists == false)
+      errTxt += "Interval " + name + " under <vp-vs-ratio> does not exist in previously defined intervals.\n";
+
   }
 
-  checkForJunk(root, errTxt, legalCommands);
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -5814,11 +5861,11 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
       double vpvs = vpvs_ratio_intervals.find(interval_names[i])->second;
       if(vpvs < vpvsMin) {
         errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
-                  +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2);
+                  +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2) + ".\n";
       }
       if(vpvs > vpvsMax) {
         errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
-                  +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
+                  +" is larger than maximum allowed value of " + NRLib::ToString(vpvsMax,2) + "\n";
       }
     }
   }
