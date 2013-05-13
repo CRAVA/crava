@@ -113,6 +113,9 @@ private:
   bool       parseTopSurface(TiXmlNode * node, std::string & errTxt);
   bool       parseBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseMultipleIntervals(TiXmlNode * node, std::string & errTxt);
+  bool      parseInterval(TiXmlNode * node, std::string & errTxt);
+  bool        parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_name, std::string & errTxt);
   bool     parseAreaFromSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseUTMArea(TiXmlNode * node, std::string & errTxt);
   bool     parseILXLArea(TiXmlNode * node, std::string & errTxt);
@@ -132,7 +135,7 @@ private:
   bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
   bool     parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
   bool     parseVpVsRatio(TiXmlNode * node, std::string & errTxt);
-  bool       parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt);
+  bool       parseIntervalVpVs(TiXmlNode * node, std::string & errTxt);
   bool     parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
