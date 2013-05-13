@@ -1889,7 +1889,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
   parseValue(root, "name", intervalname, errTxt, true);
 
   float prob = 0.0;
-  float sum  = 0.0;
+  float sum = 0.0;
   while(parseFaciesPerInterval(root, facies_map, prob, errTxt)) {
     sum += prob;
   }
@@ -5163,11 +5163,6 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
     interval_names.push_back(tmp_name);
   }
 
-
-  //Move to checkInversionConsistency
-  //if(current_interval_names.size() != interval_names.size())
-  //  errTxt += "The number of intervals given under " + root->ValueStr() + " (" + NRLib::ToString(interval_names.size()) + " ) is different from the number of intervals (" + NRLib::ToString(current_interval_names.size()) + ") previously defined.\n";
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -5194,16 +5189,10 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std
     //Check if name is contained in previously defined intervals.
     for(size_t i=0; i < current_interval_names.size(); i++) {
       if(current_interval_names[i] == name) {
-        //std::pair<std::string, float> VpVsPar(name, ratio);
-        //modelSettings_->addVpVsRatioInterval(VpVsPar);
         modelSettings_->addVpVsRatioInterval(name, ratio);
         break;
       }
     }
-
-    //Move to checkInversionConsistency
-    //if(interval_defined == false)
-    //  errTxt += "Interval " + name + " given in <vp-vs-ratio> is not inclued in the previously defined interval names.\n";
   }
 
   checkForJunk(root, errTxt, legalCommands);
