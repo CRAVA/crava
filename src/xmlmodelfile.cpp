@@ -1831,7 +1831,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
-  while(parseFaciesInterval(root,errTxt)==true)
+  while(parseFaciesInterval(root,errTxt) == true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1883,14 +1883,13 @@ TiXmlNode * root = node->FirstChildElement("interval");
   legalCommands.push_back("facies");
 
   std::string intervalname;
-  float value;
 
   std::map<std::string, float> facies_map;
 
   parseValue(root, "name", intervalname, errTxt, true);
 
-  float prob;
-  float sum = 0.0;
+  float prob = 0.0;
+  float sum  = 0.0;
   while(parseFaciesPerInterval(root, facies_map, prob, errTxt)) {
     sum += prob;
   }
@@ -1996,13 +1995,12 @@ TiXmlNode * root = node->FirstChildElement("interval");
   legalCommands.push_back("facies");
 
   std::string intervalname;
-  float value;
 
   std::map<std::string, float> volumefractions_map;
 
   parseValue(root, "name", intervalname, errTxt, true);
 
-  float fraction;
+  float fraction = 0.0;
   float sum = 0.0;
   while(parseVolumeFractionsPerInterval(root, volumefractions_map, fraction, errTxt)) {
     sum += fraction;
@@ -3933,6 +3931,8 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("parameter-name");
   legalCommands.push_back("file-name");
+  legalCommands.push_back("twt");
+  legalCommands.push_back("stratigraphic-depth");
 
   std::string name;
   if(parseValue(root, "parameter-name", name, errTxt) == true)
@@ -3940,10 +3940,37 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
   else
     errTxt += "<parameter-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true)
+  bool from_file = false;
+  if(parseValue(root, "file-name", name, errTxt) == true) {
+    modelSettings_->addTrendCubes(ModelSettings::CUBE_FROM_FILE);
     inputFiles_->addTrendCubes(name);
-  else
-    errTxt += "<file-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
+    from_file = true;
+  }
+
+  bool value = false;
+  int estimate = 0;
+  if(parseBool(root, "twt", value, errTxt) == true && value == true) {
+    modelSettings_->addTrendCubes(ModelSettings::TWT);
+    inputFiles_->addTrendCubes("");
+    estimate++;
+  }
+
+  if(parseBool(root, "stratigraphic-depth", value, errTxt) == true && value == true) {
+    modelSettings_->addTrendCubes(ModelSettings::STRATIGRAPHIC_DEPTH);
+    inputFiles_->addTrendCubes("");
+    estimate++;
+  }
+
+  if(from_file == true) {
+    if(estimate > 0)
+      errTxt += "Both <file-name> and <tvd> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
+  }
+  else {
+    if(estimate == 0)
+      errTxt += "One of <file-name>, <tvd> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
+    else if(estimate > 1)
+      errTxt += "Both <tvd> and <stratigraphic-depth> can not be given in <trend-cube>\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
@@ -4746,6 +4773,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
   legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("trend-cubes");
 
   bool facies           = true;
   bool faciesUndef      = false;
@@ -4786,6 +4814,9 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::SEISMIC_QUALITY_GRID;
   if(parseBool(root, "rms-velocities", value, errTxt ) == true && value == true)
     paramFlag += IO::RMS_VELOCITIES;
+
+  if(parseBool(root, "trend-cubes", value, errTxt) == true && value == true)
+    paramFlag += IO::TREND_CUBES;
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -5132,8 +5163,6 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
     interval_names.push_back(tmp_name);
   }
 
-  //Check if all intervals has gotten a new Vp-Vs-ratio value.
-  const std::vector<std::string> & current_interval_names = modelSettings_->getIntervalNames();
 
   //Move to checkInversionConsistency
   //if(current_interval_names.size() != interval_names.size())
@@ -5155,7 +5184,7 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std
   legalCommands.push_back("ratio");
 
   std::string name;
-  float ratio;
+  float ratio = 0.0;
 
   const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
 
@@ -5524,6 +5553,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
                 +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
     }
   }
+  checkRockPhysicsConsistency(errTxt);
 }
 
 void
@@ -5665,8 +5695,11 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
   if(modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated when facies probabilities are calculated using rock physics models\n";
+  }
 
-  //Rock physics consistency
+void
+XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
+{
   if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
@@ -5712,7 +5745,6 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
     if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
       errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
-
   }
 
 
