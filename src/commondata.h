@@ -15,7 +15,7 @@ public:
 
 private:
 
-  void createOuterTempSimbox();
+  void createOuterTemporarySimbox();
 
   //Bool variables for whether intial data processing went well.
   bool outer_temp_simbox_;
