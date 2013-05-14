@@ -40,6 +40,7 @@
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
 #include "src/tasklist.h"
+#include "src/commondata.h"
 
 #include "src/xmlmodelfile.h"
 #include "src/modelavostatic.h"
@@ -177,6 +178,7 @@ int main(int argc, char** argv)
     XmlModelFile modelFile(argv[1]);
     InputFiles     * inputFiles     = modelFile.getInputFiles();
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
+    CommonData     * commonData     = NULL;
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
 
@@ -195,6 +197,13 @@ int main(int argc, char** argv)
       LogKit::EndBuffering();
       return(1);
     }
+
+    /*------------------------------------------------------------
+    READ COMMON DATA AND PERFORM ESTIMATION BASED ON INPUT FILES
+    AND MODEL SETTINGS
+    -------------------------------------------------------------*/
+
+    commonData = new CommonData(modelSettings, inputFiles);
 
     Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;
@@ -325,6 +334,7 @@ int main(int argc, char** argv)
 
     delete modelAVOstatic;
     delete modelGeneral;
+    delete commonData;
     delete modelSettings;
     delete inputFiles;
 

@@ -2,16 +2,20 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#ifndef VARIO_H
-#define VARIO_H
+#ifndef COMMONDATA_H
+#define COMMONDATA_H
 
 #include <math.h>
 #include <string>
 
+class ModelSettings;
+class InputFiles;
+
 class CommonData{
 public:
-  CommonData(void);
-  virtual ~CommonData();
+  CommonData(ModelSettings  * modelSettings,
+             InputFiles     * inputFiles);
+  ~CommonData();
 
 private:
 

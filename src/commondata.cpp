@@ -11,8 +11,11 @@
 
 #include "src/commondata.h"
 #include "src/simbox.h"
+#include "src/modelsettings.h"
+#include "src/inputfiles.h"
 
-CommonData::CommonData(void)
+CommonData::CommonData(ModelSettings  * modelSettings,
+                       InputFiles     * inputFiles)
 {
 }
 
