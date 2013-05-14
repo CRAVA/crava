@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include "src/commondata.h"
+#include "src/simbox.h"
 
 CommonData::CommonData(void)
 {
@@ -20,7 +21,7 @@ CommonData::~CommonData()
 }
 
 void
-CommonData::createOuterTempSimbox()
+CommonData::createOuterTemporarySimbox()
 {
   //Simbox: Flat topp og bunn, gitt av hhv. topp av øverste og bunn av nederste flate. Rund utover til nærmeste 4ms.
   //Hent segygeometri fra første AVO-vintage, første vinkel. (Få evt. med segyformatet).
