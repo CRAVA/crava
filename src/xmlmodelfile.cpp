@@ -1800,7 +1800,7 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("name");
-  legalCommands.push_back("singel-surface");
+  legalCommands.push_back("single-surface");
   legalCommands.push_back("top-surface");
   legalCommands.push_back("base-surface");
   legalCommands.push_back("top-conform");
@@ -2023,10 +2023,10 @@ bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legal_commands;
-  legal_commands.push_back("name");
-  legal_commands.push_back("base-surface");
-  legal_commands.push_back("number-of-layers");
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("base-surface");
+  legalCommands.push_back("number-of-layers");
 
   std::string interval_name;
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
@@ -2060,7 +2060,7 @@ bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
       err_txt += "The number of layers needs to be larger than 0.\n";
   }
 
-  checkForJunk(root, err_txt, legal_commands, true); //allow duplicates
+  checkForJunk(root, err_txt, legalCommands, true); //allow duplicates
   return(true);
 }
 
@@ -2105,7 +2105,7 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("name");
-  legalCommands.push_back("facies");
+  legalCommands.push_back("probability");
 
   std::string facies_name;
   std::string file_name;
@@ -2236,12 +2236,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 }
-
-
-
-
-
-
 
 bool
 XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
@@ -4417,11 +4411,11 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legal_commands;
-  legal_commands.push_back("time-file");
-  legal_commands.push_back("time-value");
-  legal_commands.push_back("depth-file");
-  legal_commands.push_back("erosion-priority");
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+  legalCommands.push_back("depth-file");
+  legalCommands.push_back("erosion-priority");
 
   std::string file_name;
   bool time_file = parseFileName(root,"time-file", file_name, err_txt);
@@ -4456,7 +4450,7 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
   }
 
 
-  checkForJunk(root, err_txt, legal_commands);
+  checkForJunk(root, err_txt, legalCommands);
   return(true);
 }
 
@@ -5312,31 +5306,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   float ratio = RMISSING;
   bool ratioInterval = false;
-  //std::string tmp_error;
 
-  if(parseVpVsRatio(root, errTxt) == false) { //Temporary solution: If both a value and intervals are given, it will only use what is defined first.
-    parseValue(root,"vp-vs-ratio", ratio, errTxt);
-    modelSettings_->setVpVsRatio(ratio);
-  }
-  else
-    ratioInterval = true;
-
-  /*
-  parseValue(root,"vp-vs-ratio", ratio, tmp_error, true); //Gets error if <interval> is used under <vp-vs-ratio>
-
-  if(parseVpVsRatio(root, errTxt) == true)
-    ratioInterval = true;
-
-  if(tmp_error.size() == 0) {
-    if(ratioInterval == true)
-      errTxt += "You cannot both specify a Vp-Vs-ratio value and specify intervals";
-    else
-      modelSettings_->setVpVsRatio(ratio);
-  }
-
-  if(ratioInterval == false && tmp_error.size() > 0) //Error with the vp-vp-ratio value
-    errTxt += tmp_error;
-  */
+  parseVpVsRatio(root, errTxt);
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
@@ -5466,15 +5437,29 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval");
+  bool interval = false;
+  bool value = false;
+  float ratio = RMISSING;
 
-  TiXmlNode * child = root->FirstChild();
-  std::string first_value = child->Value();
-
-  if(first_value != "interval") {
-    return(false);
+  while(parseIntervalVpVs(root, errTxt) == true) {
+    interval = true;
   }
-  else {
-    while(parseIntervalVpVs(root, errTxt) == true);
+
+  if(interval == false) {
+    
+    parseValue(node, "vp-vs-ratio", ratio, errTxt);
+    if(ratio != RMISSING) {
+      value = true;
+      if(interval == true) {
+        errTxt += "You cannot specify both a value and intervals under <advanced-settings> <vp-vs-ratio>";
+        return(false);
+      }
+      else {
+        modelSettings_->setVpVsRatio(ratio);
+        return(true);
+      }
+    }
+
   }
 
   checkForJunk(root, errTxt, legalCommands);
