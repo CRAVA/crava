@@ -20,6 +20,8 @@ InputFiles::InputFiles(void)
     backVelFile_(""),
     reflMatrFile_(""),
     corrDirFile_(""),
+    corrDirTopFile_(""),
+    corrDirBaseFile_(""),
     paramCorrFile_(""),
     tempCorrFile_(""),
     areaSurfaceFile_("")
@@ -96,15 +98,34 @@ InputFiles::addInputPathAndCheckFiles()
   errTxt += addPathAndCheck(velocityField_);
   for(i=0;i<backFile_.size();i++)
     errTxt += addPathAndCheck(backFile_[i]);
+
+  std::map<std::string, std::string>::iterator j;
+  for(j=interval_base_time_surface_.begin();j != interval_base_time_surface_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+  for(j=interval_base_depth_surface_.begin();j != interval_base_depth_surface_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+  for(j=interval_corrDirFile_.begin();j != interval_corrDirFile_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+  for(j=interval_corrDirTopFile_.begin();j != interval_corrDirTopFile_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+  for(j=interval_corrDirBaseFile_.begin();j != interval_corrDirBaseFile_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+
   errTxt += addPathAndCheck(backVelFile_);
   errTxt += addPathAndCheck(corrDirFile_);
+  errTxt += addPathAndCheck(corrDirTopFile_);
+  errTxt += addPathAndCheck(corrDirBaseFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCorrFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
   errTxt += addPathAndCheck(refSurfaceFile_,true);
   errTxt += addPathAndCheck(areaSurfaceFile_);
 
-  std::map<std::string, std::string>::iterator j;
   for(j=priorFaciesProb_.begin();j != priorFaciesProb_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
