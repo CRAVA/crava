@@ -13,19 +13,18 @@
 #include "src/simbox.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "src/simbox.h"
 
 CommonData::CommonData(ModelSettings  * modelSettings,
-                       InputFiles     * inputFiles)
-{
+                       InputFiles     * inputFiles){
+
 }
 
-CommonData::~CommonData()
-{
+CommonData::~CommonData(){
 }
 
-void
-CommonData::createOuterTemporarySimbox()
-{
+bool
+CommonData::createOuterTemporarySimbox(){
   //Simbox: Flat topp og bunn, gitt av hhv. topp av øverste og bunn av nederste flate. Rund utover til nærmeste 4ms.
   //Hent segygeometri fra første AVO-vintage, første vinkel. (Få evt. med segyformatet).
   //Les inn ytterflatene for inversjonen.
@@ -35,3 +34,22 @@ CommonData::createOuterTemporarySimbox()
   //Lag et volum med samme xy-utstrekning. ->full_inversion_volume_
 }
 
+bool CommonData::readSeismicData(){
+
+}
+
+bool CommonData::readWellData(){
+
+}
+
+bool CommonData::blockWellsForEstimation(){
+
+}
+
+bool CommonData::setupReflectionMatrixAndTempWavelet(){
+
+}
+
+bool CommonData::optimizeWellLocations(){
+
+}

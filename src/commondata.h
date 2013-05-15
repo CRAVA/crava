@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <string>
+#include "src/simbox.h"
 
 class ModelSettings;
 class InputFiles;
@@ -19,7 +20,12 @@ public:
 
 private:
 
-  void createOuterTemporarySimbox();
+  bool createOuterTemporarySimbox();
+  bool readSeismicData();
+  bool readWellData();
+  bool blockWellsForEstimation();
+  bool setupReflectionMatrixAndTempWavelet();
+  bool optimizeWellLocations();
 
   //Bool variables for whether intial data processing went well.
   bool outer_temp_simbox_;
