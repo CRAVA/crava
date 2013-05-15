@@ -98,6 +98,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
   forwardModeling_        = modelSettings->getForwardModeling();
   numberOfWells_          = modelSettings->getNumberOfWells();
 
+  priorCorrXY_            = NULL;
 
   {
     int debugLevel = modelSettings->getLogLevel();
@@ -284,7 +285,8 @@ ModelGeneral::~ModelGeneral(void)
         delete wells_[i];
   }
 
-   delete priorCorrXY_;
+  if(priorCorrXY_ != NULL)
+    delete priorCorrXY_;
 
 }
 
