@@ -273,7 +273,7 @@ Crava::Crava(ModelSettings           * modelSettings,
 
 
   seismicParameters.setBackgroundParameters(postAlpha_, postBeta_, postRho_);
-  
+
   if(!modelSettings->getForwardModeling())
     seismicParameters.FFTCovGrids();
 
