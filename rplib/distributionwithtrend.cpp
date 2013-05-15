@@ -3,12 +3,14 @@
 
 DistributionWithTrend::DistributionWithTrend()
 : share_level_(None),
+  current_u_(0),  //Ok since resample is true.
   resample_(true)
 {
 }
 
 DistributionWithTrend::DistributionWithTrend(const int shareLevel,bool reSample)
 : share_level_(shareLevel),
+  current_u_(0),  //Shaky, should not be used with reSample = false, use the one below.
   resample_(reSample)
 {
 }

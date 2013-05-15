@@ -1975,7 +1975,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
-  while(parseFaciesInterval(root,errTxt)==true);
+  while(parseFaciesInterval(root,errTxt) == true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2090,7 +2090,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
 
   const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
   if(prior_prob_interval_tmp.count(intervalname) > 0) {
-    errTxt += "Interval " + intervalname + " is defined more than once under <"+root->ValueStr()+"> "
+    errTxt += "Interval " + intervalname + " is defined more than once under <"+node->ValueStr()+"> "
           +lineColumnText(root)+".\n";
   }
 
@@ -2142,7 +2142,6 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
     volume_fraction = true;
   }
 
-  //hgolsen
   if(volume_fraction == true) {
     typedef std::map<std::string,float> mapType;
     mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
@@ -2211,7 +2210,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
 
   const std::map<std::string, std::map<std::string, float> > & volume_fractions_interval_tmp = modelSettings_->getVolumeFractionsProbInterval();
   if(volume_fractions_interval_tmp.count(intervalname) > 0) {
-    errTxt += "Interval " + intervalname + " is defined more than once under <"+root->ValueStr()+"> "
+    errTxt += "Interval " + intervalname + " is defined more than once under <"+node->ValueStr()+"> "
           +lineColumnText(root)+".\n";
   }
 
@@ -4131,6 +4130,8 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("parameter-name");
   legalCommands.push_back("file-name");
+  legalCommands.push_back("twt");
+  legalCommands.push_back("stratigraphic-depth");
 
   std::string name;
   if(parseValue(root, "parameter-name", name, errTxt) == true)
@@ -4138,10 +4139,37 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
   else
     errTxt += "<parameter-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true)
+  bool from_file = false;
+  if(parseValue(root, "file-name", name, errTxt) == true) {
+    modelSettings_->addTrendCubes(ModelSettings::CUBE_FROM_FILE);
     inputFiles_->addTrendCubes(name);
-  else
-    errTxt += "<file-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
+    from_file = true;
+  }
+
+  bool value = false;
+  int estimate = 0;
+  if(parseBool(root, "twt", value, errTxt) == true && value == true) {
+    modelSettings_->addTrendCubes(ModelSettings::TWT);
+    inputFiles_->addTrendCubes("");
+    estimate++;
+  }
+
+  if(parseBool(root, "stratigraphic-depth", value, errTxt) == true && value == true) {
+    modelSettings_->addTrendCubes(ModelSettings::STRATIGRAPHIC_DEPTH);
+    inputFiles_->addTrendCubes("");
+    estimate++;
+  }
+
+  if(from_file == true) {
+    if(estimate > 0)
+      errTxt += "Both <file-name> and <tvd> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
+  }
+  else {
+    if(estimate == 0)
+      errTxt += "One of <file-name>, <tvd> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
+    else if(estimate > 1)
+      errTxt += "Both <tvd> and <stratigraphic-depth> can not be given in <trend-cube>\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
@@ -5065,6 +5093,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
   legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("trend-cubes");
 
   bool facies           = true;
   bool faciesUndef      = false;
@@ -5105,6 +5134,9 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::SEISMIC_QUALITY_GRID;
   if(parseBool(root, "rms-velocities", value, errTxt ) == true && value == true)
     paramFlag += IO::RMS_VELOCITIES;
+
+  if(parseBool(root, "trend-cubes", value, errTxt) == true && value == true)
+    paramFlag += IO::TREND_CUBES;
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -5452,11 +5484,11 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   }
 
   //if(root->FirstChildElement() == NULL) {
-    parseValue(root->Parent(), "vp-vs-ratio", ratio, errTxt);
+    parseValue(node, "vp-vs-ratio", ratio, errTxt);
     if(ratio != RMISSING) {
       value = true;
       if(interval == true) {
-        errTxt += "You cannot specify both a value and intervals under <advanced-settings> <vp-vs-ratio>";
+        errTxt += "You cannot specify both a value and intervals under <advanced-settings> " + root->ValueStr() + ".\n";
         return(false);
       }
       else {
@@ -5464,8 +5496,8 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
         return(true);
       }
     }
-    else if(interval == true)
-      return(true);
+    //else if(interval == true)
+    //  return(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -5846,7 +5878,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
                 +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
     }
   }
-
+  checkRockPhysicsConsistency(errTxt);
   const std::map<std::string, float> & vpvs_ratio_intervals = modelSettings_->getVpVsRatioIntervals();
   if (vpvs_ratio_intervals.size() > 0) {
     const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
@@ -6006,8 +6038,11 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
   if(modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated when facies probabilities are calculated using rock physics models\n";
+  }
 
-  //Rock physics consistency
+void
+XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
+{
   if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
     if(modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getNumberOfVintages() == 0)
@@ -6053,7 +6088,6 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
     if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
       errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
-
   }
 
 
@@ -6096,26 +6130,12 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
           std::map<std::string, float> facies_probabilities = it->second;
 
-          // Compare names in rock physics model with names given in .xml-file
-          if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+          for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
-            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-
-              if(iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
-            }
-          }
-
-          // Compare names in rock physics model with names given as input in proability cubes
-          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
-            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
-
-            for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-              if (iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
-            }
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <prior-probabilities> for interval " 
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
         }
       }
@@ -6127,7 +6147,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     }
     //Check that all intervals have gotten a volume fraction
     const std::map<std::string, std::map<std::string, float> > & volume_fraction_interval = modelSettings_->getVolumeFractionsProbInterval();
-    if(prior_facies_prob_interval.size() > 0) {
+    if(volume_fraction_interval.size() > 0) {
       if(interval_names.size() != volume_fraction_interval.size())
         errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for volume fractions under <prior-probabilites> (" + NRLib::ToString(volume_fraction_interval.size()) + ").\n";
 
@@ -6143,31 +6163,37 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
         const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
 
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
-          std::map<std::string, float> facies_probabilities = it->second;
+          std::map<std::string, float> volume_fractions = it->second;
 
-          // Compare names in rock physics model with names given in .xml-file
-          if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+          for(std::map<std::string, float>::const_iterator it = volume_fractions.begin(); it != volume_fractions.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
-            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-
-              if(iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
-            }
-          }
-
-          // Compare names in rock physics model with names given as input in proability cubes
-          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
-            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
-
-            for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-              if (iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
-            }
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <volume-fractions> for interval " 
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
         }
       }
+    }
+
+    //Check that intervals under prior-prob and volume fractions containes the same intervals
+    if(prior_facies_prob_interval.size() > 0 && volume_fraction_interval.size() > 0) {
+
+      for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
+        
+        std::map<std::string, float> facies_probabilities = it->second;
+        std::map<std::string, float> volume_fractions = volume_fraction_interval.find(it->first)->second;
+
+        for(std::map<std::string, float>::const_iterator it2 = facies_probabilities.begin(); it2 != facies_probabilities.end(); it2++) {
+          if(volume_fractions.count(it2->first) == 0)
+            errTxt += "Facies " + it2->first + " is defined for <prior-probabilites> but not for <volume-fraction> for interval " + it->first + ".\n";
+        }
+        for(std::map<std::string, float>::const_iterator it3 = volume_fractions.begin(); it3 != volume_fractions.end(); it3++) {
+          if(facies_probabilities.count(it3->first) == 0)
+            errTxt += "Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
+        }
+      }
+
     }
 
     //Check that all intervals are used under correlation direction
