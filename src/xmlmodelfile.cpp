@@ -1975,7 +1975,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
-  while(parseFaciesInterval(root,errTxt)==true)
+  while(parseFaciesInterval(root,errTxt)==true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2088,6 +2088,12 @@ TiXmlNode * root = node->FirstChildElement("interval");
     errTxt+="Prior facies probabilities for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
 
+  const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
+  if(prior_prob_interval_tmp.count(intervalname) > 0) {
+    errTxt += "Interval " + intervalname + " is defined more than once under <"+root->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+  }
+
   modelSettings_->addPriorFaciesProbInterval(intervalname, facies_map);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
@@ -2095,7 +2101,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
 }
 
 bool
-XmlModelFile::parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt)
+XmlModelFile::parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float & prob, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("facies");
   if(root == 0)
@@ -2130,21 +2136,25 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
   legalCommands.push_back("interval");
 
   float sum       = 0.0;
+  bool volume_fraction = false;
 
-  while(parseFaciesVolumeFractions(root,errTxt)==true);
-
-  typedef std::map<std::string,float> mapType;
-  //mapType myMap = modelSettings_->getPriorFaciesProb();
-  //std::map<std::string, float>
-  mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
-
-  for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
-    sum+=(*it).second;
+  while(parseFaciesVolumeFractions(root,errTxt)==true) {
+    volume_fraction = true;
   }
-  if(sum != 1.0)
-    errTxt+="Volume fractions must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
-  while(parseVolumeFractionsInterval(root,errTxt)==true)
+  //hgolsen
+  if(volume_fraction == true) {
+    typedef std::map<std::string,float> mapType;
+    mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
+
+    for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
+      sum+=(*it).second;
+    }
+    if(sum != 1.0)
+      errTxt+="Volume fractions must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+  }
+
+  while(parseVolumeFractionsInterval(root,errTxt)==true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2166,7 +2176,7 @@ TiXmlNode * root = node->FirstChildElement("facies");
   float value;
   parseValue(root, "name", faciesname, errTxt, true);
 
-  parseValue(root,"fraction", value, errTxt, true);
+  parseValue(root, "fraction", value, errTxt, true);
   modelSettings_->addVolumeFractionProb(faciesname, value);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
@@ -2199,6 +2209,12 @@ TiXmlNode * root = node->FirstChildElement("interval");
   if(sum != 1.0)
     errTxt+="Volume fractions for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
+  const std::map<std::string, std::map<std::string, float> > & volume_fractions_interval_tmp = modelSettings_->getVolumeFractionsProbInterval();
+  if(volume_fractions_interval_tmp.count(intervalname) > 0) {
+    errTxt += "Interval " + intervalname + " is defined more than once under <"+root->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+  }
+
   modelSettings_->addVolumeFractionInterval(intervalname, volumefractions_map);
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -2206,7 +2222,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
 }
 
 bool
-XmlModelFile::parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float prob, std::string & errTxt)
+XmlModelFile::parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("facies");
   if(root == 0)
@@ -5435,9 +5451,8 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
     interval = true;
   }
 
-  if(interval == false) {
-    
-    parseValue(node, "vp-vs-ratio", ratio, errTxt);
+  //if(root->FirstChildElement() == NULL) {
+    parseValue(root->Parent(), "vp-vs-ratio", ratio, errTxt);
     if(ratio != RMISSING) {
       value = true;
       if(interval == true) {
@@ -5449,8 +5464,8 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
         return(true);
       }
     }
-
-  }
+    else if(interval == true)
+      return(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -6071,6 +6086,39 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
           errTxt += "There is missing facies-probabilities under <prior-probabilities> for interval " + interval_names[i] + ".\n";
         }
       }
+
+
+      //Rock physics consistency per interval
+      if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
+
+        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+
+        for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
+          std::map<std::string, float> facies_probabilities = it->second;
+
+          // Compare names in rock physics model with names given in .xml-file
+          if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+
+            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+              if(iter == rock_storage.end())
+                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+            }
+          }
+
+          // Compare names in rock physics model with names given as input in proability cubes
+          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
+            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
+
+            for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+              if (iter == rock_storage.end())
+                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
+            }
+          }
+        }
+      }
     }
 
     // Check that multizone background and multiple intervals are not used simultaneously
@@ -6086,6 +6134,38 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       for(size_t i = 0; i < interval_names.size(); i++) {
         if(volume_fraction_interval.count(interval_names[i]) == 0) {
           errTxt += "There is missing volume fractions under <prior-probabilities> for interval " + interval_names[i] + ".\n";
+        }
+      }
+
+      //Rock physics consistency with volume fractions per interval
+      if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
+
+        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+
+        for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
+          std::map<std::string, float> facies_probabilities = it->second;
+
+          // Compare names in rock physics model with names given in .xml-file
+          if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
+
+            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+              if(iter == rock_storage.end())
+                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+            }
+          }
+
+          // Compare names in rock physics model with names given as input in proability cubes
+          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
+            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
+
+            for(std::map<std::string, std::string>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+              if (iter == rock_storage.end())
+                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies "+it->first+" is not one of the rocks given in the rock physics model.\n";
+            }
+          }
         }
       }
     }
@@ -6118,6 +6198,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
            errTxt += "There is missing correlation direction under <prior-model>, <correlation-direction> for interval " + interval_names[i] + ".\n";
       }
     }
+
+
+
+
 
   }
 }
