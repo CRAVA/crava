@@ -32,24 +32,41 @@ CommonData::createOuterTemporarySimbox(){
 
   //Lag en simbox xy-utstrekninga, flat topp og flat bunn. -> esimation_simbox_
   //Lag et volum med samme xy-utstrekning. ->full_inversion_volume_
+  return true;
 }
 
 bool CommonData::readSeismicData(){
+  return true;
 
 }
 
 bool CommonData::readWellData(){
+  return true;
 
 }
 
 bool CommonData::blockWellsForEstimation(){
+  return true;
 
 }
 
 bool CommonData::setupReflectionMatrixAndTempWavelet(){
+  return true;
 
 }
 
 bool CommonData::optimizeWellLocations(){
+  return true;
+}
+
+bool CommonData::estimateWaveletShape(){
+
+}
+  
+bool CommonData::estimatePriorCorrelation(){
+
+}
+  
+bool CommonData::setupEstimationRockPhysics(){
 
 }

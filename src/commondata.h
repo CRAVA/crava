@@ -14,9 +14,20 @@ class InputFiles;
 
 class CommonData{
 public:
-  CommonData(ModelSettings  * modelSettings,
-             InputFiles     * inputFiles);
-  ~CommonData();
+  CommonData(ModelSettings    * modelSettings,
+             InputFiles       * inputFiles);
+  ~ CommonData();
+
+  //SET FUNCTIONS
+
+  void        setEstimationSimbox();
+  void        setFullInversionVoulume();
+
+  //GET FUNCTIONS
+
+  Simbox          * getEstimationSimbox()     const { return estimation_simbox_     ;}
+  NRLib::Volume   * getFullInversionVolume()  const { return full_inversion_volume_ ;}
+  
 
 private:
 
@@ -26,8 +37,12 @@ private:
   bool blockWellsForEstimation();
   bool setupReflectionMatrixAndTempWavelet();
   bool optimizeWellLocations();
+  bool estimateWaveletShape();
+  bool estimatePriorCorrelation();
+  bool setupEstimationRockPhysics();
 
-  //Bool variables for whether intial data processing went well.
+  // Bool variables indicating whether the corresponding data processing
+  // succeeded
   bool outer_temp_simbox_;
   bool read_seismic_;
   bool read_wells_;
@@ -37,6 +52,9 @@ private:
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
+
+  Simbox          * estimation_simbox_;
+  NRLib::Volume   * full_inversion_volume_;
 
 };
 
