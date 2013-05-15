@@ -19,9 +19,9 @@ OPT         = -O2
 DEBUG       =
 PURIFY      =
 #Marit/Alf: Dette virker ikke under Ubuntu
-#ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
-ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
-mode        = all
+ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
+#ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+mode        = debug
 
 ifeq ($(GCCNEW),1)
 GXXWARNING += -Wno-unused-but-set-variable
