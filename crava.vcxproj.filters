@@ -1004,9 +1004,6 @@
     <ClInclude Include="src\bWellPt.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\corr.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\correlatedrocksamples.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
