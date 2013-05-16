@@ -284,6 +284,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\commondata.cpp" />
     <ClCompile Include="src\correlatedrocksamples.cpp" />
     <ClCompile Include="src\covgrid2d.cpp" />
     <ClCompile Include="src\covgridseparated.cpp" />
@@ -1351,6 +1352,7 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />

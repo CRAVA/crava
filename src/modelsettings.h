@@ -400,7 +400,7 @@ public:
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
-  void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;} // .insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
+  void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;}
   void addVolumeFractionInterval(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumefractionInterval_[interval_name] = volumefractions_map ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}

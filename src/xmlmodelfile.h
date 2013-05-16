@@ -68,10 +68,10 @@ private:
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
-  bool      parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt);
+  bool      parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float & prob, std::string & errTxt);
   bool   parseVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseVolumeFractionsInterval(TiXmlNode * node, std::string & errTxt);
-  bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float prob, std::string & errTxt);
+  bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt);
   bool    parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
@@ -140,6 +140,8 @@ private:
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
+  template <typename T>
+  bool parseCurrentValue(TiXmlNode * node, T & value, std::string & errTxt);
   bool parseDistributionWithTrend(TiXmlNode                                   * node,
                                   const std::string                           & keyword,
                                   std::vector<DistributionWithTrendStorage *> & storage,
@@ -227,4 +229,45 @@ XmlModelFile::parseValue(TiXmlNode         * node,
   errTxt += tmpErr;
   return(true);
 }
+
+template <typename T>
+bool
+XmlModelFile::parseCurrentValue(TiXmlNode         * node,
+                                T                 & value,
+                                std::string       & errTxt)
+{
+  setMissing(value);
+  TiXmlNode * valNode = node->FirstChild();
+  if(valNode == NULL)
+    return(false);
+  if(valNode->Type() ==  TiXmlNode::COMMENT) {
+    node->RemoveChild(valNode);
+    return(true);
+  }
+
+  std::vector<std::string> legalCommands(1);
+
+  while(valNode != NULL && valNode->Type() != TiXmlNode::TEXT)
+    valNode = valNode->NextSibling();
+
+  if(valNode == NULL)
+    return(false);
+  else {
+    std::string tmpErr = "";
+
+    try {
+      value = NRLib::ParseType<T>(valNode->ValueStr());
+    }
+    catch(NRLib::Exception & e) {
+      setMissing(value);
+      tmpErr = "Error: "+std::string(e.what())+" on line "+NRLib::ToString(valNode->Row())+", column "+NRLib::ToString(valNode->Column())+".\n";
+    }
+
+    node->RemoveChild(valNode);
+    errTxt += tmpErr;
+  }
+
+  return(true);
+}
+
 #endif
