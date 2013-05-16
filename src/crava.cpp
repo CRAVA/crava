@@ -112,6 +112,8 @@ Crava::Crava(ModelSettings           * modelSettings,
   scaleWarningText_  = "";
   errThetaCov_       = new double*[ntheta_];
   sigmamdnew_        = NULL;
+  errCorr_           = NULL;
+
   for(int i=0;i<ntheta_;i++) {
     errThetaCov_[i]  = new double[ntheta_];
     thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
@@ -271,7 +273,9 @@ Crava::Crava(ModelSettings           * modelSettings,
 
 
   seismicParameters.setBackgroundParameters(postAlpha_, postBeta_, postRho_);
-  seismicParameters.FFTCovGrids();
+
+  if(!modelSettings->getForwardModeling())
+    seismicParameters.FFTCovGrids();
 
   delete spatwellfilter;
 
@@ -288,7 +292,8 @@ Crava::~Crava()
   delete [] dataVariance_;
   if(fprob_ != NULL)
     delete fprob_;
-  delete errCorr_;
+  if(errCorr_ != NULL)
+    delete errCorr_;
 
   for(int i = 0;i<ntheta_;i++)
     delete[] errThetaCov_[i];
@@ -741,7 +746,7 @@ Crava::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
   float * corrT = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
   computeReflectionCoefficientTimeCovariance(rcCovT, corrT, A);
   rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
-
+  delete corrT;
 
   // computes the time Covariance in the errorterm with wavelet Local can be more efficiently computed
   Wavelet1D *errorSmooth  = new Wavelet1D(wLocal ,Wavelet::FIRSTORDERFORWARDDIFF);
