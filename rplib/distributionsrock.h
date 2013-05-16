@@ -55,7 +55,8 @@ public:
                                                      const Rock                * sample) = 0;
 
   //Top level objects (those accessed from outside the rock physics model) need more parameters set, so call this.
-  void                                  CompleteTopLevelObject(std::vector<DistributionWithTrend *> res_var);
+  void                                  CompleteTopLevelObject(std::vector<DistributionWithTrend *>   res_var,
+                                                               std::string                          & errTxt);
 
   void                                  SetResamplingLevel(int level) {resampling_level_ = level;}
 
@@ -65,13 +66,8 @@ protected:
   virtual Rock                        * GenerateSamplePrivate(const std::vector<double> & trend_params) = 0;
                                         //This function should be called last step in constructor
                                         //for all children classes.
-  void                                  SetupExpectationAndCovariances();
-                                                                     /*NRLib::Grid2D<std::vector<double> >   & expectation,
-                                                                       NRLib::Grid2D<NRLib::Grid2D<double> > & covariance,
-                                                                       std::vector<double>                   & tabulated_s0,
-                                                                       std::vector<double>                   & tabulated_s1,
-                                                                       const std::vector<double>             & s_min,
-                                                                       const std::vector<double>             & s_max);*/
+
+  void                                  SetupExpectationAndCovariances(std::string & errTxt);
 
   void                                  FindTabulatedTrendParams(std::vector<double>       & tabulated_s0,
                                                                  std::vector<double>       & tabulated_s1,

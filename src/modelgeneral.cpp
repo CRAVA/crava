@@ -2471,6 +2471,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
             if(rockErrTxt == "") {
 
+              std::string tmpErrTxt = "";
+
               int n_vintages = static_cast<int>(rock.size());
               if(n_vintages > 1)
                 LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
@@ -2480,7 +2482,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                   LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
 
                 //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-                rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
+                rock[i]->CompleteTopLevelObject(res_var_vintage[i],
+                                                tmpErrTxt);
 
                 std::vector<bool> has_trends = rock[i]->HasTrend();
                 bool              has_trend = false;
@@ -2496,7 +2499,6 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
                 printExpectationAndCovariance(expectation, covariance, has_trend);
 
-                std::string tmpErrTxt = "";
                 if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
                   tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
                   tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
