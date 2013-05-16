@@ -1315,8 +1315,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
     inputFiles_->setParamCorrFile(filename);
 
-  if(parseFileName(root, "correlation-direction", filename, errTxt) == true)
-    inputFiles_->setCorrDirFile(filename);
+  parseCorrelationDirection(root, errTxt);
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
@@ -1722,6 +1721,159 @@ XmlModelFile::parseZone(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
+XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("correlation-direction");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
+  legalCommands.push_back("top-conform");
+  legalCommands.push_back("base-conform");
+  legalCommands.push_back("interval");
+
+
+  std::string corr_file = "";
+  bool corr_file_used = false;
+  while(parseCurrentValue(root, corr_file, errTxt) == true);
+
+  if(corr_file != "") {
+    inputFiles_->setCorrDirFile(corr_file);
+    corr_file_used = true;
+  }
+
+  bool top_surface = false;
+  bool base_surface = false;
+
+  std::string filename;
+  if(parseFileName(root, "top-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirTopSurfaceFile(filename);
+    top_surface = true;
+  }
+
+  if(parseFileName(root, "base-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirBaseSurfaceFile(filename);
+    base_surface = true;
+  }
+
+  bool top_conform = false;
+  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
+    modelSettings_->setCorrDirTopConform(true);
+
+  bool base_conform = false;
+  if(parseBool(root, "base-conform", top_conform, errTxt) == true)
+    modelSettings_->setCorrDirBaseConform(true);
+
+  if(top_surface == true && top_conform == true)
+    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
+
+  if(base_surface == true && base_conform == true)
+    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
+
+  if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
+    errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
+
+  if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
+    errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
+
+  if(top_conform == true && base_conform == true)
+    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
+              + "where only one is allowed to be true.\n";
+
+  bool interval_used = false;
+
+  while(parseIntervalCorrelationDirection(root,errTxt)==true) {
+    if(interval_used == false)
+      interval_used = true;
+  }
+
+  if(corr_file_used == true && interval_used == true)
+    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
+  if(corr_file_used == true && (top_conform == true || base_conform == true || top_surface == true || base_surface == true))
+    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
+                + node->ValueStr() + ".\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("single-surface");
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
+  legalCommands.push_back("top-conform");
+  legalCommands.push_back("base-conform");
+
+  std::string interval_name;
+  parseValue(root, "name", interval_name, errTxt);
+
+  modelSettings_->setCorrDirIntervalUsed(true);
+
+  bool singel_surface = false;
+  bool top_surface = false;
+  bool base_surface = false;
+
+  std::string filename;
+  if(parseFileName(root, "single-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirIntervalFile(interval_name, filename);
+    singel_surface = true;
+  }
+
+  if(parseFileName(root, "top-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirIntervalTopSurfaceFile(interval_name, filename);
+    top_surface = true;
+  }
+
+  if(parseFileName(root, "base-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirIntervalBaseSurfaceFile(interval_name, filename);
+    base_surface = true;
+  }
+
+  bool top_conform = false;
+  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
+    modelSettings_->setCorrDirIntervalTopConform(interval_name, true);
+
+  bool base_conform = false;
+  if(parseBool(root, "base-conform", base_conform, errTxt) == true)
+    modelSettings_->setCorrDirIntervalBaseConform(interval_name, true);
+
+  if(singel_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
+    errTxt += "For interval " + interval_name + " a singel surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
+
+  if(top_surface == true && top_conform == true)
+    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + " where only one is allowed.\n";
+
+  if(base_surface == true && base_conform == true)
+    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction>  for interval " + interval_name + " where only one is allowed.\n";
+
+  if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
+    errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction> for interval " + interval_name
+              + ". One of these must be set if either <top-surface> or <top-conform> are used.\n";
+
+  if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
+    errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction> for interval " + interval_name
+              + ". One of these must be set if either <base-surface> or <base-conform> are used.\n";
+
+  if(top_conform == true && base_conform == true)
+    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +"> for interval " + interval_name +", "
+              + "where only one is allowed to be true.\n";
+
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
 XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("facies-probabilities");
@@ -1831,7 +1983,11 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
-  while(parseFaciesInterval(root,errTxt) == true);
+
+  unsigned int nFaciesIntervals = 0;
+  while(parseFaciesInterval(root,errTxt)==true){
+    nFaciesIntervals++;
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1871,6 +2027,52 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
 }
 
+bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("base-surface");
+  legalCommands.push_back("number-of-layers");
+
+  std::string interval_name;
+  std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
+
+  bool success = parseValue(root, "name", interval_name, err_txt, false);
+  if(success == false){
+    err_txt += "Interval name not provided in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }else if(std::find(interval_names.begin(), interval_names.end(), interval_name) != interval_names.end()){
+    err_txt += "Interval name" + interval_name +" is already in use in command <"
+      +root->ValueStr()+"> " +lineColumnText(root)+".\n";
+  }else{
+    modelSettings_->addIntervalName(interval_name);
+  }
+
+  bool baseSurf = parseIntervalBaseSurface(root, interval_name, err_txt);
+  if(!baseSurf){
+    err_txt += "Base surface not provided in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  int number_of_layers = 0;
+  if(parseValue(root, "number-of-layers", number_of_layers, err_txt) == false)
+    err_txt += "Number of layers not specified for interval "+ interval_name + " in command <"+root->ValueStr()+">"
+      +lineColumnText(root)+".\n";
+  else
+  {
+    if (number_of_layers>0)
+      modelSettings_->setTimeNzInterval(interval_name,number_of_layers);
+    else
+      err_txt += "The number of layers needs to be larger than 0.\n";
+  }
+
+  checkForJunk(root, err_txt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
 bool
 XmlModelFile::parseFaciesInterval(TiXmlNode * node, std::string & errTxt)
 {
@@ -1882,11 +2084,11 @@ TiXmlNode * root = node->FirstChildElement("interval");
   legalCommands.push_back("name");
   legalCommands.push_back("facies");
 
-  std::string intervalname;
+  std::string interval_name;
 
   std::map<std::string, float> facies_map;
 
-  parseValue(root, "name", intervalname, errTxt, true);
+  parseValue(root, "name", interval_name, errTxt, true);
 
   float prob = 0.0;
   float sum = 0.0;
@@ -1895,17 +2097,22 @@ TiXmlNode * root = node->FirstChildElement("interval");
   }
 
   if(sum != 1.0)
-    errTxt+="Prior facies probabilities for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+    errTxt+="Prior facies probabilities for interval " + interval_name + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
+  const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
+  if(prior_prob_interval_tmp.count(interval_name) > 0) {
+    errTxt += "Interval " + interval_name + " is defined more than once under <"+node->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+  }
 
-  modelSettings_->addPriorFaciesProbInterval(intervalname, facies_map);
+  modelSettings_->addPriorFaciesProbInterval(interval_name, facies_map);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 }
 
 bool
-XmlModelFile::parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float prob, std::string & errTxt)
+XmlModelFile::parseFaciesPerInterval(TiXmlNode * node, std::map<std::string, float> & facies_map, float & prob, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("facies");
   if(root == 0)
@@ -1913,16 +2120,16 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("name");
-  legalCommands.push_back("facies");
+  legalCommands.push_back("probability");
 
-  std::string faciesname;
-  std::string filename;
+  std::string facies_name;
+  std::string file_name;
   float value;
-  parseValue(root, "name", faciesname, errTxt, true);
+  parseValue(root, "name", facies_name, errTxt, true);
   parseValue(root, "probability", value, errTxt, true);
 
   prob = value;
-  facies_map.insert(std::pair<std::string, float>(faciesname, value));
+  facies_map.insert(std::pair<std::string, float>(facies_name, value));
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
@@ -1940,21 +2147,27 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
   legalCommands.push_back("interval");
 
   float sum       = 0.0;
+  bool volume_fraction = false;
 
-  while(parseFaciesVolumeFractions(root,errTxt)==true);
 
-  typedef std::map<std::string,float> mapType;
-  //mapType myMap = modelSettings_->getPriorFaciesProb();
-  //std::map<std::string, float>
-  mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
-
-  for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
-    sum+=(*it).second;
+  bool faciesVolumeFractions = false;
+  while(parseFaciesVolumeFractions(root,errTxt)==true){
+    if (faciesVolumeFractions == false)
+      faciesVolumeFractions = true;
   }
-  if(sum != 1.0)
-    errTxt+="Volume fractions must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
-  while(parseVolumeFractionsInterval(root,errTxt)==true)
+  if(volume_fraction == true) {
+    typedef std::map<std::string,float> mapType;
+    mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
+
+    for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
+      sum+=(*it).second;
+    }
+    if(sum != 1.0)
+      errTxt+="Volume fractions must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+  }
+
+  while(parseVolumeFractionsInterval(root,errTxt)==true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1971,13 +2184,13 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("name");
   legalCommands.push_back("fraction");
 
-  std::string faciesname;
-  std::string filename;
+  std::string facies_name;
+  std::string file_name;
   float value;
-  parseValue(root, "name", faciesname, errTxt, true);
+  parseValue(root, "name", facies_name, errTxt, true);
 
-  parseValue(root,"fraction", value, errTxt, true);
-  modelSettings_->addVolumeFractionProb(faciesname, value);
+  parseValue(root, "fraction", value, errTxt, true);
+  modelSettings_->addVolumeFractionProb(facies_name, value);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
@@ -2009,6 +2222,12 @@ TiXmlNode * root = node->FirstChildElement("interval");
   if(sum != 1.0)
     errTxt+="Volume fractions for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
+  const std::map<std::string, std::map<std::string, float> > & volume_fractions_interval_tmp = modelSettings_->getVolumeFractionsProbInterval();
+  if(volume_fractions_interval_tmp.count(intervalname) > 0) {
+    errTxt += "Interval " + intervalname + " is defined more than once under <"+node->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+  }
+
   modelSettings_->addVolumeFractionInterval(intervalname, volumefractions_map);
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -2016,7 +2235,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
 }
 
 bool
-XmlModelFile::parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float prob, std::string & errTxt)
+XmlModelFile::parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("facies");
   if(root == 0)
@@ -2038,12 +2257,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 }
-
-
-
-
-
-
 
 bool
 XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
@@ -4010,39 +4223,105 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  // add multizones
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval-two-surfaces");
   legalCommands.push_back("interval-one-surface");
   legalCommands.push_back("area-from-surface");
   legalCommands.push_back("utm-coordinates");
   legalCommands.push_back("inline-crossline-numbers");
+  legalCommands.push_back("multiple-intervals");
 
-  bool interval = parseIntervalTwoSurfaces(root, errTxt);
+  bool interval_2 = parseIntervalTwoSurfaces(root, errTxt);
 
-  if(parseIntervalOneSurface(root, errTxt) == interval) { //Either both or none given
-    if(interval == true)
-      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
-        +lineColumnText(root)+".\n";
-    else
+  bool interval_1 = parseIntervalOneSurface(root, errTxt);
+
+  bool interval_m = parseMultipleIntervals(root, errTxt);
+
+  // one of the interval options must be used
+  if(interval_2 == false && interval_1 == false && interval_m == false) {
+    errTxt += "No time intervals specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+
+    // one of the interval options must be used
+    if(interval_2 == false && interval_1 == false && interval_m == false) {
       errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
+
+    // only one interval option must be used
+    } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
+      && !(interval_1 == false && interval_2 == true && interval_m == false)
+      && !(interval_1 == false && interval_2 == false && interval_m == true)){
+        errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+    }
   }
 
-  bool area1 = parseAreaFromSurface(root, errTxt);
-  bool area2 = parseILXLArea(root, errTxt);
-  if(area1 && area2)
-    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
-  bool area3 = parseUTMArea(root, errTxt);
-  if(area1 && area3)
-    errTxt+= "Area can no be given both by a surface and by coordinates\n";
-  if(area2 && area3)
-    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+    bool area1 = parseAreaFromSurface(root, errTxt);
+    bool area2 = parseILXLArea(root, errTxt);
+    if(area1 && area2)
+      errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+    bool area3 = parseUTMArea(root, errTxt);
+    if(area1 && area3)
+      errTxt+= "Area can no be given both by a surface and by coordinates\n";
+    if(area2 && area3)
+      errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
 
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
+    checkForJunk(root, errTxt, legalCommands);
+    return(true);
 }
 
+bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_txt)
+{
+  TiXmlNode * root = node->FirstChildElement("multiple-intervals");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("interval");
+
+  modelSettings_->setParallelTimeSurfaces(false);
+  modelSettings_->setErosionPriorityTopSurface(1); //default is 1
+
+  if(parseTopSurface(root, err_txt) == false){
+    err_txt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  int nIntervals = 0;
+
+  while(parseInterval(root,err_txt)==true){
+    nIntervals++;
+  }
+
+  if(nIntervals==0){
+    err_txt += "No input intervals given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  std::vector<int> erosion_priorities;
+  erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
+  std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
+  if(interval_names.size() == erosion_priorities.size()){
+    for (unsigned int i=0; i<interval_names.size(); i++){
+      erosion_priorities.push_back(modelSettings_->getErosionPriorityBaseSurface(interval_names[i]));
+    }
+  }
+
+  std::sort(erosion_priorities.begin(), erosion_priorities.end());
+  bool priorities_ok = true;
+  for (unsigned int i=1; i<erosion_priorities.size();i++){
+    if (erosion_priorities[i-1]>=erosion_priorities[i])
+      priorities_ok = false;
+  }
+  if(priorities_ok == false){
+    err_txt += "The erosion priorities are not unique in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, err_txt, legalCommands);
+  return (true);
+}
 
 bool
 XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
@@ -4138,6 +4417,7 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-file");
   legalCommands.push_back("time-value");
   legalCommands.push_back("depth-file");
+  legalCommands.push_back("top-surface-erosion-priority");
 
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
@@ -4163,10 +4443,66 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
     inputFiles_->setDepthSurfFile(0, filename);
 
+  int erosion_priority;
+  if(parseValue(root, "top-surface-erosion-priority", erosion_priority, errTxt) == true){
+    modelSettings_->setErosionPriorityTopSurface(erosion_priority);
+  }else{
+    modelSettings_->setErosionPriorityTopSurface(1);
+  }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_name, std::string & err_txt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+  legalCommands.push_back("depth-file");
+  legalCommands.push_back("erosion-priority");
+
+  std::string file_name;
+  bool time_file = parseFileName(root,"time-file", file_name, err_txt);
+  if(time_file == true)
+    inputFiles_->setIntervalBaseTimeSurface(interval_name, file_name);
+
+  float value;
+  bool time_value = parseValue(root,"time-value", value, err_txt);
+  if(time_value == true) {
+    if(time_file == false)
+      inputFiles_->setIntervalBaseTimeSurface(interval_name,NRLib::ToString(value) );
+    else
+      err_txt += "Both file and value given for base time in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(time_file == false) {
+    inputFiles_->setIntervalBaseTimeSurface(interval_name, "");
+    err_txt += "No time surface given for interval "+ interval_name +" in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  if(parseFileName(root,"depth-file", file_name, err_txt) == true)
+    inputFiles_->setIntervalBaseDepthSurface(interval_name, file_name);
+
+  // erosion priority is necessary for each surface
+  int erosion_priority;
+  if(parseValue(root, "erosion-priority", erosion_priority, err_txt)){
+    modelSettings_->setErosionPriorityBaseSurface(interval_name, erosion_priority);
+  }else{
+    err_txt += "No erosion priority given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+
+  checkForJunk(root, err_txt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
@@ -5024,14 +5360,13 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   float ratio = RMISSING;
   bool ratioInterval = false;
-  if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
-    modelSettings_->setVpVsRatio(ratio);
-  else if(parseVpVsRatio(root, errTxt) == true)
-    ratioInterval = true;
+
+  parseVpVsRatio(root, errTxt);
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
     modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
+
 
   if (ratio_from_wells && (ratio != RMISSING || ratioInterval == true)) {
     errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
@@ -5156,11 +5491,23 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval");
+  bool interval = false;
+  float ratio = RMISSING;
 
-  std::vector<std::string> interval_names;
-  std::string tmp_name;
-  while(parseIntervalVpVs(root, tmp_name, errTxt) == true) {
-    interval_names.push_back(tmp_name);
+  while(parseIntervalVpVs(root, errTxt) == true) {
+    if(interval == false)
+      interval = true;
+  }
+
+  while(parseCurrentValue(root, ratio, errTxt) == true);
+
+  if(ratio != RMISSING) {
+    if(interval == true) {
+      errTxt += "You cannot specify both a value and intervals under <advanced-settings> " + root->ValueStr() + ".\n";
+    }
+    else {
+      modelSettings_->setVpVsRatio(ratio);
+    }
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -5168,7 +5515,7 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
-XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std::string & errTxt)
+XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("interval");
   if(root == 0)
@@ -5180,22 +5527,22 @@ XmlModelFile::parseIntervalVpVs(TiXmlNode * node, std::string interval_name, std
 
   std::string name;
   float ratio = 0.0;
+  bool name_given = false;
+  bool ratio_given = false;
 
-  const std::vector<std::string> current_interval_names = modelSettings_->getIntervalNames();
+  if(parseValue(root, "name", name, errTxt) == true)
+    name_given = true;
+  if(parseValue(root, "ratio", ratio, errTxt) == true)
+    ratio_given = true;
 
-  if(parseValue(root, "name", name, errTxt) == true && parseValue(root, "ratio", ratio, errTxt) == true) {
-    interval_name = name;
+  if(name_given == true && ratio_given == true)
+    modelSettings_->addVpVsRatioInterval(name, ratio);
+  else if(name_given == true && ratio_given == false)
+    errTxt += "<ratio> is missing under <vp-vs-ratio> for interval " + name +".\n";
+  else if(name_given == false && ratio_given == true)
+    errTxt += "<name> is missing under <vp-vs-ratio> for a interval.\n";
 
-    //Check if name is contained in previously defined intervals.
-    for(size_t i=0; i < current_interval_names.size(); i++) {
-      if(current_interval_names[i] == name) {
-        modelSettings_->addVpVsRatioInterval(name, ratio);
-        break;
-      }
-    }
-  }
-
-  checkForJunk(root, errTxt, legalCommands);
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -5543,6 +5890,30 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     }
   }
   checkRockPhysicsConsistency(errTxt);
+  const std::map<std::string, float> & vpvs_ratio_intervals = modelSettings_->getVpVsRatioIntervals();
+  if (vpvs_ratio_intervals.size() > 0) {
+    const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
+    double vpvsMin = modelSettings_->getVpVsRatioMin();
+    double vpvsMax = modelSettings_->getVpVsRatioMax();
+
+    double vpvs = 0.0;
+    bool vpvs_exists = false;
+    for(size_t i = 0; i < interval_names.size(); i++) {
+      if(vpvs_ratio_intervals.count(interval_names[i]) > 0) {
+        vpvs = vpvs_ratio_intervals.find(interval_names[i])->second;
+        vpvs_exists = true;
+      }
+
+      if(vpvs < vpvsMin && vpvs_exists) {
+        errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
+                  +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2) + ".\n";
+      }
+      if(vpvs > vpvsMax && vpvs_exists) {
+        errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
+                  +" is larger than maximum allowed value of " + NRLib::ToString(vpvsMax,2) + "\n";
+      }
+    }
+  }
 }
 
 void
@@ -5741,9 +6112,9 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
     const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
 
+    //Check that all intervals have gotten a value in vpvs_ratio_intervals.
     const std::map<std::string, float> & vpvs_ratio_intervals = modelSettings_->getVpVsRatioIntervals();
     if(vpvs_ratio_intervals.size() > 0) {
-      //Check that all intervals have gotten a value in vpvs_ratio_intervals.
 
       if(interval_names.size() != vpvs_ratio_intervals.size())
         errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <vp-vs-ratio> (" + NRLib::ToString(vpvs_ratio_intervals.size()) + ").\n";
@@ -5755,23 +6126,123 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       }
     }
 
+    //Check that all intervals have gotten a prior prob.
     const std::map<std::string, std::map<std::string, float> > & prior_facies_prob_interval = modelSettings_->getPriorFaciesProbInterval();
     if(prior_facies_prob_interval.size() > 0) {
-
-      if(interval_names.size() != vpvs_ratio_intervals.size())
-        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <prior-probabilities> (" + NRLib::ToString(vpvs_ratio_intervals.size()) + ").\n";
+      if(interval_names.size() != prior_facies_prob_interval.size())
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <prior-probabilites> (" + NRLib::ToString(prior_facies_prob_interval.size()) + ").\n";
 
       for(size_t i = 0; i < interval_names.size(); i++) {
-        if(vpvs_ratio_intervals.count(interval_names[i]) == 0) {
+        if(prior_facies_prob_interval.count(interval_names[i]) == 0) {
           errTxt += "There is missing facies-probabilities under <prior-probabilities> for interval " + interval_names[i] + ".\n";
+        }
+      }
+
+
+      //Rock physics consistency per interval
+      if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
+
+        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+
+        for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
+          std::map<std::string, float> facies_probabilities = it->second;
+
+          for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <prior-probabilities> for interval "
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+          }
         }
       }
     }
 
+    //Check that all intervals have gotten a volume fraction
+    const std::map<std::string, std::map<std::string, float> > & volume_fraction_interval = modelSettings_->getVolumeFractionsProbInterval();
+    if(volume_fraction_interval.size() > 0) {
+      if(interval_names.size() != volume_fraction_interval.size())
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for volume fractions under <prior-probabilites> (" + NRLib::ToString(volume_fraction_interval.size()) + ").\n";
+
+      for(size_t i = 0; i < interval_names.size(); i++) {
+        if(volume_fraction_interval.count(interval_names[i]) == 0) {
+          errTxt += "There is missing volume fractions under <prior-probabilities> for interval " + interval_names[i] + ".\n";
+        }
+      }
+
+      //Rock physics consistency with volume fractions per interval
+      if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
+
+        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+
+        for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
+          std::map<std::string, float> volume_fractions = it->second;
+
+          for(std::map<std::string, float>::const_iterator it = volume_fractions.begin(); it != volume_fractions.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <volume-fractions> for interval "
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+          }
+        }
+      }
+    }
+
+    //Check that intervals under prior-prob and volume fractions containes the same intervals
+    if(prior_facies_prob_interval.size() > 0 && volume_fraction_interval.size() > 0) {
+
+      for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
+
+        std::map<std::string, float> facies_probabilities = it->second;
+        std::map<std::string, float> volume_fractions = volume_fraction_interval.find(it->first)->second;
+
+        for(std::map<std::string, float>::const_iterator it2 = facies_probabilities.begin(); it2 != facies_probabilities.end(); it2++) {
+          if(volume_fractions.count(it2->first) == 0)
+            errTxt += "Facies " + it2->first + " is defined for <prior-probabilites> but not for <volume-fraction> for interval " + it->first + ".\n";
+        }
+        for(std::map<std::string, float>::const_iterator it3 = volume_fractions.begin(); it3 != volume_fractions.end(); it3++) {
+          if(facies_probabilities.count(it3->first) == 0)
+            errTxt += "Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
+        }
+      }
+
+    }
+
+    //Check that all intervals are used under correlation direction
+    if(modelSettings_->getCorrDirIntervalUsed() == true) {
+      const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFile();
+      const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFile();
+      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalTopSurfaceFile();
+      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConform();
+      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
+
+      int single_count = interval_corr_dir_file.size();
+      int top_count =  interval_corr_dir_top_file.size() + interval_top_conform_correlation.size();
+      int base_count = interval_top_conform_correlation.size() + interval_base_conform_correlation.size();
+
+      if(top_count != base_count) //This shouldn't happen, there is a check in parseIntervalCorrelationDirection if either top or base is used without the other.
+        errTxt += "Some intervals in <correlation-direction> have defined a top-surface or top-conform without a base-surface or base-conform (or vice versa).\n";
+
+      size_t intervals_used = top_count + single_count;
+      if(interval_names.size() != intervals_used)
+        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for <correlation-direction> under <prior-model> (" + NRLib::ToString(top_count + single_count) +").\n";
+
+      for(size_t i = 0; i < interval_names.size(); i++) {
+        if(interval_corr_dir_file.count(interval_names[i]) == 0 &&
+           interval_corr_dir_top_file.count(interval_names[i]) == 0 &&
+           interval_corr_dir_base_file.count(interval_names[i]) == 0 &&
+           interval_top_conform_correlation.count(interval_names[i]) == 0 &&
+           interval_base_conform_correlation.count(interval_names[i]) == 0)
+           errTxt += "There is missing correlation direction under <prior-model>, <correlation-direction> for interval " + interval_names[i] + ".\n";
+      }
+    }
+
+
+
+
 
   }
-
-
 }
 
 void
@@ -5928,7 +6399,9 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
 void
 XmlModelFile::checkMultizoneBackgroundConsistency(std::string & errTxt)
 {
-  if(modelSettings_->getMultizoneBackground() == true) {
+  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getMultizoneBackground() == true){
+    errTxt+= "<multiple-intervals> can not be used at the same time as <multizone-model>";
+  } else if(modelSettings_->getMultizoneBackground() == true) {
     std::vector<std::string> multizoneSurface = inputFiles_->getMultizoneSurfaceFiles();
     int nSurfaces = static_cast<int>(multizoneSurface.size());
     const std::string & top = inputFiles_->getTimeSurfFile(0);
