@@ -16,6 +16,7 @@ public:
 private:
 
   void createOuterTemporarySimbox();
+  bool readSeismicData();
 
   //Bool variables for whether intial data processing went well.
   bool outer_temp_simbox_;
