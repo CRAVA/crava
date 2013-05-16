@@ -133,41 +133,6 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubsection{\hbracket{interval-one-surface}} \newkw{interval-one-surface}
- \slist
-   \item \Description Using this command gives parallel top and base of inversion interval. This, \kw{multiple-intervals} or \kw{interval-two-surfaces} must be given.
-   \item \Argument Elements for parallel top and base inversion interval
-   \item \Default
- \elist
-
-\paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
- \slist
-   \item \Description File name for standard surface file. The top and base surfaces for the inversion interval will be parallel to this.
-   \item \Argument File name
-   \item \Default
- \elist
-
-\paragraph{\hbracket{shift-to-interval-top}} \newkw{shift-to-interval-top}
- \slist
-   \item \Description Value giving the distance from reference surface to top surface. This value is added to the reference surface to create the top surface.
-   \item \Argument Value
-   \item \Default
- \elist
-
-\paragraph{\hbracket{thickness}}\newkw{thickness}
- \slist
-   \item \Description Value giving the thickness of the inversion interval. This value is added to the top surface to create the base surface.
-   \item \Argument Value
-   \item \Default
- \elist
-
-\paragraph{\hbracket{sample-density}}\newkw{sample-density}
- \slist
-   \item \Description Value giving the thickness of a layer in the inversion interval. The thickness should be divisible by this value.
-   \item \Argument Value
-   \item \Default
- \elist
-
 \subsubsection{\hbracket{interval-two-surfaces}} \newkw{interval-two-surfaces}
  \slist
    \item \Description One way to give the top and bottom limitations. Must be used if output in depth domain is desired. This, \kw{multiple-intervals} or \kw{interval-one-surface} must be given.
@@ -202,7 +167,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument File name
    \item \Default
  \elist
-
+ 
 \paragraph{\hbracket{base-surface}\necessary} \newkw{base-surface}
  \slist
    \item \Description File name(s) for base surface file(s).
@@ -253,6 +218,41 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+\subsubsection{\hbracket{interval-one-surface}} \newkw{interval-one-surface}
+ \slist
+   \item \Description Using this command gives parallel top and base of inversion interval. This, \kw{multiple-intervals} or \kw{interval-two-surfaces} must be given.
+   \item \Argument Elements for parallel top and base inversion interval
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
+ \slist
+   \item \Description File name for standard surface file. The top and base surfaces for the inversion interval will be parallel to this.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{shift-to-interval-top}} \newkw{shift-to-interval-top}
+ \slist
+   \item \Description Value giving the distance from reference surface to top surface. This value is added to the reference surface to create the top surface.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{thickness}}\newkw{thickness}
+ \slist
+   \item \Description Value giving the thickness of the inversion interval. This value is added to the top surface to create the base surface.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{sample-density}}\newkw{sample-density}
+ \slist
+   \item \Description Value giving the thickness of a layer in the inversion interval. The thickness should be divisible by this value.
+   \item \Argument Value
+   \item \Default
+ \elist
+
 \subsubsection{\hbracket{multiple-intervals}} \newkw{multiple-intervals}
  \slist
    \item \Description One way to give the top and bottom limitations of the inversion intervals. Must be used if output in depth domain is desired. This, \kw{interval-one-surface} or \kw{interval-two-surfaces} must be given.
@@ -288,11 +288,11 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
  
- \subparagraph{\hbracket{top-surface-erosion-priority} \necessary}\rnewkw{top-surface-erosion-priority}{top-surface-erosion-priority2}
+ \subparagraph{\hbracket{top-surface-erosion-priority}}\rnewkw{top-surface-erosion-priority}{top-surface-erosion-priority2}
  \slist
    \item \Description Priority of the top surface file. The top surface file and all base surface files in the inversion intervals need to given different priority.
    \item \Argument Int
-   \item \Default
+   \item \Default 1
  \elist
  
 \paragraph{\hbracket{interval} \necessary}  \newkw{interval}
@@ -337,9 +337,16 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{erosion-priority}} \rnewkw{erosion-priority}{erosion-priority2}
+\subsubparagraph{\hbracket{erosion-priority} \necessary} \rnewkw{erosion-priority}{erosion-priority2}
  \slist
    \item \Description Priority of the base surface file for this interval. The top surface file and all base surface files in the inversion intervals need to given different priority.
+   \item \Argument Int
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{number-of-layers} \necessary} \rnewkw{number-of-layers}{interval-number-of-layers}
+ \slist
+   \item \Description Number of layers for the interval
    \item \Argument Int
    \item \Default
  \elist
@@ -2190,9 +2197,9 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \paragraph{\hbracket{top-surface-erosion-priority}}\newkw{top-surface-erosion-priority}
  \slist
-   \item \Description Priority of the top surface file. The top surface file and all base surface files in the zones need to given different priority
+   \item \Description Priority of the top surface file. The top surface file and all base surface files in the zones need to given different priority. By default, the erosion priority for the top surface is 1.
    \item \Argument Int
-   \item \Default
+   \item \Default 1
  \elist
 
 \paragraph{\hbracket{zone}}\newkw{zone}
@@ -2533,7 +2540,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{probability}}\newkw{interval-probability}
+\subsubparagraph{\hbracket{probability}}\rnewkw{probability}{interval-probability}
  \slist
    \item \Description Probability for the facies given above.
    \item \Argument Real numbers between 0 and 1. Numbers for all facies per interval must sum to one.
@@ -2596,7 +2603,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{fraction}}\newkw{interval-volume-fraction}
+\subsubparagraph{\hbracket{fraction}}\newkw{fraction}
  \slist
    \item \Description Posterior volume fraction for the facies given above.
    \item \Argument Real number between 0 and 1. Numbers for all facies per interval must sum to one.

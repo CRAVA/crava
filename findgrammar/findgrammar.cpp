@@ -123,35 +123,37 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
   while(start < term) {
     end = file.find("(",start);
     name = file.substr(start,end-start+1);
-    if(name == "parseValue(" || name == "parseFileName(" || name == "parseBool(" ||
-       name == "parseVariogram(" || name == "parseTraceHeaderFormat(" ||
-       name == "parseDistributionWithTrend(")
-    {
-      start = file.find("\"",end);
-      end   = file.find("\"",start+1);
-      name  = file.substr(start+1,end-start-1);
-      child = new TiXmlElement(name);
-    }
-    else if(name == "parseConstituent(" ||
-            name == "parseDEMHost(" || name == "parseDEMInclusion(" ||
-            name == "parseUpperBound(" || name == "parseLowerBound(" ||
-            (node->ValueStr() == "walton" && name == "parseSolid(") ||
-            node->ValueStr() == "gassmann")
-    {
-      child = ProcessCodeLevelTerminating(file, "::"+name, errTxt);
-    }
-    else
-      child = ProcessCodeLevel(file, "::"+name, errTxt, parents);
-
-    if(node->FirstChildElement(child->ValueStr()) != NULL)
-      errTxt = errTxt+"Error: Command <"+node->ValueStr()+"><"+child->ValueStr()+"> is implemented twice.\n";
-    else {
-      node->LinkEndChild(child);
-      std::vector<std::string>::iterator pos = std::find(cList.begin(), cList.end(),child->ValueStr());
-      if(pos == cList.end())
-        errTxt = errTxt+"Error: Command <"+node->ValueStr()+"><"+child->ValueStr()+"> is implemented, but not listed as legal.\n";
+    if(name != "parseCurrentValue(") {
+      if(name == "parseValue(" || name == "parseFileName(" || name == "parseBool(" ||
+         name == "parseVariogram(" || name == "parseTraceHeaderFormat(" ||
+         name == "parseDistributionWithTrend(")
+      {
+        start = file.find("\"",end);
+        end   = file.find("\"",start+1);
+        name  = file.substr(start+1,end-start-1);
+        child = new TiXmlElement(name);
+      }
+      else if(name == "parseConstituent(" ||
+              name == "parseDEMHost(" || name == "parseDEMInclusion(" ||
+              name == "parseUpperBound(" || name == "parseLowerBound(" ||
+              (node->ValueStr() == "walton" && name == "parseSolid(") ||
+              node->ValueStr() == "gassmann")
+      {
+        child = ProcessCodeLevelTerminating(file, "::"+name, errTxt);
+      }
       else
-        cList.erase(pos);
+        child = ProcessCodeLevel(file, "::"+name, errTxt, parents);
+
+      if(node->FirstChildElement(child->ValueStr()) != NULL)
+        errTxt = errTxt+"Error: Command <"+node->ValueStr()+"><"+child->ValueStr()+"> is implemented twice.\n";
+      else {
+        node->LinkEndChild(child);
+        std::vector<std::string>::iterator pos = std::find(cList.begin(), cList.end(),child->ValueStr());
+        if(pos == cList.end())
+          errTxt = errTxt+"Error: Command <"+node->ValueStr()+"><"+child->ValueStr()+"> is implemented, but not listed as legal.\n";
+        else
+          cList.erase(pos);
+      }
     }
     start = file.find("parse",end);
   }
