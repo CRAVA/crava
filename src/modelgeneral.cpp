@@ -176,8 +176,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
-        if(failedDepthConv == false)
-          processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
+        if(failedDepthConv == false && failedWells == false)
+          processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, wells_, inputFiles);
 
         //Set up timeline.
         timeLine_ = new TimeLine();
@@ -2363,16 +2363,26 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
     delete velocity;
 }
 
-void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
-                                      Simbox                       * timeCutSimbox,
-                                      ModelSettings                * modelSettings,
-                                      bool                         & failed,
-                                      std::string                  & errTxt,
-                                      const InputFiles             * inputFiles)
+void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox,
+                                      Simbox                        * timeCutSimbox,
+                                      ModelSettings                 * modelSettings,
+                                      bool                          & failed,
+                                      std::string                   & errTxt,
+                                      const std::vector<WellData *> & wells,
+                                      const InputFiles              * inputFiles)
 {
-  if(modelSettings->getFaciesProbFromRockPhysics()){
+  if(modelSettings->getFaciesProbFromRockPhysics()) {
 
     LogKit::WriteHeader("Processing Rock Physics");
+
+    // Block logs, make separate function later
+    int     nWells         = modelSettings->getNumberOfWells();
+    std::vector<BlockedLogs *> blocked_logs(nWells, NULL);
+
+    if(nWells > 0) {
+      for (int i=0 ; i<nWells ; i++)
+        blocked_logs[i] = new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel());
+    }
 
     trend_cubes_ = CravaTrend(timeSimbox,
                               timeCutSimbox,
@@ -2383,9 +2393,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     int n_vintages = modelSettings->getNumberOfVintages();
 
-    const std::string&                       path                               = inputFiles->getInputDirectory();
-    const std::vector<std::string>&          trend_cube_parameters              = modelSettings->getTrendCubeParameters();
-    const std::vector<std::vector<double> >& trend_cube_sampling                = trend_cubes_.GetTrendCubeSampling();
+    const std::string&                        path                  = inputFiles->getInputDirectory();
+    const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
+    const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2393,9 +2403,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       std::vector<DistributionWithTrendStorage *> storage = it->second;
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
-      for(size_t i=0; i<storage.size(); i++) {
-        dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-      }
+      for(size_t i=0; i<storage.size(); i++)
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2577,6 +2586,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
         }
       }
     }
+
+    for(int i=0; i<nWells; i++)
+      delete blocked_logs[i];
 
     if(errTxt != "")
       failed = true;
