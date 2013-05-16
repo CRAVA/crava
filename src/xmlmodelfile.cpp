@@ -1737,11 +1737,11 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
 
   std::string corr_file = "";
   bool corr_file_used = false;
-  while(parseCurrentValue(root, corr_file, errTxt) == true);
-
-  if(corr_file != "") {
-    inputFiles_->setCorrDirFile(corr_file);
-    corr_file_used = true;
+  while(parseCurrentValue(root, corr_file, errTxt) == true) {
+    if(corr_file != "") {
+      inputFiles_->setCorrDirFile(corr_file);
+      corr_file_used = true;
+    }
   }
 
   bool top_surface = false;
@@ -5499,14 +5499,14 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
       interval = true;
   }
 
-  while(parseCurrentValue(root, ratio, errTxt) == true);
-
-  if(ratio != RMISSING) {
-    if(interval == true) {
-      errTxt += "You cannot specify both a value and intervals under <advanced-settings> " + root->ValueStr() + ".\n";
-    }
-    else {
-      modelSettings_->setVpVsRatio(ratio);
+  while(parseCurrentValue(root, ratio, errTxt) == true) {
+    if(ratio != RMISSING) {
+      if(interval == true) {
+        errTxt += "You cannot specify both a value and intervals under <advanced-settings> " + root->ValueStr() + ".\n";
+      }
+      else {
+        modelSettings_->setVpVsRatio(ratio);
+      }
     }
   }
 
