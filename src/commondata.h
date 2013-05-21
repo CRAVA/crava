@@ -2,6 +2,7 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
+
 #ifndef COMMONDATA_H
 #define COMMONDATA_H
 
@@ -41,6 +42,7 @@ private:
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
+  bool readSeismicData();
 
   int computeTime(int year, int month, int day) const;
 

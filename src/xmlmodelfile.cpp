@@ -1315,10 +1315,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
     inputFiles_->setParamCorrFile(filename);
 
-  if(parseCorrelationDirection(root, errTxt) == false) {
-    if(parseFileName(root, "correlation-direction", filename, errTxt) == true)
-      inputFiles_->setCorrDirFile(filename);
-  }
+  parseCorrelationDirection(root, errTxt);
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
@@ -1737,55 +1734,66 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("base-conform");
   legalCommands.push_back("interval");
 
-  //Temp
-  TiXmlNode * child = root->FirstChild();
-  std::string first_value = child->Value();
 
-  if(first_value != "interval" && first_value != "top-surface"  && first_value != "base-surface"
-    && first_value != "top-conform" && first_value != "base-conform") {
-      return(false);
+  std::string corr_file = "";
+  bool corr_file_used = false;
+  while(parseCurrentValue(root, corr_file, errTxt) == true) {
+    if(corr_file != "") {
+      inputFiles_->setCorrDirFile(corr_file);
+      corr_file_used = true;
+    }
   }
-  else {
-    bool top_surface = false;
-    bool base_surface = false;
 
-    std::string filename;
-    if(parseFileName(root, "top-surface", filename, errTxt) == true) {
-      inputFiles_->setCorrDirTopSurfaceFile(filename);
-      top_surface = true;
-    }
+  bool top_surface = false;
+  bool base_surface = false;
 
-    if(parseFileName(root, "base-surface", filename, errTxt) == true) {
-      inputFiles_->setCorrDirBaseSurfaceFile(filename);
-      base_surface = true;
-    }
+  std::string filename;
+  if(parseFileName(root, "top-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirTopSurfaceFile(filename);
+    top_surface = true;
+  }
 
-    bool top_conform = false;
-    if(parseBool(root, "top-conform", top_conform, errTxt) == true)
-      modelSettings_->setCorrDirTopConform(true);
+  if(parseFileName(root, "base-surface", filename, errTxt) == true) {
+    inputFiles_->setCorrDirBaseSurfaceFile(filename);
+    base_surface = true;
+  }
 
-    bool base_conform = false;
-    if(parseBool(root, "base-conform", top_conform, errTxt) == true)
-      modelSettings_->setCorrDirBaseConform(true);
+  bool top_conform = false;
+  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
+    modelSettings_->setCorrDirTopConform(true);
 
-    if(top_surface == true && top_conform == true)
-      errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
+  bool base_conform = false;
+  if(parseBool(root, "base-conform", top_conform, errTxt) == true)
+    modelSettings_->setCorrDirBaseConform(true);
 
-    if(base_surface == true && base_conform == true)
-      errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
+  if(top_surface == true && top_conform == true)
+    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-    if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
-      errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
+  if(base_surface == true && base_conform == true)
+    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-    if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
-      errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
+  if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
+    errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
 
-    if(top_conform == true && base_conform == true)
-      errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
-                + "where only one is allowed to be true.\n";
+  if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
+    errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
-    while(parseIntervalCorrelationDirection(root,errTxt)==true);
-  }//Temp
+  if(top_conform == true && base_conform == true)
+    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
+              + "where only one is allowed to be true.\n";
+
+  bool interval_used = false;
+
+  while(parseIntervalCorrelationDirection(root,errTxt)==true) {
+    if(interval_used == false)
+      interval_used = true;
+  }
+
+  if(corr_file_used == true && interval_used == true)
+    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
+  if(corr_file_used == true && (top_conform == true || base_conform == true || top_surface == true || base_surface == true))
+    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
+                + node->ValueStr() + ".\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -5483,28 +5491,23 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval");
   bool interval = false;
-  bool value = false;
   float ratio = RMISSING;
 
   while(parseIntervalVpVs(root, errTxt) == true) {
-    interval = true;
+    if(interval == false)
+      interval = true;
   }
 
-  //if(root->FirstChildElement() == NULL) {
-    parseValue(root->Parent(), "vp-vs-ratio", ratio, errTxt);
+  while(parseCurrentValue(root, ratio, errTxt) == true) {
     if(ratio != RMISSING) {
-      value = true;
       if(interval == true) {
         errTxt += "You cannot specify both a value and intervals under <advanced-settings> <vp-vs-ratio>";
-        return(false);
       }
       else {
         modelSettings_->setVpVsRatio(ratio);
-        return(true);
       }
     }
-    else if(interval == true)
-      return(true);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -5892,13 +5895,19 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     double vpvsMin = modelSettings_->getVpVsRatioMin();
     double vpvsMax = modelSettings_->getVpVsRatioMax();
 
+    double vpvs = 0.0;
+    bool vpvs_exists = false;
     for(size_t i = 0; i < interval_names.size(); i++) {
-      double vpvs = vpvs_ratio_intervals.find(interval_names[i])->second;
-      if(vpvs < vpvsMin) {
+      if(vpvs_ratio_intervals.count(interval_names[i]) > 0) {
+        vpvs = vpvs_ratio_intervals.find(interval_names[i])->second;
+        vpvs_exists = true;
+      }
+
+      if(vpvs < vpvsMin && vpvs_exists) {
         errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
                   +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2) + ".\n";
       }
-      if(vpvs > vpvsMax) {
+      if(vpvs > vpvsMax && vpvs_exists) {
         errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
                   +" is larger than maximum allowed value of " + NRLib::ToString(vpvsMax,2) + "\n";
       }
@@ -6138,12 +6147,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
           std::map<std::string, float> facies_probabilities = it->second;
 
 
-            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
-              if(iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
-            }
           }
         }
       }
@@ -6151,7 +6155,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
     //Check that all intervals have gotten a volume fraction
     const std::map<std::string, std::map<std::string, float> > & volume_fraction_interval = modelSettings_->getVolumeFractionsProbInterval();
-    if(prior_facies_prob_interval.size() > 0) {
+    if(volume_fraction_interval.size() > 0) {
       if(interval_names.size() != volume_fraction_interval.size())
         errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for volume fractions under <prior-probabilites> (" + NRLib::ToString(volume_fraction_interval.size()) + ").\n";
 
@@ -6167,15 +6171,9 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
 
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
-          std::map<std::string, float> facies_probabilities = it->second;
+          std::map<std::string, float> volume_fractions = it->second;
 
 
-            for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-              std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-
-              if(iter == rock_storage.end())
-                errTxt += "Problem with rock physics prior model for interval " + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
-            }
           }
 
           // Compare names in rock physics model with names given as input in proability cubes
@@ -6183,7 +6181,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
             const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
 
       for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
-        
+
         std::map<std::string, float> facies_probabilities = it->second;
         std::map<std::string, float> volume_fractions = volume_fraction_interval.find(it->first)->second;
 
