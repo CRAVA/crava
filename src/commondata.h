@@ -31,7 +31,8 @@ public:
 
 private:
 
-  bool createOuterTemporarySimbox();
+  bool createOuterTemporarySimbox(ModelSettings  * modelSettings,
+                                  InputFiles     * inputFiles);
   bool readSeismicData();
   bool readWellData();
   bool blockWellsForEstimation();
@@ -40,6 +41,8 @@ private:
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
+
+  int computeTime(int year, int month, int day) const;
 
   // Bool variables indicating whether the corresponding data processing
   // succeeded

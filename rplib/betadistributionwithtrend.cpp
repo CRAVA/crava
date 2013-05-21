@@ -22,6 +22,7 @@ BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
 : DistributionWithTrend(shared,true)
 {
   mean_ = mean->Clone();
+
   var_  = var->Clone();
 
   use_trend_cube_.resize(2);
