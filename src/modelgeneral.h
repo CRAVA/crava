@@ -281,12 +281,13 @@ private:
                                            std::string      & errText,
                                            bool             & failedVelocity);
 
-  void              processRockPhysics(Simbox                       * timeSimbox,
-                                       Simbox                       * timeCutSimbox,
-                                       ModelSettings                * modelSettings,
-                                       bool                         & failed,
-                                       std::string                  & errTxt,
-                                       const InputFiles             * inputFiles);
+  void              processRockPhysics(Simbox                        * timeSimbox,
+                                       Simbox                        * timeCutSimbox,
+                                       ModelSettings                 * modelSettings,
+                                       bool                          & failed,
+                                       std::string                   & errTxt,
+                                       const std::vector<WellData *> & wells,
+                                       const InputFiles              * inputFiles);
 
 
 

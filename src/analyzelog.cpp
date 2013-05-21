@@ -47,6 +47,9 @@ Analyzelog::Analyzelog(std::vector<WellData *> wells,
 
 Analyzelog::~Analyzelog(void)
 {
+  for(int i=0; i<3; i++)
+    delete [] pointVar0_[i];
+  delete [] pointVar0_;
 }
 
 //
