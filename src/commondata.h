@@ -42,7 +42,6 @@ private:
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
-  bool readSeismicData();
 
   int computeTime(int year, int month, int day) const;
 

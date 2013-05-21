@@ -2098,9 +2098,6 @@ TiXmlNode * root = node->FirstChildElement("interval");
 
 
   const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
-          +lineColumnText(root)+".\n";
-  }
-
 
   modelSettings_->addPriorFaciesProbInterval(interval_name, facies_map);
 
@@ -6146,9 +6143,6 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
           std::map<std::string, float> facies_probabilities = it->second;
 
-
-
-          }
         }
       }
     }
@@ -6176,10 +6170,11 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
           }
 
+        /*
           // Compare names in rock physics model with names given as input in proability cubes
           else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
             const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
-
+            */
       for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
 
         std::map<std::string, float> facies_probabilities = it->second;
@@ -6229,7 +6224,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
 
 
-
+    }
   }
 }
 
