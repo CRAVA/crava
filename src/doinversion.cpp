@@ -6,6 +6,8 @@
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
 #include "src/modeltraveltimedynamic.h"
+#include "src/modelgravitystatic.h"
+#include "src/modelgravitydynamic.h"
 #include "src/inputfiles.h"
 #include "src/modelgeneral.h"
 #include "src/seismicparametersholder.h"
@@ -132,6 +134,36 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
 
   delete modelTravelTimeDynamic;
+
+  return(failedLoadingModel);
+}
+
+bool
+doTimeLapseGravimetricInversion(const ModelSettings       * modelSettings,
+                                const ModelGeneral        * modelGeneral,
+                                const ModelGravityStatic  * modelGravityStatic,
+                                const InputFiles          * inputFiles,
+                                const int                 & vintage,
+                                SeismicParametersHolder   & seismicParameters)
+{
+  ModelGravityDynamic * modelGravityDynamic = NULL;
+
+  modelGravityDynamic = new ModelGravityDynamic(modelSettings,
+                                                modelGeneral,
+                                                inputFiles,
+                                                vintage,
+                                                seismicParameters);
+
+  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->getFailed();
+
+   if(failedLoadingModel == false) {
+
+    //GravityInversion * gravityInversion = new GravityInversion(modelSettings, modelGeneral, modelGravityStatic, modelGravityDynamic, seismicParameters);
+
+    //delete gravityInversion;
+  }
+
+  delete modelGravityDynamic;
 
   return(failedLoadingModel);
 }

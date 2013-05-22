@@ -680,7 +680,6 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addDefaultTimeGradientSettings();
 
   if(parseGravimetry(root, errTxt) == false) {
-    inputFiles_->addGravimetricObservationLocations("");
     inputFiles_->addGravimetricData("");
     modelSettings_->addTimeLapseGravimetry(false);
   }
@@ -1206,14 +1205,7 @@ XmlModelFile::parseGravimetry(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("locations-file");
   legalCommands.push_back("data-file");
-
-  std::string locations_file;
-  if(parseFileName(root, "locations-file", locations_file, errTxt) == true)
-    inputFiles_->addGravimetricObservationLocations(locations_file);
-  else
-    errTxt += "<gravimetry><locations-file> needs to be given\n";
 
   std::string data_file;
   if(parseFileName(root, "data-file", data_file, errTxt) == true)

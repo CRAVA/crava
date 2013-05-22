@@ -6,6 +6,8 @@
 class ModelSettings;
 class ModelAVODynamic;
 class ModelAVOStatic;
+class ModelGravityStatic;
+class ModelGravityDynamic;
 class ModelGeneral;
 class InputFiles;
 class Simbox;
@@ -39,6 +41,12 @@ bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSetting
                                     const int                     & vintage,
                                     SeismicParametersHolder       & seismicParameters);
 
+bool doTimeLapseGravimetricInversion(const ModelSettings       * modelSettings,
+                                     const ModelGeneral        * modelGeneral,
+                                     const ModelGravityStatic * modelGravityStatic,
+                                     const InputFiles          * inputFiles,
+                                     const int                 & vintage,
+                                     SeismicParametersHolder   & seismicParameters);
 
 #endif
 

@@ -46,6 +46,7 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 #include "src/timeline.h"
+#include "src/modelgravitystatic.h"
 
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
@@ -206,6 +207,12 @@ int main(int argc, char** argv)
                       seismicParameters,
                       timeBGSimbox);
 
+    ModelGravityStatic * modelGravityStatic = NULL;
+    // Flytttes på sikt inn i setupStaticModels
+    modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
+
+    if(modelGravityStatic == NULL || modelGravityStatic->getFailed())
+     return(1);
     if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
        modelAVOstatic == NULL || modelAVOstatic->getFailed())
       return(1);
@@ -257,7 +264,7 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::GRAVITY :
-        errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+        //errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
         break;
       default :
         errTxt += "Error: Unknown inverstion type.\n";
@@ -272,22 +279,29 @@ int main(int argc, char** argv)
       double time;
       int time_index = 0;
       while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-        modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
+      //  modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
         time_index++;
         bool failed;
         switch(eventType) {
         case TimeLine::AVO :
-          failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failed = false;
+          //failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
           break;
         case TimeLine::TRAVEL_TIME :
-          failed = doTimeLapseTravelTimeInversion(modelSettings,
-                                                  modelGeneral,
-                                                  inputFiles,
-                                                  eventIndex,
-                                                  seismicParameters);
+          failed = false;
+          //failed = doTimeLapseTravelTimeInversion(modelSettings,
+           //                                       modelGeneral,
+           //                                       inputFiles,
+           //                                       eventIndex,
+           //                                       seismicParameters);
           break;
         case TimeLine::GRAVITY :
-          failed = true;
+          failed = doTimeLapseGravimetricInversion(modelSettings,
+                                                   modelGeneral,
+                                                   modelGravityStatic,
+                                                   inputFiles,
+                                                   eventIndex,
+                                                   seismicParameters);
           break;
         default :
           failed = true;

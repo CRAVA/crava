@@ -981,6 +981,12 @@
     <ClCompile Include="src\commondata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1164,9 +1170,6 @@
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\system_error.hpp">
-      <Filter>Header Files\libs\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\windows_error.hpp">
@@ -1644,6 +1647,15 @@
       <Filter>Header Files\rplib</Filter>
     </ClInclude>
     <ClInclude Include="src\commondata.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
