@@ -6109,6 +6109,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
   }
 
+  if(modelSettings_->getUseLocalNoise(0) == true && modelSettings_->getNumberOfWells() == 0)
+    errTxt += "Local noise can not be used when no wells are given.\n";
 
   if(modelSettings_->getIntervalNames().size() > 0) { //Interval model is used
 
