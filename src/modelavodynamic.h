@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #include "nrlib/surface/regularsurface.hpp"
-#include "nrlib/grid/grid2d.hpp"
 
 #include "src/vario.h"
 #include "src/definitions.h"
