@@ -114,6 +114,29 @@ public:
                                                 std::vector<std::vector<double> > &Sigma_gradient);
 
   void           deleteDynamicBlockedLogs();
+
+  static void               findSizeAndBlockPointers(WellData  *  well,
+                                                     Simbox    *  simbox,
+                                                     int       *& bInd,
+                                                     const int &  nLayers,
+                                                     int       &  firstM,
+                                                     int       &  lastM,
+                                                     int       &  nBlocks);
+
+  static void               findBlockIJK(WellData   * well,
+                                         Simbox     * simbox,
+                                         const int  * bInd,
+                                         const int  & firstM,
+                                         const int  & lastM,
+                                         const int  & nLayers,
+                                         const int  & nBlocks,
+                                         int       *& ipos,
+                                         int       *& jpos,
+                                         int       *& kpos,
+                                         float      & dz,
+                                         int        & firstB,
+                                         int        & lastB);
+
 private:
   void                      setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
                                                     float * vertical_trend, double z0, double dz, int nz);
@@ -145,14 +168,6 @@ private:
   int                       findMostProbable(const int * count,
                                              int         nFacies,
                                              int         blockIndex);
-
-  void                      findSizeAndBlockPointers(WellData * well,
-                                                     Simbox   * simbox,
-                                                     int      * bInd);
-
-  void                      findBlockIJK(WellData  * well,
-                                         Simbox    * simbox,
-                                         const int * bInd);
 
   void                      findBlockXYZ(Simbox * simbox);
 

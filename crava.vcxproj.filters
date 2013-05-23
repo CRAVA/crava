@@ -980,8 +980,9 @@
     </ClCompile>
     <ClCompile Include="src\commondata.cpp">
       <Filter>Source Files\src</Filter>
-    </ClCompile>
-  </ItemGroup>
+    </ClCompile>    <ClCompile Include="src\blockedlogsforrockphysics.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
       <Filter>Source Files\libs\boost</Filter>
@@ -1164,9 +1165,6 @@
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\system_error.hpp">
-      <Filter>Header Files\libs\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\windows_error.hpp">
@@ -1643,10 +1641,13 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
       <Filter>Header Files\rplib</Filter>
     </ClInclude>
-    <ClInclude Include="src\commondata.h">
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>    <ClInclude Include="src\commondata.h">
       <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-  </ItemGroup>
+    </ClInclude>    <ClInclude Include="src\blockedlogsforrockphysics.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\NORSAR\BIP2008-2010\NSM-Projects\CRAVA_Project\INVERSION\CRAVA_INPUT\initial-model.xml">
       <Filter>Source Files\libs\nrlib</Filter>

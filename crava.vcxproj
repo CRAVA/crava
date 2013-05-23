@@ -271,6 +271,7 @@
     </ClCompile>
     <ClCompile Include="src\background.cpp" />
     <ClCompile Include="src\blockedlogs.cpp" />
+    <ClCompile Include="src\blockedlogsforrockphysics.cpp" />
     <ClCompile Include="src\blockedlogsforzone.cpp" />
     <ClCompile Include="src\box.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1352,6 +1353,7 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\tasklist.h" />
