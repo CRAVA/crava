@@ -978,6 +978,9 @@
     <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp">
       <Filter>Source Files\rplib</Filter>
     </ClCompile>
+    <ClCompile Include="src\blockedlogsforrockphysics.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1161,9 +1164,6 @@
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\system_error.hpp">
-      <Filter>Header Files\libs\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\windows_error.hpp">
@@ -1639,6 +1639,12 @@
     </ClInclude>
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
       <Filter>Header Files\rplib</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\blockedlogsforrockphysics.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -26,6 +26,7 @@
 #include "src/background.h"
 #include "src/welldata.h"
 #include "src/blockedlogs.h"
+#include "src/blockedlogsforrockphysics.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -2375,13 +2376,13 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
     LogKit::WriteHeader("Processing Rock Physics");
 
-    // Block logs, make separate function later
-    int     nWells         = modelSettings->getNumberOfWells();
-    std::vector<BlockedLogs *> blocked_logs(nWells, NULL);
+    // Block logs
+    int     nWells = modelSettings->getNumberOfWells();
 
+    std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
     if(nWells > 0) {
       for (int i=0 ; i<nWells ; i++)
-        blocked_logs[i] = new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel());
+        blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
     }
 
     trend_cubes_ = CravaTrend(timeSimbox,
@@ -2580,7 +2581,6 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           }
           else
             errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
-          //rock_distributions_[it->first] = rock;
         }
       }
     }

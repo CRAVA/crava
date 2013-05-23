@@ -237,8 +237,8 @@ BlockedLogs::blockWell(WellData  * well,
 
   int * bInd = new int[well->getNd()]; // Gives which block each well log entry contributes to
 
-  findSizeAndBlockPointers(well, simbox, bInd);
-  findBlockIJK(well, simbox, bInd);
+  findSizeAndBlockPointers(well, simbox, bInd, nLayers_, firstM_, lastM_, nBlocks_);
+  findBlockIJK(well, simbox, bInd, firstM_, lastM_, nLayers_, nBlocks_, ipos_, jpos_, kpos_, dz_, firstB_, lastB_);
   //We do not use block centre to represent BW position any more, due to ugly visualisation
   //findBlockXYZ(simbox);
 
@@ -538,9 +538,13 @@ BlockedLogs::findMostProbable(const int * count,
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::findSizeAndBlockPointers(WellData * well,
-                                      Simbox   * simbox,
-                                      int      * bInd)
+BlockedLogs::findSizeAndBlockPointers(WellData  *  well,
+                                      Simbox    *  simbox,
+                                      int       *& bInd,
+                                      const int &  nLayers,
+                                      int       &  firstM,
+                                      int       &  lastM,
+                                      int       &  nBlocks)
 {
   int dummy;
   const int      nd = well->getNd();
@@ -556,7 +560,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   for (int m = 0 ; m < nd ; m++) {
     simbox->getIndexes(x[m], y[m], z[m], firstI, firstJ, firstK);
     if (firstI != IMISSING && firstJ != IMISSING && firstK != IMISSING) {
-      firstM_ = m;
+      firstM = m;
       break;
     }
   }
@@ -569,7 +573,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   for (int m = nd - 1 ; m > 0 ; m--) {
     simbox->getIndexes(x[m], y[m], z[m], lastI, lastJ, lastK);
     if (lastI != IMISSING && lastJ != IMISSING && lastK != IMISSING) {
-      lastM_ = m;
+      lastM = m;
       break;
     }
   }
@@ -585,7 +589,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   int oldK = firstK;
 
   int nDefinedBlocks = 0;
-  bInd[firstM_] = firstK; // The first defined well log entry contributes to this block.
+  bInd[firstM] = firstK; // The first defined well log entry contributes to this block.
 
   //
   // The well positions used to be given in float rather than double. Unfortunately, this
@@ -599,7 +603,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   const int ny    = simbox->getny();                                 // help hack
   simboxInd[0] = nx*ny*oldK + nx*oldJ + oldI;                        // help hack
 
-  for (int m = firstM_ + 1 ; m < lastM_ + 1 ; m++) {
+  for (int m = firstM + 1 ; m < lastM + 1 ; m++) {
     simbox->getIndexes(x[m], y[m], z[m], newI ,newJ, newK);
 
     if (newI != oldI || newJ != oldJ || newK != oldK) {
@@ -626,7 +630,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   }
   nDefinedBlocks++;
   //
-  // Why we cannot use nBlocks_ = nDefined:
+  // Why we cannot use nBlocks = nDefined:
   //
   // When we calculate the background model for each parameter we first
   // estimate a vertical trend in the total volume, anf then we interpolate
@@ -637,28 +641,38 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   // log at all because the well was too short, we have to make a virtual
   // well.
   //
-  nBlocks_ = firstK + nDefinedBlocks + (nLayers_ - lastK - 1);
+  nBlocks = firstK + nDefinedBlocks + (nLayers - lastK - 1);
 
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::Low,"firstM_, lastM_          = %d, %d    \n",firstM_,lastM_);
-    LogKit::LogFormatted(LogKit::Low,"nLayers_                 = %d        \n",nLayers_);
+    LogKit::LogFormatted(LogKit::Low,"firstM, lastM          = %d, %d    \n",firstM,lastM);
+    LogKit::LogFormatted(LogKit::Low,"nLayers                 = %d        \n",nLayers);
     LogKit::LogFormatted(LogKit::Low,"firstI,firstJ,firstK     = %d, %d, %d\n",firstI,firstJ,firstK);
     LogKit::LogFormatted(LogKit::Low,"lastI,lastJ,lastK        = %d, %d, %d\n",lastI,lastJ,lastK);
-    LogKit::LogFormatted(LogKit::Low,"nDefinedBlocks, nBlocks_ = %d, %d    \n",nDefinedBlocks,nBlocks_);
+    LogKit::LogFormatted(LogKit::Low,"nDefinedBlocks, nBlocks = %d, %d    \n",nDefinedBlocks,nBlocks);
   }
   delete [] simboxInd;
 }
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::findBlockIJK(WellData  * well,
-                          Simbox    * simbox,
-                          const int * bInd)
+BlockedLogs::findBlockIJK(WellData   * well,
+                          Simbox     * simbox,
+                          const int  * bInd,
+                          const int  & firstM,
+                          const int  & lastM,
+                          const int  & nLayers,
+                          const int  & nBlocks,
+                          int       *& ipos,
+                          int       *& jpos,
+                          int       *& kpos,
+                          float      & dz,
+                          int        & firstB,
+                          int        & lastB)
 {
-  ipos_ = new int[nBlocks_];
-  jpos_ = new int[nBlocks_];
-  kpos_ = new int[nBlocks_];
+  ipos = new int[nBlocks];
+  jpos = new int[nBlocks];
+  kpos = new int[nBlocks];
 
   int dummy;
   const double * x = well->getXpos(dummy);
@@ -669,55 +683,55 @@ BlockedLogs::findBlockIJK(WellData  * well,
   //
   int b = -1; // block counter;
   int firstI, firstJ, firstK;
-  simbox->getIndexes(x[firstM_], y[firstM_], z[firstM_], firstI, firstJ, firstK);
+  simbox->getIndexes(x[firstM], y[firstM], z[firstM], firstI, firstJ, firstK);
   for (int k = 0 ; k < firstK ; k++) {
     b++;
-    ipos_[b] = firstI;
-    jpos_[b] = firstJ;
-    kpos_[b] = k;
+    ipos[b] = firstI;
+    jpos[b] = firstJ;
+    kpos[b] = k;
   }
 
   //
   // Set IJK for the defined part of the well
   //
   b = firstK;
-  ipos_[b] = firstI;
-  jpos_[b] = firstJ;
-  kpos_[b] = firstK;
+  ipos[b] = firstI;
+  jpos[b] = firstJ;
+  kpos[b] = firstK;
   int i, j, k;
-  for (int m = firstM_ + 1 ; m < lastM_ + 1 ; m++) {
+  for (int m = firstM + 1 ; m < lastM + 1 ; m++) {
     if (bInd[m] != bInd[m - 1]) {
       b++;
       simbox->getIndexes(x[m], y[m], z[m], i, j, k);
-      ipos_[b] = i;
-      jpos_[b] = j;
-      kpos_[b] = k;
+      ipos[b] = i;
+      jpos[b] = j;
+      kpos[b] = k;
     }
   }
-  firstB_ = firstK;
-  lastB_  = b;
+  firstB = firstK;
+  lastB  = b;
 
   //
   // Set IJK for the virtual part of well in lower part of simbox
   //
   int lastI,  lastJ,  lastK;
-  simbox->getIndexes(x[lastM_], y[lastM_], z[lastM_], lastI, lastJ, lastK);
-  for (int k = lastK + 1 ; k < nLayers_ ; k++) {
+  simbox->getIndexes(x[lastM], y[lastM], z[lastM], lastI, lastJ, lastK);
+  for (int k = lastK + 1 ; k < nLayers ; k++) {
     b++;
-    ipos_[b] = lastI;
-    jpos_[b] = lastJ;
-    kpos_[b] = k;
+    ipos[b] = lastI;
+    jpos[b] = lastJ;
+    kpos[b] = k;
   }
 
-  dz_ = static_cast<float>(simbox->getRelThick(ipos_[0],jpos_[0])*simbox->getdz());
+  dz = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
 
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",firstB_,lastB_);
+    LogKit::LogFormatted(LogKit::Low,"firstB, lastB        = %d, %d    \n",firstB,lastB);
     LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",firstI, firstJ, firstK);
     LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",lastI, lastJ, lastK);
-    for (int b = 0 ; b < nBlocks_ ; b++)
-      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,ipos_[b],jpos_[b],kpos_[b]);
+    for (int b = 0 ; b < nBlocks ; b++)
+      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,ipos[b],jpos[b],kpos[b]);
   }
 }
 
