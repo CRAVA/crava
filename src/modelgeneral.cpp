@@ -2376,15 +2376,6 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
     LogKit::WriteHeader("Processing Rock Physics");
 
-    // Block logs
-    int     nWells = modelSettings->getNumberOfWells();
-
-    std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
-    if(nWells > 0) {
-      for (int i=0 ; i<nWells ; i++)
-        blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
-    }
-
     trend_cubes_ = CravaTrend(timeSimbox,
                               timeCutSimbox,
                               modelSettings,
@@ -2424,6 +2415,20 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       float var_beta_max  = modelSettings->getVarBetaMax();
       float var_rho_min   = modelSettings->getVarRhoMin();
       float var_rho_max   = modelSettings->getVarRhoMax();
+      int   nWells        = modelSettings->getNumberOfWells();
+
+      // Block logs
+      std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
+      if(nWells > 0) {
+        for (int i=0 ; i<nWells ; i++) {
+          //for(int j=0; j<wells[i]->getNFacies(); j++) {
+          //  std::string name = wells[i]->getFaciesName(j);
+          //  if(name == all_facies_names[it]) {
+
+          blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
+
+        }
+      }
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
       const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
@@ -2443,7 +2448,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
         }
       }
 
-
+      // Find facies names
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
       std::map<std::string, std::string> facies_cubes   = inputFiles->getPriorFaciesProbFile();
       std::vector<std::string> all_facies_names         = faciesNames_;
@@ -2463,6 +2468,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
+
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2473,6 +2479,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
                                                                                        path,
                                                                                        trend_cube_parameters,
                                                                                        trend_cube_sampling,
+                                                                                       blocked_logs,
                                                                                        rock_storage,
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
@@ -2585,10 +2592,9 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
             errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
         }
       }
+      for(int i=0; i<nWells; i++)
+        delete blocked_logs[i];
     }
-
-    for(int i=0; i<nWells; i++)
-      delete blocked_logs[i];
 
     if(errTxt != "")
       failed = true;

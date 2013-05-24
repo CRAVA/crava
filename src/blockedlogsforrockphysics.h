@@ -5,17 +5,9 @@
 #ifndef BLOCKED_LOGS_FOR_ROCK_PHYSICS_H
 #define BLOCKED_LOGS_FOR_ROCK_PHYSICS_H
 
-#include "nrlib/iotools/logkit.hpp"
-#include <stdlib.h>
-#include <string.h>
-#include "fftw.h"
-#include "lib/utils.h"
 
-class ModelSettings;
-class FFTGrid;
 class WellData;
 class Simbox;
-class Wavelet;
 
 class BlockedLogsForRockPhysics
 {
