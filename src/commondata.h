@@ -15,8 +15,9 @@ class InputFiles;
 
 class CommonData{
 public:
-  CommonData(ModelSettings    * modelSettings,
-             InputFiles       * inputFiles);
+  CommonData(ModelSettings    * model_settings,
+             InputFiles       * input_files,
+             std::string      & err_text);
   ~ CommonData();
 
   //SET FUNCTIONS
@@ -32,8 +33,47 @@ public:
 
 private:
 
-  bool createOuterTemporarySimbox(ModelSettings  * modelSettings,
-                                  InputFiles     * inputFiles);
+  void getGeometryFromGridOnFile(const std::string                grid_file,
+                                        const TraceHeaderFormat * thf,
+                                        SegyGeometry           *& geometry,
+                                        std::string             & err_text);
+
+  SegyGeometry * geometryFromCravaFile(const std::string & file_name);
+
+  SegyGeometry * geometryFromStormFile(const std::string  & file_name,
+                                    std::string           & err_text,
+                                    bool scale);
+
+  bool createOuterTemporarySimbox(ModelSettings           * model_settings,
+                                  InputFiles              * input_files,
+                                  std::string             & err_text);
+
+  void writeAreas(const SegyGeometry  * area_params,
+                  Simbox              * time_simbox,
+                  std::string         & err_text);
+
+  void findSmallestSurfaceGeometry(const double   x0,
+                                   const double   y0,
+                                   const double   lx,
+                                   const double   ly,
+                                   const double   rot,
+                                   double       & x_min,
+                                   double       & y_min,
+                                   double       & x_max,
+                                   double       & y_max);
+
+  void CommonData::setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
+                                                      InputFiles                     * input_files,
+                                                      ModelSettings                  * model_settings,
+                                                      std::string                    & err_text,
+                                                      bool                           & failed);
+
+  void CommonData::setSimboxSurfacesSingleInterval(Simbox                          *& simbox,
+                                                   const std::vector<std::string>   & surf_file,
+                                                   ModelSettings                    * model_settings,
+                                                   std::string                      & err_text,
+                                                   bool                             & failed);
+
   bool readSeismicData();
   bool readWellData();
   bool blockWellsForEstimation();

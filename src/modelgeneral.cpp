@@ -971,12 +971,11 @@ ModelGeneral::logIntervalInformation(const Simbox      * simbox,
                        simbox->getdz()*simbox->getMinRelThick());
 }
 
-void
-ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
-                                const std::vector<std::string> & surfFile,
-                                ModelSettings                  * modelSettings,
-                                std::string                    & errText,
-                                bool                           & failed)
+void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
+                                     const std::vector<std::string> & surfFile,
+                                     ModelSettings                  * modelSettings,
+                                     std::string                    & errText,
+                                     bool                           & failed)
 {
   const std::string & topName = surfFile[0];
 
