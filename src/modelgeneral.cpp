@@ -2420,14 +2420,8 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       // Block logs
       std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
       if(nWells > 0) {
-        for (int i=0 ; i<nWells ; i++) {
-          //for(int j=0; j<wells[i]->getNFacies(); j++) {
-          //  std::string name = wells[i]->getFaciesName(j);
-          //  if(name == all_facies_names[it]) {
-
+        for (int i=0 ; i<nWells ; i++)
           blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
-
-        }
       }
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();

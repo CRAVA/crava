@@ -17,38 +17,22 @@ public:
 
   ~BlockedLogsForRockPhysics(void);
 
+  std::vector<float>       getAlphaForFacies(const std::string & facies_name);
+
 private:
-  void                     blockContinuousLog(const int            * bInd,
-                                              const float          * wellLog,
-                                              const int            * faciesLog,
-                                              const int            * faciesNumbers,
-                                              const int            & nFacies,
-                                              std::vector<float *> & blockedLog);
+  void                     blockContinuousLog(const int                        * bInd,
+                                              const float                      * wellLog,
+                                              const int                        * faciesLog,
+                                              const int                        * faciesNumbers,
+                                              const int                        & firstM,
+                                              const int                        & lastM,
+                                              std::vector<std::vector<float> > & blockedLog);
 
+  std::vector<std::vector<float> >  alpha_;                    ///<
+  std::vector<std::vector<float> >  beta_;                     ///< Raw logs (log-domain)
+  std::vector<std::vector<float> >  rho_;                      ///<
 
-  int          * ipos_;                     ///<
-  int          * jpos_;                     ///< Simbox IJK value for block
-  int          * kpos_;                     ///<
-
-  float          dz_;                       ///< Simbox dz value for block
-
-  std::vector<float *> alpha_;                    ///<
-  std::vector<float *> beta_;                     ///< Raw logs (log-domain)
-  std::vector<float *> rho_;                      ///<
-
-  std::vector<float *> alpha_highcut_background_; ///<
-  std::vector<float *> beta_highcut_background_;  ///< Logs high-cut filtered to background resolution (log-domain)
-  std::vector<float *> rho_highcut_background_;   ///<
-
-
-  int            firstM_;                   ///< First well log entry contributing to blocked well
-  int            lastM_;                    ///< Last well log entry contributing to blocked well
-
-  int            firstB_;                   ///< First block with contribution from well log
-  int            lastB_;                    ///< Last block with contribution from well log
-
-  int            nBlocks_;                  ///< Number of blocks
-  int            nLayers_;                  ///< Number of vertical layers (nz)
+  std::vector<std::string>          facies_names_;             ///< Names of the facies in the blocked log
 };
 
 #endif

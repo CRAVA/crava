@@ -323,7 +323,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                         const std::string                                           & path,
                                                         const std::vector<std::string>                              & trend_cube_parameters,
                                                         const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                        const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
+                                                        const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                         const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                         const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                         const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -338,6 +338,12 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
   alpha[1] = vs_[0]     ->GetOneYearCorrelation();
   alpha[2] = density_[0]->GetOneYearCorrelation();
+
+  // Use blockedLogs given facies
+  std::vector<std::vector<float> > vp_given_facies;
+  for(size_t i=0; i<blockedLogs.size(); i++) {
+    vp_given_facies[i] = blockedLogs[0]->getAlphaForFacies(rock_name_);
+  }
 
   std::vector<double> s_min;
   std::vector<double> s_max;
