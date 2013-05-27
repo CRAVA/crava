@@ -27,6 +27,7 @@ public:
   virtual DistributionWithTrend        * GenerateDistributionWithTrend(const std::string                       & /*path*/,
                                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                                       const std::vector<std::vector<float> >  & /*blocked_logs*/,
                                                                        std::string                             & /*errTxt*/)                    = 0;
 
   virtual NRLib::TrendStorage          * CloneMean() const = 0;
@@ -67,6 +68,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -113,6 +115,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -159,6 +162,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -219,6 +223,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;

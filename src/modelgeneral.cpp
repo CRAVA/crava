@@ -2388,6 +2388,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
     const std::string&                        path                  = inputFiles->getInputDirectory();
     const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
     const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+    const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2396,7 +2397,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++)
-        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }

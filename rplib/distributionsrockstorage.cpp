@@ -73,6 +73,8 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
   for(int i=0; i<n_constituents; i++)
     CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
 
@@ -85,7 +87,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
       if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
       }
       else {
         if(all_volume_fractions[i-1][s] != NULL)
@@ -340,9 +342,21 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   alpha[2] = density_[0]->GetOneYearCorrelation();
 
   // Use blockedLogs given facies
-  std::vector<std::vector<float> > vp_given_facies;
-  for(size_t i=0; i<blockedLogs.size(); i++) {
-    vp_given_facies[i] = blockedLogs[0]->getAlphaForFacies(rock_name_);
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > vp_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vp_given_facies[i] = blockedLogs[i]->getAlphaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > vs_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vs_given_facies[i] = blockedLogs[i]->getBetaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
 
   std::vector<double> s_min;
@@ -368,17 +382,17 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vp_given_facies, tmpErrTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_vs)
-      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vs_given_facies, tmpErrTxt);
     else
       vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, density_given_facies, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -504,6 +518,8 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   int n_vintages_bulk_density  = static_cast<int>(correlation_bulk_density_.size());
   int n_vintages_shear_density = static_cast<int>(correlation_shear_density_.size());
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
@@ -515,17 +531,17 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear)
-      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -913,6 +929,8 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
     }
   }
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
   std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(n_vintages);
@@ -928,7 +946,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_aspect[s]) {
         if(inclusion_aspect_ratio_[s][i] != NULL)
-          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       }
       else
         all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
@@ -938,7 +956,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_volume[s]) {
         if(volume_fractions[s][i] != NULL)
-          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       }
       else
         if(all_volume_fractions[i-1][s] != NULL)
@@ -1211,6 +1229,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
   }
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_weight_dist_with_trend(n_vintages, NULL);
@@ -1218,17 +1238,17 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_porosity)
-      porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_bulk_weight)
-      bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear_weight)
-      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
   }

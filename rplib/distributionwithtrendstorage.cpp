@@ -75,6 +75,7 @@ DistributionWithTrend *
 DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                  const std::vector<std::string>          & trend_cube_parameters,
                                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                 const std::vector<std::vector<float> >  & blocked_logs,
                                                                  std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {  //Make sure shared variables are only generated one time
@@ -146,6 +147,7 @@ DistributionWithTrend *
 NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                   const std::vector<std::string>          & trend_cube_parameters,
                                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                  const std::vector<std::vector<float> >  & blocked_logs,
                                                                   std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
@@ -224,6 +226,7 @@ DistributionWithTrend *
 BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                 const std::vector<std::string>          & trend_cube_parameters,
                                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                const std::vector<std::vector<float> >  & blocked_logs,
                                                                 std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
@@ -399,6 +402,7 @@ DistributionWithTrend *
 BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                       const std::vector<std::vector<float> >  & blocked_logs,
                                                                        std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time

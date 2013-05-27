@@ -74,6 +74,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
 
   std::vector<DistributionsSolid *>                  final_dist_solid(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
+  const std::vector<std::vector<float> >             dummy_blocked_logs;
 
   for(int i=0; i<n_vintages; i++)
     all_volume_fractions[i].resize(n_constituents, NULL);
@@ -84,7 +85,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
 
       if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
       }
       else {
         if(all_volume_fractions[i-1][s] != NULL)
@@ -162,6 +163,8 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int             
   int n_vintages_vp_density = static_cast<int>(correlation_vs_density_.size());
   int n_vintages_vs_density = static_cast<int>(correlation_vs_density_.size());
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsSolid *>    dist_solid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vs_dist_with_trend(n_vintages, NULL);
@@ -173,17 +176,17 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int             
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_vs)
-      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -285,6 +288,8 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
   int n_vintages_bulk_density  = static_cast<int>(correlation_bulk_density_.size());
   int n_vintages_shear_density = static_cast<int>(correlation_shear_density_.size());
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsSolid *>    dist_solid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
@@ -296,17 +301,17 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear)
-      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -595,6 +600,8 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
     }
   }
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsSolid *>                  final_dist_solid(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
   std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(n_vintages);
@@ -613,7 +620,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
 
       if(i < n_vintages_aspect[s]) {
         if(inclusion_aspect_ratio_[s][i] != NULL)
-          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
       }
       else
         all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
@@ -623,7 +630,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
 
       if(i < n_vintages_volume[s]) {
         if(volume_fractions[s][i] != NULL)
-          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
       }
       else
         all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();

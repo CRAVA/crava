@@ -251,19 +251,22 @@ BlockedLogs::blockWell(WellData  * well,
     blockCoordinateLog(bInd, well->getMD(dummy), md_);
 
 
-  blockContinuousLog(bInd, well->getAlpha(dummy), alpha_);
-  blockContinuousLog(bInd, well->getBeta(dummy), beta_);
-  blockContinuousLog(bInd, well->getRho(dummy), rho_);
-  blockContinuousLog(bInd, well->getAlphaBackgroundResolution(dummy), alpha_highcut_background_);
-  blockContinuousLog(bInd, well->getBetaBackgroundResolution(dummy), beta_highcut_background_);
-  blockContinuousLog(bInd, well->getRhoBackgroundResolution(dummy), rho_highcut_background_);
-  blockContinuousLog(bInd, well->getAlphaSeismicResolution(dummy), alpha_highcut_seismic_);
-  blockContinuousLog(bInd, well->getBetaSeismicResolution(dummy), beta_highcut_seismic_);
-  blockContinuousLog(bInd, well->getRhoSeismicResolution(dummy), rho_highcut_seismic_);
+  blockContinuousLog(bInd, well->getAlpha(dummy), firstM_, lastM_, nBlocks_, alpha_);
+  blockContinuousLog(bInd, well->getBeta(dummy), firstM_, lastM_, nBlocks_, beta_);
+  blockContinuousLog(bInd, well->getRho(dummy), firstM_, lastM_, nBlocks_, rho_);
+  blockContinuousLog(bInd, well->getAlphaBackgroundResolution(dummy), firstM_, lastM_, nBlocks_, alpha_highcut_background_);
+  blockContinuousLog(bInd, well->getBetaBackgroundResolution(dummy), firstM_, lastM_, nBlocks_, beta_highcut_background_);
+  blockContinuousLog(bInd, well->getRhoBackgroundResolution(dummy), firstM_, lastM_, nBlocks_, rho_highcut_background_);
+  blockContinuousLog(bInd, well->getAlphaSeismicResolution(dummy), firstM_, lastM_, nBlocks_, alpha_highcut_seismic_);
+  blockContinuousLog(bInd, well->getBetaSeismicResolution(dummy), firstM_, lastM_, nBlocks_, beta_highcut_seismic_);
+  blockContinuousLog(bInd, well->getRhoSeismicResolution(dummy), firstM_, lastM_, nBlocks_, rho_highcut_seismic_);
 
-  if (well->isFaciesLogDefined())
-    blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_);
+  if (well->isFaciesLogDefined()) {
+    faciesNumbers_ = well->getFaciesNr();
+    nFacies_       = well->getNFacies();
 
+    blockDiscreteLog(bInd, well->getFacies(dummy), faciesNumbers_, nFacies_, firstM_, lastM_, nBlocks_, facies_);
+  }
   if(interpolate == true) {
     for(int i=1;i<well->getNd();i++) {
       if(abs(bInd[i]-bInd[i-1]) > 1) {
@@ -368,31 +371,34 @@ BlockedLogs::findXYZforVirtualPart(Simbox * simbox)
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::blockContinuousLog(const int   *  bInd,
-                                const float *  wellLog,
+BlockedLogs::blockContinuousLog(const int    * bInd,
+                                const float  * wellLog,
+                                const int    & firstM,
+                                const int    & lastM,
+                                const int    & nBlocks,
                                 float       *& blockedLog)
 {
   if (wellLog != NULL) {
-    blockedLog  = new float[nBlocks_];
-    int * count = new int[nBlocks_];
+    blockedLog  = new float[nBlocks];
+    int * count = new int[nBlocks];
     //
     // Initialise arrays
     //
-    for (int l = 0 ; l < nBlocks_ ; l++) {
+    for (int l = 0 ; l < nBlocks ; l++) {
       blockedLog[l] = 0.0f;
       count[l] = 0;
     }
     //
     // Block log
     //
-    for (int m = firstM_ ; m < lastM_ + 1 ; m++) {
+    for (int m = firstM ; m < lastM + 1 ; m++) {
       if (wellLog[m] != RMISSING) {
         blockedLog[bInd[m]] += log(wellLog[m]); //NBNB-PAL: Flytt denne logaritmen nedover...
         count[bInd[m]]++;
         //LogKit::LogFormatted(LogKit::Low,"m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));
       }
     }
-    for (int l = 0 ; l < nBlocks_ ; l++) {
+    for (int l = 0 ; l < nBlocks ; l++) {
       if (count[l] > 0) {
         blockedLog[l] /= count[l];
         //LogKit::LogFormatted(LogKit::Low,"l=%d   count[l]=%d  sum=%.3f  blockedLog[l]=%.4f \n",l,count[l],sum, blockedLog[l]);
@@ -410,16 +416,17 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
                               const int *  wellLog,
                               const int *  faciesNumbers,
                               int          nFacies,
+                              const int  & firstM,
+                              const int  & lastM,
+                              const int  & nBlocks,
                               int       *& blockedLog)
 {
   if (wellLog != NULL) {
     //
     // Allocate memory and set undefined
     //
-    faciesNumbers_ = faciesNumbers;
-    nFacies_ = nFacies;
-    blockedLog = new int[nBlocks_];
-    for (int m = 0 ; m < nBlocks_ ; m++)
+    blockedLog = new int[nBlocks];
+    for (int m = 0 ; m < nBlocks ; m++)
       blockedLog[m] = IMISSING;
 
     int   maxAllowedValue = 100;  // Largest allowed value (facies number).
@@ -450,11 +457,11 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     //
     for (int i = 0 ; i < nFacies ; i++)
       count[i] = 0;
-    int value = wellLog[firstM_];
+    int value = wellLog[firstM];
     if(value!=IMISSING)
       count[table[value]]++;
 
-    for (int m = firstM_+1 ; m < lastM_ + 1 ; m++) {
+    for (int m = firstM+1 ; m < lastM + 1 ; m++) {
       if (bInd[m] != bInd[m - 1]) { // bInd[m] is the block number which sample 'm' lies in
         blockedLog[bInd[m-1]] = findMostProbable(count, nFacies, bInd[m-1]);
         for (int i = 0 ; i < nFacies ; i++)
@@ -464,7 +471,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     if(value!=IMISSING)
       count[table[value]]++;
     }
-    blockedLog[bInd[lastM_]] = findMostProbable(count, nFacies, bInd[lastM_]);
+    blockedLog[bInd[lastM]] = findMostProbable(count, nFacies, bInd[lastM]);
 
     delete [] count;
     delete [] table;

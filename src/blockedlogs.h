@@ -137,6 +137,25 @@ public:
                                          int        & firstB,
                                          int        & lastB);
 
+  static void               blockContinuousLog(const int    *  bInd,
+                                               const float  *  wellLog,
+                                               const int    & firstM,
+                                               const int    & lastM,
+                                               const int    & nBlocks,
+                                               float       *& blockedLog);
+
+  static void               blockDiscreteLog(const int * bInd,
+                                             const int *  wellLog,
+                                             const int *  faciesNumbers,
+                                             int          nFacies,
+                                             const int  & firstM,
+                                             const int  & lastM,
+                                             const int  & nBlocks,
+                                             int       *& blockedLog);
+
+  static int                findMostProbable(const int * count,
+                                             int         nFacies,
+                                             int         blockIndex);
 private:
   void                      setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
                                                     float * vertical_trend, double z0, double dz, int nz);
@@ -149,25 +168,11 @@ private:
                                                const double *  coord,
                                                double       *& blockedCoord);
 
-  void                      blockContinuousLog(const int   *  bInd,
-                                               const float *  wellLog,
-                                               float       *& blockedLog);
-
-  void                      blockDiscreteLog(const int * bInd,
-                                             const int *  wellLog,
-                                             const int *  faciesNumbers,
-                                             int          nFacies,
-                                             int       *& blockedLog);
-
   void                      interpolateContinuousLog(double * blockedLog, int start, int end, int index, float rel);
   void                      interpolateContinuousLog(float * blockedLog, int start, int end, int index, float rel);
   void                      interpolateTrend(const float * blockedLog, float * trend);
   void                      interpolateTrend(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void                      interpolateTrend(const int * blockedLog, int * trend);
-
-  int                       findMostProbable(const int * count,
-                                             int         nFacies,
-                                             int         blockIndex);
 
   void                      findBlockXYZ(Simbox * simbox);
 

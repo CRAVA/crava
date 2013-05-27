@@ -41,11 +41,10 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
   int   lastM;
   int   firstB;
   int   lastB;
-  float dz;
   int * ipos;                     ///<
   int * jpos;                     ///< Simbox IJK value for block
   int * kpos;                     ///<
-
+  float dz;
 
   BlockedLogs::findSizeAndBlockPointers(well, simbox, bInd, nLayers, firstM, lastM, nBlocks);
 
@@ -57,22 +56,37 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
 
   int dummy;
 
-  alpha_.resize(nFacies, std::vector<float>(nBlocks,0));
-  beta_.resize(nFacies, std::vector<float>(nBlocks,0));
-  rho_.resize(nFacies, std::vector<float>(nBlocks,0));
+  float * blocked_alpha  = NULL;
+  float * blocked_beta   = NULL;
+  float * blocked_rho    = NULL;
+  int   * blocked_facies = NULL;
 
-  blockContinuousLog(bInd, well->getAlpha(dummy), well->getFacies(dummy), well->getFaciesNr(), firstM, lastM, alpha_);
-  blockContinuousLog(bInd, well->getBeta(dummy), well->getFacies(dummy), well->getFaciesNr(), firstM, lastM, beta_);
-  blockContinuousLog(bInd, well->getRho(dummy), well->getFacies(dummy), well->getFaciesNr(), firstM, lastM, rho_);
-
+  BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy), firstM, lastM, nBlocks, blocked_alpha);
+  BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy), firstM, lastM, nBlocks, blocked_beta);
+  BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy), firstM, lastM, nBlocks, blocked_rho);
+  BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 
   delete [] bInd;
+
+  alpha_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  beta_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  rho_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+
+  assignToFacies(blocked_alpha, blocked_facies, well->getFaciesNr(), alpha_);
+  assignToFacies(blocked_beta, blocked_facies, well->getFaciesNr(), beta_);
+  assignToFacies(blocked_rho, blocked_facies, well->getFaciesNr(), rho_);
+
+  delete [] blocked_alpha;
+  delete [] blocked_beta;
+  delete [] blocked_rho;
+  delete [] blocked_facies;
 }
 
 //------------------------------------------------------------------------------
 BlockedLogsForRockPhysics::~BlockedLogsForRockPhysics(void)
 {
 }
+
 //------------------------------------------------------------------------------
 std::vector<float>
 BlockedLogsForRockPhysics::getAlphaForFacies(const std::string & facies_name)
@@ -85,41 +99,49 @@ BlockedLogsForRockPhysics::getAlphaForFacies(const std::string & facies_name)
 
   return alpha_given_facies;
 }
+
+//------------------------------------------------------------------------------
+std::vector<float>
+BlockedLogsForRockPhysics::getBetaForFacies(const std::string & facies_name)
+{
+  std::vector<float> beta_given_facies;
+  for(size_t i=0; i<facies_names_.size(); i++) {
+    if(facies_name == facies_names_[i])
+      beta_given_facies = beta_[i];
+  }
+
+  return beta_given_facies;
+}
+
+//------------------------------------------------------------------------------
+std::vector<float>
+BlockedLogsForRockPhysics::getRhoForFacies(const std::string & facies_name)
+{
+  std::vector<float> rho_given_facies;
+  for(size_t i=0; i<facies_names_.size(); i++) {
+    if(facies_name == facies_names_[i])
+      rho_given_facies = rho_[i];
+  }
+
+  return rho_given_facies;
+}
+
 //------------------------------------------------------------------------------
 void
-BlockedLogsForRockPhysics::blockContinuousLog(const int                        * bInd,
-                                              const float                      * wellLog,
-                                              const int                        * faciesLog,
-                                              const int                        * faciesNumbers,
-                                              const int                        & firstM,
-                                              const int                        & lastM,
-                                              std::vector<std::vector<float> > & blockedLog)
+BlockedLogsForRockPhysics::assignToFacies(const float                      * wellLog,
+                                          const int                        * faciesLog,
+                                          const int                        * faciesNumbers,
+                                          std::vector<std::vector<float> > & blockedLog)
 {
   if (wellLog != NULL) {
     int nFacies = blockedLog.size();
     int nBlocks = blockedLog[0].size();
 
-    std::vector<std::vector<int> > count(nFacies, std::vector<int>(nBlocks,0));
-    //
-    // Block log
-    //
-    for (int m = firstM; m < lastM + 1; m++) {
+    for (int m = 0; m < nBlocks; m++) {
       if (wellLog[m] != RMISSING && faciesLog[m] != IMISSING) {
         for(int j=0; j<nFacies; j++) {
-          if(faciesNumbers[j] == faciesLog[m]) {
-            blockedLog[j][bInd[m]] += log(wellLog[m]);
-            count[j][bInd[m]]++;
-          }
-        }
-      }
-    }
-    for (int l = 0 ; l < nBlocks; l++) {
-      for(int j=0; j<nFacies; j++) {
-        if(faciesNumbers[j] == faciesLog[l]) {
-          if (count[j][l] > 0)
-            blockedLog[j][l] /= count[j][l];
-          else
-            blockedLog[j][l] = RMISSING;
+          if(faciesNumbers[j] == faciesLog[m])
+            blockedLog[j][m] = wellLog[m];
         }
       }
     }

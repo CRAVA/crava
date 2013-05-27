@@ -18,15 +18,14 @@ public:
   ~BlockedLogsForRockPhysics(void);
 
   std::vector<float>       getAlphaForFacies(const std::string & facies_name);
+  std::vector<float>       getBetaForFacies(const std::string & facies_name);
+  std::vector<float>       getRhoForFacies(const std::string & facies_name);
 
 private:
-  void                     blockContinuousLog(const int                        * bInd,
-                                              const float                      * wellLog,
-                                              const int                        * faciesLog,
-                                              const int                        * faciesNumbers,
-                                              const int                        & firstM,
-                                              const int                        & lastM,
-                                              std::vector<std::vector<float> > & blockedLog);
+  void                     assignToFacies(const float                      * wellLog,
+                                          const int                        * faciesLog,
+                                          const int                        * faciesNumbers,
+                                          std::vector<std::vector<float> > & blockedLog);
 
   std::vector<std::vector<float> >  alpha_;                    ///<
   std::vector<std::vector<float> >  beta_;                     ///< Raw logs (log-domain)
