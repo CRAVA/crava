@@ -16,8 +16,7 @@ class InputFiles;
 class CommonData{
 public:
   CommonData(ModelSettings    * model_settings,
-             InputFiles       * input_files,
-             std::string      & err_text);
+             InputFiles       * input_files);
   ~ CommonData();
 
   //SET FUNCTIONS
@@ -40,9 +39,9 @@ private:
 
   SegyGeometry * geometryFromCravaFile(const std::string & file_name);
 
-  SegyGeometry * geometryFromStormFile(const std::string  & file_name,
-                                    std::string           & err_text,
-                                    bool scale);
+  SegyGeometry * geometryFromStormFile(const std::string    & file_name,
+                                       std::string          & err_text,
+                                       bool                   scale = false);
 
   bool createOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
@@ -62,13 +61,13 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
-  void CommonData::setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
+  void setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
                                                       InputFiles                     * input_files,
                                                       ModelSettings                  * model_settings,
                                                       std::string                    & err_text,
                                                       bool                           & failed);
 
-  void CommonData::setSimboxSurfacesSingleInterval(Simbox                          *& simbox,
+  void setSimboxSurfacesSingleInterval(Simbox                          *& simbox,
                                                    const std::vector<std::string>   & surf_file,
                                                    ModelSettings                    * model_settings,
                                                    std::string                      & err_text,

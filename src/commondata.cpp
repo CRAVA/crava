@@ -21,9 +21,9 @@
 #include "nrlib/segy/segy.hpp"
 
 CommonData::CommonData(ModelSettings  * model_settings,
-                       InputFiles     * input_files,
-                       std::string    & err_text){
-  
+                       InputFiles     * input_files){
+  std::string err_text = "";
+
   createOuterTemporarySimbox(model_settings, input_files, err_text);
 
 }
@@ -598,8 +598,14 @@ void CommonData::setSimboxSurfacesMultipleIntervals(Simbox                      
                                                     std::string                    & err_text,
                                                     bool                           & failed){
 
-  std::string               top_surface_name =  input_files->getTimeSurfFile(0);
-  std::vector<std::string>  interval_names =    model_settings->getIntervalNames();
-  unsigned int              n_intervals =       interval_names.size();
+  //std::string               top_surface_name =  input_files->getTimeSurfFile(0);
+  //std::vector<std::string>  interval_names =    model_settings->getIntervalNames();
+  //unsigned int              n_intervals =       interval_names.size();
+  (void) simbox;
+  (void) input_files;
+  (void) model_settings;
+  (void) err_text;
+  (void) failed;
+
 
 }
