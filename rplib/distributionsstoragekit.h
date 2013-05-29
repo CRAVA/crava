@@ -104,6 +104,7 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
                           const std::string                                 & path,
                           const std::vector<std::string>                    & trend_cube_parameters,
                           const std::vector<std::vector<double> >           & trend_cube_sampling,
+                          const std::vector<std::vector<float> >            & blocked_logs,
                           std::string                                       & errTxt);
 
 #endif

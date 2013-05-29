@@ -69,12 +69,13 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
     }
   }
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
   std::vector<DistributionsSolid *>                  final_dist_solid(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
-  const std::vector<std::vector<float> >             dummy_blocked_logs;
 
   for(int i=0; i<n_vintages; i++)
     all_volume_fractions[i].resize(n_constituents, NULL);
@@ -612,7 +613,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
   }
 
   for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
   for(int i=0; i<n_vintages; i++) {
 

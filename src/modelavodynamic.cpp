@@ -436,7 +436,7 @@ ModelAVODynamic::readMatrix(const std::string & fileName, int n1, int n2,
   float * tmpRes = new float[n1*n2+1];
   std::ifstream inFile;
   NRLib::OpenRead(inFile,fileName);
-  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+  std::string text = "\nReading "+readReason+" from file "+fileName+" ... ";
   LogKit::LogFormatted(LogKit::Low,text);
   std::string storage;
   int index = 0;

@@ -69,9 +69,9 @@ Rock * DistributionsRock::EvolveSample(double       time,
 }
 
 
-Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
-                                       const Rock & rock,
-                                       std::vector<double> &resVar )
+Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double                time,
+                                                           const Rock          & rock,
+                                                           std::vector<double> & resVar )
 {
   size_t nResVar=reservoir_variables_.size();
   resVar.resize(nResVar);

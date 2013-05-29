@@ -70,10 +70,10 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
   FindSMinMax(trend_cube_sampling, s_min, s_max);
 
-  for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
-
   const std::vector<std::vector<float> > dummy_blocked_logs;
+
+  for(int i=0; i<n_constituents; i++)
+    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
@@ -850,6 +850,8 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
   int n_constituents = n_inclusions + 1;
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<std::vector<DistributionWithTrendStorage *> > volume_fractions(n_constituents);
   volume_fractions[0] = host_volume_fraction_;
 
@@ -857,7 +859,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
     volume_fractions[i+1] = inclusion_volume_fraction_[i];
 
   for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
 
   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
   std::vector<double> alpha(n_inclusions + n_constituents);
@@ -928,8 +930,6 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
         final_distr_fluid_inc[i][s] = final_distr_fluid_inc[i-1][s]->Clone();
     }
   }
-
-  const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
@@ -1153,9 +1153,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<double> s_min;
   std::vector<double> s_max;
 
-  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
-  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
-  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
+  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
 
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
@@ -1228,8 +1230,6 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     if(typeid(*(n_all->second)) != typeid(ReussRockStorage))
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
   }
-
-  const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);

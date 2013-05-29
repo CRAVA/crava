@@ -68,10 +68,10 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
     }
   }
 
-  for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
-
   const std::vector<std::vector<float> > dummy_blocked_logs;
+
+  for(int i=0; i<n_constituents; i++)
+    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
   std::vector<DistributionsFluid *>                  final_dist_fluid(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
