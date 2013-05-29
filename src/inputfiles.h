@@ -17,6 +17,7 @@ public:
 
   const std::string              & getSeedFile(void)             const { return seedFile_             ;}
   const std::string              & getWellFile(int i)            const { return wellFiles_[i]         ;}
+  const std::vector<std::string> & getWellFiles(void)            const { return wellFiles_            ;}
   const std::string              & getSeismicFile(int i, int j)  const { return timeLapseSeismicFiles_[i][j]      ;}
   const std::string              & getWaveletFile(int i, int j)  const { return timeLapseWaveletFiles_[i][j]      ;}
   const std::string              & getShiftFile(int i, int j)    const { return timeLapseWaveletShiftFiles_[i][j] ;}
@@ -52,6 +53,8 @@ public:
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
   const std::vector<std::string> & getMultizoneSurfaceFiles()    const { return multizoneSurfaceFiles_;}
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
+  const std::vector<std::string> & getSeismicFiles(void)         const { return seismicFiles_         ;}
+  const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void) const { return timeLapseSeismicFiles_ ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 

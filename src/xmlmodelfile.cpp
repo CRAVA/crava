@@ -1984,10 +1984,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   }
 
 
-  unsigned int nFaciesIntervals = 0;
-  while(parseFaciesInterval(root,errTxt)==true){
-    nFaciesIntervals++;
-  }
+  while(parseFaciesInterval(root,errTxt)==true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2099,11 +2096,14 @@ TiXmlNode * root = node->FirstChildElement("interval");
   if(sum != 1.0)
     errTxt+="Prior facies probabilities for interval " + interval_name + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
+
   const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
+
   if(prior_prob_interval_tmp.count(interval_name) > 0) {
     errTxt += "Interval " + interval_name + " is defined more than once under <"+node->ValueStr()+"> "
           +lineColumnText(root)+".\n";
   }
+
 
   modelSettings_->addPriorFaciesProbInterval(interval_name, facies_map);
 
