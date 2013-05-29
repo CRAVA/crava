@@ -852,6 +852,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     xMax  = *max_element(x_transformed.begin(), x_transformed.end()) + 5.0f*sqrt(sigmae[0][0]);
     yMin  = *min_element(y_transformed.begin(), y_transformed.end()) - 5.0f*sqrt(sigmae[1][1]);
     yMax  = *max_element(y_transformed.begin(), y_transformed.end()) + 5.0f*sqrt(sigmae[1][1]);
+    zMax  = trend1[nBinsTrend_];
+    zMin  = trend1[0];
     dX  = (xMax-xMin)/nBinsX;
     dY  = (yMax-yMin)/nBinsY;
     dZ  = (zMax-zMin)/nBinsTrend_;
@@ -2181,8 +2183,10 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   float help;
   float dens;
   float undefSum = 0.0;
-  if (nDimensions == 3 || nDimensions == 4){
+  if (nDimensions == 3){
     undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*volume[0]->getnz());
+  }else if (nDimensions == 4){
+    undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*nBinsTrend_*nBinsTrend_);
   }else if (nDimensions == 5){
     undefSum = p_undefined/(nBinsTrend_*nBinsTrend_*volume[0]->getnx()*volume[0]->getny());
   }
