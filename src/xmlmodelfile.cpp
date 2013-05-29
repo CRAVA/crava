@@ -4417,7 +4417,6 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-file");
   legalCommands.push_back("time-value");
   legalCommands.push_back("depth-file");
-  legalCommands.push_back("top-surface-erosion-priority");
 
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
@@ -4442,13 +4441,6 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
 
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
     inputFiles_->setDepthSurfFile(0, filename);
-
-  int erosion_priority;
-  if(parseValue(root, "top-surface-erosion-priority", erosion_priority, errTxt) == true){
-    modelSettings_->setErosionPriorityTopSurface(erosion_priority);
-  }else{
-    modelSettings_->setErosionPriorityTopSurface(1);
-  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
