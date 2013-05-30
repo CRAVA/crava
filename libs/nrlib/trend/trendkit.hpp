@@ -33,7 +33,13 @@
 
 namespace NRLib {
 
-   int  GetTrend1DFileFormat(const std::string & file_name,
+#define RMISSING -99999.000
+#define IMISSING -99999
+
+  void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                             double                                  & trend);
+
+  int  GetTrend1DFileFormat(const std::string & file_name,
                              std::string       & errText);
 
   void  ReadTrend1DJason(const std::string   & file_name,
@@ -58,6 +64,13 @@ namespace NRLib {
                                    const std::vector<double> & fx,
                                    const std::vector<double> & y,
                                    std::vector<double>       & fy);
+
+  void            Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                                  std::vector<double>                     & trend);
+
+  void            SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
+                                                       const std::vector<int> & count,
+                                                       const int              & iWells);
 
   void ReadTrend2DPlainAscii(const std::string     & file_name,
                              std::string           & /*errText*/,

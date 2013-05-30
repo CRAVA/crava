@@ -21,8 +21,6 @@ public:
                                 const std::vector<std::vector<float> >  & /*blocked_logs*/,
                                 std::string                             & /*errTxt*/) const = 0;
 
-  #define RMISSING -99999.000
-  #define IMISSING -99999
 };
 
 //-------------------------------------------------------------------//
@@ -75,13 +73,6 @@ public:
                                 std::string                             & errTxt) const;
 
 private:
-
-  void            Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                                  std::vector<double>                     & trend) const;
-
-  void            SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
-                                                       const std::vector<int> & count,
-                                                       const int              & iWells) const;
   std::string file_name_;
   std::string reference_parameter_;
   bool        estimate_;
