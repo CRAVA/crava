@@ -92,7 +92,7 @@ Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
 
 
 //-----------------------------------------------------------------------------------------------------------
-void  DistributionsRock::SetupExpectationAndCovariances()
+void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
 //-----------------------------------------------------------------------------------------------------------
 {
   int n  = 1024; // Number of samples generated for each distribution
@@ -119,9 +119,6 @@ void  DistributionsRock::SetupExpectationAndCovariances()
 
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
-//  std::vector<double>   a(n);
- // std::vector<double>   b(n);
- // std::vector<double>   c(n);
 
   bool failed = false;
 
@@ -150,6 +147,14 @@ void  DistributionsRock::SetupExpectationAndCovariances()
         delete rock;
 
         if(vp <= 0 || vs < 0 || rho <=0) {
+          errTxt += "\nAt least one sample generated from the rock model obtains negative values.\n";
+          if(vp <= 0)
+            errTxt += "  The variance for Vp might be too large.\n\n";
+          if(vs < 0)
+            errTxt += "  The variance for Vs might be too large.\n\n";
+          if(rho <= 0)
+            errTxt += "  The variance for density might be too large.\n\n";
+
           failed = true;
           break;
         }
@@ -540,9 +545,10 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
 }
 
 
-void DistributionsRock::CompleteTopLevelObject(std::vector<DistributionWithTrend *> res_var)
+void DistributionsRock::CompleteTopLevelObject(std::vector<DistributionWithTrend *>   res_var,
+                                               std::string                          & errTxt)
 {
   reservoir_variables_ = res_var;
   SetResamplingLevel(DistributionWithTrend::Full);
-  SetupExpectationAndCovariances();
+  SetupExpectationAndCovariances(errTxt);
 }
