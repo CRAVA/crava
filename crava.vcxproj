@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -254,6 +254,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
+    <ClCompile Include="libs\nrlib\random\dSFMT.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -393,7 +394,6 @@
     <ClCompile Include="libs\nrlib\random\functions.cpp" />
     <ClCompile Include="libs\nrlib\random\gamma.cpp" />
     <ClCompile Include="libs\nrlib\iotools\logkit.cpp" />
-    <ClCompile Include="libs\nrlib\random\mt19937ar.cpp" />
     <ClCompile Include="libs\nrlib\random\normal.cpp" />
     <ClCompile Include="libs\nrlib\well\norsarwell.cpp" />
     <ClCompile Include="libs\nrlib\flens\nrlib_flens.cpp" />
@@ -1350,6 +1350,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="libs\nrlib\random\dSFMT.h" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
@@ -1433,9 +1434,6 @@
     <ClInclude Include="libs\nrlib\grid\grid2d.hpp" />
     <ClInclude Include="libs\nrlib\iotools\logkit.hpp" />
     <ClInclude Include="libs\nrlib\math\mathutility.hpp" />
-    <ClInclude Include="libs\nrlib\random\mt19937_32.hpp" />
-    <ClInclude Include="libs\nrlib\random\mt19937_64.hpp" />
-    <ClInclude Include="libs\nrlib\random\mt19937ar.hpp" />
     <ClInclude Include="libs\nrlib\random\normal.hpp" />
     <ClInclude Include="libs\nrlib\well\norsarwell.hpp" />
     <ClInclude Include="libs\nrlib\flens\nrlib_flens.hpp" />
