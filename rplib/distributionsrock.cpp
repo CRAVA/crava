@@ -7,7 +7,7 @@
 #include "nrlib/statistics/statistics.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -23,7 +23,7 @@ Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<
   return(result);
 }
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -37,7 +37,7 @@ Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_param
 
 
 
-
+//--------------------------------------------------------------//
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
@@ -56,7 +56,7 @@ void DistributionsRock::GenerateWellSample(double                 corr,
   }
   delete rock;
 }
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::EvolveSample(double       time,
                                        const Rock & rock)
 {
@@ -68,7 +68,7 @@ Rock * DistributionsRock::EvolveSample(double       time,
   return UpdateSample(time, true, trend, &rock);
 }
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double                time,
                                                            const Rock          & rock,
                                                            std::vector<double> & resVar )

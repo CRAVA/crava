@@ -452,8 +452,9 @@ SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
     for (int k = 0 ; k < nz ; k++) {
       trend[k] = global_mean;
     }
-    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean\n");
+    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean: %.2f\n\n",global_mean);
   }
+
   else {
     if (errorHead) {
       // Fix first part of trend containing missing-values.

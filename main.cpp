@@ -26,6 +26,7 @@
 
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/random/random.hpp"
 
 #include "rplib/demmodelling.h"
 
@@ -179,6 +180,7 @@ int main(int argc, char** argv)
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
+    NRLib::Random::Initialize();
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());

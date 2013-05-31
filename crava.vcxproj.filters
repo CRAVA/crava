@@ -1646,6 +1646,9 @@
     <ClInclude Include="libs\nrlib\random\dSFMT.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
+    <ClInclude Include="libs\nrlib\random\dSFMT-common.h">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\NORSAR\BIP2008-2010\NSM-Projects\CRAVA_Project\INVERSION\CRAVA_INPUT\initial-model.xml">

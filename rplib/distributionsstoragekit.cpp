@@ -3,7 +3,7 @@
 #include "src/modelsettings.h"
 #include "nrlib/flens/nrlib_flens.hpp"
 
-
+//--------------------------------------------------------------//
 void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
                             std::string                                & errTxt)
 {
@@ -28,7 +28,7 @@ void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_
   else if(n_missing > 1)
     errTxt += "All but one of the volume frations must be defined in the rock physics models where elements with corresponding volume frations are given\n";
 }
-
+//--------------------------------------------------------------//
 void FindMixTypesForRock(std::vector<std::string>  constituent_label,
                          int n_constituents,
                          const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
@@ -77,7 +77,7 @@ void FindMixTypesForRock(std::vector<std::string>  constituent_label,
     tmpErrTxt += "Fluids and solids can not be mixed with rocks in the Reuss model\n";
 }
 
-
+//--------------------------------------------------------------//
 void FindMixTypesForDryRock(std::vector<std::string> constituent_label,
                             int n_constituents,
                             const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
@@ -105,7 +105,7 @@ void FindMixTypesForDryRock(std::vector<std::string> constituent_label,
   }
 }
 
-
+//--------------------------------------------------------------//
 std::vector<DistributionsRock *>
 ReadRock(const int                                                   & n_vintages,
          const std::string                                           & target_rock,
@@ -142,7 +142,7 @@ ReadRock(const int                                                   & n_vintage
   return(rock);
 
 }
-
+//--------------------------------------------------------------//
 std::vector<DistributionsSolid *>
 ReadSolid(const int                                                  & n_vintages,
           const std::string                                          & target_solid,
@@ -171,7 +171,7 @@ ReadSolid(const int                                                  & n_vintage
 
   return(solid);
 }
-
+//--------------------------------------------------------------//
 std::vector<DistributionsDryRock *>
 ReadDryRock(const int                                                  & n_vintages,
             const std::string                                          & target_dryrock,
@@ -202,7 +202,7 @@ ReadDryRock(const int                                                  & n_vinta
 
   return(dryrock);
 }
-
+//--------------------------------------------------------------//
 std::vector<DistributionsFluid *>
 ReadFluid(const int                                                  & n_vintages,
           const std::string                                          & target_fluid,
@@ -232,7 +232,7 @@ ReadFluid(const int                                                  & n_vintage
 
   return(fluid);
 }
-
+//--------------------------------------------------------------//
 void
 FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
             std::vector<double>                     & s_min,
@@ -248,7 +248,7 @@ FindSMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
     s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
   }
 }
-
+//--------------------------------------------------------------//
 void
 CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt)
 {
@@ -277,7 +277,7 @@ CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std
   if(pos_def == false)
     errTxt += "The correlations given in the tabulated rock physics model need to generate a positive definite matrix\n";
 }
-
+//--------------------------------------------------------------//
 void FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sampling,
                         std::vector<double>                     & s_min,
                         std::vector<double>                     & s_max)
@@ -292,7 +292,7 @@ void FindSamplingMinMax(const std::vector<std::vector<double> > & trend_cube_sam
     s_max[i] = trend_cube_sampling[i][trend_cube_sampling[0].size()-1] - trend_cube_sampling[i][0];
   }
 }
-
+//--------------------------------------------------------------//
 void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & test_objects,
                           const std::string                                 & type,
                           const std::string                                 & path,
