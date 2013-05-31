@@ -5,6 +5,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/statistics/statistics.hpp"
+#include "nrlib/random/random.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
 //--------------------------------------------------------------//
@@ -120,10 +121,14 @@ void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
 
+  unsigned int seed = NRLib::Random::DrawUint32();
+
   bool failed = false;
 
   for (int i = 0 ; i < mi ; i++) {
     for (int j = 0 ; j < mj ; j++) {
+
+      NRLib::Random::Initialize(seed);
 
       const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
