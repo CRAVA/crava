@@ -44,7 +44,7 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
 
   // if multiple intervals
   if(model_settings->getIntervalNames().size() > 0){
-
+    setSimboxSurfacesMultipleIntervals(estimation_simbox_, input_files, model_settings, err_text, failed);
   }
   // single interval described by either one or two surfaces
   else{
@@ -593,19 +593,29 @@ void CommonData::setSimboxSurfacesSingleInterval(Simbox                        *
 }
 
 void CommonData::setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
-                                                    InputFiles                     * input_files,
-                                                    ModelSettings                  * model_settings,
+                                                    const InputFiles               * input_files,
+                                                    const ModelSettings            * model_settings,
                                                     std::string                    & err_text,
                                                     bool                           & failed){
 
-  //std::string               top_surface_name =  input_files->getTimeSurfFile(0);
-  //std::vector<std::string>  interval_names =    model_settings->getIntervalNames();
-  //unsigned int              n_intervals =       interval_names.size();
+  // Get interval surface data ------------------------------------------------------------------------------
+
+  const std::vector<std::string>  interval_names                         =  model_settings->getIntervalNames();
+  unsigned int                    n_intervals                            =  interval_names.size();
+  const std::string               top_surface_file_name                  =  input_files->getTimeSurfFile(0);
+  const std::string               base_surface_file
+  const std::vector<std::string>  base_surfaces_file_name                =  input_files->getTimeSurfFiles();
+  const std::map<std::string, std::string> interval_base_time_surfaces   =  input_files->getIntervalBaseTimeSurfaces();
+  //int                             erosion_priority_top_surface           =  model_settings->getErosionPriorityTopSurface();
+  //const std::map<std::string,int> erosion_priority_base_surfaces         =  model_settings->getErosionPriorityBaseSurfaces();
+  
   (void) simbox;
-  (void) input_files;
-  (void) model_settings;
+
   (void) err_text;
   (void) failed;
 
+  Surface * top_surface = new Surface(top_surface_file_name);
+  Surface * base_surface = new Surface(base_surfaces_file_name[n_intervals-1]);
 
+  
 }

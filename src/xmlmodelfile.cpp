@@ -4295,6 +4295,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
       +lineColumnText(root)+".\n";
   }
 
+  // check that the erosion priorities are unique
   std::vector<int> erosion_priorities;
   erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();

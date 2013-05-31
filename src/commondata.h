@@ -62,16 +62,16 @@ private:
                                    double       & y_max);
 
   void setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
-                                                      InputFiles                     * input_files,
-                                                      ModelSettings                  * model_settings,
-                                                      std::string                    & err_text,
-                                                      bool                           & failed);
+                                          const InputFiles               * input_files,
+                                          const ModelSettings            * model_settings,
+                                          std::string                    & err_text,
+                                          bool                           & failed);
 
   void setSimboxSurfacesSingleInterval(Simbox                          *& simbox,
-                                                   const std::vector<std::string>   & surf_file,
-                                                   ModelSettings                    * model_settings,
-                                                   std::string                      & err_text,
-                                                   bool                             & failed);
+                                       const std::vector<std::string>   & surf_file,
+                                       ModelSettings                    * model_settings,
+                                       std::string                      & err_text,
+                                       bool                             & failed);
 
   bool readSeismicData();
   bool readWellData();
