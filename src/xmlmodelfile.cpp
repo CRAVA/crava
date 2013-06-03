@@ -2587,7 +2587,7 @@ XmlModelFile::parseReuss(TiXmlNode                                   * node,
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new ReussRockStorage(constituent_label, constituent_fraction);
+    DistributionsRockStorage * rock = new ReussRockStorage(constituent_label, constituent_fraction, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -2635,7 +2635,7 @@ XmlModelFile::parseVoigt(TiXmlNode                                   * node,
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new VoigtRockStorage(constituent_label, constituent_fraction);
+    DistributionsRockStorage * rock = new VoigtRockStorage(constituent_label, constituent_fraction, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -2683,7 +2683,7 @@ XmlModelFile::parseHill(TiXmlNode                                   * node,
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new HillRockStorage(constituent_label, constituent_fraction);
+    DistributionsRockStorage * rock = new HillRockStorage(constituent_label, constituent_fraction, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -2906,7 +2906,7 @@ XmlModelFile::parseDEM(TiXmlNode                                  * node,
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -3040,7 +3040,7 @@ XmlModelFile::parseGassmann(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new GassmannRockStorage(dry_rock, fluid);
+    DistributionsRockStorage * rock = new GassmannRockStorage(dry_rock, fluid, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -3098,7 +3098,7 @@ XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Boundning model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, shear_weight, correlation);
+    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, porosity, bulk_weight, shear_weight, correlation, label);
     modelSettings_->addRock(label, rock);
   }
 
@@ -3304,7 +3304,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
@@ -3318,7 +3318,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
@@ -3491,7 +3491,7 @@ XmlModelFile::parseTabulatedDryRock(TiXmlNode                                   
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
@@ -3505,7 +3505,7 @@ XmlModelFile::parseTabulatedDryRock(TiXmlNode                                   
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
@@ -6101,6 +6101,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
   }
 
+  if(modelSettings_->getUseLocalNoise(0) == true && modelSettings_->getNumberOfWells() == 0)
+    errTxt += "Local noise can not be used when no wells are given.\n";
 
   if(modelSettings_->getIntervalNames().size() > 0) { //Interval model is used
 

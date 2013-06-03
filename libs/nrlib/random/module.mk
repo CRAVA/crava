@@ -2,7 +2,7 @@ SRC +=	$(NRLIB_BASE_DIR)random/binomial.cpp  \
 	$(NRLIB_BASE_DIR)random/chisquared.cpp \
 	$(NRLIB_BASE_DIR)random/functions.cpp \
 	$(NRLIB_BASE_DIR)random/gamma.cpp \
-	$(NRLIB_BASE_DIR)random/mt19937ar.cpp \
+	$(NRLIB_BASE_DIR)random/dSFMT.cpp \
 	$(NRLIB_BASE_DIR)random/normal.cpp \
 	$(NRLIB_BASE_DIR)random/delta.cpp \
 	$(NRLIB_BASE_DIR)random/random.cpp \
