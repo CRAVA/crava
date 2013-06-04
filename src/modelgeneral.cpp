@@ -2440,16 +2440,11 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       const std::map<std::string, DistributionsRockStorage    *>& rock_storage     = modelSettings->getRockStorage();
 
       // Map out reservoir variables for using in rocks to access resampling trigger.
-      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
-      if(reservoir_variables_.size() > 0) {
-        size_t nVintages = reservoir_variables_.begin()->second.size();
-        res_var_vintage.resize(nVintages);
-        for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
-          var_it != reservoir_variables_.end();var_it++)
-        {
-          for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
-            res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
-        }
+      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(modelSettings->getNumberOfVintages());
+      std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it;
+      for(var_it = reservoir_variables_.begin(); var_it != reservoir_variables_.end();var_it++) {
+        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
       }
 
       // Find facies names
