@@ -11,6 +11,10 @@
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/flens/nrlib_flens.hpp"
 
+class Vario;
+class Simbox;
+class CovGrid2D;
+
 class Kriging2D
 {
 public:
@@ -18,6 +22,10 @@ public:
                            const KrigingData2D & krigingData,
                            const CovGrid2D     & cov,
                            bool                  getResiduals = false);
+
+  static CovGrid2D & makeCovGrid2D(const Simbox * simbox,
+                                   Vario        * vario,
+                                   int            debugFlag);
 
 private:
   static void  subtractTrend(NRLib::Vector            & d,

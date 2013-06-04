@@ -137,6 +137,7 @@ private:
   bool     parseVpVsRatio(TiXmlNode * node, std::string & errTxt);
   bool       parseIntervalVpVs(TiXmlNode * node, std::string & errTxt);
   bool     parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
+  bool      parseSeismicQualityGrid(TiXmlNode * node, std::string & errTxt);
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);

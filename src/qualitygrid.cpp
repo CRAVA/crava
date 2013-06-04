@@ -39,6 +39,17 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
 
   FFTGrid * grid;
 
+  if(modelSettings->getSeismicQualityGridValue() != RMISSING)
+    value_ = modelSettings->getSeismicQualityGridValue();
+  else {
+    double tmpsum = 0.0;
+    for (int i=0; i< nWells; i++)
+      tmpsum += wellValue_[i];
+    value_ = tmpsum / nWells;
+
+    LogKit::LogFormatted(LogKit::Low, "The value used for weighting under <seismic-quality-grid> is " + NRLib::ToString(value_) + ", this is an average from all fit values from wells.\n");
+ }
+
   generateProbField(grid, wells, simbox, modelSettings);
 
   std::string fileName = "Seismic_Quality_Grid";
@@ -56,18 +67,36 @@ void QualityGrid::generateProbField(FFTGrid              *& grid,
   const int nz     = simbox->getnz();
   const int nWells = modelSettings->getNumberOfWells();
 
+  Vario * vario = modelSettings->getBackgroundVario();
+  CovGrid2D & cov = makeCovGrid2D(simbox, vario);
+
+  if(modelSettings->getSeismicQualityGridRange() != RMISSING) {
+    float range1 = modelSettings->getSeismicQualityGridRange();
+    float range2 = range1;
+    float angle = vario->getAngle();
+    std::string type = vario->getType();
+    Vario * vario_new;
+
+    if(type == "Spherical") {
+      vario_new = new SphericalVario(range1, range2, angle);
+    }
+    else
+    {
+      GenExpVario * vario_tmp = dynamic_cast<GenExpVario *>(vario);
+      float power = vario_tmp->getPower();
+      vario_new = new GenExpVario(power, range1, range2, angle);
+    }
+    cov = makeCovGrid2D(simbox, vario_new);
+  }
+
   std::vector<KrigingData2D> krigingData(nz);
   setupKrigingData2D(krigingData, wells, simbox, nWells);
-
-  Vario * vario = modelSettings->getBackgroundVario();
-  const CovGrid2D & cov = makeCovGrid2D(simbox, vario);
 
   const bool isFile = modelSettings->getFileGrid();
 
   makeKrigedProbField(krigingData, grid, simbox, cov, isFile);
 
   delete &cov;
-
 }
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
@@ -143,7 +172,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
   for (int k=0; k<nzp; k++)
   {
     // Set constant value for layer
-    surface.Assign(1.0f);
+    surface.Assign(value_);
 
     // Kriging of layer
     Kriging2D::krigSurface(surface, krigingData[k], cov);
