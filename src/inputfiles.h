@@ -55,6 +55,8 @@ public:
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
   const std::vector<std::string> & getSeismicFiles(void)         const { return seismicFiles_         ;}
   const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void) const { return timeLapseSeismicFiles_ ;}
+  const std::map<std::string, std::string> & getIntervalBaseTimeSurfaces(void) const { return interval_base_time_surface_   ;}
+  const std::map<std::string, std::string> & getIntervalBaseDepthSurface(void) const { return interval_base_depth_surface_  ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 

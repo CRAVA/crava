@@ -222,6 +222,7 @@ public:
   std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
   std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval() const { return volumefractionInterval_   ;}
   int                              getErosionPriorityTopSurface()       const { return erosion_priority_top_surface_;}
+  const std::map<std::string,int> & getErosionPriorityBaseSurfaces()    const { return erosion_priority_interval_base_surface_    ;}
   int                              getErosionPriorityBaseSurface(const std::string & interval_name) const {return erosion_priority_interval_base_surface_.find(interval_name)->second;}
 
   bool                               getCorrDirTopConform(void)          const { return topConformCorrelation_ ;}

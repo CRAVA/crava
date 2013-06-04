@@ -2,6 +2,7 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
+
 #ifndef COMMONDATA_H
 #define COMMONDATA_H
 
@@ -22,8 +23,8 @@ class InputFiles;
 
 class CommonData{
 public:
-  CommonData(ModelSettings    * modelSettings,
-             InputFiles       * inputFiles);
+  CommonData(ModelSettings    * model_settings,
+             InputFiles       * input_files);
 
   ~ CommonData();
 
@@ -34,13 +35,58 @@ public:
 
   //GET FUNCTIONS
 
-  Simbox          * getEstimationSimbox()     const { return estimation_simbox_     ;}
-  NRLib::Volume   * getFullInversionVolume()  const { return full_inversion_volume_ ;}
+  const Simbox          & getEstimationSimbox()     const { return estimation_simbox_     ;}
+  const NRLib::Volume   & getFullInversionVolume()  const { return full_inversion_volume_ ;}
+  
 
 
 private:
 
-  bool createOuterTemporarySimbox();
+  void getGeometryFromGridOnFile(const std::string                grid_file,
+                                        const TraceHeaderFormat * thf,
+                                        SegyGeometry           *& geometry,
+                                        std::string             & err_text);
+
+  SegyGeometry * geometryFromCravaFile(const std::string & file_name);
+
+  SegyGeometry * geometryFromStormFile(const std::string    & file_name,
+                                       std::string          & err_text,
+                                       bool                   scale = false);
+
+  bool createOuterTemporarySimbox(ModelSettings           * model_settings,
+                                  InputFiles              * input_files,
+                                  Simbox                  & estimation_simbox,
+                                  NRLib::Volume           & full_inversion_interval,
+                                  std::string             & err_text);
+
+  void writeAreas(const SegyGeometry  * area_params,
+                  Simbox              * time_simbox,
+                  std::string         & err_text);
+
+  void findSmallestSurfaceGeometry(const double   x0,
+                                   const double   y0,
+                                   const double   lx,
+                                   const double   ly,
+                                   const double   rot,
+                                   double       & x_min,
+                                   double       & y_min,
+                                   double       & x_max,
+                                   double       & y_max);
+
+  void setSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
+                                    NRLib::Volume                  & full_inversion_volume,
+                                    const InputFiles               * input_files,
+                                    const ModelSettings            * model_settings,
+                                    std::string                    & err_text,
+                                    bool                           & failed);
+
+  void setSurfacesSingleInterval(Simbox                           & estimation_simbox,
+                                 NRLib::Volume                    & full_inversion_volume,
+                                 const std::vector<std::string>   & surf_file,
+                                 ModelSettings                    * model_settings,
+                                 std::string                      & err_text,
+                                 bool                             & failed);
+
   bool readSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles);
   bool readWellData(ModelSettings  * modelSettings,
@@ -51,6 +97,8 @@ private:
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
+
+  int computeTime(int year, int month, int day) const;
 
   // Bool variables indicating whether the corresponding data processing
   // succeeded
@@ -64,7 +112,8 @@ private:
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
 
-  //int seismic_type_; ///< Enum seismic types
+  Simbox          estimation_simbox_;
+  NRLib::Volume   full_inversion_volume_;
 
   //std::vector<NRLib::SegY *>   segy_files_;
   //std::vector<StormContGrid *> stormgrids_;
@@ -74,8 +123,8 @@ private:
   //FFTGrid                   ** seisCube_;              ///< Seismic data cubes
   std::vector<WellData *>      welldata_;                      ///< Well data
   std::vector<NRLib::Well>     wells_;
-  Simbox                     * estimation_simbox_;
-  NRLib::Volume              * full_inversion_volume_;
+  //Simbox                     * estimation_simbox_;
+  //NRLib::Volume              * full_inversion_volume_;
 
 };
 

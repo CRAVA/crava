@@ -2150,6 +2150,7 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
   bool volume_fraction = false;
 
 
+
   bool faciesVolumeFractions = false;
   while(parseFaciesVolumeFractions(root,errTxt)==true){
     if (faciesVolumeFractions == false)
@@ -2161,6 +2162,7 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
     mapType volume_fractions_map = modelSettings_->getVolumeFractionsProb();
 
     for(mapType::const_iterator it = volume_fractions_map.begin(); it != volume_fractions_map.end(); ++it) {
+
       sum+=(*it).second;
     }
     if(sum != 1.0)
@@ -4299,6 +4301,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
       +lineColumnText(root)+".\n";
   }
 
+  // check that the erosion priorities are unique
   std::vector<int> erosion_priorities;
   erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
@@ -5502,7 +5505,7 @@ XmlModelFile::parseVpVsRatio(TiXmlNode * node, std::string & errTxt)
   while(parseCurrentValue(root, ratio, errTxt) == true) {
     if(ratio != RMISSING) {
       if(interval == true) {
-        errTxt += "You cannot specify both a value and intervals under <advanced-settings> " + root->ValueStr() + ".\n";
+        errTxt += "You cannot specify both a value and intervals under <advanced-settings> <vp-vs-ratio>";
       }
       else {
         modelSettings_->setVpVsRatio(ratio);
@@ -6147,13 +6150,6 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
           std::map<std::string, float> facies_probabilities = it->second;
 
-          for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
-
-            if(iter == rock_storage.end())
-              errTxt += "Problem with rock physics prior model under <prior-probabilities> for interval "
-                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
-          }
         }
       }
     }
@@ -6178,20 +6174,14 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
           std::map<std::string, float> volume_fractions = it->second;
 
-          for(std::map<std::string, float>::const_iterator it = volume_fractions.begin(); it != volume_fractions.end(); it++) {
-            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
-            if(iter == rock_storage.end())
-              errTxt += "Problem with rock physics prior model under <volume-fractions> for interval "
-                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
-        }
-      }
-    }
 
-    //Check that intervals under prior-prob and volume fractions containes the same intervals
-    if(prior_facies_prob_interval.size() > 0 && volume_fraction_interval.size() > 0) {
-
+        /*
+          // Compare names in rock physics model with names given as input in proability cubes
+          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
+            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
+            */
       for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
 
         std::map<std::string, float> facies_probabilities = it->second;
@@ -6241,7 +6231,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
 
 
-
+    }
   }
 }
 

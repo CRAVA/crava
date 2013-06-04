@@ -1,5 +1,5 @@
 /***************************************************************************
-*      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
+* Copyright (C) 2008 by Norwegian Computing Center and Statoil *
 ***************************************************************************/
 
 #include <string.h>
@@ -16,11 +16,11 @@
 #include "src/modelgeneral.h"
 #include "src/vario.h"
 
-QualityGrid::QualityGrid(const std::vector<double>   pValue,
-                         std::vector<WellData *>     wells,
-                         const Simbox              * simbox,
-                         const ModelSettings       * modelSettings,
-                         ModelGeneral              * modelGeneral)
+QualityGrid::QualityGrid(const std::vector<double> pValue,
+                         std::vector<WellData *> wells,
+                         const Simbox * simbox,
+                         const ModelSettings * modelSettings,
+                         ModelGeneral * modelGeneral)
 : wellValue_(0)
 {
 
@@ -47,13 +47,13 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
   delete grid;
 }
 
-void QualityGrid::generateProbField(FFTGrid              *& grid,
+void QualityGrid::generateProbField(FFTGrid *& grid,
                                     std::vector<WellData *> wells,
-                                    const Simbox          * simbox,
-                                    const ModelSettings   * modelSettings) const
+                                    const Simbox * simbox,
+                                    const ModelSettings * modelSettings) const
 {
 
-  const int nz     = simbox->getnz();
+  const int nz = simbox->getnz();
   const int nWells = modelSettings->getNumberOfWells();
 
   std::vector<KrigingData2D> krigingData(nz);
@@ -71,18 +71,18 @@ void QualityGrid::generateProbField(FFTGrid              *& grid,
 }
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
-                                     std::vector<WellData *>      wells,
-                                     const Simbox               * simbox,
-                                     const int                    nWells) const
+                                     std::vector<WellData *> wells,
+                                     const Simbox * simbox,
+                                     const int nWells) const
 {
   for (int w=0; w<nWells; w++)
   {
     const BlockedLogs * bl = wells[w]->getBlockedLogsConstThick();
 
-    const int   nBlocks = bl->getNumberOfBlocks();
-    const int * ipos    = bl->getIpos();
-    const int * jpos    = bl->getJpos();
-    const int * kpos    = bl->getKpos();
+    const int nBlocks = bl->getNumberOfBlocks();
+    const int * ipos = bl->getIpos();
+    const int * jpos = bl->getJpos();
+    const int * kpos = bl->getKpos();
 
     for (int m=0; m<nBlocks; m++)
     {
@@ -101,10 +101,10 @@ void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
 }
 
 void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
-                                      FFTGrid                   *& grid,
-                                      const Simbox               * simbox,
-                                      const CovGrid2D            & cov,
-                                      const bool                   isFile) const
+                                      FFTGrid *& grid,
+                                      const Simbox * simbox,
+                                      const CovGrid2D & cov,
+                                      const bool isFile) const
 {
   std::string text = "\nBuilding seismic quality grid:";
   LogKit::LogFormatted(LogKit::Low, text);
@@ -113,15 +113,15 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
   const int ny = simbox->getny();
   const int nz = simbox->getnz();
 
-  const int    nxp  = nx;
-  const int    nyp  = ny;
-  const int    nzp  = nz;
-  const int    rnxp = 2*(nxp/2 + 1);
+  const int nxp = nx;
+  const int nyp = ny;
+  const int nzp = nz;
+  const int rnxp = 2*(nxp/2 + 1);
 
-  const double x0   = simbox->getx0();
-  const double y0   = simbox->gety0();
-  const double lx   = simbox->getlx();
-  const double ly   = simbox->getly();
+  const double x0 = simbox->getx0();
+  const double y0 = simbox->gety0();
+  const double lx = simbox->getlx();
+  const double ly = simbox->getly();
 
   //
   // Template surface to be kriged
@@ -131,9 +131,9 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
   const float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
-    << "\n  0%       20%       40%       60%       80%      100%"
-    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
-    << "\n  ^";
+    << "\n 0% 20% 40% 60% 80% 100%"
+    << "\n | | | | | | | | | | | "
+    << "\n ^";
 
   grid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   grid->createRealGrid();
@@ -171,7 +171,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
 }
 
 CovGrid2D & QualityGrid::makeCovGrid2D(const Simbox * simbox,
-                                       Vario  * vario) const
+                                       Vario * vario) const
 {
   const int nx = simbox->getnx();
   const int ny = simbox->getny();
