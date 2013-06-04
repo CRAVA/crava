@@ -22,34 +22,27 @@
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files){
+  estimation_simbox_ = Simbox();
   std::string err_text = "";
-
-  createOuterTemporarySimbox(model_settings, input_files, err_text);
+  createOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 
 }
 
 CommonData::~CommonData(){
+  //delete estimation_simbox_;
+  //delete full_inversion_volume_;
 }
 
 bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
                                             InputFiles      * input_files,
+                                            Simbox          & estimation_simbox,
+                                            NRLib::Volume   & full_inversion_volume,
                                             std::string     & err_text){
 
   // parameters
   bool failed = false;
   std::string grid_file("");
   int  area_specification  = model_settings->getAreaSpecification();
-
-  // FETCH TOP AND BASE SURFACES FOR THE FORWARD/INVERSION INTERVALS -----------------------------------------------
-
-  // if multiple intervals
-  if(model_settings->getIntervalNames().size() > 0){
-    setSimboxSurfacesMultipleIntervals(estimation_simbox_, input_files, model_settings, err_text, failed);
-  }
-  // single interval described by either one or two surfaces
-  else{
-    setSimboxSurfacesSingleInterval(estimation_simbox_, input_files->getTimeSurfFiles(), model_settings, err_text, failed);
-  }
   
 
   // FIND SEGY GEOMETRY FOR INVERSION AREA -------------------------------------------------------------------------
@@ -181,17 +174,28 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
     }
   }
 
+  // SET THE AREA FOR THE ESTIMATION SIMBOX
+
   if(!failed){
     const SegyGeometry * area_params = model_settings->getAreaParameters();
-    failed = estimation_simbox_->setArea(area_params, err_text);
+    failed = estimation_simbox.setArea(area_params, err_text);
     if(failed)
     {
-      writeAreas(area_params,estimation_simbox_,area_type);
+      writeAreas(area_params,&estimation_simbox_,area_type);
       err_text += "The specified AREA extends outside the surface(s).\n";
     }
-    
   }
 
+  // SET TOP AND BASE SURFACES FOR THE FORWARD/INVERSION INTERVALS -----------------------------------------------
+
+  // if multiple intervals
+  if(model_settings->getIntervalNames().size() > 0){
+    setSurfacesMultipleIntervals(estimation_simbox, full_inversion_volume, input_files, model_settings, err_text, failed);
+  }
+  // single interval described by either one or two surfaces
+  else{
+    setSurfacesSingleInterval(estimation_simbox, full_inversion_volume, input_files->getTimeSurfFiles(), model_settings, err_text, failed);
+  }
 
   return (!failed);
 }
@@ -454,45 +458,49 @@ void CommonData::findSmallestSurfaceGeometry(const double   x0,
   }
 }
 
-void CommonData::setSimboxSurfacesSingleInterval(Simbox                        *& simbox,
-                                                 const std::vector<std::string> & surf_file,
-                                                 ModelSettings                  * model_settings,
-                                                 std::string                    & err_text,
-                                                 bool                           & failed)
+void CommonData::setSurfacesSingleInterval(Simbox                           & estimation_simbox,
+                                           NRLib::Volume                    & full_inversion_volume,
+                                           const std::vector<std::string>   & surf_file,
+                                           ModelSettings                    * model_settings,
+                                           std::string                      & err_text,
+                                           bool                             & failed)
 {
-  const std::string & topName = surf_file[0];
+  const std::string & top_surface_file_name = surf_file[0];
 
-  bool   generate_seismic    = model_settings->getForwardModeling();
-  bool   estimation_mode     = model_settings->getEstimationMode();
-  bool   generate_background = model_settings->getGenerateBackground();
+  //bool   generate_seismic    = model_settings->getForwardModeling();
+  //bool   estimation_mode     = model_settings->getEstimationMode();
+  //bool   generate_background = model_settings->getGenerateBackground();
   bool   parallel_surfaces   = model_settings->getParallelTimeSurfaces();
-  int    nz                 = model_settings->getTimeNz();
-  int    output_format       = model_settings->getOutputGridFormat();
-  int    output_domain       = model_settings->getOutputGridDomain();
-  int    output_grids_elastic = model_settings->getOutputGridsElastic();
-  int    output_grids_other   = model_settings->getOutputGridsOther();
-  int    output_grids_seismic = model_settings->getOutputGridsSeismic();
+  //int    nz                 = model_settings->getTimeNz();
+  //int    output_format       = model_settings->getOutputGridFormat();
+  //int    output_domain       = model_settings->getOutputGridDomain();
+  //int    output_grids_elastic = model_settings->getOutputGridsElastic();
+  //int    output_grids_other   = model_settings->getOutputGridsOther();
+  //int    output_grids_seismic = model_settings->getOutputGridsSeismic();
   double d_top               = model_settings->getTimeDTop();
   double lz                 = model_settings->getTimeLz();
-  double dz                 = model_settings->getTimeDz();
+  //double dz                 = model_settings->getTimeDz();
 
-  Surface * z0_grid = NULL;
-  Surface * z1_grid = NULL;
+  Surface * top_surface = NULL;
+  Surface * base_surface = NULL;
+
+  Surface * top_surface_flat = NULL;
+  Surface * base_surface_flat = NULL;
+
   try {
-    if (NRLib::IsNumber(topName)) {
+    double x_min, x_max;
+    double y_min, y_max;
+    findSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
+                                  estimation_simbox.getlx(), estimation_simbox.getly(),
+                                  estimation_simbox.getAngle(),
+                                  x_min,y_min,x_max,y_max);
+    if (NRLib::IsNumber(top_surface_file_name)) {
       // Find the smallest surface that covers the simbox. For simplicity
       // we use only four nodes (nx=ny=2).
-      double x_min, x_max;
-      double y_min, y_max;
-      findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
-                                  simbox->getlx(), simbox->getly(),
-                                  simbox->getAngle(),
-                                  x_min,y_min,x_max,y_max);
-      z0_grid = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(topName.c_str()));
+      top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(top_surface_file_name.c_str()));
     }
     else {
-      Surface tmp_surf(topName);
-      z0_grid = new Surface(tmp_surf);
+      top_surface = new Surface(top_surface_file_name);
     }
   }
   catch (NRLib::Exception & e) {
@@ -502,43 +510,37 @@ void CommonData::setSimboxSurfacesSingleInterval(Simbox                        *
 
   if(!failed) {
     if(parallel_surfaces) { //Only one reference surface
-      simbox->setDepth(*z0_grid, d_top, lz, dz, model_settings->getRunFromPanel());
+      //simbox->setDepth(*top_surface_flat, d_top, lz, dz, model_settings->getRunFromPanel());
+      top_surface->Add(d_top);
+      base_surface = new Surface(*top_surface);
+      base_surface->Add(lz);
+      //full_inversion_volume->SetSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
     }
-    else {
-      const std::string & base_name = surf_file[1];
+    else { //Two reference surfaces
+      const std::string & base_surface_file_name = surf_file[1];
       try {
-        if (NRLib::IsNumber(base_name)) {
+        if (NRLib::IsNumber(base_surface_file_name)) {
           // Find the smallest surface that covers the simbox. For simplicity
           // we use only four nodes (nx=ny=2).
-          double xMin, xMax;
-          double yMin, yMax;
-          findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
-                                      simbox->getlx(), simbox->getly(),
-                                      simbox->getAngle(),
-                                      xMin,yMin,xMax,yMax);
-          z1_grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(base_name.c_str()));
+          double x_min, x_max;
+          double y_min, y_max;
+          findSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
+                                      estimation_simbox.getlx(), estimation_simbox.getly(),
+                                      estimation_simbox.getAngle(),
+                                      x_min, y_min, x_max, y_max);
+          base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
         }
         else {
-          Surface tmpSurf(base_name);
-          z1_grid = new Surface(tmpSurf);
+          base_surface = new Surface(base_surface_file_name);
         }
       }
       catch (NRLib::Exception & e) {
         err_text += e.what();
         failed = true;
       }
-      if(!failed) {
-        try {
-          simbox->setDepth(*z0_grid, *z1_grid, nz, model_settings->getRunFromPanel());
-        }
-        catch (NRLib::Exception & e) {
-          err_text += e.what();
-          std::string text("Seismic data");
-          writeAreas(model_settings->getAreaParameters(),simbox,text);
-          failed = true;
-        }
-      }
+      
     }
+    /*
     if (!failed) {
       if((output_domain & IO::TIMEDOMAIN) > 0) {
         std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
@@ -586,36 +588,129 @@ void CommonData::setSimboxSurfacesSingleInterval(Simbox                        *
           }
         }
       }
+    } */
+  }
+  if(!failed){
+    try{ //initialize full_inversion_volume and set the flat top and base surfaces of the simbox
+
+      full_inversion_volume = NRLib::Volume(estimation_simbox.getx0(), estimation_simbox.gety0(),
+        estimation_simbox.getlx(), estimation_simbox.getly(),
+        *top_surface, *base_surface, estimation_simbox.getAngle());
+
+      // find the top and bottom points on the full inversion volume
+      double z_min_top_surface = full_inversion_volume.GetTopZMin(2,2);
+      double z_max_base_surface = full_inversion_volume.GetBotZMax(2,2);
+      // round outwards from the center of the volume to nearest multiple 4
+      double z_min = floor(z_min_top_surface/4)*4;
+      double z_max = ceil(z_max_base_surface/4)*4;
+      top_surface_flat = new Surface(top_surface->GetXMin(), top_surface->GetYMin(), 
+        top_surface->GetXMax()-top_surface->GetXMin(), top_surface->GetYMax()-top_surface->GetYMin(),
+        2, 2, z_min);
+      base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
+        base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
+        2, 2, z_max);
+      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, 2, model_settings->getRunFromPanel());
+    }
+    catch(NRLib::Exception & e){
+      err_text += e.what();
+      failed = true;
     }
   }
-  delete z0_grid;
-  delete z1_grid;
+  delete top_surface;
+  delete base_surface;
+  delete top_surface_flat;
+  delete base_surface_flat;
 }
 
-void CommonData::setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
-                                                    const InputFiles               * input_files,
-                                                    const ModelSettings            * model_settings,
-                                                    std::string                    & err_text,
-                                                    bool                           & failed){
+void CommonData::setSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
+                                              NRLib::Volume                  & full_inversion_volume,
+                                              const InputFiles               * input_files,
+                                              const ModelSettings            * model_settings,
+                                              std::string                    & err_text,
+                                              bool                           & failed){
 
   // Get interval surface data ------------------------------------------------------------------------------
 
-  const std::vector<std::string>  interval_names                         =  model_settings->getIntervalNames();
-  unsigned int                    n_intervals                            =  interval_names.size();
-  const std::string               top_surface_file_name                  =  input_files->getTimeSurfFile(0);
-  const std::string               base_surface_file
-  const std::vector<std::string>  base_surfaces_file_name                =  input_files->getTimeSurfFiles();
-  const std::map<std::string, std::string> interval_base_time_surfaces   =  input_files->getIntervalBaseTimeSurfaces();
-  //int                             erosion_priority_top_surface           =  model_settings->getErosionPriorityTopSurface();
-  //const std::map<std::string,int> erosion_priority_base_surfaces         =  model_settings->getErosionPriorityBaseSurfaces();
-  
-  (void) simbox;
+  const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
+  unsigned int                              n_intervals                            =  interval_names.size();
+  const std::map<std::string, std::string>  interval_base_time_surfaces            =  input_files->getIntervalBaseTimeSurfaces();
+  // implicit assumption that the top surface is the first one given and the base surface is the last one
+  const std::string                         top_surface_file_name                  =  input_files->getTimeSurfFile(0);
+  const std::string                         base_surface_file_name                 =  interval_base_time_surfaces.find( interval_names[n_intervals-1])->second;
 
-  (void) err_text;
-  (void) failed;
+  Surface * top_surface = NULL; 
+  Surface * base_surface = NULL;
 
-  Surface * top_surface = new Surface(top_surface_file_name);
-  Surface * base_surface = new Surface(base_surfaces_file_name[n_intervals-1]);
+  Surface * top_surface_flat = NULL;
+  Surface * base_surface_flat = NULL;
 
+  try{
+    if(NRLib::IsNumber(top_surface_file_name)){
+      double x_min, x_max;
+      double y_min, y_max;
+      findSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
+                                  estimation_simbox.getlx(), estimation_simbox.getly(),
+                                  estimation_simbox.getAngle(), x_min,y_min,x_max,y_max);
+      top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(top_surface_file_name.c_str()));
+    }
+    else{
+      top_surface = new Surface(top_surface_file_name);
+    }
+
+  }
+  catch(NRLib::Exception & e) {
+    err_text += e.what();
+    failed = true;
+  }
+
+  if(!failed){
+    try{
+      if(NRLib::IsNumber(base_surface_file_name)){
+        double x_min, x_max;
+        double y_min, y_max;
+        findSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
+                                    estimation_simbox.getlx(), estimation_simbox.getly(),
+                                    estimation_simbox.getAngle(), x_min,y_min,x_max,y_max);
+        base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
+      }
+      else{
+        base_surface = new Surface(base_surface_file_name);
+      }
+    }
+    catch(NRLib::Exception & e){
+      err_text += e.what();
+      failed = true;
+    }
+  }
+  if(!failed){
+    try{ // initialize full_inversion_volume and set the flat top and base surfaces of the simbox
+      full_inversion_volume =  NRLib::Volume(estimation_simbox.getx0(), estimation_simbox.gety0(),
+        estimation_simbox.getlx(), estimation_simbox.getly(),
+        *top_surface, *base_surface, estimation_simbox.getAngle());
+
+      // find the top and bottom points on the full inversion volume
+      double z_min_top_surface = full_inversion_volume.GetTopZMin(2,2);
+      double z_max_base_surface = full_inversion_volume.GetBotZMax(2,2);
+      // round outwards from the center of the volume to nearest multiple 4
+      double z_min = floor(z_min_top_surface/4)*4;
+      double z_max = ceil(z_max_base_surface/4)*4;
+      top_surface_flat = new Surface(top_surface->GetXMin(), top_surface->GetYMin(), 
+        top_surface->GetXMax()-top_surface->GetXMin(), top_surface->GetYMax()-top_surface->GetYMin(),
+        2, 2, z_min);
+      base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
+        base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
+        2, 2, z_max);
+      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, 2, model_settings->getRunFromPanel());
+    }
+    catch(NRLib::Exception & e){
+      err_text += e.what();
+      failed = true;
+    }
+  }
+
+  delete top_surface;
+  delete base_surface;
+  delete top_surface_flat;
+  delete base_surface_flat;
   
 }

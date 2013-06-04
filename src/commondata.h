@@ -26,8 +26,8 @@ public:
 
   //GET FUNCTIONS
 
-  Simbox          * getEstimationSimbox()     const { return estimation_simbox_     ;}
-  NRLib::Volume   * getFullInversionVolume()  const { return full_inversion_volume_ ;}
+  const Simbox          & getEstimationSimbox()     const { return estimation_simbox_     ;}
+  const NRLib::Volume   & getFullInversionVolume()  const { return full_inversion_volume_ ;}
   
 
 private:
@@ -45,6 +45,8 @@ private:
 
   bool createOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
+                                  Simbox                  & estimation_simbox,
+                                  NRLib::Volume           & full_inversion_interval,
                                   std::string             & err_text);
 
   void writeAreas(const SegyGeometry  * area_params,
@@ -61,17 +63,19 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
-  void setSimboxSurfacesMultipleIntervals(Simbox                        *& simbox,
-                                          const InputFiles               * input_files,
-                                          const ModelSettings            * model_settings,
-                                          std::string                    & err_text,
-                                          bool                           & failed);
+  void setSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
+                                    NRLib::Volume                  & full_inversion_volume,
+                                    const InputFiles               * input_files,
+                                    const ModelSettings            * model_settings,
+                                    std::string                    & err_text,
+                                    bool                           & failed);
 
-  void setSimboxSurfacesSingleInterval(Simbox                          *& simbox,
-                                       const std::vector<std::string>   & surf_file,
-                                       ModelSettings                    * model_settings,
-                                       std::string                      & err_text,
-                                       bool                             & failed);
+  void setSurfacesSingleInterval(Simbox                           & estimation_simbox,
+                                 NRLib::Volume                    & full_inversion_volume,
+                                 const std::vector<std::string>   & surf_file,
+                                 ModelSettings                    * model_settings,
+                                 std::string                      & err_text,
+                                 bool                             & failed);
 
   bool readSeismicData();
   bool readWellData();
@@ -96,8 +100,8 @@ private:
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
 
-  Simbox          * estimation_simbox_;
-  NRLib::Volume   * full_inversion_volume_;
+  Simbox          estimation_simbox_;
+  NRLib::Volume   full_inversion_volume_;
 
 };
 
