@@ -105,7 +105,7 @@ private:
   bool outer_temp_simbox_;
   bool read_seismic_;
   bool read_wells_;
-  bool well_blocks_;
+  bool block_wells_;
   bool setup_reflection_matrix_;
   bool optimize_well_location_;
   bool wavelet_estimation_shape_;

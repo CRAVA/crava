@@ -13,34 +13,50 @@
 #include "src/simbox.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
-#include "src/simbox.h"
 #include "src/timeline.h"
-#include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/modelgeneral.h"
-#include "src/modelgeneral.h"
-
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
-
 #include "src/seismicstorage.h"
 #include "nrlib/well/norsarwell.hpp"
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files)
+:
+  outer_temp_simbox_(false),
+  read_seismic_(false),
+  read_wells_(false),
+  block_wells_(false),
+  setup_reflection_matrix_(false),
+  optimize_well_location_(false),
+  wavelet_estimation_shape_(false),
+  prior_corr_estimation_(false),
+  setup_estimation_rock_physics_(false)
 {
-
+  bool failed = false;
+  std::string err_text = "";
   //if(readSeismicData(modelSettings,
   //                   inputFiles) == true)
   //  read_seismic_ = true; //True or false if there is no seismic data?
-  std::string err_text = "";
-  createOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 
+  // 1. set up outer simbox
+  outer_temp_simbox_ = createOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
+  failed = !outer_temp_simbox_;
 
-  if(readWellData(model_settings,
-                  input_files) == true)
-    read_wells_ = true;
+  // 3. read well data
+  if(!failed){
+    read_wells_ = readWellData(model_settings, input_files)
+    failed = !read_wells_;
+  }
 
+  // 4. block wells for estimation
+  // if well position is to be optimized
+  if(!failed){
+    if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations()){
+
+    }
+  }
 
 }
 
