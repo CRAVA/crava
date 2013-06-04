@@ -2099,6 +2099,12 @@ TiXmlNode * root = node->FirstChildElement("interval");
 
   const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
 
+  if(prior_prob_interval_tmp.count(interval_name) > 0) {
+    errTxt += "Interval " + interval_name + " is defined more than once under <"+node->ValueStr()+"> "
+          +lineColumnText(root)+".\n";
+  }
+
+
   modelSettings_->addPriorFaciesProbInterval(interval_name, facies_map);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
