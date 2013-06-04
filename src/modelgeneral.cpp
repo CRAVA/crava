@@ -26,6 +26,7 @@
 #include "src/background.h"
 #include "src/welldata.h"
 #include "src/blockedlogs.h"
+#include "src/blockedlogsforrockphysics.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -176,8 +177,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
 
-        if(failedDepthConv == false)
-          processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
+        if(failedDepthConv == false && failedWells == false)
+          processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, wells_, inputFiles);
 
         //Set up timeline.
         timeLine_ = new TimeLine();
@@ -2363,14 +2364,15 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
     delete velocity;
 }
 
-void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
-                                      Simbox                       * timeCutSimbox,
-                                      ModelSettings                * modelSettings,
-                                      bool                         & failed,
-                                      std::string                  & errTxt,
-                                      const InputFiles             * inputFiles)
+void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox,
+                                      Simbox                        * timeCutSimbox,
+                                      ModelSettings                 * modelSettings,
+                                      bool                          & failed,
+                                      std::string                   & errTxt,
+                                      const std::vector<WellData *> & wells,
+                                      const InputFiles              * inputFiles)
 {
-  if(modelSettings->getFaciesProbFromRockPhysics()){
+  if(modelSettings->getFaciesProbFromRockPhysics()) {
 
     LogKit::WriteHeader("Processing Rock Physics");
 
@@ -2383,9 +2385,10 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     int n_vintages = modelSettings->getNumberOfVintages();
 
-    const std::string&                       path                               = inputFiles->getInputDirectory();
-    const std::vector<std::string>&          trend_cube_parameters              = modelSettings->getTrendCubeParameters();
-    const std::vector<std::vector<double> >& trend_cube_sampling                = trend_cubes_.GetTrendCubeSampling();
+    const std::string&                        path                  = inputFiles->getInputDirectory();
+    const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
+    const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+    const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2393,9 +2396,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       std::vector<DistributionWithTrendStorage *> storage = it->second;
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
-      for(size_t i=0; i<storage.size(); i++) {
-        dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-      }
+      for(size_t i=0; i<storage.size(); i++)
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2414,6 +2416,14 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       float var_beta_max  = modelSettings->getVarBetaMax();
       float var_rho_min   = modelSettings->getVarRhoMin();
       float var_rho_max   = modelSettings->getVarRhoMax();
+      int   nWells        = modelSettings->getNumberOfWells();
+
+      // Block logs
+      std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
+      if(nWells > 0) {
+        for (int i=0 ; i<nWells ; i++)
+          blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
+      }
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
       const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
@@ -2433,7 +2443,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
         }
       }
 
-
+      // Find facies names
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
       std::map<std::string, std::string> facies_cubes   = inputFiles->getPriorFaciesProbFile();
       std::vector<std::string> all_facies_names         = faciesNames_;
@@ -2453,6 +2463,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
+
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2463,6 +2474,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                                                                        path,
                                                                                        trend_cube_parameters,
                                                                                        trend_cube_sampling,
+                                                                                       blocked_logs,
                                                                                        rock_storage,
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
@@ -2470,6 +2482,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                                                                        rockErrTxt);
 
             if(rockErrTxt == "") {
+
+              std::string tmpErrTxt = "";
 
               int n_vintages = static_cast<int>(rock.size());
               if(n_vintages > 1)
@@ -2480,7 +2494,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                   LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
 
                 //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-                rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
+                rock[i]->CompleteTopLevelObject(res_var_vintage[i],
+                                                tmpErrTxt);
 
                 std::vector<bool> has_trends = rock[i]->HasTrend();
                 bool              has_trend = false;
@@ -2496,7 +2511,6 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
                 printExpectationAndCovariance(expectation, covariance, has_trend);
 
-                std::string tmpErrTxt = "";
                 if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
                   tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
                   tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
@@ -2571,9 +2585,10 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
           }
           else
             errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
-          //rock_distributions_[it->first] = rock;
         }
       }
+      for(int i=0; i<nWells; i++)
+        delete blocked_logs[i];
     }
 
     if(errTxt != "")

@@ -166,7 +166,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
-      delete corrTFiltered;
+      delete [] corrTFiltered;
     }
 
     if(simbox_->getIsConstantThick() == false)
@@ -746,7 +746,7 @@ Crava::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
   float * corrT = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
   computeReflectionCoefficientTimeCovariance(rcCovT, corrT, A);
   rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
-  delete corrT;
+  delete [] corrT;
 
   // computes the time Covariance in the errorterm with wavelet Local can be more efficiently computed
   Wavelet1D *errorSmooth  = new Wavelet1D(wLocal ,Wavelet::FIRSTORDERFORWARDDIFF);

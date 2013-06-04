@@ -5,9 +5,10 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/statistics/statistics.hpp"
+#include "nrlib/random/random.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -23,7 +24,7 @@ Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<
   return(result);
 }
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -37,7 +38,7 @@ Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_param
 
 
 
-
+//--------------------------------------------------------------//
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
@@ -56,7 +57,7 @@ void DistributionsRock::GenerateWellSample(double                 corr,
   }
   delete rock;
 }
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::EvolveSample(double       time,
                                        const Rock & rock)
 {
@@ -68,10 +69,10 @@ Rock * DistributionsRock::EvolveSample(double       time,
   return UpdateSample(time, true, trend, &rock);
 }
 
-
-Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
-                                       const Rock & rock,
-                                       std::vector<double> &resVar )
+//--------------------------------------------------------------//
+Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double                time,
+                                                           const Rock          & rock,
+                                                           std::vector<double> & resVar )
 {
   size_t nResVar=reservoir_variables_.size();
   resVar.resize(nResVar);
@@ -92,7 +93,7 @@ Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
 
 
 //-----------------------------------------------------------------------------------------------------------
-void  DistributionsRock::SetupExpectationAndCovariances()
+void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
 //-----------------------------------------------------------------------------------------------------------
 {
   int n  = 1024; // Number of samples generated for each distribution
@@ -119,14 +120,15 @@ void  DistributionsRock::SetupExpectationAndCovariances()
 
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
-//  std::vector<double>   a(n);
- // std::vector<double>   b(n);
- // std::vector<double>   c(n);
+
+  unsigned int seed = NRLib::Random::DrawUint32();
 
   bool failed = false;
 
   for (int i = 0 ; i < mi ; i++) {
     for (int j = 0 ; j < mj ; j++) {
+
+      NRLib::Random::Initialize(seed);
 
       const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
@@ -150,6 +152,14 @@ void  DistributionsRock::SetupExpectationAndCovariances()
         delete rock;
 
         if(vp <= 0 || vs < 0 || rho <=0) {
+          errTxt += "\nAt least one sample generated from the rock model obtains negative values.\n";
+          if(vp <= 0)
+            errTxt += "  The variance for Vp might be too large.\n\n";
+          if(vs < 0)
+            errTxt += "  The variance for Vs might be too large.\n\n";
+          if(rho <= 0)
+            errTxt += "  The variance for density might be too large.\n\n";
+
           failed = true;
           break;
         }
@@ -540,9 +550,10 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
 }
 
 
-void DistributionsRock::CompleteTopLevelObject(std::vector<DistributionWithTrend *> res_var)
+void DistributionsRock::CompleteTopLevelObject(std::vector<DistributionWithTrend *>   res_var,
+                                               std::string                          & errTxt)
 {
   reservoir_variables_ = res_var;
   SetResamplingLevel(DistributionWithTrend::Full);
-  SetupExpectationAndCovariances();
+  SetupExpectationAndCovariances(errTxt);
 }
