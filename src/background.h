@@ -165,10 +165,6 @@ private:
                                           const std::vector<double>  & surface_uncertainty,
                                           const bool                   isFile) const;
 
-  const CovGrid2D & makeCovGrid2D(const Simbox * simbox,
-                                  Vario        * vario,
-                                  int            debugFlag);
-
   void         setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha,
                                   std::vector<KrigingData2D>     & krigingDataBeta,
                                   std::vector<KrigingData2D>     & krigingDataRho,
