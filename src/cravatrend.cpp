@@ -151,7 +151,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
       trend_cube_sampling_.push_back(sampling);
 
 
-      if(modelSettings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+      if((modelSettings->getOutputGridsOther() & IO::TREND_CUBES) > 0) {
         std::string fileName = IO::PrefixTrendCubes() + trend_cube_parameters[grid_number];
         writeToFile(timeSimbox, trend_cube, fileName, "trend cube");
       }

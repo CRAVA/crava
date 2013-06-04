@@ -18,7 +18,9 @@ public:
   virtual Trend * GenerateTrend(const std::string                       & /*path*/,
                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                const std::vector<std::vector<float> >  & /*blocked_logs*/,
                                 std::string                             & /*errTxt*/) const = 0;
+
 };
 
 //-------------------------------------------------------------------//
@@ -37,10 +39,11 @@ public:
   virtual TrendStorage * Clone()   const { return new TrendConstantStorage(*this) ;}
   virtual double         GetMean() const { return mean_value_                     ;}
 
-  virtual Trend * GenerateTrend(const std::string                       & /*path*/,
-                                const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                std::string                             & /*errTxt*/) const;
+  virtual Trend * GenerateTrend(const std::string                       & path,
+                                const std::vector<std::string>          & trend_cube_parameters,
+                                const std::vector<std::vector<double> > & trend_cube_sampling,
+                                const std::vector<std::vector<float> >  & blocked_logs,
+                                std::string                             & errTxt) const;
 
 private:
   double mean_value_;
@@ -66,10 +69,10 @@ public:
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                const std::vector<std::vector<float> >  & blocked_logs,
                                 std::string                             & errTxt) const;
 
 private:
-
   std::string file_name_;
   std::string reference_parameter_;
   bool        estimate_;
@@ -93,6 +96,7 @@ public:
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                const std::vector<std::vector<float> >  & blocked_logs,
                                 std::string                             & errTxt)   const;
 
 private:
