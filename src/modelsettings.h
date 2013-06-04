@@ -599,7 +599,7 @@ private:
   std::vector<int>                  indBGTrend_;                 ///< Use well to estimate background trend?
   std::vector<int>                  indWavelet_;                 ///< Use well to estimate wavelet?
   std::vector<int>                  indFacies_;                  ///< Use well to estimate facies?
-  std::vector<int>                  indRockPhysics_;             ///< Use weel to estimate rock physics?
+  std::vector<int>                  indRockPhysics_;             ///< Use well to estimate rock physics?
   std::vector<int>                  indRealVs_;                  ///< Treat Vs log as real?
   std::vector<int>                  indFilter_;                  ///< Filter elastic logs using spatial multi-parameter filter?
 

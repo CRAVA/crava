@@ -24,6 +24,7 @@
 #include "rplib/distributionsstoragekit.h"
 
 #include "src/modelsettings.h"
+#include "src/blockedlogsforrockphysics.h"
 
 #include <typeinfo>
 
@@ -40,6 +41,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                      const std::string                                               & path,
                                                      const std::vector<std::string>                                  & trend_cube_parameters,
                                                      const std::vector<std::vector<double> >                         & trend_cube_sampling,
+                                                     const std::vector<BlockedLogsForRockPhysics *>                  & blockedLogs,
                                                      const std::vector<std::string>                                  & constituent_label,
                                                      const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
                                                      const std::map<std::string, DistributionsRockStorage *>         & model_rock_storage,
@@ -68,8 +70,10 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
   FindSMinMax(trend_cube_sampling, s_min, s_max);
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, errTxt);
+    CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
   std::vector<DistributionsRock *>                   final_dist_rock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
@@ -83,7 +87,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
       if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
       }
       else {
         if(all_volume_fractions[i-1][s] != NULL)
@@ -125,6 +129,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                                           path,
                                                                           trend_cube_parameters,
                                                                           trend_cube_sampling,
+                                                                          blockedLogs,
                                                                           model_rock_storage,
                                                                           model_solid_storage,
                                                                           model_dry_rock_storage,
@@ -293,13 +298,15 @@ TabulatedVelocityRockStorage::TabulatedVelocityRockStorage(std::vector<Distribut
                                                            std::vector<DistributionWithTrendStorage *> density,
                                                            std::vector<double>                         correlation_vp_vs,
                                                            std::vector<double>                         correlation_vp_density,
-                                                           std::vector<double>                         correlation_vs_density)
+                                                           std::vector<double>                         correlation_vs_density,
+                                                           std::string                                 rock_name)
 : vp_(vp),
   vs_(vs),
   density_(density),
   correlation_vp_vs_(correlation_vp_vs),
   correlation_vp_density_(correlation_vp_density),
-  correlation_vs_density_(correlation_vs_density)
+  correlation_vs_density_(correlation_vs_density),
+  rock_name_(rock_name)
 {
 }
 
@@ -318,6 +325,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                         const std::string                                           & path,
                                                         const std::vector<std::string>                              & trend_cube_parameters,
                                                         const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                        const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                         const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                         const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                         const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -332,6 +340,24 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
   alpha[1] = vs_[0]     ->GetOneYearCorrelation();
   alpha[2] = density_[0]->GetOneYearCorrelation();
+
+  // Use blockedLogs given facies
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > vp_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vp_given_facies[i] = blockedLogs[i]->getAlphaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > vs_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vs_given_facies[i] = blockedLogs[i]->getBetaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+  }
 
   std::vector<double> s_min;
   std::vector<double> s_max;
@@ -356,17 +382,17 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vp_given_facies, tmpErrTxt);
     else
       vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_vs)
-      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vs_given_facies, tmpErrTxt);
     else
       vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, density_given_facies, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -437,13 +463,15 @@ TabulatedModulusRockStorage::TabulatedModulusRockStorage(std::vector<Distributio
                                                          std::vector<DistributionWithTrendStorage *> density,
                                                          std::vector<double>                         correlation_bulk_shear,
                                                          std::vector<double>                         correlation_bulk_density,
-                                                         std::vector<double>                         correlation_shear_density)
+                                                         std::vector<double>                         correlation_shear_density,
+                                                         std::string                                 rock_name)
 : bulk_modulus_(bulk_modulus),
   shear_modulus_(shear_modulus),
   density_(density),
   correlation_bulk_shear_(correlation_bulk_shear),
   correlation_bulk_density_(correlation_bulk_density),
-  correlation_shear_density_(correlation_shear_density)
+  correlation_shear_density_(correlation_shear_density),
+  rock_name_(rock_name)
 {
 }
 
@@ -462,6 +490,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::string                                           & path,
                                                        const std::vector<std::string>                              & trend_cube_parameters,
                                                        const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                       const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
                                                        const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                        const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -489,6 +518,8 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   int n_vintages_bulk_density  = static_cast<int>(correlation_bulk_density_.size());
   int n_vintages_shear_density = static_cast<int>(correlation_shear_density_.size());
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
@@ -500,17 +531,17 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear)
-      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -584,9 +615,11 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 }
 //----------------------------------------------------------------------------------//
 ReussRockStorage::ReussRockStorage(std::vector<std::string>                                  constituent_label,
-                                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
+                                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                   std::string                                               rock_name)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction)
+  constituent_volume_fraction_(constituent_volume_fraction),
+  rock_name_(rock_name)
 {
 }
 
@@ -605,6 +638,7 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
                                             const std::string                                           & path,
                                             const std::vector<std::string>                              & trend_cube_parameters,
                                             const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                            const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                             const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -621,6 +655,7 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
                                       path,
                                       trend_cube_parameters,
                                       trend_cube_sampling,
+                                      blockedLogs,
                                       constituent_label_,
                                       constituent_volume_fraction_,
                                       model_rock_storage,
@@ -640,9 +675,11 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
 
 //----------------------------------------------------------------------------------//
 VoigtRockStorage::VoigtRockStorage(std::vector<std::string>                                  constituent_label,
-                                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
+                                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                   std::string                                               rock_name)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction)
+  constituent_volume_fraction_(constituent_volume_fraction),
+  rock_name_(rock_name)
 {
 }
 
@@ -661,6 +698,7 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
                                             const std::string                                           & path,
                                             const std::vector<std::string>                              & trend_cube_parameters,
                                             const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                            const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                             const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -677,6 +715,7 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
                                       path,
                                       trend_cube_parameters,
                                       trend_cube_sampling,
+                                      blockedLogs,
                                       constituent_label_,
                                       constituent_volume_fraction_,
                                       model_rock_storage,
@@ -697,9 +736,11 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
 
 //----------------------------------------------------------------------------------//
 HillRockStorage::HillRockStorage(std::vector<std::string>                                  constituent_label,
-                                 std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction)
+                                 std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                                 std::string                                               rock_name)
 : constituent_label_(constituent_label),
-  constituent_volume_fraction_(constituent_volume_fraction)
+  constituent_volume_fraction_(constituent_volume_fraction),
+  rock_name_(rock_name)
 {
 }
 
@@ -718,6 +759,7 @@ HillRockStorage::GenerateDistributionsRock(const int                            
                                            const std::string                                           & path,
                                            const std::vector<std::string>                              & trend_cube_parameters,
                                            const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                           const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                            const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                            const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                            const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -734,6 +776,7 @@ HillRockStorage::GenerateDistributionsRock(const int                            
                                       path,
                                       trend_cube_parameters,
                                       trend_cube_sampling,
+                                      blockedLogs,
                                       constituent_label_,
                                       constituent_volume_fraction_,
                                       model_rock_storage,
@@ -756,12 +799,14 @@ DEMRockStorage::DEMRockStorage(std::string                                      
                                std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
                                std::vector<std::string>                                  inclusion_label,
                                std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
-                               std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio)
+                               std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
+                               std::string                                               rock_name)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
-  inclusion_aspect_ratio_(inclusion_aspect_ratio)
+  inclusion_aspect_ratio_(inclusion_aspect_ratio),
+  rock_name_(rock_name)
 {
 }
 
@@ -790,6 +835,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                           const std::string                                           & path,
                                           const std::vector<std::string>                              & trend_cube_parameters,
                                           const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                          const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
                                           const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                           const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                           const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -804,6 +850,8 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
   int n_constituents = n_inclusions + 1;
 
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
   std::vector<std::vector<DistributionWithTrendStorage *> > volume_fractions(n_constituents);
   volume_fractions[0] = host_volume_fraction_;
 
@@ -811,7 +859,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
     volume_fractions[i+1] = inclusion_volume_fraction_[i];
 
   for(int i=0; i<n_constituents; i++)
-    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+    CheckValuesInZeroOne(volume_fractions[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
 
   // Order in alpha: aspect_ratios, host_volume_fraction, inclusion_volume_fractions
   std::vector<double> alpha(n_inclusions + n_constituents);
@@ -898,7 +946,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_aspect[s]) {
         if(inclusion_aspect_ratio_[s][i] != NULL)
-          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       }
       else
         all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
@@ -908,7 +956,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
       if(i < n_vintages_volume[s]) {
         if(volume_fractions[s][i] != NULL)
-          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       }
       else
         if(all_volume_fractions[i-1][s] != NULL)
@@ -961,9 +1009,11 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
 
 //----------------------------------------------------------------------------------//
 GassmannRockStorage::GassmannRockStorage(std::string dry_rock,
-                                         std::string fluid)
+                                         std::string fluid,
+                                         std::string rock_name)
 : dry_rock_(dry_rock),
-  fluid_(fluid)
+  fluid_(fluid),
+  rock_name_(rock_name)
 {
 }
 
@@ -976,6 +1026,7 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
                                                const std::string                                           & path,
                                                const std::vector<std::string>                              & trend_cube_parameters,
                                                const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                               const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
                                                const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1052,13 +1103,15 @@ BoundingRockStorage::BoundingRockStorage(std::string                            
                                          std::vector<DistributionWithTrendStorage *> porosity,
                                          std::vector<DistributionWithTrendStorage *> bulk_weight,
                                          std::vector<DistributionWithTrendStorage *> shear_weight,
-                                         double                                      correlation_weights)
+                                         double                                      correlation_weights,
+                                         std::string                                 rock_name)
 : upper_rock_(upper_rock),
   lower_rock_(lower_rock),
   porosity_(porosity),
   bulk_weight_(bulk_weight),
   shear_weight_(shear_weight),
-  correlation_weights_(correlation_weights)
+  correlation_weights_(correlation_weights),
+  rock_name_(rock_name)
 {
 }
 
@@ -1077,6 +1130,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                                                const std::string                                           & path,
                                                const std::vector<std::string>                              & trend_cube_parameters,
                                                const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                               const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1099,9 +1153,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<double> s_min;
   std::vector<double> s_max;
 
-  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
-  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
-  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
+  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
 
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
@@ -1112,6 +1168,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                               path,
                               trend_cube_parameters,
                               trend_cube_sampling,
+                              blockedLogs,
                               model_rock_storage,
                               model_solid_storage,
                               model_dry_rock_storage,
@@ -1147,6 +1204,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                               path,
                               trend_cube_parameters,
                               trend_cube_sampling,
+                              blockedLogs,
                               model_rock_storage,
                               model_solid_storage,
                               model_dry_rock_storage,
@@ -1180,17 +1238,17 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   for(int i=0; i<n_vintages; i++) {
     if(i < n_vintages_porosity)
-      porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_bulk_weight)
-      bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
     if(i < n_vintages_shear_weight)
-      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, tmpErrTxt);
+      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
     else
       shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
   }

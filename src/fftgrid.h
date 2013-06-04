@@ -176,11 +176,10 @@ public:
                                  const GridMapping * depthMap  = NULL,
                                  const GridMapping * timeMap   = NULL,
                                  const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                                 bool                padding = false,
-                                 bool                scientific_format = false);
+                                 bool padding = false);
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
-                                      bool padding = false, bool flat = false, bool scientific_format = false);//No mode/randomaccess
+                                      bool padding = false, bool flat = false);//No mode/randomaccess
   virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
                                      const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
