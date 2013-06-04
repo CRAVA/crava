@@ -1,4 +1,4 @@
-// $Id: random.cpp 1175 2013-05-27 07:41:03Z perroe $
+// $Id: randomgenerator.cpp 1175 2013-05-27 07:41:03Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -19,7 +19,8 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "random.hpp"
+
+#include "randomgenerator.hpp"
 #include "../exception/exception.hpp"
 
 #include <ctime>
@@ -28,12 +29,20 @@
 
 using namespace NRLib;
 
-bool          Random::is_initialized_ = false;
-unsigned long Random::start_seed_     = 0;
-bool          Random::use_seed_file_  = false;
-std::string   Random::seed_file_      = "";
+RandomGenerator::RandomGenerator()
+{
+  is_initialized_ = false;
+  start_seed_     = 0;
+}
 
-void Random::Initialize() {
+RandomGenerator::~RandomGenerator()
+{
+}
+
+
+void
+RandomGenerator::Initialize()
+{
   unsigned long seed = static_cast<unsigned long>(time(0));
   InitializeMT(seed);
   start_seed_ = DrawUint32();
@@ -41,27 +50,17 @@ void Random::Initialize() {
   InitializeMT(start_seed_);
 }
 
-void Random::Initialize(unsigned long int seed) {
+void
+RandomGenerator::Initialize(unsigned long int seed)
+{
   start_seed_ = seed;
   is_initialized_ = true;
   InitializeMT(start_seed_);
 }
 
-void Random::Initialize(const std::string& filename) {
-  std::ifstream file(filename.c_str());
-  if (!file) {
-    throw Exception("Error opening seed file " + filename + "\n");
-  }
-  if (!(file >> start_seed_)) {
-    throw Exception("Error reading seed from seed file " + filename + "\n");
-  }
-  seed_file_ = filename;
-  use_seed_file_ = true;
-  is_initialized_ = true;
-  InitializeMT(start_seed_);
-}
 
-double Random::Norm01()
+double
+RandomGenerator::Norm01()
 {
   double u, u1, u2, u3;
   double c, x, v1, v2, w, s, t;
@@ -118,7 +117,8 @@ double Random::Norm01()
 }
 
 
-unsigned long Random::GetStartSeed()
+unsigned long
+RandomGenerator::GetStartSeed()
 {
   if (!is_initialized_) {
     throw Exception("Random number generator is not initalized.");
@@ -127,22 +127,9 @@ unsigned long Random::GetStartSeed()
 }
 
 
-void Random::WriteSeedToFile()
-{
-  if (use_seed_file_) {
-    std::ofstream file(seed_file_.c_str());
-    if (!file) {
-      throw Exception("Error opening seed file " + seed_file_ + "\n");
-    }
-    file << DrawUint32() << "\n";
-    if (!file) {
-      throw Exception("Error writing to seed file " + seed_file_ + "\n");
-    }
-  }
-}
 
-
-double Random::g(double x)
+double
+RandomGenerator::g(double x)
 {
   double a = 17.49731196;
   double b = 2.36785163;
@@ -159,7 +146,9 @@ double Random::g(double x)
 }
 
 
-void Random::InitializeMT(unsigned long seed)
+void
+RandomGenerator::InitializeMT(unsigned long seed)
 {
-  dsfmt_gv_init_gen_rand(seed);
+  dsfmt_init_gen_rand(&dsfmt, seed);
 }
+

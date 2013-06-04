@@ -5,9 +5,10 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/statistics/statistics.hpp"
+#include "nrlib/random/random.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -23,7 +24,7 @@ Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<
   return(result);
 }
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -37,7 +38,7 @@ Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_param
 
 
 
-
+//--------------------------------------------------------------//
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
@@ -56,7 +57,7 @@ void DistributionsRock::GenerateWellSample(double                 corr,
   }
   delete rock;
 }
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::EvolveSample(double       time,
                                        const Rock & rock)
 {
@@ -68,10 +69,10 @@ Rock * DistributionsRock::EvolveSample(double       time,
   return UpdateSample(time, true, trend, &rock);
 }
 
-
-Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
-                                       const Rock & rock,
-                                       std::vector<double> &resVar )
+//--------------------------------------------------------------//
+Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double                time,
+                                                           const Rock          & rock,
+                                                           std::vector<double> & resVar )
 {
   size_t nResVar=reservoir_variables_.size();
   resVar.resize(nResVar);
@@ -120,10 +121,14 @@ void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
 
+  unsigned int seed = NRLib::Random::DrawUint32();
+
   bool failed = false;
 
   for (int i = 0 ; i < mi ; i++) {
     for (int j = 0 ; j < mj ; j++) {
+
+      NRLib::Random::Initialize(seed);
 
       const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
