@@ -2376,6 +2376,15 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
     LogKit::WriteHeader("Processing Rock Physics");
 
+    // Block logs, make separate function later
+    int     nWells         = modelSettings->getNumberOfWells();
+    std::vector<BlockedLogs *> blocked_logs(nWells, NULL);
+
+    if(nWells > 0) {
+      for (int i=0 ; i<nWells ; i++)
+        blocked_logs[i] = new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel());
+    }
+
     trend_cubes_ = CravaTrend(timeSimbox,
                               timeCutSimbox,
                               modelSettings,
@@ -2590,6 +2599,9 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       for(int i=0; i<nWells; i++)
         delete blocked_logs[i];
     }
+
+    for(int i=0; i<nWells; i++)
+      delete blocked_logs[i];
 
     if(errTxt != "")
       failed = true;
