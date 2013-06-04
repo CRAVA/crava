@@ -6073,7 +6073,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   if (modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated when facies probabilities are calculated using rock physics models\n";
 
-  if (modelSettings_->getSeismicQualityGridValue() != RMISSING && 
+  if (modelSettings_->getSeismicQualityGridValue() != RMISSING &&
       (modelSettings_->getSeismicQualityGridValue() < 0 || modelSettings_->getSeismicQualityGridValue() > 1))
     errTxt += "<value> under <seismic-quality-grid> must be in the interval between 0 and 1.\n";
 

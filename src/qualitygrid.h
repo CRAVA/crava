@@ -52,7 +52,6 @@ private:
 
   std::vector<float>   wellValue_;
 
-  float range_;
   float value_;
 };
 

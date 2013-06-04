@@ -46,10 +46,9 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
     for (int i=0; i< nWells; i++)
       tmpsum += wellValue_[i];
     value_ = tmpsum / nWells;
-   
+
     LogKit::LogFormatted(LogKit::Low, "The value used for weighting under <seismic-quality-grid> is " + NRLib::ToString(value_) + ", this is an average from all fit values from wells.\n");
-    
-  }
+ }
 
   generateProbField(grid, wells, simbox, modelSettings);
 
@@ -98,7 +97,6 @@ void QualityGrid::generateProbField(FFTGrid              *& grid,
   makeKrigedProbField(krigingData, grid, simbox, cov, isFile);
 
   delete &cov;
-
 }
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
