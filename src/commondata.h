@@ -42,6 +42,11 @@ public:
 
 private:
 
+  bool       checkThatDataCoverGrid(const SegY   * segy,
+                                    float         offset,
+                                    const Simbox * timeCutSimbox,
+                                    float         guard_zone);
+
   void getGeometryFromGridOnFile(const std::string                grid_file,
                                         const TraceHeaderFormat * thf,
                                         SegyGeometry           *& geometry,

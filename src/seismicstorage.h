@@ -60,8 +60,9 @@ private:
   //                         StormContGrid storm_grid);
 
   std::string   file_name_;
-  int           seismic_type_; /// Se seismicTypes above
   float         angle_;
+  int           seismic_type_; /// Se seismicTypes above
+
   NRLib::SegY * segy_;
   StormContGrid * storm_grid_;
 

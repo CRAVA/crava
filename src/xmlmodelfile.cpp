@@ -6145,7 +6145,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       //Rock physics consistency per interval
       if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
 
-        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+        //const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
 
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
           std::map<std::string, float> facies_probabilities = it->second;
@@ -6169,7 +6169,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       //Rock physics consistency with volume fractions per interval
       if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
 
-        const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
+        //const std::map<std::string, DistributionsRockStorage *>& rock_storage = modelSettings_->getRockStorage();
 
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
           std::map<std::string, float> volume_fractions = it->second;

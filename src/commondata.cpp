@@ -226,6 +226,7 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
   }
   if(timelaps_seismic_files == 0 && inputFiles->getSeismicFiles().size() == 0)
     return(true);
+
   //Skip if mode is estimation and wavelet/noise is not set for estimation.
   if(modelSettings->getEstimationMode() == true && modelSettings->getEstimateWaveletNoise() == false)
     return(true);
@@ -272,58 +273,27 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
 
           float guard_zone = modelSettings->getGuardZone();
 
-          //ModelGeneral::checkThatDataCoverGrid ?
-          float dz = segy->GetDz();
-          float z0 = offset[i] + 0.5f*dz;
-          float zn = z0 + (segy->GetNz() - 1)*dz;
+          //int nx = estimation_simbox_.getnx();
+          //int ny = estimation_simbox_.getny();
+          //float top_grid = static_cast<float>(estimation_simbox_.getTopZMax());
+          //float top_grid2 = static_cast<float>(full_inversion_volume_.GetTopZMax());
+          
+          if(checkThatDataCoverGrid(segy, offset[i], &estimation_simbox_, guard_zone) == true) { //Change this to full_inversion_volume_?
+            float padding         = 2*guard_zone;
+            bool  relativePadding = false;
+            bool  onlyVolume      = true;
 
+            segy->ReadAllTraces(&full_inversion_volume_, //timeCutSimBox  //estimation_simbox_ eller full_inversion_volume_?
+                                padding,
+                                onlyVolume,
+                                relativePadding);
+            segy->CreateRegularGrid();
 
-          float top_grid = static_cast<float>(estimation_simbox_.getTopZMin());
-          float bot_grid = static_cast<float>(estimation_simbox_.getBotZMax());
-
-          float top_guard = top_grid - guard_zone;
-          float bot_guard = bot_grid + guard_zone;
-
-          if (top_guard < z0) {
-            float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
-            LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data above the interval of interest. The seismic data\n"
-                                                  " must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a "
-                                                  + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-                                                  + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-                                                  + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-                                                  + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-                                                  + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-                                                  + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-                                                  + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+            SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
+            seismic_data_.push_back(seismicdata);
           }
-          if (bot_guard > zn) {
-            float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
-            LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data below the interval of interest. The seismic data\n"
-                                                  "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a "
-                                                  + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-                                                  + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-                                                  + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-                                                  + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-                                                  + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-                                                  + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-                                                  + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
-          }
-          //End checkThatDataCoverGrid
-
-          float padding         = 2*guard_zone;
-          bool  relativePadding = false;
-          bool  onlyVolume      = true;
-
-
-          //DOES NOT WORK WITH "Simbox estimation_simbox_"
-          //segy->ReadAllTraces(estimation_simbox_, //timeCutSimBox
-          //                    padding,
-          //                    onlyVolume,
-          //                    relativePadding);
-          segy->CreateRegularGrid();
-
-          SeismicStorage seismicdata(filename, 0, angles[i], segy);
-          seismic_data_.push_back(seismicdata);
+          else
+            LogKit::LogFormatted(LogKit::Warning, "Data from segy-file " + filename + " is not read.\n");
 
         } //SEGY
         else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -345,20 +315,71 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
             SeismicStorage seismicdata;
 
             if(fileType == IO::STORM)
-              seismicdata = SeismicStorage(filename, 1, angles[i], stormgrid);
+              seismicdata = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
             else
-              seismicdata = SeismicStorage(filename, 2, angles[i], stormgrid);
+              seismicdata = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
 
             seismic_data_.push_back(seismicdata);
           }
 
         } //STORM / SGRI
         else
-        {
           LogKit::LogFormatted(LogKit::Warning, "Error when reading file " + filename +". File type not recognized.\n");
-        }
       }
     }
+  }
+
+  return true;
+}
+
+bool
+CommonData::checkThatDataCoverGrid(const SegY   * segy,
+                                   float         offset,
+                                   const Simbox * timeCutSimbox,
+                                   float         guard_zone)
+{
+  // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
+  float dz = segy->GetDz();
+  float z0 = offset + 0.5f*dz;
+  float zn = z0 + (segy->GetNz() - 1)*dz;
+
+  // Top and base of interval of interest
+  float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
+  float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
+
+  //int nx = 
+
+  //float top_grid = static_cast<float>(full_inversion_volume_.GetTopZMin(
+
+  // Find guard zone
+  float top_guard = top_grid - guard_zone;
+  float bot_guard = bot_grid + guard_zone;
+
+  if (top_guard < z0) {
+    float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
+    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data above the interval of interest. The seismic data\n"
+                                          " must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a "
+                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
+                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
+                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
+                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
+                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
+                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
+                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+    return false;
+  }
+  if (bot_guard > zn) {
+    float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
+    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data below the interval of interest. The seismic data\n"
+                                          "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a "
+                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
+                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
+                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
+                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
+                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
+                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
+                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+    return false;
   }
 
   return true;
@@ -545,8 +566,8 @@ bool CommonData::readWellData(ModelSettings  * modelSettings,
       NRLib::DiscardRestOfLine(file,line,false);
       NRLib::ReadNextToken(file, token, line);
       well_name = token;
-      double xpos0 = NRLib::ReadNext<double>(file, line); //Needed?
-      double ypos0 = NRLib::ReadNext<double>(file, line); //Needed
+      //double xpos0 = NRLib::ReadNext<double>(file, line); //Needed?
+      //double ypos0 = NRLib::ReadNext<double>(file, line); //Needed
       NRLib::DiscardRestOfLine(file,line,false);
       nlog   = NRLib::ReadNext<int>(file, line);
 

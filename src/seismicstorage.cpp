@@ -28,9 +28,9 @@ SeismicStorage::SeismicStorage(std::string   filename,
 {
 }
 
-SeismicStorage::SeismicStorage(std::string   filename,
-                               int           seismic_type,
-                               float         angle,
+SeismicStorage::SeismicStorage(std::string     filename,
+                               int             seismic_type,
+                               float           angle,
                                StormContGrid * storm_grid)
  : file_name_(filename),
    angle_(angle),
