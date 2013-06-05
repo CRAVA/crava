@@ -150,6 +150,16 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
   int n_vintages_density    = static_cast<int>(density_.size());
   int n_vintages_vp_density = static_cast<int>(correlation_vp_density_.size());
 
+  std::string tmpErrTxt = "";
+  for(int i=0; i<n_vintages; i++) {
+    if(vp_[i]->GetEstimate() == true)
+      tmpErrTxt += "Vp can not be estimated from wells\n";
+    if(density_[i]->GetEstimate() == true)
+      tmpErrTxt += "Density can not be estimated from wells\n";
+    if(tmpErrTxt != "")
+      break;
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
@@ -158,39 +168,46 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
 
   std::vector<double> corr_vp_density;
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_vp)
+        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+      else
+        vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_density)
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+      else
+        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_vp_density)
-      corr_vp_density.push_back(correlation_vp_density_[i]);
-    else
-      corr_vp_density.push_back(corr_vp_density[i-1]);
+      if(i < n_vintages_vp_density)
+        corr_vp_density.push_back(correlation_vp_density_[i]);
+      else
+        corr_vp_density.push_back(corr_vp_density[i-1]);
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsFluid * fluid = new DistributionsFluidTabulated(vp_dist_with_trend[i],
+                                                                   density_dist_with_trend[i],
+                                                                   corr_vp_density[i],
+                                                                   DEMTools::Velocity,
+                                                                   alpha);
+
+      dist_fluid[i] = fluid;
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(vp_dist_with_trend[i]->GetIsShared() == false)
+        delete vp_dist_with_trend[i];
+      if(density_dist_with_trend[i]->GetIsShared() == false)
+        delete density_dist_with_trend[i];
+    }
   }
 
-   for(int i=0; i<n_vintages; i++) {
-    DistributionsFluid * fluid = new DistributionsFluidTabulated(vp_dist_with_trend[i],
-                                                                 density_dist_with_trend[i],
-                                                                 corr_vp_density[i],
-                                                                 DEMTools::Velocity,
-                                                                 alpha);
-
-    dist_fluid[i] = fluid;
+  else{
+    errTxt += "Problems with the Tabulated rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
   }
-
-   for(int i=0; i<n_vintages; i++) {
-     if(vp_dist_with_trend[i]->GetIsShared() == false)
-       delete vp_dist_with_trend[i];
-     if(density_dist_with_trend[i]->GetIsShared() == false)
-       delete density_dist_with_trend[i];
-   }
 
   return(dist_fluid);
 }
@@ -229,6 +246,16 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   int n_vintages_density      = static_cast<int>(density_.size());
   int n_vintages_bulk_density = static_cast<int>(correlation_bulk_density_.size());
 
+  std::string tmpErrTxt = "";
+  for(int i=0; i<n_vintages; i++) {
+    if(bulk_modulus_[i]->GetEstimate() == true)
+      tmpErrTxt += "Vp can not be estimated from wells\n";
+    if(density_[i]->GetEstimate() == true)
+      tmpErrTxt += "Density can not be estimated from wells\n";
+    if(tmpErrTxt != "")
+      break;
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
@@ -237,44 +264,53 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
 
   std::vector<double> corr_bulk_density;
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_bulk)
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+      else
+        bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_density)
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+      else
+        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    double lower_mega_fluid = 1.0e+4;
-    double upper_mega_fluid = 1.0e+7;
-    double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
-    if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
-      errTxt += "Bulk modulus need to be given in kPa\n";
+      double lower_mega_fluid = 1.0e+4;
+      double upper_mega_fluid = 1.0e+7;
+      double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
+      if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
+        errTxt += "Bulk modulus need to be given in kPa\n";
 
-    if(i < n_vintages_bulk_density)
-      corr_bulk_density.push_back(correlation_bulk_density_[i]);
-    else
-      corr_bulk_density.push_back(corr_bulk_density[i-1]);
+      if(i < n_vintages_bulk_density)
+        corr_bulk_density.push_back(correlation_bulk_density_[i]);
+      else
+        corr_bulk_density.push_back(corr_bulk_density[i-1]);
+    }
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    DistributionsFluid * fluid = new DistributionsFluidTabulated(bulk_dist_with_trend[i],
-                                                                 density_dist_with_trend[i],
-                                                                 corr_bulk_density[i],
-                                                                 DEMTools::Modulus,
-                                                                 alpha);
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      DistributionsFluid * fluid = new DistributionsFluidTabulated(bulk_dist_with_trend[i],
+                                                                   density_dist_with_trend[i],
+                                                                   corr_bulk_density[i],
+                                                                   DEMTools::Modulus,
+                                                                   alpha);
 
-    dist_fluid[i] = fluid;
+      dist_fluid[i] = fluid;
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(bulk_dist_with_trend[i]->GetIsShared() == false)
+        delete bulk_dist_with_trend[i];
+      if(density_dist_with_trend[i]->GetIsShared() == false)
+        delete density_dist_with_trend[i];
+    }
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    if(bulk_dist_with_trend[i]->GetIsShared() == false)
-      delete bulk_dist_with_trend[i];
-    if(density_dist_with_trend[i]->GetIsShared() == false)
-      delete density_dist_with_trend[i];
+  else{
+    errTxt += "Problems with the Tabulated rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
   }
 
   return(dist_fluid);

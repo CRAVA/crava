@@ -359,6 +359,17 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
 
+  for(int i=0; i<n_vintages; i++) {
+    if(vp_[i]->GetEstimate() == true && vp_given_facies.size() == 0)
+      tmpErrTxt += "Vp can not be estimated as no Vp log is given in the wells\n";
+    if(vs_[i]->GetEstimate() == true && vs_given_facies.size() == 0)
+      tmpErrTxt += "Vs can not be estimated as no Vs log is given in the wells\n";
+    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
+      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+    if(tmpErrTxt != "")
+      break;
+  }
+
   std::vector<double> s_min;
   std::vector<double> s_max;
 
@@ -380,45 +391,48 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   std::vector<double> corr_vp_density;
   std::vector<double> corr_vs_density;
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_vp)
-      vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vp_given_facies, tmpErrTxt);
-    else
-      vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
 
-    if(i < n_vintages_vs)
-      vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vs_given_facies, tmpErrTxt);
-    else
-      vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_vp)
+        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vp_given_facies, tmpErrTxt);
+      else
+        vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, density_given_facies, tmpErrTxt);
-    else
-      density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_vs)
+        vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, vs_given_facies, tmpErrTxt);
+      else
+        vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_vp_vs)
-      corr_vp_vs.push_back(correlation_vp_vs_[i]);
-    else
-      corr_vp_vs.push_back(corr_vp_vs[i-1]);
+      if(i < n_vintages_density)
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, density_given_facies, tmpErrTxt);
+      else
+        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_vp_density)
-      corr_vp_density.push_back(correlation_vp_density_[i]);
-    else
-      corr_vp_density.push_back(corr_vp_density[i-1]);
+      if(i < n_vintages_vp_vs)
+        corr_vp_vs.push_back(correlation_vp_vs_[i]);
+      else
+        corr_vp_vs.push_back(corr_vp_vs[i-1]);
 
-    if(i < n_vintages_vs_density)
-      corr_vs_density.push_back(correlation_vs_density_[i]);
-    else
-      corr_vs_density.push_back(corr_vs_density[i-1]);
-  }
+      if(i < n_vintages_vp_density)
+        corr_vp_density.push_back(correlation_vp_density_[i]);
+      else
+        corr_vp_density.push_back(corr_vp_density[i-1]);
 
-  for(int i=0; i<n_vintages; i++) {
-    std::string corrErrTxt = "";
-    CheckPositiveDefiniteCorrMatrix(corr_vp_vs[i], corr_vp_density[i], corr_vs_density[i], corrErrTxt);
-    if(corrErrTxt != "") {
-      if(n_vintages > 1)
-        tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
-      tmpErrTxt += corrErrTxt;
+      if(i < n_vintages_vs_density)
+        corr_vs_density.push_back(correlation_vs_density_[i]);
+      else
+        corr_vs_density.push_back(corr_vs_density[i-1]);
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      std::string corrErrTxt = "";
+      CheckPositiveDefiniteCorrMatrix(corr_vp_vs[i], corr_vp_density[i], corr_vs_density[i], corrErrTxt);
+      if(corrErrTxt != "") {
+        if(n_vintages > 1)
+          tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
+        tmpErrTxt += corrErrTxt;
+      }
     }
   }
 
@@ -448,8 +462,8 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     }
   }
 
-  if(tmpErrTxt != "") {
-    errTxt += "\nProblems with the Tabulated rock physics model for <rock>:\n";
+  else{
+    errTxt += "Problems with the Tabulated rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
@@ -490,7 +504,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::string                                           & path,
                                                        const std::vector<std::string>                              & trend_cube_parameters,
                                                        const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                       const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
+                                                       const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                        const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                        const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -505,6 +519,28 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   alpha[0] = bulk_modulus_[0] ->GetOneYearCorrelation();
   alpha[1] = shear_modulus_[0]->GetOneYearCorrelation();
   alpha[2] = density_[0]      ->GetOneYearCorrelation();
+
+  // Use blockedLogs given facies
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+  }
+
+  for(int i=0; i<n_vintages; i++) {
+    if(bulk_modulus_[i]->GetEstimate() == true)
+      tmpErrTxt += "Bulk modulus can not be estimated from wells\n";
+
+    if(shear_modulus_[i]->GetEstimate() == true)
+      tmpErrTxt += "Shear modulus can not be estimated from wells\n";
+
+    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
+      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+
+    if(tmpErrTxt != "")
+      break;
+  }
 
   std::vector<double> s_min;
   std::vector<double> s_max;
@@ -529,54 +565,57 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   std::vector<double> corr_bulk_density;
   std::vector<double> corr_shear_density;
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_bulk)
-      bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_bulk)
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_shear)
-      shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_shear)
+        shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_density)
-      density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_density)
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, density_given_facies, tmpErrTxt);
+      else
+        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-    double lower_mega = 1.0e+6;
-    double upper_mega = 1.6e+8;
-    double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
-    double test_shear = shear_dist_with_trend[0]->ReSample(0,0);
-    if(test_bulk < lower_mega || test_bulk > upper_mega)
-      tmpErrTxt += "Bulk modulus need to be given in kPa\n";
-    if(test_shear < lower_mega || test_shear > upper_mega)
-      tmpErrTxt += "Shear modulus need to be given in kPa\n";
+      double lower_mega = 1.0e+6;
+      double upper_mega = 1.6e+8;
+      double test_bulk  = bulk_dist_with_trend[i]->ReSample(0,0);
+      double test_shear = shear_dist_with_trend[i]->ReSample(0,0);
 
-    if(i < n_vintages_bulk_shear)
-      corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
-    else
-      corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
+      if(test_bulk < lower_mega || test_bulk > upper_mega)
+        tmpErrTxt += "Bulk modulus need to be given in kPa\n";
+      if(test_shear < lower_mega || test_shear > upper_mega)
+        tmpErrTxt += "Shear modulus need to be given in kPa\n";
 
-    if(i < n_vintages_bulk_density)
-      corr_bulk_density.push_back(correlation_bulk_density_[i]);
-    else
-      corr_bulk_density.push_back(corr_bulk_density[i-1]);
+      if(i < n_vintages_bulk_shear)
+        corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
+      else
+        corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
 
-    if(i < n_vintages_shear_density)
-      corr_shear_density.push_back(correlation_shear_density_[i]);
-    else
-      corr_shear_density.push_back(corr_shear_density[i-1]);
-  }
+      if(i < n_vintages_bulk_density)
+        corr_bulk_density.push_back(correlation_bulk_density_[i]);
+      else
+        corr_bulk_density.push_back(corr_bulk_density[i-1]);
 
-  for(int i=0; i<n_vintages; i++) {
-    std::string corrErrTxt = "";
-    CheckPositiveDefiniteCorrMatrix(corr_bulk_shear[i], corr_bulk_density[i], corr_shear_density[i], corrErrTxt);
-    if(corrErrTxt != "") {
-      if(n_vintages > 1)
-        tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
-      tmpErrTxt += corrErrTxt;
+      if(i < n_vintages_shear_density)
+        corr_shear_density.push_back(correlation_shear_density_[i]);
+      else
+        corr_shear_density.push_back(corr_shear_density[i-1]);
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      std::string corrErrTxt = "";
+      CheckPositiveDefiniteCorrMatrix(corr_bulk_shear[i], corr_bulk_density[i], corr_shear_density[i], corrErrTxt);
+      if(corrErrTxt != "") {
+        if(n_vintages > 1)
+          tmpErrTxt += "Vintage "+NRLib::ToString(i+1)+":";
+        tmpErrTxt += corrErrTxt;
+      }
     }
   }
 
@@ -606,8 +645,8 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     }
   }
 
-  if(tmpErrTxt != "") {
-    errTxt += "\nProblems with the Tabulated rock physics model for <rock>:\n";
+  else {
+    errTxt += "\nProblems with the Tabulated rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
@@ -651,22 +690,34 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
 
   std::string tmpErrTxt = "";
 
-  rock =   CreateDistributionsRockMix(n_vintages,
-                                      path,
-                                      trend_cube_parameters,
-                                      trend_cube_sampling,
-                                      blockedLogs,
-                                      constituent_label_,
-                                      constituent_volume_fraction_,
-                                      model_rock_storage,
-                                      model_solid_storage,
-                                      model_dry_rock_storage,
-                                      model_fluid_storage,
-                                      DEMTools::Reuss,
-                                      tmpErrTxt);
+  for(int i=0; i<n_vintages; i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
 
-  if(tmpErrTxt != "") {
-    errTxt += "\nProblems with the Reuss rock physics model for <rock>:\n";
+  if(tmpErrTxt == "")
+    rock =   CreateDistributionsRockMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        blockedLogs,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        model_rock_storage,
+                                        model_solid_storage,
+                                        model_dry_rock_storage,
+                                        model_fluid_storage,
+                                        DEMTools::Reuss,
+                                        tmpErrTxt);
+
+  else {
+    errTxt += "\nProblems with the Reuss rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
@@ -711,23 +762,34 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
 
   std::string tmpErrTxt = "";
 
-  rock =   CreateDistributionsRockMix(n_vintages,
-                                      path,
-                                      trend_cube_parameters,
-                                      trend_cube_sampling,
-                                      blockedLogs,
-                                      constituent_label_,
-                                      constituent_volume_fraction_,
-                                      model_rock_storage,
-                                      model_solid_storage,
-                                      model_dry_rock_storage,
-                                      model_fluid_storage,
-                                      DEMTools::Voigt,
-                                      tmpErrTxt);
+  for(int i=0; i<n_vintages; i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
 
+  if(tmpErrTxt == "")
+    rock =   CreateDistributionsRockMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        blockedLogs,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        model_rock_storage,
+                                        model_solid_storage,
+                                        model_dry_rock_storage,
+                                        model_fluid_storage,
+                                        DEMTools::Voigt,
+                                        tmpErrTxt);
 
-  if(tmpErrTxt != "") {
-    errTxt += "\nProblems with the Voigt rock physics model for <rock>:\n";
+  else {
+    errTxt += "\nProblems with the Voigt rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
@@ -772,21 +834,33 @@ HillRockStorage::GenerateDistributionsRock(const int                            
 
   std::string tmpErrTxt = "";
 
-  rock =   CreateDistributionsRockMix(n_vintages,
-                                      path,
-                                      trend_cube_parameters,
-                                      trend_cube_sampling,
-                                      blockedLogs,
-                                      constituent_label_,
-                                      constituent_volume_fraction_,
-                                      model_rock_storage,
-                                      model_solid_storage,
-                                      model_dry_rock_storage,
-                                      model_fluid_storage,
-                                      DEMTools::Hill,
-                                      tmpErrTxt);
+  for(int i=0; i<n_vintages; i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
 
-  if(tmpErrTxt != "") {
+  if(tmpErrTxt == "")
+    rock =   CreateDistributionsRockMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        blockedLogs,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        model_rock_storage,
+                                        model_solid_storage,
+                                        model_dry_rock_storage,
+                                        model_fluid_storage,
+                                        DEMTools::Hill,
+                                        tmpErrTxt);
+
+  else {
     errTxt += "\nProblems with the Hill rock physics model for <rock>:\n";
     errTxt += tmpErrTxt;
   }
@@ -936,35 +1010,50 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(n_vintages);
 
   for(int i=0; i<n_vintages; i++) {
+    for(size_t j=0; j<all_volume_fractions.size(); j++) {
+      if(volume_fractions[i][j]->GetEstimate() == true)
+        tmpErrTxt += "Volume fractions can not be estimated from wells\n";
+    }
+    for(size_t j=0; j<all_aspect_ratios.size(); j++) {
+      if(inclusion_aspect_ratio_[i][j]->GetEstimate() == true)
+        tmpErrTxt += "Aspect ratios can not be estimated from wells\n";
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
+
+  for(int i=0; i<n_vintages; i++) {
     all_volume_fractions[i].resize(n_constituents, NULL);
     all_aspect_ratios[i].resize(n_inclusions, NULL);
   }
 
-  for(int i=0; i<n_vintages; i++) {
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
 
-    for (int s = 0; s < n_inclusions; s++) {
+      for (int s = 0; s < n_inclusions; s++) {
 
-      if(i < n_vintages_aspect[s]) {
-        if(inclusion_aspect_ratio_[s][i] != NULL)
-          all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        if(i < n_vintages_aspect[s]) {
+          if(inclusion_aspect_ratio_[s][i] != NULL)
+            all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+         }
+        else
+          all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
       }
-      else
-        all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
-    }
 
-    for (int s = 0; s < n_constituents; s++) {
+      for (int s = 0; s < n_constituents; s++) {
 
-      if(i < n_vintages_volume[s]) {
-        if(volume_fractions[s][i] != NULL)
-          all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        if(i < n_vintages_volume[s]) {
+          if(volume_fractions[s][i] != NULL)
+            all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        }
+        else
+          if(all_volume_fractions[i-1][s] != NULL)
+            all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
       }
-      else
-        if(all_volume_fractions[i-1][s] != NULL)
-          all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
+
+      CheckVolumeConsistency(all_volume_fractions[i], tmpErrTxt);
+
     }
-
-    CheckVolumeConsistency(all_volume_fractions[i], tmpErrTxt);
-
   }
 
   if (tmpErrTxt == "") {
@@ -999,7 +1088,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
     }
   }
 
-  if(tmpErrTxt != "") {
+  else {
     errTxt += "\nProblems with the DEM rock physics model:\n";
     errTxt += tmpErrTxt;
   }
@@ -1090,7 +1179,7 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
     }
   }
   else {
-    errTxt += "\nProblems with the Gassmann rock physics model for <rock>:\n";
+    errTxt += "\nProblems with the Gassmann rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
@@ -1231,26 +1320,38 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
   }
 
+  for(int i=0; i<n_vintages; i++) {
+    if(porosity_[i]->GetEstimate() == true)
+      tmpErrTxt += "Porosity can not be estimated from wells\n";
+    if(bulk_weight_[i]->GetEstimate() == true)
+      tmpErrTxt += "Bulk weights can not be estimated from wells\n";
+    if(shear_weight_[i]->GetEstimate() == true)
+      tmpErrTxt += "Shear weights can not be estimated from wells\n";
+    if(tmpErrTxt != "")
+      break;
+  }
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_weight_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> shear_weight_dist_with_trend(n_vintages, NULL);
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_porosity)
-      porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_porosity)
+        porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_bulk_weight)
-      bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_bulk_weight)
+        bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_shear_weight)
-      shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-    else
-      shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_shear_weight)
+        shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
+    }
   }
 
   if(tmpErrTxt == "") {
@@ -1287,7 +1388,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   }
 
-  if(tmpErrTxt != "") {
+  else {
     errTxt += "\nProblems with the Bounding rock physics model:\n";
     errTxt += tmpErrTxt;
   }

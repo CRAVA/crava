@@ -2580,8 +2580,10 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
               rock_distributions_[all_facies_names[it]] = rock;
             }
-            else
+            else {
+              errTxt += "\nRock '"+iter->first+"':\n";
               errTxt += rockErrTxt;
+            }
           }
           else
             errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
