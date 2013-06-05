@@ -352,8 +352,9 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
       }
     }
   }
+  bool scientific_format = true;
   expDens.multiplyByScalar(static_cast<float>(1.0/sum));
-  expDens.writeFile(fileName, "", volume);
+  expDens.writeFile(fileName, "", volume, "NO_LABEL", 0.0, NULL, NULL, TraceHeaderFormat(TraceHeaderFormat::SEISWORKS), false, scientific_format);
 }
 
 void PosteriorElasticPDF3D::SetupSmoothingGaussian3D(FFTGrid * smoother,
