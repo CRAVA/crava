@@ -118,6 +118,9 @@ ModelSettings::ModelSettings(void)
 
   p_undef_                 =    0.01f;
 
+  seismicQualityGridValue_ = RMISSING;
+  seismicQualityGridRange_ = RMISSING;
+
   lzLimit_                 =     0.41;   // NB! This is a double ==> do not use 'f'.
   time_dTop_               = RMISSING;
   time_lz_                 = RMISSING;

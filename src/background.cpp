@@ -274,9 +274,9 @@ Background::generateBackgroundModel(FFTGrid                      *& bgAlpha,
                      vtAlpha,vtBeta,vtRho,
                      ipos,jpos,kpos);
 
-  const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
-                                              modelSettings->getBackgroundVario(),
-                                              modelSettings->getDebugFlag());
+  const CovGrid2D & covGrid2D = Kriging2D::makeCovGrid2D(simbox,
+                                                         modelSettings->getBackgroundVario(),
+                                                         modelSettings->getDebugFlag());
 
   makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp" , modelSettings->getFileGrid());
   makeKrigedBackground(krigingDataBeta , bgBeta , trendBeta , simbox, covGrid2D, "Vs" , modelSettings->getFileGrid());
@@ -358,7 +358,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                    surface,
                    simbox);
 
-  const CovGrid2D & covGrid2D = makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
+  const CovGrid2D & covGrid2D = Kriging2D::makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
 
   std::string name_vp  = "Vp";
   std::string name_vs  = "Vs";
@@ -1456,31 +1456,6 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha
     std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
     forLogging.writeToFile(fileName);
   }
-}
-
-//---------------------------------------------------------------------------
-const CovGrid2D &
-Background::makeCovGrid2D(const Simbox * simbox,
-                          Vario  * vario,
-                          int      debugFlag)
-{
-  //
-  // Pretabulate all needed covariances
-  //
-  const int    nx = simbox->getnx();
-  const int    ny = simbox->getny();
-
-  const float  dx = static_cast<float>(simbox->getdx());
-  const float  dy = static_cast<float>(simbox->getdy());
-
-  CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
-
-  if(debugFlag == 1) {
-    std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
-    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
-    cov->writeToFile(fileName);
-  }
-  return (*cov);
 }
 
 //---------------------------------------------------------------------------

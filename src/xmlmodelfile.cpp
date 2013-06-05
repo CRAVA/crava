@@ -5155,7 +5155,6 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-
 bool
 XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
 {
@@ -5339,6 +5338,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("white-noise-component");
   legalCommands.push_back("reflection-matrix");
   legalCommands.push_back("kriging-data-limit");
+  legalCommands.push_back("seismic-quality-grid");
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
   legalCommands.push_back("rms-panel-mode");
@@ -5349,19 +5349,17 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   parseFFTGridPadding(root, errTxt);
 
-  float ratio = RMISSING;
-  bool ratioInterval = false;
+  bool vp_vs_ratio_given = false;
 
-  parseVpVsRatio(root, errTxt);
+  if(parseVpVsRatio(root, errTxt) == true)
+    vp_vs_ratio_given = true;
 
   bool ratio_from_wells = false;
   if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
     modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
 
-
-  if (ratio_from_wells && (ratio != RMISSING || ratioInterval == true)) {
-    errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
-              + ") and ask the ratio to be estimated from well data.\n";
+  if (ratio_from_wells && vp_vs_ratio_given) {
+    errTxt += "You cannot both specify a Vp/Vs ratio and ask the ratio to be estimated from well data.\n";
   }
 
   bool fileGrid;
@@ -5400,6 +5398,9 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
       errTxt += "The number of data in neighbourhood when doing kriging must be larger than or equal to zero\n";
   }
   int level = 0;
+
+  parseSeismicQualityGrid(root, errTxt);
+
   if(parseValue(root, "debug-level", level, errTxt) == true)
     modelSettings_->setDebugFlag(level);
 
@@ -5559,6 +5560,29 @@ XmlModelFile::parseFrequencyBand(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
+bool
+XmlModelFile::parseSeismicQualityGrid(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("seismic-quality-grid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("range");
+  legalCommands.push_back("value");
+
+  float range = RMISSING;
+  float value = RMISSING;
+
+  if(parseValue(root, "range", range, errTxt) == true)
+    modelSettings_->setSeismicQualityGridRange(range);
+
+  if(parseValue(root, "value", value, errTxt) == true)
+    modelSettings_->setSeismicQualityGridValue(value);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt)
@@ -6045,8 +6069,17 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
   if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
-  if(modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
+  if (modelSettings_->getFaciesProbFromRockPhysics() == true  && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated when facies probabilities are calculated using rock physics models\n";
+
+  if (modelSettings_->getSeismicQualityGridValue() != RMISSING &&
+      (modelSettings_->getSeismicQualityGridValue() < 0 || modelSettings_->getSeismicQualityGridValue() > 1))
+    errTxt += "<value> under <seismic-quality-grid> must be in the interval between 0 and 1.\n";
+
+  if ((modelSettings_->getSeismicQualityGridValue() != RMISSING || modelSettings_->getSeismicQualityGridRange() != RMISSING) &&
+      !(modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
+    LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Paramteres are set under <seismic-quality-grid> <advanced-settings>, "
+                        "but this grid is not set to be written under <io-settings> <grid-output> <other-settings>, so these are ignored.\n");
 
   }
 

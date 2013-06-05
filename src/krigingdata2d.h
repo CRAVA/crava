@@ -29,7 +29,7 @@ public:
   inline int                 getIndexJ(int k)      const { return indexJ_[k]                     ;}
 
   void                       writeToFile(const std::string & name);
-
+  
 private:
   int                        gotBlock(int i, int j) const;
 
@@ -37,6 +37,7 @@ private:
   std::vector<int>           indexI_;
   std::vector<int>           indexJ_;
   std::vector<int>           count_;
+
 };
 
 #endif
