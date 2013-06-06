@@ -48,7 +48,11 @@ private:
   CovGrid2D & makeCovGrid2D(const Simbox * simbox,
                             Vario  * vario) const;
 
+
+
   std::vector<float>   wellValue_;
+
+  float value_;
 };
 
 #endif
