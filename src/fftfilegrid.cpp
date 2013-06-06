@@ -528,23 +528,25 @@ FFTFileGrid::writeFile(const std::string & fileName,
                        const GridMapping * depthMap,
                        const GridMapping * timeMap,
                        const TraceHeaderFormat & thf,
-                       bool padding)
+                       bool                padding,
+                       bool                scientific_format)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding, scientific_format);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
 
 void
-FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, 
+                            bool padding, bool flat, bool scientific_format)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeStormFile(fileName, simbox, ascii, padding, flat);
+  FFTGrid::writeStormFile(fileName, simbox, ascii, padding, flat, scientific_format);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
