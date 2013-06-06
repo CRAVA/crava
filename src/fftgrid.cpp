@@ -2015,8 +2015,7 @@ FFTGrid::writeFile(const std::string       & fName,
                    const GridMapping       * depthMap,
                    const GridMapping       * timeMap,
                    const TraceHeaderFormat & thf,
-                   bool                      padding,
-                   bool                      scientific_format)
+                   bool padding)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
@@ -2027,7 +2026,7 @@ FFTGrid::writeFile(const std::string       & fName,
         if((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(fileName, simbox, false,padding);
         if((formatFlag_ & IO::ASCII) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, true,padding, false, scientific_format);
+          FFTGrid::writeStormFile(fileName, simbox, true,padding);
       }
       else {
         FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
@@ -2076,8 +2075,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
                         const Simbox      * simbox,
                         bool                ascii,
                         bool                padding,
-                        bool                flat,
-                        bool                scientific_format)
+                        bool                flat)
 {
   int nx, ny, nz;
   if(padding == true)
@@ -2120,12 +2118,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
     NRLib::OpenWrite(file, gfName);
     LogKit::LogFormatted(LogKit::Low,"\nWriting STORM ascii file "+gfName+"...");
     file << header;
-    if (scientific_format){
-      file << std::scientific;
-    }
-    else{
-      file << std::fixed << std::setprecision(6);
-    } 
+    file << std::fixed << std::setprecision(6);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
         for(i=0;i<nx-1;i++) {
