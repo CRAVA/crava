@@ -37,20 +37,15 @@ public:
 
   const Simbox          & getEstimationSimbox()     const { return estimation_simbox_     ;}
   const NRLib::Volume   & getFullInversionVolume()  const { return full_inversion_volume_ ;}
-  
+
 
 
 private:
 
-  bool       checkThatDataCoverGrid(const SegY   * segy,
-                                    float         offset,
-                                    const Simbox * timeCutSimbox,
-                                    float         guard_zone);
-
-  void getGeometryFromGridOnFile(const std::string                grid_file,
-                                        const TraceHeaderFormat * thf,
-                                        SegyGeometry           *& geometry,
-                                        std::string             & err_text);
+  void getGeometryFromGridOnFile(const std::string         grid_file,
+                                 const TraceHeaderFormat * thf,
+                                 SegyGeometry           *& geometry,
+                                 std::string             & err_text);
 
   SegyGeometry * geometryFromCravaFile(const std::string & file_name);
 
@@ -94,8 +89,29 @@ private:
 
   bool readSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles);
+
+  bool       checkThatDataCoverGrid(const SegY   * segy,
+                                    float         offset,
+                                    const Simbox * timeCutSimbox,
+                                    float         guard_zone);
+
   bool readWellData(ModelSettings  * modelSettings,
                     InputFiles     * inputFiles);
+
+  void        readNorsarWell(const std::string              & wellFileName,
+                             NRLib::Well                    & new_well,
+                             const std::vector<std::string> & logNames,
+                             const std::vector<bool>        & inverseVelocity,
+                             bool                             faciesLogGiven,
+                             std::string                    & error);
+
+  void          readRMSWell(const std::string              & wellFileName,
+                            NRLib::Well                    & new_well,
+                            const std::vector<std::string> & logNames,
+                            const std::vector<bool>        & inverseVelocity,
+                            bool                             faciesLogGiven,
+                            std::string                    & error);
+
   bool blockWellsForEstimation();
   bool setupReflectionMatrixAndTempWavelet();
   bool optimizeWellLocations();
@@ -120,14 +136,18 @@ private:
   Simbox          estimation_simbox_;
   NRLib::Volume   full_inversion_volume_;
 
-  //std::vector<NRLib::SegY *>   segy_files_;
-  //std::vector<StormContGrid *> stormgrids_;
-
   std::vector<SeismicStorage> seismic_data_;
-
-  //FFTGrid                   ** seisCube_;              ///< Seismic data cubes
-  std::vector<WellData *>      welldata_;                      ///< Well data
   std::vector<NRLib::Well>     wells_;
+
+  //Well variables not contained in NRlib::Well
+  std::map<std::string, int>                        timemissing_;
+  std::map<std::string, double>                     xpos0_;
+  std::map<std::string, double>                     ypos0_;
+  std::map<std::string, std::vector<std::string> >  faciesnames_;
+  std::map<std::string, std::vector<int> >          faciesNr_;
+  std::map<std::string, int>                        faciesok_; //Bool?
+  std::map<std::string, int>                        nFacies_;
+
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;
 
