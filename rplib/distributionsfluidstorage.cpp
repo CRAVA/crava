@@ -151,13 +151,14 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
   int n_vintages_vp_density = static_cast<int>(correlation_vp_density_.size());
 
   std::string tmpErrTxt = "";
-  for(int i=0; i<n_vintages; i++) {
+
+  for(int i=0; i<n_vintages_vp; i++) {
     if(vp_[i]->GetEstimate() == true)
       tmpErrTxt += "Vp can not be estimated from wells\n";
+  }
+  for(int i=0; i<n_vintages_density; i++) {
     if(density_[i]->GetEstimate() == true)
       tmpErrTxt += "Density can not be estimated from wells\n";
-    if(tmpErrTxt != "")
-      break;
   }
 
   const std::vector<std::vector<float> > dummy_blocked_logs;
@@ -169,14 +170,16 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
   std::vector<double> corr_vp_density;
 
   if(tmpErrTxt == "") {
+
     for(int i=0; i<n_vintages; i++) {
+
       if(i < n_vintages_vp)
-        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       else
         vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -185,7 +188,9 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       else
         corr_vp_density.push_back(corr_vp_density[i-1]);
     }
+  }
 
+  if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       DistributionsFluid * fluid = new DistributionsFluidTabulated(vp_dist_with_trend[i],
                                                                    density_dist_with_trend[i],
@@ -247,13 +252,14 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   int n_vintages_bulk_density = static_cast<int>(correlation_bulk_density_.size());
 
   std::string tmpErrTxt = "";
-  for(int i=0; i<n_vintages; i++) {
+
+  for(int i=0; i<n_vintages_bulk; i++) {
     if(bulk_modulus_[i]->GetEstimate() == true)
-      tmpErrTxt += "Vp can not be estimated from wells\n";
+      tmpErrTxt += "Bulk modulus can not be estimated from wells\n";
+  }
+  for(int i=0; i<n_vintages_density; i++) {
     if(density_[i]->GetEstimate() == true)
       tmpErrTxt += "Density can not be estimated from wells\n";
-    if(tmpErrTxt != "")
-      break;
   }
 
   const std::vector<std::vector<float> > dummy_blocked_logs;
@@ -267,12 +273,12 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_bulk)
-        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       else
         bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -280,7 +286,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       double upper_mega_fluid = 1.0e+7;
       double test_bulk  = bulk_dist_with_trend[0]->ReSample(0,0);
       if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
-        errTxt += "Bulk modulus need to be given in kPa\n";
+        tmpErrTxt += "Bulk modulus need to be given in kPa\n";
 
       if(i < n_vintages_bulk_density)
         corr_bulk_density.push_back(correlation_bulk_density_[i]);
@@ -342,15 +348,37 @@ ReussFluidStorage::GenerateDistributionsFluid(const int                         
                                               const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
                                               std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
-                                                                        path,
-                                                                        trend_cube_parameters,
-                                                                        trend_cube_sampling,
-                                                                        model_fluid_storage,
-                                                                        constituent_label_,
-                                                                        constituent_volume_fraction_,
-                                                                        DEMTools::Reuss,
-                                                                        errTxt);
+  std::vector<DistributionsFluid *> fluid;
+
+  std::string tmpErrTxt = "";
+
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
+
+  if(tmpErrTxt == "")
+    fluid = CreateDistributionsFluidMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        model_fluid_storage,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        DEMTools::Reuss,
+                                        tmpErrTxt);
+
+  else {
+    errTxt += "\nProblems with the Reuss rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
+  }
+
   return(fluid);
 }
 
@@ -380,15 +408,37 @@ VoigtFluidStorage::GenerateDistributionsFluid(const int                         
                                               const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
                                               std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
-                                                                        path,
-                                                                        trend_cube_parameters,
-                                                                        trend_cube_sampling,
-                                                                        model_fluid_storage,
-                                                                        constituent_label_,
-                                                                        constituent_volume_fraction_,
-                                                                        DEMTools::Voigt,
-                                                                        errTxt);
+  std::vector<DistributionsFluid *> fluid;
+
+  std::string tmpErrTxt = "";
+
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
+
+  if(tmpErrTxt == "")
+    fluid = CreateDistributionsFluidMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        model_fluid_storage,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        DEMTools::Voigt,
+                                        tmpErrTxt);
+
+  else {
+    errTxt += "\nProblems with the Voigt rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
+  }
+
   return(fluid);
 }
 
@@ -418,15 +468,37 @@ HillFluidStorage::GenerateDistributionsFluid(const int                          
                                              const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
                                              std::string                                                    & errTxt) const
 {
-  std::vector<DistributionsFluid *> fluid = CreateDistributionsFluidMix(n_vintages,
-                                                                        path,
-                                                                        trend_cube_parameters,
-                                                                        trend_cube_sampling,
-                                                                        model_fluid_storage,
-                                                                        constituent_label_,
-                                                                        constituent_volume_fraction_,
-                                                                        DEMTools::Hill,
-                                                                        errTxt);
+  std::vector<DistributionsFluid *> fluid;
+
+  std::string tmpErrTxt = "";
+
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
+    for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+        tmpErrTxt += "The volume fractions can not be estimated from wells\n";
+        break;
+      }
+    }
+    if(tmpErrTxt != "")
+      break;
+  }
+
+  if(tmpErrTxt == "")
+    fluid = CreateDistributionsFluidMix(n_vintages,
+                                        path,
+                                        trend_cube_parameters,
+                                        trend_cube_sampling,
+                                        model_fluid_storage,
+                                        constituent_label_,
+                                        constituent_volume_fraction_,
+                                        DEMTools::Hill,
+                                        tmpErrTxt);
+
+  else {
+    errTxt += "\nProblems with the Hill rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
+  }
+
   return(fluid);
 }
 
@@ -460,10 +532,25 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
                                                    const std::map<std::string, DistributionsFluidStorage *>       & /*model_fluid_storage*/,
                                                    std::string                                                    & errTxt) const
 {
+  std::string tmpErrTxt = "";
+
   std::vector<double> alpha(3);
   alpha[0] = salinity_[0]     ->GetOneYearCorrelation();
   alpha[1] = temperature_[0]  ->GetOneYearCorrelation();
   alpha[2] = pore_pressure_[0]->GetOneYearCorrelation();
+
+  for(size_t i=0; i<pore_pressure_.size(); i++) {
+    if(pore_pressure_[i]->GetEstimate() == true)
+      tmpErrTxt += "Pore pressure can not be estimated from wells for a <solid>\n";
+  }
+  for(size_t i=0; i<temperature_.size(); i++) {
+    if(temperature_[i]->GetEstimate() == true)
+      tmpErrTxt += "Temperature can not be estimated from wells for a <solid>\n";
+  }
+  for(size_t i=0; i<salinity_.size(); i++) {
+    if(salinity_[i]->GetEstimate() == true)
+      tmpErrTxt += "Salinity can not be estimatedfrom wells for a <solid>\n";
+  }
 
   int n_vintages_pressure    = static_cast<int>(pore_pressure_.size());
   int n_vintages_temperature = static_cast<int>(temperature_.size());
@@ -476,45 +563,57 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
   std::vector<DistributionWithTrend *> temperature_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> salinity_dist_with_trend(n_vintages, NULL);
 
-  for(int i=0; i<n_vintages; i++) {
-    if(i < n_vintages_pressure)
-      pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_pressure)
+        pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_temperature)
-      temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_temperature)
+        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
 
-    if(i < n_vintages_salinity)
-      salinity_dist_with_trend[i] = salinity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
-    else
-      salinity_dist_with_trend[i] = salinity_dist_with_trend[i-1]->Clone();
+      if(i < n_vintages_salinity)
+        salinity_dist_with_trend[i] = salinity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        salinity_dist_with_trend[i] = salinity_dist_with_trend[i-1]->Clone();
 
-    //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
-    bool is_co2 = false;
-    DistributionsFluid * fluid = NULL;
-
-    if (is_co2) {
-      std::vector<double> alpha2(2);
-      std::copy(alpha.begin() + 1, alpha.end(), alpha2.begin());
-      fluid       = new DistributionsFluidCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], alpha2);
     }
-    else
-      fluid       = new DistributionsFluidBatzleWang(temperature_dist_with_trend[i], pressure_dist_with_trend[i], salinity_dist_with_trend[i], alpha);
+  }
+  //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
+  bool is_co2 = false;
+  DistributionsFluid * fluid = NULL;
+
+  if(tmpErrTxt == "") {
+
+    for(int i=0; i<n_vintages; i++) {
+      if (is_co2) {
+        std::vector<double> alpha2(2);
+        std::copy(alpha.begin() + 1, alpha.end(), alpha2.begin());
+        fluid       = new DistributionsFluidCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], alpha2);
+      }
+      else
+        fluid       = new DistributionsFluidBatzleWang(temperature_dist_with_trend[i], pressure_dist_with_trend[i], salinity_dist_with_trend[i], alpha);
 
 
-    dist_fluid[i] = fluid;
+      dist_fluid[i] = fluid;
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(temperature_dist_with_trend[i]->GetIsShared() == false)
+        delete temperature_dist_with_trend[i];
+      if(pressure_dist_with_trend[i]->GetIsShared() == false)
+        delete pressure_dist_with_trend[i];
+      if(salinity_dist_with_trend[i]->GetIsShared() == false)
+        delete salinity_dist_with_trend[i];
+    }
   }
 
-  for(int i=0; i<n_vintages; i++) {
-    if(temperature_dist_with_trend[i]->GetIsShared() == false)
-      delete temperature_dist_with_trend[i];
-    if(pressure_dist_with_trend[i]->GetIsShared() == false)
-      delete pressure_dist_with_trend[i];
-    if(salinity_dist_with_trend[i]->GetIsShared() == false)
-      delete salinity_dist_with_trend[i];
+  else {
+    errTxt += "\nProblems with the Batzle-Wang rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
   }
 
   return(dist_fluid);

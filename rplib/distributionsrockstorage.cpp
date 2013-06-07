@@ -334,12 +334,24 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 {
   LogKit::LogFormatted(LogKit::Low," Generating Tabulated rock physics model\n");
 
-  std::string tmpErrTxt = "";
-
   std::vector<double> alpha(3);
   alpha[0] = vp_[0]     ->GetOneYearCorrelation();
   alpha[1] = vs_[0]     ->GetOneYearCorrelation();
   alpha[2] = density_[0]->GetOneYearCorrelation();
+
+  std::vector<double> s_min;
+  std::vector<double> s_max;
+
+  FindSMinMax(trend_cube_sampling, s_min, s_max);
+
+  int n_vintages_vp         = static_cast<int>(vp_.size());
+  int n_vintages_vs         = static_cast<int>(vs_.size());
+  int n_vintages_density    = static_cast<int>(density_.size());
+  int n_vintages_vp_vs      = static_cast<int>(correlation_vp_vs_.size());
+  int n_vintages_vp_density = static_cast<int>(correlation_vs_density_.size());
+  int n_vintages_vs_density = static_cast<int>(correlation_vs_density_.size());
+
+  std::string tmpErrTxt = "";
 
   // Use blockedLogs given facies
   int nWells = static_cast<int>(blockedLogs.size());
@@ -359,28 +371,18 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
 
-  for(int i=0; i<n_vintages; i++) {
+  for(int i=0; i<n_vintages_vp; i++) {
     if(vp_[i]->GetEstimate() == true && vp_given_facies.size() == 0)
       tmpErrTxt += "Vp can not be estimated as no Vp log is given in the wells\n";
+  }
+  for(int i=0; i<n_vintages_vs; i++) {
     if(vs_[i]->GetEstimate() == true && vs_given_facies.size() == 0)
       tmpErrTxt += "Vs can not be estimated as no Vs log is given in the wells\n";
+  }
+  for(int i=0; i<n_vintages_density; i++) {
     if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
       tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
-    if(tmpErrTxt != "")
-      break;
   }
-
-  std::vector<double> s_min;
-  std::vector<double> s_max;
-
-  FindSMinMax(trend_cube_sampling, s_min, s_max);
-
-  int n_vintages_vp         = static_cast<int>(vp_.size());
-  int n_vintages_vs         = static_cast<int>(vs_.size());
-  int n_vintages_density    = static_cast<int>(density_.size());
-  int n_vintages_vp_vs      = static_cast<int>(correlation_vp_vs_.size());
-  int n_vintages_vp_density = static_cast<int>(correlation_vs_density_.size());
-  int n_vintages_vs_density = static_cast<int>(correlation_vs_density_.size());
 
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
@@ -513,34 +515,10 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 {
   LogKit::LogFormatted(LogKit::Low," Generating Tabulated rock physics model\n");
 
-  std::string tmpErrTxt = "";
-
   std::vector<double> alpha(3);
   alpha[0] = bulk_modulus_[0] ->GetOneYearCorrelation();
   alpha[1] = shear_modulus_[0]->GetOneYearCorrelation();
   alpha[2] = density_[0]      ->GetOneYearCorrelation();
-
-  // Use blockedLogs given facies
-  int nWells = static_cast<int>(blockedLogs.size());
-
-  std::vector<std::vector<float> > density_given_facies(nWells);
-  for(int i=0; i<nWells; i++) {
-    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
-  }
-
-  for(int i=0; i<n_vintages; i++) {
-    if(bulk_modulus_[i]->GetEstimate() == true)
-      tmpErrTxt += "Bulk modulus can not be estimated from wells\n";
-
-    if(shear_modulus_[i]->GetEstimate() == true)
-      tmpErrTxt += "Shear modulus can not be estimated from wells\n";
-
-    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
-      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
-
-    if(tmpErrTxt != "")
-      break;
-  }
 
   std::vector<double> s_min;
   std::vector<double> s_max;
@@ -553,6 +531,29 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   int n_vintages_bulk_shear    = static_cast<int>(correlation_bulk_shear_.size());
   int n_vintages_bulk_density  = static_cast<int>(correlation_bulk_density_.size());
   int n_vintages_shear_density = static_cast<int>(correlation_shear_density_.size());
+
+  std::string tmpErrTxt = "";
+
+  // Use blockedLogs given facies
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+  }
+
+  for(int i=0; i<n_vintages_bulk; i++) {
+    if(bulk_modulus_[i]->GetEstimate() == true)
+      tmpErrTxt += "Bulk modulus can not be estimated from wells\n";
+  }
+  for(int i=0; i<n_vintages_shear; i++) {
+    if(shear_modulus_[i]->GetEstimate() == true)
+      tmpErrTxt += "Shear modulus can not be estimated from wells\n";
+  }
+  for(int i=0; i<n_vintages_density; i++) {
+    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
+      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+  }
 
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
@@ -645,11 +646,11 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     }
   }
 
-  else {
+
+ else {
     errTxt += "\nProblems with the Tabulated rock physics model:\n";
     errTxt += tmpErrTxt;
   }
-
   return(dist_rock);
 }
 //----------------------------------------------------------------------------------//
@@ -690,9 +691,9 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
 
   std::string tmpErrTxt = "";
 
-  for(int i=0; i<n_vintages; i++) {
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
     for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
-      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
         tmpErrTxt += "The volume fractions can not be estimated from wells\n";
         break;
       }
@@ -762,9 +763,9 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
 
   std::string tmpErrTxt = "";
 
-  for(int i=0; i<n_vintages; i++) {
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
     for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
-      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
         tmpErrTxt += "The volume fractions can not be estimated from wells\n";
         break;
       }
@@ -834,9 +835,9 @@ HillRockStorage::GenerateDistributionsRock(const int                            
 
   std::string tmpErrTxt = "";
 
-  for(int i=0; i<n_vintages; i++) {
+  for(size_t i=0; i<constituent_volume_fraction_.size(); i++) {
     for(size_t j=0; j<constituent_volume_fraction_[i].size(); j++) {
-      if(constituent_volume_fraction_[i][j]->GetEstimate() == true) {
+      if(constituent_volume_fraction_[i][j] != NULL && constituent_volume_fraction_[i][j]->GetEstimate() == true) {
         tmpErrTxt += "The volume fractions can not be estimated from wells\n";
         break;
       }
@@ -1009,17 +1010,17 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
   std::vector<std::vector<DistributionWithTrend *> > all_aspect_ratios(n_vintages);
 
-  for(int i=0; i<n_vintages; i++) {
-    for(size_t j=0; j<all_volume_fractions.size(); j++) {
-      if(volume_fractions[i][j]->GetEstimate() == true)
+  for(size_t i=0; i<volume_fractions.size(); i++) {
+    for(size_t j=0; j<volume_fractions[i].size(); j++) {
+      if(volume_fractions[i][j] != NULL && volume_fractions[i][j]->GetEstimate() == true)
         tmpErrTxt += "Volume fractions can not be estimated from wells\n";
     }
-    for(size_t j=0; j<all_aspect_ratios.size(); j++) {
+  }
+  for(size_t i=0; i<inclusion_aspect_ratio_.size(); i++) {
+    for(size_t j=0; j<inclusion_aspect_ratio_[i].size(); j++) {
       if(inclusion_aspect_ratio_[i][j]->GetEstimate() == true)
         tmpErrTxt += "Aspect ratios can not be estimated from wells\n";
     }
-    if(tmpErrTxt != "")
-      break;
   }
 
   for(int i=0; i<n_vintages; i++) {
@@ -1320,16 +1321,19 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
   }
 
-  for(int i=0; i<n_vintages; i++) {
+  for(size_t i=0; i<porosity_.size(); i++) {
     if(porosity_[i]->GetEstimate() == true)
       tmpErrTxt += "Porosity can not be estimated from wells\n";
+  }
+  for(size_t i=0; i<bulk_weight_.size(); i++) {
     if(bulk_weight_[i]->GetEstimate() == true)
       tmpErrTxt += "Bulk weights can not be estimated from wells\n";
+  }
+  for(size_t i=0; i<shear_weight_.size(); i++) {
     if(shear_weight_[i]->GetEstimate() == true)
       tmpErrTxt += "Shear weights can not be estimated from wells\n";
-    if(tmpErrTxt != "")
-      break;
   }
+
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_weight_dist_with_trend(n_vintages, NULL);
