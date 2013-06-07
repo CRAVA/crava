@@ -3788,13 +3788,13 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
     // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
     // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
-    float ** paramCorr = NULL;
+    float ** paramCov = NULL;
     bool failedParamCorr = false;
     std::string tmpErrText("");
     if(!estimateParamCov) {
-      paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
-      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
-      if(paramCorr == NULL || tmpErrText != "") {
+      paramCov = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
+      validateCorrelationMatrix(paramCov, modelSettings, tmpErrText);
+      if(paramCov == NULL || tmpErrText != "") {
         errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
         errText += tmpErrText;
         failedParamCorr = true;
@@ -3802,9 +3802,9 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
     }
     else if (modelSettings->getFaciesProbFromRockPhysics() == true) {
       estimateParamCov = false;
-      paramCorr = new float * [3];
+      paramCov = new float * [3];
       for(int i=0;i<3;i++) {
-        paramCorr[i] = new float[3];
+        paramCov[i] = new float[3];
       }
 
       int n_facies = static_cast<int>(faciesNames_.size());
@@ -3828,7 +3828,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
 
       for(int i=0; i<3; i++) {
         for(int j=0; j<3; j++)
-          paramCorr[i][j] = static_cast<float>(param_corr(i,j));
+          paramCov[i][j] = static_cast<float>(param_corr(i,j));
       }
 
       if (tmpErrText != "")
@@ -3890,7 +3890,6 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       }
     }
 
-    float ** pointVar0 = NULL;
     if (estimateParamCov || estimateTempCorr) //Need well estimation
     {
       std::string tmpErrTxt;
@@ -3898,18 +3897,26 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
                                             background,
                                             timeSimbox,
                                             modelSettings,
+                                            estimateParamCov,
                                             tmpErrTxt);
       if (tmpErrTxt != "") {
         errText += tmpErrTxt;
         failedParamCorr = true;
       }
 
-      if(estimateParamCov)
-        paramCorr = analyze->getVar0();
-      else
-        delete [] analyze->getVar0();
+      if(estimateParamCov) {
+        float ** analyzeParamCov = analyze->getVar0();
 
-      pointVar0 = analyze->getPointVar0();
+        paramCov = new float * [3];
+        for(int i=0;i<3;i++) {
+          paramCov[i] = new float[3];
+        }
+
+        for(int i=0; i<3; i++) {
+          for(int j=0; j<3; j++)
+            paramCov[i][j] = analyzeParamCov[i][j];
+        }
+      }
 
       float * estCorrT = analyze->getCorrT();
       if(estimateTempCorr) {
@@ -3953,7 +3960,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       getCorrGradIJ(corrGradI, corrGradJ);
       //makeCorr2DPositiveDefinite( priorCorrXY_);
 
-      seismicParameters.setCorrelationParameters(paramCorr,
+      seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
                                                  priorCorrXY_,
                                                  lowIntCut,
@@ -3967,8 +3974,8 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
                                                  nzPad);
 
       for(int i=0; i<3; i++)
-        delete [] paramCorr[i];
-      delete [] paramCorr;
+        delete [] paramCov[i];
+      delete [] paramCov;
 
       if(printResult)
         seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);
