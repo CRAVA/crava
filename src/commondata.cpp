@@ -969,6 +969,7 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
   //
   const std::string & reflMatrFile = input_files->getReflMatrFile();
   const double        vpvs         = model_settings->getVpVsRatio();
+  float                  ** reflectionMatrix;
 
 
   int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
@@ -977,53 +978,92 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
   //bool failed = false;
 
   for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
-    LogKit::WriteHeader("Reading seismic data");
 
     std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
     std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
 
     int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
 
-    for (int i = 0 ; i < numberOfAngles ; i++) {
+    //for (int i = 0 ; i < numberOfAngles ; i++) { ??
+
+      if (reflMatrFile != "") {  //File should have one line for each seismic data file. Check: if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
+        std::string tmpErrText("");
+        reflectionMatrix = readMatrix(reflMatrFile, numberOfAngles, 3, "reflection matrix", tmpErrText);
+        if(reflectionMatrix == NULL) {
+          LogKit::LogFormatted(LogKit::Error, "Reading of file "+reflMatrFile+ " for reflection matrix failed\n");
+          LogKit::LogFormatted(LogKit::Error, tmpErrText);
+          //errText += "Reading of file "+reflMatrFile+ " for reflection matrix failed\n";
+          //errText += tmpErrText;
+          return false;
+          //failed = true;
+        }
+
+        LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+      }
+      else if(vpvs != RMISSING) { //Hvis den er missing -> ikke gitt -> eller ikke gitt felles for alle soner.
+        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
+        double vsvp = 1.0/vpvs;
+        setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+      }
+      else if(model_settings->getBackgroundType() != "background" || model_settings->getVpVsRatioFromWells()) {
+        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
+        double vsvp = vsvpFromWells(wells, model_settings->getNumberOfWells());
+        setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+        //double vpvs = 2; ??
 
 
+      }
+      //else if (background == NULL || model_settings->getVpVsRatioFromWells()) {
+      //  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
+      //  double vsvp = vsvpFromWells(wells, model_settings->getNumberOfWells());
+      //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+      //}
+      else {
+        if (model_settings->getForwardModeling())
+          LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
+        else
+          LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
 
-  if (reflMatrFile != "") {
-    std::string tmpErrText("");
-    reflectionMatrix_ = readMatrix(reflMatrFile, numberOfAngles, 3, "reflection matrix", tmpErrText);
-    if(reflectionMatrix_ == NULL) {
-      LogKit::LogFormatted(LogKit::Error, "Reading of file "+reflMatrFile+ " for reflection matrix failed\n");
-      LogKit::LogFormatted(LogKit::Error, tmpErrText);
-      //errText += "Reading of file "+reflMatrFile+ " for reflection matrix failed\n";
-      //errText += tmpErrText;
-      return false;
-      //failed = true;
-    }
-    LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
-  }
-  //else if (vpvs != RMISSING) {
-  //  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
-  //  double vsvp = 1.0/vpvs;
-  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
-  //}
-  //else if (background == NULL || modelSettings->getVpVsRatioFromWells()) {
-  //  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
-  //  double vsvp = vsvpFromWells(wells, modelSettings->getNumberOfWells());
-  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
-  //}
-  //else {
-  //  if (modelSettings->getForwardModeling())
-  //    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
-  //  else
-  //    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
+        model_settings->getBackgroundType
+        double vsvp = background->getMeanVsVp();
+        setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+      }
+    //} //nAngles
 
-  //  double vsvp = background->getMeanVsVp();
-  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
-  //}
-
-
-    } //nAngles
+      reflectionMatrix_[thisTimeLapse] = reflectionMatrix;
   } //nTimeLapses
+
+  setup_reflection_matrix_ = true;
+
+  //Set up temporary wavelet
+  //1. Check if optimize welllocation //Point f) Comes from xml-model file
+  if(model_settings->getOptimizeWellLocation()) {
+
+  //2. Check if read seismic ok | read_seismic_ok_
+    if(read_seismic_ == true) {
+
+      //3. Use Ricker - wavelet.
+      //4. 1 wavelet per angle
+      for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+
+        std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+        std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+
+        int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+
+        for (int i = 0 ; i < numberOfAngles ; i++) {
+        //5  Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
+
+
+
+
+        }
+
+      }
+
+    }
+  }
+
 
   return true;
 
@@ -1031,8 +1071,8 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
 
 float **
 CommonData::readMatrix(const std::string & fileName, int n1, int n2,
-                            const std::string & readReason,
-                            std::string       & errText)
+                       const std::string & readReason,
+                       std::string       & errText)
 {
   float * tmpRes = new float[n1*n2+1];
   std::ifstream inFile;
@@ -1081,6 +1121,61 @@ CommonData::readMatrix(const std::string & fileName, int n1, int n2,
     LogKit::LogFormatted(LogKit::Low,"failed.\n");
   delete [] tmpRes;
   return(result);
+}
+
+void
+CommonData::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+                                         double                vsvp,
+                                         const ModelSettings * model_settings,
+                                         int                   numberOfAngles,
+                                         int                   thisTimeLapse)
+{
+  int      i;
+  float ** A      = new float * [numberOfAngles];
+
+  double           vsvp2       = vsvp*vsvp;
+  std::vector<int> seismicType = model_settings->getSeismicType(thisTimeLapse);
+  std::vector<float>        angles = model_settings->getAngle(thisTimeLapse);
+
+  for(i = 0; i < numberOfAngles; i++)
+  {
+    double angle = static_cast<double>(angles[i]);
+    A[i] = new float[3];
+    double sint  = sin(angle);
+    double sint2 = sint*sint;
+    if(seismicType[i] == ModelSettings::STANDARDSEIS) {  //PP
+      double tan2t=tan(angle)*tan(angle);
+
+      A[i][0] = float( (1.0 +tan2t )/2.0 ) ;
+      A[i][1] = float( -4*vsvp2 * sint2 );
+      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
+    }
+    else if(seismicType[i] == ModelSettings::PSSEIS) {
+      double cost  = cos(angle);
+      double cosp  = sqrt(1-vsvp2*sint2);
+      double fac   = 0.5*sint/cosp;
+
+      A[i][0] = 0;
+      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
+      A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
+    }
+  }
+  reflectionMatrix = A;
+  double vpvs = 1.0f/vsvp;
+  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
+  std::string text;
+  if (vpvs < model_settings->getVpVsRatioMin()) {
+    LogKit::LogFormatted(LogKit::Warning,"\nA very small Vp/Vs-ratio has been detected. Values below %.2f are regarded unlikely. \n",model_settings->getVpVsRatioMin());
+    text  = "Check the Vp/Vs-ratio. A small value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <minimim-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  }
+  else if (vpvs > model_settings->getVpVsRatioMax()) {
+    LogKit::LogFormatted(LogKit::Warning,"\nA very large Vp/Vs-ratio has been detected. Values above %.2f are regarded unlikely. \n",model_settings->getVpVsRatioMax());
+    text  = "Check the Vp/Vs-ratio. A large value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  }
 }
 
 bool CommonData::optimizeWellLocations() {

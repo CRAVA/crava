@@ -113,6 +113,7 @@ private:
                             std::string                    & error);
 
   bool blockWellsForEstimation();
+
   bool setupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
                                            InputFiles *    input_files);
 
@@ -121,6 +122,12 @@ private:
                               int                 n2,
                               const std::string & readReason,
                               std::string       & errText);
+
+  void  setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+                                     double                vsvp,
+                                     const ModelSettings * modelSettings,
+                                     int                   numberOfAngles,
+                                     int                   thisTimeLapse);
 
   bool optimizeWellLocations();
   bool estimateWaveletShape();
@@ -136,6 +143,7 @@ private:
   bool read_wells_;
   bool well_blocks_;
   bool setup_reflection_matrix_;
+  bool temporary_wavelet_;
   bool optimize_well_location_;
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
@@ -157,7 +165,11 @@ private:
   std::map<std::string, int>                        faciesok_; //Bool?
   std::map<std::string, int>                        nFacies_;
 
-  float                  ** reflectionMatrix_;
+
+  std::map<int, float **> reflectionMatrix_;
+  bool        reflection_matrix_from_file_; //False: created from global vp/vs
+
+  //float                  ** reflectionMatrix_;
 
 
   //Simbox                     * estimation_simbox_;
