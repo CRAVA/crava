@@ -46,7 +46,7 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
                                     const std::vector<std::string>          & /*trend_cube_parameters*/,
                                     const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                     const std::vector<std::vector<float> >  & blocked_logs,
-                                    std::string                             & /*errTxt*/) const
+                                    std::string                             & errTxt) const
 {
   double mean = 0;
   if(estimate_ == true)

@@ -42,6 +42,7 @@ public:
 
   virtual double                         GetOneYearCorrelation() = 0;
 
+  virtual bool                           GetEstimate() const = 0;
 };
 
 //--------------------------------------------------------------//
@@ -85,12 +86,15 @@ public:
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
+
 private:
   const NRLib::TrendStorage            * mean_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 
 };
 
@@ -130,6 +134,8 @@ public:
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
+
 private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
@@ -137,6 +143,7 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 
 //--------------------------------------------------------------//
@@ -180,6 +187,7 @@ public:
   virtual const double                     GetLowerLimit() const                     { return lower_limit_                 ;}
   virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
 
   static void                              CheckBetaConsistency(NRLib::Trend * mean,
                                                                 NRLib::Trend * variance,
@@ -196,6 +204,7 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 
 //--------------------------------------------------------------//
@@ -242,6 +251,7 @@ public:
   virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
   virtual const double                     GetLowerProbability() const               { return lower_probability_           ;}
   virtual const double                     GetUpperProbability() const               { return upper_probability_           ;}
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
 
 private:
   const NRLib::TrendStorage            * mean_;
@@ -254,5 +264,6 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 #endif
