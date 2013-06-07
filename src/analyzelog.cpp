@@ -23,11 +23,13 @@ Analyzelog::Analyzelog(std::vector<WellData *> wells,
                        Background            * background,
                        const Simbox          * simbox,
                        const ModelSettings   * modelSettings,
+                       const bool            & estimateParamCov,
                        std::string           & errTxt)
 {
   pointVar0_ = new float*[3];
-  for(int i=0 ; i<3 ; i++)
-    pointVar0_[i] = new float[3];
+  for(int i=0 ; i<3 ; i++) {
+    pointVar0_[i] = NULL;
+  }
 
   Var0_ = new float*[3];
   for(int i=0 ; i<3 ; i++)
@@ -42,6 +44,7 @@ Analyzelog::Analyzelog(std::vector<WellData *> wells,
 
   estimate(modelSettings,
            background,
+           estimateParamCov,
            errTxt);
 }
 
@@ -50,6 +53,10 @@ Analyzelog::~Analyzelog(void)
   for(int i=0; i<3; i++)
     delete [] pointVar0_[i];
   delete [] pointVar0_;
+
+  for(int i=0; i<3; i++)
+    delete [] Var0_[i];
+  delete [] Var0_;
 }
 
 //
@@ -58,6 +65,7 @@ Analyzelog::~Analyzelog(void)
 void
 Analyzelog::estimate(const ModelSettings * modelSettings,
                      Background          * background,
+                     const bool          & estimateParamCov,
                      std::string         & errTxt)
 {
   float ** lnDataAlpha = new float*[nwells_];
@@ -90,7 +98,8 @@ Analyzelog::estimate(const ModelSettings * modelSettings,
   if (errTxt != "")
     return;
 
-  estimatePointVar0(pointVar0_, lnDataAlpha, lnDataBeta, lnDataRho, errTxt);
+  if(estimateParamCov)
+    estimatePointVar0(pointVar0_, lnDataAlpha, lnDataBeta, lnDataRho, errTxt);
 
   int maxnd;
   calculateNumberOfLags(numberOfLags_, maxnd, errTxt);
@@ -104,7 +113,8 @@ Analyzelog::estimate(const ModelSettings * modelSettings,
                        numberOfLags_, maxnd,
                        errTxt);
 
-  checkVariances(modelSettings, pointVar0_, Var0_, dt, errTxt);
+  if(estimateParamCov)
+    checkVariances(modelSettings, pointVar0_, Var0_, dt, errTxt);
 
   for(int i=0 ; i<nwells_ ; i++)
   {
@@ -278,6 +288,10 @@ Analyzelog::estimatePointVar0(float      ** Var0,
 {
   int nd, i, j, tell1, tell2, tell3, tell4, tell5, tell6;
   double sum1, sum2, sum3, sum4, sum5, sum6;
+
+  for(int i=0 ; i<3 ; i++)
+    Var0[i] = new float[3];
+
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       Var0[i][j] = 0.0;
@@ -794,8 +808,6 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
   // n=nend;
   //
   time(&timeend);
-  LogKit::LogFormatted(LogKit::Low,"\nEstimate parameter variance and parameter temporal correlation in %d seconds.\n",
-                   static_cast<int>(timeend-timestart));
 
   delete [] z;
   delete [] indA;
@@ -821,8 +833,8 @@ void
 Analyzelog::checkVariances(const ModelSettings  * modelSettings,
                            const float  * const * pointVar0,
                            const float  * const * Var0,
-                           float            dt,
-                           std::string    & errTxt)
+                           float                  dt,
+                           std::string          & errTxt)
 {
   //| These min and max values below are used for consistency check. If a variance
   //| is outside these ranges there is probably a problem with the log.
