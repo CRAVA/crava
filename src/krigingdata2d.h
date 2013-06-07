@@ -37,6 +37,7 @@ private:
   std::vector<int>           indexI_;
   std::vector<int>           indexJ_;
   std::vector<int>           count_;
+
 };
 
 #endif
