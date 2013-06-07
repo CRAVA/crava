@@ -87,16 +87,16 @@ private:
                                  std::string                      & err_text,
                                  bool                             & failed);
 
-  bool readSeismicData(ModelSettings  * modelSettings,
-                       InputFiles     * inputFiles);
+  bool readSeismicData(ModelSettings  * model_settings,
+                       InputFiles     * input_files);
 
   bool       checkThatDataCoverGrid(const SegY   * segy,
                                     float         offset,
                                     const Simbox * timeCutSimbox,
                                     float         guard_zone);
 
-  bool readWellData(ModelSettings  * modelSettings,
-                    InputFiles     * inputFiles);
+  bool readWellData(ModelSettings  * model_settings,
+                    InputFiles     * input_files);
 
   void        readNorsarWell(const std::string              & wellFileName,
                              NRLib::Well                    & new_well,
@@ -113,7 +113,15 @@ private:
                             std::string                    & error);
 
   bool blockWellsForEstimation();
-  bool setupReflectionMatrixAndTempWavelet();
+  bool setupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
+                                           InputFiles *    input_files);
+
+  float  ** readMatrix(const std::string & fileName,
+                              int                 n1,
+                              int                 n2,
+                              const std::string & readReason,
+                              std::string       & errText);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
@@ -136,7 +144,8 @@ private:
   Simbox          estimation_simbox_;
   NRLib::Volume   full_inversion_volume_;
 
-  std::vector<SeismicStorage> seismic_data_;
+  //std::vector<SeismicStorage> seismic_data_;
+  std::map<int, std::vector<SeismicStorage> > seismic_data_;
   std::vector<NRLib::Well>     wells_;
 
   //Well variables not contained in NRlib::Well
@@ -147,6 +156,9 @@ private:
   std::map<std::string, std::vector<int> >          faciesNr_;
   std::map<std::string, int>                        faciesok_; //Bool?
   std::map<std::string, int>                        nFacies_;
+
+  float                  ** reflectionMatrix_;
+
 
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;

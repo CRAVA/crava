@@ -216,52 +216,55 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
   return (!failed);
 }
 
-bool CommonData::readSeismicData(ModelSettings  * modelSettings,
-                                 InputFiles     * inputFiles)
+bool CommonData::readSeismicData(ModelSettings  * model_settings,
+                                 InputFiles     * input_files)
 {
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
-  for(size_t i = 0; i < inputFiles->getTimeLapseSeismicFiles().size(); i++) {
-    timelaps_seismic_files += inputFiles->getNumberOfSeismicFiles(i);
+  for(size_t i = 0; i < input_files->getTimeLapseSeismicFiles().size(); i++) {
+    timelaps_seismic_files += input_files->getNumberOfSeismicFiles(i);
   }
-  if(timelaps_seismic_files == 0 && inputFiles->getSeismicFiles().size() == 0)
+  if(timelaps_seismic_files == 0 && input_files->getSeismicFiles().size() == 0)
     return(true);
 
   //Skip if mode is estimation and wavelet/noise is not set for estimation.
-  if(modelSettings->getEstimationMode() == true && modelSettings->getEstimateWaveletNoise() == false)
+  if(model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
     return(true);
 
 //  const std::vector<std::string> & seismic_files = inputFiles->getSeismicFiles();
-  const std::vector<std::vector<std::string> > seismic_timelapse_files = inputFiles->getTimeLapseSeismicFiles();
+  const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
 
-  int nTimeLapses = modelSettings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+  int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
 //  int nVintages = modelSettings->getNumberOfVintages();
-  int numberOfAngles = modelSettings->getNumberOfTimeLapses();
+  //int numberOfAngles = model_settings->getNumberOfTimeLapses();
   //bool failed = false;
 
   for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
-    if(inputFiles->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
+    if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
 
       LogKit::WriteHeader("Reading seismic data");
 
-      std::vector<float> angles = modelSettings->getAngle(thisTimeLapse);
-      std::vector<float> offset = modelSettings->getLocalSegyOffset(thisTimeLapse);
+      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+      std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+
+      int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+      std::vector<SeismicStorage> seismic_data_angle;
 
       for (int i = 0 ; i < numberOfAngles ; i++) {
 
-        std::string filename = inputFiles->getSeismicFile(thisTimeLapse,i);
+        std::string filename = input_files->getSeismicFile(thisTimeLapse,i);
         int fileType = IO::findGridType(filename);
 
         if(fileType == IO::SEGY) { //From ModelGeneral::readSegyFile
 
           SegY * segy = NULL;
-          TraceHeaderFormat * format = modelSettings->getTraceHeaderFormat(thisTimeLapse,i);
+          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(thisTimeLapse,i);
 
           if(format == NULL) { //Unknown format
             std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
-            if (modelSettings->getTraceHeaderFormat() != NULL)
+            if (model_settings->getTraceHeaderFormat() != NULL)
             {
-              traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
+              traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
             }
             segy = new SegY(filename,
                             offset[i],
@@ -271,7 +274,7 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
           else //Known format, read directly.
             segy = new SegY(filename, offset[i], *format);
 
-          float guard_zone = modelSettings->getGuardZone();
+          float guard_zone = model_settings->getGuardZone();
 
 
           if(checkThatDataCoverGrid(segy, offset[i], &estimation_simbox_, guard_zone) == true) { //Change this to full_inversion_volume_?
@@ -286,7 +289,7 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
             segy->CreateRegularGrid();
 
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
-            seismic_data_.push_back(seismicdata);
+            seismic_data_angle.push_back(seismicdata);
           }
           else
             LogKit::LogFormatted(LogKit::Warning, "Data from segy-file " + filename + " is not read.\n");
@@ -308,22 +311,25 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
           }
 
           if(failed == false) {
-            SeismicStorage seismicdata;
+            SeismicStorage seismicdata_tmp;
 
             if(fileType == IO::STORM)
-              seismicdata = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
+              seismicdata_tmp = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
             else
-              seismicdata = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
+              seismicdata_tmp = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
 
-            seismic_data_.push_back(seismicdata);
+            seismic_data_angle.push_back(seismicdata_tmp);
           }
 
         } //STORM / SGRI
         else
           LogKit::LogFormatted(LogKit::Warning, "Error when reading file " + filename +". File type not recognized.\n");
-      }
-    }
-  }
+      } //nAngles
+
+      seismic_data_[thisTimeLapse] = seismic_data_angle;
+
+    }//ifSeismicFiles
+  } //nTimeLapses
 
   return true;
 }
@@ -384,22 +390,22 @@ CommonData::checkThatDataCoverGrid(const SegY   * segy,
   return true;
 }
 
-bool CommonData::readWellData(ModelSettings  * modelSettings,
-                              InputFiles     * inputFiles)
+bool CommonData::readWellData(ModelSettings  * model_settings,
+                              InputFiles     * input_files)
 {
 
-  int nWells = modelSettings->getNumberOfWells();
+  int nWells = model_settings->getNumberOfWells();
   if(nWells > 0)
     LogKit::WriteHeader("Reading wells");
 
-  std::vector<std::string> logNames = modelSettings->getLogNames();
-  std::vector<bool> inverseVelocity = modelSettings->getInverseVelocity();
-  bool faciesLogGiven = modelSettings->getFaciesLogGiven();
+  std::vector<std::string> logNames = model_settings->getLogNames();
+  std::vector<bool> inverseVelocity = model_settings->getInverseVelocity();
+  bool faciesLogGiven = model_settings->getFaciesLogGiven();
 
   for(int i=0 ; i<nWells; i++) {
     std::string error = "";
     NRLib::Well new_well;
-    std::string wellFileName = inputFiles->getWellFile(i);
+    std::string wellFileName = input_files->getWellFile(i);
 
     if(wellFileName.find(".nwh",0) != std::string::npos)
       readNorsarWell(wellFileName, new_well, logNames, inverseVelocity, faciesLogGiven, error); //Norsar well, from WellData::readNorsarWell
@@ -950,17 +956,131 @@ CommonData::readRMSWell(const std::string              & wellFileName,
   nFacies_[well_name] = nFacies;
 }
 
-
-
-
-
 bool CommonData::blockWellsForEstimation() {
   return true;
 }
 
-bool CommonData::setupReflectionMatrixAndTempWavelet() {
+bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
+                                                     InputFiles * input_files) {
+  LogKit::WriteHeader("Reflection matrix");
+  //
+  // About to process wavelets and energy information. Needs the a-matrix, so create
+  // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
+  //
+  const std::string & reflMatrFile = input_files->getReflMatrFile();
+  const double        vpvs         = model_settings->getVpVsRatio();
+
+
+  int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+//  int nVintages = modelSettings->getNumberOfVintages();
+  //int numberOfAngles = model_settings->getNumberOfTimeLapses();
+  //bool failed = false;
+
+  for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+    LogKit::WriteHeader("Reading seismic data");
+
+    std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+    std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+
+    int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+
+    for (int i = 0 ; i < numberOfAngles ; i++) {
+
+
+
+  if (reflMatrFile != "") {
+    std::string tmpErrText("");
+    reflectionMatrix_ = readMatrix(reflMatrFile, numberOfAngles, 3, "reflection matrix", tmpErrText);
+    if(reflectionMatrix_ == NULL) {
+      LogKit::LogFormatted(LogKit::Error, "Reading of file "+reflMatrFile+ " for reflection matrix failed\n");
+      LogKit::LogFormatted(LogKit::Error, tmpErrText);
+      //errText += "Reading of file "+reflMatrFile+ " for reflection matrix failed\n";
+      //errText += tmpErrText;
+      return false;
+      //failed = true;
+    }
+    LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+  }
+  //else if (vpvs != RMISSING) {
+  //  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
+  //  double vsvp = 1.0/vpvs;
+  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
+  //}
+  //else if (background == NULL || modelSettings->getVpVsRatioFromWells()) {
+  //  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
+  //  double vsvp = vsvpFromWells(wells, modelSettings->getNumberOfWells());
+  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
+  //}
+  //else {
+  //  if (modelSettings->getForwardModeling())
+  //    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
+  //  else
+  //    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
+
+  //  double vsvp = background->getMeanVsVp();
+  //  setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
+  //}
+
+
+    } //nAngles
+  } //nTimeLapses
+
   return true;
 
+}
+
+float **
+CommonData::readMatrix(const std::string & fileName, int n1, int n2,
+                            const std::string & readReason,
+                            std::string       & errText)
+{
+  float * tmpRes = new float[n1*n2+1];
+  std::ifstream inFile;
+  NRLib::OpenRead(inFile,fileName);
+  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+  LogKit::LogFormatted(LogKit::Low,text);
+  std::string storage;
+  int index = 0;
+  int error = 0;
+
+  while(error == 0 && inFile >> storage) {
+    if(index < n1*n2) {
+      try {
+        tmpRes[index] = NRLib::ParseType<float>(storage);
+      }
+      catch (NRLib::Exception & e) {
+        errText += "Error in "+fileName+"\n";
+        errText += e.what();
+        error = 1;
+      }
+    }
+    index++;
+  }
+  if(error == 0) {
+    if(index != n1*n2) {
+      error = 1;
+      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
+    }
+  }
+
+  float ** result = NULL;
+  if(error == 0) {
+    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+    result = new float * [n1];
+    int i, j;
+    index = 0;
+    for(i=0;i<n1;i++) {
+      result[i] = new float[n2];
+      for(j=0;j<n2;j++) {
+        result[i][j] = tmpRes[index];
+        index++;
+      }
+    }
+  }
+  else
+    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+  delete [] tmpRes;
+  return(result);
 }
 
 bool CommonData::optimizeWellLocations() {
