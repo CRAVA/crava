@@ -2190,7 +2190,7 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
     // the three elastic dimensions have been reduced to two (x and y) and z is the trend dim
     undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*nBinsTrend_);
   }else if (nDimensions == 5){
-    // the three elastic dimensions have been reduced to two (x and y) and there are two 
+    // the three elastic dimensions have been reduced to two (x and y) and there are two
     // trend dimensions. Only two dimensions in the simbox are used.
     undefSum = p_undefined/(nBinsTrend_*nBinsTrend_*volume[0]->getnx()*volume[0]->getny());
   }

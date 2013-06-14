@@ -2125,7 +2125,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
     }
     else{
       file << std::fixed << std::setprecision(6);
-    } 
+    }
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
         for(i=0;i<nx-1;i++) {

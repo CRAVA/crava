@@ -540,7 +540,7 @@ FFTFileGrid::writeFile(const std::string & fileName,
 }
 
 void
-FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, 
+FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii,
                             bool padding, bool flat, bool scientific_format)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
