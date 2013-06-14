@@ -13,7 +13,8 @@ public:
 
   virtual ~TrendStorage();
 
-  virtual TrendStorage * Clone() const = 0;
+  virtual TrendStorage * Clone()       const = 0;
+  virtual bool           GetEstimate() const = 0;
 
   virtual Trend * GenerateTrend(const std::string                       & /*path*/,
                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
@@ -36,8 +37,9 @@ public:
 
   virtual ~TrendConstantStorage();
 
-  virtual TrendStorage * Clone()   const { return new TrendConstantStorage(*this) ;}
-  virtual double         GetMean() const { return mean_value_                     ;}
+  virtual TrendStorage * Clone()       const { return new TrendConstantStorage(*this) ;}
+  virtual double         GetMean()     const { return mean_value_                     ;}
+  virtual bool           GetEstimate() const { return estimate_                       ;}
 
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,
@@ -65,6 +67,7 @@ public:
   virtual ~Trend1DStorage();
 
   virtual TrendStorage * Clone()                                                                       const { return new Trend1DStorage(*this) ;}
+  virtual bool           GetEstimate()                                                                 const { return estimate_                 ;}
 
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,
@@ -92,6 +95,7 @@ public:
   virtual ~Trend2DStorage();
 
   virtual TrendStorage * Clone()                                                                       const { return new Trend2DStorage(*this) ;}
+  virtual bool           GetEstimate()                                                                 const { return estimate_                 ;}
 
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,

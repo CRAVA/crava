@@ -328,7 +328,7 @@ SeismicParametersHolder::invFFTCovGrids()
 void
 SeismicParametersHolder::FFTCovGrids()
 {
-  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids in seismic parameters holder from time domain to FFT domain...");
+  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids from time domain to FFT domain...");
 
   if (!covAlpha_->getIsTransformed())
     covAlpha_->fftInPlace();
