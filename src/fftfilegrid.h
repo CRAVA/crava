@@ -53,9 +53,10 @@ public:
                          const GridMapping * depthMap  = NULL,
                          const GridMapping * timeMap   = NULL,
                          const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                         bool padding=false);  //Use this instead of the ones below.
+                         bool                padding   = false,
+                         bool                scientific_format = false);  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
-                              bool padding = false, bool flat = false);
+                              bool padding = false, bool flat = false, bool scientific_format = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
                              const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
