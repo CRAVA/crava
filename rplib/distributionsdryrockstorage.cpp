@@ -304,9 +304,9 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
 TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(std::vector<DistributionWithTrendStorage *> vp,
                                                                  std::vector<DistributionWithTrendStorage *> vs,
                                                                  std::vector<DistributionWithTrendStorage *> density,
-                                                                 std::vector<double>                         correlation_vp_vs,
-                                                                 std::vector<double>                         correlation_vp_density,
-                                                                 std::vector<double>                         correlation_vs_density,
+                                                                 std::vector<DistributionWithTrendStorage *> correlation_vp_vs,
+                                                                 std::vector<DistributionWithTrendStorage *> correlation_vp_density,
+                                                                 std::vector<DistributionWithTrendStorage *> correlation_vs_density,
                                                                  std::vector<DistributionWithTrendStorage *> total_porosity,
                                                                  std::vector<DistributionWithTrendStorage *> mineral_k)
 : vp_(vp),
@@ -330,6 +330,15 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
 
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_vp_vs_[0]->GetIsShared() == false)
+    delete correlation_vp_vs_[0];
+
+  if(correlation_vp_density_[0]->GetIsShared() == false)
+    delete correlation_vp_density_[0];
+
+  if(correlation_vs_density_[0]->GetIsShared() == false)
+    delete correlation_vs_density_[0];
 
   if(total_porosity_[0]->GetIsShared() == false)
     delete total_porosity_[0];
@@ -376,11 +385,42 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
       tmpErrTxt += "Density can not be estimated from wells for a <dry-rock>\n";
   }
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  std::vector<double> corr_vp_vs(n_vintages, 0);
+  std::vector<double> corr_vp_density(n_vintages, 0);
+  std::vector<double> corr_vs_density(n_vintages, 0);
 
-  std::vector<double> corr_vp_vs;
-  std::vector<double> corr_vp_density;
-  std::vector<double> corr_vs_density;
+  for(int i=0; i<n_vintages_vp_vs; i++) {
+    if(correlation_vp_vs_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-vp-vs> can not be estimated from wells\n";
+
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_[i], "correlation", corr_vp_vs[i], errTxt);
+
+    if(corr_vp_vs[i] > 1 || corr_vp_vs[i] < -1)
+        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_vp_density; i++) {
+    if(correlation_vp_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-vp-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
+
+    if(corr_vp_density[i] > 1 || corr_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_vs_density; i++) {
+    if(correlation_vs_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-vs-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
+
+    if(corr_vs_density[i] > 1 || corr_vs_density[i] < -1)
+        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsDryRock *>  dist_dryrock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
@@ -417,20 +457,14 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
       else
         porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
-      if(i < n_vintages_vp_vs)
-        corr_vp_vs.push_back(correlation_vp_vs_[i]);
-      else
-        corr_vp_vs.push_back(corr_vp_vs[i-1]);
+      if(i >= n_vintages_vp_vs)
+        corr_vp_vs[i] = corr_vp_vs[i-1];
 
-      if(i < n_vintages_vp_density)
-        corr_vp_density.push_back(correlation_vp_density_[i]);
-      else
-        corr_vp_density.push_back(corr_vp_density[i-1]);
+      if(i >= n_vintages_vp_density)
+        corr_vp_density[i] = corr_vp_density[i-1];
 
-      if(i < n_vintages_vs_density)
-        corr_vs_density.push_back(correlation_vs_density_[i]);
-      else
-        corr_vs_density.push_back(corr_vs_density[i-1]);
+      if(i >= n_vintages_vs_density)
+        corr_vs_density[i] = corr_vs_density[i-1];
     }
 
     for(int i=0; i<n_vintages; i++) {
@@ -486,9 +520,9 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
 TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                                                std::vector<DistributionWithTrendStorage *> shear_modulus,
                                                                std::vector<DistributionWithTrendStorage *> density,
-                                                               std::vector<double>                         correlation_bulk_shear,
-                                                               std::vector<double>                         correlation_bulk_density,
-                                                               std::vector<double>                         correlation_shear_density,
+                                                               std::vector<DistributionWithTrendStorage *> correlation_bulk_shear,
+                                                               std::vector<DistributionWithTrendStorage *> correlation_bulk_density,
+                                                               std::vector<DistributionWithTrendStorage *> correlation_shear_density,
                                                                std::vector<DistributionWithTrendStorage *> total_porosity,
                                                                std::vector<DistributionWithTrendStorage *> mineral_k)
 : bulk_modulus_(bulk_modulus),
@@ -513,6 +547,15 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
 
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_bulk_shear_[0]->GetIsShared() == false)
+    delete correlation_bulk_shear_[0];
+
+  if(correlation_bulk_density_[0]->GetIsShared() == false)
+    delete correlation_bulk_density_[0];
+
+  if(correlation_shear_density_[0]->GetIsShared() == false)
+    delete correlation_shear_density_[0];
 
   if(total_porosity_[0]->GetIsShared() == false)
     delete total_porosity_[0];
@@ -559,6 +602,40 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
       tmpErrTxt += "Density can not be estimated from wells for a <dry-rock>\n";
   }
 
+  std::vector<double> corr_bulk_shear;
+  std::vector<double> corr_bulk_density;
+  std::vector<double> corr_shear_density;
+
+  for(int i=0; i<n_vintages_bulk_shear; i++) {
+    if(correlation_bulk_shear_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-bulk-shear> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_[i], "correlation", corr_bulk_shear[i], errTxt);
+
+    if(corr_bulk_shear[i] > 1 || corr_bulk_shear[i] < -1)
+        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_bulk_density; i++) {
+    if(correlation_bulk_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-bulk-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_[i], "correlation", corr_bulk_density[i], errTxt);
+
+    if(corr_bulk_density[i] > 1 || corr_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_shear_density; i++) {
+    if(correlation_shear_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-shear-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_shear_density_[i], "correlation", corr_shear_density[i], errTxt);
+
+    if(corr_shear_density[i] > 1 || corr_shear_density[i] < -1)
+        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsDryRock *>  dist_dryrock(n_vintages, NULL);
@@ -567,10 +644,6 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> mineral_k_dist_with_trend(n_vintages, NULL);
-
-  std::vector<double> corr_bulk_shear;
-  std::vector<double> corr_bulk_density;
-  std::vector<double> corr_shear_density;
 
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
@@ -609,19 +682,13 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
       if(test_shear < lower_mega || test_shear > upper_mega)
         tmpErrTxt += "Shear modulus need to be given in kPa\n";
 
-      if(i < n_vintages_bulk_shear)
-        corr_bulk_shear.push_back(correlation_bulk_shear_[i]);
-      else
+      if(i >= n_vintages_bulk_shear)
         corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
 
-      if(i < n_vintages_bulk_density)
-        corr_bulk_density.push_back(correlation_bulk_density_[i]);
-      else
+      if(i >= n_vintages_bulk_density)
         corr_bulk_density.push_back(corr_bulk_density[i-1]);
 
-      if(i < n_vintages_shear_density)
-        corr_shear_density.push_back(correlation_shear_density_[i]);
-      else
+      if(i >= n_vintages_shear_density)
         corr_shear_density.push_back(corr_shear_density[i-1]);
     }
 

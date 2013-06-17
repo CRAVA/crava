@@ -39,7 +39,7 @@ class TabulatedVelocityFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                 std::vector<DistributionWithTrendStorage *> density,
-                                std::vector<double>                         correlation_vp_density_);
+                                std::vector<DistributionWithTrendStorage *> correlation_vp_density_);
 
   virtual ~TabulatedVelocityFluidStorage();
 
@@ -53,7 +53,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_vp_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -61,7 +61,7 @@ class TabulatedModulusFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                std::vector<DistributionWithTrendStorage *> density,
-                               std::vector<double>                         correlation_bulk_density_);
+                               std::vector<DistributionWithTrendStorage *> correlation_bulk_density);
 
   virtual ~TabulatedModulusFluidStorage();
 
@@ -75,7 +75,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_bulk_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_;
 };
 
 //----------------------------------------------------------------------------------//
