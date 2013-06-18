@@ -5935,8 +5935,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
   if ((modelSettings_->getSeismicQualityGridValue() != RMISSING || modelSettings_->getSeismicQualityGridRange() != RMISSING) &&
       !(modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
-    LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Paramteres are set under <seismic-quality-grid> <advanced-settings>, "
-                        "but this grid is not set to be written under <io-settings> <grid-output> <other-settings>, so these are ignored.\n");
+    errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
+                        "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
 
   }
 
