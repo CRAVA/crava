@@ -98,19 +98,19 @@ private:
   bool readWellData(ModelSettings  * model_settings,
                     InputFiles     * input_files);
 
-  void        readNorsarWell(const std::string              & wellFileName,
-                             NRLib::Well                    & new_well,
-                             const std::vector<std::string> & logNames,
-                             const std::vector<bool>        & inverseVelocity,
-                             bool                             faciesLogGiven,
-                             std::string                    & error);
+  //void        readNorsarWell(const std::string              & wellFileName,
+  //                           NRLib::Well                    & new_well,
+  //                           const std::vector<std::string> & logNames,
+  //                           const std::vector<bool>        & inverseVelocity,
+  //                           bool                             faciesLogGiven,
+  //                           std::string                    & error);
 
-  void          readRMSWell(const std::string              & wellFileName,
-                            NRLib::Well                    & new_well,
-                            const std::vector<std::string> & logNames,
-                            const std::vector<bool>        & inverseVelocity,
-                            bool                             faciesLogGiven,
-                            std::string                    & error);
+  //void          readRMSWell(const std::string              & wellFileName,
+  //                          NRLib::Well                    & new_well,
+  //                          const std::vector<std::string> & logNames,
+  //                          const std::vector<bool>        & inverseVelocity,
+  //                          bool                             faciesLogGiven,
+  //                          std::string                    & error);
 
   bool blockWellsForEstimation();
 
@@ -157,13 +157,13 @@ private:
   std::vector<NRLib::Well>     wells_;
 
   //Well variables not contained in NRlib::Well
-  std::map<std::string, int>                        timemissing_;
-  std::map<std::string, double>                     xpos0_;
-  std::map<std::string, double>                     ypos0_;
-  std::map<std::string, std::vector<std::string> >  faciesnames_;
-  std::map<std::string, std::vector<int> >          faciesNr_;
-  std::map<std::string, int>                        faciesok_; //Bool?
-  std::map<std::string, int>                        nFacies_;
+  //std::map<std::string, int>                        timemissing_;
+  //std::map<std::string, double>                     xpos0_;
+  //std::map<std::string, double>                     ypos0_;
+  //std::map<std::string, std::vector<std::string> >  faciesnames_;
+  //std::map<std::string, std::vector<int> >          faciesNr_;
+  //std::map<std::string, int>                        faciesok_; //Bool?
+  //std::map<std::string, int>                        nFacies_;
 
 
   std::map<int, float **> reflectionMatrix_;

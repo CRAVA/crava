@@ -24,6 +24,8 @@
 #include <string>
 
 #include "well.hpp"
+#include "norsarwell.hpp"
+#include "rmswell.hpp"
 
 using namespace NRLib;
 
@@ -44,6 +46,12 @@ Well::Well(const std::string & name,
 }
 
 
+Well::Well(const std::string & file_name,
+           bool read_ok)
+{
+  ReadWell(file_name, read_ok);
+}
+
 
 Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
            const std::map<std::string,std::vector<int> >    & disc_log,
@@ -56,9 +64,30 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
-
 Well::~Well()
 {}
+
+void
+Well::ReadWell(const std::string& file_name,
+               bool read_ok)
+{
+  if(file_name.find(".nwh",0) != std::string::npos) {
+    NRLib::RMSWell well(file_name);
+    well_name_ = well.GetWellName();
+    cont_log_ = well.GetContLog();
+    disc_log_ = well.GetDiscLog();
+    read_ok = true;
+  }
+  else if(file_name.find(".rms",0) != std::string::npos) {
+    NRLib::NorsarWell well(file_name);
+    well_name_ = well.GetWellName();
+    cont_log_ = well.GetContLog();
+    disc_log_ = well.GetDiscLog();
+    read_ok = true;
+  }
+  else
+    read_ok = false;
+}
 
 
 void

@@ -984,6 +984,9 @@
     <ClCompile Include="src\seismicstorage.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1654,6 +1657,9 @@
     </ClInclude>
     <ClInclude Include="src\seismicstorage.h">
       <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
