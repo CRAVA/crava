@@ -12,6 +12,8 @@
 #include "src/welldata.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "src/blockedlogscommon.h"
+#include "src/tasklist.h"
 
 #include "src/seismicstorage.h"
 
@@ -89,9 +91,18 @@ private:
 
   bool readSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles);
-  bool readWellData(ModelSettings  * modelSettings,
-                    InputFiles     * inputFiles);
-  bool blockWellsForEstimation();
+
+  bool readWellData(ModelSettings     * modelSettings,
+                    InputFiles        * inputFiles);
+
+  bool blockWellsForEstimation(const ModelSettings                            * const model_settings, 
+                               const InputFiles                               * const input_files, 
+                               const Simbox                                   & estimation_simbox, 
+                               const NRLib::Volume                            & full_inversion_volume, 
+                               const std::vector<NRLib::Well>                 & wells,
+                               std::vector<BlockedLogsCommon *>               & blocked_logs_common,
+                               std::string                                    & err_text);
+
   bool setupReflectionMatrixAndTempWavelet();
   bool optimizeWellLocations();
   bool estimateWaveletShape();
@@ -120,9 +131,10 @@ private:
 
   std::vector<SeismicStorage> seismic_data_;
 
-  //FFTGrid                   ** seisCube_;              ///< Seismic data cubes
-  std::vector<WellData *>      welldata_;                      ///< Well data
-  std::vector<NRLib::Well>     wells_;
+  //FFTGrid                   ** seisCube_;                 ///< Seismic data cubes
+  std::vector<WellData *>           welldata_;              ///< Well data
+  std::vector<BlockedLogsCommon *>  blocked_logs_common_;   ///< Blocked wells for estimation
+  std::vector<NRLib::Well>          wells_;
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;
 

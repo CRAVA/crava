@@ -46,15 +46,18 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 3. read well data
   if(!failed){
-    read_wells_ = readWellData(model_settings, input_files)
+    read_wells_ = readWellData(model_settings, input_files);
     failed = !read_wells_;
+
   }
 
   // 4. block wells for estimation
-  // if well position is to be optimized
+  // if well position is to be optimized or 
+  // if wavelet/noise should be estimated or
+  // if correlations should be estimated
   if(!failed){
     if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations()){
-
+      block_wells_ = blockWellsForEstimation(model_settings, input_files, estimation_simbox_, full_inversion_volume_, wells_, blocked_logs_common_, err_text);
     }
   }
 
@@ -883,10 +886,6 @@ bool CommonData::readWellData(ModelSettings  * modelSettings,
     return true;
 }
 
-bool CommonData::blockWellsForEstimation() {
-  return true;
-
-}
 
 bool CommonData::setupReflectionMatrixAndTempWavelet() {
   return true;
@@ -1382,4 +1381,23 @@ void CommonData::setSurfacesMultipleIntervals(Simbox                         & e
   delete top_surface_flat;
   delete base_surface_flat;
   
+}
+
+
+bool CommonData::blockWellsForEstimation(const ModelSettings                            * const model_settings, 
+                                         const InputFiles                               * const input_files, 
+                                         const Simbox                                   & estimation_simbox, 
+                                         const NRLib::Volume                            & full_inversion_volume, 
+                                         const std::vector<NRLib::Well>                 & wells,
+                                         std::vector<BlockedLogsCommon *>               & blocked_logs_common,
+                                         std::string                                    & err_text){
+  bool failed = false;
+  unsigned int n_wells = wells.size();
+
+  for (unsigned int i=0; i<n_wells; i++){
+    BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], &estimation_simbox);
+    blocked_logs_common.push_back(blocked_log);
+  }
+
+  return failed;
 }
