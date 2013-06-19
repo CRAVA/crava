@@ -28,9 +28,9 @@ SeismicStorage::SeismicStorage(std::string   filename,
 {
 }
 
-SeismicStorage::SeismicStorage(std::string   filename,
-                               int           seismic_type,
-                               float         angle,
+SeismicStorage::SeismicStorage(std::string     filename,
+                               int             seismic_type,
+                               float           angle,
                                StormContGrid * storm_grid)
  : file_name_(filename),
    angle_(angle),
@@ -43,33 +43,3 @@ SeismicStorage::SeismicStorage(std::string   filename,
 SeismicStorage::~SeismicStorage()
 {
 }
-
-//void
-//SeismicStorage::SeismicStorageSegy(std::string   filename,
-//                                   int           seismic_type,
-//                                   float         angle,
-//                                   NRLib::SegY * segy)
-//
-//{
-//  setFileName(filename);
-//  setAngle(angle);
-//  setSeismicType(seismic_type);
-//  setSegY(segy);
-//}
-
-//void
-//SeismicStorage::SeismicStorageStorm(std::string   filename,
-//                                    int           seismic_type,
-//                                    float         angle,
-//                                    StormContGrid storm_grid)
-//
-//{
-//  setFileName(filename);
-//  setAngle(angle);
-//  setSeismicType(seismic_type);
-//  setStorm(storm_grid);
-//}
-
-
-
-

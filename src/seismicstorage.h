@@ -46,22 +46,13 @@ public:
   void          setSeismicType(int seismic_type)        { seismic_type_ = seismic_type ;}
   void          setAngle(float angle)                   { angle_ = angle ;}
   void          setSegY(NRLib::SegY * segy)             { segy_ = segy ;}
-  void          setStorm(StormContGrid * stormgrid)       { storm_grid_ = stormgrid ;}
+  void          setStorm(StormContGrid * stormgrid)     { storm_grid_ = stormgrid ;}
 
 private:
-  //void SeismicStorageSegy(std::string   filename,
-  //                        int           seismic_type,
-  //                        float         angle,
-  //                        NRLib::SegY * segy);
-
-  //void SeismicStorageStorm(std::string   filename,
-  //                         int           seismic_type,
-  //                         float         angle,
-  //                         StormContGrid storm_grid);
-
   std::string   file_name_;
-  int           seismic_type_; /// Se seismicTypes above
   float         angle_;
+  int           seismic_type_; /// Se seismicTypes above
+
   NRLib::SegY * segy_;
   StormContGrid * storm_grid_;
 

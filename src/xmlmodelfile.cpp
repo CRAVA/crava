@@ -6141,7 +6141,6 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         }
       }
 
-
       //Rock physics consistency per interval
       if(modelSettings_->getFaciesProbFromRockPhysics() == true) {
 
@@ -6150,8 +6149,15 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
           std::map<std::string, float> facies_probabilities = it->second;
 
+          for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <prior-probabilities> for interval "
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+          }
         }
-      }
+      } 
     }
 
     //Check that all intervals have gotten a volume fraction
@@ -6174,14 +6180,20 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
         for(std::map<std::string, std::map<std::string, float> >::const_iterator it = volume_fraction_interval.begin(); it != volume_fraction_interval.end(); it++) {
           std::map<std::string, float> volume_fractions = it->second;
 
+          for(std::map<std::string, float>::const_iterator it = volume_fractions.begin(); it != volume_fractions.end(); it++) {
+            std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
+            if(iter == rock_storage.end())
+              errTxt += "Problem with rock physics prior model under <volume-fractions> for interval "
+                        + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
+        }
+      }
+    }
 
-        /*
-          // Compare names in rock physics model with names given as input in proability cubes
-          else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
-            const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();
-            */
+    //Check that intervals under prior-prob and volume fractions containes the same intervals
+    if(prior_facies_prob_interval.size() > 0 && volume_fraction_interval.size() > 0) {
+
       for(std::map<std::string, std::map<std::string, float> >::const_iterator it = prior_facies_prob_interval.begin(); it != prior_facies_prob_interval.end(); it++) {
 
         std::map<std::string, float> facies_probabilities = it->second;
@@ -6196,8 +6208,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
             errTxt += "Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
         }
       }
-
-    }
+    } 
 
     //Check that all intervals are used under correlation direction
     if(modelSettings_->getCorrDirIntervalUsed() == true) {
@@ -6227,12 +6238,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
            errTxt += "There is missing correlation direction under <prior-model>, <correlation-direction> for interval " + interval_names[i] + ".\n";
       }
     }
+  } //Interval
 
-
-
-
-    }
-  }
 }
 
 void

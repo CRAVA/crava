@@ -26,6 +26,7 @@
 #include <sstream>
 #include <map>
 
+
 namespace NRLib {
   class Well{
   public:
@@ -36,6 +37,10 @@ namespace NRLib {
     Well(const std::string & name,
          double              rmissing = -999.0,
          int                 imissing = -999);
+
+    /// Construct well from file
+    Well(const std::string & file_name,
+         bool read_ok);
 
     /// Constructor
     /// \param[in] cont_log Continuous logs
@@ -60,6 +65,10 @@ namespace NRLib {
     std::vector<int> & GetDiscLog(const std::string& name);
     /// Return discrete logs
     const std::vector<int> & GetDiscLog(const std::string& name) const;
+
+    /// Read a well from a file-name
+    void ReadWell(const std::string&file_name,
+                  bool read_ok);
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
