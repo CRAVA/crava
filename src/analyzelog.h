@@ -18,18 +18,20 @@ public:
              Background            * background,
              const Simbox          * simbox,
              const ModelSettings   * modelSettings,
+             const bool            & estimateParamCov,
              std::string           & errTxt);
+
   ~Analyzelog(void);
 
   float        ** getVar0(void)         const { return Var0_         ;}
-  float        ** getPointVar0(void)    const { return pointVar0_    ;}
   float         * getCorrT(void)        const { return CorrT_        ;}
   int             getNumberOfLags(void) const { return numberOfLags_ ;}
 
 private:
   void            estimate(const ModelSettings * modelSettings,
-                           Background    * background,
-                           std::string   & errTxt);
+                           Background          * background,
+                           const bool          & estimateParamCov,
+                           std::string         & errTxt);
 
   void            estimateLnData(float      **& lnData,
                                  FFTGrid      * background,
@@ -65,8 +67,8 @@ private:
   void            checkVariances(const ModelSettings  * modelSettings,
                                  const float  * const * pointVar0,
                                  const float  * const * Var0,
-                                 float            dt,
-                                 std::string    & errTxt);
+                                 float                  dt,
+                                 std::string          & errTxt);
 
   const Simbox          * simbox_;
   std::vector<WellData *> wells_;

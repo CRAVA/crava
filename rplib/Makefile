@@ -1,6 +1,6 @@
 include ../Makeheader
 
-INCLUDE =  -I.. -I ../libs/fft/include -I ../libs
+INCLUDE =  -I.. -I../libs/fft/include -I../libs
 CPPFLAGS += $(INCLUDE)
 
 OBJDIR = ../obj

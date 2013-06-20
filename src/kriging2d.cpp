@@ -108,10 +108,10 @@ Kriging2D::fillKrigingVector(NRLib::Vector          & k,
   }
 }
 
-CovGrid2D & 
+CovGrid2D &
 Kriging2D::makeCovGrid2D(const Simbox * simbox,
-                         Vario  * vario,
-                         int      debugFlag)
+                         Vario        * vario,
+                         int            debugFlag)
 {
   //
   // Pretabulate all needed covariances
