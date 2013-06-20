@@ -44,9 +44,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setupReflectionMatrixAndTempWavelet(model_settings,
                                       input_files);
 
-  //if(readWellData(model_settings,
-  //                input_files) == true)
-  //  read_wells_ = true;
+  if(readWellData(model_settings,
+                  input_files) == true)
+    read_wells_ = true;
 
 
 }
@@ -238,13 +238,9 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
   if(model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
     return(false);
 
-//  const std::vector<std::string> & seismic_files = inputFiles->getSeismicFiles();
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
 
-  int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
-//  int nVintages = modelSettings->getNumberOfVintages();
-  //int numberOfAngles = model_settings->getNumberOfTimeLapses();
-  //bool failed = false;
+  int nTimeLapses = model_settings->getNumberOfTimeLapses();
 
   for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
     if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
@@ -1023,105 +1019,106 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
   LogKit::WriteHeader("Setting up temporary wavelet");
 
   //1. Check if optimize welllocation //Point f) Comes from xml-model file
-  if(model_settings->getOptimizeWellLocation() == false) {
-
-    read_seismic_ = true;
   //2. Check if read seismic ok | read_seismic_ok_
-    if(read_seismic_ == true) {
+  read_seismic_ = true;
+  if(model_settings->getOptimizeWellLocation() == false && read_seismic_ == true) {
 
-      //3. Use Ricker - wavelet.
-      //4. 1 wavelet per angle
+    //3. Use Ricker - wavelet.
+    //4. 1 wavelet per angle
+    //5  Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
+    int numberOfAngles = model_settings->getNumberOfAngles(0);
+    int error = 0;
 
-      //for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
-        //std::vector<float> angles = model_settings->getAngle(0);
-        //std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
-        int numberOfAngles = model_settings->getNumberOfAngles(0);
-        //float ** reflectionMatrix = reflectionMatrix_[0];
+    for (int i = 0 ; i < numberOfAngles ; i++) {
+      //Check all timelapses for this angle, choose the first one;
+      int thisTimeLapse = 0;
+      int vintageyear = model_settings->getVintageYear(0);
+      int vintagemonth = model_settings->getVintageMonth(0);
+      int vintageday = model_settings->getVintageDay(0);
+      for(size_t j = 1; j < nTimeLapses; j++) {
+        if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
+          vintageyear = model_settings->getVintageYear(j);
+          vintagemonth = model_settings->getVintageMonth(j);
+          vintageday = model_settings->getVintageDay(j);
+          thisTimeLapse = j;
+        }
+      }
+      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
 
-        //5  Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
-        for (int i = 0 ; i < numberOfAngles ; i++) {
-          //int error;
-          //Wavelet                ** wavelet_;               ///< Wavelet for angle
-          SegY * segy = NULL;
+      int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
+      int n_traces;
+      std::vector<std::vector<float> > trace_data(100);
+      std::vector<float> frequency_peaks;
 
-          //Check all timelapses for this angle, choose the lowes one;
-          int thisTimeLapse = 0;
-          int vintageyear = model_settings->getVintageYear(0);
-          int vintagemonth = model_settings->getVintageMonth(0);
-          int vintageday = model_settings->getVintageDay(0);
-          for(size_t j = 1; j < nTimeLapses; j++) {
-            if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
-              vintageyear = model_settings->getVintageYear(j);
-              vintagemonth = model_settings->getVintageMonth(j);
-              vintageday = model_settings->getVintageDay(j);
-              thisTimeLapse = j;
+      if(seismic_data_[thisTimeLapse][i].getSeismicType() == SeismicStorage::SEGY) {
+        //SegY * segy = NULL;
+        SegY * segy = seismic_data_[thisTimeLapse][i].getSegY();
+        n_traces = segy->GetNTraces();
+        //int tmp_value = static_cast<int>(n_traces / 100);
+
+        for(size_t j = 0; j < 100; j++) {
+          int trace_index = j*(static_cast<int>(n_traces / 100));
+          NRLib::SegYTrace * segy_tmp = segy->getTrace(trace_index);
+
+          if(segy_tmp != NULL) {
+            size_t start = segy_tmp->GetStart();
+            size_t end = segy_tmp->GetEnd();
+            for(size_t k = start; k < end; k++) {
+              trace_data[j].push_back(segy_tmp->GetValue(k));
             }
           }
-          std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
-
-          int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
-
-          if(seismic_data_[thisTimeLapse][i].getSeismicType() == SeismicStorage::SEGY)
-            segy = seismic_data_[thisTimeLapse][i].getSegY();
-          else
-            StormContGrid * stormg = seismic_data_[thisTimeLapse][i].getStorm();
-
-          int n_traces = segy->GetNTraces();
-          int tmp_value = static_cast<int>(n_traces / 100);
-          //segy->FindNumberOfTraces();
-
-          std::vector<float> trace_data = segy->GetAllValues();
-
-          std::vector<float> trace_tmp;
-
-          for(int j = 0; j < 100; j++) {
-            int trace_index = j*tmp_value;
-
-
-            //SegYTrace *              getTrace(int i) {return traces_[i];}
-            //NRLib::SegYTrace * segy_tmp = segy->getTrace(trace_index);
-            //int index = 0;
-            //std::vector<float> trace_data;
-
-            //if(segy_tmp != NULL) {
-            //  size_t start = segy_tmp->GetStart();
-            //  size_t end = segy_tmp->GetEnd();
-            //  for(size_t k = start; k < end; k++) {
-            //    trace_data.push_back(segy_tmp->GetValue(k));
-            //  }
-            //}
-
-            //FFT to find peak-frequency.
-
-
-            //segy_tmp->GetValue
-
-            //segy->ReadAllTraces
-
-            //float peak_data = 0;
-            //for(size_t ii = 0; ii < trace_data.size(); ii++) {
-            //  if(trace_data[ii] > peak_data)
-            //    peak_data = trace_data[ii];
-            //}
-
-            //segy->GetNearestTrace();
-            //segy->GetNextTrace();
-            //segy->GetTraceData();
-
-            //std::string grid_file("");
-            //grid_file = input_files->getSeismicFile(0,i);
-            //std::string tmp_err_text;
-            //SegyGeometry * geometry;
-            //getGeometryFromGridOnFile(grid_file,
-            //                          model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
-            //                          geometry,
-            //                          tmp_err_text);
-            //float frequency = model_settings->getRickerPeakFrequency(thisTimeLapse,i);
-            //Wavelet  * wavelet = new Wavelet1D(model_settings, reflectionMatrix[i], angles[i], frequency, error);
-          }
         }
-      //}
+      }
+      else {
+        StormContGrid * stormg = seismic_data_[thisTimeLapse][i].getStorm();
+        //n_traces = stormg->GetN();
+        //stormg->
+        //stormg->begin();
+        float aa = 0.0;
+
+      }
+
+
+      //FFT to find peak-frequency.
+      for(int j = 0; j < 100; j++) {
+        int nzPad = model_settings->getNZpad();
+        int n_trace = trace_data[j].size();
+
+        fftw_real    * seis_r = new fftw_real;
+        fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
+        seis_r = new fftw_real[n_trace];
+
+        for(size_t k=0; k <  n_trace; k++)
+          seis_r[k] = trace_data[j][k];
+
+        Utils::fft(seis_r, seis_c, n_trace);
+
+        float peak_tmp = 0.0;
+        for(size_t k = 0; k < trace_data.size(); k++) {
+          if(seis_r[k] > peak_tmp)
+            peak_tmp = seis_r[k];
+        }
+        frequency_peaks.push_back(peak_tmp);
+      }
+
+      float mean_frequency = 0.0;
+      for(size_t j = 0; j < frequency_peaks.size(); j++)
+        mean_frequency += frequency_peaks[j];
+      mean_frequency /= frequency_peaks.size();
+
+      int tmp_error = 0;
+      Wavelet  * wavelet_tmp = new Wavelet1D(model_settings, reflectionMatrix[i], angles[i], mean_frequency, tmp_error);
+
+      error += tmp_error;
+
+      if(tmp_error == 0)
+        temporary_wavelets_[i] = wavelet_tmp;
+      else
+        LogKit::LogFormatted(LogKit::Error, "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[i]) + ".\n");
     }
+
+    if(error == 0)
+      temporary_wavelet_ = true;
   }
 
   return true;

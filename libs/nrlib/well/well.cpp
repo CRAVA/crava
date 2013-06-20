@@ -47,7 +47,7 @@ Well::Well(const std::string & name,
 
 
 Well::Well(const std::string & file_name,
-           bool read_ok)
+           bool & read_ok)
 {
   ReadWell(file_name, read_ok);
 }

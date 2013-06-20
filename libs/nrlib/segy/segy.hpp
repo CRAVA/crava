@@ -174,6 +174,7 @@ public:
   TraceHeaderFormat         GetTraceHeaderFormat(){return trace_header_format_;};
   static TraceHeaderFormat  FindTraceHeaderFormat(const std::string & fileName);
 
+  SegYTrace *              getTrace(int i) {return traces_[i];};
 
 private:
   //void                      ebcdicHeader(std::string& outstring);               ///<

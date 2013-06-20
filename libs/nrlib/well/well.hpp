@@ -40,7 +40,7 @@ namespace NRLib {
 
     /// Construct well from file
     Well(const std::string & file_name,
-         bool read_ok);
+         bool & read_ok);
 
     /// Constructor
     /// \param[in] cont_log Continuous logs

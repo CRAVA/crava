@@ -12,6 +12,7 @@
 #include "src/welldata.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "lib/utils.h"
 
 #include "src/seismicstorage.h"
 
@@ -168,6 +169,8 @@ private:
 
   std::map<int, float **> reflectionMatrix_;
   bool        reflection_matrix_from_file_; //False: created from global vp/vs
+
+  std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle
 
   //float                  ** reflectionMatrix_;
 
