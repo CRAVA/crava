@@ -165,7 +165,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
-  std::vector<double> corr_vp_density;
+  std::vector<double> corr_vp_density(n_vintages, 0);
   for(int i=0; i<n_vintages_vp_density; i++) {
     if(correlation_vp_density_[i]->GetEstimate() == true)
       tmpErrTxt += "<correlation-vp-density> can not be estimated from wells\n";
@@ -279,7 +279,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
-  std::vector<double> corr_bulk_density;
+  std::vector<double> corr_bulk_density(n_vintages, 0);
   for(int i=0; i<n_vintages_bulk_density; i++) {
     if(correlation_bulk_density_[i]->GetEstimate() == true)
       tmpErrTxt += "<correlation-bulk-density> can not be estimated from wells\n";

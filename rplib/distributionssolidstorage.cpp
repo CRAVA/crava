@@ -377,9 +377,9 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
       tmpErrTxt += "Density can not be estimatedfrom wells for a <solid>\n";
   }
 
-  std::vector<double> corr_bulk_shear;
-  std::vector<double> corr_bulk_density;
-  std::vector<double> corr_shear_density;
+  std::vector<double> corr_bulk_shear(n_vintages, 0);
+  std::vector<double> corr_bulk_density(n_vintages, 0);
+  std::vector<double> corr_shear_density(n_vintages, 0);
 
   for(int i=0; i<n_vintages_bulk_shear; i++) {
     if(correlation_bulk_shear_[i]->GetEstimate() == true)
