@@ -254,6 +254,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1351,6 +1352,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />

@@ -21,6 +21,9 @@
 #include "src/seismicstorage.h"
 #include "nrlib/well/norsarwell.hpp"
 
+#include "src/wavelet1D.h"
+#include "nrlib/segy/segytrace.hpp"
+
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files)
 :
@@ -44,6 +47,11 @@ CommonData::CommonData(ModelSettings  * model_settings,
   outer_temp_simbox_ = createOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
   failed = !outer_temp_simbox_;
 
+  // 2. read seismic data
+  if(readSeismicData(model_settings,
+                     input_files) == true)
+    read_seismic_ = true; //True or false if there is no seismic data?
+
   // 3. read well data
   if(!failed){
     read_wells_ = readWellData(model_settings, input_files);
@@ -60,6 +68,10 @@ CommonData::CommonData(ModelSettings  * model_settings,
       block_wells_ = blockWellsForEstimation(model_settings, input_files, estimation_simbox_, full_inversion_volume_, wells_, blocked_logs_common_, err_text);
     }
   }
+
+  setupReflectionMatrixAndTempWavelet(model_settings,
+                                      input_files);
+
 
 }
 
@@ -78,7 +90,7 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
   bool failed = false;
   std::string grid_file("");
   int  area_specification  = model_settings->getAreaSpecification();
-  
+
 
   // FIND SEGY GEOMETRY FOR INVERSION AREA -------------------------------------------------------------------------
 
@@ -114,8 +126,8 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
     SegyGeometry geometry(surf);
     model_settings->setAreaParameters(&geometry);
   }
-
-  else if(area_specification == ModelSettings::AREA_FROM_GRID_DATA         || // tilfelle iii 
+  
+  else if(area_specification == ModelSettings::AREA_FROM_GRID_DATA || // tilfelle iii
           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM || // tilfelle i med snap to seismic
           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE){ // tilfelle ii med snap to seismic
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+grid_file+"\'\n");
@@ -235,51 +247,67 @@ bool CommonData::createOuterTemporarySimbox(ModelSettings   * model_settings,
   return (!failed);
 }
 
-bool CommonData::readSeismicData(ModelSettings  * modelSettings,
-                                 InputFiles     * inputFiles)
+
+bool CommonData::readSeismicData(ModelSettings  * model_settings,
+                                 InputFiles     * input_files)
 {
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
-  for(size_t i = 0; i < inputFiles->getTimeLapseSeismicFiles().size(); i++) {
-    timelaps_seismic_files += inputFiles->getNumberOfSeismicFiles(i);
+
+  for(size_t i = 0; i < input_files->getTimeLapseSeismicFiles().size(); i++) {
+    timelaps_seismic_files += input_files->getNumberOfSeismicFiles(i);
   }
-  if(timelaps_seismic_files == 0 && inputFiles->getSeismicFiles().size() == 0)
-    return(true);
+
+  if(timelaps_seismic_files == 0 && input_files->getSeismicFiles().size() == 0)
+    return(false);
+
   //Skip if mode is estimation and wavelet/noise is not set for estimation.
-  if(modelSettings->getEstimationMode() == true && modelSettings->getEstimateWaveletNoise() == false)
-    return(true);
+
+  if(model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
+    return(false);
 
 //  const std::vector<std::string> & seismic_files = inputFiles->getSeismicFiles();
-  const std::vector<std::vector<std::string> > seismic_timelapse_files = inputFiles->getTimeLapseSeismicFiles();
 
-  int nTimeLapses = modelSettings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+  const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
+
+
+  int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
 //  int nVintages = modelSettings->getNumberOfVintages();
-  int numberOfAngles = modelSettings->getNumberOfTimeLapses();
+
+  //int numberOfAngles = model_settings->getNumberOfTimeLapses();
   //bool failed = false;
 
   for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
-    if(inputFiles->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
+
+    if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
 
       LogKit::WriteHeader("Reading seismic data");
 
-      std::vector<float> angles = modelSettings->getAngle(thisTimeLapse);
-      std::vector<float> offset = modelSettings->getLocalSegyOffset(thisTimeLapse);
+
+      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+      std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+
+      int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+      std::vector<SeismicStorage> seismic_data_angle;
 
       for (int i = 0 ; i < numberOfAngles ; i++) {
 
-        std::string filename = inputFiles->getSeismicFile(thisTimeLapse,i);
+        std::string filename = input_files->getSeismicFile(thisTimeLapse,i);
         int fileType = IO::findGridType(filename);
 
         if(fileType == IO::SEGY) { //From ModelGeneral::readSegyFile
 
           SegY * segy = NULL;
-          TraceHeaderFormat * format = modelSettings->getTraceHeaderFormat(thisTimeLapse,i);
+
+          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(thisTimeLapse,i);
 
           if(format == NULL) { //Unknown format
             std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
-            if (modelSettings->getTraceHeaderFormat() != NULL)
+
+            if (model_settings->getTraceHeaderFormat() != NULL)
             {
-              traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
+
+              traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
             }
             segy = new SegY(filename,
                             offset[i],
@@ -289,60 +317,30 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
           else //Known format, read directly.
             segy = new SegY(filename, offset[i], *format);
 
-          float guard_zone = modelSettings->getGuardZone();
 
-          //ModelGeneral::checkThatDataCoverGrid ?
-          float dz = segy->GetDz();
-          float z0 = offset[i] + 0.5f*dz;
-          float zn = z0 + (segy->GetNz() - 1)*dz;
+          float guard_zone = model_settings->getGuardZone();
 
 
-          float top_grid = static_cast<float>(estimation_simbox_.getTopZMin());
-          float bot_grid = static_cast<float>(estimation_simbox_.getBotZMax());
+          if(checkThatDataCoverGrid(segy, offset[i], &estimation_simbox_, guard_zone) == true) { //Change this to full_inversion_volume_?
+            float padding         = 2*guard_zone;
+            bool  relativePadding = false;
+            bool  onlyVolume      = true;
 
-          float top_guard = top_grid - guard_zone;
-          float bot_guard = bot_grid + guard_zone;
 
-          if (top_guard < z0) {
-            float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
-            LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data above the interval of interest. The seismic data\n"
-                                                  " must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a "
-                                                  + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-                                                  + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-                                                  + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-                                                  + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-                                                  + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-                                                  + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-                                                  + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+            segy->ReadAllTraces(&full_inversion_volume_, //timeCutSimBox  //estimation_simbox_ eller full_inversion_volume_?
+                                padding,
+                                onlyVolume,
+                                relativePadding);
+            segy->CreateRegularGrid();
+
+
+            SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
+            seismic_data_angle.push_back(seismicdata);
           }
-          if (bot_guard > zn) {
-            float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
-            LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data below the interval of interest. The seismic data\n"
-                                                  "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a "
-                                                  + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-                                                  + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-                                                  + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-                                                  + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-                                                  + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-                                                  + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-                                                  + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
-          }
-          //End checkThatDataCoverGrid
 
-          float padding         = 2*guard_zone;
-          bool  relativePadding = false;
-          bool  onlyVolume      = true;
+          else
+            LogKit::LogFormatted(LogKit::Warning, "Data from segy-file " + filename + " is not read.\n");
 
-
-          //DOES NOT WORK WITH "Simbox estimation_simbox_"
-          //segy->ReadAllTraces(estimation_simbox_, //timeCutSimBox
-          //                    padding,
-          //                    onlyVolume,
-          //                    relativePadding);
-          segy->CreateRegularGrid();
-
-          SeismicStorage seismicdata(filename, 0, angles[i], segy);
-          seismic_data_.push_back(seismicdata);
 
         } //SEGY
         else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -361,535 +359,1001 @@ bool CommonData::readSeismicData(ModelSettings  * modelSettings,
           }
 
           if(failed == false) {
-            SeismicStorage seismicdata;
+            SeismicStorage seismicdata_tmp;
 
             if(fileType == IO::STORM)
-              seismicdata = SeismicStorage(filename, 1, angles[i], stormgrid);
-            else
-              seismicdata = SeismicStorage(filename, 2, angles[i], stormgrid);
 
-            seismic_data_.push_back(seismicdata);
+              seismicdata_tmp = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
+            else
+
+              seismicdata_tmp = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
+
+
+            seismic_data_angle.push_back(seismicdata_tmp);
           }
 
         } //STORM / SGRI
         else
-        {
+
           LogKit::LogFormatted(LogKit::Warning, "Error when reading file " + filename +". File type not recognized.\n");
-        }
-      }
-    }
+
+      } //nAngles
+
+      seismic_data_[thisTimeLapse] = seismic_data_angle;
+
+    }//ifSeismicFiles
+  } //nTimeLapses
+
+  return true;
+}
+
+bool
+CommonData::checkThatDataCoverGrid(const SegY   * segy,
+                                   float         offset,
+                                   const Simbox * timeCutSimbox,
+                                   float         guard_zone)
+{
+  // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
+  float dz = segy->GetDz();
+  float z0 = offset + 0.5f*dz;
+  float zn = z0 + (segy->GetNz() - 1)*dz;
+
+  // Top and base of interval of interest
+  float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
+  float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
+
+  //Use this instead? input for timeCutSimbox is estimation_simbox_
+  //int nx = estimation_simbox_.getnx();
+  //int ny = estimation_simbox_.getny();
+  //float top_grid = static_cast<float>(full_inversion_volume_.GetTopZMin(nx, ny));
+  //float bot_grid = static_cast<float>(full_inversion_volume_.GetBotZMax(nx, ny));
+
+  // Find guard zone
+  float top_guard = top_grid - guard_zone;
+  float bot_guard = bot_grid + guard_zone;
+
+  if (top_guard < z0) {
+    float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
+    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data above the interval of interest. The seismic data\n"
+                                          " must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a "
+                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
+                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
+                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
+                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
+                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
+                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
+                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+    return false;
+  }
+  if (bot_guard > zn) {
+    float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
+    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data below the interval of interest. The seismic data\n"
+                                          "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a "
+                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
+                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
+                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
+                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
+                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
+                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
+                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
+    return false;
   }
 
   return true;
 }
 
-bool CommonData::readWellData(ModelSettings  * modelSettings,
-                              InputFiles     * inputFiles)
+
+bool CommonData::readWellData(ModelSettings  * model_settings,
+                              InputFiles     * input_files)
 {
 
-  int nWells = modelSettings->getNumberOfWells();
+
+  int nWells = model_settings->getNumberOfWells();
   if(nWells > 0)
     LogKit::WriteHeader("Reading wells");
-  int well_error = 0;
-  std::vector<std::string> logNames = modelSettings->getLogNames();
-  std::vector<bool> inverseVelocity = modelSettings->getInverseVelocity();
-  bool faciesLogGiven = modelSettings->getFaciesLogGiven();
+
+
+
+  //std::vector<std::string> logNames = model_settings->getLogNames();
+  //std::vector<bool> inverseVelocity = model_settings->getInverseVelocity();
+  //bool faciesLogGiven = model_settings->getFaciesLogGiven();
 
   for(int i=0 ; i<nWells; i++) {
-    int error = 0;
-    NRLib::Well new_well;
-    std::string wellFileName = inputFiles->getWellFile(i);
 
-    std::string well_name;
-    std::vector<std::string>  faciesNames;
+    std::string error = "";
 
-    std::vector<double> xpos;
-    std::vector<double> ypos;
-    std::vector<double> zpos;
-    std::vector<double> alpha;
-    std::vector<double> beta;
-    std::vector<double> rho;
-    std::vector<double> md;
-    std::vector<int> facies; // Always allocate a facies log (for code simplicity). Keep this ??
+    std::string wellFileName = input_files->getWellFile(i);
+    bool read_ok = false;
+    NRLib::Well new_well(wellFileName, read_ok);
 
-    if(wellFileName.find(".nwh",0) != std::string::npos) { //Norsar well, from WellData::readNorsarWell
+    if(wellFileName.find(".nwh",0) != std::string::npos)
+      ProcessLogsNorsarWell(new_well, error);
+    else if(wellFileName.find(".rms",0) != std::string::npos)
+      ProcessLogsRMSWell(new_well, error);
 
-      std::string name = NRLib::RemovePath(wellFileName);
-      name = NRLib::ReplaceExtension(name, "");
-      well_name = name;
-      int faciesok; // all faciesnumbers read are present in header
-      double xpos0;
-      double ypos0;
+    if(read_ok == true)
+      wells_.push_back(new_well);
+    else
+      LogKit::LogFormatted(LogKit::Error, "Well format of file " + wellFileName + " not recognized.");
 
-      try
-      {
-        NRLib::NorsarWell well(wellFileName);
 
-        int nVar = 5;       // z,alpha,beta,rho, and facies
-
-        std::vector<std::string> parameterList;
-
-        bool vpLog = false;
-        bool vsLog = false;
-
-        if(logNames[0] != "") // Assume that all lognames are filled present if first is.
-        {
-          parameterList = logNames;
-          if (!faciesLogGiven)
-            nVar = 4;
-          vpLog = !inverseVelocity[0];
-          vsLog = !inverseVelocity[1];
-        }
-        else
-        {
-          parameterList[0] = "TWT";
-          parameterList[1] = "DT";
-          parameterList[2] = "RHOB";
-          parameterList[3] = "DTS";
-          parameterList[4] = "FACIES";
-        }
-
-        int nLogs  = 2+nVar;
-        int nExtra = 1; //MD log, needed for writing.
-        std::vector<double> * filler = NULL; //to eliminate warning.
-        std::vector<std::vector<double> *> logs(nLogs+nExtra, filler);
-        if(well.HasContLog("UTMX") == false) {
-          error = 1;
-          LogKit::LogFormatted(LogKit::Error,"Could not find log 'UTMX' in well file "+wellFileName+".\n");
-          logs[0] = NULL;
-        }
-        else
-          logs[0] = &(well.GetContLog("UTMX"));
-        if(well.HasContLog("UTMY") == false) {
-          error = 1;
-          LogKit::LogFormatted(LogKit::Error,"Could not find log 'UTMY' in well file "+wellFileName+".\n");
-          logs[1] = NULL;
-        }
-        logs[1] = &(well.GetContLog("UTMY"));
-        for(int i=0;i<nVar;i++) {
-          if(well.HasContLog(parameterList[i]) == false) {
-            logs[2+i] = NULL;
-            if(i != 4 || logNames[0] != "") {
-              error = 1;
-              LogKit::LogFormatted(LogKit::Error,"Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n");
-            }
-            else if(i==4)
-              nLogs = nLogs-1;
-          }
-          else
-            logs[2+i] = &(well.GetContLog(parameterList[i]));
-        }
-
-        //Added MD log.
-        int mdLog = nLogs;
-        if(well.HasContLog("MD") == false) {
-          error = 1;
-          LogKit::LogFormatted(LogKit::Error,"Could not find log 'MD' in well file "+wellFileName+".\n");
-          logs[mdLog] = NULL;
-        }
-        logs[mdLog] = &(well.GetContLog("MD"));
-        nLogs++;
-
-        //if(logs[2] == NULL)
-        //  timemissing = 1;
-        //else
-        //  timemissing =0;
-        int nFacies = 0;
-        if(error == 0) {
-          faciesok = 1;
-          std::vector<int> facCodes;
-          int nd = 0;
-          for(size_t i=0;i<logs[2]->size();i++)
-            if(well.IsMissing((*logs[2])[i]) == false)
-              nd++;
-
-          for(size_t i=0;i<logs[0]->size();i++) {
-            if(well.IsMissing((*logs[2])[i]) == false) {
-              xpos.push_back((*logs[0])[i]*1000);
-              ypos.push_back((*logs[1])[i]*1000);
-              zpos.push_back((*logs[2])[i]*1000);
-              if(!well.IsMissing((*logs[3])[i]))
-                alpha.push_back(static_cast<double>((*logs[3])[i]));
-              else
-                alpha.push_back(RMISSING);
-              if(!well.IsMissing((*logs[5])[i]))
-                beta.push_back(static_cast<float>((*logs[5])[i]));
-              else
-                beta.push_back(RMISSING);
-              if(!well.IsMissing((*logs[4])[i]))
-                rho.push_back(static_cast<float>((*logs[4])[i]));
-              else
-                rho.push_back(RMISSING);
-              if(mdLog != 6 && nLogs > 6 && logs[6] != NULL && !well.IsMissing((*logs[6])[i])) {
-                facies.push_back(static_cast<int>((*logs[6])[i]));
-
-                if(find(facCodes.begin(), facCodes.end(), facies[facies.size()]) == facCodes.end())
-                  facCodes.push_back(facies[facies.size()]);
-              }
-              else
-                facies.push_back(IMISSING);
-              if(!well.IsMissing((*logs[mdLog])[i]))
-                md.push_back(static_cast<float>((*logs[mdLog])[i]));
-              else
-                md.push_back(RMISSING);
-            }
-          }
-          nFacies = static_cast<int>(facCodes.size());
-
-        }
-        xpos0 = well.GetXPosOrigin()*1000;
-        ypos0 = well.GetYPosOrigin()*1000;
-
-      }
-      catch (NRLib::Exception & e) {
-        LogKit::LogFormatted(LogKit::Error,"Error: " + NRLib::ToString(e.what()));
-        error = 1;
-      }
-
-    }
-    else if(wellFileName.find(".rms",0) != std::string::npos) { //RMS well, from WellData::ReadRMSWell
-
-      double dummy = RMISSING;
-      int j,k;
-      //int timemissing = 0;
-      std::ifstream file;
-      NRLib::OpenRead(file, wellFileName);
-      std::string token, dummyStr;
-      std::vector<std::string> tokenLine;
-      //From WellData::ReadRMSWell
-
-      int nlog; // number of logs in file
-      int line = 0;
-      NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
-      NRLib::DiscardRestOfLine(file,line,false);
-      NRLib::ReadNextToken(file, token, line);
-      well_name = token;
-      double xpos0 = NRLib::ReadNext<double>(file, line); //Needed?
-      double ypos0 = NRLib::ReadNext<double>(file, line); //Needed
-      NRLib::DiscardRestOfLine(file,line,false);
-      nlog   = NRLib::ReadNext<int>(file, line);
-
-      int faciesok; // all faciesnumbers read are present in header
-
-      //Start searching for key words.
-
-      int nVar = 5;       // z,alpha,beta,rho, and facies
-
-      std::vector<std::string> parameterList(5);
-
-      bool vpLog = false;
-      bool vsLog = false;
-
-      if(logNames[0] != "") // Assume that all lognames are filled present if first is.
-      {
-        parameterList = logNames;
-        if (!faciesLogGiven)
-          nVar = 4;
-        vpLog = !inverseVelocity[0];
-        vsLog = !inverseVelocity[1];
-      }
-      else
-      {
-        parameterList[0] = "TWT";
-        parameterList[1] = "DT";
-        parameterList[2] = "RHOB"; //DTS before RHOB?
-        parameterList[3] = "DTS";
-        parameterList[4] = "FACIES";
-      }
-
-      int * pos = new int[nVar];
-      for(k=0;k<nVar;k++)
-        pos[k] = IMISSING;
-
-      int nFacies = 0;
-      std::string faciesLogName;
-      for(k=0;k<nlog;k++)
-      {
-        NRLib::ReadNextToken(file,token,line);
-        for(j=0;j<nVar;j++)
-        {
-          if( NRLib::Uppercase(token)==parameterList[j])
-          {
-            pos[j] = k + 4;
-            if(j==4)
-            {
-              faciesLogName = parameterList[4];
-              // facies log - save names
-              NRLib::ReadNextToken(file,token,line); // read code word DISC
-              if (token != "DISC")
-              {
-                LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
-                exit(1);
-              }
-              // Find number of facies
-              std::getline(file,dummyStr);
-              tokenLine = NRLib::GetTokens(dummyStr);
-              nFacies = static_cast<int>(tokenLine.size())/2;
-            }
-          }
-        }
-        if (token != "DISC")
-          NRLib::DiscardRestOfLine(file,line,false);
-      }
-
-      std::string missVar = "";
-      for(k=0 ; k<nVar ; k++)
-      {
-        if(pos[k]==IMISSING)
-        {
-          missVar += parameterList[k];
-          error = 1;
-        }
-      }
-      if(error > 0)
-        LogKit::LogFormatted(LogKit::Error,"Cannot find log(s) "+missVar+" in well file "+wellFileName+".\n");
-
-      //if(pos[0]==IMISSING)
-      //  timemissing = 1;
-      //else
-      //  timemissing = 0;
-
-      // Find nd_, the number of observations in well.
-      // Count the number of time observations which is not missing values.
-
-      int nData = 0;
-      int legalData = 0;
-      int nd;
-      while (NRLib::CheckEndOfFile(file)==false)
-      {
-        nData++;
-        try {
-          dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
-          dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
-          dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
-
-          for(j=4;j<=nlog+3;j++) {
-            dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
-            if(j==pos[0] && dummy != WELLMISSING) {
-              legalData++;   // Found legal TIME variable
-            }
-          }
-        }
-        catch (NRLib::IOError e) {
-          std::string text;
-          text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
-          text += NRLib::ToString(nData) + " (not counting header lines).\n";
-          text += std::string("\nERROR message is \'") + e.what() + "\'";
-          LogKit::LogMessage(LogKit::Error,text);
-          exit(1);
-        }
-      }
-      file.close();
-      file.clear();
-      nd = legalData;
-
-      //
-      // Check that the number of logs found for each log entry agrees
-      // with the number of logs specified in header.
-      //
-      // A nicer and faster implementation for this is requested...
-      //
-
-      int logEntry = 0;
-      NRLib::OpenRead(file, wellFileName);
-      line = 0;
-      for(k=0;k<4+nlog;k++)
-        NRLib::DiscardRestOfLine(file,line,false);
-      while (NRLib::CheckEndOfFile(file)==false && error==0)
-      {
-        logEntry++;
-        int  elements = 0;
-        bool lastIsBlank = true;
-        std::getline(file,token);
-
-        int l = static_cast<int>(token.length());
-        for (k=0; k<l; k++)
-        {
-          if (token[k] != ' ' && token[k] != '\t' && token[k] != '\r' && token[k] != '\0')
-          {
-            if (lastIsBlank)
-              elements++;
-            lastIsBlank = false;
-          }
-          else
-            lastIsBlank = true;
-        }
-        if(elements != nlog+3)
-        {
-          error = 1;
-          LogKit::LogFormatted(LogKit::Error,"ERROR for well "+well_name +": The number of log elements (nlogs="+NRLib::ToString(elements-3)+")\n in line "+NRLib::ToString(logEntry)+" does not match header specifications (nlogs="+NRLib::ToString(nlog)+").\n");
-        }
-      }
-      file.close();
-      file.clear();
-
-      //
-      // Read logs
-      //
-      std::vector<int> faciesNr;
-      //if (nFacies > 0)
-      //  faciesNr.resize(nFacies);
-
-      NRLib::OpenRead(file, wellFileName);
-      line = 0;
-      for(k=0;k<4+nlog;k++)
-      {
-        NRLib::ReadNextToken(file,token,line);
-        if (NRLib::Uppercase(token) == parameterList[4])
-        {
-          NRLib::ReadNextToken(file,token,line); // read code word DISC
-          // facies types given here
-          for(int kk=0;kk<nFacies;kk++)
-          {
-            NRLib::ReadNextToken(file,token,line);
-            //faciesNr[kk] = NRLib::ParseType<int>(token);
-            faciesNr.push_back(NRLib::ParseType<int>(token));
-            NRLib::ReadNextToken(file,token,line);
-            faciesNames.push_back(token);
-          }
-        }
-        NRLib::DiscardRestOfLine(file,line,false);
-      }
-      double OPENWORKS_MISSING = -999.25;
-      bool wrongMissingValues = false;
-
-      double xpos_data = RMISSING;
-      double ypos_data = RMISSING;
-      double zpos_data = RMISSING;
-      double alpha_data = RMISSING;
-      double beta_data = RMISSING;
-      double rho_data = RMISSING;
-      int facies_data = IMISSING;
-      k         = -1;
-      faciesok = 1;
-      int legal = 0;
-      for(k=0;k<nData;k++)
-      {
-        xpos_data  = NRLib::ReadNext<double>(file,line);
-        ypos_data  = NRLib::ReadNext<double>(file,line);
-        dummy = NRLib::ReadNext<double>(file,line);
-        for(j=4;j<=nlog+3;j++)
-        {
-          dummy = NRLib::ReadNext<double>(file,line);
-          if(j==pos[0])
-          {
-            //Found TIME variable
-            if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING)
-            {
-              zpos_data = dummy;
-              k++;
-              legal = 1;
-            }
-            else
-              legal = 0;
-          }
-          else if(j==pos[1])
-          {
-            // Found ALPHA variable
-            if(dummy != WELLMISSING)
-              if (vpLog)
-                alpha_data = static_cast<double>(dummy);
-              else
-                alpha_data = static_cast<double>(304800.0/dummy);
-            else
-              alpha_data = RMISSING;
-          }
-          else if(j==pos[3])
-          {
-            // Found BETA variable
-            if(dummy != WELLMISSING)
-              if (vsLog)
-                beta_data = static_cast<double>(dummy);
-              else
-                beta_data = static_cast<double>(304800.0/dummy);
-            else
-              beta_data = RMISSING;
-          }
-          else if(j==pos[2])
-          {
-            //Found RHO variable
-            if(dummy != WELLMISSING)
-              rho_data = static_cast<double>(dummy);
-            else
-              rho_data = RMISSING;
-          }
-          else if(nVar > 4 && j==pos[4])
-          {
-            //Found facies variable
-            if(dummy != WELLMISSING)
-              facies_data = static_cast<int>(dummy);
-            else
-              facies_data = IMISSING;
-            if(facies_data!=IMISSING)
-            {
-              int faciesok_check = 0;
-              for(int kk=0 ; kk<nFacies ; kk++)
-              {
-                if(facies_data == faciesNr[kk]) {
-                  faciesok_check = 1;
-                  break;
-                }
-              }
-              if(faciesok_check == 0)
-                faciesok = 0;
-            }
-          }
-        }
-        if(legal == 1)
-        {
-          //Cut against full_inversion_volume
-          //double z_top = full_inversion_volume_->GetTopSurface().GetZ(xpos_data, ypos_data);
-          //double z_bot = full_inversion_volume_->GetBotSurface().GetZ(xpos_data, ypos_data);
-
-          //if(zpos_data < z_top && zpos_data > z_bot) {
-            xpos.push_back(xpos_data);
-            ypos.push_back(ypos_data);
-            zpos.push_back(zpos_data);
-            alpha.push_back(alpha_data);
-            beta.push_back(beta_data);
-            rho.push_back(rho_data);
-            facies.push_back(facies_data);
-            if (alpha_data == OPENWORKS_MISSING)
-              wrongMissingValues = true;
-            if(beta_data == OPENWORKS_MISSING)
-              wrongMissingValues = true;
-            if(rho_data == OPENWORKS_MISSING)
-              wrongMissingValues = true;
-          //}
-        }
-      }
-      file.close();
-    }
-
-    //Add well logs
-    new_well.SetWellName(well_name);
-    new_well.AddContLog("xpos", xpos);
-    new_well.AddContLog("ypos", ypos);
-    new_well.AddContLog("zpos", zpos);
-    new_well.AddContLog("alpha", alpha);
-    new_well.AddContLog("beta", beta);
-    new_well.AddContLog("rho", rho);
-    if(md.size() > 0)
-      new_well.AddContLog("md", md);
-
-    new_well.AddDiscLog("facies", facies);
-    new_well.SetMissing(RMISSING);
-
-    wells_.push_back(new_well);
-
-    well_error += error;
   }
 
-  if(well_error > 0)
-    return false;
-  else
-    return true;
+  return true;
+}
+
+void CommonData::ProcessLogsNorsarWell(NRLib::Well   & new_well,
+                                       std::string   & error_text){
+  
+}
+
+void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
+                                    std::string   & error_text){
+  // For now need 
+  const double factor_usfeet_to_meters = 304800.0;
+  
+  std::vector<double> vs;
+  std::vector<double> rho;
+  if(new_well.HasContLog("DT")){
+    std::vector<double> vp_temp = new_well.GetContLog("DT");
+    std::vector<double> vp(vp_temp.size());
+    for(unsigned int i=0; i<vp_temp.size(); i++){
+      vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
+    }
+    new_well.RemoveContLog("DT");
+  }
+  if(new_well.HasContLog("DTS")){
+    std::vector<double> vs_temp = new_well.GetContLog("DTS");
+    std::vector<double> vs(vs_temp.size());
+    for(unsigned int i=0; i<vs_temp.size(); i++){
+      vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
+    }
+    new_well.RemoveContLog("DTS");
+    new_well.AddContLog("vs_data", vs);
+  }
+  if(new_well.HasContLog("RHOB")){
+    std::vector<double> rho_temp = new_well.GetContLog("RHOB");
+    std::vector<double> rho(rho_temp.size());
+    rho = rho_temp;
+    new_well.RemoveContLog("RHOB");
+  }
+}
+
+//void
+//CommonData::readNorsarWell(const std::string              & wellFileName,
+//                           NRLib::Well                    & new_well,
+//                           const std::vector<std::string> & logNames,
+//                           const std::vector<bool>        & inverseVelocity,
+//                           bool                             faciesLogGiven,
+//                           std::string                    & error)
+//{
+//  std::string name = NRLib::RemovePath(wellFileName);
+//  name = NRLib::ReplaceExtension(name, "");
+//  std::string well_name = name;
+//  int faciesok = 0; // all faciesnumbers read are present in header //1 ok
+//  int timemissing = 0;
+//  double xpos0 = 0.0;
+//  double ypos0 = 0;
+//  int nFacies = 0;
+//
+//  std::vector<double> xpos;
+//  std::vector<double> ypos;
+//  std::vector<double> zpos;
+//  std::vector<double> alpha;
+//  std::vector<double> beta;
+//  std::vector<double> rho;
+//  std::vector<double> md;
+//  std::vector<int> facies; // Always allocate a facies log (for code simplicity). Keep this ??
+//
+//  try
+//  {
+//    NRLib::NorsarWell well(wellFileName);
+//
+//    int nVar = 5;       // z,alpha,beta,rho, and facies
+//
+//    std::vector<std::string> parameterList;
+//
+//    bool vpLog = false;
+//    bool vsLog = false;
+//
+//    if(logNames[0] != "") // Assume that all lognames are filled present if first is.
+//    {
+//      parameterList = logNames;
+//      if (!faciesLogGiven)
+//        nVar = 4;
+//      vpLog = !inverseVelocity[0];
+//      vsLog = !inverseVelocity[1];
+//    }
+//    else
+//    {
+//      parameterList[0] = "TWT";
+//      parameterList[1] = "DT";
+//      parameterList[2] = "RHOB";
+//      parameterList[3] = "DTS";
+//      parameterList[4] = "FACIES";
+//    }
+//
+//    int nLogs  = 2+nVar;
+//    int nExtra = 1; //MD log, needed for writing.
+//    std::vector<double> * filler = NULL; //to eliminate warning.
+//    std::vector<std::vector<double> *> logs(nLogs+nExtra, filler);
+//    if(well.HasContLog("UTMX") == false) {
+//      //error = 1;
+//      //LogKit::LogFormatted(LogKit::Error,"Could not find log 'UTMX' in well file "+wellFileName+".\n");
+//      error += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
+//      logs[0] = NULL;
+//    }
+//    else
+//      logs[0] = &(well.GetContLog("UTMX"));
+//    if(well.HasContLog("UTMY") == false) {
+//      //error = 1;
+//      //LogKit::LogFormatted(LogKit::Error,"Could not find log 'UTMY' in well file "+wellFileName+".\n");
+//      error += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
+//      logs[1] = NULL;
+//    }
+//    logs[1] = &(well.GetContLog("UTMY"));
+//    for(int i=0;i<nVar;i++) {
+//      if(well.HasContLog(parameterList[i]) == false) {
+//        logs[2+i] = NULL;
+//        if(i != 4 || logNames[0] != "") {
+//          //error = 1;
+//          //LogKit::LogFormatted(LogKit::Error,"Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n");
+//          error += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
+//        }
+//        else if(i==4)
+//          nLogs = nLogs-1;
+//      }
+//      else
+//        logs[2+i] = &(well.GetContLog(parameterList[i]));
+//    }
+//
+//    //Added MD log.
+//    int mdLog = nLogs;
+//    if(well.HasContLog("MD") == false) {
+//      //error = 1;
+//      //LogKit::LogFormatted(LogKit::Error,"Could not find log 'MD' in well file "+wellFileName+".\n");
+//      error += "Could not find log 'MD' in well file "+wellFileName+".\n";
+//      logs[mdLog] = NULL;
+//    }
+//    logs[mdLog] = &(well.GetContLog("MD"));
+//    nLogs++;
+//
+//    if(logs[2] == NULL)
+//      timemissing = 1;
+//    else
+//      timemissing =0;
+//
+//    if(error == "") {
+//      faciesok = 1;
+//      std::vector<int> facCodes;
+//      int nd = 0;
+//      for(size_t i=0;i<logs[2]->size();i++)
+//        if(well.IsMissing((*logs[2])[i]) == false)
+//          nd++;
+//
+//      for(size_t i=0;i<logs[0]->size();i++) {
+//        if(well.IsMissing((*logs[2])[i]) == false) {
+//          xpos.push_back((*logs[0])[i]*1000);
+//          ypos.push_back((*logs[1])[i]*1000);
+//          zpos.push_back((*logs[2])[i]*1000);
+//          if(!well.IsMissing((*logs[3])[i]))
+//            alpha.push_back(static_cast<double>((*logs[3])[i]));
+//          else
+//            alpha.push_back(RMISSING);
+//          if(!well.IsMissing((*logs[5])[i]))
+//            beta.push_back(static_cast<float>((*logs[5])[i]));
+//          else
+//            beta.push_back(RMISSING);
+//          if(!well.IsMissing((*logs[4])[i]))
+//            rho.push_back(static_cast<float>((*logs[4])[i]));
+//          else
+//            rho.push_back(RMISSING);
+//          if(mdLog != 6 && nLogs > 6 && logs[6] != NULL && !well.IsMissing((*logs[6])[i])) {
+//            facies.push_back(static_cast<int>((*logs[6])[i]));
+//
+//            if(find(facCodes.begin(), facCodes.end(), facies[facies.size()]) == facCodes.end())
+//              facCodes.push_back(facies[facies.size()]);
+//          }
+//          else
+//            facies.push_back(IMISSING);
+//          if(!well.IsMissing((*logs[mdLog])[i]))
+//            md.push_back(static_cast<float>((*logs[mdLog])[i]));
+//          else
+//            md.push_back(RMISSING);
+//        }
+//      }
+//      nFacies = static_cast<int>(facCodes.size());
+//
+//    }
+//    xpos0 = well.GetXPosOrigin()*1000;
+//    ypos0 = well.GetYPosOrigin()*1000;
+//
+//  }
+//  catch (NRLib::Exception & e) {
+//    //LogKit::LogFormatted(LogKit::Error,"Error: " + NRLib::ToString(e.what()));
+//    //error = 1;
+//    error += "Error: " + NRLib::ToString(e.what());
+//  }
+//
+//  //Add well logs
+//  new_well.SetWellName(well_name);
+//  new_well.AddContLog("xpos", xpos);
+//  new_well.AddContLog("ypos", ypos);
+//  new_well.AddContLog("zpos", zpos);
+//  new_well.AddContLog("alpha", alpha);
+//  new_well.AddContLog("beta", beta);
+//  new_well.AddContLog("rho", rho);
+//  if(md.size() > 0)
+//    new_well.AddContLog("md", md);
+//
+//  new_well.AddDiscLog("facies", facies);
+//  new_well.SetMissing(RMISSING);
+//
+//  timemissing_[well_name] = timemissing;
+//  xpos0_[well_name] = xpos0;
+//  ypos0_[well_name] = ypos0;
+//  faciesok_[well_name] = faciesok;
+//  nFacies_[well_name] = nFacies;
+//
+//}
+
+
+//void
+//CommonData::readRMSWell(const std::string              & wellFileName,
+//                        NRLib::Well                    & new_well,
+//                        const std::vector<std::string> & logNames,
+//                        const std::vector<bool>        & inverseVelocity,
+//                        bool                             faciesLogGiven,
+//                        std::string                    & error)
+//{
+//  double dummy = RMISSING;
+//  int j,k;
+//  //int timemissing = 0;
+//  std::ifstream file;
+//  NRLib::OpenRead(file, wellFileName);
+//  std::string token, dummyStr;
+//  std::vector<std::string> tokenLine;
+//
+//  int timemissing;
+//  //From WellData::ReadRMSWell
+//
+//  std::vector<std::string>  faciesNames;
+//  std::vector<double> xpos;
+//  std::vector<double> ypos;
+//  std::vector<double> zpos;
+//  std::vector<double> alpha;
+//  std::vector<double> beta;
+//  std::vector<double> rho;
+//  std::vector<int> facies; // Always allocate a facies log (for code simplicity). Keep this ??
+//
+//  int nlog; // number of logs in file
+//  int line = 0;
+//  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
+//  NRLib::DiscardRestOfLine(file,line,false);
+//  NRLib::ReadNextToken(file, token, line);
+//  std::string well_name = token;
+//  double xpos0 = NRLib::ReadNext<double>(file, line); //Needed?
+//  double ypos0 = NRLib::ReadNext<double>(file, line); //Needed
+//  NRLib::DiscardRestOfLine(file,line,false);
+//  nlog   = NRLib::ReadNext<int>(file, line);
+//
+//  //int faciesok = 1; // all faciesnumbers read are present in header
+//
+//  //Start searching for key words.
+//
+//  int nVar = 5;       // z,alpha,beta,rho, and facies
+//
+//  std::vector<std::string> parameterList(5);
+//
+//  bool vpLog = false;
+//  bool vsLog = false;
+//
+//  if(logNames[0] != "") // Assume that all lognames are filled present if first is.
+//  {
+//    parameterList = logNames;
+//    if (!faciesLogGiven)
+//      nVar = 4;
+//    vpLog = !inverseVelocity[0];
+//    vsLog = !inverseVelocity[1];
+//  }
+//  else
+//  {
+//    parameterList[0] = "TWT";
+//    parameterList[1] = "DT";
+//    parameterList[2] = "RHOB"; //DTS before RHOB?
+//    parameterList[3] = "DTS";
+//    parameterList[4] = "FACIES";
+//  }
+//
+//  int * pos = new int[nVar];
+//  for(k=0;k<nVar;k++)
+//    pos[k] = IMISSING;
+//
+//  int nFacies = 0;
+//  std::string faciesLogName;
+//  for(k=0;k<nlog;k++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    for(j=0;j<nVar;j++)
+//    {
+//      if( NRLib::Uppercase(token)==parameterList[j])
+//      {
+//        pos[j] = k + 4;
+//        if(j==4)
+//        {
+//          faciesLogName = parameterList[4];
+//          // facies log - save names
+//          NRLib::ReadNextToken(file,token,line); // read code word DISC
+//          if (token != "DISC")
+//          {
+//            LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
+//            exit(1);
+//          }
+//          // Find number of facies
+//          std::getline(file,dummyStr);
+//          tokenLine = NRLib::GetTokens(dummyStr);
+//          nFacies = static_cast<int>(tokenLine.size())/2;
+//        }
+//      }
+//    }
+//    if (token != "DISC")
+//      NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//
+//  std::string missVar = "";
+//  bool missing_error = false;
+//  for(k=0 ; k<nVar ; k++)
+//  {
+//    if(pos[k]==IMISSING)
+//    {
+//      missVar += parameterList[k];
+//      //error = 1;
+//      missing_error = true;
+//    }
+//  }
+//  if(missing_error == true)
+//    error += "Cannot find log(s) "+missVar+" in well file "+wellFileName+".\n";
+//    //LogKit::LogFormatted(LogKit::Error,"Cannot find log(s) "+missVar+" in well file "+wellFileName+".\n");
+//
+//  if(pos[0]==IMISSING)
+//    timemissing = 1;
+//  else
+//    timemissing = 0;
+//
+//  // Find nd, the number of observations in well.
+//  // Count the number of time observations which is not missing values.
+//
+//  int nData = 0;
+//  int legalData = 0;
+//  int nd;
+//  while (NRLib::CheckEndOfFile(file)==false)
+//  {
+//    nData++;
+//    try {
+//      dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
+//      dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
+//      dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
+//
+//      for(j=4;j<=nlog+3;j++) {
+//        dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
+//        if(j==pos[0] && dummy != WELLMISSING) {
+//          legalData++;   // Found legal TIME variable
+//        }
+//      }
+//    }
+//    catch (NRLib::IOError e) {
+//      std::string text;
+//      text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
+//      text += NRLib::ToString(nData) + " (not counting header lines).\n";
+//      text += std::string("\nERROR message is \'") + e.what() + "\'";
+//      LogKit::LogMessage(LogKit::Error,text);
+//      exit(1);
+//    }
+//  }
+//  file.close();
+//  file.clear();
+//  nd = legalData;
+//
+//  //
+//  // Check that the number of logs found for each log entry agrees
+//  // with the number of logs specified in header.
+//  //
+//  // A nicer and faster implementation for this is requested...
+//  //
+//
+//  int logEntry = 0;
+//  NRLib::OpenRead(file, wellFileName);
+//  line = 0;
+//  for(k=0;k<4+nlog;k++)
+//    NRLib::DiscardRestOfLine(file,line,false);
+//  while (NRLib::CheckEndOfFile(file)==false && error!="")
+//  {
+//    logEntry++;
+//    int  elements = 0;
+//    bool lastIsBlank = true;
+//    std::getline(file,token);
+//
+//    int l = static_cast<int>(token.length());
+//    for (k=0; k<l; k++)
+//    {
+//      if (token[k] != ' ' && token[k] != '\t' && token[k] != '\r' && token[k] != '\0')
+//      {
+//        if (lastIsBlank)
+//          elements++;
+//        lastIsBlank = false;
+//      }
+//      else
+//        lastIsBlank = true;
+//    }
+//    if(elements != nlog+3)
+//    {
+//      //error = 1;
+//      //LogKit::LogFormatted(LogKit::Error,"ERROR for well "+well_name +": The number of log elements (nlogs="+NRLib::ToString(elements-3)+")\n in line "+NRLib::ToString(logEntry)+" does not match header specifications (nlogs="+NRLib::ToString(nlog)+").\n");
+//      error += "ERROR for well "+well_name +": The number of log elements (nlogs="+NRLib::ToString(elements-3)+")\n in line "+NRLib::ToString(logEntry)+" does not match header specifications (nlogs="+NRLib::ToString(nlog)+").\n";
+//    }
+//  }
+//  file.close();
+//  file.clear();
+//
+//  //
+//  // Read logs
+//  //
+//  std::vector<int> faciesNr;
+//  //if (nFacies > 0)
+//  //  faciesNr.resize(nFacies);
+//
+//  NRLib::OpenRead(file, wellFileName);
+//  line = 0;
+//  for(k=0;k<4+nlog;k++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    if (NRLib::Uppercase(token) == parameterList[4])
+//    {
+//      NRLib::ReadNextToken(file,token,line); // read code word DISC
+//      // facies types given here
+//      for(int kk=0;kk<nFacies;kk++)
+//      {
+//        NRLib::ReadNextToken(file,token,line);
+//        //faciesNr[kk] = NRLib::ParseType<int>(token);
+//        faciesNr.push_back(NRLib::ParseType<int>(token));
+//        NRLib::ReadNextToken(file,token,line);
+//        faciesNames.push_back(token);
+//      }
+//    }
+//    NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//  double OPENWORKS_MISSING = -999.25;
+//  bool wrongMissingValues = false;
+//
+//  double xpos_data = RMISSING;
+//  double ypos_data = RMISSING;
+//  double zpos_data = RMISSING;
+//  double alpha_data = RMISSING;
+//  double beta_data = RMISSING;
+//  double rho_data = RMISSING;
+//  int facies_data = IMISSING;
+//  k         = -1;
+//  int faciesok = 1;
+//  int legal = 0;
+//  for(k=0;k<nData;k++)
+//  {
+//    xpos_data  = NRLib::ReadNext<double>(file,line);
+//    ypos_data  = NRLib::ReadNext<double>(file,line);
+//    dummy = NRLib::ReadNext<double>(file,line);
+//    for(j=4;j<=nlog+3;j++)
+//    {
+//      dummy = NRLib::ReadNext<double>(file,line);
+//      if(j==pos[0])
+//      {
+//        //Found TIME variable
+//        if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING)
+//        {
+//          zpos_data = dummy;
+//          k++;
+//          legal = 1;
+//        }
+//        else
+//          legal = 0;
+//      }
+//      else if(j==pos[1])
+//      {
+//        // Found ALPHA variable
+//        if(dummy != WELLMISSING)
+//          if (vpLog)
+//            alpha_data = static_cast<double>(dummy);
+//          else
+//            alpha_data = static_cast<double>(304800.0/dummy);
+//        else
+//          alpha_data = RMISSING;
+//      }
+//      else if(j==pos[3])
+//      {
+//        // Found BETA variable
+//        if(dummy != WELLMISSING)
+//          if (vsLog)
+//            beta_data = static_cast<double>(dummy);
+//          else
+//            beta_data = static_cast<double>(304800.0/dummy);
+//        else
+//          beta_data = RMISSING;
+//      }
+//      else if(j==pos[2])
+//      {
+//        //Found RHO variable
+//        if(dummy != WELLMISSING)
+//          rho_data = static_cast<double>(dummy);
+//        else
+//          rho_data = RMISSING;
+//      }
+//      else if(nVar > 4 && j==pos[4])
+//      {
+//        //Found facies variable
+//        if(dummy != WELLMISSING)
+//          facies_data = static_cast<int>(dummy);
+//        else
+//          facies_data = IMISSING;
+//        if(facies_data!=IMISSING)
+//        {
+//          int faciesok_check = 0;
+//          for(int kk=0 ; kk<nFacies ; kk++)
+//          {
+//            if(facies_data == faciesNr[kk]) {
+//              faciesok_check = 1;
+//              break;
+//            }
+//          }
+//          if(faciesok_check == 0)
+//            faciesok = 0;
+//        }
+//      }
+//    }
+//    if(legal == 1)
+//    {
+//      //Cut against full_inversion_volum
+//      double z_top = full_inversion_volume_.GetTopSurface().GetZ(xpos_data, ypos_data);
+//      double z_bot = full_inversion_volume_.GetBotSurface().GetZ(xpos_data, ypos_data);
+//
+//      if(zpos_data < z_top && zpos_data > z_bot) {
+//        xpos.push_back(xpos_data);
+//        ypos.push_back(ypos_data);
+//        zpos.push_back(zpos_data);
+//        alpha.push_back(alpha_data);
+//        beta.push_back(beta_data);
+//        rho.push_back(rho_data);
+//        facies.push_back(facies_data);
+//        if (alpha_data == OPENWORKS_MISSING)
+//          wrongMissingValues = true;
+//        if(beta_data == OPENWORKS_MISSING)
+//          wrongMissingValues = true;
+//        if(rho_data == OPENWORKS_MISSING)
+//          wrongMissingValues = true;
+//      }
+//    }
+//  }
+//  file.close();
+//
+//  //Add well logs
+//  new_well.SetWellName(well_name);
+//  new_well.AddContLog("xpos", xpos);
+//  new_well.AddContLog("ypos", ypos);
+//  new_well.AddContLog("zpos", zpos);
+//  new_well.AddContLog("alpha", alpha);
+//  new_well.AddContLog("beta", beta);
+//  new_well.AddContLog("rho", rho);
+//
+//  new_well.AddDiscLog("facies", facies);
+//  new_well.SetMissing(RMISSING);
+//
+//  timemissing_[well_name] = timemissing;
+//  xpos0_[well_name] = xpos0;
+//  ypos0_[well_name] = ypos0;
+//  faciesnames_[well_name] = faciesNames;
+//  faciesok_[well_name] = faciesok;
+//  faciesNr_[well_name] = faciesNr;
+//  nFacies_[well_name] = nFacies;
+//}
+
+
+
+bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
+                                                     InputFiles * input_files) {
+  LogKit::WriteHeader("Reflection matrix");
+  //
+  // About to process wavelets and energy information. Needs the a-matrix, so create
+  // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
+  //
+  const std::string & reflMatrFile = input_files->getReflMatrFile();
+  const double        vpvs         = model_settings->getVpVsRatio();
+  float                  ** reflectionMatrix;
+
+
+  int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+  for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+
+
+    std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+    std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+
+
+    int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+
+
+    if (reflMatrFile != "") {  //File should have one line for each seismic data file. Check: if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
+      std::string tmpErrText("");
+      reflectionMatrix = readMatrix(reflMatrFile, numberOfAngles, 3, "reflection matrix", tmpErrText);
+      if(reflectionMatrix == NULL) {
+        LogKit::LogFormatted(LogKit::Error, "Reading of file "+reflMatrFile+ " for reflection matrix failed\n");
+        LogKit::LogFormatted(LogKit::Error, tmpErrText);
+        return false;
+      }
+
+      LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+    }
+
+    else if(vpvs != RMISSING) {
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
+      double vsvp = 1.0/vpvs;
+      setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
+      double vsvp = 1/2;
+      setupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+    }
+
+
+      reflectionMatrix_[thisTimeLapse] = reflectionMatrix;
+  } //nTimeLapses
+
+
+  setup_reflection_matrix_ = true;
+
+
+  //Set up temporary wavelet
+  LogKit::WriteHeader("Setting up temporary wavelet");
+
+
+  //1. Check if optimize welllocation //Point f) Comes from xml-model file
+  if(model_settings->getOptimizeWellLocation() == false) {
+
+
+    read_seismic_ = true;
+  //2. Check if read seismic ok | read_seismic_ok_
+    if(read_seismic_ == true) {
+
+
+      //3. Use Ricker - wavelet.
+      //4. 1 wavelet per angle
+
+
+      //for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+        //std::vector<float> angles = model_settings->getAngle(0);
+        //std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
+        int numberOfAngles = model_settings->getNumberOfAngles(0);
+        //float ** reflectionMatrix = reflectionMatrix_[0];
+
+
+        //5  Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
+        for (int i = 0 ; i < numberOfAngles ; i++) {
+          //int error;
+          //Wavelet                ** wavelet_;               ///< Wavelet for angle
+          SegY * segy = NULL;
+
+
+          //Check all timelapses for this angle, choose the lowes one;
+          int thisTimeLapse = 0;
+          int vintageyear = model_settings->getVintageYear(0);
+          int vintagemonth = model_settings->getVintageMonth(0);
+          int vintageday = model_settings->getVintageDay(0);
+          for(size_t j = 1; j < nTimeLapses; j++) {
+            if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
+              vintageyear = model_settings->getVintageYear(j);
+              vintagemonth = model_settings->getVintageMonth(j);
+              vintageday = model_settings->getVintageDay(j);
+              thisTimeLapse = j;
+            }
+          }
+
+          std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+
+
+          int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
+
+
+          if(seismic_data_[thisTimeLapse][i].getSeismicType() == SeismicStorage::SEGY)
+            segy = seismic_data_[thisTimeLapse][i].getSegY();
+          else
+            StormContGrid * stormg = seismic_data_[thisTimeLapse][i].getStorm();
+
+
+          int n_traces = segy->GetNTraces();
+          int tmp_value = static_cast<int>(n_traces / 100);
+          //segy->FindNumberOfTraces();
+
+
+          std::vector<float> trace_data = segy->GetAllValues();
+
+
+          std::vector<float> trace_tmp;
+
+
+          for(int j = 0; j < 100; j++) {
+            int trace_index = j*tmp_value;
+
+
+
+
+            //SegYTrace *              getTrace(int i) {return traces_[i];}
+            //NRLib::SegYTrace * segy_tmp = segy->getTrace(trace_index);
+            //int index = 0;
+            //std::vector<float> trace_data;
+
+
+            //if(segy_tmp != NULL) {
+            //  size_t start = segy_tmp->GetStart();
+            //  size_t end = segy_tmp->GetEnd();
+            //  for(size_t k = start; k < end; k++) {
+            //    trace_data.push_back(segy_tmp->GetValue(k));
+            //  }
+            //}
+
+
+            //FFT to find peak-frequency.
+
+
+
+            //segy_tmp->GetValue
+
+            //segy->ReadAllTraces
+
+            //float peak_data = 0;
+            //for(size_t ii = 0; ii < trace_data.size(); ii++) {
+            //  if(trace_data[ii] > peak_data)
+            //    peak_data = trace_data[ii];
+            //}
+
+            //segy->GetNearestTrace();
+            //segy->GetNextTrace();
+            //segy->GetTraceData();
+
+            //std::string grid_file("");
+            //grid_file = input_files->getSeismicFile(0,i);
+            //std::string tmp_err_text;
+            //SegyGeometry * geometry;
+            //getGeometryFromGridOnFile(grid_file,
+            //                          model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
+            //                          geometry,
+            //                          tmp_err_text);
+            //float frequency = model_settings->getRickerPeakFrequency(thisTimeLapse,i);
+            //Wavelet  * wavelet = new Wavelet1D(model_settings, reflectionMatrix[i], angles[i], frequency, error);
+          }
+
+        }
+
+      //}
+    }
+  }
+
+
+  return true;
+
+
 }
 
 
-bool CommonData::setupReflectionMatrixAndTempWavelet() {
-  return true;
+float **
+CommonData::readMatrix(const std::string & fileName, int n1, int n2,
+                       const std::string & readReason,
+                       std::string       & errText)
+{
+  float * tmpRes = new float[n1*n2+1];
+  std::ifstream inFile;
+  NRLib::OpenRead(inFile,fileName);
+  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+  LogKit::LogFormatted(LogKit::Low,text);
+  std::string storage;
+  int index = 0;
+  int error = 0;
 
+
+  while(error == 0 && inFile >> storage) {
+    if(index < n1*n2) {
+      try {
+        tmpRes[index] = NRLib::ParseType<float>(storage);
+      }
+      catch (NRLib::Exception & e) {
+        errText += "Error in "+fileName+"\n";
+        errText += e.what();
+        error = 1;
+      }
+    }
+    index++;
+  }
+  if(error == 0) {
+    if(index != n1*n2) {
+      error = 1;
+      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
+    }
+  }
+
+
+  float ** result = NULL;
+  if(error == 0) {
+    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+    result = new float * [n1];
+    int i, j;
+    index = 0;
+    for(i=0;i<n1;i++) {
+      result[i] = new float[n2];
+      for(j=0;j<n2;j++) {
+        result[i][j] = tmpRes[index];
+        index++;
+      }
+    }
+  }
+  else
+
+    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+  delete [] tmpRes;
+  return(result);
+}
+
+
+void
+CommonData::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+                                         double                vsvp,
+                                         const ModelSettings * model_settings,
+                                         int                   numberOfAngles,
+                                         int                   thisTimeLapse)
+{
+  int      i;
+  float ** A      = new float * [numberOfAngles];
+
+
+  double           vsvp2       = vsvp*vsvp;
+  std::vector<int> seismicType = model_settings->getSeismicType(thisTimeLapse);
+  std::vector<float>        angles = model_settings->getAngle(thisTimeLapse);
+
+
+  for(i = 0; i < numberOfAngles; i++)
+  {
+    double angle = static_cast<double>(angles[i]);
+    A[i] = new float[3];
+    double sint  = sin(angle);
+    double sint2 = sint*sint;
+    if(seismicType[i] == ModelSettings::STANDARDSEIS) {  //PP
+      double tan2t=tan(angle)*tan(angle);
+
+      A[i][0] = float( (1.0 +tan2t )/2.0 ) ;
+      A[i][1] = float( -4*vsvp2 * sint2 );
+      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
+    }
+    else if(seismicType[i] == ModelSettings::PSSEIS) {
+      double cost  = cos(angle);
+      double cosp  = sqrt(1-vsvp2*sint2);
+      double fac   = 0.5*sint/cosp;
+
+      A[i][0] = 0;
+      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
+      A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
+    }
+  }
+  reflectionMatrix = A;
+  double vpvs = 1.0f/vsvp;
+  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
+  std::string text;
+  if (vpvs < model_settings->getVpVsRatioMin()) {
+    LogKit::LogFormatted(LogKit::Warning,"\nA very small Vp/Vs-ratio has been detected. Values below %.2f are regarded unlikely. \n",model_settings->getVpVsRatioMin());
+    text  = "Check the Vp/Vs-ratio. A small value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <minimim-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  }
+  else if (vpvs > model_settings->getVpVsRatioMax()) {
+    LogKit::LogFormatted(LogKit::Warning,"\nA very large Vp/Vs-ratio has been detected. Values above %.2f are regarded unlikely. \n",model_settings->getVpVsRatioMax());
+    text  = "Check the Vp/Vs-ratio. A large value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  }
 }
 
 bool CommonData::optimizeWellLocations() {
@@ -899,7 +1363,7 @@ bool CommonData::optimizeWellLocations() {
 bool CommonData::estimateWaveletShape() {
   return true;
 }
-  
+
 bool CommonData::setupEstimationRockPhysics(){
   return true;
 }
@@ -1206,7 +1670,7 @@ void CommonData::setSurfacesSingleInterval(Simbox                           & es
         err_text += e.what();
         failed = true;
       }
-      
+
     }
     /*
     if (!failed) {
@@ -1380,7 +1844,7 @@ void CommonData::setSurfacesMultipleIntervals(Simbox                         & e
   delete base_surface;
   delete top_surface_flat;
   delete base_surface_flat;
-  
+
 }
 
 

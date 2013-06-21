@@ -40,7 +40,7 @@ namespace NRLib {
 
     /// Construct well from file
     Well(const std::string & file_name,
-         bool read_ok);
+         bool              & read_ok);
 
     /// Constructor
     /// \param[in] cont_log Continuous logs
@@ -67,8 +67,8 @@ namespace NRLib {
     const std::vector<int> & GetDiscLog(const std::string& name) const;
 
     /// Read a well from a file-name
-    void ReadWell(const std::string&file_name,
-                  bool read_ok);
+    void ReadWell(const std::string & file_name,
+                  bool              & read_ok);
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
