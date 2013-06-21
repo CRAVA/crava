@@ -53,7 +53,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<DistributionWithTrendStorage *> correlation_vp_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_;   /// Converted to double
 };
 
 //----------------------------------------------------------------------------------//
@@ -75,7 +75,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_;   /// Converted to double
 };
 
 //----------------------------------------------------------------------------------//
