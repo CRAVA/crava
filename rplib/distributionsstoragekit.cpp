@@ -344,3 +344,22 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
     }
   }
 }
+
+void
+FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage * dist_with_trend,
+                                         std::string                          type,
+                                         double                             & value,
+                                         std::string                        & errTxt)
+{
+
+  if(typeid(*(dist_with_trend)) == typeid(DeltaDistributionWithTrendStorage)) {
+    const DeltaDistributionWithTrendStorage * d1 = dynamic_cast<const DeltaDistributionWithTrendStorage *>(dist_with_trend);
+    if(typeid((*d1->GetMean())) == typeid(NRLib::TrendConstantStorage)) {
+      const NRLib::TrendConstantStorage * t1 = dynamic_cast<const NRLib::TrendConstantStorage *>(d1->GetMean());
+      value = t1->GetMean();
+    }
+  }
+  else {
+    errTxt += "All "+type+" variables need to be double values, not trends or distributions\n";
+  }
+}
