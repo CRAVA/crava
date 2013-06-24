@@ -107,4 +107,8 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
                           const std::vector<std::vector<float> >            & blocked_logs,
                           std::string                                       & errTxt);
 
+void FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage * dist_with_trend,
+                                              std::string                          type,
+                                              double                             & value,
+                                              std::string                        & errTxt);
 #endif
