@@ -241,6 +241,7 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
 
   int nTimeLapses = model_settings->getNumberOfTimeLapses();
+  int error = 0;
 
   for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
     if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
@@ -294,8 +295,10 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
             seismic_data_angle.push_back(seismicdata);
           }
-          else
+          else {
             LogKit::LogFormatted(LogKit::Warning, "Data from segy-file " + filename + " is not read.\n");
+            error = 1;
+          }
 
         } //SEGY
         else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -311,6 +314,7 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
           {
             LogKit::LogFormatted(LogKit::Warning, "Error when reading storm-file " + filename +": " + NRLib::ToString(e.what()) + "\n");
             failed = true;
+            error = 1;
           }
 
           if(failed == false) {
@@ -325,8 +329,10 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
           }
 
         } //STORM / SGRI
-        else
+        else {
           LogKit::LogFormatted(LogKit::Warning, "Error when reading file " + filename +". File type not recognized.\n");
+          error = 1;
+        }
       } //nAngles
 
       seismic_data_[thisTimeLapse] = seismic_data_angle;
@@ -334,7 +340,10 @@ bool CommonData::readSeismicData(ModelSettings  * model_settings,
     }//ifSeismicFiles
   } //nTimeLapses
 
-  return true;
+  if(error = 0)
+    return true;
+  else
+    return false;
 }
 
 bool
@@ -1035,7 +1044,7 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
       int vintageyear = model_settings->getVintageYear(0);
       int vintagemonth = model_settings->getVintageMonth(0);
       int vintageday = model_settings->getVintageDay(0);
-      for(size_t j = 1; j < nTimeLapses; j++) {
+      for(int j = 1; j < nTimeLapses; j++) {
         if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
           vintageyear = model_settings->getVintageYear(j);
           vintagemonth = model_settings->getVintageMonth(j);
@@ -1048,13 +1057,13 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
       int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
       int n_traces;
       std::vector<std::vector<float> > trace_data(100);
+      std::vector<double> trace_length;
       std::vector<float> frequency_peaks;
 
       if(seismic_data_[thisTimeLapse][i].getSeismicType() == SeismicStorage::SEGY) {
-        //SegY * segy = NULL;
         SegY * segy = seismic_data_[thisTimeLapse][i].getSegY();
         n_traces = segy->GetNTraces();
-        //int tmp_value = static_cast<int>(n_traces / 100);
+        trace_length.resize(100, 1); //Dummy, to avoid checking later if trace_data came from SEGY or STORM
 
         for(size_t j = 0; j < 100; j++) {
           int trace_index = j*(static_cast<int>(n_traces / 100));
@@ -1071,40 +1080,77 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
       }
       else {
         StormContGrid * stormg = seismic_data_[thisTimeLapse][i].getStorm();
-        //n_traces = stormg->GetN();
-        //stormg->
-        //stormg->begin();
-        float aa = 0.0;
 
+        double x_tmp = 0.0;
+        double y_tmp = 0.0;
+        double z_tmp = 0.0;
+
+        int index_i = 0;
+        int index_j = 0;
+        int trace_index = 0;
+
+        for(int ii = 0; ii < 10; ii++) {
+
+          index_i = ii*static_cast<int>(stormg->GetNI()/10);
+          if(index_i >= stormg->GetNI())
+            index_i = stormg->GetNI() -1;
+
+          for(int jj = 0; jj < 10; jj++) {
+
+            index_j = jj*static_cast<int>(stormg->GetNJ()/10);
+            if(index_j >= stormg->GetNJ())
+              index_j = stormg->GetNJ()-1;
+
+            for(size_t kk = 0; kk < stormg->GetNK(); kk++) {
+              stormg->FindCenterOfCell(index_i, index_j, kk, x_tmp, y_tmp, z_tmp);
+              trace_data[trace_index].push_back(stormg->GetValueClosestInZ(x_tmp, y_tmp, z_tmp));
+            }
+
+            //Store length
+            double top = stormg->GetTopSurface().GetZ(x_tmp, y_tmp);
+            double bot = stormg->GetBotSurface().GetZ(x_tmp, y_tmp);
+            trace_length.push_back(std::abs(bot-top));
+
+            trace_index++;
+          }
+        }
       }
-
 
       //FFT to find peak-frequency.
       for(int j = 0; j < 100; j++) {
-        int nzPad = model_settings->getNZpad();
         int n_trace = trace_data[j].size();
-
         fftw_real    * seis_r = new fftw_real;
         fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
         seis_r = new fftw_real[n_trace];
 
-        for(size_t k=0; k <  n_trace; k++)
+        for(int k=0; k < n_trace; k++)
           seis_r[k] = trace_data[j][k];
 
         Utils::fft(seis_r, seis_c, n_trace);
 
+        //std::vector<float> seis_tmp;
+
         float peak_tmp = 0.0;
-        for(size_t k = 0; k < trace_data.size(); k++) {
+        for(int k = 0; k < n_trace; k++) {
+          //seis_tmp.push_back(seis_r[k]);
           if(seis_r[k] > peak_tmp)
             peak_tmp = seis_r[k];
         }
+
+        peak_tmp *= trace_length[j];
         frequency_peaks.push_back(peak_tmp);
       }
 
       float mean_frequency = 0.0;
-      for(size_t j = 0; j < frequency_peaks.size(); j++)
+      float mean_grid_height = 0.0;
+      for(size_t j = 0; j < frequency_peaks.size(); j++) {
         mean_frequency += frequency_peaks[j];
+        mean_grid_height += trace_length[j];
+      }
       mean_frequency /= frequency_peaks.size();
+      mean_grid_height /= frequency_peaks.size(); //Will be 1 if SEGY is used.
+
+      mean_frequency /= mean_grid_height;
 
       int tmp_error = 0;
       Wavelet  * wavelet_tmp = new Wavelet1D(model_settings, reflectionMatrix[i], angles[i], mean_frequency, tmp_error);
@@ -1112,7 +1158,7 @@ bool CommonData::setupReflectionMatrixAndTempWavelet(ModelSettings * model_setti
       error += tmp_error;
 
       if(tmp_error == 0)
-        temporary_wavelets_[i] = wavelet_tmp;
+        temporary_wavelets_.push_back(wavelet_tmp);
       else
         LogKit::LogFormatted(LogKit::Error, "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[i]) + ".\n");
     }
@@ -1233,6 +1279,7 @@ CommonData::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
     TaskList::addTask(text);
   }
 }
+
 
 bool CommonData::optimizeWellLocations() {
   return true;
