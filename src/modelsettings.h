@@ -222,6 +222,7 @@ public:
   std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
   std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval() const { return volumefractionInterval_   ;}
   int                              getErosionPriorityTopSurface()       const { return erosion_priority_top_surface_;}
+  const std::map<std::string,int> & getErosionPriorityBaseSurfaces()    const { return erosion_priority_interval_base_surface_    ;}
   int                              getErosionPriorityBaseSurface(const std::string & interval_name) const {return erosion_priority_interval_base_surface_.find(interval_name)->second;}
 
   bool                               getCorrDirTopConform(void)          const { return topConformCorrelation_ ;}
@@ -400,7 +401,7 @@ public:
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
-  void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;} // .insert(std::pair<std::string, std::map<std::string, float> >(name, prior_int_map)) ;}
+  void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;}
   void addVolumeFractionInterval(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumefractionInterval_[interval_name] = volumefractions_map ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
