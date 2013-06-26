@@ -130,6 +130,9 @@ private:
                                      int                   numberOfAngles,
                                      int                   thisTimeLapse);
 
+  bool waveletHandling(ModelSettings * model_settings,
+                       InputFiles * input_files);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
