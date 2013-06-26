@@ -69,8 +69,13 @@ CommonData::CommonData(ModelSettings  * model_settings,
     }
   }
 
-  SetupReflectionMatrixAndTempWavelet(model_settings,
+  // 6. Optimization of well location
+  if(!failed){
+    if(model_settings->getOptimizeWellLocation()){
+      SetupReflectionMatrixAndTempWavelet(model_settings,
                                       input_files);
+    }
+  }
 
 
 }
@@ -1945,4 +1950,92 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   }
 
   return failed;
+}
+
+
+void  CommonData::OptimizeWellLocations(FFTGrid                     ** seisCube,
+                                        float                       ** reflectionMatrix,
+                                        ModelSettings                * modelSettings,
+                                        const std::vector<Surface *> & interval)
+{
+  LogKit::WriteHeader("Estimating optimized well location");
+
+  double  deltaX, deltaY;
+  float   sum;
+  float   kMove;
+  float   moveAngle;
+  int     iMove;
+  int     jMove;
+  int     i,j,w;
+  int     iMaxOffset;
+  int     jMaxOffset;
+  int     nMoveAngles = 0;
+  int     nWells      = modelSettings->getNumberOfWells();
+  int     nAngles     = modelSettings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
+  float   maxShift    = modelSettings->getMaxWellShift();
+  float   maxOffset   = modelSettings->getMaxWellOffset();
+  double  angle       = timeSimbox_->getAngle();
+  double  dx          = timeSimbox_->getdx();
+  double  dy          = timeSimbox_->getdx();
+  std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
+
+  std::vector<float> angleWeight(nAngles);
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+
+  for (w = 0 ; w < nWells ; w++) {
+    if( wells_[w]->isDeviated()==true )
+      continue;
+
+    BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
+    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( nMoveAngles==0 )
+      continue;
+
+    for( i=0; i<nAngles; i++ )
+      angleWeight[i] = 0;
+
+    for( i=0; i<nMoveAngles; i++ ){
+      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+
+      for( j=0; j<nAngles; j++ ){
+        if( moveAngle == seismicAngle[j]){
+          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+          break;
+        }
+      }
+    }
+
+    sum = 0;
+    for( i=0; i<nAngles; i++ )
+      sum += angleWeight[i];
+    if( sum == 0 )
+      continue;
+
+    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
+    jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
+
+    bl->findOptimalWellLocation(seisCube,timeSimbox_,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
+
+    deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
+    deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
+    wells_[w]->moveWell(timeSimbox_,deltaX,deltaY,kMove);
+    wells_[w]->deleteBlockedLogsOrigThick();
+    wells_[w]->setBlockedLogsOrigThick( new BlockedLogs(wells_[w], timeSimbox_, modelSettings->getRunFromPanel()) );
+    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
+    wells_[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
+  }
+
+   for (w = 0 ; w < nWells ; w++){
+     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
+    {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
+          wells_[w]->getWellname().c_str());
+      TaskList::addTask("Well "+NRLib::ToString(wells_[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
+    }
+   }
 }
