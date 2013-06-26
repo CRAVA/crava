@@ -93,9 +93,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\analyzelog.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -981,6 +978,18 @@
     <ClCompile Include="src\commondata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\seismicstorage.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\blockedlogscommon.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1648,6 +1657,15 @@
     </ClInclude>
     <ClInclude Include="src\commondata.h">
       <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\seismicstorage.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\blockedlogscommon.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

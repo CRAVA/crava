@@ -254,6 +254,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -271,6 +272,7 @@
     </ClCompile>
     <ClCompile Include="src\background.cpp" />
     <ClCompile Include="src\blockedlogs.cpp" />
+    <ClCompile Include="src\blockedlogscommon.cpp" />
     <ClCompile Include="src\blockedlogsforzone.cpp" />
     <ClCompile Include="src\box.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -335,6 +337,7 @@
     <ClCompile Include="src\qualitygrid.cpp" />
     <ClCompile Include="src\rockphysicsinversion4d.cpp" />
     <ClCompile Include="src\seismicparametersholder.cpp" />
+    <ClCompile Include="src\seismicstorage.cpp" />
     <ClCompile Include="src\simbox.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1349,11 +1352,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="src\blockedlogscommon.h" />
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
+    <ClInclude Include="src\seismicstorage.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
     <ClInclude Include="src\background.h" />
