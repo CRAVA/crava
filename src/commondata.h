@@ -12,6 +12,7 @@
 #include "src/welldata.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "lib/utils.h"
 #include "src/blockedlogscommon.h"
 #include "src/tasklist.h"
 
@@ -96,8 +97,8 @@ private:
                     InputFiles        * inputFiles,
                     std::string       & err_text);
 
-  bool BlockWellsForEstimation(const ModelSettings                            * const model_settings, 
-                               //const InputFiles                               * const input_files, 
+  bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
+                               //const InputFiles                               * const input_files,
                                const Simbox                                   & estimation_simbox,
                                const std::vector<NRLib::Well>                 & wells,
                                std::vector<BlockedLogsCommon *>               & blocked_logs_common,
@@ -146,10 +147,13 @@ private:
                                      int                   numberOfAngles,
                                      int                   thisTimeLapse);
 
-  bool OptimizeWellLocations();
-  bool EstimateWaveletShape();
-  bool EstimatePriorCorrelation();
-  bool SetupEstimationRockPhysics();
+  bool waveletHandling(ModelSettings * model_settings,
+                       InputFiles * input_files);
+
+  bool optimizeWellLocations();
+  bool estimateWaveletShape();
+  bool estimatePriorCorrelation();
+  bool setupEstimationRockPhysics();
 
   int ComputeTime(int year, int month, int day) const;
 
@@ -186,6 +190,14 @@ private:
 
   std::map<int, float **> reflectionMatrix_;
   bool        reflection_matrix_from_file_; //False: created from global vp/vs
+
+  std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle
+
+  //float                  ** reflectionMatrix_;
+
+
+  //Simbox                     * estimation_simbox_;
+  //NRLib::Volume              * full_inversion_volume_;
 
 };
 

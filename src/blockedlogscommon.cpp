@@ -32,12 +32,12 @@ BlockedLogsCommon::~BlockedLogsCommon(){
 
 void BlockedLogsCommon::BlockWell(const NRLib::Well                  * const well_data,
                                   const Simbox                       * const estimation_simbox,
-                                  std::map<std::string, int>         & continuous_log_names, 
-                                  std::map<std::string, int>         & discrete_log_names, 
-                                  std::vector<std::vector<double> >  & continuous_logs, 
+                                  std::map<std::string, int>         & continuous_log_names,
+                                  std::map<std::string, int>         & discrete_log_names,
+                                  std::vector<std::vector<double> >  & continuous_logs,
                                   std::vector<std::vector<int> >     & discrete_logs,
                                   bool                                 interpolate){
-                                    
+
   well_name_ = well_data->GetWellName();
   // Get size of vector
   std::map<std::string,std::vector<double> > all_logs_temp = well_data->GetContLog();
@@ -119,7 +119,7 @@ void BlockedLogsCommon::BlockWell(const NRLib::Well                  * const wel
           InterpolateContinuousLog(x_pos_, start, end, j, t);
           InterpolateContinuousLog(y_pos_, start, end, j, t);
           InterpolateContinuousLog(z_pos_, start, end, j, t);
-          
+
           // all blocked continuous logs
           for(std::map<std::string,int >::iterator it=continuous_log_names_blocked_.begin(); it!=continuous_log_names_blocked_.end(); ++it){
             InterpolateContinuousLog(continuous_logs_blocked_[it->second], start, end, j, t);
@@ -333,7 +333,7 @@ void BlockedLogsCommon::BlockCoordinateLog(const std::vector<int>    &  b_ind,
     else
       blocked_coord[l]  = RMISSING;
   }
-  
+
 }
 
 //------------------------------------------------------------------------------
@@ -369,10 +369,10 @@ void BlockedLogsCommon::BlockContinuousLog(const int                 *  b_ind,
 }
 
 //------------------------------------------------------------------------------
-void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocked_log, 
-                                                  int                     start, 
+void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocked_log,
+                                                  int                     start,
                                                   int                     end,
-                                                  int                     index, 
+                                                  int                     index,
                                                   float                   rel)
 {
   if(blocked_log[start] != RMISSING && blocked_log[end] != RMISSING && blocked_log[index] == RMISSING)

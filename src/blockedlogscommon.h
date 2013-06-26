@@ -36,9 +36,9 @@ private:
 
   void    BlockWell(const NRLib::Well                  * const well_data,
                     const Simbox                       * const estimation_simbox,
-                    std::map<std::string, int>         & continuous_log_names, 
-                    std::map<std::string, int>         & discrete_log_names, 
-                    std::vector<std::vector<double> >  & continuous_logs, 
+                    std::map<std::string, int>         & continuous_log_names,
+                    std::map<std::string, int>         & discrete_log_names,
+                    std::vector<std::vector<double> >  & continuous_logs,
                     std::vector<std::vector<int> >     & discrete_logs,
                     bool                                 interpolate);
 
@@ -56,10 +56,10 @@ private:
                              const std::vector<double> &  well_log,
                              std::vector<double>       &  blocked_log);
 
-  void    InterpolateContinuousLog(std::vector<double>   & blocked_log, 
-                                   int                     start, 
+  void    InterpolateContinuousLog(std::vector<double>   & blocked_log,
+                                   int                     start,
                                    int                     end,
-                                   int                     index, 
+                                   int                     index,
                                    float                   rel);
 
   // CLASS VARIABLES -----------------------------
@@ -79,12 +79,12 @@ private:
   std::vector<int> i_pos_;    // Simbox i position
   std::vector<int> j_pos_;    // Simbox j position
   std::vector<int> k_pos_;    // Simbox k position
-  
-  std::map<std::string, int> continuous_log_names_; // 
-  std::map<std::string, int> discrete_log_names_;   // 
 
-  std::map<std::string, int> continuous_log_names_blocked_; // 
-  std::map<std::string, int> discrete_log_names_blocked_;   // 
+  std::map<std::string, int> continuous_log_names_; //
+  std::map<std::string, int> discrete_log_names_;   //
+
+  std::map<std::string, int> continuous_log_names_blocked_; //
+  std::map<std::string, int> discrete_log_names_blocked_;   //
 
   int n_continuous_logs_;
   int n_discrete_logs_;

@@ -6157,7 +6157,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
                         + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
         }
-      } 
+      }
     }
 
     //Check that all intervals have gotten a volume fraction
@@ -6208,7 +6208,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
             errTxt += "Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
         }
       }
-    } 
+    }
 
     //Check that all intervals are used under correlation direction
     if(modelSettings_->getCorrDirIntervalUsed() == true) {
