@@ -13,6 +13,8 @@
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "lib/utils.h"
+#include "src/blockedlogscommon.h"
+#include "src/tasklist.h"
 
 #include "src/seismicstorage.h"
 
@@ -31,40 +33,40 @@ public:
 
   //SET FUNCTIONS
 
-  void        setEstimationSimbox();
-  void        setFullInversionVoulume();
+  void        SetEstimationSimbox();
+  void        SetFullInversionVoulume();
 
   //GET FUNCTIONS
 
-  const Simbox          & getEstimationSimbox()     const { return estimation_simbox_     ;}
-  const NRLib::Volume   & getFullInversionVolume()  const { return full_inversion_volume_ ;}
+  const Simbox          & GetEstimationSimbox()     const { return estimation_simbox_     ;}
+  const NRLib::Volume   & GetFullInversionVolume()  const { return full_inversion_volume_ ;}
 
 
 
 private:
 
-  void getGeometryFromGridOnFile(const std::string         grid_file,
+  void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
                                  SegyGeometry           *& geometry,
                                  std::string             & err_text);
 
-  SegyGeometry * geometryFromCravaFile(const std::string & file_name);
+  SegyGeometry * GetGeometryFromCravaFile(const std::string & file_name);
 
-  SegyGeometry * geometryFromStormFile(const std::string    & file_name,
+  SegyGeometry * GetGeometryFromStormFile(const std::string    & file_name,
                                        std::string          & err_text,
                                        bool                   scale = false);
 
-  bool createOuterTemporarySimbox(ModelSettings           * model_settings,
+  bool CreateOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
                                   Simbox                  & estimation_simbox,
                                   NRLib::Volume           & full_inversion_interval,
                                   std::string             & err_text);
 
-  void writeAreas(const SegyGeometry  * area_params,
+  void WriteAreas(const SegyGeometry  * area_params,
                   Simbox              * time_simbox,
                   std::string         & err_text);
 
-  void findSmallestSurfaceGeometry(const double   x0,
+  void FindSmallestSurfaceGeometry(const double   x0,
                                    const double   y0,
                                    const double   lx,
                                    const double   ly,
@@ -74,30 +76,47 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
-  void setSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
+  void SetSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
                                     NRLib::Volume                  & full_inversion_volume,
                                     const InputFiles               * input_files,
                                     const ModelSettings            * model_settings,
                                     std::string                    & err_text,
                                     bool                           & failed);
 
-  void setSurfacesSingleInterval(Simbox                           & estimation_simbox,
+  void SetSurfacesSingleInterval(Simbox                           & estimation_simbox,
                                  NRLib::Volume                    & full_inversion_volume,
                                  const std::vector<std::string>   & surf_file,
                                  ModelSettings                    * model_settings,
                                  std::string                      & err_text,
                                  bool                             & failed);
 
-  bool readSeismicData(ModelSettings  * model_settings,
-                       InputFiles     * input_files);
+  bool ReadSeismicData(ModelSettings  * modelSettings,
+                       InputFiles     * inputFiles);
 
-  bool       checkThatDataCoverGrid(const SegY   * segy,
+  bool ReadWellData(ModelSettings     * modelSettings,
+                    InputFiles        * inputFiles,
+                    std::string       & err_text);
+
+  bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
+                               //const InputFiles                               * const input_files,
+                               const Simbox                                   & estimation_simbox,
+                               const std::vector<NRLib::Well>                 & wells,
+                               std::vector<BlockedLogsCommon *>               & blocked_logs_common,
+                               std::string                                    & err_text);
+
+  bool       CheckThatDataCoverGrid(const SegY   * segy,
                                     float         offset,
                                     const Simbox * timeCutSimbox,
                                     float         guard_zone);
 
-  bool readWellData(ModelSettings  * model_settings,
-                    InputFiles     * input_files);
+  void ProcessLogsNorsarWell(NRLib::Well    & new_well,
+                             std::string    & error_text,
+                             bool           & failed);
+
+  void ProcessLogsRMSWell(NRLib::Well       & new_well,
+                          std::string       & error_text,
+                          bool              & failed);
+
 
   //void        readNorsarWell(const std::string              & wellFileName,
   //                           NRLib::Well                    & new_well,
@@ -113,18 +132,16 @@ private:
   //                          bool                             faciesLogGiven,
   //                          std::string                    & error);
 
-  bool blockWellsForEstimation();
-
-  bool setupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
+  bool SetupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
                                            InputFiles *    input_files);
 
-  float  ** readMatrix(const std::string & fileName,
-                              int                 n1,
-                              int                 n2,
-                              const std::string & readReason,
-                              std::string       & errText);
+  float  ** ReadMatrix(const std::string & fileName,
+                       int                 n1,
+                       int                 n2,
+                       const std::string & readReason,
+                       std::string       & errText);
 
-  void  setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+  void  SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
                                      double                vsvp,
                                      const ModelSettings * modelSettings,
                                      int                   numberOfAngles,
@@ -138,14 +155,14 @@ private:
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
 
-  int computeTime(int year, int month, int day) const;
+  int ComputeTime(int year, int month, int day) const;
 
   // Bool variables indicating whether the corresponding data processing
   // succeeded
   bool outer_temp_simbox_;
   bool read_seismic_;
   bool read_wells_;
-  bool well_blocks_;
+  bool block_wells_;
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;
@@ -157,8 +174,9 @@ private:
   NRLib::Volume   full_inversion_volume_;
 
   //std::vector<SeismicStorage> seismic_data_;
-  std::map<int, std::vector<SeismicStorage> > seismic_data_;
-  std::vector<NRLib::Well>     wells_;
+  std::map<int, std::vector<SeismicStorage> >   seismic_data_;
+  std::vector<NRLib::Well>                      wells_;
+  std::vector<BlockedLogsCommon *>              blocked_logs_common_;   ///< Blocked wells for estimation
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;
