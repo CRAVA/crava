@@ -75,12 +75,14 @@ Well::ReadWell(const std::string  & file_name,
     NRLib::NorsarWell well(file_name);
     well_name_ = well.GetWellName();
     cont_log_ = well.GetContLog();
+    n_data_ = well.GetNData();
     disc_log_ = well.GetDiscLog();
     read_ok = true;
   }
   else if(file_name.find(".rms",0) != std::string::npos) {
     NRLib::RMSWell well(file_name);
     well_name_ = well.GetWellName();
+    n_data_ = well.GetNData();
     cont_log_ = well.GetContLog();
     disc_log_ = well.GetDiscLog();
     read_ok = true;
@@ -245,3 +247,94 @@ size_t Well::GetContLogLength(const std::string& logname) const
 
   return (item->second).size();
 }
+
+//----------------------------------------------------------------------------
+/*
+void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
+                               float                  & dev_angle,
+                               Simbox                 * simbox,
+                               bool                     use_for_wavelet_estimation)
+{
+  float maxDevAngle   = model_settings->getMaxDevAngle();
+  float thr_deviation = float(tan(maxDevAngle*NRLib::Pi/180.0));  // Largest allowed deviation
+  float max_deviation =  0.0f;
+  float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
+
+  //
+  // Find first log entry in simbox
+  //
+  int iFirst = IMISSING;
+  int i;
+  for(i=0 ; i < nd_ ; i++)
+  {
+    if(simbox->isInside(xpos_[i], ypos_[i]))
+    {
+      if (zpos_[i] > simbox->getTop(xpos_[i], ypos_[i]))
+      {
+        iFirst = i;
+        break;
+      }
+    }
+  }
+
+  if (iFirst != IMISSING) {
+    //
+    // Find last log entry in simbox
+    //
+    int iLast = iFirst;
+    for(i = iFirst + 1 ; i < nd_ ; i++)
+    {
+      if(simbox->isInside(xpos_[i], ypos_[i]))
+        {
+          if (zpos_[i] > simbox->getBot(xpos_[i], ypos_[i]))
+            break;
+        }
+      else
+        break;
+      iLast = i;
+    }
+
+    if (iLast > iFirst) {
+      double x0 = xpos_[iFirst];
+      double y0 = ypos_[iFirst];
+      double z0 = zpos_[iFirst];
+      for (int i = iFirst+1 ; i < iLast+1 ; i++) {
+        double x1 = xpos_[i];
+        double y1 = ypos_[i];
+        double z1 = zpos_[i];
+        float dz = static_cast<float>(z1 - z0);
+
+        if (dz > max_dz || i == iLast) {
+          float deviation = static_cast<float>(sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))/dz);
+          if (deviation > max_deviation) {
+            x0 = x1;
+            y0 = y1;
+            z0 = z1;
+            max_deviation = deviation;
+          }
+        }
+      }
+    }
+    dev_angle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
+    LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",dev_angle);
+
+    if (max_deviation > thr_deviation)
+    {
+      if(useForWaveletEstimation_ == ModelSettings::NOTSET) {
+        useForWaveletEstimation_ = ModelSettings::NO;
+      }
+      is_deviated_ = true;
+      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
+    }
+    else
+    {
+      is_deviated_ = false;
+      LogKit::LogFormatted(LogKit::Low,"\n");
+    }
+  }
+  else {
+    is_deviated_ = false;
+    LogKit::LogFormatted(LogKit::Low,"Well is outside inversion interval. Cannot calculate deviation.\n");
+  }
+}
+*/

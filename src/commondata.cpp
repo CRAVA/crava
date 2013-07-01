@@ -69,11 +69,18 @@ CommonData::CommonData(ModelSettings  * model_settings,
     }
   }
 
+  // 5. Reflection matrix
+  if(!failed){
+    SetupReflectionMatrixAndTempWavelet(model_settings,
+                                      input_files);
+  }
+
+  std::vector<Surface *>      surfaces;
+
   // 6. Optimization of well location
   if(!failed){
     if(model_settings->getOptimizeWellLocation()){
-      SetupReflectionMatrixAndTempWavelet(model_settings,
-                                      input_files);
+      OptimizeWellLocations(model_settings, seismic_data_, reflection_matrix_, surfaces);
     }
   }
 
@@ -245,11 +252,11 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
   // if multiple intervals
   if(model_settings->getIntervalNames().size() > 0){
-    SetSurfacesMultipleIntervals(estimation_simbox, full_inversion_volume, input_files, model_settings, err_text, failed);
+    SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text, failed);
   }
   // single interval described by either one or two surfaces
   else{
-    SetSurfacesSingleInterval(estimation_simbox, full_inversion_volume, input_files->getTimeSurfFiles(), model_settings, err_text, failed);
+    SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text, failed);
   }
 
   return (!failed);
@@ -462,7 +469,6 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
   try{
     if(nWells > 0)
       LogKit::WriteHeader("Reading wells");
-
 
 
     //std::vector<std::string> logNames = model_settings->getLogNames();
@@ -1197,7 +1203,7 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
     }
 
 
-      reflectionMatrix_[thisTimeLapse] = reflectionMatrix;
+      reflection_matrix_[thisTimeLapse] = reflectionMatrix;
   } //nTimeLapses
 
 
@@ -1225,7 +1231,7 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
       int vintageyear = model_settings->getVintageYear(0);
       int vintagemonth = model_settings->getVintageMonth(0);
       int vintageday = model_settings->getVintageDay(0);
-      for(int j = 1; j < nTimeLapses; j++) {
+      for(unsigned int j = 1; j < nTimeLapses; j++) {
         if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
           vintageyear = model_settings->getVintageYear(j);
           vintagemonth = model_settings->getVintageMonth(j);
@@ -1235,7 +1241,7 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
       }
       std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
 
-      int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
+      //int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
       int n_traces;
       std::vector<std::vector<float> > trace_data(100);
       std::vector<double> trace_length;
@@ -1266,8 +1272,8 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
         double y_tmp = 0.0;
         double z_tmp = 0.0;
 
-        int index_i = 0;
-        int index_j = 0;
+        unsigned int index_i = 0;
+        unsigned int index_j = 0;
         int trace_index = 0;
 
         for(int ii = 0; ii < 10; ii++) {
@@ -1318,7 +1324,7 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
             peak_tmp = seis_r[k];
         }
 
-        peak_tmp *= trace_length[j];
+        peak_tmp *= static_cast<float>(trace_length[j]);
         frequency_peaks.push_back(peak_tmp);
       }
 
@@ -1326,7 +1332,7 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
       float mean_grid_height = 0.0;
       for(size_t j = 0; j < frequency_peaks.size(); j++) {
         mean_frequency += frequency_peaks[j];
-        mean_grid_height += trace_length[j];
+        mean_grid_height += static_cast<float>(trace_length[j]);
       }
       mean_frequency /= frequency_peaks.size();
       mean_grid_height /= frequency_peaks.size(); //Will be 1 if SEGY is used.
@@ -1472,10 +1478,10 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
 bool CommonData::waveletHandling(ModelSettings * model_settings,
                                  InputFiles * input_files)
 {
-
+  (void) input_files;
 
   int nTimeLapses = model_settings->getNumberOfTimeLapses();
-  int error = 0;
+  //int error = 0;
 
   for(int i = 0; i < nTimeLapses; i++) {
 
@@ -1578,7 +1584,7 @@ bool CommonData::waveletHandling(ModelSettings * model_settings,
     }
 
     // check if local noise is set for some angles.
-    bool localNoiseSet = false;
+    //bool localNoiseSet = false;
     std::vector<float> angles = model_settings->getAngle(i);
 
     for (int j = 0; j < nAngles; j++) {
@@ -1840,10 +1846,6 @@ bool CommonData::waveletHandling(ModelSettings * model_settings,
 //}
 
 
-bool CommonData::optimizeWellLocations() {
-  return true;
-}
-
 //bool CommonData::EstimateWaveletShape() {
 //  return true;
 //}
@@ -2074,10 +2076,10 @@ void CommonData::FindSmallestSurfaceGeometry(const double   x0,
   }
 }
 
-void CommonData::SetSurfacesSingleInterval(Simbox                           & estimation_simbox,
+void CommonData::SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                            NRLib::Volume                    & full_inversion_volume,
+                                           Simbox                           & estimation_simbox,
                                            const std::vector<std::string>   & surf_file,
-                                           ModelSettings                    * model_settings,
                                            std::string                      & err_text,
                                            bool                             & failed)
 {
@@ -2238,12 +2240,12 @@ void CommonData::SetSurfacesSingleInterval(Simbox                           & es
   delete base_surface_flat;
 }
 
-void CommonData::SetSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
-                                              NRLib::Volume                  & full_inversion_volume,
-                                              const InputFiles               * input_files,
-                                              const ModelSettings            * model_settings,
-                                              std::string                    & err_text,
-                                              bool                           & failed){
+void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * const model_settings,
+                                              NRLib::Volume                   & full_inversion_volume,
+                                              Simbox                          & estimation_simbox,
+                                              const InputFiles                * input_files,
+                                              std::string                     & err_text,
+                                              bool                            & failed){
 
   // Get interval surface data ------------------------------------------------------------------------------
 
@@ -2333,18 +2335,35 @@ void CommonData::SetSurfacesMultipleIntervals(Simbox                         & e
 
 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                            * const model_settings,
-                                         //const InputFiles                               * const input_files,
                                          const Simbox                                   & estimation_simbox,
                                          const std::vector<NRLib::Well>                 & wells,
                                          std::vector<BlockedLogsCommon *>               & blocked_logs_common,
                                          std::string                                    & err_text){
   bool failed = false;
 
-  try{
-    unsigned int n_wells = wells.size();
+  // These are the coordinate logs that are to be used in BlockedLogs
+  std::vector<std::string> coordinate_logs;
+  coordinate_logs.push_back("X_pos");
+  coordinate_logs.push_back("Y_pos");
+  coordinate_logs.push_back("TVD");
 
-    for (unsigned int i=0; i<n_wells; i++){
-      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], &estimation_simbox, model_settings->getRunFromPanel());
+  // These are the continuous parameters that are to be used in BlockedLogs
+  std::vector<std::string> continuous_logs;
+  continuous_logs.push_back("TVD");
+  continuous_logs.push_back("TWT");
+  continuous_logs.push_back("Vp");
+  continuous_logs.push_back("Vs");
+  continuous_logs.push_back("Rho");
+  continuous_logs.push_back("MD");
+
+
+  // These are the discrete parameters that are to be used in BlockedLogs
+  std::vector<std::string> discrete_logs;
+
+  try{
+    for (unsigned int i=0; i<wells.size(); i++){
+      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], coordinate_logs, continuous_logs, discrete_logs, 
+        &estimation_simbox, model_settings->getRunFromPanel(), failed, err_text);
       blocked_logs_common.push_back(blocked_log);
     }
   }catch(NRLib::Exception & e){
@@ -2352,16 +2371,22 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     failed = true;
   }
 
-  return failed;
+  return !failed;
 }
 
 
-void  CommonData::OptimizeWellLocations(FFTGrid                     ** seisCube,
-                                        float                       ** reflectionMatrix,
-                                        ModelSettings                * modelSettings,
-                                        const std::vector<Surface *> & interval)
-{
+void  CommonData::OptimizeWellLocations(ModelSettings                                 * model_settings,
+                                        std::map<int, std::vector<SeismicStorage> >   & seismic_data,
+                                        std::map<int, float **>                       & reflection_matrix,
+                                        const std::vector<Surface *>                  & interval){
+}
+/*
   LogKit::WriteHeader("Estimating optimized well location");
+
+  Simbox          estimation_simbox = this->GetEstimationSimbox();
+  NRLib::Volume   volume            = this->GetFullInversionVolume();
+  std::vector<NRLib::Well> wells    = this->GetWells();
+  size_t n_wells = wells.size();
 
   double  deltaX, deltaY;
   float   sum;
@@ -2373,22 +2398,22 @@ void  CommonData::OptimizeWellLocations(FFTGrid                     ** seisCube,
   int     iMaxOffset;
   int     jMaxOffset;
   int     nMoveAngles = 0;
-  int     nWells      = modelSettings->getNumberOfWells();
-  int     nAngles     = modelSettings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
-  float   maxShift    = modelSettings->getMaxWellShift();
-  float   maxOffset   = modelSettings->getMaxWellOffset();
-  double  angle       = timeSimbox_->getAngle();
-  double  dx          = timeSimbox_->getdx();
-  double  dy          = timeSimbox_->getdx();
-  std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
+  int     nWells      = model_settings->getNumberOfWells();
+  int     nAngles     = model_settings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
+  float   maxShift    = model_settings->getMaxWellShift();
+  float   maxOffset   = model_settings->getMaxWellOffset();
+  double  angle       = estimation_simbox.GetAngle(); // get this from volume?
+  double  dx          = estimation_simbox.getdx();
+  double  dy          = estimation_simbox.getdy();
+  std::vector<float> seismicAngle = model_settings->getAngle(0); //Use first time lapse as this not is allowed in 4D
 
   std::vector<float> angleWeight(nAngles);
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
-  for (w = 0 ; w < nWells ; w++) {
-    if( wells_[w]->isDeviated()==true )
+  for (w = 0 ; w < n_wells ; w++) {
+    if( wells[w]->isDeviated()==true )
       continue;
 
     BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
@@ -2442,3 +2467,4 @@ void  CommonData::OptimizeWellLocations(FFTGrid                     ** seisCube,
     }
    }
 }
+*/

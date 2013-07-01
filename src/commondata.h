@@ -31,19 +31,19 @@ public:
 
   ~ CommonData();
 
-  //SET FUNCTIONS
-
-  void        SetEstimationSimbox();
-  void        SetFullInversionVoulume();
-
   //GET FUNCTIONS
 
-  const Simbox          & GetEstimationSimbox()     const { return estimation_simbox_     ;}
-  const NRLib::Volume   & GetFullInversionVolume()  const { return full_inversion_volume_ ;}
-
+  const Simbox                    & GetEstimationSimbox()     const { return estimation_simbox_     ;}
+  const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_ ;}
+  const std::vector<NRLib::Well>  & GetWells()                const { return wells_                 ;}
 
 
 private:
+
+  void  OptimizeWellLocations(ModelSettings                                 * model_settings,
+                              std::map<int, std::vector<SeismicStorage> >   & seismic_data,
+                              std::map<int, float **>                       & reflection_matrix,
+                              const std::vector<Surface *>                  & interval);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -76,17 +76,17 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
-  void SetSurfacesMultipleIntervals(Simbox                         & estimation_simbox,
+  void SetSurfacesMultipleIntervals(const ModelSettings            * const model_settings,
                                     NRLib::Volume                  & full_inversion_volume,
+                                    Simbox                         & estimation_simbox,
                                     const InputFiles               * input_files,
-                                    const ModelSettings            * model_settings,
                                     std::string                    & err_text,
                                     bool                           & failed);
 
-  void SetSurfacesSingleInterval(Simbox                           & estimation_simbox,
+  void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                  NRLib::Volume                    & full_inversion_volume,
+                                 Simbox                           & estimation_simbox,
                                  const std::vector<std::string>   & surf_file,
-                                 ModelSettings                    * model_settings,
                                  std::string                      & err_text,
                                  bool                             & failed);
 
@@ -98,7 +98,6 @@ private:
                     std::string       & err_text);
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
-                               //const InputFiles                               * const input_files,
                                const Simbox                                   & estimation_simbox,
                                const std::vector<NRLib::Well>                 & wells,
                                std::vector<BlockedLogsCommon *>               & blocked_logs_common,
@@ -150,7 +149,6 @@ private:
   bool waveletHandling(ModelSettings * model_settings,
                        InputFiles * input_files);
 
-  bool optimizeWellLocations();
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
@@ -188,7 +186,7 @@ private:
   //std::map<std::string, int>                        nFacies_;
 
 
-  std::map<int, float **> reflectionMatrix_;
+  std::map<int, float **> reflection_matrix_;
   bool        reflection_matrix_from_file_; //False: created from global vp/vs
 
   std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle

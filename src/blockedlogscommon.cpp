@@ -14,14 +14,33 @@
 #include "src/inputfiles.h"
 
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well    * const well_data,
-                                     const Simbox         * const estimation_simbox,
-                                     bool                   interpolate):
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * const well_data,
+                                     const std::vector<std::string>   & coordinate_logs_to_be_blocked,
+                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
+                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
+                                     const Simbox                     * const estimation_simbox,
+                                     bool                               interpolate,
+                                     bool                             & failed,
+                                     std::string                      & err_text):
 n_blocks_(0),
 well_name_(""),
 n_layers_(estimation_simbox->getnz()){
 
-  BlockWell(well_data, estimation_simbox, continuous_log_names_, discrete_log_names_, continuous_logs_, discrete_logs_, interpolate);
+  // Get well name
+  well_name_ = well_data->GetWellName();
+
+  // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
+  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
+  RemoveMissingLogValues(well_data, coordinate_log_names_, continuous_log_names_, discrete_log_names_, coordinate_logs_, continuous_logs_, discrete_logs_,
+                         coordinate_logs_to_be_blocked, cont_logs_to_be_blocked, disc_logs_to_be_blocked, n_data_, failed);
+  if(failed)
+    err_text += "Coordinate logs were not successfully read from well " + well_name_ +".\n";
+
+  if (!failed)
+    BlockWell(well_data, estimation_simbox, coordinate_log_names_, continuous_log_names_, discrete_log_names_, coordinate_logs_, continuous_logs_, discrete_logs_,
+             coordinate_log_names_blocked_, continuous_log_names_blocked_, discrete_log_names_blocked_,
+             coordinate_logs_blocked_, continuous_logs_blocked_, discrete_logs_blocked_, n_data_, interpolate, failed);
+
   n_continuous_logs_ = static_cast<int>(continuous_logs_.size());
   n_discrete_logs_ = static_cast<int>(discrete_logs_.size());
 }
@@ -30,80 +49,52 @@ BlockedLogsCommon::~BlockedLogsCommon(){
 
 }
 
-void BlockedLogsCommon::BlockWell(const NRLib::Well                  * const well_data,
-                                  const Simbox                       * const estimation_simbox,
-                                  std::map<std::string, int>         & continuous_log_names,
-                                  std::map<std::string, int>         & discrete_log_names,
-                                  std::vector<std::vector<double> >  & continuous_logs,
-                                  std::vector<std::vector<int> >     & discrete_logs,
-                                  bool                                 interpolate){
+void BlockedLogsCommon::BlockWell(const NRLib::Well                         * const well_data,
+                                  const Simbox                              * const estimation_simbox,
+                                  const std::map<std::string, int>          & coordinate_log_names,
+                                  const std::map<std::string, int>          & continuous_log_names,
+                                  const std::map<std::string, int>          & discrete_log_names,
+                                  const std::vector<std::vector<double> >   & coordinate_logs,
+                                  const std::vector<std::vector<double> >   & continuous_logs,
+                                  const std::vector<std::vector<int> >      & discrete_logs,
+                                  std::map<std::string, int>                & coordinate_log_names_blocked,
+                                  std::map<std::string, int>                & continuous_log_names_blocked,
+                                  std::map<std::string, int>                & discrete_log_names_blocked,
+                                  std::vector<std::vector<double> >         & coordinate_logs_blocked,
+                                  std::vector<std::vector<double> >         & continuous_logs_blocked,
+                                  std::vector<std::vector<int> >            & discrete_logs_blocked,
+                                  unsigned int                                n_data,
+                                  bool                                        interpolate,
+                                  bool                                      & failed){
 
-  well_name_ = well_data->GetWellName();
-  // Get size of vector
-  std::map<std::string,std::vector<double> > all_logs_temp = well_data->GetContLog();
-  std::map<std::string,std::vector<double> >::iterator it = all_logs_temp.begin();
-  unsigned int nd = it->second.size();
-
-  (void) discrete_log_names;
-  (void) discrete_logs;
-
-  std::map<std::string,std::vector<double> > continuous_logs_well = well_data->GetContLog();
-  std::map<std::string,std::vector<int> > discrete_logs_well = well_data->GetDiscLog();
-
-  int index_continuous = 0;
-  for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_well.begin(); it!=continuous_logs_well.end(); ++it){
-    continuous_log_names.insert(std::pair<std::string, int>(it->first, index_continuous));
-    continuous_logs.push_back(continuous_logs_well.find(it->first)->second);
-    index_continuous++;
-  }
-
-  int index_discrete = 0;
-  for (std::map<std::string,std::vector<int> >::iterator it=discrete_logs_well.begin(); it!=discrete_logs_well.end(); ++it){
-    discrete_log_names.insert(std::pair<std::string, int>(it->first, index_discrete));
-    discrete_logs.push_back(discrete_logs_well.find(it->first)->second);
-    index_discrete++;
-  }
-
-  // are all continuous logs of the same length?
-  std::vector<int> b_ind(nd); // Gives which block each well log entry contributes to
+  std::vector<int> b_ind(n_data); // Gives which block each well log entry contributes to
 
   FindSizeAndBlockPointers(estimation_simbox, b_ind);
   FindBlockIJK(estimation_simbox, b_ind);
+
+  // Coordinate logs
 
   BlockCoordinateLog(b_ind, this->GetXpos(), x_pos_);
   BlockCoordinateLog(b_ind, this->GetYpos(), y_pos_);
   BlockCoordinateLog(b_ind, this->GetZpos(), z_pos_);
 
-  // Could also loop over all continuous logs and fetch the names here
-  if(this->HasContLog("MD")){
-    std::vector<double> md_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("MD")->second], md_blocked);
-    continuous_logs_blocked_.push_back(md_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("MD", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Vp")){
-    std::vector<double> vp_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Vp")->second], vp_blocked);
-    continuous_logs_blocked_.push_back(vp_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Vp", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Vs")){
-    std::vector<double> vs_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Vs")->second], vs_blocked);
-    continuous_logs_blocked_.push_back(vs_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Vs", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Rho")){
-    std::vector<double> rho_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Rho")->second], rho_blocked);
-    continuous_logs_blocked_.push_back(rho_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Rho", continuous_logs_blocked_.size()-1));
+  // Continuous logs
+  
+  for(std::map<std::string, int>::const_iterator it = continuous_log_names.begin(); it!=continuous_log_names.end(); it++){
+    std::vector<double> temp_vector_blocked;
+    BlockContinuousLog(b_ind, continuous_logs[it->second], temp_vector_blocked);
+    continuous_logs_blocked.push_back(temp_vector_blocked);
+    continuous_log_names_blocked.insert(std::pair<std::string, int>(it->first, continuous_logs_blocked_.size()-1));
   }
 
-  // all discrete logs (20130625 EN: No discrete logs for now)
+
+  // Discrete logs (20130625 EN: No blocking of discrete logs for now)
+
+  (void) discrete_log_names;
+  (void) discrete_logs;
 
   if(interpolate){
-    for(unsigned int i=1;i<nd;i++) {
+    for(unsigned int i=1;i<n_data;i++) {
       if(abs(b_ind[i]-b_ind[i-1]) > 1) {
         int start, end;
         if(b_ind[i] > b_ind[i-1]) {
@@ -116,6 +107,7 @@ void BlockedLogsCommon::BlockWell(const NRLib::Well                  * const wel
         }
         for(int j = start+1;j<end;j++) {
           float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+          // Coordinate logs
           InterpolateContinuousLog(x_pos_, start, end, j, t);
           InterpolateContinuousLog(y_pos_, start, end, j, t);
           InterpolateContinuousLog(z_pos_, start, end, j, t);
@@ -337,9 +329,9 @@ void BlockedLogsCommon::BlockCoordinateLog(const std::vector<int>    &  b_ind,
 }
 
 //------------------------------------------------------------------------------
-void BlockedLogsCommon::BlockContinuousLog(const int                 *  b_ind,
-                                           const std::vector<double> &  well_log,
-                                           std::vector<double>       &  blocked_log){
+void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
+                                           const std::vector<double>  &  well_log,
+                                           std::vector<double>        &  blocked_log){
   //
   // Initialise arrays
   //
@@ -377,4 +369,94 @@ void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocke
 {
   if(blocked_log[start] != RMISSING && blocked_log[end] != RMISSING && blocked_log[index] == RMISSING)
     blocked_log[index] = rel*blocked_log[end]+(1-rel)*blocked_log[start];
+}
+
+//------------------------------------------------------------------------------
+void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                  * const well_data,
+                                                  std::map<std::string, int>         & coordinate_log_names,
+                                                  std::map<std::string, int>         & continuous_log_names,
+                                                  std::map<std::string, int>         & discrete_log_names,
+                                                  std::vector<std::vector<double> >  & coordinate_logs,
+                                                  std::vector<std::vector<double> >  & continuous_logs,
+                                                  std::vector<std::vector<int> >     & discrete_logs,
+                                                  const std::vector<std::string>     & coordinate_logs_to_be_blocked,
+                                                  const std::vector<std::string>     & cont_logs_to_be_blocked,
+                                                  const std::vector<std::string>     & disc_logs_to_be_blocked,
+                                                  unsigned int                       & n_data,
+                                                  bool                               & failed){
+  // Get size of data vector including WELLMISSING data points
+  unsigned int n_data_with_wellmissing = well_data->GetNData();
+  // The number of legal data excluding WELLMISSING is initially set to 0
+  n_data = 0;
+  // Value from Well_data class
+  double OPENWORKS_MISSING = -999.25;
+
+  // Get the continuous and discrete logs from the Well object
+
+  std::map<std::string,std::vector<double> > continuous_logs_well = well_data->GetContLog();
+  std::map<std::string,std::vector<int> > discrete_logs_well = well_data->GetDiscLog();
+  // Initialize cont and disc vectors holding the data
+  std::vector<std::vector<double> > coordinate_logs_temp;
+  std::vector<std::vector<double> > continuous_logs_temp;
+  std::vector<std::vector<int> >    discrete_logs_temp;
+
+  // Find the coordinate logs that are to be blocked
+  for(unsigned int i=0; i<3; i++){
+    std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(coordinate_logs_to_be_blocked[i]);
+    // if the well log contains this continuous log
+    if(it != continuous_logs_well.end()){
+      coordinate_log_names.insert(std::pair<std::string, int>(coordinate_logs_to_be_blocked[i], i));
+      coordinate_logs_temp.push_back(continuous_logs_well.find(coordinate_logs_to_be_blocked[i])->second);
+    }else{
+      failed = true;
+    }
+  }
+
+  // Find the continuous vectors in the wells that are to be blocked
+  int index_continuous = 0;
+  for(unsigned int i=0; i<cont_logs_to_be_blocked.size(); i++){
+    std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(cont_logs_to_be_blocked[i]);
+    // if the well log contains this continuous log
+    if(it != continuous_logs_well.end()){
+      continuous_log_names.insert(std::pair<std::string, int>(it->first, index_continuous));
+      continuous_logs_temp.push_back(continuous_logs_well.find(it->first)->second);
+      index_continuous++;
+    }
+  }
+
+  // Find the discrete vectors in the wells that are to be blocked
+  int index_discrete = 0;
+  for(unsigned int i=0; i<disc_logs_to_be_blocked.size(); i++){
+    std::map<std::string,std::vector<int> >::iterator it = discrete_logs_well.find(disc_logs_to_be_blocked[i]);
+    // if the well log contains this discrete log
+    if(it != discrete_logs_well.end()){
+      discrete_log_names.insert(std::pair<std::string, int>(it->first, index_discrete));
+      discrete_logs_temp.push_back(discrete_logs_well.find(it->first)->second);
+      index_discrete++;
+    }
+  }
+
+  // Initialize class variables to same vector size
+  coordinate_logs.resize(3);
+  continuous_logs.resize(continuous_logs_temp.size());
+  discrete_logs.resize(discrete_logs_temp.size());
+
+  // Remove WELLMISSING data from RMS wells
+  for(unsigned int i=0; i<n_data_with_wellmissing; i++){
+    double dummy = continuous_logs_temp[continuous_log_names_.find("TWT")->second][i];
+    if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
+      for(unsigned int j=0; j<coordinate_logs_temp.size(); j++){
+        coordinate_logs[j].push_back(coordinate_logs_temp[j][i]);
+      }
+      for(unsigned int j=0; j<continuous_logs_temp.size(); j++){
+        continuous_logs[j].push_back(continuous_logs_temp[j][i]);
+      }
+      for(unsigned int j=0; j<discrete_logs_temp.size(); j++){
+        discrete_logs[j].push_back(discrete_logs_temp[j][i]);
+      }
+      n_data++;
+    }
+  }
+
+
 }

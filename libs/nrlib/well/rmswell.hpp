@@ -44,6 +44,9 @@ namespace NRLib {
     /// Write well to file
     void WriteToFile(const std::string& filename);
 
+  //protected:
+    //void SetNumberOfData(int n_data)  { Well::SetNumberOfData(n_data)  ;}
+
   private:
     /// Names for discrete logs
     std::map<std::string, std::map<int, std::string> > discnames_;
