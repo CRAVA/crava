@@ -119,7 +119,7 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
 //----------------------------------------------------------------------------------//
 TabulatedVelocityFluidStorage::TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                                              std::vector<DistributionWithTrendStorage *> density,
-                                                             std::vector<double>                         correlation_vp_density)
+                                                             std::vector<DistributionWithTrendStorage *> correlation_vp_density)
 : vp_(vp),
   density_(density),
   correlation_vp_density_(correlation_vp_density)
@@ -130,8 +130,12 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 {
   if(vp_[0]->GetIsShared() == false)
     delete vp_[0];
+
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_vp_density_[0]->GetIsShared() == false)
+    delete correlation_vp_density_[0];
 }
 
 std::vector<DistributionsFluid *>
@@ -161,13 +165,23 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
+  std::vector<double> corr_vp_density(n_vintages, 0);
+  for(int i=0; i<n_vintages_vp_density; i++) {
+    if(correlation_vp_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-vp-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
+
+    if(corr_vp_density[i] > 1 || corr_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<double> corr_vp_density;
 
   if(tmpErrTxt == "") {
 
@@ -183,10 +197,8 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-      if(i < n_vintages_vp_density)
-        corr_vp_density.push_back(correlation_vp_density_[i]);
-      else
-        corr_vp_density.push_back(corr_vp_density[i-1]);
+     if(i >= n_vintages_vp_density)
+        corr_vp_density[i] = corr_vp_density[i-1];
     }
   }
 
@@ -220,7 +232,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
 //----------------------------------------------------------------------------------//
 TabulatedModulusFluidStorage::TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                                            std::vector<DistributionWithTrendStorage *> density,
-                                                           std::vector<double>                         correlation_bulk_density)
+                                                           std::vector<DistributionWithTrendStorage *> correlation_bulk_density)
 : bulk_modulus_(bulk_modulus),
   density_(density),
   correlation_bulk_density_(correlation_bulk_density)
@@ -231,8 +243,13 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 {
   if(bulk_modulus_[0]->GetIsShared() == false)
     delete bulk_modulus_[0];
+
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_bulk_density_[0]->GetIsShared() == false)
+    delete correlation_bulk_density_[0];
+
 }
 
 std::vector<DistributionsFluid *>
@@ -262,13 +279,22 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
+  std::vector<double> corr_bulk_density(n_vintages, 0);
+  for(int i=0; i<n_vintages_bulk_density; i++) {
+    if(correlation_bulk_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-bulk-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_[i], "correlation", corr_bulk_density[i], errTxt);
+
+    if(corr_bulk_density[i] > 1 || corr_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
-
-  std::vector<double> corr_bulk_density;
 
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
@@ -288,9 +314,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
         tmpErrTxt += "Bulk modulus need to be given in kPa\n";
 
-      if(i < n_vintages_bulk_density)
-        corr_bulk_density.push_back(correlation_bulk_density_[i]);
-      else
+      if(i >= n_vintages_bulk_density)
         corr_bulk_density.push_back(corr_bulk_density[i-1]);
     }
   }

@@ -3178,6 +3178,9 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
   legalCommands.push_back("correlation-bulk-density");
   legalCommands.push_back("correlation-shear-density");
 
+  assert(constituent != ModelSettings::FLUID);
+  assert(constituent != ModelSettings::DRY_ROCK);
+
   std::string dummy;
 
   bool use_vp      = false;
@@ -3208,120 +3211,63 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <solid><tabulated>\n";
 
-  std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
-  std::vector<double>                         correlation_vp_vs;
-  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_with_trend, "correlation", correlation_vp_vs, errTxt);
-    for(size_t i=0; i<correlation_vp_vs.size(); i++) {
-      if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
-        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vp_vs_with_trend[0]->GetIsShared() == false)
-      delete correlation_vp_vs_with_trend[0];
-  }
-  else
-    correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
-
-  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
-  std::vector<double>                         correlation_vp_density;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
-    for(size_t i=0; i<correlation_vp_density.size(); i++) {
-      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
-        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_vp_density_with_trend[0];
-  }
-  else
-    correlation_vp_density.push_back(0.0);
-
-  std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
-  std::vector<double>                         correlation_vs_density;
-  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vs_density_with_trend, "correlation", correlation_vs_density, errTxt);
-    for(size_t i=0; i<correlation_vs_density.size(); i++) {
-      if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
-        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vs_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_vs_density_with_trend[0];
-  }
-  else
-    correlation_vs_density.push_back(0.0);
-
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
-  std::vector<double>                         correlation_bulk_shear;
-  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_with_trend, "correlation", correlation_bulk_shear, errTxt);
-    for(size_t i=0; i<correlation_bulk_shear.size(); i++) {
-      if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
-        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_bulk_shear_with_trend[0]->GetIsShared() == false)
-      delete correlation_bulk_shear_with_trend[0];
-  }
-  else
-    correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
-
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
-  std::vector<double>                         correlation_bulk_density;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
-    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
-      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
-        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_bulk_density_with_trend[0];
-  }
-  else
-    correlation_bulk_density.push_back(0.0);
-
-
-  std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
-  std::vector<double>                         correlation_shear_density;
-  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_shear_density_with_trend, "correlation", correlation_shear_density, errTxt);
-    for(size_t i=0; i<correlation_shear_density.size(); i++) {
-      if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
-        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_shear_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_shear_density_with_trend[0];
-  }
-  else
-    correlation_shear_density.push_back(0.0);
-
-  assert(constituent != ModelSettings::FLUID);
   if(use_vp) {
+    std::vector<DistributionWithTrendStorage *> correlation_vp_vs;
+    if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(modelSettings_->getDefaultCorrelationVpVs(), false, false);
+      correlation_vp_vs.push_back(distWithTrend);
+    }
+
+    std::vector<DistributionWithTrendStorage *> correlation_vp_density;
+    if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_vp_density.push_back(distWithTrend);
+    }
+
+    std::vector<DistributionWithTrendStorage *> correlation_vs_density;
+    if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0.0, false, false);
+      correlation_vs_density.push_back(distWithTrend);
+    }
+
     if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
       modelSettings_->addSolid(label, solid);
     }
-    else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
-      modelSettings_->addDryRock(label, dry_rock);
-  }
     else if(constituent == ModelSettings::ROCK) {
       DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
   else {
+    std::vector<DistributionWithTrendStorage *> correlation_bulk_shear;
+    if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_bulk_shear.push_back(distWithTrend);
+    }
+
+    std::vector<DistributionWithTrendStorage *> correlation_bulk_density;
+    if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_bulk_density.push_back(distWithTrend);
+    }
+
+    std::vector<DistributionWithTrendStorage *> correlation_shear_density;
+    if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_shear_density.push_back(distWithTrend);
+    }
+
     if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
       modelSettings_->addSolid(label, solid);
     }
-    else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
-      modelSettings_->addDryRock(label, dry_rock);
-  }
     else if(constituent == ModelSettings::ROCK) {
       DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, label);
       modelSettings_->addRock(label, rock);
     }
   }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -3351,24 +3297,24 @@ XmlModelFile::parseTabulatedDryRock(TiXmlNode                                   
   legalCommands.push_back("correlation-bulk-shear");
   legalCommands.push_back("correlation-bulk-density");
   legalCommands.push_back("correlation-shear-density");
+  legalCommands.push_back("total-porosity");
+  legalCommands.push_back("mineral-bulk-modulus");
 
-  if (constituent == ModelSettings::DRY_ROCK) {
-    legalCommands.push_back("total-porosity");
-    legalCommands.push_back("mineral-bulk-modulus");
-  }
+  assert(constituent != ModelSettings::FLUID);
+  assert(constituent != ModelSettings::SOLID);
+  assert(constituent != ModelSettings::ROCK);
 
   std::string dummy;
 
   bool use_vp      = false;
   bool use_modulus = false;
 
-  if (constituent == ModelSettings::DRY_ROCK) {
-    if(parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
-      errTxt += "The total porosity must be given for the dry-rock\n";
+  if(parseDistributionWithTrend(root, "total-porosity", total_porosity, dummy, false, errTxt) == false)
+    errTxt += "The total porosity must be given for the dry-rock\n";
 
-    if(parseDistributionWithTrend(root, "mineral-bulk-modulus", mineral_k, dummy, false, errTxt) == false)
-      errTxt += "The mineral mineral_k must be given for the dry-rock\n";
-  }
+  if(parseDistributionWithTrend(root, "mineral-bulk-modulus", mineral_k, dummy, false, errTxt) == false)
+    errTxt += "The mineral mineral_k must be given for the dry-rock\n";
+
 
   std::vector<DistributionWithTrendStorage *> vp;
   if(parseDistributionWithTrend(root, "vp", vp, dummy, false, errTxt, true) == true)
@@ -3395,120 +3341,52 @@ XmlModelFile::parseTabulatedDryRock(TiXmlNode                                   
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <solid><tabulated>\n";
 
-  std::vector<DistributionWithTrendStorage *> correlation_vp_vs_with_trend;
-  std::vector<double>                         correlation_vp_vs;
-  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_with_trend, "correlation", correlation_vp_vs, errTxt);
-    for(size_t i=0; i<correlation_vp_vs.size(); i++) {
-      if(correlation_vp_vs[i] > 1 || correlation_vp_vs[i] < -1)
-        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vp_vs_with_trend[0]->GetIsShared() == false)
-      delete correlation_vp_vs_with_trend[0];
-  }
-  else
-    correlation_vp_vs.push_back(modelSettings_->getDefaultCorrelationVpVs());
-
-  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
-  std::vector<double>                         correlation_vp_density;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
-    for(size_t i=0; i<correlation_vp_density.size(); i++) {
-      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
-        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_vp_density_with_trend[0];
-  }
-  else
-    correlation_vp_density.push_back(0.0);
-
-  std::vector<DistributionWithTrendStorage *> correlation_vs_density_with_trend;
-  std::vector<double>                         correlation_vs_density;
-  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vs_density_with_trend, "correlation", correlation_vs_density, errTxt);
-    for(size_t i=0; i<correlation_vs_density.size(); i++) {
-      if(correlation_vs_density[i] > 1 || correlation_vs_density[i] < -1)
-        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vs_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_vs_density_with_trend[0];
-  }
-  else
-    correlation_vs_density.push_back(0.0);
-
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_with_trend;
-  std::vector<double>                         correlation_bulk_shear;
-  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_with_trend, "correlation", correlation_bulk_shear, errTxt);
-    for(size_t i=0; i<correlation_bulk_shear.size(); i++) {
-      if(correlation_bulk_shear[i] > 1 || correlation_bulk_shear[i] < -1)
-        errTxt += "<correlation-bulk-shear> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_bulk_shear_with_trend[0]->GetIsShared() == false)
-      delete correlation_bulk_shear_with_trend[0];
-  }
-  else
-    correlation_bulk_shear.push_back(modelSettings_->getDefaultCorrelationVpVs());
-
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
-  std::vector<double>                         correlation_bulk_density;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
-    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
-      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
-        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_bulk_density_with_trend[0];
-  }
-  else
-    correlation_bulk_density.push_back(0.0);
-
-
-  std::vector<DistributionWithTrendStorage *> correlation_shear_density_with_trend;
-  std::vector<double>                         correlation_shear_density;
-  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_shear_density_with_trend, "correlation", correlation_shear_density, errTxt);
-    for(size_t i=0; i<correlation_shear_density.size(); i++) {
-      if(correlation_shear_density[i] > 1 || correlation_shear_density[i] < -1)
-        errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_shear_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_shear_density_with_trend[0];
-  }
-  else
-    correlation_shear_density.push_back(0.0);
-
-  assert(constituent != ModelSettings::FLUID);
   if(use_vp) {
-    if(constituent == ModelSettings::SOLID) {
-      DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
-      modelSettings_->addSolid(label, solid);
+    std::vector<DistributionWithTrendStorage *> correlation_vp_vs;
+    if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(modelSettings_->getDefaultCorrelationVpVs(), false, false);
+      correlation_vp_vs.push_back(distWithTrend);
     }
-    else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
-      modelSettings_->addDryRock(label, dry_rock);
-  }
-    else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, label);
-      modelSettings_->addRock(label, rock);
+
+    std::vector<DistributionWithTrendStorage *> correlation_vp_density;
+    if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_vp_density.push_back(distWithTrend);
     }
+
+    std::vector<DistributionWithTrendStorage *> correlation_vs_density;
+    if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0.0, false, false);
+      correlation_vs_density.push_back(distWithTrend);
+    }
+
+    DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, mineral_k);
+    modelSettings_->addDryRock(label, dry_rock);
   }
+
   else {
-    if(constituent == ModelSettings::SOLID) {
-      DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
-      modelSettings_->addSolid(label, solid);
+    std::vector<DistributionWithTrendStorage *> correlation_bulk_shear;
+    if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_bulk_shear.push_back(distWithTrend);
     }
-    else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
-      modelSettings_->addDryRock(label, dry_rock);
-  }
-    else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, label);
-      modelSettings_->addRock(label, rock);
+
+    std::vector<DistributionWithTrendStorage *> correlation_bulk_density;
+    if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_bulk_density.push_back(distWithTrend);
     }
+
+    std::vector<DistributionWithTrendStorage *> correlation_shear_density;
+    if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_shear_density.push_back(distWithTrend);
+    }
+
+    DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, mineral_k);
+    modelSettings_->addDryRock(label, dry_rock);
   }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -3526,6 +3404,8 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   legalCommands.push_back("correlation-vp-density");
   legalCommands.push_back("bulk-modulus");
   legalCommands.push_back("correlation-bulk-density");
+
+  assert(constituent == ModelSettings::FLUID);
 
   std::string dummy;
 
@@ -3549,41 +3429,24 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
 
-  std::vector<DistributionWithTrendStorage *> correlation_vp_density_with_trend;
-  std::vector<double>                         correlation_vp_density;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_vp_density_with_trend, "correlation", correlation_vp_density, errTxt);
-    for(size_t i=0; i<correlation_vp_density.size(); i++) {
-      if(correlation_vp_density[i] > 1 || correlation_vp_density[i] < -1)
-        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_vp_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_vp_density_with_trend[0];
-  }
-  else
-    correlation_vp_density.push_back(0.0);
-
-
-  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_with_trend;
-  std::vector<double>                         correlation_bulk_density;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density_with_trend, dummy, false, errTxt, false) == true) {
-    FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_with_trend, "correlation", correlation_bulk_density, errTxt);
-    for(size_t i=0; i<correlation_bulk_density.size(); i++) {
-      if(correlation_bulk_density[i] > 1 || correlation_bulk_density[i] < -1)
-        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
-    }
-    if(correlation_bulk_density_with_trend[0]->GetIsShared() == false)
-      delete correlation_bulk_density_with_trend[0];
-  }
-  else
-    correlation_bulk_density.push_back(0.0);
-
-  assert(constituent == ModelSettings::FLUID);
   if(use_vp) {
+    std::vector<DistributionWithTrendStorage *> correlation_vp_density;
+    if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_vp_density.push_back(distWithTrend);
+    }
+
     DistributionsFluidStorage * fluid = new TabulatedVelocityFluidStorage(vp, density, correlation_vp_density);
     modelSettings_->addFluid(label, fluid);
   }
+
   else {
+    std::vector<DistributionWithTrendStorage *> correlation_bulk_density;
+    if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, false) == false) {
+      DistributionWithTrendStorage * distWithTrend = new DeltaDistributionWithTrendStorage(0, false, false);
+      correlation_bulk_density.push_back(distWithTrend);
+    }
+
     DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_bulk_density);
     modelSettings_->addFluid(label, fluid);
   }
@@ -6078,8 +5941,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
   if ((modelSettings_->getSeismicQualityGridValue() != RMISSING || modelSettings_->getSeismicQualityGridRange() != RMISSING) &&
       !(modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
-    LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Paramteres are set under <seismic-quality-grid> <advanced-settings>, "
-                        "but this grid is not set to be written under <io-settings> <grid-output> <other-settings>, so these are ignored.\n");
+    errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
+                        "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
 
   }
 
