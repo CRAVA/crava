@@ -1,4 +1,4 @@
-// $Id: stormcontgrid.cpp 1031 2012-06-11 09:19:06Z ulvmoen $
+// $Id: stormcontgrid.cpp 1165 2013-05-01 15:52:57Z pdahle $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -604,4 +604,36 @@ void StormContGrid::ReadSgriBinaryFile(const std::string& filename)
 
   return;
 
+}
+
+double StormContGrid::GetAvgRelThick(void) const
+{
+  double avgThick = 0.0f;
+  for (int i = 0 ; i < static_cast<int>(GetNI()); i++) {
+    for (int j = 0 ; j < static_cast<int>(GetNJ()) ; j++) {
+      avgThick += GetRelThick(i, j);
+    }
+  }
+  avgThick /= GetNI()*GetNJ();
+  return avgThick;
+}
+
+double StormContGrid::GetRelThick(int i, int j) const
+{
+  double rx = (static_cast<double>(i) + 0.5)*GetDX();
+  double ry = (static_cast<double>(j) + 0.5)*GetDY();
+  double x = rx*cos(GetAngle())-ry*sin(GetAngle()) + GetXMin();
+  double y = rx*sin(GetAngle())+ry*cos(GetAngle()) + GetYMin();
+  return(GetRelThick(x, y));
+}
+
+double StormContGrid::GetRelThick(double x, double y) const
+{
+  double relThick = 1; //Default value to be used outside grid.
+  double zTop = GetTopSurface().GetZ(x,y);
+  double zBot = GetBotSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false &&
+     GetBotSurface().IsMissing(zBot) == false)
+    relThick = (zBot-zTop)/GetLZ();
+  return(relThick);
 }
