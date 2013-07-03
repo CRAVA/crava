@@ -102,6 +102,8 @@ namespace NRLib {
                                                    const size_t & ind2,
                                                    const double & t) const;
 
+    double GetAvgRelThick() const;
+
     float  GetValueZInterpolated(double x, double y, double z)const;
     float  GetValueClosestInZ(double x, double y, double z)const;
     double GetZMin()const      { return Volume::GetZMin(GetNI(), GetNJ()); }
@@ -113,6 +115,9 @@ namespace NRLib {
     double RecalculateLZ();
     void ReadSgriHeader(std::ifstream &headerFile, std::string &binFileName);
     void ReadSgriBinaryFile(const std::string& filename);
+
+    double GetRelThick(int i, int j) const;
+    double GetRelThick(double x, double y) const;
 
     FileFormat file_format_;
     float missing_code_;
