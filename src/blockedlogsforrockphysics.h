@@ -20,6 +20,8 @@ public:
   std::vector<float>       getAlphaForFacies(const std::string & facies_name);
   std::vector<float>       getBetaForFacies(const std::string & facies_name);
   std::vector<float>       getRhoForFacies(const std::string & facies_name);
+  std::vector<float>       getBulkForFacies(const std::string & facies_name);
+  std::vector<float>       getShearForFacies(const std::string & facies_name);
 
 private:
   void                     assignToFacies(const float                      * wellLog,
@@ -30,6 +32,9 @@ private:
   std::vector<std::vector<float> >  alpha_;                    ///<
   std::vector<std::vector<float> >  beta_;                     ///< Raw logs (log-domain)
   std::vector<std::vector<float> >  rho_;                      ///<
+
+  std::vector<std::vector<float> > bulk_modulus_;              ///<
+  std::vector<std::vector<float> > shear_modulus_;             ///< Logs calculated from alpha_, beta_ and rho_
 
   std::vector<std::string>          facies_names_;             ///< Names of the facies in the blocked log
 };

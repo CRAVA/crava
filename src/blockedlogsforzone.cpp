@@ -23,17 +23,18 @@
 #include "src/io.h"
 
 BlockedLogsForZone::BlockedLogsForZone(WellData            * well,
-                                       const StormContGrid & stormgrid)
+                                       const StormContGrid & background_grid,
+                                       const StormContGrid & eroded_grid)
 : firstM_(IMISSING),
   lastM_(IMISSING)
 {
-  nLayers_ = static_cast<int>(stormgrid.GetNK());
-  dz_      = static_cast<double>(stormgrid.GetLZ()/stormgrid.GetNK());
+  nLayers_ = static_cast<int>(background_grid.GetNK());
+  dz_      = static_cast<double>(background_grid.GetLZ()/background_grid.GetNK());
 
   std::vector<int> bInd(well->getNd()); // Gives which block each well log entry contributes to
 
-  findSizeAndBlockPointers(well, stormgrid, bInd);
-  findBlockIJK(well, stormgrid, bInd);
+  findSizeAndBlockPointers(well, background_grid, eroded_grid, bInd);
+  findBlockIJK(well, background_grid, bInd);
 
   int dummy;
 
@@ -125,8 +126,8 @@ BlockedLogsForZone::findBlockIJK(WellData               * well,
 //------------------------------------------------------------------------------
 
 void
-BlockedLogsForZone::blockContinuousLog(const std::vector<int>    bInd,
-                                       const float            *  wellLog,
+BlockedLogsForZone::blockContinuousLog(const std::vector<int>   bInd,
+                                       const float            * wellLog,
                                        std::vector<float>     & blockedLog)
 {
   if (wellLog != NULL) {
@@ -143,9 +144,11 @@ BlockedLogsForZone::blockContinuousLog(const std::vector<int>    bInd,
     // Block log
     //
     for (int m = firstM_ ; m < lastM_ + 1 ; m++) {
-      if (wellLog[m] != RMISSING) {
-        blockedLog[bInd[m]] += log(wellLog[m]);
-        count[bInd[m]]++;
+      if(m >= first_eroded_M_ && m <= last_eroded_M_) {
+        if (wellLog[m] != RMISSING) {
+          blockedLog[bInd[m]] += log(wellLog[m]);
+          count[bInd[m]]++;
+        }
       }
     }
     for (int l = 0 ; l < nBlocks_ ; l++) {
@@ -161,9 +164,10 @@ BlockedLogsForZone::blockContinuousLog(const std::vector<int>    bInd,
 //------------------------------------------------------------------------------
 
 void
-BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
-                                             const StormContGrid  & stormgrid,
-                                             std::vector<int>     & bInd)
+BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
+                                             const StormContGrid & background_grid,
+                                             const StormContGrid & eroded_grid,
+                                             std::vector<int>    & bInd)
 {
   int            dummy;
   int            missing = 99999;
@@ -173,7 +177,7 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   const double * z  = well->getZpos(dummy);
 
   //
-  // Find first cell in StormContGrid that the well hits
+  // Find first cell in eroded_grid that the well hits
   //
   bool   inside = false;
   size_t firstI = missing;
@@ -181,9 +185,43 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t firstK = missing;
 
   for(int m=0; m<nd; m++) {
-    inside = stormgrid.IsInside(x[m], y[m], z[m]);
+    inside = eroded_grid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      stormgrid.FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
+      eroded_grid.FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
+      first_eroded_M_ = m;
+      break;
+    }
+  }
+
+  //
+  // Find last cell in eroded_grid that the well hits
+  //
+  inside       = false;
+  size_t lastI = missing;
+  size_t lastJ = missing;
+  size_t lastK = missing;
+
+  for (int m=nd-1; m>0; m--) {
+    inside = eroded_grid.IsInside(x[m], y[m], z[m]);
+    if(inside == true) {
+      eroded_grid.FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
+      last_eroded_M_ = m;
+      break;
+    }
+  }
+
+  //
+  // Find first cell in background_grid that the well hits
+  //
+  inside = false;
+  firstI = missing;
+  firstJ = missing;
+  firstK = missing;
+
+  for(int m=0; m<nd; m++) {
+    inside = background_grid.IsInside(x[m], y[m], z[m]);
+    if(inside == true) {
+      background_grid.FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
       firstM_ = m;
       break;
     }
@@ -193,17 +231,17 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t oldK = firstK;
 
   //
-  // Find last cell in StormContGrid that the well hits
+  // Find last cell in background_grid that the well hits
   //
-  inside       = false;
-  size_t lastI = missing;
-  size_t lastJ = missing;
-  size_t lastK = missing;
+  inside = false;
+  lastI  = missing;
+  lastJ  = missing;
+  lastK  = missing;
 
   for (int m=nd-1; m>0; m--) {
-    inside = stormgrid.IsInside(x[m], y[m], z[m]);
+    inside = background_grid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      stormgrid.FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
+      background_grid.FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
       lastM_ = m;
       break;
     }
@@ -219,8 +257,8 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   bInd[firstM_] = static_cast<int>(firstK); // The first defined well log entry contributes to this block.
 
   std::vector<int> stormInd(nd);
-  const int nx    = static_cast<int>(stormgrid.GetNI());
-  const int ny    = static_cast<int>(stormgrid.GetNJ());
+  const int nx    = static_cast<int>(background_grid.GetNI());
+  const int ny    = static_cast<int>(background_grid.GetNJ());
   stormInd[0] = nx*ny*static_cast<int>(oldK) + nx*static_cast<int>(oldJ)+static_cast<int>(oldI);
 
   size_t newI = missing;
@@ -228,7 +266,7 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t newK = missing;
 
   for (int m = firstM_ + 1 ; m < lastM_ + 1 ; m++) {
-    stormgrid.FindIndex(x[m], y[m], z[m], newI, newJ, newK);
+    background_grid.FindIndex(x[m], y[m], z[m], newI, newJ, newK);
 
     if (newI != oldI || newJ != oldJ || newK != oldK) {
 
