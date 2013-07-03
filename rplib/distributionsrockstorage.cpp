@@ -595,18 +595,28 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   // Use blockedLogs given facies
   int nWells = static_cast<int>(blockedLogs.size());
 
+  std::vector<std::vector<float> > bulk_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    bulk_given_facies[i] = blockedLogs[i]->getBulkForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > shear_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    shear_given_facies[i] = blockedLogs[i]->getShearForFacies(rock_name_);
+  }
+
   std::vector<std::vector<float> > density_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
     density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
 
   for(int i=0; i<n_vintages_bulk; i++) {
-    if(bulk_modulus_[i]->GetEstimate() == true)
-      tmpErrTxt += "Bulk modulus can not be estimated from wells\n";
+    if(bulk_modulus_[i]->GetEstimate() == true && bulk_given_facies.size() == 0)
+      tmpErrTxt += "Bulk modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
   }
   for(int i=0; i<n_vintages_shear; i++) {
-    if(shear_modulus_[i]->GetEstimate() == true)
-      tmpErrTxt += "Shear modulus can not be estimated from wells\n";
+    if(shear_modulus_[i]->GetEstimate() == true && shear_given_facies.size() == 0)
+      tmpErrTxt += "Shear modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
   }
   for(int i=0; i<n_vintages_density; i++) {
     if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
@@ -618,8 +628,12 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   std::vector<double> corr_shear_density(n_vintages, 0);
 
   for(int i=0; i<n_vintages_bulk_shear; i++) {
-    if(correlation_bulk_shear_[i]->GetEstimate() == true)
-      tmpErrTxt += "<correlation-bulk-shear> can not be estimated from wells\n";
+    if(correlation_bulk_shear_[i]->GetEstimate() == true) {
+      if(bulk_given_facies.size() == 0 && shear_given_facies.size() == 0)
+        tmpErrTxt += "<correlation-bulk-shear> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      else
+        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+    }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_[i], "correlation", corr_bulk_shear[i], errTxt);
 
@@ -628,8 +642,12 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   }
 
   for(int i=0; i<n_vintages_bulk_density; i++) {
-    if(correlation_bulk_density_[i]->GetEstimate() == true)
-      tmpErrTxt += "<correlation-bulk-density> can not be estimated from wells\n";
+    if(correlation_bulk_density_[i]->GetEstimate() == true) {
+      if(bulk_given_facies.size() == 0 && density_given_facies.size() == 0)
+        tmpErrTxt += "<correlation-bulk-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      else
+        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+    }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_[i], "correlation", corr_bulk_density[i], errTxt);
 
@@ -638,8 +656,12 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   }
 
   for(int i=0; i<n_vintages_shear_density; i++) {
-    if(correlation_shear_density_[i]->GetEstimate() == true)
-      tmpErrTxt += "<correlation-shear-density> can not be estimated from wells\n";
+    if(correlation_shear_density_[i]->GetEstimate() == true) {
+      if(shear_given_facies.size() == 0 && density_given_facies.size() == 0)
+        tmpErrTxt += "<correlation-shear-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      else
+        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+    }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_shear_density_[i], "correlation", corr_shear_density[i], errTxt);
 
@@ -1316,6 +1338,49 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   int n_vintages_porosity     = static_cast<int>(porosity_.size());
   int n_vintages_bulk_weight  = static_cast<int>(bulk_weight_.size());
   int n_vintages_shear_weight = static_cast<int>(shear_weight_.size());
+
+  // Use blockedLogs given facies
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > vp_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vp_given_facies[i] = blockedLogs[i]->getAlphaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > vs_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    vs_given_facies[i] = blockedLogs[i]->getBetaForFacies(rock_name_);
+  }
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+  }
+
+  bool logs_given = true;
+  if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0 || density_given_facies.size() == 0)
+    logs_given = false;
+
+  for(int i=0; i<n_vintages_porosity; i++) {
+    if(porosity_[i]->GetEstimate() == true && logs_given == false) {
+      tmpErrTxt += "Porosity can not be estimated as all of Vp, Vs and density not are given in the wells.\n"; //Marit: Må ha egen porosity-logg for å kunne estimere denne
+      break;
+    }
+  }
+
+  for(int i=0; i<n_vintages_bulk_weight; i++) {
+    if(bulk_weight_[i]->GetEstimate() == true && logs_given == false) {
+      tmpErrTxt += "<bulk-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+      break;
+    }
+  }
+
+  for(int i=0; i<n_vintages_shear_weight; i++) {
+    if(shear_weight_[i]->GetEstimate() == true && logs_given == false) {
+      tmpErrTxt += "<shear-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+      break;
+    }
+  }
 
   std::vector<double> alpha(3);
   alpha[0] = porosity_[0]    ->GetOneYearCorrelation();

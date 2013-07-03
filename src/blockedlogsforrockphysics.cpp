@@ -7,8 +7,8 @@
 #include <math.h>
 
 #include "nrlib/flens/nrlib_flens.hpp"
-
 #include "nrlib/iotools/logkit.hpp"
+
 #include "fftw.h"
 #include "rfftw.h"
 #include "fftw-int.h"
@@ -25,6 +25,7 @@
 #include "src/modelsettings.h"
 #include "src/io.h"
 
+#include "rplib/demmodelling.h"
 
 BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
                                                      Simbox    * simbox)
@@ -80,6 +81,21 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
   delete [] blocked_beta;
   delete [] blocked_rho;
   delete [] blocked_facies;
+
+  bulk_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  shear_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  for(int i=0; i<nFacies; i++) {
+    for(int j=0; j<nBlocks; j++) {
+      if(alpha_[i][j] != RMISSING && beta_[i][j] != RMISSING && rho_[i][j] != RMISSING) {
+        double bulk;
+        double shear;
+        DEMTools::CalcElasticParamsFromSeismicParams(alpha_[i][j], beta_[i][j], rho_[i][j], bulk, shear);
+        bulk_modulus_[i][j] = static_cast<float>(bulk);
+        shear_modulus_[i][j] = static_cast<float>(shear);
+      }
+    }
+  }
+
 }
 
 //------------------------------------------------------------------------------
@@ -124,6 +140,32 @@ BlockedLogsForRockPhysics::getRhoForFacies(const std::string & facies_name)
   }
 
   return rho_given_facies;
+}
+
+//------------------------------------------------------------------------------
+std::vector<float>
+BlockedLogsForRockPhysics::getBulkForFacies(const std::string & facies_name)
+{
+  std::vector<float> bulk_given_facies;
+  for(size_t i=0; i<facies_names_.size(); i++) {
+    if(facies_name == facies_names_[i])
+      bulk_given_facies = bulk_modulus_[i];
+  }
+
+  return bulk_given_facies;
+}
+
+//------------------------------------------------------------------------------
+std::vector<float>
+BlockedLogsForRockPhysics::getShearForFacies(const std::string & facies_name)
+{
+  std::vector<float> shear_given_facies;
+  for(size_t i=0; i<facies_names_.size(); i++) {
+    if(facies_name == facies_names_[i])
+      shear_given_facies = shear_modulus_[i];
+  }
+
+  return shear_given_facies;
 }
 
 //------------------------------------------------------------------------------
