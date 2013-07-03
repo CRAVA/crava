@@ -180,6 +180,8 @@ int main(int argc, char** argv)
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
+    ModelGravityStatic * modelGravityStatic = NULL;
+
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
@@ -202,17 +204,12 @@ int main(int argc, char** argv)
 
     setupStaticModels(modelGeneral,
                       modelAVOstatic,
+                      modelGravityStatic,
                       modelSettings,
                       inputFiles,
                       seismicParameters,
                       timeBGSimbox);
 
-    ModelGravityStatic * modelGravityStatic = NULL;
-    // Flytttes på sikt inn i setupStaticModels
-    modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
-
-    if(modelGravityStatic == NULL || modelGravityStatic->getFailed())
-     return(1);
     if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
        modelAVOstatic == NULL || modelAVOstatic->getFailed())
       return(1);
@@ -240,8 +237,7 @@ int main(int argc, char** argv)
       case TimeLine::AVO :
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-
+         failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
         }
         // In case of 3D inversion
         else{
@@ -264,7 +260,7 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::GRAVITY :
-        //errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+        errTxt += "Error: Asked for 3D gravimetric inversion: Not available.\n";
         break;
       default :
         errTxt += "Error: Unknown inverstion type.\n";
@@ -279,21 +275,19 @@ int main(int argc, char** argv)
       double time;
       int time_index = 0;
       while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-      //  modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
+        modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
         time_index++;
         bool failed;
         switch(eventType) {
         case TimeLine::AVO :
-          failed = false;
-          //failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
           break;
         case TimeLine::TRAVEL_TIME :
-          failed = false;
-          //failed = doTimeLapseTravelTimeInversion(modelSettings,
-           //                                       modelGeneral,
-           //                                       inputFiles,
-           //                                       eventIndex,
-           //                                       seismicParameters);
+          failed = doTimeLapseTravelTimeInversion(modelSettings,
+                                                  modelGeneral,
+                                                  inputFiles,
+                                                  eventIndex,
+                                                  seismicParameters);
           break;
         case TimeLine::GRAVITY :
           failed = doTimeLapseGravimetricInversion(modelSettings,

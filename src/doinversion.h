@@ -15,6 +15,7 @@ class SeismicParametersHolder;
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
@@ -41,12 +42,12 @@ bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSetting
                                     const int                     & vintage,
                                     SeismicParametersHolder       & seismicParameters);
 
-bool doTimeLapseGravimetricInversion(const ModelSettings       * modelSettings,
-                                     const ModelGeneral        * modelGeneral,
-                                     const ModelGravityStatic * modelGravityStatic,
-                                     const InputFiles          * inputFiles,
-                                     const int                 & vintage,
-                                     SeismicParametersHolder   & seismicParameters);
+bool doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
+                                     ModelGeneral            * modelGeneral,
+                                     ModelGravityStatic      * modelGravityStatic,
+                                     InputFiles              * inputFiles,
+                                     int                     & vintage,
+                                     SeismicParametersHolder & seismicParameters);
 
 #endif
 

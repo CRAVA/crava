@@ -61,6 +61,7 @@ public:
 
   void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
+  State4D                    getState4D()               const { return state4d_                ;}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
   std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}

@@ -125,6 +125,7 @@ public:
   virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);
   fftw_complex         getFirstComplexValue();
+  float                getFirstRealValue();                     // No mode/randomaccess
   virtual int          square();                                // No mode/randomaccess
   virtual int          expTransf();                             // No mode/randomaccess
   virtual int          logTransf();                             // No mode/randomaccess
@@ -135,9 +136,11 @@ public:
 
 
   virtual void         add(FFTGrid* fftGrid);                   // No mode/randomaccess
-  virtual void         subtract(FFTGrid* fftGrid);                   // No mode/randomaccess
+  virtual void         addScalar(float scalar);                 // No mode/randomaccess, only for real grids
+  virtual void         subtract(FFTGrid* fftGrid);              // No mode/randomaccess
   virtual void         changeSign();                   // No mode/randomaccess
   virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
+  virtual void         conjugate();                             // No mode/randomaccess
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
   int                  getCounterForGet() const {return(counterForGet_);}
   int                  getCounterForSet() const {return(counterForSet_);}

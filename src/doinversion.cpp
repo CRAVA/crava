@@ -12,9 +12,11 @@
 #include "src/modelgeneral.h"
 #include "src/seismicparametersholder.h"
 #include "src/simbox.h"
+#include "src/gravimetricinversion.h"
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
@@ -31,6 +33,9 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                        timeBGSimbox,
                                        modelGeneral->getTimeSimboxConstThick(),
                                        modelGeneral->getWells());
+
+  // Add some logic to decide if modelGravityStatic should be created. To be done later.
+  modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
 }
 
 
@@ -139,28 +144,33 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
 }
 
 bool
-doTimeLapseGravimetricInversion(const ModelSettings       * modelSettings,
-                                const ModelGeneral        * modelGeneral,
-                                const ModelGravityStatic  * modelGravityStatic,
-                                const InputFiles          * inputFiles,
-                                const int                 & vintage,
-                                SeismicParametersHolder   & seismicParameters)
+doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
+                                ModelGeneral            * modelGeneral,
+                                ModelGravityStatic      * modelGravityStatic,
+                                InputFiles              * inputFiles,
+                                int                     & vintage,
+                                SeismicParametersHolder & seismicParameters)
 {
   ModelGravityDynamic * modelGravityDynamic = NULL;
 
   modelGravityDynamic = new ModelGravityDynamic(modelSettings,
                                                 modelGeneral,
+                                                modelGravityStatic,
                                                 inputFiles,
                                                 vintage,
                                                 seismicParameters);
 
-  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->getFailed();
+  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->GetFailed();
 
    if(failedLoadingModel == false) {
 
-    //GravityInversion * gravityInversion = new GravityInversion(modelSettings, modelGeneral, modelGravityStatic, modelGravityDynamic, seismicParameters);
+    GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
+                                                                           modelGravityStatic,
+                                                                           modelGravityDynamic,
+                                                                           seismicParameters,
+                                                                           modelSettings);
 
-    //delete gravityInversion;
+    delete gravimetricInversion;
   }
 
   delete modelGravityDynamic;

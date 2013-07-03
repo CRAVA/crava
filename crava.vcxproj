@@ -309,6 +309,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp" />
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
     <ClCompile Include="src\io.cpp" />
@@ -1355,6 +1356,7 @@
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\gravimetricinversion.h" />
     <ClInclude Include="src\modelgravitydynamic.h" />
     <ClInclude Include="src\modelgravitystatic.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />

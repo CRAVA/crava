@@ -5978,8 +5978,16 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
+  int numberGravityFiles = 0;
+  for(int i = 0; i<modelSettings_->getNumberOfVintages(); i++){
+    if(modelSettings_->getGravityTimeLapse(i))
+      numberGravityFiles++;
+  }
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)   // Not necessarily on first vintage
     errTxt += "Seismic data are needed for inversion.\n";
+
+  if(numberGravityFiles == 1)
+    errTxt += "Need at least two gravity data files for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
     bool okWithoutWells = true;
@@ -6294,8 +6302,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
   }
   for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
-    if(modelSettings_->getNumberOfAngles(i) == 0)
-      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getNumberOfAngles(i) == 0 && (modelSettings_->getGravityTimeLapse(i) == false))
+      errTxt += "Need at least one <angle-gather> or <gravity> in <survey>.\n";
     if(modelSettings_->getVintageYear(i) == RMISSING)
       errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
   }
