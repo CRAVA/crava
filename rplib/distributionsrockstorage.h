@@ -13,6 +13,8 @@ class DistributionsFluidStorage;
 class DistributionsRock;
 class DistributionsFluid;
 
+class BlockedLogsForRockPhysics;
+
 class DistributionsRockStorage {
 public:
   DistributionsRockStorage();
@@ -23,6 +25,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -33,6 +36,7 @@ protected:
                                                               const std::string                                               & path,
                                                               const std::vector<std::string>                                  & trend_cube_parameters,
                                                               const std::vector<std::vector<double> >                         & trend_cube_sampling,
+                                                              const std::vector<BlockedLogsForRockPhysics *>                  & blockedLogs,
                                                               const std::vector<std::string>                                  & constituent_label,
                                                               const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
                                                               const std::map<std::string, DistributionsRockStorage *>         & model_rock_storage,
@@ -49,9 +53,10 @@ public:
   TabulatedVelocityRockStorage(std::vector<DistributionWithTrendStorage *> vp,
                                std::vector<DistributionWithTrendStorage *> vs,
                                std::vector<DistributionWithTrendStorage *> density,
-                               std::vector<double>                         correlation_vp_vs,
-                               std::vector<double>                         correlation_vp_density,
-                               std::vector<double>                         correlation_vs_density);
+                               std::vector<DistributionWithTrendStorage *> correlation_vp_vs,
+                               std::vector<DistributionWithTrendStorage *> correlation_vp_density,
+                               std::vector<DistributionWithTrendStorage *> correlation_vs_density,
+                               std::string                                 rock_name);
 
   virtual ~TabulatedVelocityRockStorage();
 
@@ -59,6 +64,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -69,9 +75,10 @@ private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> vs_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_vp_vs_;
-  std::vector<double>                         correlation_vp_density_;
-  std::vector<double>                         correlation_vs_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_vp_vs_;        /// Converted to double
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_;   /// Converted to double
+  std::vector<DistributionWithTrendStorage *> correlation_vs_density_;   /// Converted to double
+  std::string                                 rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -80,9 +87,10 @@ public:
   TabulatedModulusRockStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                               std::vector<DistributionWithTrendStorage *> shear_modulus,
                               std::vector<DistributionWithTrendStorage *> density,
-                              std::vector<double>                         correlation_bulk_shear,
-                              std::vector<double>                         correlation_bulk_density,
-                              std::vector<double>                         correlation_shear_density);
+                              std::vector<DistributionWithTrendStorage *> correlation_bulk_shear,
+                              std::vector<DistributionWithTrendStorage *> correlation_bulk_density,
+                              std::vector<DistributionWithTrendStorage *> correlation_shear_density,
+                              std::string                                 rock_name);
 
   virtual ~TabulatedModulusRockStorage();
 
@@ -90,6 +98,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -100,16 +109,18 @@ private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> shear_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_bulk_shear_;
-  std::vector<double>                         correlation_bulk_density_;
-  std::vector<double>                         correlation_shear_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_shear_;      /// Converted to double
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_;    /// Converted to double
+  std::vector<DistributionWithTrendStorage *> correlation_shear_density_;   /// Converted to double
+  std::string                                 rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
 class ReussRockStorage : public DistributionsRockStorage {
 public:
   ReussRockStorage(std::vector<std::string>                                  constituent_label,
-                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
+                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                   std::string                                               rock_name);
 
   virtual ~ReussRockStorage();
 
@@ -117,6 +128,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -126,13 +138,15 @@ public:
 private:
   std::vector<std::string>                                  constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
+  std::string                                               rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
 class VoigtRockStorage : public DistributionsRockStorage {
 public:
   VoigtRockStorage(std::vector<std::string>                                  constituent_label,
-                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
+                   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                   std::string                                               rock_name);
 
   virtual ~VoigtRockStorage();
 
@@ -140,6 +154,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -149,13 +164,15 @@ public:
 private:
   std::vector<std::string>                                  constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
+  std::string                                               rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
 class HillRockStorage : public DistributionsRockStorage {
 public:
   HillRockStorage(std::vector<std::string>                                  constituent_label,
-                  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction);
+                  std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction,
+                  std::string                                               rock_name);
 
   virtual ~HillRockStorage();
 
@@ -163,6 +180,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -172,6 +190,7 @@ public:
 private:
   std::vector<std::string>                                  constituent_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > constituent_volume_fraction_;
+  std::string                                               rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -181,7 +200,8 @@ public:
                  std::vector<DistributionWithTrendStorage *>               host_volume_fraction,
                  std::vector<std::string>                                  inclusion_label,
                  std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction,
-                 std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio);
+                 std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio,
+                 std::string                                               rock_name);
 
   virtual ~DEMRockStorage();
 
@@ -189,6 +209,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -201,13 +222,15 @@ private:
   std::vector<std::string>                                  inclusion_label_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_volume_fraction_;
   std::vector<std::vector<DistributionWithTrendStorage *> > inclusion_aspect_ratio_;
+  std::string                                               rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
 class GassmannRockStorage : public DistributionsRockStorage {
 public:
   GassmannRockStorage(std::string dry_rock,
-                      std::string fluid);
+                      std::string fluid,
+                      std::string rock_name_);
 
   virtual ~GassmannRockStorage();
 
@@ -215,6 +238,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -224,6 +248,7 @@ public:
 private:
   std::string dry_rock_;
   std::string fluid_;
+  std::string rock_name_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -234,7 +259,8 @@ public:
                       std::vector<DistributionWithTrendStorage *> porosity,
                       std::vector<DistributionWithTrendStorage *> bulk_weight,
                       std::vector<DistributionWithTrendStorage *> shear_weight,
-                      double                                      correlation_weights);
+                      double                                      correlation_weights,
+                      std::string                                 rock_name);
 
   virtual ~BoundingRockStorage();
 
@@ -242,6 +268,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
+                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -255,7 +282,7 @@ private:
   std::vector<DistributionWithTrendStorage *> bulk_weight_;
   std::vector<DistributionWithTrendStorage *> shear_weight_;
   double                                      correlation_weights_;
-
+  std::string                                 rock_name_;
 };
 
 #endif

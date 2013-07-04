@@ -287,13 +287,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument File name
    \item \Default
  \elist
- 
- \subparagraph{\hbracket{top-surface-erosion-priority}}\rnewkw{top-surface-erosion-priority}{top-surface-erosion-priority2}
- \slist
-   \item \Description Priority of the top surface file. The top surface file and all base surface files in the inversion intervals need to given different priority.
-   \item \Argument Int
-   \item \Default 1
- \elist
+
  
 \paragraph{\hbracket{interval} \necessary}  \newkw{interval}
  \slist
@@ -1248,6 +1242,27 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument Integer
    \item \Default 250
  \elist
+
+\subsubsection{\hbracket{seismic-quality-grid}}\rnewkw{seismic-quality-grid}{seismic-quality-grid2}
+ \slist
+   \item \Description Input parameters for seismic quality grid if it is set to yes under \kw{seismic-quality-grid} in \kw{grid-output}.
+   \item \Argument 
+   \item \Default 
+ \elist 
+ 
+\paragraph{\hbracket{range}}\rnewkw{range}{range2}
+ \slist
+   \item \Description Range from wells. Outside this range the facies probabilities are estimated from seismic data with a weighing given in \rkw{value}{value2}.
+   \item \Argument Value
+   \item \Default 2000
+ \elist 
+ 
+\paragraph{\hbracket{value}}\rnewkw{value}{value2}
+ \slist
+   \item \Description The value of weighing of seismic-data between wells.
+   \item \Argument Value between 0 and 1.
+   \item \Default An average of all fit values from wells.
+ \elist 
 
 \subsubsection{\hbracket{debug-level}}\newkw{debug-level}
  \slist
@@ -2955,7 +2970,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-solid}
@@ -3202,7 +3217,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-dry-rock}
@@ -3504,7 +3519,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subparagraph{\hbracket{correlation-vp-density}}\newkw{correlation-vp-density}

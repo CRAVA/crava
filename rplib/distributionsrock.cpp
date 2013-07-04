@@ -5,9 +5,10 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/statistics/statistics.hpp"
+#include "nrlib/random/random.hpp"
 #include <nrlib/flens/nrlib_flens.hpp>
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<double> & trend_params, std::vector<double> &resVar )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -23,7 +24,7 @@ Rock * DistributionsRock::GenerateSampleAndReservoirVariables(const std::vector<
   return(result);
 }
 
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_params )
 {
   size_t nResVar=reservoir_variables_.size();
@@ -37,7 +38,7 @@ Rock * DistributionsRock::GenerateSample(const std::vector<double> & trend_param
 
 
 
-
+//--------------------------------------------------------------//
 void DistributionsRock::GenerateWellSample(double                 corr,
                                            std::vector<double>  & vp,
                                            std::vector<double>  & vs,
@@ -56,7 +57,7 @@ void DistributionsRock::GenerateWellSample(double                 corr,
   }
   delete rock;
 }
-
+//--------------------------------------------------------------//
 Rock * DistributionsRock::EvolveSample(double       time,
                                        const Rock & rock)
 {
@@ -68,10 +69,10 @@ Rock * DistributionsRock::EvolveSample(double       time,
   return UpdateSample(time, true, trend, &rock);
 }
 
-
-Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double       time,
-                                       const Rock & rock,
-                                       std::vector<double> &resVar )
+//--------------------------------------------------------------//
+Rock * DistributionsRock::EvolveSampleAndReservoirVaribles(double                time,
+                                                           const Rock          & rock,
+                                                           std::vector<double> & resVar )
 {
   size_t nResVar=reservoir_variables_.size();
   resVar.resize(nResVar);
@@ -120,62 +121,68 @@ void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
   NRLib::Grid2D<double> cov(3,3);
   std::vector<double>   mean(3);
 
+  unsigned int seed = NRLib::Random::DrawUint32();
+
   bool failed = false;
 
   for (int i = 0 ; i < mi ; i++) {
     for (int j = 0 ; j < mj ; j++) {
-
-      const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
-
-      NRLib::Vector log_vp(n);
-      NRLib::Vector log_vs(n);
-      NRLib::Vector log_rho(n);
-
-      double vp;
-      double vs;
-      double rho;
-
-      for (int k = 0 ; k < n ; k++) {
-        Rock * rock = GenerateSample(tp);
-
-        rock->GetSeismicParams(vp, vs, rho);
-
-        log_vp(k) = std::log(vp);
-        log_vs(k) = std::log(vs);
-        log_rho(k) = std::log(rho);
-
-        delete rock;
-
-        if(vp <= 0 || vs < 0 || rho <=0) {
-          errTxt += "\nAt least one sample generated from the rock model obtains negative values.\n";
-          if(vp <= 0)
-            errTxt += "  The variance for Vp might be too large.\n\n";
-          if(vs < 0)
-            errTxt += "  The variance for Vs might be too large.\n\n";
-          if(rho <= 0)
-            errTxt += "  The variance for density might be too large.\n\n";
-
-          failed = true;
-          break;
-        }
-      }
 
       std::vector<double>   expectation_small(3, 0.0);
       NRLib::Grid2D<double> covariance_small(3, 3, 0.0);
 
       if(failed == false) {
 
-        std::vector<NRLib::Vector> m(3);
+        NRLib::Random::Initialize(seed);
+        const std::vector<double> & tp = trend_params(i,j); // trend_params = two-dimensional
 
-        m[0] = log_vp;
-        m[1] = log_vs;
-        m[2] = log_rho;
+        NRLib::Vector log_vp(n);
+        NRLib::Vector log_vs(n);
+        NRLib::Vector log_rho(n);
 
-        for (int k = 0; k < 3; k++) {
-          expectation_small[k] = NRLib::Mean(m[k]);
-          for (int l = k; l < 3; l++) {
-            covariance_small(k,l) = NRLib::Cov(m[k], m[l]);
-            covariance_small(l,k) = covariance_small(k,l);
+        double vp;
+        double vs;
+        double rho;
+
+        for (int k = 0 ; k < n ; k++) {
+          Rock * rock = GenerateSample(tp);
+
+          rock->GetSeismicParams(vp, vs, rho);
+
+          log_vp(k) = std::log(vp);
+          log_vs(k) = std::log(vs);
+          log_rho(k) = std::log(rho);
+
+          delete rock;
+
+          if(vp <= 0 || vs < 0 || rho <=0) {
+            errTxt += "\nAt least one sample generated from the rock model obtains negative values.\n";
+            if(vp <= 0)
+              errTxt += "  The variance for Vp might be too large.\n\n";
+            if(vs < 0)
+              errTxt += "  The variance for Vs might be too large.\n\n";
+            if(rho <= 0)
+              errTxt += "  The variance for density might be too large.\n\n";
+
+            failed = true;
+            break;
+          }
+        }
+
+        if(failed == false) {
+
+          std::vector<NRLib::Vector> m(3);
+
+          m[0] = log_vp;
+          m[1] = log_vs;
+          m[2] = log_rho;
+
+          for (int k = 0; k < 3; k++) {
+            expectation_small[k] = NRLib::Mean(m[k]);
+            for (int l = k; l < 3; l++) {
+              covariance_small(k,l) = NRLib::Cov(m[k], m[l]);
+              covariance_small(l,k) = covariance_small(k,l);
+            }
           }
         }
       }

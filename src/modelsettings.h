@@ -205,6 +205,8 @@ public:
   bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}
   void                             getTimeGradientSettings(float &distance, float &alpha, int t);
   int                              getEstimateNumberOfWavelets(int t)   const;
+  double                           getSeismicQualityGridRange(void)     const { return seismicQualityGridRange_                   ;}
+  double                           getSeismicQualityGridValue(void)     const { return seismicQualityGridValue_                   ;}
   const std::vector<int>           findSortedVintages(void)             const;
   const std::vector<std::string> & getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
   const std::vector<int>         & getTrendCubeType(void)               const { return trendCubeType_                       ;}
@@ -418,6 +420,8 @@ public:
   void addVintage(int year, int month, int day);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
   void addTimeGradientSettings(float distance, float alpha);
+  void setSeismicQualityGridRange(float range)            { seismicQualityGridRange_  = range                    ;}
+  void setSeismicQualityGridValue(float value)            { seismicQualityGridValue_  = value                    ;}
 
   void addDefaultVintage(void);
   void addDefaultTimeGradientSettings(void);
@@ -599,7 +603,7 @@ private:
   std::vector<int>                  indBGTrend_;                 ///< Use well to estimate background trend?
   std::vector<int>                  indWavelet_;                 ///< Use well to estimate wavelet?
   std::vector<int>                  indFacies_;                  ///< Use well to estimate facies?
-  std::vector<int>                  indRockPhysics_;             ///< Use weel to estimate rock physics?
+  std::vector<int>                  indRockPhysics_;             ///< Use well to estimate rock physics?
   std::vector<int>                  indRealVs_;                  ///< Treat Vs log as real?
   std::vector<int>                  indFilter_;                  ///< Filter elastic logs using spatial multi-parameter filter?
 
@@ -742,6 +746,8 @@ private:
   double                            wavelet3DTuningFactor_;      ///< Large value forces better fit of wavelet
   double                            gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
+  float                             seismicQualityGridRange_;    ///< Radius value from well-points where wells are used in Seismic Quality Grids
+  float                             seismicQualityGridValue_;    ///< Value between wells if range is used.
 
   bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
   bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface

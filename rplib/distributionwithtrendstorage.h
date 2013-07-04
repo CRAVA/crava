@@ -27,6 +27,7 @@ public:
   virtual DistributionWithTrend        * GenerateDistributionWithTrend(const std::string                       & /*path*/,
                                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                                       const std::vector<std::vector<float> >  & /*blocked_logs*/,
                                                                        std::string                             & /*errTxt*/)                    = 0;
 
   virtual NRLib::TrendStorage          * CloneMean() const = 0;
@@ -41,6 +42,7 @@ public:
 
   virtual double                         GetOneYearCorrelation() = 0;
 
+  virtual bool                           GetEstimate() const = 0;
 };
 
 //--------------------------------------------------------------//
@@ -67,6 +69,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -83,12 +86,15 @@ public:
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
+
 private:
   const NRLib::TrendStorage            * mean_;
   DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 
 };
 
@@ -113,6 +119,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -127,6 +134,8 @@ public:
 
   virtual double                           GetOneYearCorrelation()                   { return one_year_correlation_        ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
+
 private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
@@ -134,6 +143,7 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 
 //--------------------------------------------------------------//
@@ -159,6 +169,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -176,6 +187,7 @@ public:
   virtual const double                     GetLowerLimit() const                     { return lower_limit_                 ;}
   virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
 
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
 
   static void                              CheckBetaConsistency(NRLib::Trend * mean,
                                                                 NRLib::Trend * variance,
@@ -192,6 +204,7 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 
 //--------------------------------------------------------------//
@@ -219,6 +232,7 @@ public:
   virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                          const std::vector<std::string>          & trend_cube_parameters,
                                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         const std::vector<std::vector<float> >  & blocked_logs,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -237,6 +251,7 @@ public:
   virtual const double                     GetUpperLimit() const                     { return upper_limit_                 ;}
   virtual const double                     GetLowerProbability() const               { return lower_probability_           ;}
   virtual const double                     GetUpperProbability() const               { return upper_probability_           ;}
+  virtual bool                             GetEstimate() const                       { return estimate_                    ;}
 
 private:
   const NRLib::TrendStorage            * mean_;
@@ -249,5 +264,6 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
   int                                    vintage_year_;
   double                                 one_year_correlation_;
+  bool                                   estimate_;
 };
 #endif

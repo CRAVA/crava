@@ -26,6 +26,7 @@
 
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/random/random.hpp"
 
 #include "rplib/demmodelling.h"
 

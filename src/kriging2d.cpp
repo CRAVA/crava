@@ -9,6 +9,8 @@
 #include "lib/utils.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "src/covgrid2d.h"
+#include "src/simbox.h"
 
 void Kriging2D::krigSurface(Grid2D              & trend,
                             const KrigingData2D & krigingData,
@@ -105,4 +107,29 @@ Kriging2D::fillKrigingVector(NRLib::Vector          & k,
     k(ii) = static_cast<double>(cov.getCov(deltai,deltaj));
   }
 }
+
+CovGrid2D &
+Kriging2D::makeCovGrid2D(const Simbox * simbox,
+                         Vario        * vario,
+                         int            debugFlag)
+{
+  //
+  // Pretabulate all needed covariances
+  //
+  const int    nx = simbox->getnx();
+  const int    ny = simbox->getny();
+
+  const float  dx = static_cast<float>(simbox->getdx());
+  const float  dy = static_cast<float>(simbox->getdy());
+
+  CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
+
+  if(debugFlag == 1) {
+    std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
+    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
+    cov->writeToFile(fileName);
+  }
+  return (*cov);
+}
+
 

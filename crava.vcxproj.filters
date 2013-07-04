@@ -285,9 +285,6 @@
     <ClCompile Include="libs\nrlib\iotools\logkit.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
-    <ClCompile Include="libs\nrlib\random\mt19937ar.cpp">
-      <Filter>Source Files\libs\nrlib</Filter>
-    </ClCompile>
     <ClCompile Include="libs\nrlib\random\normal.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
@@ -981,6 +978,11 @@
     <ClCompile Include="src\commondata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\blockedlogsforrockphysics.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\random\dSFMT.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
     <ClCompile Include="src\modelgravitystatic.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1218,15 +1220,6 @@
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
     <ClInclude Include="libs\nrlib\math\mathutility.hpp">
-      <Filter>Header Files\libs\nrlib</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\nrlib\random\mt19937_32.hpp">
-      <Filter>Header Files\libs\nrlib</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\nrlib\random\mt19937_64.hpp">
-      <Filter>Header Files\libs\nrlib</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\nrlib\random\mt19937ar.hpp">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
     <ClInclude Include="libs\nrlib\random\normal.hpp">
@@ -1649,9 +1642,20 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
       <Filter>Header Files\rplib</Filter>
     </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\commondata.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
+    <ClInclude Include="src\blockedlogsforrockphysics.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\random\dSFMT.h">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\random\dSFMT-common.h">
+      <Filter>Header Files\libs\nrlib</Filter>
     <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files</Filter>
     </ClInclude>

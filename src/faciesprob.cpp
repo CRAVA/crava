@@ -852,6 +852,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     xMax  = *max_element(x_transformed.begin(), x_transformed.end()) + 5.0f*sqrt(sigmae[0][0]);
     yMin  = *min_element(y_transformed.begin(), y_transformed.end()) - 5.0f*sqrt(sigmae[1][1]);
     yMax  = *max_element(y_transformed.begin(), y_transformed.end()) + 5.0f*sqrt(sigmae[1][1]);
+    zMax  = trend1[nBinsTrend_];
+    zMin  = trend1[0];
     dX  = (xMax-xMin)/nBinsX;
     dY  = (yMax-yMin)/nBinsY;
     dZ  = (zMax-zMin)/nBinsTrend_;
@@ -902,10 +904,10 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     Simbox * expVol = createExpVol(volume[0]);
     for(int j=0; j<static_cast<int>(posteriorPdf[0].size()); j++) {
       std::string baseName = "Rock_Physics_";
-      baseName = baseName + facies_names[0];
+      baseName = baseName + facies_names[j];
       std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
       bool writeSurface = (j==0); //writeSurface is true if j == 0.
-      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume[0], expVol, 0, writeSurface);
+      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume[0], expVol, j, writeSurface);
 
     }
     delete expVol;
@@ -1147,11 +1149,11 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
             baseName = "Rock_Physics_Max_Noise_";
         } else
           baseName = "Rock_Physics_";
-        baseName = baseName + facies_names[i];
+        baseName = baseName + facies_names[j];
         std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
 
-        posteriorPdf3d[i][j]->ResampleAndWriteDensity(fileName, volume[i], expVol, i, writeSurface);
+        posteriorPdf3d[i][j]->ResampleAndWriteDensity(fileName, volume[i], expVol, j, writeSurface);
 
       }
       delete expVol;
@@ -1236,9 +1238,10 @@ void FaciesProb::makeFaciesProb(int                                 nFac,
         }
         else
           baseName = "Rock_Physics_";
-        baseName = baseName + facies_names[i];
+        baseName = baseName + facies_names[j];
+        std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
-        resampleAndWriteDensity(density[i][j], baseName, volume[i], expVol, i, writeSurface);
+        resampleAndWriteDensity(density[i][j], fileName, volume[i], expVol, j, writeSurface);
       }
       delete expVol;
     }
@@ -2181,9 +2184,14 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
   float help;
   float dens;
   float undefSum = 0.0;
-  if (nDimensions == 3 || nDimensions == 4){
+  if (nDimensions == 3){
     undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*volume[0]->getnz());
+  }else if (nDimensions == 4){
+    // the three elastic dimensions have been reduced to two (x and y) and z is the trend dim
+    undefSum = p_undefined/(volume[0]->getnx()*volume[0]->getny()*nBinsTrend_);
   }else if (nDimensions == 5){
+    // the three elastic dimensions have been reduced to two (x and y) and there are two
+    // trend dimensions. Only two dimensions in the simbox are used.
     undefSum = p_undefined/(nBinsTrend_*nBinsTrend_*volume[0]->getnx()*volume[0]->getny());
   }
 

@@ -24,7 +24,8 @@ DistributionWithTrendStorage::~DistributionWithTrendStorage()
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
 : is_shared_(false),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
 }
 
@@ -39,22 +40,28 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean
 
   mean_                    = new NRLib::TrendConstantStorage(mean, estimate);
   distribution_with_trend_ = NULL;
+  estimate_                = estimate;
 }
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
                                                                      bool                        is_shared)
 : is_shared_(is_shared),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
   mean_                    = mean;
   distribution_with_trend_ = NULL;
+
+  if(mean_->GetEstimate() == true)
+    estimate_ = true;
 }
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const DeltaDistributionWithTrendStorage & dist)
 : is_shared_(dist.is_shared_),
   vintage_year_(dist.vintage_year_),
-  one_year_correlation_(dist.one_year_correlation_)
+  one_year_correlation_(dist.one_year_correlation_),
+  estimate_(dist.estimate_)
 {
   mean_ = dist.mean_->Clone();
 
@@ -75,17 +82,19 @@ DistributionWithTrend *
 DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                  const std::vector<std::string>          & trend_cube_parameters,
                                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                 const std::vector<std::vector<float> >  & blocked_logs,
                                                                  std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {  //Make sure shared variables are only generated one time
 
-    NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
       share_level = DistributionWithTrend::SingleSample;
 
-    distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, share_level);
+    if(errTxt == "")
+      distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, share_level);
 
     delete mean_trend;
   }
@@ -105,7 +114,8 @@ DeltaDistributionWithTrendStorage::CloneMean() const
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
 : is_shared_(false),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
 }
 
@@ -114,17 +124,22 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRL
                                                                        bool                        is_shared)
 : is_shared_(is_shared),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
   mean_                     = mean->Clone();
   variance_                 = variance->Clone();
   distribution_with_trend_  = NULL;
+
+  if(mean_->GetEstimate() == true || variance_->GetEstimate() == true)
+    estimate_ = true;
 }
 
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NormalDistributionWithTrendStorage & dist)
 : is_shared_(dist.is_shared_),
   vintage_year_(dist.vintage_year_),
-  one_year_correlation_(dist.one_year_correlation_)
+  one_year_correlation_(dist.one_year_correlation_),
+  estimate_(dist.estimate_)
 {
   mean_     = dist.mean_    ->Clone();
   variance_ = dist.variance_->Clone();
@@ -146,18 +161,20 @@ DistributionWithTrend *
 NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                   const std::vector<std::string>          & trend_cube_parameters,
                                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                  const std::vector<std::vector<float> >  & blocked_logs,
                                                                   std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
-
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    // Estimere forventning og varians her
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
       share_level = DistributionWithTrend::SingleSample;
 
-    distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, share_level);
+    if(errTxt == "")
+      distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, share_level);
 
     delete mean_trend;
     delete variance_trend;
@@ -177,7 +194,8 @@ NormalDistributionWithTrendStorage::CloneMean() const
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
 : is_shared_(false),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
 }
 
@@ -190,11 +208,15 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::
   upper_limit_(upper_limit),
   is_shared_(is_shared),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
   mean_                     = mean->Clone();
   variance_                 = variance->Clone();
   distribution_with_trend_  = NULL;
+
+  if(mean_->GetEstimate() == true || variance_->GetEstimate() == true)
+    estimate_ = true;
 }
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const BetaDistributionWithTrendStorage & dist)
@@ -202,7 +224,8 @@ BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const BetaDis
   upper_limit_(dist.lower_limit_),
   is_shared_(dist.is_shared_),
   vintage_year_(dist.vintage_year_),
-  one_year_correlation_(dist.one_year_correlation_)
+  one_year_correlation_(dist.one_year_correlation_),
+  estimate_(dist.estimate_)
 {
   mean_     = dist.mean_    ->Clone();
   variance_ = dist.variance_->Clone();
@@ -224,12 +247,13 @@ DistributionWithTrend *
 BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                 const std::vector<std::string>          & trend_cube_parameters,
                                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                const std::vector<std::vector<float> >  & blocked_logs,
                                                                 std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
 
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
 
     CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
@@ -237,7 +261,8 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
     if(is_shared_ == true)
       share_level = DistributionWithTrend::SingleSample;
 
-    distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, share_level);
+    if(errTxt == "")
+      distribution_with_trend_= new BetaDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, share_level);
 
     delete mean_trend;
     delete variance_trend;
@@ -346,7 +371,8 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage()
 : is_shared_(false),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
 }
 
@@ -363,11 +389,15 @@ BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage
   upper_probability_(upper_probability),
   is_shared_(is_shared),
   vintage_year_(1),
-  one_year_correlation_(1.0)
+  one_year_correlation_(1.0),
+  estimate_(false)
 {
   mean_                     = mean->Clone();
   variance_                 = variance->Clone();
   distribution_with_trend_  = NULL;
+
+  if(mean_->GetEstimate() == true || variance_->GetEstimate() == true)
+    estimate_ = true;
 }
 
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage(const BetaEndMassDistributionWithTrendStorage & dist)
@@ -377,7 +407,8 @@ BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage
   upper_probability_(dist.upper_probability_),
   is_shared_(dist.is_shared_),
   vintage_year_(dist.vintage_year_),
-  one_year_correlation_(dist.one_year_correlation_)
+  one_year_correlation_(dist.one_year_correlation_),
+  estimate_(dist.estimate_)
 {
   mean_     = dist.mean_    ->Clone();
   variance_ = dist.variance_->Clone();
@@ -399,12 +430,13 @@ DistributionWithTrend *
 BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                       const std::vector<std::vector<float> >  & blocked_logs,
                                                                        std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
 
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
 
     BetaDistributionWithTrendStorage::CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
@@ -412,7 +444,8 @@ BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std
     if(is_shared_ == true)
       share_level = DistributionWithTrend::SingleSample;
 
-    distribution_with_trend_= new BetaEndMassDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, lower_probability_, upper_probability_, share_level);
+    if(errTxt == "")
+      distribution_with_trend_= new BetaEndMassDistributionWithTrend(mean_trend, variance_trend, lower_limit_, upper_limit_, lower_probability_, upper_probability_, share_level);
 
     delete mean_trend;
     delete variance_trend;

@@ -1,4 +1,4 @@
-// $Id: random.hpp 1177 2013-05-27 08:37:26Z perroe $
+// $Id: randomgenerator.hpp 1177 2013-05-27 08:37:26Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -19,58 +19,49 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef NRLIB_RANDOM_H
-#define NRLIB_RANDOM_H
-
-#include <string>
+#ifndef NRLIB_RANDOMGENERATOR_H
+#define NRLIB_RANDOMGENERATOR_H
 
 #include "dSFMT.h"
 
 namespace NRLib {
 
-/// Random generator class based on the Mersenne-Twister random
-/// number generator.
-/// Always initialize before use!
-class Random {
+class RandomGenerator {
 public:
+  RandomGenerator();
+
+  ~RandomGenerator();
   ///Initializes with current time
-  static void Initialize();
+  void Initialize();
 
-  static void Initialize(unsigned long seed);
-
-  static void Initialize(const std::string& seed_file_);
-
-  /// \return uniform number in [0,1)
-  static double Unif01()             { return dsfmt_gv_genrand_close_open(); }
+  void Initialize(unsigned long seed);
 
   /// \return unsigned 32-bit integer betwen 0 and 0xFFFFFFFF
-  static unsigned long DrawUint32()  { return dsfmt_gv_genrand_uint32(); }
+  unsigned long DrawUint32()  { return dsfmt_genrand_uint32(&dsfmt); }
+
+  /// \return uniform number in [0,1)
+  double Unif01()             { return dsfmt_genrand_close_open(&dsfmt); }
 
   /// Marsaglia-Bray's method, see Ripley, p. 84.
-  static double Norm01();
+  double Norm01();
 
   /// Get start seed.
-  static unsigned long GetStartSeed();
-
-  /// Writes seed to file if seed-file is used.
-  static void WriteSeedToFile();
+  unsigned long GetStartSeed();
 
 private:
+  /// RNG state
+  dsfmt_t dsfmt;
+
   /// Support function for Norm01
-  static double g(double x);
+  double g(double x);
 
-  static void InitializeMT(unsigned long seed);
+  void InitializeMT(unsigned long seed);
 
-  static unsigned long start_seed_;
+  unsigned long start_seed_;
 
-  static bool is_initialized_;
-
-  static bool use_seed_file_;
-
-  static std::string seed_file_;
+  bool is_initialized_;
 };
 
 }
 
-#endif
-
+#endif // NRLIB_RANDOMGENERATOR_H

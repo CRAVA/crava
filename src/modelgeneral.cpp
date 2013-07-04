@@ -26,6 +26,7 @@
 #include "src/background.h"
 #include "src/welldata.h"
 #include "src/blockedlogs.h"
+#include "src/blockedlogsforrockphysics.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -2375,15 +2376,6 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
     LogKit::WriteHeader("Processing Rock Physics");
 
-    // Block logs, make separate function later
-    int     nWells         = modelSettings->getNumberOfWells();
-    std::vector<BlockedLogs *> blocked_logs(nWells, NULL);
-
-    if(nWells > 0) {
-      for (int i=0 ; i<nWells ; i++)
-        blocked_logs[i] = new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel());
-    }
-
     trend_cubes_ = CravaTrend(timeSimbox,
                               timeCutSimbox,
                               modelSettings,
@@ -2396,6 +2388,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
     const std::string&                        path                  = inputFiles->getInputDirectory();
     const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
     const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+    const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2404,7 +2397,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++)
-        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2423,6 +2416,14 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       float var_beta_max  = modelSettings->getVarBetaMax();
       float var_rho_min   = modelSettings->getVarRhoMin();
       float var_rho_max   = modelSettings->getVarRhoMax();
+      int   nWells        = modelSettings->getNumberOfWells();
+
+      // Block logs
+      std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
+      if(nWells > 0) {
+        for (int i=0 ; i<nWells ; i++)
+          blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
+      }
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
       const std::map<std::string, DistributionsSolidStorage   *>& solid_storage    = modelSettings->getSolidStorage();
@@ -2430,19 +2431,14 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       const std::map<std::string, DistributionsRockStorage    *>& rock_storage     = modelSettings->getRockStorage();
 
       // Map out reservoir variables for using in rocks to access resampling trigger.
-      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
-      if(reservoir_variables_.size() > 0) {
-        size_t nVintages = reservoir_variables_.begin()->second.size();
-        res_var_vintage.resize(nVintages);
-        for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
-          var_it != reservoir_variables_.end();var_it++)
-        {
-          for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
-            res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
-        }
+      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(modelSettings->getNumberOfVintages());
+      std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it;
+      for(var_it = reservoir_variables_.begin(); var_it != reservoir_variables_.end();var_it++) {
+        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
       }
 
-
+      // Find facies names
       std::map<std::string, float> facies_probabilities = modelSettings->getPriorFaciesProb();
       std::map<std::string, std::string> facies_cubes   = inputFiles->getPriorFaciesProbFile();
       std::vector<std::string> all_facies_names         = faciesNames_;
@@ -2462,6 +2458,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
+
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2472,6 +2469,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
                                                                                        path,
                                                                                        trend_cube_parameters,
                                                                                        trend_cube_sampling,
+                                                                                       blocked_logs,
                                                                                        rock_storage,
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
@@ -2577,18 +2575,18 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
 
               rock_distributions_[all_facies_names[it]] = rock;
             }
-            else
+            else {
+              errTxt += "\nRock '"+iter->first+"':\n";
               errTxt += rockErrTxt;
+            }
           }
           else
             errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
-          //rock_distributions_[it->first] = rock;
         }
       }
+      for(int i=0; i<nWells; i++)
+        delete blocked_logs[i];
     }
-
-    for(int i=0; i<nWells; i++)
-      delete blocked_logs[i];
 
     if(errTxt != "")
       failed = true;
@@ -3696,7 +3694,7 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
   float   maxOffset   = modelSettings->getMaxWellOffset();
   double  angle       = timeSimbox_->getAngle();
   double  dx          = timeSimbox_->getdx();
-  double  dy          = timeSimbox_->getdx();
+  double  dy          = timeSimbox_->getdy();
   std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
 
   std::vector<float> angleWeight(nAngles);
@@ -3790,13 +3788,13 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
     // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
     // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
-    float ** paramCorr = NULL;
+    float ** paramCov = NULL;
     bool failedParamCorr = false;
     std::string tmpErrText("");
     if(!estimateParamCov) {
-      paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
-      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
-      if(paramCorr == NULL || tmpErrText != "") {
+      paramCov = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
+      validateCorrelationMatrix(paramCov, modelSettings, tmpErrText);
+      if(paramCov == NULL || tmpErrText != "") {
         errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
         errText += tmpErrText;
         failedParamCorr = true;
@@ -3804,9 +3802,9 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
     }
     else if (modelSettings->getFaciesProbFromRockPhysics() == true) {
       estimateParamCov = false;
-      paramCorr = new float * [3];
+      paramCov = new float * [3];
       for(int i=0;i<3;i++) {
-        paramCorr[i] = new float[3];
+        paramCov[i] = new float[3];
       }
 
       int n_facies = static_cast<int>(faciesNames_.size());
@@ -3830,7 +3828,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
 
       for(int i=0; i<3; i++) {
         for(int j=0; j<3; j++)
-          paramCorr[i][j] = static_cast<float>(param_corr(i,j));
+          paramCov[i][j] = static_cast<float>(param_corr(i,j));
       }
 
       if (tmpErrText != "")
@@ -3892,7 +3890,6 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       }
     }
 
-    float ** pointVar0 = NULL;
     if (estimateParamCov || estimateTempCorr) //Need well estimation
     {
       std::string tmpErrTxt;
@@ -3900,18 +3897,26 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
                                             background,
                                             timeSimbox,
                                             modelSettings,
+                                            estimateParamCov,
                                             tmpErrTxt);
       if (tmpErrTxt != "") {
         errText += tmpErrTxt;
         failedParamCorr = true;
       }
 
-      if(estimateParamCov)
-        paramCorr = analyze->getVar0();
-      else
-        delete [] analyze->getVar0();
+      if(estimateParamCov) {
+        float ** analyzeParamCov = analyze->getVar0();
 
-      pointVar0 = analyze->getPointVar0();
+        paramCov = new float * [3];
+        for(int i=0;i<3;i++) {
+          paramCov[i] = new float[3];
+        }
+
+        for(int i=0; i<3; i++) {
+          for(int j=0; j<3; j++)
+            paramCov[i][j] = analyzeParamCov[i][j];
+        }
+      }
 
       float * estCorrT = analyze->getCorrT();
       if(estimateTempCorr) {
@@ -3955,7 +3960,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       getCorrGradIJ(corrGradI, corrGradJ);
       //makeCorr2DPositiveDefinite( priorCorrXY_);
 
-      seismicParameters.setCorrelationParameters(paramCorr,
+      seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
                                                  priorCorrXY_,
                                                  lowIntCut,
@@ -3969,8 +3974,8 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
                                                  nzPad);
 
       for(int i=0; i<3; i++)
-        delete [] paramCorr[i];
-      delete [] paramCorr;
+        delete [] paramCov[i];
+      delete [] paramCov;
 
       if(printResult)
         seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);

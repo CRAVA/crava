@@ -45,12 +45,16 @@ Trend *
 TrendConstantStorage::GenerateTrend(const std::string                       & /*path*/,
                                     const std::vector<std::string>          & /*trend_cube_parameters*/,
                                     const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                    const std::vector<std::vector<float> >  & blocked_logs,
                                     std::string                             & errTxt) const
 {
+  double mean = 0;
   if(estimate_ == true)
-    errTxt += "Estimation of value in rock physics models has not been implemented yet\n";
+    EstimateConstantTrend(blocked_logs, mean);
+  else
+    mean = mean_value_;
 
-  Trend * trend = new TrendConstant(mean_value_);
+  Trend * trend = new TrendConstant(mean);
   return trend;
 }
 
@@ -84,34 +88,51 @@ Trend *
 Trend1DStorage::GenerateTrend(const std::string                       & path,
                               const std::vector<std::string>          & trend_cube_parameters,
                               const std::vector<std::vector<double> > & trend_cube_sampling,
+                              const std::vector<std::vector<float> >  & blocked_logs,
                               std::string                             & errTxt) const
 {
   Trend * trend = NULL;
 
-  if(estimate_ == true)
-    errTxt += "Estimation of 1D trend in rock physics models has not been implemented yet\n";
+  int reference = 0;
+  for(int i=0; i<static_cast<int>(trend_cube_parameters.size()); i++) {
+    if(reference_parameter_ == trend_cube_parameters[i])
+      reference = i+1;
+  }
 
+  if(reference == 0) {
+    errTxt += "The reference parameter of the 1D trend in "+file_name_+" \n"
+      "is not the same as the parameter names of the trend cubes\n";
+    return(0);
+  }
+
+  int n_cube_samples = static_cast<int>(trend_cube_sampling[reference-1].size());
+  double increment   = trend_cube_sampling[reference-1][1]-trend_cube_sampling[reference-1][0];
+
+  std::vector<double> resampled_trend(static_cast<int>(n_cube_samples));;
+  std::vector<double> trend_values;
+  std::vector<double> trend_sampling;
+  double              s_min;
+  double              dz;
+
+  if(estimate_ == true) {
+
+    Estimate1DTrend(blocked_logs, trend_values);
+
+    s_min = trend_cube_sampling[reference-1][0];
+    double s_max = trend_cube_sampling[reference-1][n_cube_samples-1];
+    dz = (s_max - s_min + 1)/(static_cast<int>(trend_values.size()));
+
+    trend_sampling.resize(trend_values.size());
+
+    for(int i=0; i<static_cast<int>(trend_values.size()); i++)
+      trend_sampling[i] = s_min + i*dz;
+
+  }
   else {
-
-    int reference = 0;
-    for(int i=0; i<static_cast<int>(trend_cube_parameters.size()); i++) {
-      if(reference_parameter_ == trend_cube_parameters[i])
-        reference = i+1;
-    }
-
-    if(reference == 0) {
-      errTxt += "The reference parameter of the 1D trend in "+file_name_+" \n"
-        "is not the same as the parameter names of the trend cubes\n";
-      return(0);
-    }
 
     std::string file_name = path + file_name_;
 
     int file_format = GetTrend1DFileFormat(file_name, errTxt);
-
-    std::vector<double> trend_values;
-    double              s_min;
-    double              dz;
 
     if(file_format < 0) {
       errTxt += "Invalid 1D trend file\n";
@@ -121,41 +142,38 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
       ReadTrend1DJason(file_name,errTxt,trend_values,s_min,dz);
 
       double s_max          = s_min + dz*static_cast<int>(trend_values.size());
-      int    n_cube_samples = static_cast<int>(trend_cube_sampling[reference-1].size());
-
-      std::vector<double> resampled_trend(static_cast<int>(n_cube_samples));;
 
       if(trend_cube_sampling[reference-1][0] < s_min) {
         errTxt += "The mimimum value of the 1D trend in "+file_name_+" \n"
-          "is lower than the minimum value of "+trend_cube_parameters[reference-1]+"\n";
+                  " is lower than the minimum value of "+trend_cube_parameters[reference-1]+"\n";
       }
       else if(trend_cube_sampling[reference-1][n_cube_samples-1] > s_max) {
         errTxt += "The maximum value of the 1D trend in "+file_name_+" \n"
-          "is higher than the maximum value of "+trend_cube_parameters[reference-1]+"\n";
+                  " is higher than the maximum value of "+trend_cube_parameters[reference-1]+"\n";
       }
       else {
 
-        std::vector<double> trend_sampling(static_cast<int>(trend_values.size()));
+        trend_sampling.resize(trend_values.size());
 
         for(int i=0; i<static_cast<int>(trend_values.size()); i++)
           trend_sampling[i] = s_min + i*dz;
 
-        ResampleTrend1D(trend_sampling,
-          trend_values,
-          trend_cube_sampling[reference-1],
-          resampled_trend);
-
       }
-
-      double increment = trend_cube_sampling[reference-1][1]-trend_cube_sampling[reference-1][0];
-
-      trend = new Trend1D(resampled_trend, reference, increment);
     }
+  }
+
+  if(errTxt == "") {
+    ResampleTrend1D(trend_sampling,
+                    trend_values,
+                    trend_cube_sampling[reference-1],
+                    resampled_trend);
+
+    trend = new Trend1D(resampled_trend, reference, increment);
 
   }
+
   return trend;
 }
-
 
 //-------------------------------------------------------------------//
 
@@ -186,6 +204,7 @@ Trend *
 Trend2DStorage::GenerateTrend(const std::string                       & path,
                               const std::vector<std::string>          & trend_cube_parameters,
                               const std::vector<std::vector<double> > & trend_cube_sampling,
+                              const std::vector<std::vector<float> >  & /*blocked_logs*/,
                               std::string                             & errTxt) const
 {
   Trend * trend = NULL;
@@ -206,7 +225,7 @@ Trend2DStorage::GenerateTrend(const std::string                       & path,
 
     if(reference1 == 0 || reference2 == 0)
       errTxt += "The reference parameters of the 2D trend in "+file_name_+" \n"
-      "is not the same as the parameter names of the trend cubes\n";
+                " is not the same as the parameter names of the trend cubes\n";
 
     std::string file_name = path + file_name_;
     RegularSurface<double> surface(file_name);
