@@ -19,7 +19,7 @@ class BlockedLogsForZone
 public:
   BlockedLogsForZone(WellData            * well,
                      const StormContGrid & background_grid,
-                     const StormContGrid & eroded_grid);
+                     const NRLib::Volume & eroded_grid);
 
   ~BlockedLogsForZone();
 
@@ -51,7 +51,7 @@ private:
 
   void       findSizeAndBlockPointers(WellData            * well,
                                       const StormContGrid & background_grid,
-                                      const StormContGrid & eroded_grid,
+                                      const NRLib::Volume & eroded_grid,
                                       std::vector<int>    & bInd);
 
   std::vector<float>        alpha_;                    ///<

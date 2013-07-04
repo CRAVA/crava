@@ -24,8 +24,11 @@
 
 BlockedLogsForZone::BlockedLogsForZone(WellData            * well,
                                        const StormContGrid & background_grid,
-                                       const StormContGrid & eroded_grid)
-: firstM_(IMISSING),
+                                       const NRLib::Volume & eroded_grid)
+: ipos_(NULL),
+  jpos_(NULL),
+  kpos_(NULL),
+  firstM_(IMISSING),
   lastM_(IMISSING)
 {
   nLayers_ = static_cast<int>(background_grid.GetNK());
@@ -166,7 +169,7 @@ BlockedLogsForZone::blockContinuousLog(const std::vector<int>   bInd,
 void
 BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
                                              const StormContGrid & background_grid,
-                                             const StormContGrid & eroded_grid,
+                                             const NRLib::Volume & eroded_grid,
                                              std::vector<int>    & bInd)
 {
   int            dummy;
@@ -180,14 +183,10 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
   // Find first cell in eroded_grid that the well hits
   //
   bool   inside = false;
-  size_t firstI = missing;
-  size_t firstJ = missing;
-  size_t firstK = missing;
 
   for(int m=0; m<nd; m++) {
     inside = eroded_grid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      eroded_grid.FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
       first_eroded_M_ = m;
       break;
     }
@@ -197,14 +196,10 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
   // Find last cell in eroded_grid that the well hits
   //
   inside       = false;
-  size_t lastI = missing;
-  size_t lastJ = missing;
-  size_t lastK = missing;
 
   for (int m=nd-1; m>0; m--) {
     inside = eroded_grid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      eroded_grid.FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
       last_eroded_M_ = m;
       break;
     }
@@ -214,9 +209,9 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
   // Find first cell in background_grid that the well hits
   //
   inside = false;
-  firstI = missing;
-  firstJ = missing;
-  firstK = missing;
+  size_t firstI = missing;
+  size_t firstJ = missing;
+  size_t firstK = missing;
 
   for(int m=0; m<nd; m++) {
     inside = background_grid.IsInside(x[m], y[m], z[m]);
@@ -234,9 +229,9 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData            * well,
   // Find last cell in background_grid that the well hits
   //
   inside = false;
-  lastI  = missing;
-  lastJ  = missing;
-  lastK  = missing;
+  size_t lastI  = missing;
+  size_t lastJ  = missing;
+  size_t lastK  = missing;
 
   for (int m=nd-1; m>0; m--) {
     inside = background_grid.IsInside(x[m], y[m], z[m]);
@@ -314,6 +309,7 @@ BlockedLogsForZone::getVerticalTrend(const std::vector<float> & blockedLog,
                                      float                    * trend) const
 {
   if (blockedLog.size() != 0 && trend != NULL) {
+
     std::vector<int> count(nLayers_);
 
     for (int k = 0 ; k < nLayers_ ; k++) {
