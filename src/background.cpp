@@ -383,11 +383,10 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     std::vector<float *> highCutWellTrendBeta(nWells);
     std::vector<float *> highCutWellTrendRho(nWells);
 
-    StormContGrid eroded_zone;
+    NRLib::Volume eroded_zone;
 
     BuildErodedZones(eroded_zone,
                      eroded_surfaces,
-                     nz,
                      simbox,
                      i);
 
@@ -741,14 +740,11 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
 
 //---------------------------------------------------------------------------
 void
-Background::BuildErodedZones(StormContGrid                & eroded_zone,
+Background::BuildErodedZones(NRLib::Volume                & eroded_zone,
                              const std::vector<Surface *> & eroded_surfaces,
-                             const int                    & nz,
                              const Simbox                 * simbox,
                              const int                    & i) const
 {
-  int    nx        = simbox->getnx();
-  int    ny        = simbox->getny();
   double x_min     = simbox->GetXMin();
   double y_min     = simbox->GetYMin();
   double lx        = simbox->GetLX();
@@ -756,9 +752,7 @@ Background::BuildErodedZones(StormContGrid                & eroded_zone,
   double angle     = simbox->getAngle();
 
 
-  NRLib::Volume volume(x_min, y_min, lx, ly, *eroded_surfaces[i], *eroded_surfaces[i+1], angle);
-
-  eroded_zone = StormContGrid(volume, nx, ny, nz);
+  eroded_zone = NRLib::Volume(x_min, y_min, lx, ly, *eroded_surfaces[i], *eroded_surfaces[i+1], angle);
 
 }
 //---------------------------------------------------------------------------
@@ -1182,7 +1176,7 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                               std::vector<float *>              & highCutWellTrend,
                               const std::vector<WellData *>     & wells,
                               StormContGrid                     & background_zone,
-                              StormContGrid                     & eroded_zone,
+                              NRLib::Volume                     & eroded_zone,
                               const std::vector<bool>           & hitZone,
                               const int                         & nz,
                               const std::string                 & name,
@@ -1267,11 +1261,11 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
 void
 Background::checkWellHitsZone(std::vector<bool>             & hitZone,
                               const std::vector<WellData *> & wells,
-                              StormContGrid                 & eroded_zone,
+                              NRLib::Volume                 & eroded_zone,
                               const int                     & nWells) const
 {
   for(int w=0; w<nWells; w++) {
-    if(wells[w]->checkStormgrid(eroded_zone) == 0) {
+    if(wells[w]->checkVolume(eroded_zone) == 0) {
       hitZone[w] = true;
     }
     else
