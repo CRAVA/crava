@@ -134,6 +134,7 @@ private:
                                  std::vector<float *>              & wellTrend,
                                  std::vector<float *>              & highCutWellTrend,
                                  const std::vector<WellData *>     & wells,
+                                 StormContGrid                     & background_zone,
                                  StormContGrid                     & eroded_zone,
                                  const std::vector<bool>           & hitZone,
                                  const int                         & nz,
