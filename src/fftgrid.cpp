@@ -90,17 +90,30 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
-  istransformed_  = false;
+  istransformed_  = fftGrid->getIsTransformed();
 
-  createRealGrid(add_);
-  for(int k=0;k<nzp_;k++) {
-    for(int j=0;j<nyp_;j++) {
-      for(int i=0;i<rnxp_;i++) {
-        float value = fftGrid->getNextReal();
-        if (expTrans)
-          setNextReal(exp(value));
-        else
-          setNextReal(value);
+  if(istransformed_ == false) {
+    createRealGrid(add_);
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<rnxp_;i++) {
+          float value = fftGrid->getNextReal();
+          if (expTrans)
+            setNextReal(exp(value));
+          else
+            setNextReal(value);
+        }
+      }
+    }
+  }
+  else {
+    createComplexGrid();
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<cnxp_;i++) {
+          fftw_complex value = fftGrid->getNextComplex();
+          setNextComplex(value);
+        }
       }
     }
   }
@@ -1579,6 +1592,14 @@ FFTGrid::getFirstComplexValue()
   return( value );
 }
 
+float
+FFTGrid::getFirstRealValue()
+{
+  assert(istransformed_==false);
+  float value = static_cast<float>(rvalue_[0]);
+  return( value );
+}
+
 int
 FFTGrid::setNextComplex(fftw_complex value)
 {
@@ -1876,6 +1897,18 @@ FFTGrid::add(FFTGrid* fftGrid)
   }
 }
 void
+FFTGrid::addScalar(float scalar)
+{
+  // Only addition of scalar in real domain
+  assert(istransformed_==false);
+  int i;
+  for(i=0;i < rsize_;i++)
+  {
+    rvalue_[i] += scalar;
+  }
+}
+
+void
 FFTGrid::subtract(FFTGrid* fftGrid)
 {
   assert(nxp_==fftGrid->getNxp());
@@ -1942,6 +1975,16 @@ FFTGrid::multiply(FFTGrid* fftGrid)
     {
       rvalue_[i] *= fftGrid->rvalue_[i];
     }
+  }
+}
+
+void
+FFTGrid::conjugate()
+{
+  assert(istransformed_==true);
+  for(int i=0;i<csize_;i++)
+  {
+    cvalue_[i].im = -cvalue_[i].im;
   }
 }
 
