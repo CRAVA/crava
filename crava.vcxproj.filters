@@ -983,13 +983,14 @@
     </ClCompile>
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
-    <ClCompile Include="src\modelgravitystatic.cpp">
+    </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\modelgravitydynamic.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\gravimetricinversion.cpp">
+    <ClCompile Include="src\modelgravitystatic.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1654,18 +1655,13 @@
     <ClInclude Include="libs\nrlib\random\dSFMT.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
-    <ClInclude Include="libs\nrlib\random\dSFMT-common.h">
-      <Filter>Header Files\libs\nrlib</Filter>
-    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\modelgravitydynamic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\modelgravitystatic.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\gravimetricinversion.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
