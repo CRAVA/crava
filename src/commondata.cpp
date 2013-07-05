@@ -26,6 +26,7 @@
 #include "nrlib/segy/segytrace.hpp"
 
 #include "lib/timekit.hpp"
+#include "src/timings.h"
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files)
@@ -72,8 +73,14 @@ CommonData::CommonData(ModelSettings  * model_settings,
     }
   }
 
-  SetupReflectionMatrixAndTempWavelet(model_settings,
-                                      input_files);
+  if(SetupReflectionMatrixAndTempWavelet(model_settings,
+                                      input_files) == true) {
+    setup_reflection_matrix_ = true; //Set inside function?
+    temporary_wavelet_ = true;
+  }
+
+  if(WaveletHandling(model_settings, input_files) == true)
+    wavelet_handling_ = true;
 
   //if(readWellData(model_settings,
   //                input_files) == true)
@@ -1190,10 +1197,9 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
 
-
   //1. Check if optimize welllocation //Point f) Comes from xml-model file
     //2. Check if read seismic ok | read_seismic_ok_
-  read_seismic_ = true;
+  //read_seismic_ = true;
   if(model_settings->getOptimizeWellLocation() == false && read_seismic_ == true) {
 
     //3. Use Ricker - wavelet.
@@ -1289,6 +1295,8 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
 
     if(error == 0)
       temporary_wavelet_ = true;
+    else
+      return false;
   }
 
   return true;
@@ -1423,9 +1431,12 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
   if(err_text != "")
     LogKit::LogFormatted(LogKit::Error, "Error when finding wavelet estimation interval: " + err_text + "\n");
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   for(int i = 0; i < n_timeLapses; i++) {
 
-    Wavelet ** wavelet;               ///< Wavelet for angle MOVE TO CLASS VARIABLE
+    Wavelet ** wavelet;               ///< Wavelet for angle
 
     int n_angles = model_settings->getNumberOfAngles(i);
 
@@ -1436,11 +1447,11 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     //Fra ModelAvoDynamic::processSeismic:
     std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
 
-    //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok.
+    //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
     bool estimate_failed = false;
     for(size_t j = 0; j < estimate_wavelets.size(); j++) {
       if(estimate_wavelets[j])
-        if(read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false) {
+        if(read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
           estimate_failed = true;
           return false; //Utskrift av feilmelding?
         }
@@ -1448,24 +1459,20 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    double wall=0.0, cpu=0.0;
-    TimeKit::getTime(wall,cpu);
-
     wavelet = new Wavelet * [n_angles];
     std::vector<Grid2D *> local_noise_scale;       ///< Scale factors for local noise
-    std::vector<Grid2D *> local_noise_shift;       ///< Scale factors for local shift
-    std::vector<Grid2D *> local_noise_estimate;    ///< Scale factors for local noise
+    std::vector<Grid2D *> local_shift;
+    std::vector<Grid2D *> local_scale;
     local_noise_scale.resize(n_angles);
-    local_noise_shift.resize(n_angles);
-    local_noise_estimate.resize(n_angles);
+    local_shift.resize(n_angles);
+    local_scale.resize(n_angles);
     bool has_3D_wavelet = false;
-    //bool estimation_used = false;
 
     for(int j=0; j <n_angles; j++) {
 
       local_noise_scale[j] = NULL;
-      local_noise_shift[j] = NULL;
-      local_noise_estimate[j] = NULL;
+      local_shift[j] = NULL;
+      local_scale[j] = NULL;
 
       if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
         has_3D_wavelet = true;
@@ -1483,7 +1490,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     NRLib::Grid2D<float>              structure_depth_grad_x;  ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
     NRLib::Grid2D<float>              structure_depth_grad_y;  ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
-    //std::string err_text("");
     bool failed = false;
 
     if (has_3D_wavelet) {
@@ -1499,7 +1505,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
          if(!failed)
         {
           //Correlation direction from ModelGeneral::makeTimeSimboxes
-          Surface * correlation_direction;
+          Surface * correlation_direction = NULL;
           try {
             Surface tmpSurf(input_files->getCorrDirFile());
             if(estimation_simbox_.CheckSurface(tmpSurf) == true)
@@ -1536,14 +1542,14 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       float distance, sigma_m;
       model_settings->getTimeGradientSettings(distance, sigma_m, i);
       std::vector<std::vector<double> > SigmaXY;
-      for (unsigned int w=0; w<n_wells; w++) {
-        BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
-        if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))){ // then we allready have the
+
+      for(size_t w = 0; w < n_wells; w++) {
+        if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))){
           double v0=model_settings->getAverageVelocity();
-          bl->setSeismicGradient(v0,structure_depth_grad_x,structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
+          blocked_logs_common_[w]->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
         }else{
-          bl->setTimeGradientSettings(distance, sigma_m);
-          bl->findSeismicGradient(seisCube, &estimation_simbox_, n_angles,t_grad_x[w], t_grad_y[w],SigmaXY);
+          blocked_logs_common_[w]->SetTimeGradientSettings(distance, sigma_m);
+          blocked_logs_common_[w]->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
         }
       }
     }
@@ -1562,10 +1568,10 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     }
 
     // check if local noise is set for some angles.
-    bool localNoiseSet = false;
-    //std::vector<float> angles = model_settings->getAngle(i);
+    bool local_noise_set = false;
 
     for (int j = 0; j < n_angles; j++) {
+      seismic_data_[i][j];
 
       float angle = float(angles[i]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
@@ -1574,16 +1580,14 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
         error += Process1DWavelet(model_settings,
                                   input_files,
-                                  //estimation_simbox_,
-                                  //seisCube,
-                                  wells,
+                                  &seismic_data_[i][j],
+                                  blocked_logs_common_,
                                   wavelet_estim_interval,
-                                  //reflectionMatrix_[j],
                                   err_text,
                                   wavelet[j],
                                   local_noise_scale[j],
-                                  local_noise_shift[j],
-                                  local_noise_estimate[j],
+                                  local_shift[j],
+                                  local_scale[j],
                                   i, //Timelapse
                                   j, //Angle
                                   angles[j],
@@ -1594,11 +1598,9 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       else
         error += Process3DWavelet(model_settings,
                                   input_files,
-                                  //estimation_simbox_,
-                                  //seisCube,
-                                  wells,
+                                  &seismic_data_[i][j],
+                                  blocked_logs_common_,
                                   wavelet_estim_interval,
-                                  //reflectionMatrix_[j],
                                   err_text,
                                   wavelet[j],
                                   i, //Timelapse
@@ -1611,39 +1613,31 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   t_grad_y,
                                   estimate_wavelets[j]);
 
-      //if(estimateWavelets[i]) {
-      //  if(read_seismic_ == true && read_wells_ == true && setup_reflection_matrix_ == true) {
-      //    //Block wells as in optimize well-location
-
-      //    //use ProcessWavelets (modelavodynamic.cpp), but with blocked logs instead of well-object.
-
-      //    //Store Noise-estimate (globally and localy), local shift and scale for each wavelet.
-
-      //  }
-
-      //}
-      //else { //From file or ricker
-
-      //  if(useRickerWavelet[i]) {
-
-      //  }
-      //  else { //From file
-
-      //  }
-
-      //  if(input_files->getWaveletFile(i, j) != "")
-      //    ;
-
-      //}
-
-
-
+      if(local_noise_scale[j] != NULL)
+        local_noise_set = true;
+      //if(modelSettings->getForwardModeling()==false) // else, no seismic data
+      //  seisCube[i]->endAccess();
 
     } //angle
 
-    wavelets_[i] = wavelet;
+    if(local_noise_set == true) {
+      for(int i=0;i<n_angles;i++)
+        if(local_noise_scale[i]==NULL)
+          local_noise_scale[i] = new Grid2D(estimation_simbox_.getnx(),
+                                            estimation_simbox_.getny(),
+                                            1.0);
+    }
 
-  }
+    wavelets_[i] = wavelet;
+    local_noise_scale_[i] = local_noise_scale;
+    local_shift_[i] = local_shift;
+    local_scale_[i] = local_scale;
+    global_noise_estimate_[i] = sn_ratio;
+    sn_ratio_[i] = sn_ratio;
+  }  //timelapse
+
+  Timings::setTimeWavelets(wall,cpu);
+
   return true;
 
 }
@@ -1651,16 +1645,14 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 int
 CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                              const InputFiles             * input_files,
-                             //const Simbox                 * timeSimbox,
-                             //const FFTGrid        * const * seisCube,
-                             std::vector<WellData *>        wells,
+                             const SeismicStorage           * seismic_data,
+                             std::vector<BlockedLogsCommon *> blocked_logs,
                              const std::vector<Surface *> & wavelet_estim_interval,
-                             //const float                  * reflectionMatrix,
                              std::string                  & err_text,
                              Wavelet                     *& wavelet,
-                             Grid2D                      *& local_noise_scale,
-                             Grid2D                      *& local_noise_shift,
-                             Grid2D                      *& local_noise_estimate,
+                             Grid2D                      *& local_noise_scale, //local noise estimates?
+                             Grid2D                      *& local_shift,
+                             Grid2D                      *& local_scale,
                              unsigned int                   i_timelapse,
                              unsigned int                   j_angle,
                              const float                    angle,
@@ -1669,19 +1661,20 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                              bool                           use_ricker_wavelet,
                              bool                           use_local_noise)
 {
+
   int error = 0;
   //Grid2D * shiftGrid(NULL);
   //Grid2D * gainGrid(NULL);
   if(model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
       Surface help(input_files->getScaleFile(i_timelapse,j_angle));
       //gainGrid = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
-      local_noise_estimate = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
-      ResampleSurfaceToGrid2D(&help, local_noise_estimate);
+      local_scale = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
+      ResampleSurfaceToGrid2D(&help, local_scale);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse,j_angle));
-    local_noise_shift = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
-    ResampleSurfaceToGrid2D(&helpShift, local_noise_shift);
+    local_shift = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
+    ResampleSurfaceToGrid2D(&helpShift, local_shift);
   }
   if (use_local_noise && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
     Surface helpNoise(input_files->getLocalNoiseFile(i_timelapse,j_angle));
@@ -1691,8 +1684,8 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
 
   if (estimate_wavelet)
     wavelet = new Wavelet1D(&estimation_simbox_,
-                            seisCube[j_angle],
-                            wells,
+                            seismic_data,
+                            blocked_logs,
                             wavelet_estim_interval,
                             model_settings,
                             *reflection_matrix_[i_timelapse],
@@ -1724,8 +1717,9 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                                 err_text);
     }
       // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seisCube[i_timelapse], wells);
+      if(seismic_data->GetFileName() != "") {
+      //if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
+        float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, blocked_logs);
         const float limHigh  = 3.0f;
         const float limLow   = 0.33f;
 
@@ -1756,17 +1750,17 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
 
     if (model_settings->getForwardModeling() == false && model_settings->getNumberOfWells() > 0) {
       float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
-                                                                   seisCube[j_angle],
-                                                                   wells,
+                                                                   seismic_data,
+                                                                   blocked_logs,
                                                                    model_settings,
                                                                    err_text,
                                                                    error,
                                                                    j_angle,
                                                                    local_noise_scale,
                                                                    //shiftGrid,
-                                                                   local_noise_shift,
+                                                                   local_shift,
                                                                    //gainGrid,
-                                                                   local_noise_estimate,
+                                                                   local_scale,
                                                                    sn_ratio,
                                                                    model_settings->getWaveletScale(i_timelapse,j_angle),
                                                                    model_settings->getEstimateSNRatio(i_timelapse,j_angle),
@@ -1775,7 +1769,6 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                                                                    model_settings->getEstimateLocalShift(i_timelapse,j_angle),
                                                                    model_settings->getEstimateLocalScale(i_timelapse,j_angle),
                                                                    estimate_wavelet);
-
       if(model_settings->getEstimateSNRatio(i_timelapse,j_angle))
         sn_ratio = SNRatio_tmp;
         //SNRatio_[i_timelapse] = SNRatio;
@@ -1815,8 +1808,6 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                                      IO::PrefixLocalNoise(),
                                      1.0,  // Scale map with this factor before writing to disk
                                      model_settings,
-                                     //j_angle,
-                                     //estimation_simbox_,
                                      local_noise_scale,
                                      angle);
 
@@ -1825,12 +1816,9 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                                      IO::PrefixLocalWaveletShift(),
                                      1.0,
                                      model_settings,
-                                     //j_angle,
-                                     //estimation_simbox_,
-                                     //shiftGrid,
-                                     local_noise_shift,
+                                     local_shift,
                                      angle);
-        wavelet->setShiftGrid(local_noise_shift);
+        wavelet->setShiftGrid(local_shift);
       }
 
       if (useLocalGain) {
@@ -1838,12 +1826,9 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
                                      IO::PrefixLocalWaveletGain(),
                                      1.0,
                                      model_settings,
-                                     //j_angle,
-                                     //estimation_simbox_,
-                                     //gainGrid,
-                                     local_noise_estimate,
+                                     local_scale,
                                      angle);
-        wavelet->setGainGrid(local_noise_estimate);
+        wavelet->setGainGrid(local_scale);
       }
     }
   }
@@ -1853,11 +1838,9 @@ CommonData::Process1DWavelet(const ModelSettings          * model_settings,
 int
 CommonData::Process3DWavelet(const ModelSettings                     * model_settings,
                              const InputFiles                        * input_files,
-                             //const Simbox                            * timeSimbox,
-                             //const FFTGrid                   * const * seisCube,
-                             const std::vector<WellData *>           & wells,
+                             const SeismicStorage                    * seismic_data,
+                             std::vector<BlockedLogsCommon *>          blocked_logs,
                              const std::vector<Surface *>            & wavelet_estim_interval,
-                             //const float                             * reflectionMatrix,
                              std::string                             & err_text,
                              Wavelet                                *& wavelet,
                              unsigned int                              i_timelapse,
@@ -1878,10 +1861,10 @@ CommonData::Process3DWavelet(const ModelSettings                     * model_set
                             ref_time_grad_y,
                             t_grad_x,
                             t_grad_y,
-                            seisCube[j_angle],
+                            seismic_data,
                             model_settings,
-                            wells,
-                            estimation_simbox_,
+                            blocked_logs,
+                            &estimation_simbox_,
                             *reflection_matrix_[i_timelapse],
                             j_angle,
                             error,
@@ -1923,8 +1906,8 @@ CommonData::Process3DWavelet(const ModelSettings                     * model_set
 
     if (localEst && model_settings->getForwardModeling() == false) {
       float sn_ratio_tmp = wavelet->calculateSNRatio(&estimation_simbox_,
-                                                     seisCube[j_angle],
-                                                     wells,
+                                                     seismic_data,
+                                                     blocked_logs,
                                                      model_settings,
                                                      err_text,
                                                      error,

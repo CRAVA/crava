@@ -11,6 +11,7 @@
 //#include "src/commondata.h"
 #include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
+#include "src/simbox.h"
 
 class SeismicStorage
 {
@@ -44,6 +45,17 @@ public:
   void            GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
                                      std::vector<float>               & trace_length,
                                      int                                n);
+
+  std::vector<float> GetTraceData(int index) const;
+
+  std::vector<float> GetRealTrace(const Simbox * estimation_simbox,
+                                  int i,
+                                  int j) const;
+
+  float GetRealTraceValue(const Simbox * estimation_simbox,
+                          int i,
+                          int j,
+                          int k) const;
 
   //SET FUNCTIONS
   void            SetFileName(std::string file_name)      { file_name_ = file_name ; }

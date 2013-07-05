@@ -40,9 +40,11 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                      const NRLib::Grid2D<float>                 & refTimeGradY,
                      const std::vector<std::vector<double> >    & tGradX,
                      const std::vector<std::vector<double> >    & tGradY,
-                     const FFTGrid                              * seisCube,
+                     const SeismicStorage                       * seismic_data,
+                     //const FFTGrid                              * seisCube,
                      const ModelSettings                        * modelSettings,
-                     const std::vector<WellData *>              & wells,
+                     const std::vector<BlockedLogsCommon *>     & blocked_logs,
+                     //const std::vector<WellData *>              & wells,
                      const Simbox                               * simBox,
                      const float                                * reflCoef,
                      int                                          angle_index,
@@ -53,7 +55,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
 
-  theta_      = seisCube->getTheta();;
+  //theta_      = seisCube->getTheta();;
+  theta_      = seismic_data->GetAngle();
   norm_       = RMISSING;
   cz_         = 0;
   inFFTorder_ = true;
@@ -67,7 +70,11 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   float dx    = static_cast<float>(simBox->getdx());
   float dy    = static_cast<float>(simBox->getdy());
   dz_         = static_cast<float>(simBox->getdz());
-  nzp_        = seisCube->getNzp();
+
+  //nzp_        = seisCube->getNzp();
+  std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
+  nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 
@@ -81,19 +88,23 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   std::vector<float>                   wellWeight(nWells, 0.0);
   std::vector<float>                   dzWell(nWells, 0.0);
   for (unsigned int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", wells[w]->getWellname().c_str());
+    //if (wells[w]->getUseForWaveletEstimation()) {
+    if(modelSettings->getIndicatorWavelet(w) > 0) {
+      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_logs[w]->GetWellName().c_str());
 
-      BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
-      const std::vector<int> iPos = bl->getIposVector();
-      const std::vector<int> jPos = bl->getJposVector();
+      //BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
+      const std::vector<int> iPos = blocked_logs[w]->GetIposVector();
+      //const std::vector<int> iPos = bl->getIposVector();
+      const std::vector<int> jPos = blocked_logs[w]->GetJposVector();
+      //const std::vector<int> jPos = bl->getJposVector();
 
-      std::vector<float> az(nz_);
-      std::vector<float> bz(nz_);
-      std::vector<float> at0(nz_);
-      std::vector<float> bt0(nz_);
-      unsigned int nBlocks = bl->getNumberOfBlocks();
-      calculateGradients(bl,
+      std::vector<double> az(nz_);
+      std::vector<double> bz(nz_);
+      std::vector<double> at0(nz_);
+      std::vector<double> bt0(nz_);
+      unsigned int nBlocks = blocked_logs[w]->GetNumberOfBlocks();
+
+      calculateGradients(blocked_logs[w],
                          iPos,
                          jPos,
                          refTimeGradX,
@@ -108,25 +119,26 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
       std::vector<bool> hasWellData(nz_);
       findLayersWithData(estimInterval,
-                         bl,
-                         seisCube,
+                         blocked_logs[w],
+                         seismic_data,
+                         simBox,
                          az,
                          bz,
                          hasWellData);
 
       int start, length;
-      bl->findContiniousPartOfData(hasWellData,
-                                   nz_,
-                                   start,
-                                   length);
+      blocked_logs[w]->FindContiniousPartOfData(hasWellData,
+                                                nz_,
+                                                start,
+                                                length);
 
       dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0]) * dz_);
       if (length > nWl) {
-        std::string wellname(wells[w]->getWellname());
+        std::string wellname(blocked_logs[w]->GetWellName());
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         std::vector<float> Halpha;
-        std::vector<fftw_real> cppAdj = adjustCpp(bl,
+        std::vector<fftw_real> cppAdj = adjustCpp(blocked_logs[w],
                                                   az,
                                                   bz,
                                                   Halpha,
@@ -137,21 +149,32 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
         if( ModelSettings::getDebugLevel() > 0 ) {
           std::string fileName = "xgrad_depth_" + wellname + "_" + angle;
-          printVecToFile(fileName, &az[0], length);
+
+          //std::vector<float> az_tmp(az.size());
+          //for(size_t i = 0; i < az_tmp.size(); i++)
+          //  az_tmp[i] = static_cast<float>(az[i]);
+          //printVecToFile(fileName, &az_tmp[0], length);
+
+          //printVecToFile(fileName, &az[0], length);
+          printVecDoubleToFile(fileName, &az[0], length);
+
+
           fileName = "ygrad_depth_" + wellname + "_" + angle;
-          printVecToFile(fileName, &bz[0], length);
+          //printVecToFile(fileName, &bz[0], length);
+          printVecDoubleToFile(fileName, &bz[0], length);
           fileName = "cpp_adjust_" + wellname + "_" + angle;
           printVecToFile(fileName, &cppAdj[0], length);
         }
 
-        std::vector<float> zLog(nBlocks);
+        std::vector<double> zLog(nBlocks);
         for (unsigned int b=0; b<nBlocks; b++) {
-          float zTop     = static_cast<float> (simBox->getTop(iPos[b], jPos[b]));
+          float zTop     = static_cast<double> (simBox->getTop(iPos[b], jPos[b]));
 //          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
-          zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
+          zLog[b]         = static_cast<double> (zTop + b * dzWell[w]);
         }
-        std::vector<float> zPosWell(nz_);
-        bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
+        std::vector<double> zPosWell(nz_);
+        blocked_logs[w]->GetVerticalTrend(zLog, &zPosWell[0]);
+        //bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
 
         int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx);
         int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy);
@@ -161,10 +184,12 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         int nPoints = 0;
         for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
           for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
-            std::vector<float> seisLog(nBlocks);
-            bl->getBlockedGrid(&seisCube[0], &seisLog[0], xTr, yTr);
-            std::vector<float> seisData(nz_);
-            bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+            std::vector<double> seisLog(nBlocks);
+            blocked_logs[w]->GetBlockedGrid(simBox, seismic_data, &seisLog[0], xTr, yTr);
+            //bl->getBlockedGrid(&seisCube[0], &seisLog[0], xTr, yTr);
+            std::vector<double> seisData(nz_);
+            blocked_logs[w]->GetVerticalTrend(seisLog, &seisData[0]);
+            //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
             for (unsigned int b=0; b<nBlocks; b++) {
               //int xIndex      = iPos[b] + xTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
               //int yIndex      = jPos[b] + yTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
@@ -172,8 +197,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 //              zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(xIndex, yIndex) * dz_);
               zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
             }
-            std::vector<float> zPosTrace(nz_);
-            bl->getVerticalTrend(&zLog[0], &zPosTrace[0]);
+            std::vector<double> zPosTrace(nz_);
+            blocked_logs[w]->GetVerticalTrend(zLog, &zPosTrace[0]);
+            //bl->getVerticalTrend(&zLog[0], &zPosTrace[0]);
             for (int t=start; t < start+length; t++) {
               if (seisData[t] != RMISSING) {
                 dVec.push_back(seisData[t]);
@@ -245,7 +271,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                                             dVec);
       } //if (length > nWl)
       else {
-        LogKit::LogFormatted(LogKit::Medium,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
+        LogKit::LogFormatted(LogKit::Medium,"     No enough data for 3D wavelet estimation in well %s\n", blocked_logs[w]->GetWellName().c_str());
       }
     } // if(wells->getUseForEstimation)
   } // for (w=0...nWells)
@@ -265,12 +291,13 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
   for(unsigned int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation() &&
+    //if (wells[w]->getUseForWaveletEstimation() &&
+    if(modelSettings->getIndicatorWavelet(w) > 0 &&
        ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
     {
       for(int i=0; i<nzp_; i++)
         rAmp_[i] = wellWavelets[w][i];
-      std::string wellname(wells[w]->getWellname());
+      std::string wellname(blocked_logs[w]->GetWellName());
       NRLib::Substitute(wellname,"/","_");
       NRLib::Substitute(wellname," ","_");
       std::string fileName = IO::PrefixWellWavelet() + wellname + "_";
@@ -463,8 +490,10 @@ Wavelet3D::createWavelet1DForErrorNorm(void)
 
 float
 Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
-                            const FFTGrid                            * seisCube,
-                            const std::vector<WellData *>            & wells,
+                            const SeismicStorage                     * seismic_data,
+                            const std::vector<BlockedLogsCommon *>     blocked_logs,
+                            //const FFTGrid                            * seisCube,
+                            //const std::vector<WellData *>            & wells,
                             const ModelSettings                      * modelSettings,
                             std::string                              & errText,
                             int                                      & error,
@@ -492,19 +521,22 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
   std::vector<int>   nActiveData(nWells, 0);
 
   for (unsigned int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", wells[w]->getWellname().c_str());
+    //if (wells[w]->getUseForWaveletEstimation()) {
+    if(modelSettings->getIndicatorWavelet(w) > 0) {
+      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_logs[w]->GetWellName().c_str());
 
-      BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
-      const std::vector<int> iPos = bl->getIposVector();
-      const std::vector<int> jPos = bl->getJposVector();
+      //BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
+      const std::vector<int> iPos = blocked_logs[w]->GetIposVector();
+      //const std::vector<int> iPos = bl->getIposVector();
+      const std::vector<int> jPos = blocked_logs[w]->GetJposVector();
+      //const std::vector<int> jPos = bl->getJposVector();
 
-      std::vector<float> az(nz_);
-      std::vector<float> bz(nz_);
-      std::vector<float> at0(nz_);
-      std::vector<float> bt0(nz_);
-      unsigned int nBlocks = bl->getNumberOfBlocks();
-      calculateGradients(bl,
+      std::vector<double> az(nz_);
+      std::vector<double> bz(nz_);
+      std::vector<double> at0(nz_);
+      std::vector<double> bt0(nz_);
+      unsigned int nBlocks = blocked_logs[w]->GetNumberOfBlocks();
+      calculateGradients(blocked_logs[w],
                          iPos,
                          jPos,
                          refTimeGradX,
@@ -518,34 +550,45 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
                          bt0);
 
       std::vector<bool> hasWellData(nz_);
-      std::vector<float> seisLog(nBlocks);
-      bl->getBlockedGrid(seisCube, &seisLog[0]);
-      std::vector<float> seisData(nz_);
-      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+      std::vector<double> seisLog(nBlocks);
+      blocked_logs[w]->GetBlockedGrid(simbox, seismic_data, &seisLog[0]);
+      //bl->getBlockedGrid(seisCube, &seisLog[0]);
+      std::vector<double> seisData(nz_);
+      blocked_logs[w]->GetVerticalTrend(seisLog, &seisData[0]);
+      //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
 
-      std::vector<float> alpha(nz_);
-      std::vector<float> beta(nz_);
-      std::vector<float> rho(nz_);
-      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
-      bl->getVerticalTrend(bl->getBeta(), &beta[0]);
-      bl->getVerticalTrend(bl->getRho(), &rho[0]);
+      std::vector<double> alpha(nz_);
+      std::vector<double> beta(nz_);
+      std::vector<double> rho(nz_);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVp(), &alpha[0]);
+      //bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVs(), &beta[0]);
+      //bl->getVerticalTrend(bl->getBeta(), &beta[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetRho(), &rho[0]);
+      //bl->getVerticalTrend(bl->getRho(), &rho[0]);
 
       for (int k=0; k<nz_; k++)
         hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
 
       int start, length;
-      bl->findContiniousPartOfData(hasWellData,
-                                   nz_,
-                                   start,
-                                   length);
+
+      blocked_logs[w]->FindContiniousPartOfData(hasWellData,
+                                                nz_,
+                                                start,
+                                                length);
+
+      //bl->findContiniousPartOfData(hasWellData,
+      //                             nz_,
+      //                             start,
+      //                             length);
 
       dzWell[w]          = static_cast<float>(simbox->getRelThick(iPos[0],jPos[0]) * dz_);
       if (length > nWl) {
-        std::string wellname(wells[w]->getWellname());
+        std::string wellname(blocked_logs[w]->GetWellName());
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         std::vector<float> Halpha;
-        std::vector<fftw_real> cppAdj = adjustCpp(bl,
+        std::vector<fftw_real> cppAdj = adjustCpp(blocked_logs[w],
                                                   az,
                                                   bz,
                                                   Halpha,
@@ -554,14 +597,15 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
                                                   wellname,
                                                   angle);
 
-        std::vector<float> zLog(nBlocks);
+        std::vector<double> zLog(nBlocks);
         for (unsigned int b=0; b<nBlocks; b++) {
-          float zTop     = static_cast<float> (simbox->getTop(iPos[b], jPos[b]));
+          float zTop     = static_cast<double> (simbox->getTop(iPos[b], jPos[b]));
           //          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
-          zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
+          zLog[b]         = static_cast<double> (zTop + b * dzWell[w]);
         }
-        std::vector<float> zPosWell(nz_);
-        bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
+        std::vector<double> zPosWell(nz_);
+        blocked_logs[w]->GetVerticalTrend(zLog, &zPosWell[0]);
+        //bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
 
         std::vector<std::vector<float> > gMat;
         std::vector<float> dVec;
@@ -686,7 +730,7 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
       }
       else {
         LogKit::LogFormatted(LogKit::Low, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
-          wells[w]->getWellname().c_str(), length*dz_, waveletLength_);
+          blocked_logs[w]->GetWellName().c_str(), length*dz_, waveletLength_);
       }
     }
   }
@@ -705,10 +749,10 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
     if(nActiveData[w]>0) {
       float SNWell = dataVarWell[w]/errVarWell[w];
       LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f \n",
-            wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),SNWell);
+            blocked_logs[w]->GetWellName().c_str(),shiftWell[w],sqrt(dataVarWell[w]),SNWell);
     }
     else
-      LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
+      LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             - \n",blocked_logs[w]->GetWellName().c_str());
   }
 
   if(estimateSNRatio)
@@ -753,32 +797,43 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
 
 void
 Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
-                              BlockedLogs                  * bl,
-                              const FFTGrid                * seisCube,
-                              const std::vector<float>     & az,
-                              const std::vector<float>     & bz,
+                              BlockedLogsCommon            * blocked_log,
+                              //BlockedLogs                  * bl,
+                              const SeismicStorage         * seismic_data,
+                              //const FFTGrid                * seisCube,
+                              const Simbox                 * simBox,
+                              const std::vector<double>    & az,
+                              const std::vector<double>    & bz,
                               std::vector<bool>            & hasWellData) const
 {
-  std::vector<float> seisLog(bl->getNumberOfBlocks());
-  bl->getBlockedGrid(seisCube, &seisLog[0]);
-  std::vector<float> seisData(nz_);
-  bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+  std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
+  blocked_log->GetBlockedGrid(simBox, seismic_data, &seisLog[0]);
+  //bl->getBlockedGrid(seisCube, &seisLog[0]);
+  std::vector<double> seisData(nz_);
+  blocked_log->GetVerticalTrend(seisLog, &seisData[0]);
+  //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
 
-  std::vector<float> alpha(nz_);
-  std::vector<float> beta(nz_);
-  std::vector<float> rho(nz_);
-  bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
-  bl->getVerticalTrend(bl->getBeta(), &beta[0]);
-  bl->getVerticalTrend(bl->getRho(), &rho[0]);
+  std::vector<double> alpha(nz_);
+  std::vector<double> beta(nz_);
+  std::vector<double> rho(nz_);
+  blocked_log->GetVerticalTrend(blocked_log->GetVp(), &alpha[0]);
+  //bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
+  blocked_log->GetVerticalTrend(blocked_log->GetVs(), &beta[0]);
+  //bl->getVerticalTrend(bl->getBeta(), &beta[0]);
+  blocked_log->GetVerticalTrend(blocked_log->GetRho(), &rho[0]);
+  //bl->getVerticalTrend(bl->getRho(), &rho[0]);
 
   for (int k=0; k<nz_; k++)
     hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
 
   //Check that data are within wavelet estimation interval
   if (estimInterval.size() > 0) {
-    const std::vector<double> xPos = bl->getXposVector();
-    const std::vector<double> yPos = bl->getYposVector();
-    const std::vector<double> zPos = bl->getZposVector();
+    const std::vector<double> xPos = blocked_log->GetXpos();
+    //const std::vector<double> xPos = bl->getXposVector();
+    const std::vector<double> yPos = blocked_log->GetYpos();
+    //const std::vector<double> yPos = bl->getYposVector();
+    const std::vector<double> zPos = blocked_log->GetZpos();
+    //const std::vector<double> zPos = bl->getZposVector();
     for (int k=0; k<nz_; k++) {
       const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
       const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
@@ -854,17 +909,18 @@ Wavelet3D::findWLvalue(float omega) const
 }
 
 std::vector<fftw_real>
-Wavelet3D::adjustCpp(BlockedLogs              * bl,
-                     const std::vector<float> & az,
-                     const std::vector<float> & bz,
-                     std::vector<float>       & Halpha,
-                     int                        start,
-                     int                        length,
-                     const std::string        & wellname,
-                     const std::string        & angle) const
+Wavelet3D::adjustCpp(BlockedLogsCommon         * blocked_log,
+                     const std::vector<double> & az,
+                     const std::vector<double> & bz,
+                     std::vector<float>        & Halpha,
+                     int                         start,
+                     int                         length,
+                     const std::string         & wellname,
+                     const std::string         & angle) const
 {
   std::vector<fftw_real> cpp(rnzp_);
-  bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
+  blocked_log->FillInCpp(coeff_, start, length, &cpp[0], nzp_);
+  //bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
 
   std::vector<fftw_real> cppAdj(length, 0.0);
   std::vector<float>     alpha1_vec(length, 0.0);
@@ -904,7 +960,7 @@ Wavelet3D::adjustCpp(BlockedLogs              * bl,
 
 
 void
-Wavelet3D::calculateGradients(BlockedLogs                * bl,
+Wavelet3D::calculateGradients(BlockedLogsCommon          * blocked_log,
                               const std::vector<int>     & iPos,
                               const std::vector<int>     & jPos,
                               const NRLib::Grid2D<float> & refTimeGradX,
@@ -912,16 +968,16 @@ Wavelet3D::calculateGradients(BlockedLogs                * bl,
                               const std::vector<double>  & tGradX,
                               const std::vector<double>  & tGradY,
                               float                        v0,
-                              std::vector<float>         & az,
-                              std::vector<float>         & bz,
-                              std::vector<float>         & at0,
-                              std::vector<float>         & bt0) const
+                              std::vector<double>        & az,
+                              std::vector<double>        & bz,
+                              std::vector<double>        & at0,
+                              std::vector<double>        & bt0) const
 {
-  unsigned int nBlocks = bl->getNumberOfBlocks();
-  std::vector<float> zGradX(nBlocks);
-  std::vector<float> zGradY(nBlocks);
-  std::vector<float> t0GradX(nBlocks);
-  std::vector<float> t0GradY(nBlocks);
+  unsigned int nBlocks = blocked_log->GetNumberOfBlocks();
+  std::vector<double> zGradX(nBlocks);
+  std::vector<double> zGradY(nBlocks);
+  std::vector<double> t0GradX(nBlocks);
+  std::vector<double> t0GradY(nBlocks);
   for (unsigned int b = 0; b<nBlocks; b++) {
     t0GradX[b]    = refTimeGradX(iPos[b], jPos[b]);
     zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[b]) - t0GradX[b]); //0.001f is due to ms/s conversion
@@ -929,10 +985,14 @@ Wavelet3D::calculateGradients(BlockedLogs                * bl,
     zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[b]) - t0GradY[b]);
   }
 
-  bl->getVerticalTrend(&zGradX[0], &az[0]);
-  bl->getVerticalTrend(&zGradY[0], &bz[0]);
-  bl->getVerticalTrend(&t0GradX[0], &at0[0]);
-  bl->getVerticalTrend(&t0GradY[0], &bt0[0]);
+  //bl->getVerticalTrend(&zGradX[0], &az[0]);
+  blocked_log->GetVerticalTrend(zGradX, &az[0]);
+  //bl->getVerticalTrend(&zGradY[0], &bz[0]);
+  blocked_log->GetVerticalTrend(zGradY, &bz[0]);
+  //bl->getVerticalTrend(&t0GradX[0], &at0[0]);
+  blocked_log->GetVerticalTrend(t0GradX, &at0[0]);
+  //bl->getVerticalTrend(&t0GradY[0], &bt0[0]);
+  blocked_log->GetVerticalTrend(t0GradY, &bt0[0]);
 }
 
 

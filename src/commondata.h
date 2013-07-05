@@ -153,11 +153,9 @@ private:
 
   int Process1DWavelet(const ModelSettings                * modelSettings,
                        const InputFiles             * inputFiles,
-                       //const Simbox                 * timeSimbox,
-                       //const FFTGrid        * const * seisCube,
-                       std::vector<WellData *>        wells,
+                       const SeismicStorage           * seismic_data,
+                       std::vector<BlockedLogsCommon *> blocked_logs_common,
                        const std::vector<Surface *> & waveletEstimInterval,
-                       //const float                  * reflectionMatrix,
                        std::string                  & err_text,
                        Wavelet                     *& wavelet,
                        Grid2D                      *& local_noise_scale,
@@ -173,11 +171,9 @@ private:
 
   int Process3DWavelet(const ModelSettings                     * model_settings,
                        const InputFiles                        * input_files,
-                       //const Simbox                            * timeSimbox,
-                       //const FFTGrid                   * const * seisCube,
-                       const std::vector<WellData *>           & wells,
+                       const SeismicStorage           * seismic_data,
+                       std::vector<BlockedLogsCommon *> blocked_logs_common,
                        const std::vector<Surface *>            & wavelet_estim_interval,
-                       //const float                             * reflectionMatrix,
                        std::string                             & err_text,
                        Wavelet                                *& wavelet,
                        unsigned int                              i_timelapse,
@@ -217,7 +213,6 @@ private:
                                     const std::string   & type,
                                     const float           scaleFactor,
                                     const ModelSettings * modelSettings,
-                                    //const unsigned int    i,
                                     const Grid2D        * grid,
                                     const float           angle);
 
@@ -241,6 +236,7 @@ private:
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;
+  bool wavelet_handling_;
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
@@ -248,7 +244,6 @@ private:
   Simbox          estimation_simbox_;
   NRLib::Volume   full_inversion_volume_;
 
-  //std::vector<SeismicStorage> seismic_data_;
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
   std::vector<NRLib::Well>                      wells_;
   std::vector<BlockedLogsCommon *>              blocked_logs_common_;   ///< Blocked wells for estimation
@@ -268,13 +263,12 @@ private:
 
   std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle
 
-
-  //Wavelet                ** wavelet
-
   std::map<int, Wavelet**>   wavelets_;
-
-  //float                  ** reflectionMatrix_;
-
+  std::map<int, std::vector<Grid2D *> > local_noise_scale_;
+  std::map<int, std::vector<Grid2D *> > local_shift_;
+  std::map<int, std::vector<Grid2D *> > local_scale_;
+  std::map<int, std::vector<float> > global_noise_estimate_;
+  std::map<int, std::vector<float> > sn_ratio_;
 
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;
