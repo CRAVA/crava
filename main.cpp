@@ -182,6 +182,7 @@ int main(int argc, char** argv)
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
+    NRLib::Random::Initialize();
 
 
     if (modelFile.getParsingFailed()) {
@@ -238,7 +239,7 @@ int main(int argc, char** argv)
       case TimeLine::AVO :
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
-         failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
         }
         // In case of 3D inversion
         else{

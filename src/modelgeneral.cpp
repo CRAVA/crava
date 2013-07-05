@@ -222,9 +222,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           NRLib::Matrix initialCov(6,6);
           process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
 
-    //      timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
-    //      timeEvolution_.SetInitialMean(initialMean);
-    //      timeEvolution_.SetInitialCov(initialCov);
+          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+          timeEvolution_.SetInitialMean(initialMean);
+          timeEvolution_.SetInitialCov(initialCov);
         }
       }
     }
