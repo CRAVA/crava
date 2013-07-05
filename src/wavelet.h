@@ -11,6 +11,9 @@
 #include "src/definitions.h"
 #include "lib/utils.h"
 
+#include "src/seismicstorage.h"
+#include "src/blockedlogscommon.h"
+
 class Simbox;
 class FFTGrid;
 class WellData;
@@ -118,13 +121,17 @@ public:
 
   virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
                                                const Simbox                * /*simbox*/,
-                                               const FFTGrid               * /*seisCube*/,
-                                               std::vector<WellData *> /*wells*/) {return 1.0f;}
+                                               const SeismicStorage             * /*seismic_data*/,
+                                               const std::vector<BlockedLogsCommon *> &  /*blocked_logs*/) {return 1.0f;}
+                                               //const FFTGrid               * /*seisCube*/,
+                                               //std::vector<WellData *> /*wells*/) {return 1.0f;}
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
-                                                const FFTGrid         * /*seisCube*/,
-                                                std::vector<WellData *> /*wells*/,
+                                                const SeismicStorage  * /*seismic_data*/,
+                                                const std::vector<BlockedLogsCommon *>  /*blocked_logs_common*/,
+                                                //const FFTGrid         * /*seisCube*/,
+                                                //std::vector<WellData *> /*wells*/,
                                                 const ModelSettings   * /*modelSettings*/,
                                                 std::string           & /*errText*/,
                                                 int                   & /*error*/,
@@ -142,8 +149,10 @@ public:
                                                 bool                    /*estimateWavelet*/) {return 1.0f;}
 
   virtual float calculateSNRatio(const Simbox                             * /*simbox*/,
-                                 const FFTGrid                            * /*seisCube*/,
-                                 const std::vector<WellData *>            & /*wells*/,
+                                 const SeismicStorage                     * /*seismic_data*/,
+                                 const std::vector<BlockedLogsCommon *>     /*blocked_logs_common*/,
+                                 //const FFTGrid                            * /*seisCube*/,
+                                 //const std::vector<WellData *>            & /*wells*/,
                                  const ModelSettings                      * /*modelSettings*/,
                                  std::string                              & /*errText*/,
                                  int                                      & /*error*/,
@@ -186,6 +195,10 @@ protected:
   void           printVecToFile(const std::string                       & fileName,
                                 fftw_real                               * vec ,
                                 int                                       nzp) const;
+
+  void           printVecDoubleToFile(const std::string                       & fileName,
+                                      double                                  * vec,
+                                      int                                       nzp) const;
 
 
   fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,

@@ -106,7 +106,8 @@ private:
 
   bool       CheckThatDataCoverGrid(const SegY   * segy,
                                     float         offset,
-                                    const Simbox * timeCutSimbox,
+                                    //const Simbox * timeCutSimbox,
+                                    //const NRLib::Volume   full_inversion_volume,
                                     float         guard_zone);
 
   void ProcessLogsNorsarWell(NRLib::Well    & new_well,
@@ -147,8 +148,77 @@ private:
                                      int                   numberOfAngles,
                                      int                   thisTimeLapse);
 
-  bool waveletHandling(ModelSettings * model_settings,
-                       InputFiles * input_files);
+  bool WaveletHandling(ModelSettings * model_settings,
+                       InputFiles    * input_files);
+
+  int Process1DWavelet(const ModelSettings                * modelSettings,
+                       const InputFiles             * inputFiles,
+                       const SeismicStorage           * seismic_data,
+                       std::vector<BlockedLogsCommon *> blocked_logs_common,
+                       const std::vector<Surface *> & waveletEstimInterval,
+                       std::string                  & err_text,
+                       Wavelet                     *& wavelet,
+                       Grid2D                      *& local_noise_scale,
+                       Grid2D                      *& local_noise_shift,
+                       Grid2D                      *& local_noise_estimate,
+                       unsigned int                   i_timelapse,
+                       unsigned int                   j_angle,
+                       const float                    angle,
+                       float                          sn_ratio,
+                       bool                           estimate_wavlet,
+                       bool                           use_ricker_wavelet,
+                       bool                           use_local_noise);
+
+  int Process3DWavelet(const ModelSettings                     * model_settings,
+                       const InputFiles                        * input_files,
+                       const SeismicStorage           * seismic_data,
+                       std::vector<BlockedLogsCommon *> blocked_logs_common,
+                       const std::vector<Surface *>            & wavelet_estim_interval,
+                       std::string                             & err_text,
+                       Wavelet                                *& wavelet,
+                       unsigned int                              i_timelapse,
+                       unsigned int                              j_angle,
+                       float                                     angle,
+                       float                                     sn_ratio,
+                       const NRLib::Grid2D<float>              & ref_time_grad_x,
+                       const NRLib::Grid2D<float>              & ref_time_grad_y,
+                       const std::vector<std::vector<double> > & t_grad_x,
+                       const std::vector<std::vector<double> > & t_grad_y,
+                       bool                                      estimate_wavelet);
+
+  void FindWaveletEstimationInterval(InputFiles             * input_files,
+                                     std::vector<Surface *> & wavelet_estim_interval,
+                                     std::string            & err_text);
+
+  void ComputeStructureDepthGradient(double                 v0,
+                                     double                 radius,
+                                     const Surface        * t0_surf,
+                                     const Surface        * correlation_direction,
+                                     NRLib::Grid2D<float> & structure_depth_grad_x,
+                                     NRLib::Grid2D<float> & structure_depth_grad_y);
+
+  void ComputeReferenceTimeGradient(const Surface       * t0_surf,
+                                    NRLib::Grid2D<float> &ref_time_grad_x,
+                                    NRLib::Grid2D<float> &ref_time_grad_y);
+
+  void CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
+
+
+  void ResampleSurfaceToGrid2D(const Surface * surface,
+                               Grid2D        * outgrid);
+
+  int  GetWaveletFileFormat(const std::string & fileName, std::string & errText);
+
+  void ReadAndWriteLocalGridsToFile(const std::string   & fileName,
+                                    const std::string   & type,
+                                    const float           scaleFactor,
+                                    const ModelSettings * modelSettings,
+                                    const Grid2D        * grid,
+                                    const float           angle);
+
+  void ResampleGrid2DToSurface(const Simbox   * simbox,
+                               const Grid2D   * grid,
+                               Surface       *& surface);
 
   bool optimizeWellLocations();
   bool estimateWaveletShape();
@@ -166,6 +236,7 @@ private:
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;
+  bool wavelet_handling_;
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
@@ -173,7 +244,6 @@ private:
   Simbox          estimation_simbox_;
   NRLib::Volume   full_inversion_volume_;
 
-  //std::vector<SeismicStorage> seismic_data_;
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
   std::vector<NRLib::Well>                      wells_;
   std::vector<BlockedLogsCommon *>              blocked_logs_common_;   ///< Blocked wells for estimation
@@ -188,13 +258,17 @@ private:
   //std::map<std::string, int>                        nFacies_;
 
 
-  std::map<int, float **> reflectionMatrix_;
+  std::map<int, float **> reflection_matrix_;
   bool        reflection_matrix_from_file_; //False: created from global vp/vs
 
   std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle
 
-  //float                  ** reflectionMatrix_;
-
+  std::map<int, Wavelet**>   wavelets_;
+  std::map<int, std::vector<Grid2D *> > local_noise_scale_;
+  std::map<int, std::vector<Grid2D *> > local_shift_;
+  std::map<int, std::vector<Grid2D *> > local_scale_;
+  std::map<int, std::vector<float> > global_noise_estimate_;
+  std::map<int, std::vector<float> > sn_ratio_;
 
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;

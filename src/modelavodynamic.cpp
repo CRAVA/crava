@@ -1135,16 +1135,16 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
     resampleSurfaceToGrid2D(timeSimbox, &helpNoise, localNoiseScale_[i]);
   }
 
-  if (estimateWavelet_[i])
-    wavelet = new Wavelet1D(timeSimbox,
-                            seisCube[i],
-                            wells,
-                            waveletEstimInterval,
-                            modelSettings,
-                            reflectionMatrix,
-                            i,
-                            error,
-                            errText);
+  //if (estimateWavelet_[i])
+  //  wavelet = new Wavelet1D(timeSimbox,
+  //                          seisCube[i],
+  //                          wells,
+  //                          waveletEstimInterval,
+  //                          modelSettings,
+  //                          reflectionMatrix,
+  //                          i,
+  //                          error,
+  //                          errText);
 
   else { //Not estimation modus
     if(useRickerWavelet)
@@ -1170,27 +1170,27 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
                                 errText);
     }
       // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-        const float limHigh  = 3.0f;
-        const float limLow   = 0.33f;
+      //if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
+      //  float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+      //  const float limHigh  = 3.0f;
+      //  const float limLow   = 0.33f;
 
-        if(modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
-           wavelet->multiplyRAmpByConstant(prescale);
-        else {
-          if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
-             std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-            if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
-              errText += text;
-              error++;
-            }
-            else {
-              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-            }
-          }
-        }
-      }
+      //  if(modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
+      //     wavelet->multiplyRAmpByConstant(prescale);
+      //  else {
+      //    if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+      //       std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+      //      if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
+      //        errText += text;
+      //        error++;
+      //      }
+      //      else {
+      //        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+      //        TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+      //      }
+      //    }
+      //  }
+      //}
       if (error == 0)
         wavelet->resample(static_cast<float>(timeSimbox->getdz()),
                           timeSimbox->getnz(),
@@ -1201,27 +1201,27 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
     wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,i));
 
     if (modelSettings->getForwardModeling() == false && modelSettings->getNumberOfWells() > 0) {
-      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox,
-                                                               seisCube[i],
-                                                               wells,
-                                                               modelSettings,
-                                                               errText,
-                                                               error,
-                                                               i,
-                                                               localNoiseScale_[i],
-                                                               shiftGrid,
-                                                               gainGrid,
-                                                               SNRatio_[i],
-                                                               modelSettings->getWaveletScale(thisTimeLapse_,i),
-                                                               modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
-                                                               modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i),
-                                                               modelSettings->getEstimateLocalNoise(thisTimeLapse_,i),
-                                                               modelSettings->getEstimateLocalShift(thisTimeLapse_,i),
-                                                               modelSettings->getEstimateLocalScale(thisTimeLapse_,i),
-                                                               estimateWavelet_[i]);
+      //float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox,
+      //                                                         seisCube[i],
+      //                                                         wells,
+      //                                                         modelSettings,
+      //                                                         errText,
+      //                                                         error,
+      //                                                         i,
+      //                                                         localNoiseScale_[i],
+      //                                                         shiftGrid,
+      //                                                         gainGrid,
+      //                                                         SNRatio_[i],
+      //                                                         modelSettings->getWaveletScale(thisTimeLapse_,i),
+      //                                                         modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
+      //                                                         modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i),
+      //                                                         modelSettings->getEstimateLocalNoise(thisTimeLapse_,i),
+      //                                                         modelSettings->getEstimateLocalShift(thisTimeLapse_,i),
+      //                                                         modelSettings->getEstimateLocalScale(thisTimeLapse_,i),
+      //                                                         estimateWavelet_[i]);
 
-      if(modelSettings->getEstimateSNRatio(thisTimeLapse_,i))
-        SNRatio_[i] = SNRatio;
+      //if(modelSettings->getEstimateSNRatio(thisTimeLapse_,i))
+      //  SNRatio_[i] = SNRatio;
     }
 
     if (error == 0) {
@@ -1306,20 +1306,20 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
 {
   int error = 0;
   if (estimateWavelet_[i]) {
-    wavelet = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
-                            waveletEstimInterval,
-                            refTimeGradX,
-                            refTimeGradY,
-                            tGradX,
-                            tGradY,
-                            seisCube[i],
-                            modelSettings,
-                            wells,
-                            timeSimbox,
-                            reflectionMatrix,
-                            i,
-                            error,
-                            errText);
+    //wavelet = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
+    //                        waveletEstimInterval,
+    //                        refTimeGradX,
+    //                        refTimeGradY,
+    //                        tGradX,
+    //                        tGradY,
+    //                        seisCube[i],
+    //                        modelSettings,
+    //                        wells,
+    //                        timeSimbox,
+    //                        reflectionMatrix,
+    //                        i,
+    //                        error,
+    //                        errText);
   }
   else { //Not estimation modus
     const std::string & waveletFile = inputFiles->getWaveletFile(thisTimeLapse_,i);
@@ -1355,25 +1355,25 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
                      modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i) ||
                      modelSettings->getEstimateSNRatio(thisTimeLapse_,i));
 
-    if (localEst && modelSettings->getForwardModeling() == false) {
-      float SNRatio = wavelet->calculateSNRatio(timeSimbox,
-                                              seisCube[i],
-                                              wells,
-                                              modelSettings,
-                                              errText,
-                                              error,
-                                              refTimeGradX,
-                                              refTimeGradY,
-                                              tGradX,
-                                              tGradY,
-                                              i,
-                                              SNRatio_[i],
-                                              modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
-                                              estimateWavelet_[i]);
-      if(modelSettings->getEstimateSNRatio(thisTimeLapse_,i))
-        SNRatio_[i] = SNRatio;
+    //if (localEst && modelSettings->getForwardModeling() == false) {
+    //  float SNRatio = wavelet->calculateSNRatio(timeSimbox,
+    //                                          seisCube[i],
+    //                                          wells,
+    //                                          modelSettings,
+    //                                          errText,
+    //                                          error,
+    //                                          refTimeGradX,
+    //                                          refTimeGradY,
+    //                                          tGradX,
+    //                                          tGradY,
+    //                                          i,
+    //                                          SNRatio_[i],
+    //                                          modelSettings->getEstimateSNRatio(thisTimeLapse_,i),
+    //                                          estimateWavelet_[i]);
+    //  if(modelSettings->getEstimateSNRatio(thisTimeLapse_,i))
+    //    SNRatio_[i] = SNRatio;
 
-    }
+    //}
     if (error == 0) {
       if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
          (modelSettings->getEstimationMode() && estimateWavelet_[i])) {

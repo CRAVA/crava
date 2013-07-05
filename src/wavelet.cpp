@@ -1070,6 +1070,22 @@ Wavelet::printVecToFile(const std::string & fileName,
   }
 }
 
+void
+Wavelet::printVecDoubleToFile(const std::string & fileName,
+                              double            * vec,
+                              int                 nzp) const
+{
+  if( ModelSettings::getDebugLevel() > 0) {
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i=0;i<nzp;i++)
+      file << vec[i] << "\n";
+    file.close();
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
