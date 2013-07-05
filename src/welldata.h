@@ -72,7 +72,7 @@ public:
   int                 getNd(void) const;
   int                 checkError(std::string & errText);
   int                 checkSimbox(Simbox *simbox);
-  int                 checkStormgrid(StormContGrid & stormgrid) const;
+  int                 checkVolume(NRLib::Volume & volume) const;
   bool                removeDuplicateLogEntries(const Simbox * simbox, int & nMerges);
   void                setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
   void                filterLogs(void);
