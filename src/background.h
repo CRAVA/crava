@@ -134,7 +134,8 @@ private:
                                  std::vector<float *>              & wellTrend,
                                  std::vector<float *>              & highCutWellTrend,
                                  const std::vector<WellData *>     & wells,
-                                 StormContGrid                     & eroded_zone,
+                                 StormContGrid                     & background_zone,
+                                 NRLib::Volume                     & eroded_zone,
                                  const std::vector<bool>           & hitZone,
                                  const int                         & nz,
                                  const std::string                 & name,
@@ -142,7 +143,7 @@ private:
 
   void        checkWellHitsZone(std::vector<bool>             & hitZone,
                                 const std::vector<WellData *> & wells,
-                                StormContGrid                 & eroded_zone,
+                                NRLib::Volume                 & eroded_zone,
                                 const int                     & nWells) const;
 
   void         writeTrendsToFile(float             * trend,
@@ -287,9 +288,8 @@ private:
                                 const std::vector<Surface> & surface,
                                 const Simbox               * simbox) const;
 
-  void         BuildErodedZones(StormContGrid                & eroded_zone,
+  void         BuildErodedZones(NRLib::Volume                & eroded_zone,
                                 const std::vector<Surface *> & eroded_surfaces,
-                                const int                    & nz,
                                 const Simbox                 * simbox,
                                 const int                    & i) const;
 
