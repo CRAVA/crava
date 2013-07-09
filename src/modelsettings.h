@@ -216,20 +216,23 @@ public:
   std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
-  std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
-  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
-  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval() const { return volumefractionInterval_   ;}
-  int                              getErosionPriorityTopSurface()       const { return erosion_priority_top_surface_;}
-  const std::map<std::string,int> & getErosionPriorityBaseSurfaces()    const { return erosion_priority_interval_base_surface_    ;}
-  int                              getErosionPriorityBaseSurface(const std::string & interval_name) const {return erosion_priority_interval_base_surface_.find(interval_name)->second;}
+  std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
+  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval()                                     const { return priorFaciesProbInterval_                                            ;}
+  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval()                                 const { return volumefractionInterval_                                             ;}
+  int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                                       ;}
+  const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
+  int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}
 
-  bool                               getCorrDirTopConform(void)          const { return topConformCorrelation_ ;}
-  bool                               getCorrDirBaseConform(void)         const { return baseConformCorrelation_ ;}
-  const std::map<std::string, bool>& getCorrDirIntervalTopConform(void)  const { return intervalTopConformCorrelation_ ;}
-  const std::map<std::string, bool>& getCorrDirIntervalBaseConform(void) const { return intervalBaseConformCorrelation_ ;}
-  bool                               getCorrDirIntervalUsed(void)        const { return intervalCorrelationUsed_ ;}
+  bool                               getCorrDirTopConform(void)                      const { return topConformCorrelation_                             ;}
+  bool                               getCorrDirBaseConform(void)                     const { return baseConformCorrelation_                            ;}
+  const std::map<std::string, bool>& getCorrDirIntervalTopConforms(void)             const { return intervalTopConformCorrelation_                     ;}
+  bool                               getCorrDirIntervalTopConform(std::string name)  const { return intervalTopConformCorrelation_.find(name)->second  ;}
+  const std::map<std::string, bool>& getCorrDirIntervalBaseConforms(void)            const { return intervalBaseConformCorrelation_                    ;}
+  bool                               getCorrDirIntervalBaseConform(std::string name) const { return intervalBaseConformCorrelation_.find(name)->second ;}
+  bool                               getCorrDirIntervalUsed(void)                    const { return intervalCorrelationUsed_                           ;}
 
 
 
@@ -746,7 +749,7 @@ private:
 
   bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
   bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
-  std::map<std::string, bool>       intervalTopConformCorrelation_;  ///< Should base correlation direction be equal to the base inversion surface per interval
+  std::map<std::string, bool>       intervalTopConformCorrelation_;  ///< Should top correlation direction be equal to the top inversion surface per interval
   std::map<std::string, bool>       intervalBaseConformCorrelation_; ///< Should base correlation direction be equal to the base inversion surface per interval
   bool                              intervalCorrelationUsed_;    ///< Whether intervals are used for correlation direction
 
