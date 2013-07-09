@@ -9,21 +9,26 @@
 #include "lib/utils.h"
 #include "src/wavelet.h"
 
+#include "src/seismicstorage.h"
+#include "src/blockedlogscommon.h"
+
 class CovGrid2D;
 
 class Wavelet1D : public Wavelet {
 public:
 //Constructors and destructor
   Wavelet1D();
-  Wavelet1D(const Simbox                 * simbox,
-            const FFTGrid                * seisCube,
-            std::vector<WellData *>        wells,
-            const std::vector<Surface *> & estimInterval,
-            const ModelSettings          * modelSettings,
-            const float                  * reflCoef,
-            int                            iAngle,
-            int                          & errCode,
-            std::string                  & errTxt);
+  Wavelet1D(const Simbox                     * simbox,
+            const SeismicStorage             * seismic_data,
+            const std::vector<BlockedLogsCommon *> &  blocked_logs, //Const?
+            //const FFTGrid                * seisCube,
+            //std::vector<WellData *>        wells,
+            const std::vector<Surface *>     & estimInterval,
+            const ModelSettings              * modelSettings,
+            const float                      * reflCoef,
+            int                                iAngle,
+            int                              & errCode,
+            std::string                      & errTxt);
 
   Wavelet1D(const std::string & fileName,
             int                 fileFormat,
@@ -64,12 +69,16 @@ Wavelet1D(const ModelSettings * modelSettings,
 
   float         findGlobalScaleForGivenWavelet(const ModelSettings        * modelSettings,
                                                const Simbox               * simbox,
-                                               const FFTGrid              * seisCube,
-                                               std::vector<WellData *> wells);
+                                               const SeismicStorage             * seismic_data,
+                                               const std::vector<BlockedLogsCommon *> &  blocked_logs);
+                                               //const FFTGrid              * seisCube,
+                                               //std::vector<WellData *> wells);
 
   float         calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
-                                                const FFTGrid         * seisCube,
-                                                std::vector<WellData *> wells,
+                                                const SeismicStorage             * seismic_data,
+                                                const std::vector<BlockedLogsCommon *>   blocked_logs_common,
+                                                //const FFTGrid         * seisCube,
+                                                //std::vector<WellData *> wells,
                                                 const ModelSettings   * modelSettings,
                                                 std::string           & errText,
                                                 int                   & error,
@@ -113,7 +122,8 @@ private:
                                             std::vector<float>       & errWellOptScale,
                                             std::vector<float>       & scaleOptWell,
                                             Grid2D                   * gain,
-                                            std::vector<WellData *>    wells,
+                                            //std::vector<WellData *>    wells,
+                                            const std::vector<BlockedLogsCommon *> & blocked_logs,
                                             const Simbox             * simbox)       const;
 
   void          estimateLocalGain(const CovGrid2D             & cov,
@@ -122,7 +132,8 @@ private:
                                   float                         globalScale,
                                   const std::vector<int>      & nActiveData,
                                   const Simbox                * simbox,
-                                  std::vector<WellData *>       wells,
+                                  //std::vector<WellData *>       wells,
+                                  const std::vector<BlockedLogsCommon *> & blocked_logs,
                                   int                           nWells);
 
   void          estimateLocalShift(const CovGrid2D            & cov,
@@ -130,7 +141,8 @@ private:
                                    const std::vector<float>   & shiftWell,
                                    const std::vector<int>     & nActiveData,
                                    const Simbox               * simbox,
-                                   std::vector<WellData *>      wells,
+                                   //std::vector<WellData *>      wells,
+                                   const std::vector<BlockedLogsCommon *> & blocked_logs,
                                    int                          nWells);
 
   void          estimateLocalNoise(const CovGrid2D           & cov,
@@ -139,7 +151,8 @@ private:
                                    const std::vector<float>  & errWellOptScale,
                                    const std::vector<int>    & nActiveData,
                                    const Simbox              * simbox,
-                                   std::vector<WellData *>     wells,
+                                   //std::vector<WellData *>     wells,
+                                   const std::vector<BlockedLogsCommon *> & blocked_logs,
                                    int                         nWells);
 
   float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,

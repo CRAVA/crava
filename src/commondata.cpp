@@ -22,7 +22,11 @@
 #include "nrlib/well/norsarwell.hpp"
 
 #include "src/wavelet1D.h"
+#include "src/wavelet3D.h"
 #include "nrlib/segy/segytrace.hpp"
+
+#include "lib/timekit.hpp"
+#include "src/timings.h"
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files)
@@ -69,8 +73,14 @@ CommonData::CommonData(ModelSettings  * model_settings,
     }
   }
 
-  SetupReflectionMatrixAndTempWavelet(model_settings,
-                                      input_files);
+  if(SetupReflectionMatrixAndTempWavelet(model_settings,
+                                      input_files) == true) {
+    setup_reflection_matrix_ = true; //Set inside function?
+    temporary_wavelet_ = true;
+  }
+
+  if(WaveletHandling(model_settings, input_files) == true)
+    wavelet_handling_ = true;
 
   //if(readWellData(model_settings,
   //                input_files) == true)
@@ -272,10 +282,10 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
 
-  int nTimeLapses = model_settings->getNumberOfTimeLapses();
+  int n_timeLapses = model_settings->getNumberOfTimeLapses();
   int error = 0;
 
-  for(int thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+  for(int thisTimeLapse = 0; thisTimeLapse < n_timeLapses; thisTimeLapse++) {
 
     if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
 
@@ -285,10 +295,10 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
       std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
       std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
 
-      int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
+      int n_angles = model_settings->getNumberOfAngles(thisTimeLapse);
       std::vector<SeismicStorage> seismic_data_angle;
 
-      for (int i = 0 ; i < numberOfAngles ; i++) {
+      for (int i = 0 ; i < n_angles; i++) {
 
         std::string filename = input_files->getSeismicFile(thisTimeLapse,i);
         int fileType = IO::findGridType(filename);
@@ -318,19 +328,20 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
           float guard_zone = model_settings->getGuardZone();
 
+          ///H
+          //CheckThatDataCoverGrid used a TimeCutSimBox. Changed to full_inversion_volume.
+          //"Bruk full_inversion_volume i kallet til som klippevolum i kallet til SegY-leseren."
+          if(CheckThatDataCoverGrid(segy, offset[i], guard_zone) == true) {
 
-          if(CheckThatDataCoverGrid(segy, offset[i], &estimation_simbox_, guard_zone) == true) { //Change this to full_inversion_volume_?
             float padding         = 2*guard_zone;
             bool  relativePadding = false;
             bool  onlyVolume      = true;
 
-
-            segy->ReadAllTraces(&full_inversion_volume_, //timeCutSimBox  //estimation_simbox_ eller full_inversion_volume_?
+            segy->ReadAllTraces(&full_inversion_volume_, //was timeCutSimBox.
                                 padding,
                                 onlyVolume,
                                 relativePadding);
             segy->CreateRegularGrid();
-
 
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
             seismic_data_angle.push_back(seismicdata);
@@ -339,7 +350,6 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
             LogKit::LogFormatted(LogKit::Warning, "Data from segy-file " + filename + " is not read.\n");
             error = 1;
           }
-
 
         } //SEGY
         else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -368,13 +378,10 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
               seismicdata_tmp = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
 
-
             seismic_data_angle.push_back(seismicdata_tmp);
           }
-
         } //STORM / SGRI
         else {
-
           LogKit::LogFormatted(LogKit::Warning, "Error when reading file " + filename +". File type not recognized.\n");
           error = 1;
         }
@@ -383,19 +390,21 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
       seismic_data_[thisTimeLapse] = seismic_data_angle;
 
     }//ifSeismicFiles
-  } //nTimeLapses
+  } //n_timeLapses
 
-  if(error = 0)
-    return true;
-  else
+  if(error > 0)
     return false;
+
+  return true;
+
 }
 
 bool
 CommonData::CheckThatDataCoverGrid(const SegY   * segy,
-                                   float         offset,
-                                   const Simbox * timeCutSimbox,
-                                   float         guard_zone)
+                                   float          offset,
+                                   //const Simbox * timeCutSimbox,
+                                   //const NRLib::Volume   full_inversion_volume,
+                                   float          guard_zone)
 {
   // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
   float dz = segy->GetDz();
@@ -403,14 +412,14 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
-  float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
+  //float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
+  //float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
 
   //Use this instead? input for timeCutSimbox is estimation_simbox_
-  //int nx = estimation_simbox_.getnx();
-  //int ny = estimation_simbox_.getny();
-  //float top_grid = static_cast<float>(full_inversion_volume_.GetTopZMin(nx, ny));
-  //float bot_grid = static_cast<float>(full_inversion_volume_.GetBotZMax(nx, ny));
+  int nx = estimation_simbox_.getnx();
+  int ny = estimation_simbox_.getny();
+  float top_grid = static_cast<float>(full_inversion_volume_.GetTopZMin(nx, ny));
+  float bot_grid = static_cast<float>(full_inversion_volume_.GetBotZMax(nx, ny));
 
   // Find guard zone
   float top_guard = top_grid - guard_zone;
@@ -458,28 +467,21 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
     if(nWells > 0)
       LogKit::WriteHeader("Reading wells");
 
-
-
-    //std::vector<std::string> logNames = model_settings->getLogNames();
-    //std::vector<bool> inverseVelocity = model_settings->getInverseVelocity();
-    //bool faciesLogGiven = model_settings->getFaciesLogGiven();
-
     for(int i=0 ; i<nWells; i++) {
 
-      std::string wellFileName = input_files->getWellFile(i);
+      std::string well_file_name = input_files->getWellFile(i);
       bool read_ok = false;
-      NRLib::Well new_well(wellFileName, read_ok);
+      NRLib::Well new_well(well_file_name, read_ok);
 
-      if(wellFileName.find(".nwh",0) != std::string::npos)
+      if(well_file_name.find(".nwh",0) != std::string::npos)
         ProcessLogsNorsarWell(new_well, err_text, failed);
-      else if(wellFileName.find(".rms",0) != std::string::npos)
+      else if(well_file_name.find(".rms",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, err_text, failed);
 
       if(read_ok == true)
         wells_.push_back(new_well);
       else
-        LogKit::LogFormatted(LogKit::Error, "Well format of file " + wellFileName + " not recognized.");
-
+        LogKit::LogFormatted(LogKit::Error, "Well format of file " + well_file_name + " not recognized.\n");
 
     }
   }catch (NRLib::Exception & e) {
@@ -1152,27 +1154,23 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
   //
-  const std::string & reflMatrFile = input_files->getReflMatrFile();
+  const std::string & refl_matr_file = input_files->getReflMatrFile();
   const double        vpvs         = model_settings->getVpVsRatio();
-  float                  ** reflectionMatrix;
+  float                  ** reflection_matrix;
 
+  int n_timelapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+  for(int i = 0; i < n_timelapses; i++) {
 
-  unsigned int nTimeLapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
-  for(size_t thisTimeLapse = 0; thisTimeLapse < nTimeLapses; thisTimeLapse++) {
+    std::vector<float> angles = model_settings->getAngle(i);
+    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
+    int n_angles = model_settings->getNumberOfAngles(i);
 
-    std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
-
-
-    int numberOfAngles = model_settings->getNumberOfAngles(thisTimeLapse);
-
-
-    if (reflMatrFile != "") {  //File should have one line for each seismic data file. Check: if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
+    if (refl_matr_file != "") {  //File should have one line for each seismic data file. Check: if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
       std::string tmpErrText("");
-      reflectionMatrix = ReadMatrix(reflMatrFile, numberOfAngles, 3, "reflection matrix", tmpErrText);
-      if(reflectionMatrix == NULL) {
-        LogKit::LogFormatted(LogKit::Error, "Reading of file "+reflMatrFile+ " for reflection matrix failed\n");
+      reflection_matrix = ReadMatrix(refl_matr_file, n_angles, 3, "reflection matrix", tmpErrText);
+      if(reflection_matrix == NULL) {
+        LogKit::LogFormatted(LogKit::Error, "Reading of file "+refl_matr_file+ " for reflection matrix failed\n");
         LogKit::LogFormatted(LogKit::Error, tmpErrText);
         return false;
       }
@@ -1183,145 +1181,100 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
     else if(vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
       double vsvp = 1.0/vpvs;
-      SetupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+      SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
       double vsvp = 1/2;
-      SetupDefaultReflectionMatrix(reflectionMatrix, vsvp, model_settings, numberOfAngles, thisTimeLapse);
+      SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
     }
 
-
-      reflectionMatrix_[thisTimeLapse] = reflectionMatrix;
+      reflection_matrix_[i] = reflection_matrix;
   } //nTimeLapses
 
-
   setup_reflection_matrix_ = true;
-
 
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
 
-
   //1. Check if optimize welllocation //Point f) Comes from xml-model file
     //2. Check if read seismic ok | read_seismic_ok_
-  read_seismic_ = true;
+  //read_seismic_ = true;
   if(model_settings->getOptimizeWellLocation() == false && read_seismic_ == true) {
 
     //3. Use Ricker - wavelet.
     //4. 1 wavelet per angle
     //5  Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
-    int numberOfAngles = model_settings->getNumberOfAngles(0);
+    int n_angles = model_settings->getNumberOfAngles(0);
     int error = 0;
 
-    for (int i = 0 ; i < numberOfAngles ; i++) {
+    for (int j = 0 ; j < n_angles; j++) {
       //Check all timelapses for this angle, choose the first one;
-      int thisTimeLapse = 0;
-      int vintageyear = model_settings->getVintageYear(0);
-      int vintagemonth = model_settings->getVintageMonth(0);
-      int vintageday = model_settings->getVintageDay(0);
-      for(int j = 1; j < nTimeLapses; j++) {
-        if(model_settings->getVintageYear(j) <= vintageyear && model_settings->getVintageMonth(j) <= vintagemonth && model_settings->getVintageDay(j) <= vintageday) {
-          vintageyear = model_settings->getVintageYear(j);
-          vintagemonth = model_settings->getVintageMonth(j);
-          vintageday = model_settings->getVintageDay(j);
-          thisTimeLapse = j;
+      int this_timelapse = 0;
+      int vintage_year = model_settings->getVintageYear(0);
+      int vintage_month = model_settings->getVintageMonth(0);
+      int vintage_day = model_settings->getVintageDay(0);
+      for(int k = 1; k < n_timelapses; k++) {
+        if(model_settings->getVintageYear(k) <= vintage_year && model_settings->getVintageMonth(k) <= vintage_month && model_settings->getVintageDay(k) <= vintage_day) {
+          vintage_year = model_settings->getVintageYear(k);
+          vintage_month = model_settings->getVintageMonth(k);
+          vintage_day = model_settings->getVintageDay(k);
+          this_timelapse = k;
         }
       }
-      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
+      std::vector<float> angles = model_settings->getAngle(this_timelapse);
 
-      int tmp_type = seismic_data_[thisTimeLapse][i].getSeismicType();
-      int n_traces;
-      std::vector<std::vector<float> > trace_data(100);
-      std::vector<double> trace_length;
       std::vector<float> frequency_peaks;
-
-      if(seismic_data_[thisTimeLapse][i].getSeismicType() == SeismicStorage::SEGY) {
-        SegY * segy = seismic_data_[thisTimeLapse][i].getSegY();
-        n_traces = segy->GetNTraces();
-        trace_length.resize(100, 1); //Dummy, to avoid checking later if trace_data came from SEGY or STORM
-
-        for(size_t j = 0; j < 100; j++) {
-          int trace_index = j*(static_cast<int>(n_traces / 100));
-          NRLib::SegYTrace * segy_tmp = segy->getTrace(trace_index);
-
-          if(segy_tmp != NULL) {
-            size_t start = segy_tmp->GetStart();
-            size_t end = segy_tmp->GetEnd();
-            for(size_t k = start; k < end; k++) {
-              trace_data[j].push_back(segy_tmp->GetValue(k));
-            }
-          }
-        }
-      }
-      else {
-        StormContGrid * stormg = seismic_data_[thisTimeLapse][i].getStorm();
-
-        double x_tmp = 0.0;
-        double y_tmp = 0.0;
-        double z_tmp = 0.0;
-
-        int index_i = 0;
-        int index_j = 0;
-        int trace_index = 0;
-
-        for(int ii = 0; ii < 10; ii++) {
-
-          index_i = ii*static_cast<int>(stormg->GetNI()/10);
-          if(index_i >= stormg->GetNI())
-            index_i = stormg->GetNI() -1;
-
-          for(int jj = 0; jj < 10; jj++) {
-
-            index_j = jj*static_cast<int>(stormg->GetNJ()/10);
-            if(index_j >= stormg->GetNJ())
-              index_j = stormg->GetNJ()-1;
-
-            for(size_t kk = 0; kk < stormg->GetNK(); kk++) {
-              stormg->FindCenterOfCell(index_i, index_j, kk, x_tmp, y_tmp, z_tmp);
-              trace_data[trace_index].push_back(stormg->GetValueClosestInZ(x_tmp, y_tmp, z_tmp));
-            }
-
-            //Store length
-            double top = stormg->GetTopSurface().GetZ(x_tmp, y_tmp);
-            double bot = stormg->GetBotSurface().GetZ(x_tmp, y_tmp);
-            trace_length.push_back(std::abs(bot-top));
-
-            trace_index++;
-          }
-        }
-      }
+      std::vector<std::vector<float> > trace_data;
+      std::vector<float> trace_length;
+      seismic_data_[this_timelapse][j].GetSparseTraceData(trace_data, trace_length, 100);
 
       //FFT to find peak-frequency.
-      for(int j = 0; j < 100; j++) {
-        int n_trace = trace_data[j].size();
-        fftw_real    * seis_r = new fftw_real;
-        fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
-        seis_r = new fftw_real[n_trace];
+      for(int k = 0; k < 100; k++) {
+        int n_trace = trace_data[k].size();
+        int n_trace_fft = ((n_trace / 2) + 1)*2;
 
-        for(int k=0; k < n_trace; k++)
-          seis_r[k] = trace_data[j][k];
+        fftw_real * seis_r = new fftw_real[n_trace_fft];
+        fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
+
+        for(int kk=0; kk < n_trace; kk++)
+          seis_r[kk] = trace_data[k][kk];
 
         Utils::fft(seis_r, seis_c, n_trace);
 
-        //std::vector<float> seis_tmp;
+        std::vector<float> tmp_re_test;
+        std::vector<float> tmp_re;
+        std::vector<float> tmp_im;
+
+        //for(int iii = 0; iii < n_trace_fft; iii++) {
+        //  tmp_re_test.push_back(seis_r[iii]);
+        //  tmp_re.push_back(seis_c[iii].re);
+        //  tmp_im.push_back(seis_c[iii].im);
+        //}
 
         float peak_tmp = 0.0;
-        for(int k = 0; k < n_trace; k++) {
-          //seis_tmp.push_back(seis_r[k]);
-          if(seis_r[k] > peak_tmp)
-            peak_tmp = seis_r[k];
+        float length_tmp = 0.0;
+        for(int kk = 0; kk < n_trace; kk++) {
+          //fftw_complex value = seis_c[kk];
+          length_tmp = std::sqrt( (seis_c[kk].re)*(seis_c[kk].re) + (seis_c[kk].im)*(seis_c[kk].im) );
+          if(length_tmp > peak_tmp && length_tmp != std::numeric_limits<float>::infinity())
+              peak_tmp = length_tmp;
         }
 
-        peak_tmp *= trace_length[j];
+        peak_tmp /= trace_length[k];
         frequency_peaks.push_back(peak_tmp);
+
+        if(seis_r != NULL)
+          delete seis_r;
+        //if(seis_c != NULL)
+        //  delete seis_c;
       }
 
       float mean_frequency = 0.0;
       float mean_grid_height = 0.0;
-      for(size_t j = 0; j < frequency_peaks.size(); j++) {
-        mean_frequency += frequency_peaks[j];
-        mean_grid_height += trace_length[j];
+      for(size_t k = 0; k < frequency_peaks.size(); k++) {
+        mean_frequency += frequency_peaks[k];
+        mean_grid_height += trace_length[k];
       }
       mean_frequency /= frequency_peaks.size();
       mean_grid_height /= frequency_peaks.size(); //Will be 1 if SEGY is used.
@@ -1329,35 +1282,38 @@ bool CommonData::SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_sett
       mean_frequency /= mean_grid_height;
 
       int tmp_error = 0;
-      Wavelet  * wavelet_tmp = new Wavelet1D(model_settings, reflectionMatrix[i], angles[i], mean_frequency, tmp_error);
+      Wavelet  * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
 
       error += tmp_error;
 
       if(tmp_error == 0)
         temporary_wavelets_.push_back(wavelet_tmp);
       else
-        LogKit::LogFormatted(LogKit::Error, "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[i]) + ".\n");
+        LogKit::LogFormatted(LogKit::Error, "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[j]) + ".\n");
+
     }
 
     if(error == 0)
       temporary_wavelet_ = true;
+    else
+      return false;
   }
 
-
   return true;
-
-
 }
 
 
-float **  CommonData::ReadMatrix(const std::string & fileName, int n1, int n2,
-                                 const std::string & readReason,
-                                 std::string       & errText)
+float **
+CommonData::ReadMatrix(const std::string & file_name,
+                       int                 n1,
+                       int                 n2,
+                       const std::string & read_reason,
+                       std::string       & err_text)
 {
-  float * tmpRes = new float[n1*n2+1];
+  float * tmp_res = new float[n1*n2+1];
   std::ifstream inFile;
-  NRLib::OpenRead(inFile,fileName);
-  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+  NRLib::OpenRead(inFile,file_name);
+  std::string text = "Reading "+read_reason+" from file "+file_name+" ... ";
   LogKit::LogFormatted(LogKit::Low,text);
   std::string storage;
   int index = 0;
@@ -1367,11 +1323,11 @@ float **  CommonData::ReadMatrix(const std::string & fileName, int n1, int n2,
   while(error == 0 && inFile >> storage) {
     if(index < n1*n2) {
       try {
-        tmpRes[index] = NRLib::ParseType<float>(storage);
+        tmp_res[index] = NRLib::ParseType<float>(storage);
       }
       catch (NRLib::Exception & e) {
-        errText += "Error in "+fileName+"\n";
-        errText += e.what();
+        err_text += "Error in "+file_name+"\n";
+        err_text += e.what();
         error = 1;
       }
     }
@@ -1380,10 +1336,9 @@ float **  CommonData::ReadMatrix(const std::string & fileName, int n1, int n2,
   if(error == 0) {
     if(index != n1*n2) {
       error = 1;
-      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
+      err_text += "Found "+NRLib::ToString(index)+" in file "+file_name+", expected "+NRLib::ToString(n1*n2)+".\n";
     }
   }
-
 
   float ** result = NULL;
   if(error == 0) {
@@ -1394,36 +1349,35 @@ float **  CommonData::ReadMatrix(const std::string & fileName, int n1, int n2,
     for(i=0;i<n1;i++) {
       result[i] = new float[n2];
       for(j=0;j<n2;j++) {
-        result[i][j] = tmpRes[index];
+        result[i][j] = tmp_res[index];
         index++;
       }
     }
   }
   else
-
     LogKit::LogFormatted(LogKit::Low,"failed.\n");
-  delete [] tmpRes;
+  delete [] tmp_res;
   return(result);
 }
 
 
 void
-CommonData::SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
+CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix,
                                          double                vsvp,
                                          const ModelSettings * model_settings,
-                                         int                   numberOfAngles,
-                                         int                   thisTimeLapse)
+                                         int                   n_angles,
+                                         int                   this_timelapse)
 {
   int      i;
-  float ** A      = new float * [numberOfAngles];
+  float ** A      = new float * [n_angles];
 
 
   double           vsvp2       = vsvp*vsvp;
-  std::vector<int> seismicType = model_settings->getSeismicType(thisTimeLapse);
-  std::vector<float>        angles = model_settings->getAngle(thisTimeLapse);
+  std::vector<int> seismicType = model_settings->getSeismicType(this_timelapse);
+  std::vector<float>        angles = model_settings->getAngle(this_timelapse);
 
 
-  for(i = 0; i < numberOfAngles; i++)
+  for(i = 0; i < n_angles; i++)
   {
     double angle = static_cast<double>(angles[i]);
     A[i] = new float[3];
@@ -1446,7 +1400,7 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
       A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
     }
   }
-  reflectionMatrix = A;
+  reflection_matrix = A;
   double vpvs = 1.0f/vsvp;
   LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
   std::string text;
@@ -1464,100 +1418,141 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
   }
 }
 
-bool CommonData::waveletHandling(ModelSettings * model_settings,
-                                 InputFiles * input_files)
+bool CommonData::WaveletHandling(ModelSettings * model_settings,
+                                 InputFiles    * input_files)
 {
-
-
-  int nTimeLapses = model_settings->getNumberOfTimeLapses();
+  int n_timeLapses = model_settings->getNumberOfTimeLapses();
   int error = 0;
 
-  for(int i = 0; i < nTimeLapses; i++) {
+  std::string err_text("");
+  std::vector<Surface *> wavelet_estim_interval;
+  FindWaveletEstimationInterval(input_files, wavelet_estim_interval, err_text);
 
-    Wavelet ** wavelet;               ///< Wavelet for angle MOVE TO CLASS VARIABLE
+  if(err_text != "")
+    LogKit::LogFormatted(LogKit::Error, "Error when finding wavelet estimation interval: " + err_text + "\n");
 
-    int nAngles = model_settings->getNumberOfAngles(i);
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
+  for(int i = 0; i < n_timeLapses; i++) {
+
+    Wavelet ** wavelet;               ///< Wavelet for angle
+
+    int n_angles = model_settings->getNumberOfAngles(i);
+
+    std::vector<float> sn_ratio = model_settings->getSNRatio(i);
+    std::vector<float> angles = model_settings->getAngle(i);
+    bool use_local_noise = model_settings->getUseLocalNoise(i);
 
     //Fra ModelAvoDynamic::processSeismic:
-    std::vector<bool> estimateWavelets = model_settings->getEstimateWavelet(i);
-    std::vector<bool> useRickerWavelet = model_settings->getUseRickerWavelet(i);
+    std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
 
-    //double wall=0.0, cpu=0.0;
-    //TimeKit::getTime(wall,cpu);
+    //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
+    bool estimate_failed = false;
+    for(size_t j = 0; j < estimate_wavelets.size(); j++) {
+      if(estimate_wavelets[j])
+        if(read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
+          estimate_failed = true;
+          return false; //Utskrift av feilmelding?
+        }
+    }
 
-    wavelet = new Wavelet * [nAngles];
-    std::vector<Grid2D *> localNoiseScale;       ///< Scale factors for local noise
-    localNoiseScale.resize(nAngles);
+    std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    bool has3Dwavelet = false;
-    for(int j=0; j <nAngles; j++) {
-      localNoiseScale[i] = NULL;
-      if (model_settings->getWaveletDim(i) == Wavelet::THREE_D)
-        has3Dwavelet = true;
-      if(estimateWavelets[i] == true)
+    wavelet = new Wavelet * [n_angles];
+    std::vector<Grid2D *> local_noise_scale;       ///< Scale factors for local noise
+    std::vector<Grid2D *> local_shift;
+    std::vector<Grid2D *> local_scale;
+    local_noise_scale.resize(n_angles);
+    local_shift.resize(n_angles);
+    local_scale.resize(n_angles);
+    bool has_3D_wavelet = false;
+
+    for(int j=0; j <n_angles; j++) {
+
+      local_noise_scale[j] = NULL;
+      local_shift[j] = NULL;
+      local_scale[j] = NULL;
+
+      if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
+        has_3D_wavelet = true;
+      if(estimate_wavelets[j] == true)
         model_settings->setWaveletScale(i,j,1.0);
     }
 
-    unsigned int                      nWells = model_settings->getNumberOfWells();
+    unsigned int                      n_wells = model_settings->getNumberOfWells();
 
-    std::vector<std::vector<double> > tGradX(nWells);
-    std::vector<std::vector<double> > tGradY(nWells);
+    std::vector<std::vector<double> > t_grad_x(n_wells);
+    std::vector<std::vector<double> > t_grad_y(n_wells);
 
-    NRLib::Grid2D<float>              refTimeGradX;         ///< Time gradient in x-direction for reference time surface (t0)
-    NRLib::Grid2D<float>              refTimeGradY;         ///< Time gradient in x-direction for reference time surface (t0)
-    NRLib::Grid2D<float>              structureDepthGradX;  ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
-    NRLib::Grid2D<float>              structureDepthGradY;  ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
+    NRLib::Grid2D<float>              ref_time_grad_x;         ///< Time gradient in x-direction for reference time surface (t0)
+    NRLib::Grid2D<float>              ref_time_grad_y;         ///< Time gradient in x-direction for reference time surface (t0)
+    NRLib::Grid2D<float>              structure_depth_grad_x;  ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
+    NRLib::Grid2D<float>              structure_depth_grad_y;  ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
-    std::string errText("");
-    //bool failed = false;
+    bool failed = false;
 
-    //if (has3Dwavelet) {
-    //  if (input_files->getRefSurfaceFile() != "") {
-    //    Surface  t0Surf;
-    //    try {
-    //      t0Surf =Surface(input_files->getRefSurfaceFile());
-    //    }
-    //    catch (NRLib::Exception & e) {
-    //      errText += e.what();
-    //      failed = true;
-    //    }
-    //     if(!failed)
-    //    {
-    //      double v0=model_settings->getAverageVelocity();
-    //      computeStructureDepthGradient(v0,
-    //                                    model_settings->getGradientSmoothingRange(),
-    //                                    timeSimbox,
-    //                                    &t0Surf,
-    //                                    correlationDirection,
-    //                                    structureDepthGradX,
-    //                                    structureDepthGradY);
-    //      Wavelet3D::setGradientMaps(structureDepthGradX,
-    //                                 structureDepthGradY);
-    //      computeReferenceTimeGradient(timeSimbox,
-    //                                   &t0Surf,
-    //                                   refTimeGradX,
-    //                                   refTimeGradY);
-    //    }
-    //    else{
-    //      errText += "Problems reading reference time surface in (x,y).\n";
-    //      error = 1;
-    //    }
-    //  }
-    //  bool estimateWellGradient = modelSettings->getEstimateWellGradientFromSeismic();
-    //  float distance, sigma_m;
-    //  modelSettings->getTimeGradientSettings(distance, sigma_m, i);
-    //  std::vector<std::vector<double> > SigmaXY;
-    //  for (unsigned int w=0; w<nWells; w++) {
-    //    BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
-    //    if(!estimateWellGradient & ((structureDepthGradX.GetN()> 0) & (structureDepthGradY.GetN()>0))){ // then we allready have the
-    //      double v0=modelSettings->getAverageVelocity();
-    //      bl->setSeismicGradient(v0,structureDepthGradX,structureDepthGradY,refTimeGradX, refTimeGradY,tGradX[w], tGradY[w]);
-    //    }else{
-    //      bl->setTimeGradientSettings(distance, sigma_m);
-    //      bl->findSeismicGradient(seisCube, timeSimbox, nAngles,tGradX[w], tGradY[w],SigmaXY);
-    //    }
-    //  }
-    //}
+    if (has_3D_wavelet) {
+      if (input_files->getRefSurfaceFile() != "") {
+        Surface  t0_surf;
+        try {
+          t0_surf =Surface(input_files->getRefSurfaceFile());
+        }
+        catch (NRLib::Exception & e) {
+          err_text += e.what();
+          failed = true;
+        }
+         if(!failed)
+        {
+          //Correlation direction from ModelGeneral::makeTimeSimboxes
+          Surface * correlation_direction = NULL;
+          try {
+            Surface tmpSurf(input_files->getCorrDirFile());
+            if(estimation_simbox_.CheckSurface(tmpSurf) == true)
+              correlation_direction = new Surface(tmpSurf);
+            else {
+              err_text += "Error: Correlation surface does not cover volume.\n"; //?
+              failed = true;
+            }
+          }
+          catch (NRLib::Exception & e) {
+            err_text += e.what();
+            failed = true;
+          }
+
+          double v0=model_settings->getAverageVelocity();
+          ComputeStructureDepthGradient(v0,
+                                        model_settings->getGradientSmoothingRange(),
+                                        &t0_surf,
+                                        correlation_direction,
+                                        structure_depth_grad_x,
+                                        structure_depth_grad_y);
+          Wavelet3D::setGradientMaps(structure_depth_grad_x,
+                                     structure_depth_grad_y);
+          ComputeReferenceTimeGradient(&t0_surf,
+                                       ref_time_grad_x,
+                                       ref_time_grad_y);
+        }
+        else{
+          err_text += "Problems reading reference time surface in (x,y).\n";
+          error = 1;
+        }
+      }
+      bool estimateWellGradient = model_settings->getEstimateWellGradientFromSeismic();
+      float distance, sigma_m;
+      model_settings->getTimeGradientSettings(distance, sigma_m, i);
+      std::vector<std::vector<double> > SigmaXY;
+
+      for(size_t w = 0; w < n_wells; w++) {
+        if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))){
+          double v0=model_settings->getAverageVelocity();
+          blocked_logs_common_[w]->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
+        }else{
+          blocked_logs_common_[w]->SetTimeGradientSettings(distance, sigma_m);
+          blocked_logs_common_[w]->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+        }
+      }
+    }
 
     if (estimation_simbox_.getdz() > 4.01f && model_settings->getEstimateNumberOfWavelets(i) > 0)
     { // Require this density for wavelet estimation
@@ -1573,266 +1568,748 @@ bool CommonData::waveletHandling(ModelSettings * model_settings,
     }
 
     // check if local noise is set for some angles.
-    bool localNoiseSet = false;
-    std::vector<float> angles = model_settings->getAngle(i);
+    bool local_noise_set = false;
 
-    for (int j = 0; j < nAngles; j++) {
+    for (int j = 0; j < n_angles; j++) {
+      seismic_data_[i][j];
 
-    float angle = float(angles[i]*180.0/M_PI);
-    LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-    //if(model_settings->getForwardModeling()==false)
-    //  seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    //if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
-    //  error += process1DWavelet(model_settings,
-    //                            input_files,
-    //                            timeSimbox,
-    //                            seisCube,
-    //                            wells,
-    //                            waveletEstimInterval,
-    //                            reflectionMatrix_[j],
-    //                            errText,
-    //                            wavelet[j],
-    //                            i,
-    //                            j,
-    //                            useRickerWavelet[i]);
-    //else
-    //  error += process3DWavelet(model_settings,
-    //                            input_files,
-    //                            timeSimbox,
-    //                            seisCube,
-    //                            wells,
-    //                            waveletEstimInterval,
-    //                            reflectionMatrix_[j],
-    //                            errText,
-    //                            wavelet[j],
-    //                            i,
-    //                            j,
-    //                            refTimeGradX,
-    //                            refTimeGradY,
-    //                            tGradX,
-    //                            tGradY);
+      float angle = float(angles[i]*180.0/M_PI);
+      LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
+      //if(model_settings->getForwardModeling()==false)
+      //  seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+      if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
+        error += Process1DWavelet(model_settings,
+                                  input_files,
+                                  &seismic_data_[i][j],
+                                  blocked_logs_common_,
+                                  wavelet_estim_interval,
+                                  err_text,
+                                  wavelet[j],
+                                  local_noise_scale[j],
+                                  local_shift[j],
+                                  local_scale[j],
+                                  i, //Timelapse
+                                  j, //Angle
+                                  angles[j],
+                                  sn_ratio[j],
+                                  estimate_wavelets[j],
+                                  use_ricker_wavelet[j],
+                                  use_local_noise);
+      else
+        error += Process3DWavelet(model_settings,
+                                  input_files,
+                                  &seismic_data_[i][j],
+                                  blocked_logs_common_,
+                                  wavelet_estim_interval,
+                                  err_text,
+                                  wavelet[j],
+                                  i, //Timelapse
+                                  j, //Angle
+                                  angles[j],
+                                  sn_ratio[j],
+                                  ref_time_grad_x,
+                                  ref_time_grad_y,
+                                  t_grad_x,
+                                  t_grad_y,
+                                  estimate_wavelets[j]);
 
+      if(local_noise_scale[j] != NULL)
+        local_noise_set = true;
+      //if(modelSettings->getForwardModeling()==false) // else, no seismic data
+      //  seisCube[i]->endAccess();
 
+    } //angle
 
-      //if(estimateWavelets[i]) {
-      //  if(read_seismic_ == true && read_wells_ == true && setup_reflection_matrix_ == true) {
-      //    //Block wells as in optimize well-location
-
-      //    //use ProcessWavelets (modelavodynamic.cpp), but with blocked logs instead of well-object.
-
-      //    //Store Noise-estimate (globally and localy), local shift and scale for each wavelet.
-
-      //  }
-
-      //}
-      //else { //From file or ricker
-
-      //  if(useRickerWavelet[i]) {
-
-      //  }
-      //  else { //From file
-
-      //  }
-
-      //  if(input_files->getWaveletFile(i, j) != "")
-      //    ;
-
-      //}
-
-
-
-
+    if(local_noise_set == true) {
+      for(int i=0;i<n_angles;i++)
+        if(local_noise_scale[i]==NULL)
+          local_noise_scale[i] = new Grid2D(estimation_simbox_.getnx(),
+                                            estimation_simbox_.getny(),
+                                            1.0);
     }
-  }
+
+    wavelets_[i] = wavelet;
+    local_noise_scale_[i] = local_noise_scale;
+    local_shift_[i] = local_shift;
+    local_scale_[i] = local_scale;
+    global_noise_estimate_[i] = sn_ratio;
+    sn_ratio_[i] = sn_ratio;
+  }  //timelapse
+
+  Timings::setTimeWavelets(wall,cpu);
+
   return true;
 
 }
 
-//int
-//CommonData::process1DWavelet(const ModelSettings          * modelSettings,
-//                                  const InputFiles             * inputFiles,
-//                                  const Simbox                 * timeSimbox,
-//                                  const FFTGrid        * const * seisCube,
-//                                  std::vector<WellData *>        wells,
-//                                  const std::vector<Surface *> & waveletEstimInterval,
-//                                  const float                  * reflectionMatrix,
-//                                  std::string                  & errText,
-//                                  Wavelet                     *& wavelet,
-//                                  //unsigned int                   i, //Timelapse
-//                                  unsigned int                   j, //Angle
-//                                  bool                           useRickerWavelet)
-//{
-//  int error = 0;
-//  Grid2D * shiftGrid(NULL);
-//  Grid2D * gainGrid(NULL);
-//  if(modelSettings->getUseLocalWavelet() && inputFiles->getScaleFile(timelapse,j) != "") {
-//      Surface help(inputFiles->getScaleFile(thisTimeLapse_,j));
-//      gainGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
-//      resampleSurfaceToGrid2D(timeSimbox, &help, gainGrid);
-//  }
-//  if (modelSettings->getUseLocalWavelet() && inputFiles->getShiftFile(timelapse,j) != ""){
-//    Surface helpShift(inputFiles->getShiftFile(thisTimeLapse_,j));
-//    shiftGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
-//    resampleSurfaceToGrid2D(timeSimbox, &helpShift, shiftGrid);
-//  }
-//  if (useLocalNoise_ && inputFiles->getLocalNoiseFile(thisTimeLapse_,j) != ""){
-//    Surface helpNoise(inputFiles->getLocalNoiseFile(thisTimeLapse_,j));
-//    localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), timeSimbox->getny(), 0.0);
-//    resampleSurfaceToGrid2D(timeSimbox, &helpNoise, localNoiseScale_[i]);
-//  }
-//
-//  if (estimateWavelet_[j])
-//    wavelet = new Wavelet1D(timeSimbox,
-//                            seisCube[j],
-//                            wells,
-//                            waveletEstimInterval,
-//                            modelSettings,
-//                            reflectionMatrix,
-//                            i,
-//                            error,
-//                            errText);
-//
-//  else { //Not estimation modus
-//    if(useRickerWavelet)
-//        wavelet = new Wavelet1D(modelSettings,
-//                                reflectionMatrix,
-//                                angle_[j],
-//                                modelSettings->getRickerPeakFrequency(thisTimeLapse_,j),
-//                                error);
-//    else {
-//      const std::string & waveletFile = inputFiles->getWaveletFile(thisTimeLapse_,j);
-//      int fileFormat = getWaveletFileFormat(waveletFile,errText);
-//      if(fileFormat < 0) {
-//        errText += "Unknown file format of file '"+waveletFile+"'.\n";
-//        error++;
-//      }
-//      else
-//        wavelet = new Wavelet1D(waveletFile,
-//                                fileFormat,
-//                                modelSettings,
-//                                reflectionMatrix,
-//                                angle_[j],
-//                                error,
-//                                errText);
-//    }
-//      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-//      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-//        float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-//        const float limHigh  = 3.0f;
-//        const float limLow   = 0.33f;
-//
-//        if(modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
-//           wavelet->multiplyRAmpByConstant(prescale);
-//        else {
-//          if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
-//             std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-//            if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
-//              errText += text;
-//              error++;
-//            }
-//            else {
-//              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-//              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-//            }
-//          }
-//        }
-//      }
-//      if (error == 0)
-//        wavelet->resample(static_cast<float>(timeSimbox->getdz()),
-//                          timeSimbox->getnz(),
-//                          modelSettings->getNZpad());
-//  }
-//
-//  if (error == 0) {
-//    wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,j));
-//
-//    if (modelSettings->getForwardModeling() == false && modelSettings->getNumberOfWells() > 0) {
-//      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox,
-//                                                               seisCube[j],
-//                                                               wells,
-//                                                               modelSettings,
-//                                                               errText,
-//                                                               error,
-//                                                               j,
-//                                                               localNoiseScale_[j],
-//                                                               shiftGrid,
-//                                                               gainGrid,
-//                                                               SNRatio_[j],
-//                                                               modelSettings->getWaveletScale(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateSNRatio(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalNoise(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalShift(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalScale(thisTimeLapse_,j),
-//                                                               estimateWavelet_[j]);
-//
-//      if(modelSettings->getEstimateSNRatio(thisTimeLapse_,j))
-//        SNRatio_[i] = SNRatio;
-//    }
-//
-//    if (error == 0) {
-//      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
-//         (modelSettings->getEstimationMode() && estimateWavelet_[j])) {
-//        std::string type;
-//        if (estimateWavelet_[j]) {
-//          type = "Estimated_";
-//          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
-//        }
-//        else if (modelSettings->getWaveletScale(thisTimeLapse_,j) == 1.00) {
-//          type = "";
-//          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
-//        }
-//        else {
-//          type = "Scaled_";
-//          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
-//        }
-//      }
-//      const float SNLow  = 1.0;
-//      const float SNHigh = 10.0;
-//      if ((SNRatio_[j] <=SNLow  || SNRatio_[j] > SNHigh) && modelSettings->getForwardModeling()==false) {
-//        errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio_[j])+" for cube "+NRLib::ToString(j+1)+".\n";
-//        errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
-//        error++;
-//      }
-//
-//      bool useLocalNoise = modelSettings->getEstimateLocalNoise(thisTimeLapse_,j) || inputFiles->getLocalNoiseFile(thisTimeLapse_,j) != "";
-//      bool useLocalShift = modelSettings->getEstimateLocalShift(thisTimeLapse_,j) || inputFiles->getShiftFile(thisTimeLapse_,j)      != "";
-//      bool useLocalGain  = modelSettings->getEstimateLocalScale(thisTimeLapse_,j) || inputFiles->getScaleFile(thisTimeLapse_,j)      != "";
-//
-//      if (useLocalNoise)
-//        readAndWriteLocalGridsToFile(inputFiles->getLocalNoiseFile(thisTimeLapse_,j),
-//                                     IO::PrefixLocalNoise(),
-//                                     1.0,  // Scale map with this factor before writing to disk
-//                                     modelSettings,
-//                                     j,
-//                                     timeSimbox,
-//                                     localNoiseScale_[j]);
-//
-//      if (useLocalShift) {
-//        readAndWriteLocalGridsToFile(inputFiles->getShiftFile(thisTimeLapse_,j),
-//                                     IO::PrefixLocalWaveletShift(),
-//                                     1.0,
-//                                     modelSettings,
-//                                     j,
-//                                     timeSimbox,
-//                                     shiftGrid);
-//        wavelet->setShiftGrid(shiftGrid);
-//      }
-//
-//      if (useLocalGain) {
-//        readAndWriteLocalGridsToFile(inputFiles->getScaleFile(thisTimeLapse_,j),
-//                                     IO::PrefixLocalWaveletGain(),
-//                                     1.0,
-//                                     modelSettings,
-//                                     j,
-//                                     timeSimbox,
-//                                     gainGrid);
-//        wavelet->setGainGrid(gainGrid);
-//      }
-//    }
-//  }
-//  return error;
-//}
+int
+CommonData::Process1DWavelet(const ModelSettings          * model_settings,
+                             const InputFiles             * input_files,
+                             const SeismicStorage           * seismic_data,
+                             std::vector<BlockedLogsCommon *> blocked_logs,
+                             const std::vector<Surface *> & wavelet_estim_interval,
+                             std::string                  & err_text,
+                             Wavelet                     *& wavelet,
+                             Grid2D                      *& local_noise_scale, //local noise estimates?
+                             Grid2D                      *& local_shift,
+                             Grid2D                      *& local_scale,
+                             unsigned int                   i_timelapse,
+                             unsigned int                   j_angle,
+                             const float                    angle,
+                             float                          sn_ratio,
+                             bool                           estimate_wavelet,
+                             bool                           use_ricker_wavelet,
+                             bool                           use_local_noise)
+{
+
+  int error = 0;
+  //Grid2D * shiftGrid(NULL);
+  //Grid2D * gainGrid(NULL);
+  if(model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
+      Surface help(input_files->getScaleFile(i_timelapse,j_angle));
+      //gainGrid = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
+      local_scale = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
+      ResampleSurfaceToGrid2D(&help, local_scale);
+  }
+  if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
+    Surface helpShift(input_files->getShiftFile(i_timelapse,j_angle));
+    local_shift = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
+    ResampleSurfaceToGrid2D(&helpShift, local_shift);
+  }
+  if (use_local_noise && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
+    Surface helpNoise(input_files->getLocalNoiseFile(i_timelapse,j_angle));
+    local_noise_scale = new Grid2D(estimation_simbox_.getnx(), estimation_simbox_.getny(), 0.0);
+    ResampleSurfaceToGrid2D(&helpNoise, local_noise_scale);
+  }
+
+  if (estimate_wavelet)
+    wavelet = new Wavelet1D(&estimation_simbox_,
+                            seismic_data,
+                            blocked_logs,
+                            wavelet_estim_interval,
+                            model_settings,
+                            *reflection_matrix_[i_timelapse],
+                            j_angle,
+                            error,
+                            err_text);
+
+  else { //Not estimation modus
+    if(use_ricker_wavelet)
+        wavelet = new Wavelet1D(model_settings,
+                                *reflection_matrix_[i_timelapse],
+                                angle,
+                                model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
+                                error);
+    else {
+      const std::string & waveletFile = input_files->getWaveletFile(i_timelapse,j_angle);
+      int fileFormat = GetWaveletFileFormat(waveletFile, err_text);
+      if(fileFormat < 0) {
+        err_text += "Unknown file format of file '"+waveletFile+"'.\n";
+        error++;
+      }
+      else
+        wavelet = new Wavelet1D(waveletFile,
+                                fileFormat,
+                                model_settings,
+                                *reflection_matrix_[i_timelapse],
+                                angle,
+                                error,
+                                err_text);
+    }
+      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+      if(seismic_data->GetFileName() != "") {
+      //if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
+        float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, blocked_logs);
+        const float limHigh  = 3.0f;
+        const float limLow   = 0.33f;
+
+        if(model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
+           wavelet->multiplyRAmpByConstant(prescale);
+        else {
+          if(model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            if(model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
+              err_text += text;
+              error++;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+            }
+          }
+        }
+      }
+      if (error == 0)
+        wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
+                          estimation_simbox_.getnz(),
+                          model_settings->getNZpad());
+  }
+
+  if (error == 0) {
+    wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
+
+    if (model_settings->getForwardModeling() == false && model_settings->getNumberOfWells() > 0) {
+      float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
+                                                                   seismic_data,
+                                                                   blocked_logs,
+                                                                   model_settings,
+                                                                   err_text,
+                                                                   error,
+                                                                   j_angle,
+                                                                   local_noise_scale,
+                                                                   //shiftGrid,
+                                                                   local_shift,
+                                                                   //gainGrid,
+                                                                   local_scale,
+                                                                   sn_ratio,
+                                                                   model_settings->getWaveletScale(i_timelapse,j_angle),
+                                                                   model_settings->getEstimateSNRatio(i_timelapse,j_angle),
+                                                                   model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle),
+                                                                   model_settings->getEstimateLocalNoise(i_timelapse,j_angle),
+                                                                   model_settings->getEstimateLocalShift(i_timelapse,j_angle),
+                                                                   model_settings->getEstimateLocalScale(i_timelapse,j_angle),
+                                                                   estimate_wavelet);
+      if(model_settings->getEstimateSNRatio(i_timelapse,j_angle))
+        sn_ratio = SNRatio_tmp;
+        //SNRatio_[i_timelapse] = SNRatio;
+    }
+
+    if (error == 0) {
+      if((model_settings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
+         (model_settings->getEstimationMode() && estimate_wavelet)) {
+        std::string type;
+        if (estimate_wavelet) {
+          type = "Estimated_";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+        }
+        else if (model_settings->getWaveletScale(i_timelapse,j_angle) == 1.00) {
+          type = "";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else {
+          type = "Scaled_";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+      }
+      const float SNLow  = 1.0;
+      const float SNHigh = 10.0;
+      if ((sn_ratio <=SNLow  || sn_ratio > SNHigh) && model_settings->getForwardModeling()==false) {
+        err_text += "Illegal signal-to-noise ratio of "+NRLib::ToString(sn_ratio)+" for cube "+NRLib::ToString(j_angle+1)+".\n";
+        err_text += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
+        error++;
+      }
+
+      bool useLocalNoise = model_settings->getEstimateLocalNoise(i_timelapse,j_angle) || input_files->getLocalNoiseFile(i_timelapse,j_angle) != "";
+      bool useLocalShift = model_settings->getEstimateLocalShift(i_timelapse,j_angle) || input_files->getShiftFile(i_timelapse,j_angle)      != "";
+      bool useLocalGain  = model_settings->getEstimateLocalScale(i_timelapse,j_angle) || input_files->getScaleFile(i_timelapse,j_angle)      != "";
+
+      if (useLocalNoise)
+        ReadAndWriteLocalGridsToFile(input_files->getLocalNoiseFile(i_timelapse,j_angle),
+                                     IO::PrefixLocalNoise(),
+                                     1.0,  // Scale map with this factor before writing to disk
+                                     model_settings,
+                                     local_noise_scale,
+                                     angle);
+
+      if (useLocalShift) {
+        ReadAndWriteLocalGridsToFile(input_files->getShiftFile(i_timelapse,j_angle),
+                                     IO::PrefixLocalWaveletShift(),
+                                     1.0,
+                                     model_settings,
+                                     local_shift,
+                                     angle);
+        wavelet->setShiftGrid(local_shift);
+      }
+
+      if (useLocalGain) {
+        ReadAndWriteLocalGridsToFile(input_files->getScaleFile(i_timelapse,j_angle),
+                                     IO::PrefixLocalWaveletGain(),
+                                     1.0,
+                                     model_settings,
+                                     local_scale,
+                                     angle);
+        wavelet->setGainGrid(local_scale);
+      }
+    }
+  }
+  return error;
+}
+
+int
+CommonData::Process3DWavelet(const ModelSettings                     * model_settings,
+                             const InputFiles                        * input_files,
+                             const SeismicStorage                    * seismic_data,
+                             std::vector<BlockedLogsCommon *>          blocked_logs,
+                             const std::vector<Surface *>            & wavelet_estim_interval,
+                             std::string                             & err_text,
+                             Wavelet                                *& wavelet,
+                             unsigned int                              i_timelapse,
+                             unsigned int                              j_angle,
+                             float                                     angle,
+                             float                                     sn_ratio,
+                             const NRLib::Grid2D<float>              & ref_time_grad_x,
+                             const NRLib::Grid2D<float>              & ref_time_grad_y,
+                             const std::vector<std::vector<double> > & t_grad_x,
+                             const std::vector<std::vector<double> > & t_grad_y,
+                             bool                                      estimate_wavelet)
+{
+  int error = 0;
+  if (estimate_wavelet) {
+    wavelet = new Wavelet3D(input_files->getWaveletFilterFile(j_angle),
+                            wavelet_estim_interval,
+                            ref_time_grad_x,
+                            ref_time_grad_y,
+                            t_grad_x,
+                            t_grad_y,
+                            seismic_data,
+                            model_settings,
+                            blocked_logs,
+                            &estimation_simbox_,
+                            *reflection_matrix_[i_timelapse],
+                            j_angle,
+                            error,
+                            err_text);
+  }
+  else { //Not estimation modus
+    const std::string & wavelet_file = input_files->getWaveletFile(i_timelapse,j_angle);
+    int file_format = GetWaveletFileFormat(wavelet_file, err_text);
+    if(file_format < 0) {
+      err_text += "Unknown file format of file '"+wavelet_file+"'.\n";
+      error++;
+    }
+    else {
+      wavelet = new Wavelet3D(wavelet_file,
+                              file_format,
+                              model_settings,
+                              *reflection_matrix_[i_timelapse],
+                              angle,
+                              error,
+                              err_text,
+                              input_files->getWaveletFilterFile(j_angle));
+      if (error == 0)
+        wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
+                          estimation_simbox_.getnz(),
+                          model_settings->getNZpad());
+    }
+  }
+  if ((model_settings->getEstimationMode() == false) && estimation_simbox_.getIsConstantThick()) {
+    err_text += "Simbox with constant thicknessis not implemented for modelling or inversion when 3D wavelet.\n";
+    error++;
+  }
+  if (error == 0) {
+    wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
+    bool localEst = (model_settings->getEstimateLocalScale(i_timelapse,j_angle) ||
+                     model_settings->getEstimateLocalShift(i_timelapse,j_angle) ||
+                     model_settings->getEstimateLocalNoise(i_timelapse,j_angle) ||
+                     model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle) ||
+                     model_settings->getEstimateSNRatio(i_timelapse,j_angle));
+
+    if (localEst && model_settings->getForwardModeling() == false) {
+      float sn_ratio_tmp = wavelet->calculateSNRatio(&estimation_simbox_,
+                                                     seismic_data,
+                                                     blocked_logs,
+                                                     model_settings,
+                                                     err_text,
+                                                     error,
+                                                     ref_time_grad_x,
+                                                     ref_time_grad_y,
+                                                     t_grad_x,
+                                                     t_grad_y,
+                                                     j_angle,
+                                                     sn_ratio,
+                                                     model_settings->getEstimateSNRatio(i_timelapse,j_angle),
+                                                     estimate_wavelet);
+      if(model_settings->getEstimateSNRatio(i_timelapse,j_angle))
+        sn_ratio = sn_ratio_tmp;
+
+    }
+    if (error == 0) {
+      if((model_settings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
+         (model_settings->getEstimationMode() && estimate_wavelet)) {
+        std::string type;
+        if (estimate_wavelet) {
+          type = "Estimated_";
+          if(wavelet->getDim()==1)
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+          else
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else if (model_settings->getWaveletScale(i_timelapse,j_angle) == 1.00) {
+          type = "";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+        else {
+          type = "Scaled_";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
+      }
+
+      const float SNLow  = 1.0;
+      const float SNHigh = 10.0;
+      if ((sn_ratio <=SNLow  || sn_ratio > SNHigh) && model_settings->getForwardModeling()==false) {
+        err_text += "Illegal signal-to-noise ratio of "+NRLib::ToString(sn_ratio)+" for cube "+NRLib::ToString(j_angle+1)+".\n";
+        err_text += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
+        error++;
+      }
+    }
+  }
+
+  return error;
+}
+
+void
+CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
+                                          std::vector<Surface *> & wavelet_estim_interval,
+                                          std::string &            err_text)
+
+{
+  const double x0 = estimation_simbox_.getx0();
+  const double y0 = estimation_simbox_.gety0();
+  const double lx = estimation_simbox_.getlx();
+  const double ly = estimation_simbox_.getly();
+  const int    nx = estimation_simbox_.getnx();
+  const int    ny = estimation_simbox_.getny();
+
+  //
+  // Get wavelet estimation interval
+  //
+  const std::string & topWEI  = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
+  const std::string & baseWEI = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
+
+  if (topWEI != "" && baseWEI != "") {
+    wavelet_estim_interval.resize(2);
+    try {
+      if (NRLib::IsNumber(topWEI))
+        wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
+      else {
+        Surface tmpSurf(topWEI);
+        wavelet_estim_interval[0] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+      //failed = true;
+    }
+
+    try {
+      if (NRLib::IsNumber(baseWEI))
+        wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
+      else {
+        Surface tmpSurf(baseWEI);
+        wavelet_estim_interval[1] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+      //failed = true;
+    }
+  }
+
+}
+
+void
+CommonData::ComputeStructureDepthGradient(double                 v0,
+                                          double                 radius,
+                                          const Surface        * t0_surf,
+                                          const Surface        * correlation_direction,
+                                          NRLib::Grid2D<float> & structure_depth_grad_x,
+                                          NRLib::Grid2D<float> & structure_depth_grad_y)
+ {
+   double ds = 12.5;
+
+   int nx = estimation_simbox_.getnx();
+   int ny = estimation_simbox_.getny();
+   structure_depth_grad_x.Resize(nx,ny);
+   structure_depth_grad_y.Resize(nx,ny);
+   double mp=v0*0.001*0.5; // 0.001 is due to s vs ms convension
+
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+     {
+       double x,y;
+       double gx,gy,gxTmp,gyTmp;
+       gx=0.0;
+       gy=0.0;
+       estimation_simbox_.getXYCoord(i,j,x,y);
+       CalculateSmoothGrad( t0_surf, x, y, radius, ds,gxTmp, gyTmp);
+       gx=-gxTmp;
+       gy=-gyTmp;
+       if( correlation_direction !=NULL){
+         CalculateSmoothGrad( correlation_direction, x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp;
+         gy+=gyTmp;
+       }else{
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox_.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp*0.5;
+         gy+=gyTmp*0.5;
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox_.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp*0.5;
+         gy+=gyTmp*0.5;
+       }
+
+       gx*=mp;
+       gy*=mp;
+       structure_depth_grad_x(i,j) =float(gx);
+       structure_depth_grad_y(i,j) =float(gy);
+     }
+ }
+
+void
+CommonData::ComputeReferenceTimeGradient(const Surface * t0_surf,
+                                         NRLib::Grid2D<float> &ref_time_grad_x,
+                                         NRLib::Grid2D<float> &ref_time_grad_y)
+ {
+   double radius = 50.0;
+   double ds = 12.5;
+   int nx = estimation_simbox_.getnx();
+   int ny = estimation_simbox_.getny();
+   ref_time_grad_x.Resize(nx,ny);
+   ref_time_grad_y.Resize(nx,ny);
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+     {
+       double x,y;
+       double gx,gy;
+       estimation_simbox_.getXYCoord(i,j,x,y);
+       CalculateSmoothGrad( t0_surf, x, y, radius, ds,gx, gy);
+       ref_time_grad_x(i,j) =float(gx);
+       ref_time_grad_y(i,j) =float(gy);
+     }
+ }
+
+void
+CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy)
+{
+  /// Return smoothed Gradient. Computes the gradient as a regression
+  /// among points within a given distance from the central point.
+  //  Returns missing if central point is outside the grid.
+  /// Returns  otherwise it is ok,
+  int i,j,k,l;
+  int disc_radius = int(floor(radius/ds));
+  int n_points    = (2*disc_radius+1)*(2*disc_radius+1);
+  std::vector<double> Z(3*n_points,0.0);
+  std::vector<double> Y(n_points,0.0);
+  std::vector<double> cov(9,0.0);
+  std::vector<double> invCov(9,0.0);
+  std::vector<double> proj(3,0.0);
+  double z0;
+  int cy=0;
+  int cz=0;
+
+  double baseDepth =surf->GetZ(x,y);
+
+
+  for(i=- disc_radius;i<=disc_radius;i++)
+    for( j=- disc_radius;j<=disc_radius;j++)
+    {
+      double dx= i*ds;
+      double dy= j*ds;
+      double foo=surf->GetZ(x+dx,y+dy);
+      Y[cy] = foo;
+      Z[cz] = 1.0;
+      Z[cz + 1] = dx;
+      Z[cz + 2] = dy;
+      cy++;
+      cz += 3;
+    }
+
+  int nData=0;
+  for(i=0; i < n_points; i++)
+  {
+    if(!surf->IsMissing(Y[i]))
+    {
+      nData++;
+      for(k=0;k<3;k++)
+      {
+        for(l=0;l<3;l++)
+          cov[k+l*3]+=Z[k + 3*i] * Z[l + 3*i];
+
+        proj[k]+=Z[k + 3*i]*(Y[i]-baseDepth);
+      }
+    }
+  }
+
+  double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
+                  +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
+
+  if(det != 0)
+  {
+      invCov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
+      invCov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
+      invCov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
+      invCov[3] = (cov[5]*cov[6] - cov[3]*cov[8]) / det;
+      invCov[4] = (cov[0]*cov[8] - cov[2]*cov[6]) / det;
+      invCov[5] = (cov[2]*cov[3] - cov[0]*cov[5]) / det;
+      invCov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
+      invCov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
+      invCov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
+
+      z0 = baseDepth;
+      gx = 0.0;
+      gy = 0.0;
+      for(k=0;k<3;k++)
+      {
+        z0 += invCov[k]*proj[k]; //NBNB check
+        gx += invCov[3+k]*proj[k];
+        gy += invCov[6+k]*proj[k];
+      }
+  }
+  else
+  {
+   gx = RMISSING;
+   gy = RMISSING;
+  }
+}
+
+
+
+
+
+void
+CommonData::ResampleSurfaceToGrid2D(const Surface * surface,
+                                    Grid2D        * outgrid)
+{
+  for(int i=0;i<estimation_simbox_.getnx();i++) {
+    for(int j=0;j<estimation_simbox_.getny();j++) {
+      double x, y, z;
+      estimation_simbox_.getCoord(i, j, 0, x, y, z);
+      (*outgrid)(i,j) = static_cast<float>(surface->GetZ(x,y));
+    }
+  }
+}
+
+int
+CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & err_text)
+{
+  int fileformat = -1;
+  int line       = 0;
+  int pos;
+  std::string dummyStr;
+  std::string targetString;
+
+  std::ifstream file;
+  NRLib::OpenRead(file, file_name);
+
+  std::getline(file,dummyStr);
+  line++;
+  targetString = "pulse file-3";
+  pos = Utils::findEnd(dummyStr, 0, targetString);
+  if (pos >= 0)
+    fileformat = Wavelet::NORSAR;
+  file.close();
+  file.clear();
+
+  if(fileformat<0) { // not norsar format
+      // test for jason file format
+    NRLib::OpenRead(file,file_name);
+    line         = 0;
+    int thisLine = 0;
+    bool lineIsComment = true;
+    while (lineIsComment == true) {
+      NRLib::ReadNextToken(file,dummyStr,line);
+      if (NRLib::CheckEndOfFile(file)) {
+        err_text += "End of wavelet file "+file_name+" is premature\n";
+        return 0;
+      }
+      else {
+        if (thisLine == line) {
+          NRLib::DiscardRestOfLine(file,line,false);
+          thisLine = line;
+        }
+        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+          lineIsComment = false;
+      }
+    }
+    file.close();
+    if (NRLib::IsNumber(dummyStr)) // not convertable number
+      fileformat= Wavelet::JASON;
+  }
+  return fileformat;
+}
+
+void
+CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
+                                              const std::string   & type,
+                                              const float           scale_factor,
+                                              const ModelSettings * model_settings,
+                                              //const unsigned int    i,
+                                              //const Simbox        * timeSimbox,
+                                              const Grid2D        * grid,
+                                              const float           angle)
+{
+  bool   estimationMode   = model_settings->getEstimationMode();
+  int    outputFormat     = model_settings->getOutputGridFormat();
+  double angle_tmp        = angle*180.0/M_PI;
+
+  Surface * help = NULL;
+
+  if(file_name != "") {
+    std::string toPath = NRLib::RemovePath(file_name);
+
+    if (type == IO::PrefixLocalNoise())
+      toPath = NRLib::PrependDir(IO::PathToNoise(), toPath);
+    else
+      toPath = NRLib::PrependDir(IO::PathToWavelets(), toPath);
+
+    NRLib::CreateDirIfNotExists(toPath);
+    NRLib::CopyFile(file_name, toPath, true);
+  }
+  else {
+    if (grid != NULL) {
+      ResampleGrid2DToSurface(&estimation_simbox_, grid, help);
+    }
+  }
+  if ((estimationMode ||
+    ((type==IO::PrefixLocalWaveletGain() || type==IO::PrefixLocalWaveletShift()) && (model_settings->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0) ||
+    (type==IO::PrefixLocalNoise() && (model_settings->getOtherOutputFlag() & IO::LOCAL_NOISE)>0)) &&
+     help != NULL)
+  {
+    std::string baseName = type + NRLib::ToString(angle_tmp, 1);
+    help->Multiply(scale_factor);
+    if (type==IO::PrefixLocalNoise())
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
+    else
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
+  }
+  if (help != NULL)
+    delete help;
+}
+
+void
+CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
+                                         const Grid2D   * grid,
+                                         Surface       *& surface)
+{
+  double xmin,xmax,ymin,ymax;
+  simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
+  int nx,ny;
+  double angle = simbox->getAngle()*180.0/M_PI;
+  if(angle > -45 || angle < 45)
+  {
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
+  }
+  else
+  {
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
+  }
+  surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
+  double x,y;
+  int i1,j1;
+  for(int i=0;i<nx;i++) {
+    for(int j=0;j<ny;j++) {
+      surface->GetXY(i,j,x,y);
+      simbox->getIndexes(x,y,i1,j1);
+      if(i1==IMISSING || j1== IMISSING)
+        surface->SetMissing(i,j);
+      else
+        (*surface)(i,j) = (*grid)(i1,j1);
+    }
+  }
+}
+
+
 
 
 bool CommonData::optimizeWellLocations() {
@@ -2087,7 +2564,7 @@ void CommonData::SetSurfacesSingleInterval(Simbox                           & es
   //int    output_domain       = model_settings->getOutputGridDomain();
   //int    output_grids_elastic = model_settings->getOutputGridsElastic();
   //int    output_grids_other   = model_settings->getOutputGridsOther();
-  //int    output_grids_seismic = model_settings->getOutputGridsSeismic();
+  int    output_grids_seismic = model_settings->getOutputGridsSeismic();
   double d_top               = model_settings->getTimeDTop();
   double lz                 = model_settings->getTimeLz();
   //double dz                 = model_settings->getTimeDz();
