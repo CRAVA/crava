@@ -106,13 +106,13 @@ InputFiles::addInputPathAndCheckFiles()
   for(j=interval_base_depth_surface_.begin();j != interval_base_depth_surface_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
-  for(j=interval_corrDirFile_.begin();j != interval_corrDirFile_.end();j++) {
+  for(j=interval_corrDirFiles_.begin();j != interval_corrDirFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
-  for(j=interval_corrDirTopFile_.begin();j != interval_corrDirTopFile_.end();j++) {
+  for(j=interval_corrDirTopFiles_.begin();j != interval_corrDirTopFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
-  for(j=interval_corrDirBaseFile_.begin();j != interval_corrDirBaseFile_.end();j++) {
+  for(j=interval_corrDirBaseFiles_.begin();j != interval_corrDirBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
 

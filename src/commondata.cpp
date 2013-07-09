@@ -59,7 +59,6 @@ CommonData::CommonData(ModelSettings  * model_settings,
   if(!failed){
     read_wells_ = ReadWellData(model_settings, input_files, err_text);
     failed = !read_wells_;
-
   }
 
   // 4. block wells for estimation
@@ -1507,7 +1506,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
           //Correlation direction from ModelGeneral::makeTimeSimboxes
           Surface * correlation_direction = NULL;
           try {
-            Surface tmpSurf(input_files->getCorrDirFile());
+            Surface tmpSurf(input_files->getCorrDirFile()); //Top and base?
             if(estimation_simbox_.CheckSurface(tmpSurf) == true)
               correlation_direction = new Surface(tmpSurf);
             else {

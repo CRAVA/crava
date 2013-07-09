@@ -41,9 +41,12 @@ public:
   const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
   const std::string              & getCorrDirTopFile(void)       const { return corrDirTopFile_       ;}
   const std::string              & getCorrDirBaseFile(void)      const { return corrDirBaseFile_      ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalFile(void)            const { return interval_corrDirFile_     ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalTopSurfaceFile(void)  const { return interval_corrDirTopFile_  ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalBaseSurfaceFile(void) const { return interval_corrDirBaseFile_ ;}
+  const std::map<std::string, std::string> & getCorrDirIntervalFiles(void)                        const { return interval_corrDirFiles_     ;}
+  const std::string                        & getCorrDirIntervalFile(std::string name)             const { return interval_corrDirFiles_.find(name)->second     ;}
+  const std::map<std::string, std::string> & getCorrDirIntervalTopSurfaceFiles(void)              const { return interval_corrDirTopFiles_  ;}
+  const std::string                        & getCorrDirIntervalTopSurfaceFile(std::string name)   const { return interval_corrDirTopFiles_.find(name)->second  ;}
+  const std::map<std::string, std::string> & getCorrDirIntervalBaseSurfaceFiles(void)             const { return interval_corrDirBaseFiles_ ;}
+  const std::string                        & getCorrDirIntervalBaseSurfaceFile(std::string name)  const { return interval_corrDirBaseFiles_.find(name)->second ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
@@ -55,8 +58,10 @@ public:
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
   const std::vector<std::string> & getSeismicFiles(void)         const { return seismicFiles_         ;}
   const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void) const { return timeLapseSeismicFiles_ ;}
-  const std::map<std::string, std::string> & getIntervalBaseTimeSurfaces(void) const { return interval_base_time_surface_   ;}
-  const std::map<std::string, std::string> & getIntervalBaseDepthSurface(void) const { return interval_base_depth_surface_  ;}
+  const std::map<std::string, std::string> & getIntervalBaseTimeSurfaces(void)             const { return interval_base_time_surface_                     ;}
+  const std::string                        & getIntervalBaseTimeSurface(std::string name)  const { return interval_base_time_surface_.find(name)->second  ;}
+  const std::map<std::string, std::string> & getIntervalBaseDepthSurfaces(void)            const { return interval_base_depth_surface_                    ;}
+  const std::string                        & getIntervalBaseDepthSurface(std::string name) const { return interval_base_depth_surface_.find(name)->second ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
@@ -88,9 +93,9 @@ public:
   void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
   void setCorrDirTopSurfaceFile(const std::string & corrDirFile)          { corrDirTopFile_       = corrDirFile       ;}
   void setCorrDirBaseSurfaceFile(const std::string & corrDirFile)         { corrDirBaseFile_      = corrDirFile       ;}
-  void setCorrDirIntervalFile(const std::string & interval_name, const std::string & file_name)            { interval_corrDirFile_[interval_name]     = file_name ;}
-  void setCorrDirIntervalTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { interval_corrDirTopFile_[interval_name]  = file_name ;}
-  void setCorrDirIntervalBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { interval_corrDirBaseFile_[interval_name] = file_name ;}
+  void setCorrDirIntervalFile(const std::string & interval_name, const std::string & file_name)            { interval_corrDirFiles_[interval_name]     = file_name ;}
+  void setCorrDirIntervalTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { interval_corrDirTopFiles_[interval_name]  = file_name ;}
+  void setCorrDirIntervalBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { interval_corrDirBaseFiles_[interval_name] = file_name ;}
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
@@ -161,9 +166,9 @@ private:
 
   std::map<std::string, std::string>    interval_base_time_surface_;     ///< File names: Map between interval name and base time surface file name/value.
   std::map<std::string, std::string>    interval_base_depth_surface_;    ///< File names: Map between interval name and base depth surface file name.
-  std::map<std::string, std::string>    interval_corrDirFile_;           ///< File names: Map between interval name and correlation direction
-  std::map<std::string, std::string>    interval_corrDirTopFile_;        ///< File names: Map between interval name and correlation direction for top-surface
-  std::map<std::string, std::string>    interval_corrDirBaseFile_;       ///< File names: Map between interval name and correlation direction for base-surface
+  std::map<std::string, std::string>    interval_corrDirFiles_;           ///< File names: Map between interval name and correlation direction
+  std::map<std::string, std::string>    interval_corrDirTopFiles_;        ///< File names: Map between interval name and correlation direction for top-surface
+  std::map<std::string, std::string>    interval_corrDirBaseFiles_;       ///< File names: Map between interval name and correlation direction for base-surface
 
   std::vector<std::vector<std::string> > timeLapseWaveletShiftFiles_; ///< File names: wavelets for each time lapse and angle gather
   std::vector<std::vector<std::string> > timeLapseWaveletScaleFiles_; ///< File names: wavelets for each time lapse and angle gather
