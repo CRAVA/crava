@@ -6212,11 +6212,11 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
     //Check that all intervals are used under correlation direction
     if(modelSettings_->getCorrDirIntervalUsed() == true) {
-      const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFile();
-      const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFile();
-      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalTopSurfaceFile();
-      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConform();
-      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
+      const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFiles();
+      const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
+      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
+      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConforms();
+      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConforms();
 
       int single_count = interval_corr_dir_file.size();
       int top_count =  interval_corr_dir_top_file.size() + interval_top_conform_correlation.size();
