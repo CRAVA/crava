@@ -40,10 +40,21 @@ public:
 
 private:
 
+  void LoadWellMoveInterval(const InputFiles             * input_files,
+                            const Simbox                 * estimation_simbox,
+                            std::vector<Surface *>       & well_move_interval,
+                            std::string                  & err_text,
+                            bool                         & failed);
+
   void  OptimizeWellLocations(ModelSettings                                 * model_settings,
+                              InputFiles                                    * input_files,
+                              const Simbox                                  * estimation_simbox,
+                              const NRLib::Volume                           & volume,
+                              std::vector<NRLib::Well>                      & wells,
                               std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                               std::map<int, float **>                       & reflection_matrix,
-                              const std::vector<Surface *>                  & interval);
+                              std::string                                   & err_text,
+                              bool                                          & failed);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -94,12 +105,13 @@ private:
                        InputFiles     * inputFiles);
 
   bool ReadWellData(ModelSettings     * modelSettings,
+                    Simbox            * estimation_simbox,
                     InputFiles        * inputFiles,
                     std::string       & err_text);
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
-                               const std::vector<NRLib::Well>                 & wells,
+                               std::vector<NRLib::Well>                       & wells,
                                std::vector<BlockedLogsCommon *>               & blocked_logs_common,
                                std::string                                    & err_text);
 

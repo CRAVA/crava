@@ -39,6 +39,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
 {
   bool failed = false;
   std::string err_text = "";
+
+  LogKit::WriteHeader("Common Data");
+
   //if(readSeismicData(modelSettings,
   //                   inputFiles) == true)
   //  read_seismic_ = true; //True or false if there is no seismic data?
@@ -53,7 +56,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 3. read well data
   if(!failed){
-    read_wells_ = ReadWellData(model_settings, input_files, err_text);
+    read_wells_ = ReadWellData(model_settings, &estimation_simbox_, input_files, err_text);
     failed = !read_wells_;
 
   }
@@ -75,18 +78,14 @@ CommonData::CommonData(ModelSettings  * model_settings,
                                       input_files);
   }
 
-  std::vector<Surface *>      surfaces;
+  //std::vector<Surface *>      surfaces;
 
   // 6. Optimization of well location
   if(!failed){
     if(model_settings->getOptimizeWellLocation()){
-      OptimizeWellLocations(model_settings, seismic_data_, reflection_matrix_, surfaces);
+      OptimizeWellLocations(model_settings, seismic_data_, reflection_matrix_);
     }
   }
-
-  //if(readWellData(model_settings,
-  //                input_files) == true)
-  //  read_wells_ = true;
 
 }
 
@@ -106,6 +105,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   std::string grid_file("");
   int  area_specification  = model_settings->getAreaSpecification();
 
+  LogKit::WriteHeader("Setting up outer modelling grid");
 
   // FIND SEGY GEOMETRY FOR INVERSION AREA -------------------------------------------------------------------------
 
@@ -460,12 +460,14 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
 
 
 bool CommonData::ReadWellData(ModelSettings  * model_settings,
+                              Simbox         * estimation_simbox,
                               InputFiles     * input_files,
                               std::string    & err_text)
 {
   bool failed = false;
 
   int nWells = model_settings->getNumberOfWells();
+  std::vector<float> dev_angle(nWells);
   try{
     if(nWells > 0)
       LogKit::WriteHeader("Reading wells");
@@ -486,12 +488,14 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
       else if(wellFileName.find(".rms",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, err_text, failed);
 
-      if(read_ok == true)
+      if(read_ok == true){
         wells_.push_back(new_well);
-      else
+      }
+      else{
         LogKit::LogFormatted(LogKit::Error, "Well format of file " + wellFileName + " not recognized.");
+      }
 
-
+      new_well.CalculateDeviation(model_settings, dev_angle[i], estimation_simbox, model_settings->getIndicatorWavelet(i));
     }
   }catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
@@ -618,6 +622,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
     new_well.AddContLog("Rho", new_well.GetContLog("RHOB"));
     new_well.RemoveContLog("RHOB");
   }
+
 }
 
 //void
@@ -2336,25 +2341,19 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                          const Simbox                                   & estimation_simbox,
-                                         const std::vector<NRLib::Well>                 & wells,
+                                         std::vector<NRLib::Well>                       & wells,
                                          std::vector<BlockedLogsCommon *>               & blocked_logs_common,
                                          std::string                                    & err_text){
   bool failed = false;
 
-  // These are the coordinate logs that are to be used in BlockedLogs
-  std::vector<std::string> coordinate_logs;
-  coordinate_logs.push_back("X_pos");
-  coordinate_logs.push_back("Y_pos");
-  coordinate_logs.push_back("TVD");
+  LogKit::WriteHeader("Blocking wells for estimation");
 
   // These are the continuous parameters that are to be used in BlockedLogs
-  std::vector<std::string> continuous_logs;
-  continuous_logs.push_back("TVD");
-  continuous_logs.push_back("TWT");
-  continuous_logs.push_back("Vp");
-  continuous_logs.push_back("Vs");
-  continuous_logs.push_back("Rho");
-  continuous_logs.push_back("MD");
+  std::vector<std::string> continuous_logs_to_be_blocked;
+  continuous_logs_to_be_blocked.push_back("Vp");
+  continuous_logs_to_be_blocked.push_back("Vs");
+  continuous_logs_to_be_blocked.push_back("Rho");
+  continuous_logs_to_be_blocked.push_back("MD");
 
 
   // These are the discrete parameters that are to be used in BlockedLogs
@@ -2362,8 +2361,9 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 
   try{
     for (unsigned int i=0; i<wells.size(); i++){
-      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], coordinate_logs, continuous_logs, discrete_logs, 
+      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs, 
         &estimation_simbox, model_settings->getRunFromPanel(), failed, err_text);
+      wells[i].SetBlockedLogsCommonOrigThick(blocked_log);
       blocked_logs_common.push_back(blocked_log);
     }
   }catch(NRLib::Exception & e){
@@ -2376,16 +2376,20 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 
 
 void  CommonData::OptimizeWellLocations(ModelSettings                                 * model_settings,
+                                        InputFiles                                    * input_files,
+                                        const Simbox                                  * estimation_simbox,
+                                        const NRLib::Volume                           & volume,
+                                        std::vector<NRLib::Well>                      & wells,
                                         std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                                         std::map<int, float **>                       & reflection_matrix,
-                                        const std::vector<Surface *>                  & interval){
-}
-/*
+                                        std::string                                   & err_text,
+                                        bool                                          & failed){
+
   LogKit::WriteHeader("Estimating optimized well location");
 
-  Simbox          estimation_simbox = this->GetEstimationSimbox();
-  NRLib::Volume   volume            = this->GetFullInversionVolume();
-  std::vector<NRLib::Well> wells    = this->GetWells();
+  std::vector<Surface *>      well_move_interval;
+  LoadWellMoveInterval(input_files, estimation_simbox, well_move_interval, err_text, failed);
+
   size_t n_wells = wells.size();
 
   double  deltaX, deltaY;
@@ -2402,9 +2406,9 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
   int     nAngles     = model_settings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
   float   maxShift    = model_settings->getMaxWellShift();
   float   maxOffset   = model_settings->getMaxWellOffset();
-  double  angle       = estimation_simbox.GetAngle(); // get this from volume?
-  double  dx          = estimation_simbox.getdx();
-  double  dy          = estimation_simbox.getdy();
+  double  angle       = estimation_simbox->getAngle();
+  double  dx          = estimation_simbox->getdx();
+  double  dy          = estimation_simbox->getdy();
   std::vector<float> seismicAngle = model_settings->getAngle(0); //Use first time lapse as this not is allowed in 4D
 
   std::vector<float> angleWeight(nAngles);
@@ -2413,11 +2417,11 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
   for (w = 0 ; w < n_wells ; w++) {
-    if( wells[w]->isDeviated()==true )
+    if( wells[w].GetIsDeviated())
       continue;
 
-    BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
-    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+    BlockedLogs * bl = wells[w].GetBlockedLogsCommonOrigThick();
+    nMoveAngles = model_settings->getNumberOfWellAngles(w);
 
     if( nMoveAngles==0 )
       continue;
@@ -2426,11 +2430,11 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
       angleWeight[i] = 0;
 
     for( i=0; i<nMoveAngles; i++ ){
-      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+      moveAngle   = model_settings->getWellMoveAngle(w,i);
 
       for( j=0; j<nAngles; j++ ){
         if( moveAngle == seismicAngle[j]){
-          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+          angleWeight[j] = model_settings->getWellMoveWeight(w,i);
           break;
         }
       }
@@ -2445,7 +2449,7 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
     iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
     jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
 
-    bl->findOptimalWellLocation(seisCube,timeSimbox_,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
+    bl->FindOptimalWellLocation(seisCube,timeSimbox_,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
 
     deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
@@ -2466,5 +2470,53 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
       TaskList::addTask("Well "+NRLib::ToString(wells_[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
     }
    }
+
 }
-*/
+
+void LoadWellMoveInterval(const InputFiles             * input_files,
+                          const Simbox                 * estimation_simbox,
+                          std::vector<Surface *>       & well_move_interval,
+                          std::string                  & err_text,
+                          bool                         & failed){
+
+  const double x0 = estimation_simbox->getx0();
+  const double y0 = estimation_simbox->gety0();
+  const double lx = estimation_simbox->getlx();
+  const double ly = estimation_simbox->getly();
+  const int    nx = estimation_simbox->getnx();
+  const int    ny = estimation_simbox->getny();
+  //
+  // Get well move interval
+  //
+  const std::string & topWMI  = input_files->getWellMoveIntFile(0);
+  const std::string & baseWMI = input_files->getWellMoveIntFile(1);
+
+  if (topWMI != "" && baseWMI != "") {
+    well_move_interval.resize(2);
+    try {
+      if (NRLib::IsNumber(topWMI))
+        well_move_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
+      else {
+        Surface tmpSurf(topWMI);
+        well_move_interval[0] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+      failed = true;
+    }
+
+    try {
+      if (NRLib::IsNumber(baseWMI))
+        well_move_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
+      else {
+        Surface tmpSurf(baseWMI);
+        well_move_interval[1] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+      failed = true;
+    }
+  }
+}

@@ -126,7 +126,13 @@ namespace NRLib {
     void  CalculateDeviation(const ModelSettings  * const model_settings,
                              float                & dev_angle,
                              Simbox               * simbox,
-                             bool                   use_for_wavelet_estimation);
+                             int                    use_for_wavelet_estimation);
+
+    void                SetBlockedLogsCommonOrigThick(BlockedLogsCommon * bl)  { blocked_logs_common_orig_thick_  = bl  ;}
+
+    BlockedLogsCommon * GetBlockedLogsCommonOrigThick() { return blocked_logs_common_orig_thick_                        ;}
+
+    bool                GetIsDeviated(void)                   const { return is_deviated_                    ;}
 
   protected:
     /// Set number of data
@@ -142,6 +148,8 @@ namespace NRLib {
     std::map<std::string,std::vector<int> >    disc_log_;
     /// Name of well
     std::string well_name_;
+
+    BlockedLogsCommon             * blocked_logs_common_orig_thick_;
 
     /// Missing value for continous logs.
     double well_rmissing_;

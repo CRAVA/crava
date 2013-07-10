@@ -47,7 +47,8 @@ Well::Well(const std::string & name,
 
 
 Well::Well(const std::string & file_name,
-           bool              & read_ok)
+           bool              & read_ok):
+blocked_logs_common_orig_thick_(NULL)
 {
   ReadWell(file_name, read_ok);
 }
@@ -249,27 +250,30 @@ size_t Well::GetContLogLength(const std::string& logname) const
 }
 
 //----------------------------------------------------------------------------
-/*
+
 void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
                                float                  & dev_angle,
                                Simbox                 * simbox,
-                               bool                     use_for_wavelet_estimation)
+                               int                      use_for_wavelet_estimation)
 {
   float maxDevAngle   = model_settings->getMaxDevAngle();
   float thr_deviation = float(tan(maxDevAngle*NRLib::Pi/180.0));  // Largest allowed deviation
   float max_deviation =  0.0f;
   float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
 
+  std::vector<double> x_pos = this->GetContLog("X_pos");
+  std::vector<double> y_pos = this->GetContLog("Y_pos");
+  std::vector<double> z_pos = this->GetContLog("TVD");
+
   //
   // Find first log entry in simbox
   //
   int iFirst = IMISSING;
-  int i;
-  for(i=0 ; i < nd_ ; i++)
+  for(unsigned int i=0 ; i < x_pos.size() ; i++)
   {
-    if(simbox->isInside(xpos_[i], ypos_[i]))
+    if(simbox->isInside(x_pos[i], y_pos[i]))
     {
-      if (zpos_[i] > simbox->getTop(xpos_[i], ypos_[i]))
+      if (z_pos[i] > simbox->getTop(x_pos[i], y_pos[i]))
       {
         iFirst = i;
         break;
@@ -282,11 +286,11 @@ void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
     // Find last log entry in simbox
     //
     int iLast = iFirst;
-    for(i = iFirst + 1 ; i < nd_ ; i++)
+    for(unsigned int i = iFirst + 1 ; i < x_pos.size() ; i++)
     {
-      if(simbox->isInside(xpos_[i], ypos_[i]))
+      if(simbox->isInside(x_pos[i], y_pos[i]))
         {
-          if (zpos_[i] > simbox->getBot(xpos_[i], ypos_[i]))
+          if (z_pos[i] > simbox->getBot(x_pos[i], y_pos[i]))
             break;
         }
       else
@@ -295,13 +299,13 @@ void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
     }
 
     if (iLast > iFirst) {
-      double x0 = xpos_[iFirst];
-      double y0 = ypos_[iFirst];
-      double z0 = zpos_[iFirst];
+      double x0 = x_pos[iFirst];
+      double y0 = y_pos[iFirst];
+      double z0 = z_pos[iFirst];
       for (int i = iFirst+1 ; i < iLast+1 ; i++) {
-        double x1 = xpos_[i];
-        double y1 = ypos_[i];
-        double z1 = zpos_[i];
+        double x1 = x_pos[i];
+        double y1 = y_pos[i];
+        double z1 = z_pos[i];
         float dz = static_cast<float>(z1 - z0);
 
         if (dz > max_dz || i == iLast) {
@@ -320,8 +324,8 @@ void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
 
     if (max_deviation > thr_deviation)
     {
-      if(useForWaveletEstimation_ == ModelSettings::NOTSET) {
-        useForWaveletEstimation_ = ModelSettings::NO;
+      if(use_for_wavelet_estimation == ModelSettings::NOTSET) {
+        use_for_wavelet_estimation = ModelSettings::NO;
       }
       is_deviated_ = true;
       LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
@@ -336,5 +340,5 @@ void  Well::CalculateDeviation(const ModelSettings    * const model_settings,
     is_deviated_ = false;
     LogKit::LogFormatted(LogKit::Low,"Well is outside inversion interval. Cannot calculate deviation.\n");
   }
+
 }
-*/
