@@ -11,6 +11,7 @@
 //#include "src/commondata.h"
 #include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
+#include "src/simbox.h"
 
 class SeismicStorage
 {
@@ -35,18 +36,35 @@ public:
                              UNKNOWN};
 
   //GET FUNCTIONS
-  std::string   getFileName()    const { return file_name_ ; }
-  int           getSeismicType() const { return seismic_type_ ; }
-  float         getAngle()       const { return angle_; }
-  NRLib::SegY * getSegY()        const { return segy_; }
-  StormContGrid * getStorm()       const { return storm_grid_; }
+  std::string     GetFileName()    const { return file_name_ ; }
+  int             GetSeismicType() const { return seismic_type_ ; }
+  float           GetAngle()       const { return angle_; }
+  NRLib::SegY *   GetSegY()        const { return segy_; }
+  StormContGrid * GetStorm()       const { return storm_grid_; }
+
+  void            GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
+                                     std::vector<float>               & trace_length,
+                                     int                                n);
+
+  std::vector<float> GetTraceData(int index) const;
+
+  std::vector<float> GetRealTrace(const Simbox * estimation_simbox,
+                                  int i,
+                                  int j) const;
+
+  float GetRealTraceValue(const Simbox * estimation_simbox,
+                          int i,
+                          int j,
+                          int k) const;
 
   //SET FUNCTIONS
-  void          setFileName(std::string file_name)      { file_name_ = file_name ; }
-  void          setSeismicType(int seismic_type)        { seismic_type_ = seismic_type ;}
-  void          setAngle(float angle)                   { angle_ = angle ;}
-  void          setSegY(NRLib::SegY * segy)             { segy_ = segy ;}
-  void          setStorm(StormContGrid * stormgrid)     { storm_grid_ = stormgrid ;}
+  void            SetFileName(std::string file_name)      { file_name_ = file_name ; }
+  void            SetSeismicType(int seismic_type)        { seismic_type_ = seismic_type ;}
+  void            SetAngle(float angle)                   { angle_ = angle ;}
+  void            SetSegY(NRLib::SegY * segy)             { segy_ = segy ;}
+  void            SetStorm(StormContGrid * stormgrid)     { storm_grid_ = stormgrid ;}
+
+
 
 private:
   std::string   file_name_;

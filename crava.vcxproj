@@ -328,6 +328,7 @@
     <ClCompile Include="src\modelgeneral.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
+    <ClCompile Include="src\multiintervalgrid.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
     <ClCompile Include="src\posteriorelasticpdf.cpp" />
     <ClCompile Include="src\posteriorelasticpdf2d.cpp" />
@@ -1358,6 +1359,7 @@
     <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\blockedlogscommon.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\multiintervalgrid.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\seismicstorage.h" />
     <ClInclude Include="src\tasklist.h" />
