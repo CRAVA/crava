@@ -65,8 +65,41 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
-Well::~Well()
-{}
+Well::~Well(){
+  delete blocked_logs_common_orig_thick_;
+}
+
+void Well::MoveWell(const Simbox    * simbox, 
+                    double            delta_X, 
+                    double            delta_Y, 
+                    double            k_move)
+{
+
+  double delta_Z;
+  double top_old, top_new;
+
+  if(HasContLog("X_pos") && HasContLog("Y_pos")){
+    std::vector<double> x_pos = GetContLog("X_pos");
+    std::vector<double> y_pos = GetContLog("Y_pos");
+    std::vector<double> z_pos = GetContLog("TVD");
+    top_old = simbox->getTop(x_pos[0], y_pos[0]);
+
+    for(unsigned int i=0; i<x_pos.size(); i++)
+    {
+      if(x_pos[i] != RMISSING)
+        x_pos[i] = x_pos[i]+delta_X;
+      if(y_pos[i] != RMISSING)
+        y_pos[i] = y_pos[i]+delta_Y;
+    }
+
+    top_new = simbox->getTop(x_pos[0], y_pos[0]);
+
+    delta_Z = top_new - top_old + k_move;
+
+    for(unsigned int i=0; i<z_pos.size(); i++)
+      z_pos[i] = z_pos[i]+delta_Z;
+  }
+}
 
 void
 Well::ReadWell(const std::string  & file_name,

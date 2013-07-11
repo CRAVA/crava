@@ -14,6 +14,7 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
+#include "src/blockedlogscommon.h"
 
 class Vario;
 class ModelSettings;

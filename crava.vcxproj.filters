@@ -990,6 +990,9 @@
     <ClCompile Include="libs\nrlib\well\well.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
+    <ClCompile Include="src\multiintervalgrid.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1666,6 +1669,9 @@
     </ClInclude>
     <ClInclude Include="libs\nrlib\well\rmswell.hpp">
       <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="src\multiintervalgrid.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

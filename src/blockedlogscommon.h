@@ -6,12 +6,21 @@
 #ifndef BLOCKEDLOGSCOMMON_H
 #define BLOCKEDLOGSCOMMON_H
 
+#include <src/seismicstorage.h>
+#include <nrlib/surface/surface.hpp>
+#include "fftw.h"
+#include <nrlib/well/well.hpp>
 
 
 class BlockedLogsCommon
 {
-
 public:
+  BlockedLogsCommon(const NRLib::Well                * const well_data,
+                    const Simbox                     * const estimation_simbox,
+                    bool                               interpolate,
+                    bool                             & failed,
+                    std::string                      & err_text);
+
   BlockedLogsCommon(const NRLib::Well                * const well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
@@ -20,23 +29,80 @@ public:
                     bool                             & failed,
                     std::string                      & err_text);
 
-  ~ BlockedLogsCommon(void);
+  ~ BlockedLogsCommon();
 
+  void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+                              const Simbox                  * time_simbox,
+                              float                        ** refl_coef,
+                              int                             n_angles,
+                              const std::vector<float>      & angle_weight,
+                              float                           max_shift,
+                              int                             i_max_offset,
+                              int                             j_max_offset,
+                              const std::vector<Surface *>    limits,
+                              int                           & i_move,
+                              int                           & j_move,
+                              float                         & k_move);
+
+  void         FindContinuousPartOfData(const std::vector<bool> & hasData,
+                                        int                       nz,
+                                        int                     & start,
+                                        int                     & length) const;
 
   //GET FUNCTIONS --------------------------------
 
+
+  std::string                            GetWellName()         const   { return well_name_                                                            ;}
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
   const std::vector<double>            & GetXpos(void)         const   { return x_pos_blocked_                                                        ;}
   const std::vector<double>            & GetYpos(void)         const   { return y_pos_blocked_                                                        ;}
   const std::vector<double>            & GetZpos(void)         const   { return z_pos_blocked_                                                        ;}
+  
   const std::vector<double>            & GetTVD(void)          const   { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetTWT(void)          const   { return twt_blocked_                                                          ;}
+
+  const std::vector<int>               & GetIposVector()       const   { return i_pos_                                                                ;}
+  const std::vector<int>               & GetJposVector()       const   { return j_pos_                                                                ;}
+  const std::vector<int>               & GetKposVector()       const   { return k_pos_                                                                ;}
+
+  const std::vector<double>            & GetVpBlocked(void)    const   { return continuous_logs_blocked_.find("Vp")->second                           ;}
+  const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
+  const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
+  const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vp")->second                         ;}
+  const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vs")->second                         ;}
+  const std::vector<double>            & GetRhoUnblocked(void) const   { return continuous_logs_unblocked_.find("Rho")->second                        ;}
+
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
+
+  void                  GetVerticalTrend(const std::vector<double>  & blockedLog, 
+                                         std::vector<double>        & trend);
+
+  void  GetVerticalTrend(const double   * blocked_log,
+                         double         * trend);
+
+  void    GetVerticalTrendLimited(const std::vector<double>       & blocked_log, 
+                                  std::vector<double>             & trend, 
+                                  const std::vector<Surface *>    & limits);
 
 private:
 
   // FUNCTIONS------------------------------------
+
+  void         InterpolateTrend(const double   * blocked_log, 
+                                double         * trend);
+
+  void         InterpolateTrend(const std::vector<double>    & blocked_log, 
+                                std::vector<double>          & trend);
+
+  void          InterpolateTrend(const std::vector<double>      & blocked_log, 
+                                 std::vector<double>            & trend, 
+                                 const std::vector<Surface *>   & limits);
+
+  double ComputeElasticImpedance(double         vp,
+                                 float         vs,
+                                 float         rho,
+                                 const float * coeff) const;
 
   void    RemoveMissingLogValues(const NRLib::Well                            * const well_data,
                                  std::vector<double>                          & x_pos_unblocked,
@@ -81,18 +147,28 @@ private:
                                    int                     index,
                                    float                   rel);
 
-  void  FindOptimalWellLocation(std::map<int, std::vector<SeismicStorage> >   seismic_data,
-                                Simbox                     * timeSimbox,
-                                float                     ** reflCoef,
-                                int                          nAngles,
-                                const std::vector<float>   & angleWeight,
-                                float                        maxShift,
-                                int                          iMaxOffset,
-                                int                          jMaxOffset,
-                                const std::vector<Surface *> limits,
-                                int                        & iMove,
-                                int                        & jMove,
-                                float                      & kMove);
+    void                      FillInCpp(const float   * coeff,
+                                        int             start,
+                                        int             length,
+                                        fftw_real     * cpp_r,
+                                        int             nzp);
+
+    void                      EstimateCor(fftw_complex * var1_c,
+                                          fftw_complex * var2_c,
+                                          fftw_complex * ccor_1_2_c,
+                                          int            cnzp) const;
+
+    void        GetBlockedGrid(const SeismicStorage   * grid,
+                               const Simbox           * estimation_simbox,
+                               std::vector<double>    & blocked_log,
+                               int                      i_offset,
+                               int                      j_offset);
+
+    void        FillInSeismic(std::vector<double> & seismic_data,
+                              int                   start,
+                              int                   length,
+                              fftw_real           * seis_r,
+                              int                   nzp) const;
 
   // CLASS VARIABLES -----------------------------
 
@@ -126,6 +202,8 @@ private:
 
   std::map<std::string, std::vector<double> > continuous_logs_unblocked_;  // Map between variable name and unblocked continuous log
   std::map<std::string, std::vector<int> > discrete_logs_unblocked_;       // Map between variable name and unblocked discrete log
+
+  bool                      interpolate_;              ///<
 
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block

@@ -27,7 +27,9 @@
 #include <map>
 #include "src/simbox.h"
 #include "src/modelsettings.h"
+#include "src/blockedlogscommon.h"
 
+class BlockedLogsCommon;
 
 namespace NRLib {
   class Well{
@@ -55,8 +57,16 @@ namespace NRLib {
     /// Destructor
     ~Well();
 
+    void MoveWell(const Simbox    * simbox, 
+                  double            delta_X, 
+                  double            delta_Y, 
+                  double            k_move);
+
+    void DeleteBlockedLogsOrigThick() { delete blocked_logs_common_orig_thick_  ;};
+
     /// Check existence of continuous log
     bool HasContLog(const std::string& name) const;
+
 
     /// Return continuous logs
     std::vector<double> & GetContLog(const std::string& name);

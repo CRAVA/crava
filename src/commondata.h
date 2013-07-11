@@ -21,8 +21,7 @@
 class ModelSettings;
 class ModelGeneral;
 class InputFiles;
-//class FFTGrid;
-//class Surface;
+
 
 class CommonData{
 public:

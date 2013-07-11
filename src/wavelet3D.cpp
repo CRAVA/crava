@@ -127,7 +127,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                          hasWellData);
 
       int start, length;
-      blocked_logs[w]->FindContiniousPartOfData(hasWellData,
+      blocked_logs[w]->FindContinuousPartOfData(hasWellData,
                                                 nz_,
                                                 start,
                                                 length);
@@ -173,7 +173,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           zLog[b]         = static_cast<double> (zTop + b * dzWell[w]);
         }
         std::vector<double> zPosWell(nz_);
-        blocked_logs[w]->GetVerticalTrend(zLog, &zPosWell[0]);
+        blocked_logs[w]->GetVerticalTrend(&zLog[0], &zPosWell[0]);
         //bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
 
         int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx);
@@ -185,10 +185,10 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
           for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
             std::vector<double> seisLog(nBlocks);
-            blocked_logs[w]->GetBlockedGrid(simBox, seismic_data, &seisLog[0], xTr, yTr);
+            blocked_logs[w]->GetBlockedGrid(seismic_data, simBox, &seisLog[0], xTr, yTr);
             //bl->getBlockedGrid(&seisCube[0], &seisLog[0], xTr, yTr);
             std::vector<double> seisData(nz_);
-            blocked_logs[w]->GetVerticalTrend(seisLog, &seisData[0]);
+            blocked_logs[w]->GetVerticalTrend(&seisLog[0], &seisData[0]);
             //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
             for (unsigned int b=0; b<nBlocks; b++) {
               //int xIndex      = iPos[b] + xTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
@@ -572,7 +572,7 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
 
       int start, length;
 
-      blocked_logs[w]->FindContiniousPartOfData(hasWellData,
+      blocked_logs[w]->FindContinuousPartOfData(hasWellData,
                                                 nz_,
                                                 start,
                                                 length);
