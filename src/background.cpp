@@ -337,6 +337,11 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   for(int i=0; i<nZones+1; i++)
     surface[i] = Surface(surface_files[i]);
 
+  std::vector<Surface> regular_surface(nZones+1);
+  RegularizeZoneSurfaces(surface, 
+                         simbox,
+                         regular_surface); //Subsequent code needs all surfaces to be equally sampled.
+
   std::vector<StormContGrid> alpha_zones(nZones);
   std::vector<StormContGrid> beta_zones(nZones);
   std::vector<StormContGrid> rho_zones(nZones);
@@ -344,7 +349,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   BuildSeismicPropertyZones(alpha_zones,
                             beta_zones,
                             rho_zones,
-                            surface,
+                            regular_surface,
                             correlation_structure,
                             simbox,
                             dz_simbox);
@@ -355,8 +360,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
 
   ErodeAllSurfaces(eroded_surfaces,
                    erosion_priority,
-                   surface,
-                   simbox);
+                   regular_surface);
 
   const CovGrid2D & covGrid2D = Kriging2D::makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
 
@@ -757,10 +761,45 @@ Background::BuildErodedZones(NRLib::Volume                & eroded_zone,
 }
 //---------------------------------------------------------------------------
 void
+Background::RegularizeZoneSurfaces(const std::vector<Surface> & surface,
+                                   const Simbox * simbox,
+                                   std::vector<Surface> & regular_surface)
+{
+  double xmin, xmax, ymin, ymax;
+  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
+  double lx = xmax-xmin;
+  double ly = ymax-ymin;
+
+  double d0 = simbox->getdx();
+  if(simbox->getdy()< d0)
+    d0 = simbox->getdy();
+
+  size_t nx = static_cast<size_t>(ceil(lx/d0));
+  double dx = lx/static_cast<double>(nx-1);
+  size_t ny = static_cast<size_t>(ceil(ly/d0));
+  double dy = ly/static_cast<double>(ny-1);
+  NRLib::Grid2D<double> z_grid(nx, ny, 0);
+
+  for(size_t s=0;s<surface.size();s++) {
+    double y = ymin;
+    for(size_t j=0;j<ny;j++) {
+      double x = xmin;
+      for(size_t i=0;i<nx;i++) {
+        double z = surface[s].GetZ(x,y);
+        z_grid(i,j) = z;
+        x += dx;
+      }
+      y += dy;
+    }
+    regular_surface[s] = Surface(xmin, ymin, lx, ly, z_grid);
+  }
+}
+
+//---------------------------------------------------------------------------
+void
 Background::ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
                              const std::vector<int>     & erosion_priority,
-                             const std::vector<Surface> & surface,
-                             const Simbox               * simbox) const
+                             const std::vector<Surface> & surface) const
 {
   int    nSurf     = static_cast<int>(eroded_surfaces.size());
 
@@ -774,14 +813,14 @@ Background::ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
     //Find closest eroded surface downward
     for(int k=l+1; k<nSurf; k++) {
       if(eroded_surfaces[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, false);
+        ErodeSurface(temp_surface, eroded_surfaces[k], false);
         break;
       }
     }
     //Find closest eroded surface upward
     for(int k=l-1; k>=0; k--) {
       if(eroded_surfaces[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, true);
+        ErodeSurface(temp_surface, eroded_surfaces[k], true);
         break;
       }
     }
@@ -2459,29 +2498,24 @@ Background::copyFFTGrid(FFTGrid   * origGrid,
 void
 Background::ErodeSurface(Surface       *& surface,
                          const Surface *  priority_surface,
-                         const Simbox  *  simbox,
                          const bool    &  compare_upward) const
 {
-  int nx    = simbox->getnx();
-  int ny    = simbox->getny();
-  double x0 = simbox->GetXMin();
-  double y0 = simbox->GetYMin();
-  double lx = simbox->GetLX();
-  double ly = simbox->GetLY();
+  int nx    = surface->GetNI();
+  int ny    = surface->GetNJ();
+  double x0 = surface->GetXMin();
+  double y0 = surface->GetYMin();
+  double lx = surface->GetLengthX();
+  double ly = surface->GetLengthY();
 
   NRLib::Grid2D<double> eroded_surface(nx,ny,0);
-  double x;
-  double y;
   double z;
   double z_priority;
 
   double missing = surface->GetMissingValue();
-  for(int i=0; i<nx; i++) {
-    for(int j=0; j<ny; j++) {
-      simbox->getXYCoord(i,j,x,y);
-
-      z_priority = priority_surface->GetZ(x,y);
-      z          = surface->GetZ(x,y);
+  for(int j=0; j<ny; j++) {
+    for(int i=0; i<nx; i++) {
+      z_priority = (*priority_surface)(i,j);
+      z          = (*surface)(i,j);
 
       if(compare_upward) {
         if(z < z_priority && z != missing)
