@@ -27,7 +27,6 @@
 #include <map>
 #include "src/simbox.h"
 #include "src/modelsettings.h"
-#include "src/blockedlogscommon.h"
 
 class BlockedLogsCommon;
 
@@ -62,7 +61,7 @@ namespace NRLib {
                   double            delta_Y, 
                   double            k_move);
 
-    void DeleteBlockedLogsOrigThick() { delete blocked_logs_common_orig_thick_  ;};
+    void DeleteBlockedLogsCommonOrigThick() { delete blocked_logs_common_orig_thick_  ;};
 
     /// Check existence of continuous log
     bool HasContLog(const std::string& name) const;

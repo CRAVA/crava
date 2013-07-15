@@ -2,25 +2,19 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <cmath>
 
 #include "src/blockedlogscommon.h"
-#include "nrlib/well/well.hpp"
-#include "src/commondata.h"
 #include "src/simbox.h"
-#include "src/modelsettings.h"
-#include "src/inputfiles.h"
+#include "fftw.h"
+#include "lib/utils.h"
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * const well_data,
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
                                      bool                             & failed,
                                      std::string                      & err_text):
 n_blocks_(0),
+n_angles_(0),
 well_name_(""),
 n_layers_(estimation_simbox->getnz()),
 interpolate_(interpolate){
@@ -57,7 +51,7 @@ interpolate_(interpolate){
 
 }
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * const well_data,
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
@@ -65,6 +59,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * const we
                                      bool                             & failed,
                                      std::string                      & err_text):
 n_blocks_(0),
+n_angles_(0),
 well_name_(""),
 n_layers_(estimation_simbox->getnz()),
 interpolate_(interpolate){
@@ -88,9 +83,6 @@ interpolate_(interpolate){
   n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
 }
 
-BlockedLogsCommon::~BlockedLogsCommon(){
-
-}
 
 void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
                                   const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
@@ -413,7 +405,7 @@ void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocke
 }
 
 //------------------------------------------------------------------------------
-void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * const well_data,
+void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * well_data,
                                                   std::vector<double>                          & x_pos_unblocked,
                                                   std::vector<double>                          & y_pos_unblocked,
                                                   std::vector<double>                          & z_pos_unblocked,
@@ -616,9 +608,9 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
       for (l = 0; l < j_tot_offset; l++)
       {
         GetBlockedGrid(&seismic_data[j], estimation_simbox, seis_log,i_offset[k],j_offset[l]);
-        for (m = 0; m < n_blocks_; m++)
+        for (m = 0; m < static_cast<int>(n_blocks_); m++)
         {
-          seis_cube_small[j](k, l, m) = seis_log[m];
+          seis_cube_small[j](k, l, m) = static_cast<float>(seis_log[m]);
         }
       }
     }
@@ -636,7 +628,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
 
       for( j=0; j<n_angles; j++ ){
 
-        for (m=0; m<n_blocks_; m++)
+        for (m=0; m<static_cast<int>(n_blocks_); m++)
           seis_log[m] = seis_cube_small[j](k,l,m);
 
         GetVerticalTrend(seis_log, seis_data);
@@ -779,7 +771,7 @@ void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>       
       trend[k] = 0.0;
       count[k] = 0;
     }
-    for (int m = 0 ; m < n_blocks_ ; m++) {
+    for (int m = 0 ; m < static_cast<int>(n_blocks_) ; m++) {
       if (blocked_log[m] != RMISSING) {
         if(limits.size() == 0 ||
            (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
@@ -812,7 +804,7 @@ void
 BlockedLogsCommon::InterpolateTrend(const double  * blocked_log, 
                                     double        * trend)
 {
-  for (int m = 1 ; m < n_blocks_ ; m++) {
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
     if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
       if(k_pos_[m] < k_pos_[m-1])
@@ -830,7 +822,7 @@ BlockedLogsCommon::InterpolateTrend(const double  * blocked_log,
 
 void         BlockedLogsCommon::InterpolateTrend(const std::vector<double>    & blocked_log, 
                                                  std::vector<double>          & trend){
-  for (int m = 1 ; m < n_blocks_ ; m++) {
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
     if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
       if(k_pos_[m] < k_pos_[m-1])
@@ -846,7 +838,7 @@ void         BlockedLogsCommon::InterpolateTrend(const std::vector<double>    & 
 void  BlockedLogsCommon::InterpolateTrend(const std::vector<double>      & blocked_log, 
                                           std::vector<double>            & trend, 
                                           const std::vector<Surface *>   & limits){
-  for (int m = 1 ; m < n_blocks_ ; m++) {
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
     if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
       if(k_pos_[m] < k_pos_[m-1])
@@ -930,9 +922,9 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
 
   for(i=start;i < start+length-1;i++)
   {
-    double ei1 = ComputeElasticImpedance(vp_vert[i], vs_vert[i],rho_vert[i],coeff);
-    double ei2 = ComputeElasticImpedance(vp_vert[i+1], vs_vert[i+1],rho_vert[i+1],coeff);
-    cpp_r[i] =  ei2-ei1;
+    double ei1 = ComputeElasticImpedance(vp_vert[i], static_cast<float>(vs_vert[i]),static_cast<float>(rho_vert[i]),coeff);
+    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]),coeff);
+    cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
 }
@@ -950,39 +942,6 @@ double BlockedLogsCommon::ComputeElasticImpedance(double         vp,
   return ang_imp;
 }
 
-void BlockedLogsCommon::GetVerticalTrend(const float   * blocked_log,
-                                         float         * trend)
-{
-  if (blocked_log != NULL && trend != NULL) {
-    int * count = new int[n_layers_];
-    for (int k = 0 ; k < n_layers_ ; k++) {
-      trend[k] = 0.0f;
-      count[k] = 0;
-    }
-    for (int m = 0 ; m < n_blocks_ ; m++) {
-      if (blocked_log[m] != RMISSING) {
-        trend[k_pos_[m]] += blocked_log[m];
-        count[k_pos_[m]]++;
-      }
-    }
-    for (int k = 0 ; k < n_layers_ ; k++) {
-      if (count[k] > 0)
-        trend[k] = trend[k]/count[k];
-      else
-        trend[k] = RMISSING;
-    }
-    if(interpolate_ == true)
-      InterpolateTrend(blocked_log, trend);
-    delete [] count;
-  }
-  else {
-    if (blocked_log == NULL)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
-    if (trend == NULL)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
-    exit(1);
-  }
-}
 
 
 void     BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_log, 
@@ -993,7 +952,7 @@ void     BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocke
       trend[k] = 0.0;
       count[k] = 0;
     }
-    for (int m = 0 ; m < n_blocks_ ; m++) {
+    for (int m = 0 ; m < static_cast<int>(n_blocks_) ; m++) {
       if (blocked_log[m] != RMISSING) {
         trend[k_pos_[m]] += blocked_log[m];
         count[k_pos_[m]]++;
@@ -1033,7 +992,7 @@ void BlockedLogsCommon::GetBlockedGrid(const SeismicStorage   * grid,
                                        std::vector<double>    & blocked_log,
                                        int                      i_offset,
                                        int                      j_offset){
-  for (int m = 0 ; m < n_blocks_ ; m++) {
+  for (int m = 0 ; m < static_cast<float>(n_blocks_) ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blocked_log[m] = grid->GetRealTraceValue(estimation_simbox, i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
 
@@ -1051,7 +1010,7 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
     seis_r[i] = 0.0;
 
   for(i=start; i<start+length; i++)
-    seis_r[i] = seismic_data[i];
+    seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
 /*
   int lTregion = 3;
   int* modify  = getIndexPrior(start,lTregion,nzp);
@@ -1060,3 +1019,149 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 */
 
 }
+
+void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>   & blocked_log,
+                                                std::vector<double>   & z_pos,
+                                                int                     n_blocks,
+                                                std::vector<double>   & vertical_trend,
+                                                double                  z0,
+                                                double                  dzVt,
+                                                int                     nz)
+{
+  //
+  // Initialise as undefined
+  //
+  for (int i=0 ; i<n_blocks ; i++)
+    blocked_log[i] = RMISSING;
+
+  //
+  // Aritmethic mean of values in overlapping cells
+  //
+  for (int i=0 ; i<n_blocks ; i++) {
+    double dz;
+    if (i==n_blocks-1)
+      dz = z_pos[i]-z_pos[i-1];
+    else
+      dz = z_pos[i+1]-z_pos[i];
+    double zi = z_pos[i];
+    double a  = zi - 0.5*dz;     // Top of blocked log cell
+    double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
+
+    int j=0;
+    while (b<a && j<nz) {
+      b += dzVt;
+      j++;
+    }
+    // Now 'j' is the first vertical trend cell overlapping blocked log cell 'i'
+
+    float value;
+    if (j==nz) {
+      // We have come to the end of the end-of-vertical-trend
+      value = static_cast<float>(vertical_trend[j-1]);
+    }
+    else if (b >= a+dz) {
+      // One single vertical-trend-cell covers a blocked log cell completely.
+      value = static_cast<float>(vertical_trend[j]);
+    }
+    else {
+      double zj = b + 0.5*dzVt; // Center of vertical trend cell
+      value = static_cast<float>( vertical_trend[j]* (zj+dzVt-zi)/dzVt + vertical_trend[j]*(zi-zj)/dzVt);
+    }
+    blocked_log[i] = value;
+
+    //LogKit::LogFormatted(LogKit::Error,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
+  }
+}
+
+void  BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>    & vertical_trend,
+                                                 double                   z0,              // z-value of center in top layer
+                                                 double                   dz,              // dz in vertical trend
+                                                 int                      nz,              // layers in vertical trend
+                                                 std::string              type,
+                                                 int                      i_angle)
+{
+  if (type != "WELL_SYNTHETIC_SEISMIC")
+  {
+    std::vector<double> blocked_log(n_blocks_);
+
+    SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                            vertical_trend, z0, dz, nz);
+
+    if (type == "ALPHA_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
+    else if (type == "BETA_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
+    else if (type == "RHO_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
+    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+      if (actual_synt_seismic_data_.size() == 0)
+        actual_synt_seismic_data_.resize(n_angles_); // nAngles is set along with real_seismic_data_
+      actual_synt_seismic_data_[i_angle] = blocked_log;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
+                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
+      exit(1);
+    }
+  }
+  else if (type == "WELL_SYNTHETIC_SEISMIC") {
+    if (well_synt_seismic_data_.size() == 0)
+    {
+      well_synt_seismic_data_.resize(n_angles_);
+      for (int i=0; i<n_angles_; i++)
+      {
+        well_synt_seismic_data_[i].resize(n_blocks_);
+        for (int j=0; j<static_cast<int>(n_blocks_); j++)
+          well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
+      }
+    }
+    SetLogFromVerticalTrend(well_synt_seismic_data_[i_angle], z_pos_blocked_, n_blocks_,
+                            vertical_trend, z0, dz, nz);
+  }
+}
+
+/*
+void  BlockedLogs::SetLogFromGrid(SeismicStorage    * grid,
+                                  int                 i_angle,
+                                  int                 n_angles,
+                                  std::string         type)
+{
+  std::vector<double> blocked_log(n_blocks_);
+
+  for (int m = 0 ; m < n_blocks_ ; m++) {
+    grid->GetRealTraceValue(
+    blocked_log[m] = grid->getRealValue(ipos_[m], jpos_[m], kpos_[m]);
+  }
+
+  if (nAngles_ == 0)
+    nAngles_ = nAngles;
+
+  if (type == "REFLECTION_COEFFICIENT") {
+    if (cpp_ == NULL)
+      cpp_ = new float * [nAngles_];
+    cpp_[iAngle] = blockedLog;
+  }
+  else if (type == "SEISMIC_DATA") {
+    if (real_seismic_data_ == NULL)
+      real_seismic_data_ = new float * [nAngles_];
+    real_seismic_data_[iAngle] = blockedLog;
+  }
+  else if (type == "FACIES_PROB") {
+    if (facies_prob_ == NULL)
+      facies_prob_ = new float * [nFacies_];
+    facies_prob_[iAngle] = blockedLog;
+  }
+  else if (type == "ALPHA_PREDICTED")
+    alpha_predicted_ = blockedLog;
+  else if (type == "BETA_PREDICTED")
+    beta_predicted_ = blockedLog;
+  else if (type == "RHO_PREDICTED")
+    rho_predicted_ = blockedLog;
+
+  else {
+    LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
+                         +"\" in BlockedLogs::setLogFromGrid()\n");
+    exit(1);
+  }
+}
+*/

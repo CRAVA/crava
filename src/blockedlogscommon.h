@@ -2,26 +2,26 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-
 #ifndef BLOCKEDLOGSCOMMON_H
 #define BLOCKEDLOGSCOMMON_H
 
-#include <src/seismicstorage.h>
-#include <nrlib/surface/surface.hpp>
+#include "src/seismicstorage.h"
 #include "fftw.h"
-#include <nrlib/well/well.hpp>
+#include <map>
+#include <string>
+#include "nrlib/well/well.hpp"
+#include "src/definitions.h"
 
 
-class BlockedLogsCommon
-{
+class BlockedLogsCommon{
 public:
-  BlockedLogsCommon(const NRLib::Well                * const well_data,
+  BlockedLogsCommon(const NRLib::Well                * well_data,
                     const Simbox                     * const estimation_simbox,
                     bool                               interpolate,
                     bool                             & failed,
                     std::string                      & err_text);
 
-  BlockedLogsCommon(const NRLib::Well                * const well_data,
+  BlockedLogsCommon(const NRLib::Well                * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
@@ -29,7 +29,6 @@ public:
                     bool                             & failed,
                     std::string                      & err_text);
 
-  ~ BlockedLogsCommon();
 
   void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                               const Simbox                  * time_simbox,
@@ -78,16 +77,51 @@ public:
   void                  GetVerticalTrend(const std::vector<double>  & blockedLog, 
                                          std::vector<double>        & trend);
 
-  void  GetVerticalTrend(const double   * blocked_log,
-                         double         * trend);
-
   void    GetVerticalTrendLimited(const std::vector<double>       & blocked_log, 
                                   std::vector<double>             & trend, 
                                   const std::vector<Surface *>    & limits);
 
+    void        GetBlockedGrid(const SeismicStorage   * grid,
+                               const Simbox           * estimation_simbox,
+                               std::vector<double>    & blocked_log,
+                               int                      i_offset = 0,
+                               int                      j_offset = 0);
+
+    void                      EstimateCor(fftw_complex    * var1_c,
+                                          fftw_complex    * var2_c,
+                                          fftw_complex    * ccor_1_2_c,
+                                          int               cnzp) const;
+
+    void                      FillInCpp(const float   * coeff,
+                                        int             start,
+                                        int             length,
+                                        fftw_real     * cpp_r,
+                                        int             nzp);
+
+    void  SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
+                                  double                  z0,              // z-value of center in top layer
+                                  double                  dz,              // dz in vertical trend
+                                  int                     nz,              // layers in vertical trend
+                                  std::string             type,
+                                  int                     iAngle);
+
+    void        FillInSeismic(std::vector<double> & seismic_data,
+                          int                   start,
+                          int                   length,
+                          fftw_real           * seis_r,
+                          int                   nzp) const;
+
 private:
 
   // FUNCTIONS------------------------------------
+
+  void                  SetLogFromVerticalTrend(std::vector<double>   & blocked_log,
+                                                std::vector<double>   & z_pos,
+                                                int                     n_blocks,
+                                                std::vector<double>   & vertical_trend,
+                                                double                  z0,
+                                                double                  dzVt,
+                                                int                     nz);
 
   void         InterpolateTrend(const double   * blocked_log, 
                                 double         * trend);
@@ -104,7 +138,7 @@ private:
                                  float         rho,
                                  const float * coeff) const;
 
-  void    RemoveMissingLogValues(const NRLib::Well                            * const well_data,
+  void    RemoveMissingLogValues(const NRLib::Well                            * well_data,
                                  std::vector<double>                          & x_pos_unblocked,
                                  std::vector<double>                          & y_pos_unblocked,
                                  std::vector<double>                          & z_pos_unblocked,
@@ -147,29 +181,6 @@ private:
                                    int                     index,
                                    float                   rel);
 
-    void                      FillInCpp(const float   * coeff,
-                                        int             start,
-                                        int             length,
-                                        fftw_real     * cpp_r,
-                                        int             nzp);
-
-    void                      EstimateCor(fftw_complex * var1_c,
-                                          fftw_complex * var2_c,
-                                          fftw_complex * ccor_1_2_c,
-                                          int            cnzp) const;
-
-    void        GetBlockedGrid(const SeismicStorage   * grid,
-                               const Simbox           * estimation_simbox,
-                               std::vector<double>    & blocked_log,
-                               int                      i_offset,
-                               int                      j_offset);
-
-    void        FillInSeismic(std::vector<double> & seismic_data,
-                              int                   start,
-                              int                   length,
-                              fftw_real           * seis_r,
-                              int                   nzp) const;
-
   // CLASS VARIABLES -----------------------------
 
   std::string        well_name_;        // Name of well
@@ -190,8 +201,14 @@ private:
   int n_continuous_logs_;     // Number of continuous logs
   int n_discrete_logs_;       // Number of discrete logs
 
-  std::map<std::string, std::vector<double>> continuous_logs_blocked_;  // Map between variable name and blocked continuous log
-  std::map<std::string, std::vector<int>> discrete_logs_blocked_;       // Map between variable name and blocked discrete log
+  std::map<std::string, std::vector<double> > continuous_logs_blocked_;  // Map between variable name and blocked continuous log
+  std::map<std::string, std::vector<int> > discrete_logs_blocked_;       // Map between variable name and blocked discrete log
+
+  std::map<std::string, std::vector<double> > cont_logs_seismic_resolution_;  // Map between variable name and blocked continuous log
+  std::map<std::string, std::vector<int> > disc_logs_seismic_resolution_;  // Map between variable name and blocked continuous log
+
+  std::vector<std::vector<double> > actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
+  std::vector<std::vector<double> > well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
 
   // Unblocked values
 
@@ -205,6 +222,7 @@ private:
 
   bool                      interpolate_;              ///<
 
+  int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
 
@@ -215,5 +233,4 @@ private:
   int                       last_B_;                    ///< Last block with contribution from well log
 
 };
-
 #endif

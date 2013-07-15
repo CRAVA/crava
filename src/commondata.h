@@ -15,7 +15,6 @@
 #include "lib/utils.h"
 #include "src/blockedlogscommon.h"
 #include "src/tasklist.h"
-
 #include "src/seismicstorage.h"
 
 class ModelSettings;
@@ -48,7 +47,7 @@ private:
   void  OptimizeWellLocations(ModelSettings                                 * model_settings,
                               InputFiles                                    * input_files,
                               const Simbox                                  * estimation_simbox,
-                              const NRLib::Volume                           & volume,
+                              //const NRLib::Volume                           & volume,
                               std::vector<NRLib::Well>                      & wells,
                               std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                               std::map<int, float **>                       & reflection_matrix,

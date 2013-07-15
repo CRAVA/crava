@@ -136,7 +136,7 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
       //std::vector<float> seisLog(bl->getNumberOfBlocks());
       std::vector<double> seisLog(blocked_logs[w]->GetNumberOfBlocks());
       //bl->getBlockedGrid(seisCube, &seisLog[0]);
-      blocked_logs[w]->GetBlockedGrid(simbox, seismic_data, &seisLog[0]);
+      blocked_logs[w]->GetBlockedGrid(seismic_data, simbox, seisLog);
       double maxAmp = 0.0;
       for (int i = 0 ; i < blocked_logs[w]->GetNumberOfBlocks(); i++) {
         maxAmp = std::max(maxAmp, std::abs(seisLog[i]));
@@ -166,16 +166,16 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
 
       //Alpha: Vp, Beta, Vs
       std::vector<double> alpha(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVp(), &alpha[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVpBlocked(), alpha);
       //bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
       std::vector<double> beta(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVs(), &beta[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVsBlocked(), beta);
       //bl->getVerticalTrend(bl->getBeta(), &beta[0]);
       std::vector<double> rho(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetRho(), &rho[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetRhoBlocked(), rho);
       //bl->getVerticalTrend(bl->getRho(), &rho[0]);
       std::vector<double> seisData(nz_);
-      blocked_logs[w]->GetVerticalTrend(seisLog, &seisData[0]);
+      blocked_logs[w]->GetVerticalTrend(seisLog, seisData);
       //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
       std::vector<bool> hasData(nz_);
       for (int k = 0 ; k < nz_ ; k++)
@@ -184,7 +184,7 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
       // Find continuous part of data
       //
       int start,length;
-      blocked_logs[w]->FindContiniousPartOfData(hasData, nz_, start, length);
+      blocked_logs[w]->FindContinuousPartOfData(hasData, nz_, start, length);
       //bl->findContiniousPartOfData(hasData, nz_, start, length);
       if(length*dz_ > waveletTaperLength ) { // must have enough data
         nUsedWells++;
@@ -193,7 +193,7 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
         fileName = "cpp_1";
         printVecToFile(fileName, cpp_r[w], nzp_);  // Debug
         Utils::fft(cpp_r[w], cpp_c[w], nzp_);
-        blocked_logs[w]->FillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_logs[w]->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
         //bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
         fileName = "seis_1";
         printVecToFile(fileName, seis_r[w], nzp_); // Debug
@@ -289,14 +289,13 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
 
-      std::vector<float> syntSeis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+      std::vector<double> synt_seis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
       if (wellWeight[w] > 0) {
         for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
-          syntSeis[i] = synt_seis_r[w][i];
+          synt_seis[i] = synt_seis_r[w][i];
         //wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
         //                                                             "WELL_SYNTHETIC_SEISMIC", iAngle);
-        blocked_logs[w]->SetLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
-                                                 "WELL_SYNTHETIC_SEISMIC", iAngle);
+        blocked_logs[w]->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_,"WELL_SYNTHETIC_SEISMIC", iAngle);
 
       }
     }
@@ -670,23 +669,23 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSet
       //std::vector<float> seisLog(wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks());
       std::vector<double> seisLog(blocked_logs[w]->GetNumberOfBlocks());
       //bl->getBlockedGrid(seisCube, &seisLog[0]);
-      blocked_logs[w]->GetBlockedGrid(simbox, seismic_data, &seisLog[0]);
+      blocked_logs[w]->GetBlockedGrid(seismic_data, simbox, seisLog);
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
       std::vector<bool> hasData(nz);
       std::vector<double> seisData(nz);
       //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
-      blocked_logs[w]->GetVerticalTrend(seisLog, &seisData[0]);
+      blocked_logs[w]->GetVerticalTrend(seisLog, seisData);
       for (int k = 0 ; k < nz; k++)
         hasData[k] = seisData[k] != RMISSING;
       int start,length;
       //bl->findContiniousPartOfData(hasData,nz,start,length);
-      blocked_logs[w]->FindContiniousPartOfData(hasData, nz, start, length);
+      blocked_logs[w]->FindContinuousPartOfData(hasData, nz, start, length);
       //bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp);
       blocked_logs[w]->FillInCpp(coeff_, start, length, cpp_r[w], nzp);
       //bl->fillInSeismic(&seisData[0],start,length,seis_r[w],nzp);
-      blocked_logs[w]->FillInSeismic(&seisData[0], start, length, seis_r[w], nzp);
+      blocked_logs[w]->FillInSeismic(seisData, start, length, seis_r[w], nzp);
 
       for(int i=0;i<nzp;i++) {
         if(cpp_r[w][i] > maxCpp)
@@ -792,20 +791,20 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       //std::vector<float> seisLog(bl->getNumberOfBlocks());
       std::vector<double> seisLog(blocked_logs[w]->GetNumberOfBlocks());
       //bl->getBlockedGrid(seisCube, &seisLog[0]);
-      blocked_logs[w]->GetBlockedGrid(simbox, seismic_data, &seisLog[0]);
+      blocked_logs[w]->GetBlockedGrid(seismic_data, simbox, seisLog);
       //bl->getBlockedGrid(seisCube, &seisLog[0]);
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
       //std::vector<float> alpha(nz_);
       std::vector<double> alpha(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVp(), &alpha[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVpBlocked(), alpha);
       //bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
       std::vector<double> beta(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVs(), &beta[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetVsBlocked(), beta);
       //bl->getVerticalTrend(bl->getBeta(), &beta[0]);
       std::vector<double> rho(nz_);
-      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetRho(), &rho[0]);
+      blocked_logs[w]->GetVerticalTrend(blocked_logs[w]->GetRhoBlocked(), rho);
       //bl->getVerticalTrend(bl->getRho(), &rho[0]);
       std::vector<double> seisData(nz_);
       //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
@@ -814,7 +813,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
         hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
 
       int start,length;
-      blocked_logs[w]->FindContiniousPartOfData(hasData, nz_, start, length);
+      blocked_logs[w]->FindContinuousPartOfData(hasData, nz_, start, length);
       //bl->findContiniousPartOfData(hasData, nz_, start, length);
 
       if(length * dz_ > waveletLength_) { // must have enough data
@@ -825,7 +824,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
         Utils::fft(wavelet_r[w], wavelet_c[w], nzp_);
         convolve(cpp_c[w], wavelet_c[w], synt_c[w], cnzp_);
         //bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
-        blocked_logs[w]->FillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_logs[w]->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
         //bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
         Utils::fft(seis_r[w], seis_c[w], nzp_);
         //bl->estimateCor(synt_c[w], seis_c[w], cor_seis_synt_c[w], cnzp_);
@@ -842,7 +841,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
         Utils::fftInv(synt_c[w], synt_r[w], nzp_);
         shiftReal(-shift/dzWell[w], synt_r[w], nzp_);
         //bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
-        blocked_logs[w]->FillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_logs[w]->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
         //bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
         if(ModelSettings::getDebugLevel() > 0) {
           std::string fileName;

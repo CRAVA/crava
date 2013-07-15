@@ -29,7 +29,8 @@
 
 using namespace NRLib;
 
-Well::Well()
+Well::Well():
+blocked_logs_common_orig_thick_(NULL)
 {
   well_rmissing_ = -999.0;
   well_imissing_  = -999;
@@ -38,7 +39,8 @@ Well::Well()
 
 Well::Well(const std::string & name,
            double              rmissing,
-           int                 imissing)
+           int                 imissing):
+blocked_logs_common_orig_thick_(NULL)
 {
   well_name_ = name;
   well_rmissing_ = rmissing;
@@ -56,7 +58,8 @@ blocked_logs_common_orig_thick_(NULL)
 
 Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
            const std::map<std::string,std::vector<int> >    & disc_log,
-           const std::string                                & well_name)
+           const std::string                                & well_name):
+blocked_logs_common_orig_thick_(NULL)
 {
   cont_log_       = cont_log;
   disc_log_       = disc_log;
