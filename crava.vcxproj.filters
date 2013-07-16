@@ -993,6 +993,9 @@
     <ClCompile Include="src\multiintervalgrid.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\intervalsimbox.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1671,6 +1674,9 @@
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
     <ClInclude Include="src\multiintervalgrid.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\intervalsimbox.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
