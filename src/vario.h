@@ -45,8 +45,6 @@ public:
   float  corr(float deltaX, float deltaY) const;
 };
 
-
-
 class GenExpVario : public Vario
 {
 public:
@@ -60,6 +58,4 @@ private:
   float pot_;
 
 };
-
-
 #endif

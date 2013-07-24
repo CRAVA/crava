@@ -6,8 +6,6 @@
 #ifndef COMMONDATA_H
 #define COMMONDATA_H
 
-#include <math.h>
-#include <string>
 #include "src/simbox.h"
 #include "src/welldata.h"
 #include "nrlib/well/well.hpp"
@@ -16,10 +14,11 @@
 #include "src/blockedlogscommon.h"
 #include "src/tasklist.h"
 #include "src/seismicstorage.h"
+#include "src/multiintervalgrid.h"
 
+class InputFiles;
 class ModelSettings;
 class ModelGeneral;
-class InputFiles;
 
 
 class CommonData{
@@ -49,10 +48,23 @@ private:
                               const Simbox                                  * estimation_simbox,
                               //const NRLib::Volume                           & volume,
                               std::vector<NRLib::Well>                      & wells,
+                              std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                               std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                               std::map<int, float **>                       & reflection_matrix,
                               std::string                                   & err_text,
                               bool                                          & failed);
+
+  void MoveWell(const NRLib::Well & well,
+                const Simbox      * simbox, 
+                double              delta_X, 
+                double              delta_Y, 
+                double              k_move);
+
+  void  CalculateDeviation(NRLib::Well            & new_well,
+                           const ModelSettings    * const model_settings,
+                           float                  & dev_angle,
+                           Simbox                 * simbox,
+                           int                      use_for_wavelet_estimation);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -110,7 +122,7 @@ private:
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
                                std::vector<NRLib::Well>                       & wells,
-                               std::vector<BlockedLogsCommon *>               & blocked_logs_common,
+                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::string                                    & err_text);
 
   bool       CheckThatDataCoverGrid(const SegY   * segy,
@@ -127,28 +139,14 @@ private:
                           bool              & failed);
 
 
-  //void        readNorsarWell(const std::string              & wellFileName,
-  //                           NRLib::Well                    & new_well,
-  //                           const std::vector<std::string> & logNames,
-  //                           const std::vector<bool>        & inverseVelocity,
-  //                           bool                             faciesLogGiven,
-  //                           std::string                    & error);
+  bool  SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_settings,
+                                            InputFiles     * input_files);
 
-  //void          readRMSWell(const std::string              & wellFileName,
-  //                          NRLib::Well                    & new_well,
-  //                          const std::vector<std::string> & logNames,
-  //                          const std::vector<bool>        & inverseVelocity,
-  //                          bool                             faciesLogGiven,
-  //                          std::string                    & error);
-
-  bool SetupReflectionMatrixAndTempWavelet(ModelSettings * model_settings,
-                                           InputFiles *    input_files);
-
-  float  ** ReadMatrix(const std::string & fileName,
-                       int                 n1,
-                       int                 n2,
-                       const std::string & readReason,
-                       std::string       & errText);
+  float  ** ReadMatrix(const std::string          & fileName,
+                       int                          n1,
+                       int                          n2,
+                       const std::string          & readReason,
+                       std::string                & errText);
 
   void  SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
                                      double                vsvp,
@@ -156,14 +154,16 @@ private:
                                      int                   numberOfAngles,
                                      int                   thisTimeLapse);
 
-  bool waveletHandling(ModelSettings * model_settings,
-                       InputFiles * input_files);
+  bool  WaveletHandling(ModelSettings                 * model_settings,
+                        InputFiles                    * input_files);
 
   bool estimateWaveletShape();
   bool estimatePriorCorrelation();
   bool setupEstimationRockPhysics();
 
   int ComputeTime(int year, int month, int day) const;
+
+  // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
   // succeeded
@@ -177,14 +177,18 @@ private:
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
+  bool multigrid_;
 
-  Simbox          estimation_simbox_;
-  NRLib::Volume   full_inversion_volume_;
+  MultiIntervalGrid       * multiple_interval_grid_;
+  Simbox                  estimation_simbox_;
+  NRLib::Volume           full_inversion_volume_;
 
   //std::vector<SeismicStorage> seismic_data_;
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
   std::vector<NRLib::Well>                      wells_;
-  std::vector<BlockedLogsCommon *>              blocked_logs_common_;   ///< Blocked wells for estimation
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_; //
+  std::vector<std::string> continuous_logs_to_be_blocked_;
+  std::vector<std::string> discrete_logs_to_be_blocked_;
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;
@@ -196,17 +200,10 @@ private:
   //std::map<std::string, int>                        nFacies_;
 
 
-  std::map<int, float **> reflection_matrix_;
-  bool        reflection_matrix_from_file_; //False: created from global vp/vs
+  std::map<int, float **>   reflection_matrix_;
+  bool                      reflection_matrix_from_file_; //False: created from global vp/vs
 
-  std::vector<Wavelet*> temporary_wavelets_; //One wavelet per angle
-
-  //float                  ** reflectionMatrix_;
-
-
-  //Simbox                     * estimation_simbox_;
-  //NRLib::Volume              * full_inversion_volume_;
+  std::vector<Wavelet*>                       temporary_wavelets_; //One wavelet per angle
 
 };
-
 #endif

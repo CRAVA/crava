@@ -2,31 +2,22 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#define _USE_MATH_DEFINES
-#include <cmath>
-
 #include "src/commondata.h"
 #include "src/simbox.h"
-#include "src/modelsettings.h"
-#include "src/inputfiles.h"
 #include "src/timeline.h"
 #include "src/fftgrid.h"
-#include "src/modelgeneral.h"
+#include "src/seismicstorage.h"
+#include "src/wavelet1D.h"
+#include "src/multiintervalgrid.h"
+
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
-#include "src/seismicstorage.h"
+#include "nrlib/segy/segytrace.hpp"
 #include "nrlib/well/norsarwell.hpp"
 
-#include "src/wavelet1D.h"
-#include "nrlib/segy/segytrace.hpp"
 
 CommonData::CommonData(ModelSettings  * model_settings,
-                       InputFiles     * input_files)
-:
+                       InputFiles     * input_files):
   outer_temp_simbox_(false),
   read_seismic_(false),
   read_wells_(false),
@@ -35,7 +26,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
   optimize_well_location_(false),
   wavelet_estimation_shape_(false),
   prior_corr_estimation_(false),
-  setup_estimation_rock_physics_(false)
+  setup_estimation_rock_physics_(false),
+  multiple_interval_grid_(NULL)
 {
   bool failed = false;
   std::string err_text = "";
@@ -65,14 +57,15 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
+
   if(!failed){
     if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations()){
-      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, blocked_logs_common_, err_text);
+      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, mapped_blocked_logs_, err_text);
       failed = !block_wells_;
     }
   }
 
-  // 5. Reflection matrix
+  // 5. Reflection matrix and wavelet
   if(!failed){
     SetupReflectionMatrixAndTempWavelet(model_settings,
                                       input_files);
@@ -83,12 +76,16 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 6. Optimization of well location
   if(!failed){
     if(model_settings->getOptimizeWellLocation()){
-      OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_,  seismic_data_, reflection_matrix_, err_text, failed);
+      OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text, failed);
       optimize_well_location_ = !failed;
     }
   }
 
-  // 7. 
+  // 7. Setup of multiple interval grid
+  if(!failed){
+    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &estimation_simbox_, err_text, failed);
+    multigrid_ = !failed;
+  }
 
 }
 
@@ -498,7 +495,7 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
         LogKit::LogFormatted(LogKit::Error, "Well format of file " + wellFileName + " not recognized.");
       }
 
-      new_well.CalculateDeviation(model_settings, dev_angle[i], estimation_simbox, model_settings->getIndicatorWavelet(i));
+      CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox, model_settings->getIndicatorWavelet(i));
     }
   }catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
@@ -1483,7 +1480,7 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
   }
 }
 
-bool CommonData::waveletHandling(ModelSettings * model_settings,
+bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                  InputFiles * input_files)
 {
   (void) input_files;
@@ -1597,7 +1594,7 @@ bool CommonData::waveletHandling(ModelSettings * model_settings,
 
     for (int j = 0; j < nAngles; j++) {
 
-    float angle = float(angles[i]*180.0/M_PI);
+      float angle = float(angles[i]*180.0/NRLib::Pi);
     LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
     //if(model_settings->getForwardModeling()==false)
     //  seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2043,7 +2040,7 @@ void CommonData::WriteAreas(const SegyGeometry * area_params,
   LogKit::LogFormatted(LogKit::Low,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
   LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx        ly     azimuth          dx      dy\n");
   LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-  double azimuth = (-1)*area_rot*(180.0/M_PI);
+  double azimuth = (-1)*area_rot*(180.0/NRLib::Pi);
   if (azimuth < 0)
     azimuth += 360.0;
   LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n",
@@ -2345,29 +2342,26 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                          const Simbox                                   & estimation_simbox,
                                          std::vector<NRLib::Well>                       & wells,
-                                         std::vector<BlockedLogsCommon *>               & blocked_logs_common,
+                                         std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                          std::string                                    & err_text){
   bool failed = false;
 
   LogKit::WriteHeader("Blocking wells for estimation");
 
   // These are the continuous parameters that are to be used in BlockedLogs
-  std::vector<std::string> continuous_logs_to_be_blocked;
-  continuous_logs_to_be_blocked.push_back("Vp");
-  continuous_logs_to_be_blocked.push_back("Vs");
-  continuous_logs_to_be_blocked.push_back("Rho");
-  continuous_logs_to_be_blocked.push_back("MD");
-
+  continuous_logs_to_be_blocked_.push_back("Vp");
+  continuous_logs_to_be_blocked_.push_back("Vs");
+  continuous_logs_to_be_blocked_.push_back("Rho");
+  continuous_logs_to_be_blocked_.push_back("MD");
 
   // These are the discrete parameters that are to be used in BlockedLogs
-  std::vector<std::string> discrete_logs;
+  
 
   try{
     for (unsigned int i=0; i<wells.size(); i++){
-      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs, 
+      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, 
         &estimation_simbox, model_settings->getRunFromPanel(), failed, err_text);
-      wells[i].SetBlockedLogsCommonOrigThick(blocked_log);
-      blocked_logs_common.push_back(blocked_log);
+      mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
     }
   }catch(NRLib::Exception & e){
     err_text += e.what();
@@ -2383,6 +2377,7 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
                                         const Simbox                                  * estimation_simbox,
                                         //const NRLib::Volume                           & volume,
                                         std::vector<NRLib::Well>                      & wells,
+                                        std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                                         std::map<int, float **>                       & reflection_matrix,
                                         std::string                                   & err_text,
@@ -2401,7 +2396,6 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
   float   move_angle;
   int     i_move;
   int     j_move;
-  int     i,j,w;
   int     i_max_offset;
   int     j_max_offset;
   int     n_move_angles = 0;
@@ -2418,23 +2412,29 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
   LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
-  for (w = 0 ; w < static_cast<int>(n_wells) ; w++) {
-    if( wells[w].GetIsDeviated())
+  for (int w = 0 ; w < static_cast<int>(n_wells) ; w++) {
+    if( wells[w].IsDeviated())
       continue;
-
-    BlockedLogsCommon * bl = wells[w].GetBlockedLogsCommonOrigThick();
+    std::string well_name = wells[w].GetWellName();
+    std::map<std::string, BlockedLogsCommon * >::iterator it = mapped_blocked_logs.find(well_name);
+    if(it == mapped_blocked_logs.end()){
+      failed = true;
+      err_text += "Blocked log not found for well  " + wells[w].GetWellName() + "\n";
+      break;
+    }
+    BlockedLogsCommon * bl = it->second;
     n_move_angles = model_settings->getNumberOfWellAngles(w);
 
     if( n_move_angles==0 )
       continue;
 
-    for( i=0; i<n_angles; i++ )
+    for(int i=0; i<n_angles; i++ )
       angle_weight[i] = 0;
 
-    for( i=0; i<n_move_angles; i++ ){
+    for(int i=0; i<n_move_angles; i++ ){
       move_angle   = model_settings->getWellMoveAngle(w,i);
 
-      for( j=0; j<n_angles; j++ ){
+      for(int j=0; j<n_angles; j++ ){
         if( move_angle == seismicAngle[j]){
           angle_weight[j] = model_settings->getWellMoveWeight(w,i);
           break;
@@ -2443,7 +2443,7 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
     }
 
     sum = 0;
-    for( i=0; i<n_angles; i++ )
+    for(int i=0; i<n_angles; i++ )
       sum += angle_weight[i];
     if( sum == 0 )
       continue;
@@ -2456,14 +2456,17 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
 
     delta_X = i_move*dx*cos(angle) - j_move*dy*sin(angle);
     delta_Y = i_move*dx*sin(angle) + j_move*dy*cos(angle);
-    wells_[w].MoveWell(estimation_simbox,delta_X,delta_Y,k_move);
-    wells_[w].DeleteBlockedLogsCommonOrigThick();
-    wells_[w].SetBlockedLogsCommonOrigThick( new BlockedLogsCommon(&wells[w], estimation_simbox, model_settings->getRunFromPanel(), failed, err_text) );
+    MoveWell(wells_[w], estimation_simbox,delta_X,delta_Y,k_move);
+    // delete old blocked well and create new
+    delete bl;
+    mapped_blocked_logs.erase(it);
+    mapped_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, new BlockedLogsCommon(&wells[w], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, 
+                                                                              estimation_simbox, model_settings->getRunFromPanel(), failed, err_text) ) );
     LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
     wells[w].GetWellName().c_str(), k_move, i_move, delta_X, j_move, delta_Y);
   }
 
-   for (w = 0 ; w < static_cast<int>(n_wells) ; w++){
+   for (int w = 0 ; w < static_cast<int>(n_wells) ; w++){
      n_move_angles = model_settings->getNumberOfWellAngles(w);
 
     if( wells[w].IsDeviated()==true && n_move_angles > 0 )
@@ -2473,6 +2476,131 @@ void  CommonData::OptimizeWellLocations(ModelSettings                           
       TaskList::addTask("Well "+NRLib::ToString(wells[w].GetWellName())+" can not be moved. Remove <optimize-location-to> for this well");
     }
    }
+
+}
+
+void CommonData::MoveWell(const NRLib::Well & well,
+                          const Simbox      * simbox, 
+                          double              delta_X, 
+                          double              delta_Y, 
+                          double              k_move){
+
+  double delta_Z;
+  double top_old, top_new;
+
+  if(well.HasContLog("X_pos") && well.HasContLog("Y_pos")){
+    std::vector<double> x_pos = well.GetContLog("X_pos");
+    std::vector<double> y_pos = well.GetContLog("Y_pos");
+    std::vector<double> z_pos = well.GetContLog("TVD");
+    top_old = simbox->getTop(x_pos[0], y_pos[0]);
+
+    for(unsigned int i=0; i<x_pos.size(); i++)
+    {
+      if(x_pos[i] != RMISSING)
+        x_pos[i] = x_pos[i]+delta_X;
+      if(y_pos[i] != RMISSING)
+        y_pos[i] = y_pos[i]+delta_Y;
+    }
+
+    top_new = simbox->getTop(x_pos[0], y_pos[0]);
+
+    delta_Z = top_new - top_old + k_move;
+
+    for(unsigned int i=0; i<z_pos.size(); i++)
+      z_pos[i] = z_pos[i]+delta_Z;
+  }
+}
+
+void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
+                                     const ModelSettings    * const model_settings,
+                                     float                  & dev_angle,
+                                     Simbox                 * simbox,
+                                     int                      use_for_wavelet_estimation)
+{
+  float maxDevAngle   = model_settings->getMaxDevAngle();
+  float thr_deviation = float(tan(maxDevAngle*NRLib::Pi/180.0));  // Largest allowed deviation
+  float max_deviation =  0.0f;
+  float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
+
+  std::vector<double> x_pos = new_well.GetContLog("X_pos");
+  std::vector<double> y_pos = new_well.GetContLog("Y_pos");
+  std::vector<double> z_pos = new_well.GetContLog("TVD");
+
+  //
+  // Find first log entry in simbox
+  //
+  int iFirst = IMISSING;
+  for(unsigned int i=0 ; i < x_pos.size() ; i++)
+  {
+    if(simbox->isInside(x_pos[i], y_pos[i]))
+    {
+      if (z_pos[i] > simbox->getTop(x_pos[i], y_pos[i]))
+      {
+        iFirst = i;
+        break;
+      }
+    }
+  }
+
+  if (iFirst != IMISSING) {
+    //
+    // Find last log entry in simbox
+    //
+    int iLast = iFirst;
+    for(unsigned int i = iFirst + 1 ; i < x_pos.size() ; i++)
+    {
+      if(simbox->isInside(x_pos[i], y_pos[i]))
+        {
+          if (z_pos[i] > simbox->getBot(x_pos[i], y_pos[i]))
+            break;
+        }
+      else
+        break;
+      iLast = i;
+    }
+
+    if (iLast > iFirst) {
+      double x0 = x_pos[iFirst];
+      double y0 = y_pos[iFirst];
+      double z0 = z_pos[iFirst];
+      for (int i = iFirst+1 ; i < iLast+1 ; i++) {
+        double x1 = x_pos[i];
+        double y1 = y_pos[i];
+        double z1 = z_pos[i];
+        float dz = static_cast<float>(z1 - z0);
+
+        if (dz > max_dz || i == iLast) {
+          float deviation = static_cast<float>(sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))/dz);
+          if (deviation > max_deviation) {
+            x0 = x1;
+            y0 = y1;
+            z0 = z1;
+            max_deviation = deviation;
+          }
+        }
+      }
+    }
+    dev_angle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
+    LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",dev_angle);
+
+    if (max_deviation > thr_deviation)
+    {
+      if(use_for_wavelet_estimation == ModelSettings::NOTSET) {
+        use_for_wavelet_estimation = ModelSettings::NO;
+      }
+      new_well.SetDeviated(true);
+      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
+    }
+    else
+    {
+      new_well.SetDeviated(false);
+      LogKit::LogFormatted(LogKit::Low,"\n");
+    }
+  }
+  else {
+    new_well.SetDeviated(false);
+    LogKit::LogFormatted(LogKit::Low,"Well is outside inversion interval. Cannot calculate deviation.\n");
+  }
 
 }
 

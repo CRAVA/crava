@@ -15,6 +15,10 @@
 #include "src/fftgrid.h"
 #include "src/definitions.h"
 
+IntervalSimbox::IntervalSimbox(){
+
+}
+
 
 IntervalSimbox::IntervalSimbox(double             x0,
                                double             y0,
@@ -55,12 +59,186 @@ IntervalSimbox::IntervalSimbox(double             x0,
   il_step_Y_     =  cosrot_/dy_;
 }
 
+IntervalSimbox::IntervalSimbox(const Simbox         * simbox,
+                               const std::string    & interval_name,
+                               int                    n_layers,
+                               const Surface        & top_surface,
+                               const Surface        & bot_surface,
+                               Surface              * single_corr_surface,
+                               std::string          & err_text,
+                               bool                 & failed)
+{
+  interval_name_  = interval_name;
+  status_         = simbox->status();
+  cosrot_         = cos(simbox->GetAngle());
+  sinrot_         = sin(simbox->GetAngle());
+  dx_             = simbox->getdx();
+  dy_             = simbox->getdy();
+  nx_             = simbox->getnx();
+  ny_             = simbox->getny();
+  nz_             = n_layers;
+  inline0_        = simbox->getIL0();
+  crossline0_     = simbox->getXL0();
+  il_step_X_      = simbox->getILStepX();
+  il_step_Y_      = simbox->getILStepY();
+  xl_step_X_      = simbox->getXLStepX();
+  xl_step_Y_      = simbox->getXLStepY();
+
+  if(simbox->CheckSurface(*single_corr_surface) != true){
+    err_text += "Error: Correlation surface does not cover volume.\n";
+    failed = true;
+  }
+  // Extend simbox as in ModelGeneral::SetupExtendedTimeSimbox
+
+  NRLib::Vector corr_plane_parameters = FindPlane(single_corr_surface);
+  Surface * mean_surface;
+  if(single_corr_surface->GetNI() > 2)
+  mean_surface = new Surface(*single_corr_surface);
+  else {
+    mean_surface = new Surface(dynamic_cast<const Surface &>(top_surface));
+    if(mean_surface->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
+      double minX = mean_surface->GetXMin();
+      double maxX = mean_surface->GetXMax();
+      double minY = mean_surface->GetYMin();
+      double maxY = mean_surface->GetYMax();
+      if(minX > single_corr_surface->GetXMin())
+        minX = single_corr_surface->GetXMin();
+      if(maxX < single_corr_surface->GetXMax())
+        maxX = single_corr_surface->GetXMax();
+      if(minY > single_corr_surface->GetYMin())
+        minY = single_corr_surface->GetYMin();
+      if(maxY < single_corr_surface->GetYMax())
+        maxY = single_corr_surface->GetYMax();
+      single_corr_surface->SetDimensions(minX, minY, maxX-minX, maxY-minY);
+    }
+  }
+
+  // initialize mean surface to 0
+  for(size_t i=0;i<mean_surface->GetN();i++)
+    (*mean_surface)(i) = 0;
+
+  // Find mean of top and base surface
+  mean_surface->AddNonConform(&(simbox->GetTopSurface()));
+  mean_surface->AddNonConform(&(simbox->GetBotSurface()));
+  mean_surface->Multiply(0.5);
+  NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
+
+  // tilt the mean plane with the correlation plane
+  ref_plane_parameters -= corr_plane_parameters;
+  //double grad_x = ref_plane_parameters(1);
+  //double grad_y = ref_plane_parameters(2);
+
+  // Create plane from parameters and add the original corr surface
+  Surface * ref_plane = CreatePlaneSurface(ref_plane_parameters, mean_surface);
+  delete mean_surface;
+  mean_surface = NULL;
+  ref_plane->AddNonConform(single_corr_surface);
+
+  // Create new top surface
+  Surface new_top_surface(*ref_plane);
+  new_top_surface.SubtractNonConform(&(top_surface));
+  double shift_top = new_top_surface.Max();
+  shift_top *= -1.0;
+  new_top_surface.Add(shift_top);
+  new_top_surface.AddNonConform(&(simbox->GetTopSurface()));
+
+  // Create new base surface
+  Surface new_base_surface(*ref_plane);
+  new_base_surface.SubtractNonConform(&(bot_surface));
+  double shift_bot = new_base_surface.Min();
+  shift_bot *= -1.0;
+  double thick    = shift_bot-shift_top;
+  double dz       = simbox->getdz();
+  int    nz       = int(thick/dz);
+  double residual = thick - nz*dz;
+  if (residual > 0.0) {
+    shift_bot += dz-residual;
+    nz++;
+  }
+    
+  new_base_surface.Add(shift_bot);
+  new_base_surface.AddNonConform(&(bot_surface));
+
+  this->SetDepth(new_top_surface, new_base_surface, nz);
+
+  delete ref_plane;
+}
+
+
+  // Constructor with two correlation surfaces
+IntervalSimbox::IntervalSimbox(const Simbox         * simbox,
+                               const std::string    & interval_name,
+                               int                    n_layers,
+                               const Surface        & top_surface,
+                               const Surface        & base_surface,
+                               std::string          & err_text,
+                               bool                 & failed,
+                               const Surface        * top_corr_surface,
+                               const Surface        * base_corr_surface){
+  interval_name_  = interval_name;
+  status_         = simbox->status();
+  cosrot_         = cos(simbox->GetAngle());
+  sinrot_         = sin(simbox->GetAngle());
+  dx_             = simbox->getdx();
+  dy_             = simbox->getdy();
+  nx_             = simbox->getnx();
+  ny_             = simbox->getny();
+  nz_             = n_layers;
+  inline0_        = simbox->getIL0();
+  crossline0_     = simbox->getXL0();
+  il_step_X_      = simbox->getILStepX();
+  il_step_Y_      = simbox->getILStepY();
+  xl_step_X_      = simbox->getXLStepX();
+  xl_step_Y_      = simbox->getXLStepY();
+  // HOW SHOULD THIS BE DONE?
+  (void) top_surface; 
+  (void) base_surface; 
+  (void) top_corr_surface; 
+  (void) base_corr_surface; 
+  (void) err_text;
+  (void) failed;
+}
+
+IntervalSimbox::IntervalSimbox(const Simbox *simbox) :
+  Volume(*simbox)
+{
+  status_      = simbox->status();
+  cosrot_      = cos(simbox->GetAngle());
+  sinrot_      = sin(simbox->GetAngle());
+  dx_          = simbox->getdx();
+  dy_          = simbox->getdy();
+  dz_          = simbox->getdz();
+  nx_          = simbox->getnx();
+  ny_          = simbox->getny();
+  nz_          = simbox->getnz();
+  inline0_     = simbox->getIL0();
+  crossline0_  = simbox->getXL0();
+  il_step_X_     = simbox->getILStepX();
+  il_step_Y_     = simbox->getILStepY();
+  xl_step_X_      = simbox->getXLStepX();
+  xl_step_Y_      = simbox->getXLStepY();
+  //const_thick_  = simbox->getcon;
+  min_rel_thick_ = simbox->getMinRelThick();
+  //top_name_     = simbox->topName_;
+  //bot_name_     = simbox->GetBotSurface();
+}
 
 
 IntervalSimbox::~IntervalSimbox()
 {
   delete top_correlation_surface_;
   delete bot_correlation_surface_;
+}
+
+Surface * IntervalSimbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
+                                             Surface             * templateSurf){
+  Surface * result = new Surface(*templateSurf);
+  for(int i=0;i<static_cast<int>(result->GetN());i++) {
+    double x,y;
+    result->GetXY(i,x,y);
+    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
+  }
+  return(result);
 }
 
 int IntervalSimbox::GetIndex(double          x,
@@ -90,6 +268,40 @@ IntervalSimbox::GetClosestZIndex(double  x,
     index = i+j*nx_+k*nx_*ny_;
   }
   return(index);
+}
+
+NRLib::Vector IntervalSimbox::FindPlane(const Surface * surf){
+
+  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
+  NRLib::Vector b(3);
+  NRLib::Vector x(3);
+
+  b = 0;
+
+  int nData = 0;
+
+  for(int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+    double x, y, z;
+    surf->GetXY(i, x, y);
+    z = (*surf)(i);
+    if(!surf->IsMissing(z)) {
+      nData++;
+      A(0,1) += x;
+      A(0,2) += y;
+      A(1,1) += x*x;
+      A(1,2) += x*y;
+      A(2,2) += y*y;
+      b(0)   += z;
+      b(1)   += x*z;
+      b(2)   += y*z;
+    }
+  }
+
+  A(0,0) = nData;
+
+  NRLib::CholeskySolve(A, b, x);
+
+  return x;
 }
 
 void
@@ -593,7 +805,7 @@ IntervalSimbox::SetDepth(const Surface  & z_ref,
 void  IntervalSimbox::SetDepth(const Surface       & z0,
                                const Surface       & z1,
                                int                   nz,
-                               bool                  skip_check = false){
+                               bool                  skip_check){
   SetSurfaces(z0, z1, skip_check);
   nz_ = nz;
   dz_ = -1;

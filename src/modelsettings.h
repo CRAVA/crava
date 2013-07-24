@@ -11,7 +11,6 @@
 
 #include "src/definitions.h"
 #include "src/io.h"
-#include "src/vario.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -20,6 +19,7 @@
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
+#include "src/vario.h"
 
 class Simbox;
 

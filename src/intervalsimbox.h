@@ -7,12 +7,35 @@
 
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
+#include "src/simbox.h"
 #include "src/io.h"
 
 class IntervalSimbox : public NRLib::Volume
 {
 public:
   IntervalSimbox(void);
+
+  // Constructor with single correlation surface
+  IntervalSimbox(const Simbox         * simbox,
+                 const std::string    & interval_name,
+                 int                    n_layers,
+                 const Surface        & top_surface,
+                 const Surface        & bot_surface,
+                 Surface              * single_corr_surface,
+                 std::string          & err_text,
+                 bool                 & failed);
+
+  // Constructor with two correlation surfaces
+  IntervalSimbox(const Simbox         * simbox,
+                 const std::string    & interval_name,
+                 int                    nz,
+                 const Surface        & top_surface,
+                 const Surface        & bot_surface,
+                 std::string          & err_text,
+                 bool                 & failed,
+                 const Surface        * top_corr_surface = NULL,
+                 const Surface        * base_corr_surface = NULL);
 
   IntervalSimbox(double             x0,
                  double             y0,
@@ -25,7 +48,7 @@ public:
                  double             dy,
                  double             dz); //Assumes constant thickness.
 
-  IntervalSimbox(const IntervalSimbox   * interval_simbox);
+  IntervalSimbox(const Simbox   * simbox);
 
   ~IntervalSimbox();
 
@@ -43,7 +66,6 @@ public:
   double         GetMaxLz()                      const { return GetLZ()                  ;} // Maximum thickness
   double         GetX0()                         const { return GetXMin()                ;}
   double         GetY0()                         const { return GetYMin()                ;}
-  double         GetAngle()                      const { return GetAngle()               ;}
   double         GetIL0()                        const { return inline0_                 ;}
   double         GetXL0()                        const { return crossline0_              ;}
   double         GetILStepX()                    const { return il_step_X_               ;}
@@ -56,6 +78,7 @@ public:
   double         GetRelThick(double x, double y) const;                                     // Local relative thickness.
   double         GetAvgRelThick(void)            const;
   int            GetStatus()                     const { return(status_)                 ;}
+  std::string    GetIntervalName()               const { return interval_name_           ;}
   const Surface & GetBotCorrSurface()            const { return *bot_correlation_surface_;}
   const Surface & GetTopCorrSurface()            const { return *top_correlation_surface_;}
 
@@ -175,6 +198,11 @@ public:
 
   // OTHER FUNCTIONS
 
+  Surface *       CreatePlaneSurface(const NRLib::Vector & planeParams,
+                                     Surface             * templateSurf);
+
+  NRLib::Vector  FindPlane(const Surface * surf);
+
   int            IsInside(double                x, 
                           double                y) const;
 
@@ -204,17 +232,20 @@ private:
   double         cosrot_, sinrot_;                  // Saving time in transformations.
   std::string    top_name_;                // Top surface name
   std::string    bot_name_;                // Botton surface name
+  std::string    interval_name_;           // Interval name
 
   //Note: IL/XL information is carried passively by this class.
   double         inline0_, crossline0_;    // XL, IL at origin, not necessarily int.
   double         il_step_X_, il_step_Y_;       // Change in XL when moving along x and y
   double         xl_step_X_, xl_step_Y_;       // Change in XL when moving along x and y
 
-  Surface   * top_correlation_surface_;
-  Surface   * bot_correlation_surface_;
+  Surface     * top_correlation_surface_;
+  Surface     * bot_correlation_surface_;
+  Surface     * single_correlation_surface_;
 
   bool           const_thick_;
   double         min_rel_thick_;
 
-}
+};
+
 #endif

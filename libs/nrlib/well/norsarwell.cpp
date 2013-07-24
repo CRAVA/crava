@@ -181,7 +181,7 @@ NorsarWell::NorsarWell(const std::string & filename)
 
   // find n_data including WELLMISSING values
   unsigned int n_data = GetContLog("TWT").size();
-  this->SetNumberOfData(n_data);
+  SetNumberOfData(n_data);
 }
 
 

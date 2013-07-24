@@ -12,15 +12,12 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
                                      bool                             & failed,
-                                     std::string                      & err_text):
-n_blocks_(0),
-n_angles_(0),
-well_name_(""),
-n_layers_(estimation_simbox->getnz()),
-interpolate_(interpolate){
-
-  // Get well name
+                                     std::string                      & err_text){
+  n_angles_ = 0;
   well_name_ = well_data->GetWellName();
+  n_layers_ = estimation_simbox->getnz();
+  n_blocks_ = 0;
+  interpolate_ = interpolate;
 
   // Get all continuous and discrete logs
   std::vector<std::string> cont_logs_to_be_blocked;
@@ -35,6 +32,7 @@ interpolate_(interpolate){
   }
 
   // Remove missing values
+
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
@@ -57,12 +55,12 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
                                      bool                             & failed,
-                                     std::string                      & err_text):
-n_blocks_(0),
-n_angles_(0),
-well_name_(""),
-n_layers_(estimation_simbox->getnz()),
-interpolate_(interpolate){
+                                     std::string                      & err_text){
+  n_angles_ = 0;
+  well_name_ = well_data->GetWellName();
+  n_layers_ = estimation_simbox->getnz();
+  n_blocks_ = 0;
+  interpolate_ = interpolate;
 
   // Get well name
   well_name_ = well_data->GetWellName();
@@ -83,6 +81,9 @@ interpolate_(interpolate){
   n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
 }
 
+BlockedLogsCommon::~BlockedLogsCommon(){
+  
+}
 
 void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
                                   const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,

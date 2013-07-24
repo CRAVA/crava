@@ -25,10 +25,8 @@
 #include <vector>
 #include <sstream>
 #include <map>
-#include "src/simbox.h"
-#include "src/modelsettings.h"
 
-class BlockedLogsCommon;
+
 
 namespace NRLib {
   class Well{
@@ -56,16 +54,8 @@ namespace NRLib {
     /// Destructor
     ~Well();
 
-    void MoveWell(const Simbox    * simbox, 
-                  double            delta_X, 
-                  double            delta_Y, 
-                  double            k_move);
-
-    void DeleteBlockedLogsCommonOrigThick() { delete blocked_logs_common_orig_thick_  ;};
-
     /// Check existence of continuous log
     bool HasContLog(const std::string& name) const;
-
 
     /// Return continuous logs
     std::vector<double> & GetContLog(const std::string& name);
@@ -109,6 +99,8 @@ namespace NRLib {
     int GetNData(void)      const  { return n_data_  ;}
     /// Return disc. missing value
     int GetIntMissing() const { return(well_imissing_); }
+    /// Set deviated
+    void SetDeviated(bool b)  {is_deviated_ = b   ;}
     /// Set missing values
     void SetMissing(double value) {well_rmissing_ = value; well_imissing_ = static_cast<int>(value);}
     /// Return discrete value at position index in log with name logname
@@ -131,21 +123,10 @@ namespace NRLib {
     const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
-    /// From WellData
-    void  CalculateDeviation(const ModelSettings  * const model_settings,
-                             float                & dev_angle,
-                             Simbox               * simbox,
-                             int                    use_for_wavelet_estimation);
-
-    void                SetBlockedLogsCommonOrigThick(BlockedLogsCommon * bl)  { blocked_logs_common_orig_thick_  = bl  ;}
-
-    BlockedLogsCommon * GetBlockedLogsCommonOrigThick() { return blocked_logs_common_orig_thick_                        ;}
-
-    bool                GetIsDeviated(void)                   const { return is_deviated_                    ;}
 
   protected:
     /// Set number of data
-    virtual void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
 
     // Number of time data including WELLMISSING values
     unsigned int              n_data_;
@@ -157,8 +138,6 @@ namespace NRLib {
     std::map<std::string,std::vector<int> >    disc_log_;
     /// Name of well
     std::string well_name_;
-
-    BlockedLogsCommon             * blocked_logs_common_orig_thick_;
 
     /// Missing value for continous logs.
     double well_rmissing_;

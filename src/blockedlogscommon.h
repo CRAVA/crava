@@ -12,7 +12,6 @@
 #include "nrlib/well/well.hpp"
 #include "src/definitions.h"
 
-
 class BlockedLogsCommon{
 public:
   BlockedLogsCommon(const NRLib::Well                * well_data,
@@ -29,6 +28,7 @@ public:
                     bool                             & failed,
                     std::string                      & err_text);
 
+  ~BlockedLogsCommon();
 
   void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                               const Simbox                  * time_simbox,
@@ -183,9 +183,9 @@ private:
 
   // CLASS VARIABLES -----------------------------
 
-  std::string        well_name_;        // Name of well
-  unsigned int       n_data_;           // Number of legal data values in well log
   unsigned int       n_blocks_;         // number of blocks
+  unsigned int       n_data_;
+  std::string        well_name_;
 
   // Blocked values
 

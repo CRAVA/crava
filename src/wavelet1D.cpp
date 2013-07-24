@@ -1234,7 +1234,7 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
   //const double *x, *y;
 
 
-  int nData;
+  //int nData;
   for(int i=0;i<nWells;i++) {
     //x = wells[i]->getXpos(nData);
     const std::vector<double> & x = blocked_logs[i]->GetXpos();
