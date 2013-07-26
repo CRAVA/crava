@@ -9,6 +9,7 @@
 #include "src/seismicstorage.h"
 #include "src/wavelet1D.h"
 #include "src/multiintervalgrid.h"
+#include "src/cravatrend.h"
 
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -27,6 +28,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   wavelet_estimation_shape_(false),
   prior_corr_estimation_(false),
   setup_estimation_rock_physics_(false),
+  trend_cubes_(false),
   multiple_interval_grid_(NULL)
 {
   bool failed = false;
@@ -87,6 +89,13 @@ CommonData::CommonData(ModelSettings  * model_settings,
     multigrid_ = !failed;
   }
 
+  // 8. Trend Cubes
+  if(multigrid_){
+    if(model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0){
+      SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, err_text, failed);
+      setup_trend_cubes_ = !failed;
+    }
+  }
 }
 
 CommonData::~CommonData() {
@@ -2649,5 +2658,35 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
       err_text += e.what();
       failed = true;
     }
+  }
+}
+
+void   CommonData::SetupTrendCubes(ModelSettings                  * model_settings, 
+                                   InputFiles                     * input_files, 
+                                   MultiIntervalGrid              * multiple_interval_grid,
+                                   std::string                    & error_text,
+                                   bool                           & failed){
+
+  const std::vector<std::string> trend_cube_parameters = model_settings->getTrendCubeParameters();
+  const std::vector<int>         trend_cube_type       = model_settings->getTrendCubeType();
+  trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
+  const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
+  try{
+    for (size_t i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
+
+      trend_cubes_[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
+                                   multiple_interval_grid->GetSimbox(i),
+                                   model_settings,
+                                   input_files,
+                                   interval_names[i],
+                                   trend_cube_type,
+                                   trend_cube_parameters,
+                                   failed,
+                                   error_text);
+
+    }
+  }catch(NRLib::Exception & e){
+    error_text+= e.what();
+    failed = true;
   }
 }

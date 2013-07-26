@@ -16,6 +16,7 @@
 #include "src/seismicstorage.h"
 #include "src/multiintervalgrid.h"
 
+class CravaTrend;
 class InputFiles;
 class ModelSettings;
 class ModelGeneral;
@@ -157,9 +158,15 @@ private:
   bool  WaveletHandling(ModelSettings                 * model_settings,
                         InputFiles                    * input_files);
 
-  bool estimateWaveletShape();
-  bool estimatePriorCorrelation();
-  bool setupEstimationRockPhysics();
+  void   SetupTrendCubes(ModelSettings                  * model_settings, 
+                         InputFiles                     * input_files, 
+                         MultiIntervalGrid              * multiple_interval_grid,
+                         std::string                    & error_text,
+                         bool                           & failed);
+
+  bool EstimateWaveletShape();
+  bool EstimatePriorCorrelation();
+  bool SetupEstimationRockPhysics();
 
   int ComputeTime(int year, int month, int day) const;
 
@@ -178,17 +185,25 @@ private:
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
   bool multigrid_;
+  bool setup_trend_cubes_;
 
   MultiIntervalGrid       * multiple_interval_grid_;
-  Simbox                  estimation_simbox_;
-  NRLib::Volume           full_inversion_volume_;
+  Simbox                    estimation_simbox_;
+  NRLib::Volume             full_inversion_volume_;
 
-  //std::vector<SeismicStorage> seismic_data_;
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
+
+  // Well logs
   std::vector<NRLib::Well>                      wells_;
+
+  // Blocked well logs
   std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_; //
-  std::vector<std::string> continuous_logs_to_be_blocked_;
-  std::vector<std::string> discrete_logs_to_be_blocked_;
+  std::vector<std::string>                      continuous_logs_to_be_blocked_;
+  std::vector<std::string>                      discrete_logs_to_be_blocked_;
+
+  // trend cubes
+  int                                           n_trend_cubes_;
+  std::vector<CravaTrend>                       trend_cubes_;
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;
@@ -203,7 +218,7 @@ private:
   std::map<int, float **>   reflection_matrix_;
   bool                      reflection_matrix_from_file_; //False: created from global vp/vs
 
-  std::vector<Wavelet*>                       temporary_wavelets_; //One wavelet per angle
+  std::vector<Wavelet*>     temporary_wavelets_; //One wavelet per angle
 
 };
 #endif
