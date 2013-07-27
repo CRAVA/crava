@@ -126,47 +126,54 @@ private:
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::string                                    & err_text);
 
-  bool       CheckThatDataCoverGrid(const SegY   * segy,
-                                    float         offset,
-                                    const Simbox * timeCutSimbox,
-                                    float         guard_zone);
+  bool       CheckThatDataCoverGrid(const SegY            * segy,
+                                    float                   offset,
+                                    const Simbox          * timeCutSimbox,
+                                    float                   guard_zone);
 
-  void ProcessLogsNorsarWell(NRLib::Well    & new_well,
-                             std::string    & error_text,
-                             bool           & failed);
+  void ProcessLogsNorsarWell(NRLib::Well                  & new_well,
+                             std::string                  & error_text,
+                             bool                         & failed);
 
-  void ProcessLogsRMSWell(NRLib::Well       & new_well,
-                          std::string       & error_text,
-                          bool              & failed);
+  void ProcessLogsRMSWell(NRLib::Well                     & new_well,
+                          std::string                     & error_text,
+                          bool                            & failed);
 
 
   bool  SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_settings,
                                             InputFiles     * input_files);
 
-  float  ** ReadMatrix(const std::string          & fileName,
-                       int                          n1,
-                       int                          n2,
-                       const std::string          & readReason,
-                       std::string                & errText);
+  float  ** ReadMatrix(const std::string                  & fileName,
+                       int                                  n1,
+                       int                                  n2,
+                       const std::string                  & readReason,
+                       std::string                        & errText);
 
-  void  SetupDefaultReflectionMatrix(float             **& reflectionMatrix,
-                                     double                vsvp,
-                                     const ModelSettings * modelSettings,
-                                     int                   numberOfAngles,
-                                     int                   thisTimeLapse);
+  void  SetupDefaultReflectionMatrix(float              **& reflectionMatrix,
+                                     double                 vsvp,
+                                     const ModelSettings  * modelSettings,
+                                     int                    numberOfAngles,
+                                     int                    thisTimeLapse);
 
-  bool  WaveletHandling(ModelSettings                 * model_settings,
-                        InputFiles                    * input_files);
+  bool  WaveletHandling(ModelSettings                     * model_settings,
+                        InputFiles                        * input_files);
 
-  void   SetupTrendCubes(ModelSettings                  * model_settings, 
-                         InputFiles                     * input_files, 
-                         MultiIntervalGrid              * multiple_interval_grid,
-                         std::string                    & error_text,
-                         bool                           & failed);
+  void  SetupTrendCubes(ModelSettings                     * model_settings, 
+                        InputFiles                        * input_files, 
+                        MultiIntervalGrid                 * multiple_interval_grid,
+                        std::string                       & error_text,
+                        bool                              & failed);
+
+  void SetupRockPhysics(const ModelSettings                                 * model_settings,
+                        const InputFiles                                    * input_files,
+                        const MultiIntervalGrid                             * multiple_interval_grid,
+                        const std::vector<CravaTrend>                       & trend_cubes,
+                        const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
+                        std::string                                         & error_text,
+                        bool                                                & failed);
 
   bool EstimateWaveletShape();
   bool EstimatePriorCorrelation();
-  bool SetupEstimationRockPhysics();
 
   int ComputeTime(int year, int month, int day) const;
 
@@ -184,7 +191,7 @@ private:
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
-  bool multigrid_;
+  bool setup_multigrid_;
   bool setup_trend_cubes_;
 
   MultiIntervalGrid       * multiple_interval_grid_;
@@ -198,12 +205,14 @@ private:
 
   // Blocked well logs
   std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_; //
-  std::vector<std::string>                      continuous_logs_to_be_blocked_;
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;
+  std::vector<std::string>                      continuous_logs_to_be_blocked_; // Continuous logs that should be blocked
+  std::vector<std::string>                      discrete_logs_to_be_blocked_;   // Discrete logs that should be blocked
 
   // trend cubes
-  int                                           n_trend_cubes_;
-  std::vector<CravaTrend>                       trend_cubes_;
+  int                                                           n_trend_cubes_;
+  std::vector<CravaTrend>                                       trend_cubes_;
+  std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
+  std::map<std::string, std::vector<DistributionWithTrend *> >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;

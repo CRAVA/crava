@@ -29,6 +29,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   prior_corr_estimation_(false),
   setup_estimation_rock_physics_(false),
   trend_cubes_(false),
+  setup_multigrid_(false),
   multiple_interval_grid_(NULL)
 {
   bool failed = false;
@@ -36,8 +37,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   LogKit::WriteHeader("Common Data");
 
-  //if(readSeismicData(modelSettings,
-  //                   inputFiles) == true)
+  //if(readSeismicData(model_settings,
+  //                   input_files) == true)
   //  read_seismic_ = true; //True or false if there is no seismic data?
 
   // 1. set up outer simbox
@@ -73,8 +74,6 @@ CommonData::CommonData(ModelSettings  * model_settings,
                                       input_files);
   }
 
-  //std::vector<Surface *>      surfaces;
-
   // 6. Optimization of well location
   if(!failed){
     if(model_settings->getOptimizeWellLocation()){
@@ -86,16 +85,32 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 7. Setup of multiple interval grid
   if(!failed){
     multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &estimation_simbox_, err_text, failed);
-    multigrid_ = !failed;
+    setup_multigrid_ = !failed;
   }
 
   // 8. Trend Cubes
-  if(multigrid_){
-    if(model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0){
-      SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, err_text, failed);
-      setup_trend_cubes_ = !failed;
+  if(setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() 
+      && model_settings->getTrendCubeParameters().size() > 0){
+    SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, err_text, failed);
+    setup_trend_cubes_ = !failed;
+  }
+
+  // 9. Rock Physics
+  if(read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()){
+    if(model_settings->getTrendCubeParameters().size() > 0){ // If trends are used, the setup of trend cubes must be ok as well
+      if(setup_trend_cubes_){
+        SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                         mapped_blocked_logs_, err_text,failed);
+        setup_estimation_rock_physics_ = !failed;
+      }
+    }
+    else{
+      SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                         mapped_blocked_logs_, err_text,failed);
+      setup_estimation_rock_physics_ = !failed;
     }
   }
+  
 }
 
 CommonData::~CommonData() {
@@ -138,7 +153,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   // tilfelle i uten snap to seismic
   if (area_specification == ModelSettings::AREA_FROM_UTM)
   {
-    // The geometry is already present in modelSettings (geometry_ or geometry_full_ ? )
+    // The geometry is already present in model_settings (geometry_ or geometry_full_ ? )
     area_type = "Model file";
     LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
   }
@@ -1568,14 +1583,14 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     //      error = 1;
     //    }
     //  }
-    //  bool estimateWellGradient = modelSettings->getEstimateWellGradientFromSeismic();
+    //  bool estimateWellGradient = model_settings->getEstimateWellGradientFromSeismic();
     //  float distance, sigma_m;
-    //  modelSettings->getTimeGradientSettings(distance, sigma_m, i);
+    //  model_settings->getTimeGradientSettings(distance, sigma_m, i);
     //  std::vector<std::vector<double> > SigmaXY;
     //  for (unsigned int w=0; w<nWells; w++) {
     //    BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
     //    if(!estimateWellGradient & ((structureDepthGradX.GetN()> 0) & (structureDepthGradY.GetN()>0))){ // then we allready have the
-    //      double v0=modelSettings->getAverageVelocity();
+    //      double v0=model_settings->getAverageVelocity();
     //      bl->setSeismicGradient(v0,structureDepthGradX,structureDepthGradY,refTimeGradX, refTimeGradY,tGradX[w], tGradY[w]);
     //    }else{
     //      bl->setTimeGradientSettings(distance, sigma_m);
@@ -1674,8 +1689,8 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 }
 
 //int
-//CommonData::process1DWavelet(const ModelSettings          * modelSettings,
-//                                  const InputFiles             * inputFiles,
+//CommonData::process1DWavelet(const ModelSettings          * model_settings,
+//                                  const InputFiles             * input_files,
 //                                  const Simbox                 * timeSimbox,
 //                                  const FFTGrid        * const * seisCube,
 //                                  std::vector<WellData *>        wells,
@@ -1690,18 +1705,18 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //  int error = 0;
 //  Grid2D * shiftGrid(NULL);
 //  Grid2D * gainGrid(NULL);
-//  if(modelSettings->getUseLocalWavelet() && inputFiles->getScaleFile(timelapse,j) != "") {
-//      Surface help(inputFiles->getScaleFile(thisTimeLapse_,j));
+//  if(model_settings->getUseLocalWavelet() && input_files->getScaleFile(timelapse,j) != "") {
+//      Surface help(input_files->getScaleFile(thisTimeLapse_,j));
 //      gainGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
 //      resampleSurfaceToGrid2D(timeSimbox, &help, gainGrid);
 //  }
-//  if (modelSettings->getUseLocalWavelet() && inputFiles->getShiftFile(timelapse,j) != ""){
-//    Surface helpShift(inputFiles->getShiftFile(thisTimeLapse_,j));
+//  if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(timelapse,j) != ""){
+//    Surface helpShift(input_files->getShiftFile(thisTimeLapse_,j));
 //    shiftGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
 //    resampleSurfaceToGrid2D(timeSimbox, &helpShift, shiftGrid);
 //  }
-//  if (useLocalNoise_ && inputFiles->getLocalNoiseFile(thisTimeLapse_,j) != ""){
-//    Surface helpNoise(inputFiles->getLocalNoiseFile(thisTimeLapse_,j));
+//  if (useLocalNoise_ && input_files->getLocalNoiseFile(thisTimeLapse_,j) != ""){
+//    Surface helpNoise(input_files->getLocalNoiseFile(thisTimeLapse_,j));
 //    localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), timeSimbox->getny(), 0.0);
 //    resampleSurfaceToGrid2D(timeSimbox, &helpNoise, localNoiseScale_[i]);
 //  }
@@ -1711,7 +1726,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //                            seisCube[j],
 //                            wells,
 //                            waveletEstimInterval,
-//                            modelSettings,
+//                            model_settings,
 //                            reflectionMatrix,
 //                            i,
 //                            error,
@@ -1719,13 +1734,13 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //
 //  else { //Not estimation modus
 //    if(useRickerWavelet)
-//        wavelet = new Wavelet1D(modelSettings,
+//        wavelet = new Wavelet1D(model_settings,
 //                                reflectionMatrix,
 //                                angle_[j],
-//                                modelSettings->getRickerPeakFrequency(thisTimeLapse_,j),
+//                                model_settings->getRickerPeakFrequency(thisTimeLapse_,j),
 //                                error);
 //    else {
-//      const std::string & waveletFile = inputFiles->getWaveletFile(thisTimeLapse_,j);
+//      const std::string & waveletFile = input_files->getWaveletFile(thisTimeLapse_,j);
 //      int fileFormat = getWaveletFileFormat(waveletFile,errText);
 //      if(fileFormat < 0) {
 //        errText += "Unknown file format of file '"+waveletFile+"'.\n";
@@ -1734,7 +1749,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //      else
 //        wavelet = new Wavelet1D(waveletFile,
 //                                fileFormat,
-//                                modelSettings,
+//                                model_settings,
 //                                reflectionMatrix,
 //                                angle_[j],
 //                                error,
@@ -1742,16 +1757,16 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //    }
 //      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
 //      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-//        float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+//        float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, timeSimbox, seisCube[i], wells);
 //        const float limHigh  = 3.0f;
 //        const float limLow   = 0.33f;
 //
-//        if(modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
+//        if(model_settings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
 //           wavelet->multiplyRAmpByConstant(prescale);
 //        else {
-//          if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+//          if(model_settings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
 //             std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-//            if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
+//            if(model_settings->getEstimateLocalScale(thisTimeLapse_,i)) {
 //              errText += text;
 //              error++;
 //            }
@@ -1765,17 +1780,17 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //      if (error == 0)
 //        wavelet->resample(static_cast<float>(timeSimbox->getdz()),
 //                          timeSimbox->getnz(),
-//                          modelSettings->getNZpad());
+//                          model_settings->getNZpad());
 //  }
 //
 //  if (error == 0) {
-//    wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,j));
+//    wavelet->scale(model_settings->getWaveletScale(thisTimeLapse_,j));
 //
-//    if (modelSettings->getForwardModeling() == false && modelSettings->getNumberOfWells() > 0) {
+//    if (model_settings->getForwardModeling() == false && model_settings->getNumberOfWells() > 0) {
 //      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox,
 //                                                               seisCube[j],
 //                                                               wells,
-//                                                               modelSettings,
+//                                                               model_settings,
 //                                                               errText,
 //                                                               error,
 //                                                               j,
@@ -1783,27 +1798,27 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //                                                               shiftGrid,
 //                                                               gainGrid,
 //                                                               SNRatio_[j],
-//                                                               modelSettings->getWaveletScale(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateSNRatio(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalNoise(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalShift(thisTimeLapse_,j),
-//                                                               modelSettings->getEstimateLocalScale(thisTimeLapse_,j),
+//                                                               model_settings->getWaveletScale(thisTimeLapse_,j),
+//                                                               model_settings->getEstimateSNRatio(thisTimeLapse_,j),
+//                                                               model_settings->getEstimateGlobalWaveletScale(thisTimeLapse_,j),
+//                                                               model_settings->getEstimateLocalNoise(thisTimeLapse_,j),
+//                                                               model_settings->getEstimateLocalShift(thisTimeLapse_,j),
+//                                                               model_settings->getEstimateLocalScale(thisTimeLapse_,j),
 //                                                               estimateWavelet_[j]);
 //
-//      if(modelSettings->getEstimateSNRatio(thisTimeLapse_,j))
+//      if(model_settings->getEstimateSNRatio(thisTimeLapse_,j))
 //        SNRatio_[i] = SNRatio;
 //    }
 //
 //    if (error == 0) {
-//      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
-//         (modelSettings->getEstimationMode() && estimateWavelet_[j])) {
+//      if((model_settings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
+//         (model_settings->getEstimationMode() && estimateWavelet_[j])) {
 //        std::string type;
 //        if (estimateWavelet_[j]) {
 //          type = "Estimated_";
 //          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
 //        }
-//        else if (modelSettings->getWaveletScale(thisTimeLapse_,j) == 1.00) {
+//        else if (model_settings->getWaveletScale(thisTimeLapse_,j) == 1.00) {
 //          type = "";
 //          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
 //        }
@@ -1814,30 +1829,30 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //      }
 //      const float SNLow  = 1.0;
 //      const float SNHigh = 10.0;
-//      if ((SNRatio_[j] <=SNLow  || SNRatio_[j] > SNHigh) && modelSettings->getForwardModeling()==false) {
+//      if ((SNRatio_[j] <=SNLow  || SNRatio_[j] > SNHigh) && model_settings->getForwardModeling()==false) {
 //        errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio_[j])+" for cube "+NRLib::ToString(j+1)+".\n";
 //        errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
 //        error++;
 //      }
 //
-//      bool useLocalNoise = modelSettings->getEstimateLocalNoise(thisTimeLapse_,j) || inputFiles->getLocalNoiseFile(thisTimeLapse_,j) != "";
-//      bool useLocalShift = modelSettings->getEstimateLocalShift(thisTimeLapse_,j) || inputFiles->getShiftFile(thisTimeLapse_,j)      != "";
-//      bool useLocalGain  = modelSettings->getEstimateLocalScale(thisTimeLapse_,j) || inputFiles->getScaleFile(thisTimeLapse_,j)      != "";
+//      bool useLocalNoise = model_settings->getEstimateLocalNoise(thisTimeLapse_,j) || input_files->getLocalNoiseFile(thisTimeLapse_,j) != "";
+//      bool useLocalShift = model_settings->getEstimateLocalShift(thisTimeLapse_,j) || input_files->getShiftFile(thisTimeLapse_,j)      != "";
+//      bool useLocalGain  = model_settings->getEstimateLocalScale(thisTimeLapse_,j) || input_files->getScaleFile(thisTimeLapse_,j)      != "";
 //
 //      if (useLocalNoise)
-//        readAndWriteLocalGridsToFile(inputFiles->getLocalNoiseFile(thisTimeLapse_,j),
+//        readAndWriteLocalGridsToFile(input_files->getLocalNoiseFile(thisTimeLapse_,j),
 //                                     IO::PrefixLocalNoise(),
 //                                     1.0,  // Scale map with this factor before writing to disk
-//                                     modelSettings,
+//                                     model_settings,
 //                                     j,
 //                                     timeSimbox,
 //                                     localNoiseScale_[j]);
 //
 //      if (useLocalShift) {
-//        readAndWriteLocalGridsToFile(inputFiles->getShiftFile(thisTimeLapse_,j),
+//        readAndWriteLocalGridsToFile(input_files->getShiftFile(thisTimeLapse_,j),
 //                                     IO::PrefixLocalWaveletShift(),
 //                                     1.0,
-//                                     modelSettings,
+//                                     model_settings,
 //                                     j,
 //                                     timeSimbox,
 //                                     shiftGrid);
@@ -1845,10 +1860,10 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 //      }
 //
 //      if (useLocalGain) {
-//        readAndWriteLocalGridsToFile(inputFiles->getScaleFile(thisTimeLapse_,j),
+//        readAndWriteLocalGridsToFile(input_files->getScaleFile(thisTimeLapse_,j),
 //                                     IO::PrefixLocalWaveletGain(),
 //                                     1.0,
-//                                     modelSettings,
+//                                     model_settings,
 //                                     j,
 //                                     timeSimbox,
 //                                     gainGrid);
@@ -2689,4 +2704,216 @@ void   CommonData::SetupTrendCubes(ModelSettings                  * model_settin
     error_text+= e.what();
     failed = true;
   }
+}
+
+void CommonData::SetupRockPhysics(const ModelSettings                     * model_settings,
+                                  const InputFiles                        * input_files,
+                                  const MultiIntervalGrid                 * multiple_interval_grid,
+                                  const std::vector<CravaTrend>           & trend_cubes,
+                                  const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
+                                  std::string                             & error_text,
+                                  bool                                    & failed)
+{
+  LogKit::WriteHeader("Processing Rock Physics");
+
+  // rock physics data
+  int   n_vintages                                                = model_settings->getNumberOfVintages();
+  const std::string                        path                   = input_files->getInputDirectory();
+  const std::vector<std::string>           trend_cube_parameters  = model_settings->getTrendCubeParameters();
+  /*const std::vector<std::vector<double> >  trend_cube_sampling    = trend_cubes.GetTrendCubeSampling();
+  const std::map<std::string, std::vector<DistributionWithTrendStorage *> >  reservoir_variable = model_settings->getReservoirVariable();
+
+  // generate distribution for each reservoir variable
+  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+
+    std::vector<DistributionWithTrendStorage *> storage = it->second;
+    std::vector<DistributionWithTrend *> dist_vector(storage.size());
+
+    for(size_t i=0; i<storage.size(); i++) {
+      dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, error_text);
+    }
+
+    reservoir_variables_[it->first] = dist_vector;
+  }
+
+  if(error_text == "") {
+
+    // elastic min/max data
+    float alpha_min     = model_settings->getAlphaMin();
+    float alpha_max     = model_settings->getAlphaMax();
+    float beta_min      = model_settings->getBetaMin();
+    float beta_max      = model_settings->getBetaMax();
+    float rho_min       = model_settings->getRhoMin();
+    float rho_max       = model_settings->getRhoMax();
+    float var_alpha_min = model_settings->getVarAlphaMin();
+    float var_alpha_max = model_settings->getVarAlphaMax();
+    float var_beta_min  = model_settings->getVarBetaMin();
+    float var_beta_max  = model_settings->getVarBetaMax();
+    float var_rho_min   = model_settings->getVarRhoMin();
+    float var_rho_max   = model_settings->getVarRhoMax();
+
+    // map between reservoir variables and storage classes
+    const std::map<std::string, DistributionsFluidStorage   *>  fluid_storage    = model_settings->getFluidStorage();
+    const std::map<std::string, DistributionsSolidStorage   *>  solid_storage    = model_settings->getSolidStorage();
+    const std::map<std::string, DistributionsDryRockStorage *>  dry_rock_storage = model_settings->getDryRockStorage();
+    const std::map<std::string, DistributionsRockStorage    *>  rock_storage     = model_settings->getRockStorage();
+
+    // Map out reservoir variables for using in rocks to access resampling trigger.
+    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
+    if(reservoir_variables_.size() > 0) {
+      size_t nVintages = reservoir_variables_.begin()->second.size();
+      res_var_vintage.resize(nVintages);
+      for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
+        var_it != reservoir_variables_.end();var_it++)
+      {
+        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
+      }
+    }
+
+
+    std::map<std::string, float> facies_probabilities = model_settings->getPriorFaciesProb();
+    std::map<std::string, std::string> facies_cubes   = input_files->getPriorFaciesProbFile();
+    std::vector<std::string> all_facies_names         = faciesNames_;
+
+    for(std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
+      all_facies_names.push_back(it_prob->first);
+    for(std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
+      all_facies_names.push_back(it_cube->first);
+
+    std::sort(all_facies_names.begin(), all_facies_names.end());
+
+    std::string prev_facies = "";
+    for(size_t it=0; it<all_facies_names.size(); it++) {
+      if(all_facies_names[it] != prev_facies) {
+        prev_facies = all_facies_names[it];
+
+        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
+        if(iter != rock_storage.end()) {
+
+          std::string rockErrTxt = "";
+
+          std::string name = iter->first;
+          LogKit::LogFormatted(LogKit::Low, "\nRock \'"+name+"\':\n");
+
+          DistributionsRockStorage * storage    = iter   ->second;
+          std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
+                                                                                      path,
+                                                                                      trend_cube_parameters,
+                                                                                      trend_cube_sampling,
+                                                                                      rock_storage,
+                                                                                      solid_storage,
+                                                                                      dry_rock_storage,
+                                                                                      fluid_storage,
+                                                                                      rockErrTxt);
+
+          if(rockErrTxt == "") {
+
+            int n_vintages = static_cast<int>(rock.size());
+            if(n_vintages > 1)
+              LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
+
+            for(int i=0; i<n_vintages; i++) {
+              if(n_vintages > 1)
+                LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
+
+              //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
+              rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
+
+              std::vector<bool> has_trends = rock[i]->HasTrend();
+              bool              has_trend = false;
+              for(size_t j=0; j<has_trends.size(); j++) {
+                if(has_trends[j] == true) {
+                  has_trend = true;
+                  break;
+                }
+              }
+
+              std::vector<double> expectation  = rock[i]->GetMeanLogExpectation();
+              NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
+
+              printExpectationAndCovariance(expectation, covariance, has_trend);
+
+              std::string tmpErrTxt = "";
+              if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
+                tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
+                tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
+              }
+              if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
+                if(typeid(*(storage)) == typeid(ReussRockStorage))
+                  tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
+                else
+                  tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
+                tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
+              }
+              if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
+                tmpErrTxt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
+                tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
+              }
+
+              if(tmpErrTxt != "") {
+                error_text += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
+                error_text += tmpErrTxt;
+              }
+
+              std::string varErrTxt = "";
+              if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
+                varErrTxt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
+                varErrTxt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
+              }
+              if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
+                varErrTxt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
+                varErrTxt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
+              }
+              if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
+                varErrTxt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
+                varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
+              }
+
+              if(varErrTxt != "") {
+                error_text += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
+                error_text += varErrTxt;
+              }
+
+              // Check correlations
+              float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+              float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+              float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
+
+              NRLib::SymmetricMatrix corr(3);
+              corr(0,0) = 1;
+              corr(1,1) = 1;
+              corr(2,2) = 1;
+              corr(0,1) = corr01;
+              corr(0,2) = corr02;
+              corr(1,2) = corr12;
+
+              try {
+                NRLib::CholeskyInvert(corr);
+              }
+              catch (NRLib::Exception & e) {
+                error_text += e.what();
+                error_text += " for rock '"+iter->first+"':\n";
+                error_text += "  The variabels in the rock model are probably linearly dependent\n";
+              }
+
+              if(varErrTxt != "" || tmpErrTxt != "")
+                break;
+
+            }
+
+            rock_distributions_[all_facies_names[it]] = rock;
+          }
+          else
+            errTxt += rockErrTxt;
+        }
+        else
+          errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
+        //rock_distributions_[it->first] = rock;
+      }
+    }
+  }
+  */
+  if(error_text != "")
+    failed = true;
 }
