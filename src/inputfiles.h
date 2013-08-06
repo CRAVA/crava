@@ -5,9 +5,9 @@
 #ifndef INPUTFILES_H
 #define INPUTFILES_H
 
-#include <string>
 #include <vector>
 #include <map>
+#include <string>
 
 class InputFiles
 {
@@ -176,7 +176,7 @@ private:
   std::vector<std::vector<std::string> > timeLapseSeismicFiles_;      ///< File names: seismic data for each time lapse and angle gather
   std::vector<std::vector<std::string> > timeLapseLocalNoiseFiles_;   ///< File names: local noise for each time lapse and angle gather
 
-  std::vector<std::vector<std::string> > timeLapseTravelTimeHorizons_;///< File names: Horizons for each travel time time lapse
+  std::vector<std::vector<std::string> > timeLapseTravelTimeHorizons_; ///< File names: Horizons for each travel time time lapse
 };
 
 #endif

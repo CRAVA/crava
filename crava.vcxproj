@@ -313,6 +313,7 @@
     </ClCompile>
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
+    <ClCompile Include="src\intervalsimbox.cpp" />
     <ClCompile Include="src\io.cpp" />
     <ClCompile Include="src\kriging2d.cpp" />
     <ClCompile Include="src\krigingadmin.cpp">
@@ -1359,6 +1360,7 @@
     <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\blockedlogscommon.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\intervalsimbox.h" />
     <ClInclude Include="src\multiintervalgrid.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\seismicstorage.h" />

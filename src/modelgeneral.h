@@ -36,6 +36,7 @@ class InputFiles;
 class TimeLine;
 class WellData;
 class SeismicParameters;
+class CravaTrend;
 
 class ModelGeneral
 {

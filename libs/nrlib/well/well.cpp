@@ -64,8 +64,10 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
-Well::~Well()
-{}
+Well::~Well(){
+
+}
+
 
 void
 Well::ReadWell(const std::string  & file_name,
@@ -75,12 +77,14 @@ Well::ReadWell(const std::string  & file_name,
     NRLib::NorsarWell well(file_name);
     well_name_ = well.GetWellName();
     cont_log_ = well.GetContLog();
+    n_data_ = well.GetNData();
     disc_log_ = well.GetDiscLog();
     read_ok = true;
   }
   else if(file_name.find(".rms",0) != std::string::npos) {
     NRLib::RMSWell well(file_name);
     well_name_ = well.GetWellName();
+    n_data_ = well.GetNData();
     cont_log_ = well.GetContLog();
     disc_log_ = well.GetDiscLog();
     read_ok = true;

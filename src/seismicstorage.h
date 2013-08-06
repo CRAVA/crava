@@ -57,6 +57,10 @@ public:
                           int j,
                           int k) const;
 
+  int GetNx() const;
+  int GetNy() const;
+  int GetNz() const;
+
   //SET FUNCTIONS
   void            SetFileName(std::string file_name)      { file_name_ = file_name ; }
   void            SetSeismicType(int seismic_type)        { seismic_type_ = seismic_type ;}

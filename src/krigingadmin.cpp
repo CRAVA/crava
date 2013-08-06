@@ -1259,6 +1259,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
       NRLib::CholeskySolve(ppMatrix2, ppInv);
     }
     catch (NRLib::Exception & e) {
+      (void) e;
       robustify = true;
     }
     counter++;

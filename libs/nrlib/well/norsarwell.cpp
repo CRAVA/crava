@@ -178,6 +178,10 @@ NorsarWell::NorsarWell(const std::string & filename)
 
   for(int i=0;i<static_cast<int>(track_logs.size());i++)
     AddContLog(log_name[i], track_logs[i]);
+
+  // find n_data including WELLMISSING values
+  unsigned int n_data = GetContLog("TWT").size();
+  SetNumberOfData(n_data);
 }
 
 

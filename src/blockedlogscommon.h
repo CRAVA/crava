@@ -43,10 +43,10 @@ public:
                               int                           & j_move,
                               float                         & k_move);
 
-  void         FindContinuousPartOfData(const std::vector<bool> & hasData,
-                                        int                       nz,
-                                        int                     & start,
-                                        int                     & length) const;
+  //void         FindContinuousPartOfData(const std::vector<bool> & hasData,
+  //                                      int                       nz,
+  //                                      int                     & start,
+  //                                      int                     & length) const;
 
   //GET FUNCTIONS --------------------------------
 
@@ -98,78 +98,81 @@ public:
                                                         int                      i_offset = 0,
                                                         int                      j_offset = 0);
 
+
   // FUNCTIONS -----------------------------------
 
-    void  SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
-                                  double                  z0,              // z-value of center in top layer
-                                  double                  dz,              // dz in vertical trend
-                                  int                     nz,              // layers in vertical trend
-                                  std::string             type,
-                                  int                     iAngle);
+  void                                   EstimateCor(fftw_complex * var1_c,
+                                                     fftw_complex * var2_c,
+                                                     fftw_complex * ccor_1_2_c,
+                                                     int            cnzp) const;
 
-    void        FillInSeismic(std::vector<double> & seismic_data,
-                          int                   start,
-                          int                   length,
-                          fftw_real           * seis_r,
-                          int                   nzp) const;
+  void                                   FillInCpp(const float * coeff,
+                                                   int           start,
+                                                   int           length,
+                                                   fftw_real   * cpp_r,
+                                                   int           nzp);
 
+  void                                   SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
+                                                                 double                  z0,              // z-value of center in top layer
+                                                                 double                  dz,              // dz in vertical trend
+                                                                 int                     nz,              // layers in vertical trend
+                                                                 std::string             type,
+                                                                 int                     i_angle);
 
+  void                                   FillInSeismic(std::vector<double> & seismic_data,
+                                                       int                   start,
+                                                       int                   length,
+                                                       fftw_real           * seis_r,
+                                                       int                   nzp) const;
 
+  void                                 SetSeismicGradient(double                            v0,
+                                                          const NRLib::Grid2D<float>   &    structure_depth_grad_x,
+                                                          const NRLib::Grid2D<float>   &    structure_depth_grad_y,
+                                                          const NRLib::Grid2D<float>   &    ref_time_grad_x,
+                                                          const NRLib::Grid2D<float>   &    ref_time_grad_y,
+                                                          std::vector<double>          &    x_gradient,
+                                                          std::vector<double>          &    y_gradient);
 
-  void    SetSeismicGradient(double                            v0,
-                             const NRLib::Grid2D<float>   &    structure_depth_grad_x,
-                             const NRLib::Grid2D<float>   &    structure_depth_grad_y,
-                             const NRLib::Grid2D<float>   &    ref_time_grad_x,
-                             const NRLib::Grid2D<float>   &    ref_time_grad_y,
-                             std::vector<double>          &    x_gradient,
-                             std::vector<double>          &    y_gradient);
+  void                                   SetTimeGradientSettings(float distance, float sigma_m);
 
-  void    SetTimeGradientSettings(float distance, float sigma_m);
+  void                                   FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
+                                                             const Simbox                      * const estimation_simbox,
+                                                             int                                 n_angles,
+                                                             std::vector<double>               & x_gradient,
+                                                             std::vector<double>               & y_gradient,
+                                                             std::vector<std::vector<double> > & sigma_gradient);
 
-  void    FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
-                              const Simbox                      * const estimation_simbox,
-                              int                                 n_angles,
-                              std::vector<double>               & x_gradient,
-                              std::vector<double>               & y_gradient,
-                              std::vector<std::vector<double> > & sigma_gradient);
+  //void                                   FindContiniousPartOfData(const std::vector<bool> & has_data,
+  //                                                                int                       nz,
+  //                                                                int                     & start,
+  //                                                                int                     & length);
 
-  void    GetBlockedGrid(const Simbox         * estimation_simbox,
-                         const SeismicStorage * seismic_data,
-                         double               * blockedLog,
-                         int                    iOffset = 0,
-                         int                    jOffset = 0);
+  void         FindContinuousPartOfData(const std::vector<bool> & hasData,
+                                        int                       nz,
+                                        int                     & start,
+                                        int                     & length) const;
 
-  void    GetVerticalTrend(const std::vector<double> & blocked_log,
-                           double * trend);
+  //void    GetBlockedGrid(const Simbox         * estimation_simbox,
+  //                       const SeismicStorage * seismic_data,
+  //                       double               * blockedLog,
+  //                       int                    iOffset = 0,
+  //                       int                    jOffset = 0);
 
-  void    FindContiniousPartOfData(const std::vector<bool> & has_data,
-                                   int                       nz,
-                                   int                     & start,
-                                   int                     & length);
+  //void    GetVerticalTrend(const std::vector<double> & blocked_log,
+  //                         double * trend);
 
-  void    FillInCpp(const float * coeff,
-                    int           start,
-                    int           length,
-                    fftw_real   * cpp_r,
-                    int           nzp);
+  //void    FillInSeismic(double    * seismicData,
+  //                      int         start,
+  //                      int         length,
+  //                      fftw_real * seis_r,
+  //                      int         nzp) const;
 
-  void    FillInSeismic(double    * seismicData,
-                        int         start,
-                        int         length,
-                        fftw_real * seis_r,
-                        int         nzp) const;
-
-  void    EstimateCor(fftw_complex * var1_c,
-                      fftw_complex * var2_c,
-                      fftw_complex * ccor_1_2_c,
-                      int            cnzp) const;
-
-  void    SetLogFromVerticalTrend(float      * vertical_trend,
-                                  double       z0,              // z-value of center in top layer
-                                  double       dz,              // dz in vertical trend
-                                  int          nz,              // layers in vertical trend
-                                  std::string  type,
-                                  int          i_angle);
+  //void    SetLogFromVerticalTrend(float      * vertical_trend,
+  //                                double       z0,              // z-value of center in top layer
+  //                                double       dz,              // dz in vertical trend
+  //                                int          nz,              // layers in vertical trend
+  //                                std::string  type,
+  //                                int          i_angle);
 
 private:
 
@@ -321,11 +324,11 @@ private:
   float        * alpha_seismic_resolution_; ///<
   float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
   float        * rho_seismic_resolution_;   ///<
-  float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
-  float       ** well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
+  //float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
+  //float       ** well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
   int            n_angles_;                  ///< Number of AVA stacks
 
-  bool                      interpolate_;              ///<
+  //bool                      interpolate_;              ///<
 
   //int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox

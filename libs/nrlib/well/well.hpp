@@ -27,6 +27,7 @@
 #include <map>
 
 
+
 namespace NRLib {
   class Well{
   public:
@@ -90,10 +91,16 @@ namespace NRLib {
     bool IsMissing(double x) const;
     /// Return true if n is missing
     bool IsMissing(int n) const;
+    /// Check if deviated
+    bool IsDeviated() { return is_deviated_; }
     /// Return cont. missing value
     double GetContMissing() const { return(well_rmissing_); }
+    /// Return number of time data
+    int GetNData(void)      const  { return n_data_  ;}
     /// Return disc. missing value
     int GetIntMissing() const { return(well_imissing_); }
+    /// Set deviated
+    void SetDeviated(bool b)  {is_deviated_ = b   ;}
     /// Set missing values
     void SetMissing(double value) {well_rmissing_ = value; well_imissing_ = static_cast<int>(value);}
     /// Return discrete value at position index in log with name logname
@@ -117,6 +124,13 @@ namespace NRLib {
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
 
+  protected:
+    /// Set number of data
+    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+
+    // Number of time data including WELLMISSING values
+    unsigned int              n_data_;
+
   private:
     /// Continuous logs
     std::map<std::string,std::vector<double> > cont_log_;
@@ -129,6 +143,9 @@ namespace NRLib {
     double well_rmissing_;
     /// Missing value for discrete logs.
     int    well_imissing_;
+    /// Parameter from ModelGeneral
+    bool                      is_deviated_;
+
   };
 
 }

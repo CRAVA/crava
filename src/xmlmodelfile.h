@@ -6,7 +6,6 @@
 #define XMLMODELFILE_H
 
 #include <stdio.h>
-
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/tinyxml/tinyxml.h"
 #include "src/definitions.h"
@@ -14,10 +13,12 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
+#include "src/blockedlogscommon.h"
 
+class InputFiles;
 class Vario;
 class ModelSettings;
-class InputFiles;
+
 
 class XmlModelFile
 {

@@ -625,6 +625,20 @@ Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool
     status_ = BOXOK;
 }
 
+void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
+                         const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck)
+{
+  SetSurfaces(top_surf, bot_surf, skipCheck);
+  nz_ = nz;
+  dz_ = -1;
+  if(status_ == EMPTY)
+    status_ = NOAREA;
+  else if(status_ == NODEPTH)
+    status_ = BOXOK;
+
+  constThick_ = false;
+}
+
 void
 Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
 {
