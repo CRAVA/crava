@@ -2,33 +2,18 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include <iostream>
-#include <iomanip>
-#include <math.h>
-
-#include "nrlib/flens/nrlib_flens.hpp"
-#include "nrlib/iotools/logkit.hpp"
-
-#include "fftw.h"
-#include "rfftw.h"
-#include "fftw-int.h"
-#include "f77_func.h"
-
 #include "src/definitions.h"
 #include "src/blockedlogsforrockphysics.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
-#include "src/wavelet.h"
-#include "src/wavelet1D.h"
-#include "src/fftgrid.h"
 #include "src/simbox.h"
-#include "src/modelsettings.h"
-#include "src/io.h"
+#include "src/cravatrend.h"
 
 #include "rplib/demmodelling.h"
 
-BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
-                                                     Simbox    * simbox)
+BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData         * well,
+                                                     Simbox           * simbox,
+                                                     const CravaTrend & trend_cubes)
 {
   int nFacies = well->getNFacies();
   facies_names_.resize(nFacies);
@@ -51,6 +36,8 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
 
   BlockedLogs::findBlockIJK(well, simbox, bInd, firstM, lastM, nLayers, nBlocks, ipos, jpos, kpos, dz, firstB, lastB);
 
+  findTrendPositions(ipos, jpos, kpos, nBlocks, trend_cubes);
+
   delete [] ipos;
   delete [] jpos;
   delete [] kpos;
@@ -64,21 +51,22 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
   int   * blocked_facies   = NULL;
 
   BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy), firstM, lastM, nBlocks, blocked_alpha);
-  BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy), firstM, lastM, nBlocks, blocked_beta);
-  BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy), firstM, lastM, nBlocks, blocked_rho);
+  BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy),  firstM, lastM, nBlocks, blocked_beta);
+  BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy),   firstM, lastM, nBlocks, blocked_rho);
   //BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dymmy), firstM, lastM, nBlocks, blocked_porosity); //NBNB Marit: Can not implement well->getPorosity(dymmy) before multizone inversion is ready
+
   BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 
   delete [] bInd;
 
-  alpha_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
-  beta_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
-  rho_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  alpha_.resize(nFacies,    std::vector<float>(nBlocks, RMISSING));
+  beta_.resize(nFacies,     std::vector<float>(nBlocks, RMISSING));
+  rho_.resize(nFacies,      std::vector<float>(nBlocks, RMISSING));
   porosity_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
 
-  assignToFacies(blocked_alpha, blocked_facies, well->getFaciesNr(), alpha_);
-  assignToFacies(blocked_beta, blocked_facies, well->getFaciesNr(), beta_);
-  assignToFacies(blocked_rho, blocked_facies, well->getFaciesNr(), rho_);
+  assignToFacies(blocked_alpha,    blocked_facies, well->getFaciesNr(), alpha_);
+  assignToFacies(blocked_beta,     blocked_facies, well->getFaciesNr(), beta_);
+  assignToFacies(blocked_rho,      blocked_facies, well->getFaciesNr(), rho_);
   assignToFacies(blocked_porosity, blocked_facies, well->getFaciesNr(), porosity_);
 
   delete [] blocked_alpha;
@@ -87,24 +75,7 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
   delete [] blocked_porosity;
   delete [] blocked_facies;
 
-  bulk_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
-  shear_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
-
-  for(int i=0; i<nFacies; i++) {
-    for(int j=0; j<nBlocks; j++) {
-      if(alpha_[i][j] != RMISSING && beta_[i][j] != RMISSING && rho_[i][j] != RMISSING) {
-
-        double bulk;
-        double shear;
-
-        DEMTools::CalcElasticParamsFromSeismicParams(alpha_[i][j], beta_[i][j], rho_[i][j], bulk, shear);
-
-        bulk_modulus_[i][j]  = static_cast<float>(bulk);
-        shear_modulus_[i][j] = static_cast<float>(shear);
-      }
-    }
-  }
-
+  calculateBulkShear(nBlocks, nFacies);
 }
 
 //------------------------------------------------------------------------------
@@ -195,7 +166,7 @@ void
 BlockedLogsForRockPhysics::assignToFacies(const float                      * wellLog,
                                           const int                        * faciesLog,
                                           const int                        * faciesNumbers,
-                                          std::vector<std::vector<float> > & blockedLog)
+                                          std::vector<std::vector<float> > & blockedLog) const
 {
   if (wellLog != NULL) {
     int nFacies = blockedLog.size();
@@ -209,5 +180,47 @@ BlockedLogsForRockPhysics::assignToFacies(const float                      * wel
         }
       }
     }
+  }
+}
+//------------------------------------------------------------------------------
+void
+BlockedLogsForRockPhysics::calculateBulkShear(const int & nBlocks,
+                                              const int & nFacies)
+{
+  bulk_modulus_.resize(nFacies,  std::vector<float>(nBlocks, RMISSING));
+  shear_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+
+  for(int i=0; i<nFacies; i++) {
+    for(int j=0; j<nBlocks; j++) {
+      if(alpha_[i][j] != RMISSING && beta_[i][j] != RMISSING && rho_[i][j] != RMISSING) {
+
+        double bulk;
+        double shear;
+
+        DEMTools::CalcElasticParamsFromSeismicParams(alpha_[i][j], beta_[i][j], rho_[i][j], bulk, shear);
+
+        bulk_modulus_[i][j]  = static_cast<float>(bulk);
+        shear_modulus_[i][j] = static_cast<float>(shear);
+      }
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+void
+BlockedLogsForRockPhysics::findTrendPositions(const int        * ipos,
+                                              const int        * jpos,
+                                              const int        * kpos,
+                                              const int        & nBlocks,
+                                              const CravaTrend & trend_cubes)
+{
+  s1_.resize(nBlocks, RMISSING);
+  s2_.resize(nBlocks, RMISSING);
+
+  std::vector<double> positions(2, RMISSING);
+  for(int i=0; i<nBlocks; i++) {
+    positions = trend_cubes.GetTrendPosition(ipos[i], jpos[i], kpos[i]);
+    s1_[i] = positions[0];
+    s2_[i] = positions[1];
   }
 }
