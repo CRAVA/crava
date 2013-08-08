@@ -57,14 +57,16 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
 
   int dummy;
 
-  float * blocked_alpha  = NULL;
-  float * blocked_beta   = NULL;
-  float * blocked_rho    = NULL;
-  int   * blocked_facies = NULL;
+  float * blocked_alpha    = NULL;
+  float * blocked_beta     = NULL;
+  float * blocked_rho      = NULL;
+  float * blocked_porosity = NULL;
+  int   * blocked_facies   = NULL;
 
   BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy), firstM, lastM, nBlocks, blocked_alpha);
   BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy), firstM, lastM, nBlocks, blocked_beta);
   BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy), firstM, lastM, nBlocks, blocked_rho);
+  //BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dymmy), firstM, lastM, nBlocks, blocked_porosity); //NBNB Marit: Can not implement well->getPorosity(dymmy) before multizone inversion is ready
   BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 
   delete [] bInd;
@@ -72,25 +74,32 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData  * well,
   alpha_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
   beta_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
   rho_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+  porosity_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
 
   assignToFacies(blocked_alpha, blocked_facies, well->getFaciesNr(), alpha_);
   assignToFacies(blocked_beta, blocked_facies, well->getFaciesNr(), beta_);
   assignToFacies(blocked_rho, blocked_facies, well->getFaciesNr(), rho_);
+  assignToFacies(blocked_porosity, blocked_facies, well->getFaciesNr(), porosity_);
 
   delete [] blocked_alpha;
   delete [] blocked_beta;
   delete [] blocked_rho;
+  delete [] blocked_porosity;
   delete [] blocked_facies;
 
   bulk_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
   shear_modulus_.resize(nFacies, std::vector<float>(nBlocks, RMISSING));
+
   for(int i=0; i<nFacies; i++) {
     for(int j=0; j<nBlocks; j++) {
       if(alpha_[i][j] != RMISSING && beta_[i][j] != RMISSING && rho_[i][j] != RMISSING) {
+
         double bulk;
         double shear;
+
         DEMTools::CalcElasticParamsFromSeismicParams(alpha_[i][j], beta_[i][j], rho_[i][j], bulk, shear);
-        bulk_modulus_[i][j] = static_cast<float>(bulk);
+
+        bulk_modulus_[i][j]  = static_cast<float>(bulk);
         shear_modulus_[i][j] = static_cast<float>(shear);
       }
     }
@@ -166,6 +175,19 @@ BlockedLogsForRockPhysics::getShearForFacies(const std::string & facies_name)
   }
 
   return shear_given_facies;
+}
+
+//------------------------------------------------------------------------------
+std::vector<float>
+BlockedLogsForRockPhysics::getPorosityForFacies(const std::string & facies_name)
+{
+  std::vector<float> porosity_given_facies;
+  for(size_t i=0; i<facies_names_.size(); i++) {
+    if(facies_name == facies_names_[i])
+      porosity_given_facies = porosity_[i];
+  }
+
+  return porosity_given_facies;
 }
 
 //------------------------------------------------------------------------------
