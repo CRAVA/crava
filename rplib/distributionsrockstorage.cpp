@@ -8,6 +8,8 @@
 #include "rplib/distributionsdryrock.h"
 #include "rplib/distributionsfluid.h"
 
+#include "rplib/rock.h"
+
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
@@ -1339,49 +1341,6 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   int n_vintages_bulk_weight  = static_cast<int>(bulk_weight_.size());
   int n_vintages_shear_weight = static_cast<int>(shear_weight_.size());
 
-  // Use blockedLogs given facies
-  int nWells = static_cast<int>(blockedLogs.size());
-
-  std::vector<std::vector<float> > vp_given_facies(nWells);
-  for(int i=0; i<nWells; i++) {
-    vp_given_facies[i] = blockedLogs[i]->getAlphaForFacies(rock_name_);
-  }
-
-  std::vector<std::vector<float> > vs_given_facies(nWells);
-  for(int i=0; i<nWells; i++) {
-    vs_given_facies[i] = blockedLogs[i]->getBetaForFacies(rock_name_);
-  }
-
-  std::vector<std::vector<float> > density_given_facies(nWells);
-  for(int i=0; i<nWells; i++) {
-    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
-  }
-
-  bool logs_given = true;
-  if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0 || density_given_facies.size() == 0)
-    logs_given = false;
-
-  for(int i=0; i<n_vintages_porosity; i++) {
-    if(porosity_[i]->GetEstimate() == true && logs_given == false) {
-      tmpErrTxt += "Porosity can not be estimated as all of Vp, Vs and density not are given in the wells.\n"; //Marit: Må ha egen porosity-logg for å kunne estimere denne
-      break;
-    }
-  }
-
-  for(int i=0; i<n_vintages_bulk_weight; i++) {
-    if(bulk_weight_[i]->GetEstimate() == true && logs_given == false) {
-      tmpErrTxt += "<bulk-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
-      break;
-    }
-  }
-
-  for(int i=0; i<n_vintages_shear_weight; i++) {
-    if(shear_weight_[i]->GetEstimate() == true && logs_given == false) {
-      tmpErrTxt += "<shear-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
-      break;
-    }
-  }
-
   std::vector<double> alpha(3);
   alpha[0] = porosity_[0]    ->GetOneYearCorrelation();
   alpha[1] = bulk_weight_[0] ->GetOneYearCorrelation();
@@ -1389,12 +1348,6 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   std::vector<double> s_min;
   std::vector<double> s_max;
-
-  const std::vector<std::vector<float> > dummy_blocked_logs;
-
-  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
-  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
 
   std::vector<DistributionsRock *> final_distr_upper_rock(n_vintages);
   std::vector<DistributionsRock *> distr_upper_rock;
@@ -1468,18 +1421,109 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
       tmpErrTxt += "The lower bound in the Bounding rock physics model needs to follow a Reuss model\n";
   }
 
-  for(size_t i=0; i<porosity_.size(); i++) {
-    if(porosity_[i]->GetEstimate() == true)
-      tmpErrTxt += "Porosity can not be estimated from wells\n";
+  int nWells = static_cast<int>(blockedLogs.size());
+
+  std::vector<std::vector<float> > bulk_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    bulk_given_facies[i] = blockedLogs[i]->getBulkForFacies(rock_name_);
   }
-  for(size_t i=0; i<bulk_weight_.size(); i++) {
-    if(bulk_weight_[i]->GetEstimate() == true)
-      tmpErrTxt += "Bulk weights can not be estimated from wells\n";
+
+  std::vector<std::vector<float> > shear_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    shear_given_facies[i] = blockedLogs[i]->getShearForFacies(rock_name_);
   }
-  for(size_t i=0; i<shear_weight_.size(); i++) {
-    if(shear_weight_[i]->GetEstimate() == true)
-      tmpErrTxt += "Shear weights can not be estimated from wells\n";
+
+  std::vector<std::vector<float> > density_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
+
+  std::vector<std::vector<float> > porosity_given_facies(nWells);
+  for(int i=0; i<nWells; i++) {
+    porosity_given_facies[i] = blockedLogs[i]->getPorosityForFacies(rock_name_);
+  }
+
+  bool logs_given = true;
+  if(bulk_given_facies.size() == 0 || shear_given_facies.size() == 0 || density_given_facies.size() == 0 || porosity_given_facies.size() == 0)
+    logs_given = false;
+
+  for(int i=0; i<n_vintages_porosity; i++) {
+    if(porosity_[i]->GetEstimate() == true && porosity_given_facies.size() == 0) {
+      tmpErrTxt += "Porosity can not be estimated as porosity not is given in the wells.\n";
+      break;
+    }
+  }
+
+  for(int i=0; i<n_vintages_bulk_weight; i++) {
+    if(bulk_weight_[i]->GetEstimate() == true && logs_given == false) {
+      tmpErrTxt += "<bulk-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+      break;
+    }
+  }
+
+  for(int i=0; i<n_vintages_shear_weight; i++) {
+    if(shear_weight_[i]->GetEstimate() == true && logs_given == false) {
+      tmpErrTxt += "<shear-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+      break;
+    }
+  }
+
+  std::vector<std::vector<float> > bulk_weight_given_facies(nWells);
+  std::vector<std::vector<float> > shear_weight_given_facies(nWells);
+
+  if(bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) {
+
+    // Calculate bulk- and shear-weights
+
+    Rock * sample_lower_rock; // Sample from the Reuss rock model
+    Rock * sample_upper_rock; // Sample from the Voigt rock model
+
+    const std::vector<double> dummy_trend_params(2,0); //Use dummy as the Reuss and Voigt rocks in the Bounding model not can contain trends
+
+    sample_lower_rock = final_distr_lower_rock[0]->GenerateSample(dummy_trend_params); // Only estimate variables in 3D model, not 4D
+    sample_upper_rock = final_distr_upper_rock[0]->GenerateSample(dummy_trend_params);
+
+    double vp_lower;
+    double vs_lower;
+    double rho_lower;
+    double bulk_lower;
+    double shear_lower;
+
+    double vp_upper;
+    double vs_upper;
+    double rho_upper;
+    double bulk_upper;
+    double shear_upper;
+
+    for(int i=0; i<nWells; i++) {
+
+      int n_well_samples = static_cast<int>(porosity_given_facies[i].size());
+
+      bulk_weight_given_facies[i].resize(n_well_samples, RMISSING);
+      shear_weight_given_facies[i].resize(n_well_samples, RMISSING);
+
+      for(int j=0; j<n_well_samples; j++) {
+        if(porosity_given_facies[i][j] != RMISSING && bulk_given_facies[i][j] != RMISSING && shear_given_facies[i][j] != RMISSING) {
+
+          sample_lower_rock->SetPorosity(porosity_given_facies[i][j]);
+          sample_upper_rock->SetPorosity(porosity_given_facies[i][j]);
+
+          sample_lower_rock->GetSeismicParams(vp_lower, vs_lower, rho_lower);
+          sample_upper_rock->GetSeismicParams(vp_upper, vs_upper, rho_upper);
+
+          DEMTools::CalcElasticParamsFromSeismicParams(vp_lower, vs_lower, rho_lower, bulk_lower, shear_lower);
+          DEMTools::CalcElasticParamsFromSeismicParams(vp_upper, vs_upper, rho_upper, bulk_upper, shear_upper);
+
+          bulk_weight_given_facies[i][j]  = static_cast<float>((bulk_given_facies[i][j]  - bulk_lower)  / (bulk_upper  - bulk_lower));
+          shear_weight_given_facies[i][j] = static_cast<float>((shear_given_facies[i][j] - shear_lower) / (shear_upper - shear_lower));
+        }
+      }
+    }
+  }
+
+  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, porosity_given_facies,     tmpErrTxt);
+  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, bulk_weight_given_facies,  tmpErrTxt);
+  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, shear_weight_given_facies, tmpErrTxt);
 
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);
@@ -1489,17 +1533,17 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_porosity)
-        porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, porosity_given_facies, tmpErrTxt);
       else
         porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_bulk_weight)
-        bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, bulk_weight_given_facies, tmpErrTxt);
       else
         bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_shear_weight)
-        shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        shear_weight_dist_with_trend[i] = shear_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, shear_weight_given_facies, tmpErrTxt);
       else
         shear_weight_dist_with_trend[i] = shear_weight_dist_with_trend[i-1]->Clone();
     }
