@@ -385,16 +385,34 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   }
 
   for(int i=0; i<n_vintages_vp; i++) {
-    if(vp_[i]->GetEstimate() == true && vp_given_facies.size() == 0)
-      tmpErrTxt += "Vp can not be estimated as no Vp log is given in the wells\n";
+    if(i == 0) {
+      if(vp_[i]->GetEstimate() == true && vp_given_facies.size() == 0)
+        tmpErrTxt += "Vp can not be estimated as no Vp log is given in the wells\n";
+    }
+    else {
+      if(vp_[i]->GetEstimate() == true)
+        tmpErrTxt += "Vp can not be estimated for time lapse data\n";
+    }
   }
   for(int i=0; i<n_vintages_vs; i++) {
-    if(vs_[i]->GetEstimate() == true && vs_given_facies.size() == 0)
-      tmpErrTxt += "Vs can not be estimated as no Vs log is given in the wells\n";
+    if(i == 0) {
+      if(vs_[i]->GetEstimate() == true && vs_given_facies.size() == 0)
+        tmpErrTxt += "Vs can not be estimated as no Vs log is given in the wells\n";
+    }
+    else {
+      if(vs_[i]->GetEstimate() == true)
+        tmpErrTxt += "Vs can not be estimated for time lapse data\n";
+    }
   }
   for(int i=0; i<n_vintages_density; i++) {
-    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
-      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+    if(i == 0) {
+      if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
+        tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+    }
+    else {
+      if(density_[i]->GetEstimate() == true)
+        tmpErrTxt += "Density can not be estimated for time lapse data\n";
+    }
   }
 
   std::vector<double> corr_vp_vs(n_vintages, 0);
@@ -403,10 +421,14 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages_vp_vs; i++) {
     if(correlation_vp_vs_[i]->GetEstimate() == true) {
-      if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-vp-vs> can not be estimated as both Vp and Vs logs are not given in the wells\n";
+      if(i == 0) {
+        if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-vp-vs> can not be estimated as both Vp and Vs logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-vp-vs> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_[i], "correlation", corr_vp_vs[i], errTxt);
@@ -417,10 +439,14 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages_vp_density; i++) {
     if(correlation_vp_density_[i]->GetEstimate() == true) {
-      if(vp_given_facies.size() == 0 || density_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-vp-density> can not be estimated as both Vp and density logs are not given in the wells\n";
+      if(i == 0) {
+        if(vp_given_facies.size() == 0 || density_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-vp-density> can not be estimated as both Vp and density logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-vp-density> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
@@ -431,10 +457,14 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
 
   for(int i=0; i<n_vintages_vs_density; i++) {
     if(correlation_vs_density_[i]->GetEstimate() == true) {
-      if(vs_given_facies.size() == 0 || density_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-vs-density> can not be estimated as both Vs and density logs are not given in the wells\n";
+      if(i == 0) {
+        if(vs_given_facies.size() == 0 || density_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-vs-density> can not be estimated as both Vs and density logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-vs-density> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
@@ -613,16 +643,34 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   }
 
   for(int i=0; i<n_vintages_bulk; i++) {
-    if(bulk_modulus_[i]->GetEstimate() == true && bulk_given_facies.size() == 0)
-      tmpErrTxt += "Bulk modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+    if(i == 0) {
+      if(bulk_modulus_[i]->GetEstimate() == true && bulk_given_facies.size() == 0)
+        tmpErrTxt += "Bulk modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+    }
+    else {
+      if(bulk_modulus_[i]->GetEstimate() == true)
+        tmpErrTxt += "Bulk modulus can not be estimated for time lapse data\n";
+    }
   }
   for(int i=0; i<n_vintages_shear; i++) {
-    if(shear_modulus_[i]->GetEstimate() == true && shear_given_facies.size() == 0)
-      tmpErrTxt += "Shear modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+    if(i == 0) {
+      if(shear_modulus_[i]->GetEstimate() == true && shear_given_facies.size() == 0)
+        tmpErrTxt += "Shear modulus can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+    }
+    else {
+      if(shear_modulus_[i]->GetEstimate() == true)
+        tmpErrTxt += "Shear modulus can not be estimated for time lapse data\n";
+    }
   }
   for(int i=0; i<n_vintages_density; i++) {
-    if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
-      tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+    if(i == 0) {
+      if(density_[i]->GetEstimate() == true && density_given_facies.size() == 0)
+        tmpErrTxt += "Density can not be estimated as no density log is given in the wells\n";
+    }
+    else {
+      if(density_[i]->GetEstimate() == true)
+        tmpErrTxt += "Density can not be estimated for time lapse data\n";
+    }
   }
 
   std::vector<double> corr_bulk_shear(n_vintages, 0);
@@ -631,10 +679,14 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages_bulk_shear; i++) {
     if(correlation_bulk_shear_[i]->GetEstimate() == true) {
-      if(bulk_given_facies.size() == 0 && shear_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-bulk-shear> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      if(i == 0) {
+        if(bulk_given_facies.size() == 0 && shear_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-bulk-shear> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-bulk-shear> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_bulk_shear_[i], "correlation", corr_bulk_shear[i], errTxt);
@@ -645,10 +697,14 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages_bulk_density; i++) {
     if(correlation_bulk_density_[i]->GetEstimate() == true) {
-      if(bulk_given_facies.size() == 0 && density_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-bulk-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      if(i == 0) {
+        if(bulk_given_facies.size() == 0 && density_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-bulk-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-bulk-density> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_[i], "correlation", corr_bulk_density[i], errTxt);
@@ -659,10 +715,14 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
 
   for(int i=0; i<n_vintages_shear_density; i++) {
     if(correlation_shear_density_[i]->GetEstimate() == true) {
-      if(shear_given_facies.size() == 0 && density_given_facies.size() == 0)
-        tmpErrTxt += "<correlation-shear-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+      if(i == 0) {
+        if(shear_given_facies.size() == 0 && density_given_facies.size() == 0)
+          tmpErrTxt += "<correlation-shear-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
+        else
+          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+      }
       else
-        tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        tmpErrTxt += "<correlation-shear-density> can not be estimatedfor time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_shear_density_[i], "correlation", corr_shear_density[i], errTxt);
@@ -1448,23 +1508,36 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     logs_given = false;
 
   for(int i=0; i<n_vintages_porosity; i++) {
-    if(porosity_[i]->GetEstimate() == true && porosity_given_facies.size() == 0) {
-      tmpErrTxt += "Porosity can not be estimated as porosity not is given in the wells.\n";
-      break;
+    if(i == 0) {
+      if(porosity_[i]->GetEstimate() == true && porosity_given_facies.size() == 0)
+        tmpErrTxt += "Porosity can not be estimated as porosity not is given in the wells.\n";
+    }
+    else {
+      if(porosity_[i]->GetEstimate() == true)
+        tmpErrTxt += "Porosity can not be estimated for time lapse data.\n";
     }
   }
 
   for(int i=0; i<n_vintages_bulk_weight; i++) {
-    if(bulk_weight_[i]->GetEstimate() == true && logs_given == false) {
-      tmpErrTxt += "<bulk-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
-      break;
+    if(i == 0) {
+      if(bulk_weight_[i]->GetEstimate() == true && logs_given == false)
+        tmpErrTxt += "<bulk-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+    }
+    else {
+      if(bulk_weight_[i]->GetEstimate() == true)
+        tmpErrTxt += "<bulk-modulus-weight> can not be estimated for time lapse data.\n";
     }
   }
 
   for(int i=0; i<n_vintages_shear_weight; i++) {
-    if(shear_weight_[i]->GetEstimate() == true && logs_given == false) {
-      tmpErrTxt += "<shear-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
-      break;
+    if(i == 0) {
+      if(shear_weight_[i]->GetEstimate() == true && logs_given == false)
+        tmpErrTxt += "<shear-modulus-weight> can not be estimated as all of Vp, Vs and density not are given in the wells.\n";
+
+    }
+    else {
+      if(shear_weight_[i]->GetEstimate() == true)
+        tmpErrTxt += "<shear-modulus-weight> can not be estimatedfor time lapse data.\n";
     }
   }
 
