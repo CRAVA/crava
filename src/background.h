@@ -278,15 +278,17 @@ private:
                                      const std::vector<int>         & erosion_priority,
                                      std::vector<double>            & zone_probability) const;
 
+  void         RegularizeZoneSurfaces(const std::vector<Surface> & surface,
+                                      const Simbox * simbox,
+                                      std::vector<Surface>       & regular_surface);
+
   void         ErodeSurface(Surface       *& surface,
                             const Surface *  priority_surface,
-                            const Simbox  *  simbox,
                             const bool    &  compare_upward) const;
 
   void         ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
                                 const std::vector<int>     & erosion_priority,
-                                const std::vector<Surface> & surface,
-                                const Simbox               * simbox) const;
+                                const std::vector<Surface> & surface) const;
 
   void         BuildErodedZones(NRLib::Volume                & eroded_zone,
                                 const std::vector<Surface *> & eroded_surfaces,
