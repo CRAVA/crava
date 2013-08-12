@@ -2422,7 +2422,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<BlockedLogsForRockPhysics *> blocked_logs(nWells, NULL);
       if(nWells > 0) {
         for (int i=0 ; i<nWells ; i++)
-          blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox);
+          blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], timeSimbox, trend_cubes_);
       }
 
       const std::map<std::string, DistributionsFluidStorage   *>& fluid_storage    = modelSettings->getFluidStorage();
