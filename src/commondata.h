@@ -115,10 +115,14 @@ private:
   bool ReadSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles);
 
-  bool ReadWellData(ModelSettings     * modelSettings,
-                    Simbox            * estimation_simbox,
-                    InputFiles        * inputFiles,
-                    std::string       & err_text);
+  bool ReadWellData(ModelSettings                   * model_settings,
+                    Simbox                          * estimation_simbox,
+                    InputFiles                      * input_files,
+                    std::vector<std::string>          & log_names,
+                    const std::vector<std::string>  & log_names_from_user,
+                    const std::vector<bool>         & inverse_velocity,
+                    bool                              facies_log_given,
+                    std::string                     & err_text);
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
@@ -131,11 +135,17 @@ private:
                                     const Simbox          * timeCutSimbox,
                                     float                   guard_zone);
 
-  void ProcessLogsNorsarWell(NRLib::Well                  & new_well,
-                             std::string                  & error_text,
-                             bool                         & failed);
+  void ProcessLogsNorsarWell(NRLib::Well                      & new_well,
+                             std::vector<std::string>         & log_names_from_user,
+                             const std::vector<bool>          & inverse_velocity,
+                             bool                               facies_log_given,
+                             std::string                      & error_text,
+                             bool                             & failed);
 
   void ProcessLogsRMSWell(NRLib::Well                     & new_well,
+                          std::vector<std::string>  & log_names_from_user,
+                          const std::vector<bool>         & inverse_velocity,
+                          bool                              facies_log_given,
                           std::string                     & error_text,
                           bool                            & failed);
 
@@ -169,8 +179,13 @@ private:
                         const MultiIntervalGrid                             * multiple_interval_grid,
                         const std::vector<CravaTrend>                       & trend_cubes,
                         const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
+                        int                                                   n_trend_cubes,
                         std::string                                         & error_text,
                         bool                                                & failed);
+
+  void PrintExpectationAndCovariance(const std::vector<double>   & expectation,
+                                     const NRLib::Grid2D<double> & covariance,
+                                     const bool                  & has_trend) const;
 
   bool EstimateWaveletShape();
   bool EstimatePriorCorrelation();
@@ -201,6 +216,7 @@ private:
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
 
   // Well logs
+  std::vector<std::string>                      log_names_;
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
@@ -211,8 +227,8 @@ private:
   // trend cubes
   int                                                           n_trend_cubes_;
   std::vector<CravaTrend>                                       trend_cubes_;
-  std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
-  std::map<std::string, std::vector<DistributionWithTrend *> >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model
+  std::vector<std::map<std::string, std::vector<DistributionsRock *> > >    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
+  std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;
@@ -228,6 +244,9 @@ private:
   bool                      reflection_matrix_from_file_; //False: created from global vp/vs
 
   std::vector<Wavelet*>     temporary_wavelets_; //One wavelet per angle
+
+  // facies
+  std::vector<std::string> facies_names_;
 
 };
 #endif

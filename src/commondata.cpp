@@ -46,14 +46,14 @@ CommonData::CommonData(ModelSettings  * model_settings,
   failed = !outer_temp_simbox_;
 
   // 2. read seismic data
-  if(ReadSeismicData(model_settings, input_files) == true)
-    read_seismic_ = true; //True or false if there is no seismic data?
+  //if(ReadSeismicData(model_settings, input_files) == true)
+    //read_seismic_ = true; //True or false if there is no seismic data?
 
   // 3. read well data
   if(!failed){
-    read_wells_ = ReadWellData(model_settings, &estimation_simbox_, input_files, err_text);
+    read_wells_ = ReadWellData(model_settings, &estimation_simbox_, input_files, log_names_, model_settings->getLogNames(),
+                                model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
     failed = !read_wells_;
-
   }
 
   // 4. block wells for estimation
@@ -100,13 +100,13 @@ CommonData::CommonData(ModelSettings  * model_settings,
     if(model_settings->getTrendCubeParameters().size() > 0){ // If trends are used, the setup of trend cubes must be ok as well
       if(setup_trend_cubes_){
         SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
-                         mapped_blocked_logs_, err_text,failed);
+                         mapped_blocked_logs_, n_trend_cubes_, err_text,failed);
         setup_estimation_rock_physics_ = !failed;
       }
     }
     else{
       SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
-                         mapped_blocked_logs_, err_text,failed);
+                         mapped_blocked_logs_, n_trend_cubes_, err_text,failed);
       setup_estimation_rock_physics_ = !failed;
     }
   }
@@ -483,12 +483,19 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
 }
 
 
-bool CommonData::ReadWellData(ModelSettings  * model_settings,
-                              Simbox         * estimation_simbox,
-                              InputFiles     * input_files,
-                              std::string    & err_text)
-{
+bool CommonData::ReadWellData(ModelSettings                   * model_settings,
+                              Simbox                          * estimation_simbox,
+                              InputFiles                      * input_files,
+                              std::vector<std::string>        & log_names,
+                              const std::vector<std::string>  & log_names_from_user,
+                              const std::vector<bool>         & inverse_velocity,
+                              bool                              facies_log_given,
+                              std::string                     & err_text){
   bool failed = false;
+
+  for(size_t i = 0; i<log_names_from_user.size(); i++){
+    log_names.push_back(log_names_from_user[i]);
+  }
 
   int nWells = model_settings->getNumberOfWells();
   std::vector<float> dev_angle(nWells);
@@ -508,9 +515,9 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
       NRLib::Well new_well(wellFileName, read_ok);
 
       if(wellFileName.find(".nwh",0) != std::string::npos)
-        ProcessLogsNorsarWell(new_well, err_text, failed);
+        ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text, failed);
       else if(wellFileName.find(".rms",0) != std::string::npos)
-        ProcessLogsRMSWell(new_well, err_text, failed);
+        ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text, failed);
 
       if(read_ok == true){
         wells_.push_back(new_well);
@@ -529,11 +536,32 @@ bool CommonData::ReadWellData(ModelSettings  * model_settings,
   return !failed;
 }
 
-void CommonData::ProcessLogsNorsarWell(NRLib::Well   & new_well,
-                                       std::string   & error_text,
-                                       bool          & failed){
+void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_well,
+                                       std::vector<std::string>        & log_names_from_user,
+                                       const std::vector<bool>         & inverse_velocity,
+                                       bool                              facies_log_given,
+                                       std::string                     & error_text,
+                                       bool                            & failed){
   const int factor_kilometer = 1000;
 
+  if(log_names_from_user.size() == 0){
+    log_names_from_user.push_back("TWT");
+    log_names_from_user.push_back("DT");
+    log_names_from_user.push_back("RHOB");
+    log_names_from_user.push_back("DTS");
+    log_names_from_user.push_back("FACIES");
+  }
+
+  for(size_t i = 0; i<log_names_from_user.size(); i++){
+    // If the well does not contain the log specified by the user, return an error message
+    if(!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])){
+      error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      failed = true;
+    }
+  }
+  
+
+  // Norsar wells must have a UTMX log
   if(new_well.HasContLog("UTMX")){
     std::vector<double> x_pos_temp = new_well.GetContLog("UTMX");
     for(unsigned int i=0; i<x_pos_temp.size(); i++){
@@ -546,6 +574,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'UTMX' in well file "+new_well.GetWellName()+".\n";
   }
 
+  // Norsar wells must have a UTMY log
   if(new_well.HasContLog("UTMY")){
     std::vector<double> y_pos_temp = new_well.GetContLog("UTMY");
     for(unsigned int i=0; i<y_pos_temp.size(); i++){
@@ -558,6 +587,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'UTMY' in well file "+new_well.GetWellName()+".\n";
   }
 
+  // Norsar wells must have a TVD log
   if(new_well.HasContLog("TVD")){
     std::vector<double> tvd_temp = new_well.GetContLog("TVD");
     for(unsigned int i=0; i<tvd_temp.size(); i++){
@@ -570,34 +600,76 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
   }
 
-  if(!new_well.HasContLog("TWT")){
-    failed = true;
-    error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
+  // Time is always entry 0 in the log name list and is always called TWT
+  //if(new_well.HasContLog(log_names_from_user[0])){
+
+  // Vp/Dt is always entry 1 in the log name list
+  if(new_well.HasContLog(log_names_from_user[1])){
+    if(inverse_velocity[0] == true){
+      new_well.AddContLog("Dt", new_well.GetContLog(log_names_from_user[0]));
+      new_well.RemoveContLog(log_names_from_user[0]);
+    }
+    else{
+      new_well.AddContLog("Vp", new_well.GetContLog(log_names_from_user[0]));
+      new_well.RemoveContLog(log_names_from_user[0]);
+    }
   }
 
-  if(new_well.HasContLog("VP")){
-    new_well.AddContLog("Vp", new_well.GetContLog("VP"));
-    new_well.RemoveContLog("VP");
+  // Rho is always entry 2 in the log name list
+  if(new_well.HasContLog(log_names_from_user[2])){
+    new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
+    new_well.RemoveContLog(log_names_from_user[2]);
   }
 
-  if(new_well.HasContLog("VS")){
-    new_well.AddContLog("Vs", new_well.GetContLog("VS"));
-    new_well.RemoveContLog("VS");
+  // Vs/Dts is always entry 3 in the log name list
+  if(new_well.HasContLog(log_names_from_user[3])){
+    if(inverse_velocity[1] == true){
+      new_well.AddContLog("Dts", new_well.GetContLog(log_names_from_user[3]));
+      new_well.RemoveContLog(log_names_from_user[3]);
+    }
+    else{
+      new_well.AddContLog("Vp", new_well.GetContLog(log_names_from_user[3]));
+      new_well.RemoveContLog(log_names_from_user[3]);
+    }
   }
 
-  if(new_well.HasContLog("RHO")){
-    new_well.AddContLog("Rho", new_well.GetContLog("RHO"));
-    new_well.RemoveContLog("RHO");
+  // If the facies log is given, it is always entry 4 in the log name list
+  if(facies_log_given){
+    if(new_well.HasDiscLog(log_names_from_user[4])){
+      new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
+      new_well.RemoveDiscLog(log_names_from_user[4]);
+    }
   }
+
 
 }
 
-void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
-                                    std::string   & error_text,
-                                    bool          & failed){
+void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
+                                    std::vector<std::string>        & log_names_from_user,
+                                    const std::vector<bool>         & inverse_velocity,
+                                    bool                              facies_log_given,
+                                    std::string                     & error_text,
+                                    bool                            & failed){
 
   const double factor_usfeet_to_meters = 304800.0;
 
+  if(log_names_from_user.size() == 0){
+    log_names_from_user.push_back("TWT");
+    log_names_from_user.push_back("DT");
+    log_names_from_user.push_back("RHOB");
+    log_names_from_user.push_back("DTS");
+    log_names_from_user.push_back("FACIES");
+  }
+
+  for(size_t i = 0; i<log_names_from_user.size(); i++){
+    // If the well does not contain the log specified by the user, return an error message
+    if(!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])){
+      error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      failed = true;
+    }
+  }
+
+  // RMS wells must have an x log
   if(new_well.HasContLog("x")){
     new_well.AddContLog("X_pos", new_well.GetContLog("x"));
     new_well.RemoveContLog("x");
@@ -606,6 +678,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'x' in well file "+new_well.GetWellName()+".\n";
   }
 
+  // RMS wells must have a y log
   if(new_well.HasContLog("y")){
     new_well.AddContLog("Y_pos", new_well.GetContLog("y"));
     new_well.RemoveContLog("y");
@@ -614,6 +687,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'y' in well file "+new_well.GetWellName()+".\n";
   }
 
+  // RMS wells must have a z log
   if(new_well.HasContLog("z")){
     new_well.AddContLog("TVD", new_well.GetContLog("z"));
     new_well.RemoveContLog("z");
@@ -622,31 +696,59 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well   & new_well,
     error_text += "Could not find log 'z' in well file "+new_well.GetWellName()+".\n";
   }
 
-  if(new_well.HasContLog("DT")){
-    std::vector<double> vp_temp = new_well.GetContLog("DT");
+  // Time is always entry 0 in the log name list
+  // Time is always called 'TWT', so no need to rename it
+  //if(new_well.HasContLog(log_names_from_user[0]))
+
+  // Vp is always entry 1 in the log name list and entry 0 in inverse_velocity
+  if(new_well.HasContLog(log_names_from_user[1])){
+    std::vector<double> vp_temp = new_well.GetContLog(log_names_from_user[1]);
     std::vector<double> vp(vp_temp.size());
-    for(unsigned int i=0; i<vp_temp.size(); i++){
-      vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
+    if(inverse_velocity[0]){
+      for(unsigned int i=0; i<vp_temp.size(); i++){
+        vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
+      }
     }
-    new_well.RemoveContLog("DT");
+    else{
+      for(unsigned int i=0; i<vp_temp.size(); i++){
+        vp[i] = static_cast<double>(vp_temp[i]);
+      }
+    }
+    new_well.RemoveContLog(log_names_from_user[1]);
     new_well.AddContLog("Vp", vp);
   }
 
-  if(new_well.HasContLog("DTS")){
-    std::vector<double> vs_temp = new_well.GetContLog("DTS");
+  // Vs is always entry 3 in the log name list
+  if(new_well.HasContLog(log_names_from_user[3])){
+    std::vector<double> vs_temp = new_well.GetContLog(log_names_from_user[3]);
     std::vector<double> vs(vs_temp.size());
-    for(unsigned int i=0; i<vs_temp.size(); i++){
-      vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
+    if(inverse_velocity[1]){
+      for(unsigned int i=0; i<vs_temp.size(); i++){
+        vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
+      }
     }
-    new_well.RemoveContLog("DTS");
+    else{
+      for(unsigned int i=0; i<vs_temp.size(); i++){
+        vs[i] = static_cast<double>(vs_temp[i]);
+      }
+    }
+    new_well.RemoveContLog(log_names_from_user[1]);
     new_well.AddContLog("Vs", vs);
   }
 
-  if(new_well.HasContLog("RHOB")){
-    new_well.AddContLog("Rho", new_well.GetContLog("RHOB"));
-    new_well.RemoveContLog("RHOB");
+  // Rho is always entry 2 in the log name list
+  if(new_well.HasContLog(log_names_from_user[2])){
+    new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
+    new_well.RemoveContLog(log_names_from_user[3]);
   }
 
+  // If defined, Facies is always entry 4 in the log name list
+  if(facies_log_given){
+    if(new_well.HasDiscLog(log_names_from_user[4])){
+      new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
+      new_well.RemoveDiscLog(log_names_from_user[4]);
+    }
+  }
 }
 
 //void
@@ -2687,7 +2789,7 @@ void   CommonData::SetupTrendCubes(ModelSettings                  * model_settin
   trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
   const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
   try{
-    for (size_t i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
+    for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
 
       trend_cubes_[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
                                    multiple_interval_grid->GetSimbox(i),
@@ -2706,35 +2808,47 @@ void   CommonData::SetupTrendCubes(ModelSettings                  * model_settin
   }
 }
 
-void CommonData::SetupRockPhysics(const ModelSettings                     * model_settings,
-                                  const InputFiles                        * input_files,
-                                  const MultiIntervalGrid                 * multiple_interval_grid,
-                                  const std::vector<CravaTrend>           & trend_cubes,
-                                  const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
-                                  std::string                             & error_text,
-                                  bool                                    & failed)
+void CommonData::SetupRockPhysics(const ModelSettings                               * model_settings,
+                                  const InputFiles                                  * input_files,
+                                  const MultiIntervalGrid                           * multiple_interval_grid,
+                                  const std::vector<CravaTrend>                     & trend_cubes,
+                                  const std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
+                                  int                                                 n_trend_cubes,
+                                  std::string                                       & error_text,
+                                  bool                                              & failed)
 {
   LogKit::WriteHeader("Processing Rock Physics");
 
   // rock physics data
-  int   n_vintages                                                = model_settings->getNumberOfVintages();
-  const std::string                        path                   = input_files->getInputDirectory();
-  const std::vector<std::string>           trend_cube_parameters  = model_settings->getTrendCubeParameters();
-  /*const std::vector<std::vector<double> >  trend_cube_sampling    = trend_cubes.GetTrendCubeSampling();
-  const std::map<std::string, std::vector<DistributionWithTrendStorage *> >  reservoir_variable = model_settings->getReservoirVariable();
+  const std::vector<std::string>                    interval_names          = model_settings->getIntervalNames();
+  int                                               n_vintages              = model_settings->getNumberOfVintages();
+  const std::string                                 path                    = input_files->getInputDirectory();
+  const std::vector<std::string>                    trend_cube_parameters   = model_settings->getTrendCubeParameters();
+  std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_trend_cubes_);
+  const std::vector<std::vector<float> >            dummy_blocked_logs;
+  const std::map<std::string, 
+    std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
+  
+  //
+  reservoir_variables_.resize(n_trend_cubes);
+  rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
-  for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+  for(int i=0; i<n_trend_cubes; i++){ // the number of trend cubes is the same as the number of intervals
+    trend_cube_sampling[i]                                                                     = trend_cubes[i].GetTrendCubeSampling();
+    for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
-    std::vector<DistributionWithTrendStorage *> storage = it->second;
-    std::vector<DistributionWithTrend *> dist_vector(storage.size());
+      std::vector<DistributionWithTrendStorage *>   storage = it->second;
+      std::vector<DistributionWithTrend *>          dist_vector(storage.size());
 
-    for(size_t i=0; i<storage.size(); i++) {
-      dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, error_text);
+      for(size_t j=0; j<storage.size(); j++) {
+        dist_vector[j]                    = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], error_text);
+      }
+
+      reservoir_variables_[i][it->first]  = dist_vector;
     }
-
-    reservoir_variables_[it->first] = dist_vector;
   }
+  
 
   if(error_text == "") {
 
@@ -2751,6 +2865,16 @@ void CommonData::SetupRockPhysics(const ModelSettings                     * mode
     float var_beta_max  = model_settings->getVarBetaMax();
     float var_rho_min   = model_settings->getVarRhoMin();
     float var_rho_max   = model_settings->getVarRhoMax();
+    int   n_wells       = model_settings->getNumberOfWells();
+
+    // Block logs
+    /*
+    std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
+    if(n_wells > 0) {
+      for (int i=0 ; i<n_wells ; i++)
+        blocked_logs_rock_physics[i] = new BlockedLogsCommon();
+    }
+    */
 
     // map between reservoir variables and storage classes
     const std::map<std::string, DistributionsFluidStorage   *>  fluid_storage    = model_settings->getFluidStorage();
@@ -2758,162 +2882,210 @@ void CommonData::SetupRockPhysics(const ModelSettings                     * mode
     const std::map<std::string, DistributionsDryRockStorage *>  dry_rock_storage = model_settings->getDryRockStorage();
     const std::map<std::string, DistributionsRockStorage    *>  rock_storage     = model_settings->getRockStorage();
 
-    // Map out reservoir variables for using in rocks to access resampling trigger.
-    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
-    if(reservoir_variables_.size() > 0) {
-      size_t nVintages = reservoir_variables_.begin()->second.size();
-      res_var_vintage.resize(nVintages);
-      for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
-        var_it != reservoir_variables_.end();var_it++)
-      {
-        for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
-          res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
+    // Map reservoir variables for use in rocks to access resampling trigger.
+    std::vector<std::vector<std::vector<DistributionWithTrend *> > > res_var_vintage(n_trend_cubes_);
+    for(int i=0; i<n_trend_cubes_; i++){
+      if(reservoir_variables_[i].size() > 0) {
+        size_t n_vintages = reservoir_variables_[i].begin()->second.size();
+        res_var_vintage[i].resize(n_vintages);
+        for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_[i].begin();
+          var_it != reservoir_variables_[i].end();var_it++)
+        {
+          for(size_t vin_index=0; vin_index < var_it->second.size();vin_index++)
+            res_var_vintage[i][vin_index].push_back((var_it->second)[vin_index]);
+        }
       }
     }
 
-
-    std::map<std::string, float> facies_probabilities = model_settings->getPriorFaciesProb();
+    // Facies names
+    std::map<std::string, std::map<std::string, float> > prior_facies_prob_interval = model_settings->getPriorFaciesProbInterval();
+    //std::map<std::string, float> facies_probabilities = model_settings->getPriorFaciesProb();
     std::map<std::string, std::string> facies_cubes   = input_files->getPriorFaciesProbFile();
-    std::vector<std::string> all_facies_names         = faciesNames_;
+    std::vector<std::string> all_facies_names         = facies_names_;
 
+    // EN hva skjer her?
+    /*
     for(std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
       all_facies_names.push_back(it_prob->first);
     for(std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
       all_facies_names.push_back(it_cube->first);
+    */
 
     std::sort(all_facies_names.begin(), all_facies_names.end());
 
     std::string prev_facies = "";
-    for(size_t it=0; it<all_facies_names.size(); it++) {
-      if(all_facies_names[it] != prev_facies) {
-        prev_facies = all_facies_names[it];
 
-        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
-        if(iter != rock_storage.end()) {
+    for(size_t i = 0; i<interval_names.size(); i++){
+      for(size_t f=0; f<all_facies_names.size(); f++) {
+        if(all_facies_names[f] != prev_facies) {
+          prev_facies = all_facies_names[f];
 
-          std::string rockErrTxt = "";
+          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[f]);
+          if(iter != rock_storage.end()) {
 
-          std::string name = iter->first;
-          LogKit::LogFormatted(LogKit::Low, "\nRock \'"+name+"\':\n");
+            std::string rock_err_txt = "";
 
-          DistributionsRockStorage * storage    = iter   ->second;
-          std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
-                                                                                      path,
-                                                                                      trend_cube_parameters,
-                                                                                      trend_cube_sampling,
-                                                                                      rock_storage,
-                                                                                      solid_storage,
-                                                                                      dry_rock_storage,
-                                                                                      fluid_storage,
-                                                                                      rockErrTxt);
+            std::string name = iter->first;
+            LogKit::LogFormatted(LogKit::Low, "\nRock \'"+name+"\':\n");
 
-          if(rockErrTxt == "") {
+            DistributionsRockStorage * storage    = iter->second;
+            // rock: vector of size equal to n_vintages
+            /*std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
+                                                                                        path,
+                                                                                        trend_cube_parameters,
+                                                                                        trend_cube_sampling[i],
+                                                                                        blocked_logs_rock_physics[i],
+                                                                                        rock_storage,
+                                                                                        solid_storage,
+                                                                                        dry_rock_storage,
+                                                                                        fluid_storage,
+                                                                                        rock_err_txt);*/
 
-            int n_vintages = static_cast<int>(rock.size());
-            if(n_vintages > 1)
-              LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
+            if(rock_err_txt == "") {
 
-            for(int i=0; i<n_vintages; i++) {
+              int n_vintages =  1;//static_cast<int>(rock.size());
               if(n_vintages > 1)
-                LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
+                LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
 
-              //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-              rock[i]->CompleteTopLevelObject(res_var_vintage[i]);
+              for(int t=0; t<n_vintages; t++) {
+                if(n_vintages > 1)
+                  LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", t+1);
 
-              std::vector<bool> has_trends = rock[i]->HasTrend();
-              bool              has_trend = false;
-              for(size_t j=0; j<has_trends.size(); j++) {
-                if(has_trends[j] == true) {
-                  has_trend = true;
-                  break;
+                //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
+                //rock[t]->CompleteTopLevelObject(res_var_vintage[i][t]);
+
+                std::vector<bool> has_trends (1,false);// = rock[t]->HasTrend();
+                bool              has_trend = false;
+                for(size_t j=0; j<has_trends.size(); j++) {
+                  if(has_trends[j] == true) {
+                    has_trend = true;
+                    break;
+                  }
                 }
-              }
 
-              std::vector<double> expectation  = rock[i]->GetMeanLogExpectation();
-              NRLib::Grid2D<double> covariance = rock[i]->GetMeanLogCovariance();
+                std::vector<double> expectation  (1,0);//rock[t]->GetMeanLogExpectation();
+                NRLib::Grid2D<double> covariance  (1,0);//rock[t]->GetMeanLogCovariance();
 
-              printExpectationAndCovariance(expectation, covariance, has_trend);
+                PrintExpectationAndCovariance(expectation, covariance, has_trend);
 
-              std::string tmpErrTxt = "";
-              if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
-                tmpErrTxt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
-                tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
-              }
-              if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
-                if(typeid(*(storage)) == typeid(ReussRockStorage))
-                  tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
-                else
-                  tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
-                tmpErrTxt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
-              }
-              if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
-                tmpErrTxt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
-                tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
-              }
+                std::string tmp_err_txt = "";
+                if (std::exp(expectation[0]) < alpha_min  || std::exp(expectation[0]) > alpha_max) {
+                  tmp_err_txt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
+                  tmp_err_txt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
+                }
+                if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
+                  if(typeid(*(storage)) == typeid(ReussRockStorage))
+                    tmp_err_txt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
+                  else
+                    tmp_err_txt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
+                  tmp_err_txt += "Vs should be in the interval ("+NRLib::ToString(beta_min)+", "+NRLib::ToString(beta_max)+") m/s\n";
+                }
+                if (std::exp(expectation[2]) < rho_min  || std::exp(expectation[2]) > rho_max) {
+                  tmp_err_txt += "Rho value of "+NRLib::ToString(std::exp(expectation[2]))+" detected: ";
+                  tmp_err_txt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
+                }
 
-              if(tmpErrTxt != "") {
-                error_text += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
-                error_text += tmpErrTxt;
-              }
+                if(tmp_err_txt != "") {
+                  error_text += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
+                  error_text += tmp_err_txt;
+                }
 
-              std::string varErrTxt = "";
-              if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
-                varErrTxt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
-                varErrTxt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
-              }
-              if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
-                varErrTxt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
-                varErrTxt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
-              }
-              if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
-                varErrTxt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
-                varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
-              }
+                std::string var_err_txt = "";
+                if (covariance(0,0) < var_alpha_min  || covariance(0,0) > var_alpha_max) {
+                  var_err_txt += "Var(log Vp) value of "+NRLib::ToString(covariance(0,0))+" detected: ";
+                  var_err_txt += "Var(log Vp) should be in the interval ("+NRLib::ToString(var_alpha_min)+", "+NRLib::ToString(var_alpha_max)+")\n";
+                }
+                if (covariance(1,1) < var_beta_min  || covariance(1,1) > var_beta_max) {
+                  var_err_txt += "Var(log Vs) value of "+NRLib::ToString(covariance(1,1))+" detected: ";
+                  var_err_txt += "Var(log Vs) should be in the interval ("+NRLib::ToString(var_beta_min)+", "+NRLib::ToString(var_beta_max)+")\n";
+                }
+                if (covariance(2,2) < var_rho_min  || covariance(2,2) > var_rho_max) {
+                  var_err_txt += "Var(log Rho) value of "+NRLib::ToString(covariance(2,2))+" detected: ";
+                  var_err_txt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
+                }
 
-              if(varErrTxt != "") {
-                error_text += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
-                error_text += varErrTxt;
+                if(var_err_txt != "") {
+                  error_text += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
+                  error_text += var_err_txt;
+                }
+
+                // Check correlations
+                float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+                float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+                float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
+
+                NRLib::SymmetricMatrix corr(3);
+                corr(0,0) = 1;
+                corr(1,1) = 1;
+                corr(2,2) = 1;
+                corr(0,1) = corr01;
+                corr(0,2) = corr02;
+                corr(1,2) = corr12;
+
+                try {
+                  NRLib::CholeskyInvert(corr);
+                }
+                catch (NRLib::Exception & e) {
+                  error_text += e.what();
+                  error_text += " for rock '"+iter->first+"':\n";
+                  error_text += "  The variables in the rock model are probably linearly dependent\n";
+                }
+
+                if(var_err_txt != "" || tmp_err_txt != "")
+                  break;
+
               }
-
-              // Check correlations
-              float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
-              float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
-              float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
-
-              NRLib::SymmetricMatrix corr(3);
-              corr(0,0) = 1;
-              corr(1,1) = 1;
-              corr(2,2) = 1;
-              corr(0,1) = corr01;
-              corr(0,2) = corr02;
-              corr(1,2) = corr12;
-
-              try {
-                NRLib::CholeskyInvert(corr);
-              }
-              catch (NRLib::Exception & e) {
-                error_text += e.what();
-                error_text += " for rock '"+iter->first+"':\n";
-                error_text += "  The variabels in the rock model are probably linearly dependent\n";
-              }
-
-              if(varErrTxt != "" || tmpErrTxt != "")
-                break;
-
+              // set rock distribution for interval i and facies f
+              //rock_distributions_[interval_names[i]][all_facies_names[f]] = rock;
             }
-
-            rock_distributions_[all_facies_names[it]] = rock;
+            else
+              error_text += rock_err_txt;
           }
           else
-            errTxt += rockErrTxt;
+            error_text += "The facies "+all_facies_names[f]+" is not one of the rocks in the rock physics model\n";
+          //rock_distributions_[i][all_facies_names[f]] = rock;
         }
-        else
-          errTxt += "The facies "+all_facies_names[it]+" is not one of the rocks in the rock physics model\n";
-        //rock_distributions_[it->first] = rock;
       }
     }
+    /*
+    for(int i=0; i<n_wells; i++)
+        delete blocked_logs_rock_physics[i];
+        */
   }
-  */
+
   if(error_text != "")
     failed = true;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CommonData::PrintExpectationAndCovariance(const std::vector<double>   & expectation,
+                                               const NRLib::Grid2D<double> & covariance,
+                                               const bool                  & has_trend) const{
+  if(has_trend == true)
+      LogKit::LogFormatted(LogKit::Low,"\nMean expectation and covariance estimated over all trend values:\n");
+  else
+    LogKit::LogFormatted(LogKit::Low,"\nEstimated expectation and covariance:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Expectation            Vp        Vs       Rho\n");
+  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"                  %7.2f   %7.2f   %7.3f \n",
+                       std::exp(expectation[0]), std::exp(expectation[1]), std::exp(expectation[2]));
+
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho\n");
+  LogKit::LogFormatted(LogKit::Low,"----------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"                  %.1e   %.1e   %.1e\n", covariance(0,0), covariance(1,1), covariance(2,2));
+
+  float corr01 = static_cast<float>(covariance(0,1)/(sqrt(covariance(0,0)*covariance(1,1))));
+  float corr02 = static_cast<float>(covariance(0,2)/(sqrt(covariance(0,0)*covariance(2,2))));
+  float corr12 = static_cast<float>(covariance(1,2)/(sqrt(covariance(1,1)*covariance(2,2))));
+
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }

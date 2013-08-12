@@ -31,18 +31,24 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     disc_logs_to_be_blocked.push_back(it->first);
   }
 
+  // FACIES
+  if(well_data->HasFaciesLog()){
+    facies_log_defined_ = true;
+    facies_map_ = well_data->GetFaciesMap();
+  }
+
   // Remove missing values
 
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
+                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   if(failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
   if (!failed)
-    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_,
-             continuous_logs_blocked_, discrete_logs_blocked_, n_data_, interpolate, failed, err_text);
+    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_, 
+              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
@@ -68,14 +74,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
+                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
   if(failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
   if (!failed)
-    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_,
-             continuous_logs_blocked_, discrete_logs_blocked_, n_data_, interpolate, failed, err_text);
+    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_, 
+              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
@@ -91,6 +97,8 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
                                   std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                                   std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
                                   unsigned int                                          n_data,
+                                  bool                                                  facies_log_defined,
+                                  const std::map<int, std::string>                    & facies_map,
                                   bool                                                  interpolate,
                                   bool                                                & failed,
                                   std::string                                         & err_text){
@@ -117,7 +125,9 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
     }
 
-    // Discrete logs (20130625 EN: No blocking of discrete logs for now)
+    // Discrete logs
+    if (facies_log_defined)
+      BlockFaciesLog(b_ind, facies_unblocked_, facies_map, facies_map.size(), facies_blocked_);
 
     (void) discrete_logs_unblocked;
     (void) discrete_logs_blocked;
@@ -363,6 +373,78 @@ void BlockedLogsCommon::BlockCoordinateLog(const std::vector<int>    &  b_ind,
 }
 
 //------------------------------------------------------------------------------
+void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>              & b_ind,
+                                       const std::vector<int>              & well_log,
+                                       const std::map<int,std::string>     & facies_map,
+                                       int                                   n_facies,
+                                       std::vector<int>                    &  blocked_log)
+{
+  if (well_log.size() > 0) {
+    //
+    // Set undefined
+    //
+    std::vector<int> facies_numbers;
+    for(std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++){
+      facies_numbers.push_back(it->first);
+    }
+    //facies_numbers_ = facies_numbers;
+    //n_facies_ = n_facies;
+    blocked_log.resize(n_blocks_);
+    for (unsigned int m = 0 ; m < n_blocks_ ; m++)
+      blocked_log[m] = IMISSING;
+
+    int   max_allowed_value = 100;  // Largest allowed value (facies number).
+    std::vector<int> count(n_facies);
+    std::vector<int> table(max_allowed_value);
+
+    //
+    // Set up facies-to-position table.
+    //
+    // Example: If log values range from 2 to 4 the table looks like
+    //
+    // table[0] = IMISSING
+    // table[1] = IMISSING
+    // table[2] =    0
+    // table[3] =    1
+    // table[4] =    2
+    // table[5] = IMISSING
+    //    .          .
+    //    .          .
+    //
+    for (int i = 0 ; i < max_allowed_value ; i++)
+      table[i] = IMISSING;
+    for (int i = 0 ; i < n_facies ; i++)
+      table[facies_numbers[i]] = i;
+
+    //
+    // Block log
+    //
+    for (int i = 0 ; i < n_facies ; i++)
+      count[i] = 0;
+    int value = well_log[first_M_];
+    if(value!=IMISSING)
+      count[table[value]]++;
+
+    for (int m = first_M_+1 ; m < last_M_ + 1 ; m++) {
+      if (b_ind[m] != b_ind[m - 1]) { // bInd[m] is the block number which sample 'm' lies in
+        blocked_log[b_ind[m-1]] = FindMostProbable(count, n_facies, b_ind[m-1]);
+        for (int i = 0 ; i < n_facies ; i++)
+          count[i] = 0;
+      }
+    value = well_log[m];
+    if(value!=IMISSING)
+      count[table[value]]++;
+    }
+    blocked_log[b_ind[last_M_]] = FindMostProbable(count, n_facies, b_ind[last_M_]);
+
+    //
+    // NOTE: The blocked log contains internal numbers 0, 1, 2, ... and
+    //       are NOT the facies labels.
+    //
+  }
+}
+
+//------------------------------------------------------------------------------
 void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
                                            const std::vector<double>  &  well_log,
                                            std::vector<double>        &  blocked_log){
@@ -411,6 +493,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
                                                   std::vector<double>                          & y_pos_unblocked,
                                                   std::vector<double>                          & z_pos_unblocked,
                                                   std::vector<double>                          & twt_unblocked,
+                                                  std::vector<int>                             & facies_unblocked,
                                                   std::map<std::string, std::vector<double> >  & continuous_logs_unblocked,
                                                   std::map<std::string, std::vector<int> >     & discrete_logs_unblocked,
                                                   const std::vector<std::string>               & cont_logs_to_be_blocked,
@@ -475,6 +558,8 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
         y_pos_unblocked.push_back(continuous_logs_well.find("Y_pos")->second[i]);
         z_pos_unblocked.push_back(continuous_logs_well.find("TVD")->second[i]);
         twt_unblocked.push_back(continuous_logs_well.find("TWT")->second[i]);
+        if(facies_log_defined_)
+          facies_unblocked.push_back(discrete_logs_well.find("Facies")->second[i]);
       
         // Loop over continuous variables and push back this element
         for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
@@ -1119,6 +1204,40 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>    & vertic
     SetLogFromVerticalTrend(well_synt_seismic_data_[i_angle], z_pos_blocked_, n_blocks_,
                             vertical_trend, z0, dz, nz);
   }
+}
+
+//------------------------------------------------------------------------------
+int BlockedLogsCommon::FindMostProbable(const std::vector<int>  & count,
+                                        int                       n_facies,
+                                        int                       block_index)
+{
+  int  maxIndex     = IMISSING;
+  int  maxCount     = 0;
+  bool inconclusive = false;
+
+  for (int i=0 ; i < n_facies ; i++ ) {
+    if (count[i] > 0 && count[i] > maxCount) {
+      maxCount     = count[i];
+      maxIndex     = i;
+      inconclusive = false;
+    }
+    else if (count[i] > 0 && count[i] == maxCount) {
+      inconclusive = true;
+    }
+  }
+
+  if (inconclusive) {
+    std::vector<int> equal;
+    for (int i=0 ; i < n_facies ; i++ ) {
+      if (count[i] == maxCount) {
+        equal.push_back(i);
+      }
+    }
+    int j = (block_index + 1) % equal.size();
+    maxIndex = equal[j];
+  }
+
+  return (maxIndex);
 }
 
 /*

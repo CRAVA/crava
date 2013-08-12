@@ -317,6 +317,7 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
 
     }
   }
+  delete time_simbox;
 }
 
 CravaTrend::~CravaTrend()
