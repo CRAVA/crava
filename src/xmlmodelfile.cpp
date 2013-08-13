@@ -363,12 +363,15 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs");
   legalCommands.push_back("dts");
   legalCommands.push_back("density");
+  legalCommands.push_back("porosity");
   legalCommands.push_back("facies");
 
+  // 0: Time
   std::string value;
   if(parseValue(root, "time", value, errTxt) == true)
     modelSettings_->setLogName(0, value);
 
+  // 1: Vp
   bool vp = parseValue(root, "vp", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(1, value);
@@ -384,6 +387,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 2: Vs
   bool vs = parseValue(root, "vs", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(3, value);
@@ -399,13 +403,22 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 3: Density
   if(parseValue(root, "density", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
+  
+  // 4: Facies
   if(parseValue(root, "facies", value, errTxt) == true) {
     modelSettings_->setLogName(4, value);
     modelSettings_->setFaciesLogGiven(true);
   }
 
+  // 5: Porosity
+  if(parseValue(root, "porosity", value, errTxt) == true) {
+    modelSettings_->setLogName(5, value);
+    modelSettings_->setPorosityLogGiven(true);
+  }
+  
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }

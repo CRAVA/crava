@@ -1715,6 +1715,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n",  logNames[2].c_str());
       if (modelSettings->getFaciesLogGiven())
         LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",logNames[4].c_str());
+      if (modelSettings->getPorosityLogGiven())
+        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  logNames[5].c_str());
     }
     else
     {
@@ -3337,6 +3339,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
     LogKit::WriteHeader("Reading and processing wells");
 
     bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
+    bool    porosityLogGiven = modelSettings->getPorosityLogGiven();
     int     nFacies        = 0;
     int     error = 0;
 
@@ -3352,6 +3355,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
         modelSettings->getIndicatorWavelet(i),
         modelSettings->getIndicatorBGTrend(i),
         modelSettings->getIndicatorRealVs(i),
+        porosityLogGiven,
         faciesLogGiven);
       if(wells[i]->checkError(tmpErrText) != 0) {
         errText += tmpErrText;
