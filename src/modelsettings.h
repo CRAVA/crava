@@ -220,8 +220,10 @@ public:
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
   std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
-  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval()                                     const { return priorFaciesProbInterval_                                            ;}
-  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval()                                 const { return volumefractionInterval_                                             ;}
+  std::map<std::string, float>                         getPriorFaciesProbInterval(std::string interval_name)            const { return priorFaciesProbInterval_.find(interval_name)->second                ;}
+  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbIntervals()                                    const { return priorFaciesProbInterval_                                            ;}
+  std::map<std::string, float>                         getVolumeFractionsProbInterval(std::string interval_name)        const { return volumefractionInterval_.find(interval_name)->second                 ;}
+  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbIntervals()                                const { return volumefractionInterval_                                             ;}
   int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                                       ;}
   const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
   int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}

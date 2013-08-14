@@ -2097,7 +2097,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
     errTxt+="Prior facies probabilities for interval " + interval_name + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
 
-  const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbInterval();
+  const std::map<std::string, std::map<std::string, float> > & prior_prob_interval_tmp = modelSettings_->getPriorFaciesProbIntervals();
 
   if(prior_prob_interval_tmp.count(interval_name) > 0) {
     errTxt += "Interval " + interval_name + " is defined more than once under <"+node->ValueStr()+"> "
@@ -2224,7 +2224,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
   if(sum != 1.0)
     errTxt+="Volume fractions for interval " + intervalname + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
-  const std::map<std::string, std::map<std::string, float> > & volume_fractions_interval_tmp = modelSettings_->getVolumeFractionsProbInterval();
+  const std::map<std::string, std::map<std::string, float> > & volume_fractions_interval_tmp = modelSettings_->getVolumeFractionsProbIntervals();
   if(volume_fractions_interval_tmp.count(intervalname) > 0) {
     errTxt += "Interval " + intervalname + " is defined more than once under <"+node->ValueStr()+"> "
           +lineColumnText(root)+".\n";
@@ -6130,7 +6130,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     }
 
     //Check that all intervals have gotten a prior prob.
-    const std::map<std::string, std::map<std::string, float> > & prior_facies_prob_interval = modelSettings_->getPriorFaciesProbInterval();
+    const std::map<std::string, std::map<std::string, float> > & prior_facies_prob_interval = modelSettings_->getPriorFaciesProbIntervals();
     if(prior_facies_prob_interval.size() > 0) {
       if(interval_names.size() != prior_facies_prob_interval.size())
         errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified under <prior-probabilites> (" + NRLib::ToString(prior_facies_prob_interval.size()) + ").\n";
@@ -6161,7 +6161,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     }
 
     //Check that all intervals have gotten a volume fraction
-    const std::map<std::string, std::map<std::string, float> > & volume_fraction_interval = modelSettings_->getVolumeFractionsProbInterval();
+    const std::map<std::string, std::map<std::string, float> > & volume_fraction_interval = modelSettings_->getVolumeFractionsProbIntervals();
     if(volume_fraction_interval.size() > 0) {
       if(interval_names.size() != volume_fraction_interval.size())
         errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for volume fractions under <prior-probabilites> (" + NRLib::ToString(volume_fraction_interval.size()) + ").\n";

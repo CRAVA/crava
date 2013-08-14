@@ -29,7 +29,7 @@ public:
   const std::vector<IntervalSimbox>                      & GetIntervalSimboxes() const           { return interval_simboxes_    ;}
   const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]          ;}
   const IntervalSimbox                                   * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i] ;}
-  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const { return parameters_               ;}
+  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_               ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
 
   //SET FUNCTIONS

@@ -8,17 +8,20 @@
 #include <stdio.h>
 
 #include "nrlib/random/beta.hpp"
+#include "nrlib/well/well.hpp"
 
 class Vario;
 class Simbox;
 class FFTGrid;
 class CovGrid2D;
 class WellData;
+//class Well;
 class GridMapping;
 class KrigingData3D;
 class KrigingData2D;
 class ModelSettings;
 class BlockedLogsForZone;
+
 
 //Special note on the use of Background:
 //All pointers used here are also used externally, so no deletion happens.
@@ -38,6 +41,13 @@ public:
              const Simbox                   * timeSimbox,
              const ModelSettings            * modelSettings,
              const std::vector<std::string> & correlation_files);
+
+  Background(FFTGrid                       ** grids,
+             const std::vector<NRLib::Well> & wells,
+             const Simbox                   * timeSimbox,
+             const ModelSettings            * modelSettings,
+             const std::vector<std::string> & surface_files);
+
   Background(FFTGrid ** grids);
   ~Background(void);
 
@@ -69,6 +79,14 @@ private:
                                                 FFTGrid                       *& bgBeta,
                                                 FFTGrid                       *& bgRho,
                                                 const std::vector<WellData *>  & wells,
+                                                const Simbox                   * simbox,
+                                                const ModelSettings            * modelSettings,
+                                                const std::vector<std::string> & surface_files);
+
+  void         generateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
+                                                FFTGrid                       *& bgBeta,
+                                                FFTGrid                       *& bgRho,
+                                                const std::vector<NRLib::Well> & wells,
                                                 const Simbox                   * simbox,
                                                 const ModelSettings            * modelSettings,
                                                 const std::vector<std::string> & surface_files);
@@ -144,6 +162,11 @@ private:
                                 const std::vector<WellData *> & wells,
                                 StormContGrid                 & eroded_zone,
                                 const int                     & nWells) const;
+
+  void        checkWellHitsZone(std::vector<bool>              & hitZone,
+                                const std::vector<NRLib::Well> & wells,
+                                StormContGrid                  & eroded_zone,
+                                const int                      & nWells) const;
 
   void         writeTrendsToFile(float             * trend,
                                  const Simbox      * simbox,

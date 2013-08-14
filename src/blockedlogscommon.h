@@ -43,10 +43,6 @@ public:
                               int                           & j_move,
                               float                         & k_move);
 
-  //void         FindContinuousPartOfData(const std::vector<bool> & hasData,
-  //                                      int                       nz,
-  //                                      int                     & start,
-  //                                      int                     & length) const;
 
   //GET FUNCTIONS --------------------------------
 
@@ -85,8 +81,11 @@ public:
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
 
-  void                                   GetVerticalTrend(const std::vector<double>  & blockedLog,
+  void                                   GetVerticalTrend(const std::vector<double>  & blocked_log,
                                                           std::vector<double>        & trend);
+
+  void                                   GetVerticalTrend(const int        * blocked_log,
+                                                          std::vector<int> & trend);
 
   void                                   GetVerticalTrendLimited(const std::vector<double>       & blocked_log,
                                                                  std::vector<double>             & trend,
@@ -125,13 +124,13 @@ public:
                                                        fftw_real           * seis_r,
                                                        int                   nzp) const;
 
-  void                                 SetSeismicGradient(double                            v0,
-                                                          const NRLib::Grid2D<float>   &    structure_depth_grad_x,
-                                                          const NRLib::Grid2D<float>   &    structure_depth_grad_y,
-                                                          const NRLib::Grid2D<float>   &    ref_time_grad_x,
-                                                          const NRLib::Grid2D<float>   &    ref_time_grad_y,
-                                                          std::vector<double>          &    x_gradient,
-                                                          std::vector<double>          &    y_gradient);
+  void                                   SetSeismicGradient(double                            v0,
+                                                            const NRLib::Grid2D<float>   &    structure_depth_grad_x,
+                                                            const NRLib::Grid2D<float>   &    structure_depth_grad_y,
+                                                            const NRLib::Grid2D<float>   &    ref_time_grad_x,
+                                                            const NRLib::Grid2D<float>   &    ref_time_grad_y,
+                                                            std::vector<double>          &    x_gradient,
+                                                            std::vector<double>          &    y_gradient);
 
   void                                   SetTimeGradientSettings(float distance, float sigma_m);
 
@@ -142,37 +141,14 @@ public:
                                                              std::vector<double>               & y_gradient,
                                                              std::vector<std::vector<double> > & sigma_gradient);
 
-  //void                                   FindContiniousPartOfData(const std::vector<bool> & has_data,
-  //                                                                int                       nz,
-  //                                                                int                     & start,
-  //                                                                int                     & length);
+  void                                   FindContinuousPartOfData(const std::vector<bool> & hasData,
+                                                                  int                       nz,
+                                                                  int                     & start,
+                                                                  int                     & length) const;
 
-  void         FindContinuousPartOfData(const std::vector<bool> & hasData,
-                                        int                       nz,
-                                        int                     & start,
-                                        int                     & length) const;
-
-  //void    GetBlockedGrid(const Simbox         * estimation_simbox,
-  //                       const SeismicStorage * seismic_data,
-  //                       double               * blockedLog,
-  //                       int                    iOffset = 0,
-  //                       int                    jOffset = 0);
-
-  //void    GetVerticalTrend(const std::vector<double> & blocked_log,
-  //                         double * trend);
-
-  //void    FillInSeismic(double    * seismicData,
-  //                      int         start,
-  //                      int         length,
-  //                      fftw_real * seis_r,
-  //                      int         nzp) const;
-
-  //void    SetLogFromVerticalTrend(float      * vertical_trend,
-  //                                double       z0,              // z-value of center in top layer
-  //                                double       dz,              // dz in vertical trend
-  //                                int          nz,              // layers in vertical trend
-  //                                std::string  type,
-  //                                int          i_angle);
+  int                                    FindMostProbable(const int * count,
+                                                          int         n_facies,
+                                                          int         block_index);
 
 private:
 
@@ -189,12 +165,18 @@ private:
   void         InterpolateTrend(const double   * blocked_log,
                                 double         * trend);
 
+  void         InterpolateTrend(const std::vector<double> & blocked_log,
+                                double                    * trend);
+
   void         InterpolateTrend(const std::vector<double>    & blocked_log,
                                 std::vector<double>          & trend);
 
-  void          InterpolateTrend(const std::vector<double>      & blocked_log,
-                                 std::vector<double>            & trend,
-                                 const std::vector<Surface *>   & limits);
+  void         InterpolateTrend(const std::vector<double>      & blocked_log,
+                                 std::vector<double>           & trend,
+                                 const std::vector<Surface *>  & limits);
+
+  void         InterpolateTrend(const int        * blocked_log,
+                                std::vector<int> & trend);
 
   double ComputeElasticImpedance(double         vp,
                                  float         vs,
@@ -265,8 +247,6 @@ private:
 
   void    ComputePrecisionMatrix(double &a, double &b, double &c);
 
-  void    InterpolateTrend(const std::vector<double> & blocked_log,
-                           double * trend);
 
   float   ComputeElasticImpedance(double         alpha,
                                   double         beta,
@@ -333,6 +313,8 @@ private:
   //int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
+
+  int                       n_facies_;
 
   int                       first_M_;                   ///< First well log entry contributing to blocked well
   int                       last_M_;                    ///< Last well log entry contributing to blocked well
