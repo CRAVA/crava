@@ -83,6 +83,7 @@ public:
   bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);
+  void           setDepth(const NRLib::Surface<double>& top_surf, const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck);
   int            status() const {return(status_);}
   void           externalFailure() {status_ = EXTERNALERROR;}
   void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;

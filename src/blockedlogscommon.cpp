@@ -2,136 +2,168 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <cmath>
 
-#include "src/commondata.h"
+#include "src/blockedlogscommon.h"
 #include "src/simbox.h"
-#include "src/modelsettings.h"
-#include "src/inputfiles.h"
-//#include "src/fftgrid.h"
-#include "nrlib/flens/nrlib_flens.hpp"
-//#include "src/seismicstorage.h"
+#include "fftw.h"
+#include "lib/utils.h"
 
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
+                                     const Simbox                     * const estimation_simbox,
+                                     bool                               interpolate,
+                                     bool                             & failed,
+                                     std::string                      & err_text){
+  n_angles_ = 0;
+  well_name_ = well_data->GetWellName();
+  n_layers_ = estimation_simbox->getnz();
+  n_blocks_ = 0;
+  interpolate_ = interpolate;
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well    * const well_data,
-                                     const Simbox         * const estimation_simbox,
-                                     bool                   interpolate):
-n_blocks_(0),
-well_name_(""),
-interpolate_(interpolate),
-n_layers_(estimation_simbox->getnz()){
+  // Get all continuous and discrete logs
+  std::vector<std::string> cont_logs_to_be_blocked;
+  std::vector<std::string> disc_logs_to_be_blocked;
+  const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
+  const std::map<std::string,std::vector<int> > disc_logs = well_data->GetDiscLog();
+  for(std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
+    cont_logs_to_be_blocked.push_back(it->first);
+  }
+  for(std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
+    disc_logs_to_be_blocked.push_back(it->first);
+  }
 
-  BlockWell(well_data, estimation_simbox, continuous_log_names_, discrete_log_names_, continuous_logs_, discrete_logs_, interpolate);
-  n_continuous_logs_ = static_cast<int>(continuous_logs_.size());
-  n_discrete_logs_ = static_cast<int>(discrete_logs_.size());
+  // FACIES
+  if(well_data->HasFaciesLog()){
+    facies_log_defined_ = true;
+    facies_map_ = well_data->GetFaciesMap();
+  }
+
+  // Remove missing values
+
+  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
+                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
+                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+
+  if(failed)
+    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+
+  if (!failed)
+    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_, 
+              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
+
+  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
+  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
+
+}
+
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
+                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
+                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
+                                     const Simbox                     * const estimation_simbox,
+                                     bool                               interpolate,
+                                     bool                             & failed,
+                                     std::string                      & err_text){
+  n_angles_ = 0;
+  well_name_ = well_data->GetWellName();
+  n_layers_ = estimation_simbox->getnz();
+  n_blocks_ = 0;
+  interpolate_ = interpolate;
+
+  // Get well name
+  well_name_ = well_data->GetWellName();
+
+  // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
+  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
+  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
+                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked, 
+                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+  if(failed)
+    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+
+  if (!failed)
+    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_, 
+              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+
+  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
+  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
 }
 
 BlockedLogsCommon::~BlockedLogsCommon(){
-
+  
 }
 
-void BlockedLogsCommon::BlockWell(const NRLib::Well                  * const well_data,
-                                  const Simbox                       * const estimation_simbox,
-                                  std::map<std::string, int>         & continuous_log_names,
-                                  std::map<std::string, int>         & discrete_log_names,
-                                  std::vector<std::vector<double> >  & continuous_logs,
-                                  std::vector<std::vector<int> >     & discrete_logs,
-                                  bool                                 interpolate){
+void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
+                                  const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
+                                  const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                                  std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                  std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                  unsigned int                                          n_data,
+                                  bool                                                  facies_log_defined,
+                                  const std::map<int, std::string>                    & facies_map,
+                                  bool                                                  interpolate,
+                                  bool                                                & failed,
+                                  std::string                                         & err_text){
 
-  well_name_ = well_data->GetWellName();
-  // Get size of vector
-  std::map<std::string,std::vector<double> > all_logs_temp = well_data->GetContLog();
-  std::map<std::string,std::vector<double> >::iterator it = all_logs_temp.begin();
-  unsigned int nd = it->second.size();
+  std::vector<int> b_ind(n_data); // Gives which block each well log entry contributes to
 
-  (void) discrete_log_names;
-  (void) discrete_logs;
+  try{
 
-  std::map<std::string,std::vector<double> > continuous_logs_well = well_data->GetContLog();
-  std::map<std::string,std::vector<int> > discrete_logs_well = well_data->GetDiscLog();
+    FindSizeAndBlockPointers(estimation_simbox, b_ind);
+    FindBlockIJK(estimation_simbox, b_ind);
 
-  int index_continuous = 0;
-  for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_well.begin(); it!=continuous_logs_well.end(); ++it){
-    continuous_log_names.insert(std::pair<std::string, int>(it->first, index_continuous));
-    continuous_logs.push_back(continuous_logs_well.find(it->first)->second);
-    index_continuous++;
-  }
+    // Coordinate logs and necessary logs
 
-  int index_discrete = 0;
-  for (std::map<std::string,std::vector<int> >::iterator it=discrete_logs_well.begin(); it!=discrete_logs_well.end(); ++it){
-    discrete_log_names.insert(std::pair<std::string, int>(it->first, index_discrete));
-    discrete_logs.push_back(discrete_logs_well.find(it->first)->second);
-    index_discrete++;
-  }
+    BlockCoordinateLog(b_ind, x_pos_unblocked_, x_pos_blocked_);
+    BlockCoordinateLog(b_ind, y_pos_unblocked_, y_pos_blocked_);
+    BlockCoordinateLog(b_ind, z_pos_unblocked_, z_pos_blocked_);
+    BlockContinuousLog(b_ind, twt_unblocked_, twt_blocked_    );
 
-  // are all continuous logs of the same length?
-  std::vector<int> b_ind(nd); // Gives which block each well log entry contributes to
+    // Continuous logs
 
-  FindSizeAndBlockPointers(estimation_simbox, b_ind);
-  FindBlockIJK(estimation_simbox, b_ind);
+    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++){
+      std::vector<double> temp_vector_blocked;
+      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+      continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+    }
 
-  BlockCoordinateLog(b_ind, this->GetXpos(), x_pos_);
-  BlockCoordinateLog(b_ind, this->GetYpos(), y_pos_);
-  BlockCoordinateLog(b_ind, this->GetZpos(), z_pos_);
+    // Discrete logs
+    if (facies_log_defined)
+      BlockFaciesLog(b_ind, facies_unblocked_, facies_map, facies_map.size(), facies_blocked_);
 
-  // Could also loop over all continuous logs and fetch the names here
-  if(this->HasContLog("MD")){
-    std::vector<double> md_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("MD")->second], md_blocked);
-    continuous_logs_blocked_.push_back(md_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("MD", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Vp")){
-    std::vector<double> vp_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Vp")->second], vp_blocked);
-    continuous_logs_blocked_.push_back(vp_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Vp", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Vs")){
-    std::vector<double> vs_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Vs")->second], vs_blocked);
-    continuous_logs_blocked_.push_back(vs_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Vs", continuous_logs_blocked_.size()-1));
-  }
-  if(this->HasContLog("Rho")){
-    std::vector<double> rho_blocked;
-    BlockCoordinateLog(b_ind, continuous_logs_[continuous_log_names_.find("Rho")->second], rho_blocked);
-    continuous_logs_blocked_.push_back(rho_blocked);
-    continuous_log_names_blocked_.insert(std::pair<std::string, int>("Rho", continuous_logs_blocked_.size()-1));
-  }
+    (void) discrete_logs_unblocked;
+    (void) discrete_logs_blocked;
 
-  // all discrete logs (20130625 EN: No discrete logs for now)
-
-  if(interpolate){
-    for(unsigned int i=1;i<nd;i++) {
-      if(abs(b_ind[i]-b_ind[i-1]) > 1) {
-        int start, end;
-        if(b_ind[i] > b_ind[i-1]) {
-          start = b_ind[i-1];
-          end   = b_ind[i];
-        }
-        else {
-          start = b_ind[i];
-          end   = b_ind[i-1];
-        }
-        for(int j = start+1;j<end;j++) {
-          float t = static_cast<float>(j-start)/static_cast<float>(end-start);
-          InterpolateContinuousLog(x_pos_, start, end, j, t);
-          InterpolateContinuousLog(y_pos_, start, end, j, t);
-          InterpolateContinuousLog(z_pos_, start, end, j, t);
-
-          // all blocked continuous logs
-          for(std::map<std::string,int >::iterator it=continuous_log_names_blocked_.begin(); it!=continuous_log_names_blocked_.end(); ++it){
-            InterpolateContinuousLog(continuous_logs_blocked_[it->second], start, end, j, t);
+    if(interpolate){
+      for(unsigned int i=1;i<n_data;i++) {
+        if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+          int start, end;
+          if(b_ind[i] > b_ind[i-1]) {
+            start = b_ind[i-1];
+            end   = b_ind[i];
           }
+          else {
+            start = b_ind[i];
+            end   = b_ind[i-1];
+          }
+          for(int j = start+1;j<end;j++) {
+            float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+            // Coordinate logs
+            InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(twt_blocked_, start, end, j, t);
 
+            // all blocked continuous logs
+            for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
+              InterpolateContinuousLog(it->second, start, end, j, t);
+            }
+
+          }
         }
       }
     }
+  }catch(NRLib::Exception & e) {
+    err_text += "Error: "+std::string(e.what());
+    failed = true;
   }
 
 }
@@ -223,7 +255,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   }
   n_defined_blocks++;
   //
-  // Why we cannot use nBlocks_ = nDefined:
+  // Why we cannot use n_blocks_ = nDefined:
   //
   // When we calculate the background model for each parameter we first
   // estimate a vertical trend in the total volume, anf then we interpolate
@@ -309,7 +341,7 @@ void    BlockedLogsCommon::FindBlockIJK(const Simbox             * const estimat
     LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",first_B_,last_B_);
     LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",first_I, first_J, first_K);
     LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",last_I, last_J, last_K);
-    for (int b = 0 ; b < n_blocks_ ; b++)
+    for (unsigned int b = 0 ; b < n_blocks_ ; b++)
       LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,i_pos_[b],j_pos_[b],k_pos_[b]);
   }
 }
@@ -331,7 +363,7 @@ void BlockedLogsCommon::BlockCoordinateLog(const std::vector<int>    &  b_ind,
     blocked_coord[b_ind[m]] += coord[m];
     count[b_ind[m]]++;
   }
-  for (int l = 0 ; l < n_blocks_ ; l++) {
+  for (unsigned int l = 0 ; l < n_blocks_ ; l++) {
     if (count[l] > 0)
       blocked_coord[l] /= count[l];
     else
@@ -341,9 +373,81 @@ void BlockedLogsCommon::BlockCoordinateLog(const std::vector<int>    &  b_ind,
 }
 
 //------------------------------------------------------------------------------
-void BlockedLogsCommon::BlockContinuousLog(const int                 *  b_ind,
-                                           const std::vector<double> &  well_log,
-                                           std::vector<double>       &  blocked_log){
+void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>              & b_ind,
+                                       const std::vector<int>              & well_log,
+                                       const std::map<int,std::string>     & facies_map,
+                                       int                                   n_facies,
+                                       std::vector<int>                    &  blocked_log)
+{
+  if (well_log.size() > 0) {
+    //
+    // Set undefined
+    //
+    std::vector<int> facies_numbers;
+    for(std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++){
+      facies_numbers.push_back(it->first);
+    }
+    //facies_numbers_ = facies_numbers;
+    //n_facies_ = n_facies;
+    blocked_log.resize(n_blocks_);
+    for (unsigned int m = 0 ; m < n_blocks_ ; m++)
+      blocked_log[m] = IMISSING;
+
+    int   max_allowed_value = 100;  // Largest allowed value (facies number).
+    std::vector<int> count(n_facies);
+    std::vector<int> table(max_allowed_value);
+
+    //
+    // Set up facies-to-position table.
+    //
+    // Example: If log values range from 2 to 4 the table looks like
+    //
+    // table[0] = IMISSING
+    // table[1] = IMISSING
+    // table[2] =    0
+    // table[3] =    1
+    // table[4] =    2
+    // table[5] = IMISSING
+    //    .          .
+    //    .          .
+    //
+    for (int i = 0 ; i < max_allowed_value ; i++)
+      table[i] = IMISSING;
+    for (int i = 0 ; i < n_facies ; i++)
+      table[facies_numbers[i]] = i;
+
+    //
+    // Block log
+    //
+    for (int i = 0 ; i < n_facies ; i++)
+      count[i] = 0;
+    int value = well_log[first_M_];
+    if(value!=IMISSING)
+      count[table[value]]++;
+
+    for (int m = first_M_+1 ; m < last_M_ + 1 ; m++) {
+      if (b_ind[m] != b_ind[m - 1]) { // bInd[m] is the block number which sample 'm' lies in
+        blocked_log[b_ind[m-1]] = FindMostProbable(count, n_facies, b_ind[m-1]);
+        for (int i = 0 ; i < n_facies ; i++)
+          count[i] = 0;
+      }
+    value = well_log[m];
+    if(value!=IMISSING)
+      count[table[value]]++;
+    }
+    blocked_log[b_ind[last_M_]] = FindMostProbable(count, n_facies, b_ind[last_M_]);
+
+    //
+    // NOTE: The blocked log contains internal numbers 0, 1, 2, ... and
+    //       are NOT the facies labels.
+    //
+  }
+}
+
+//------------------------------------------------------------------------------
+void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
+                                           const std::vector<double>  &  well_log,
+                                           std::vector<double>        &  blocked_log){
   //
   // Initialise arrays
   //
@@ -361,10 +465,10 @@ void BlockedLogsCommon::BlockContinuousLog(const int                 *  b_ind,
       //LogKit::LogFormatted(LogKit::Low,"m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));
     }
   }
-  for (int l = 0 ; l < n_blocks_ ; l++) {
+  for (unsigned int l = 0 ; l < n_blocks_ ; l++) {
     if (count[l] > 0) {
       blocked_log[l] /= count[l];
-      //LogKit::LogFormatted(LogKit::Low,"l=%d   count[l]=%d  sum=%.3f  blockedLog[l]=%.4f \n",l,count[l],sum, blockedLog[l]);
+      //LogKit::LogFormatted(LogKit::Low,"l=%d   count[l]=%d  sum=%.3f  blocked_log[l]=%.4f \n",l,count[l],sum, blocked_log[l]);
     }
     else
       blocked_log[l] = RMISSING;
@@ -383,573 +487,384 @@ void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocke
     blocked_log[index] = rel*blocked_log[end]+(1-rel)*blocked_log[start];
 }
 
+//------------------------------------------------------------------------------
+void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * well_data,
+                                                  std::vector<double>                          & x_pos_unblocked,
+                                                  std::vector<double>                          & y_pos_unblocked,
+                                                  std::vector<double>                          & z_pos_unblocked,
+                                                  std::vector<double>                          & twt_unblocked,
+                                                  std::vector<int>                             & facies_unblocked,
+                                                  std::map<std::string, std::vector<double> >  & continuous_logs_unblocked,
+                                                  std::map<std::string, std::vector<int> >     & discrete_logs_unblocked,
+                                                  const std::vector<std::string>               & cont_logs_to_be_blocked,
+                                                  const std::vector<std::string>               & disc_logs_to_be_blocked,
+                                                  unsigned int                                 & n_data,
+                                                  bool                                         & failed,
+                                                  std::string                                  & err_text){
 
-void BlockedLogsCommon::SetSeismicGradient(double                            v0,
-                                           const NRLib::Grid2D<float>   &    structure_depth_grad_x,
-                                           const NRLib::Grid2D<float>   &    structure_depth_grad_y,
-                                           const NRLib::Grid2D<float>   &    ref_time_grad_x,
-                                           const NRLib::Grid2D<float>   &    ref_time_grad_y,
-                                           std::vector<double>          &    x_gradient,
-                                           std::vector<double>          &    y_gradient)
-{
-  x_gradient.resize(n_blocks_);
-  y_gradient.resize(n_blocks_);
+  // Get size of data vector including WELLMISSING data points
+  unsigned int n_data_with_wellmissing = well_data->GetNData();
+  // The number of legal data excluding WELLMISSING is initially set to 0
+  n_data = 0;
+  // Value from Well_data class
+  double OPENWORKS_MISSING = -999.25;
 
-  double mp= 2.0/(v0*0.001);
-  for(int k = 0; k < n_blocks_; k++){
-    int i = i_pos_[k];
-    int j = j_pos_[k];
-    x_gradient[k]= structure_depth_grad_x(i,j)*mp+ref_time_grad_x(i,j);
-    y_gradient[k]= structure_depth_grad_y(i,j)*mp+ref_time_grad_y(i,j);
-  }
-}
+  // Get the continuous and discrete logs from the Well object
 
-void BlockedLogsCommon::SetTimeGradientSettings(float distance, float sigma_m)
-{
-  lateral_threshold_gradient_ = distance;
-  sigma_m_ = sigma_m;
-}
+  try{
+    std::map<std::string,std::vector<double> > continuous_logs_well = well_data->GetContLog();
+    std::map<std::string,std::vector<int> > discrete_logs_well = well_data->GetDiscLog();
 
-void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
-                                            const Simbox                * const estimation_simbox,
-                                            int                                 n_angles,
-                                            std::vector<double>               & x_gradient,
-                                            std::vector<double>               & y_gradient,
-                                            std::vector<std::vector<double> > & sigma_gradient)
-{
-  int i, j, k, l;
-  int xEx = 2;
-  int yEx = 2;
-  int nZx = (2 * xEx + 1);
-  int nZy = (2 * yEx + 1);
+    std::map<std::string, std::vector<double> >   continuous_logs_unblocked_temp;
+    std::map<std::string, std::vector<int> >      discrete_logs_unblocked_temp;
 
-  x_gradient.resize(n_blocks_);
-  y_gradient.resize(n_blocks_);
-  std::vector<double> tmp_x_grad(n_blocks_);
-  std::vector<double> tmp_y_grad(n_blocks_);
-  std::vector<double> q_epsilon(4*n_blocks_);
-  std::vector<double> q_epsilon_data(2*n_blocks_);
+    // Pick only the variables that are requested in the constructor --------------------------------------------------------
 
-  std::vector<float> seis_trace;
-  std::vector<double> z_shift(int(nZx*nZy*n_blocks_));
-
-  //seismic peak position and characteristics in well
-  std::vector<double> z_peak_well;
-  std::vector<double> peak_well;
-  std::vector<double> b_well;
-
-  //seismic peak position and characterisitics in trace
-  std::vector<double> z_peak;
-  std::vector<double> peak;
-  std::vector<double> b;
-
-  int i0 = i_pos_[0];
-  int j0 = j_pos_[0];
-
-
-  //Check if well needs to change position in order for the whole
-  //shift region to be contained in the seismic cube
-  //NBNB marita Må testes om det fungerer for forskjellige brønner
-  int nx = estimation_simbox->getnx();
-  int ny = estimation_simbox->getny();
-  int di_neg = 0; int di_pos = 0; int dj_neg = 0; int dj_pos = 0; //The max replacement in well in x and y direction.
-  for(k = 1; k < n_blocks_; k++){
-    di_pos = std::max(i0 - i_pos_[k] , di_pos);
-    di_neg = std::min(i0 - i_pos_[k] , di_neg);
-    dj_pos = std::max(j0 - j_pos_[k] , dj_pos);
-    dj_neg = std::min(j0 - j_pos_[k] , dj_neg);
-  }
-  i0 = std::max(xEx, i0 + di_neg) - di_neg;
-  i0 = std::min(nx - xEx - 1, i0 + di_pos) - di_pos;
-  j0 = std::max(yEx, j0 + dj_neg) - dj_neg;
-  j0 = std::min(ny - yEx - 1, j0 + dj_pos) - dj_pos;
-
-
-  int di = i0 - i_pos_[0];
-  int dj = j0 - j_pos_[0];
-  if(di != 0 || dj != 0){
-    //adjust the well location
-    for(k = 0; k < n_blocks_; k++){
-      i_pos_[k] += di;
-      j_pos_[k] += dj;
+    // Find the continuous vectors in the wells that are to be blocked
+    for(unsigned int i=0; i<cont_logs_to_be_blocked.size(); i++){
+      std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(cont_logs_to_be_blocked[i]);
+      // if the well log contains this continuous log
+      if(it != continuous_logs_well.end()){
+        continuous_logs_unblocked_temp.insert(std::pair<std::string, std::vector<double> >(it->first, it->second));
+      }
     }
-  }
 
-  char* buffer = new char[1000];
-  sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
-  std::ofstream out(buffer);
-  delete [] buffer;
+    // Find the discrete vectors in the wells that are to be blocked
+    for(unsigned int i=0; i<disc_logs_to_be_blocked.size(); i++){
+      std::map<std::string,std::vector<int> >::iterator it = discrete_logs_well.find(disc_logs_to_be_blocked[i]);
+      // if the well log contains this discrete log
+      if(it != discrete_logs_well.end()){
+        discrete_logs_unblocked_temp.insert(std::pair<std::string, std::vector<int> >(it->first, it->second));
+      }
+    }
 
-  //Temp
-  //SegY * segy = seismic_data[0].GetSegY();
-  //segy->GetAllValues
+    for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
+      std::vector<double> temp_vector;
+      continuous_logs_unblocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector));
+    }
 
-  double dz, ztop, dzW, ztopW;
-  for(l = 0; l < n_angles; l++){
-    for(j = -yEx; j <= yEx; j++){
-      for(i = -xEx; i <= xEx; i++){
+    for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
+      std::vector<int> temp_vector;
+      discrete_logs_unblocked.insert(std::pair<std::string, std::vector<int> >(it->first, temp_vector));
+    }
 
 
-        seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0); ///H Correct values returned?
-        //seis_trace = seisCube[l]->getRealTrace2(i0, j0);
-
-        SmoothTrace(seis_trace);
-        //if(j == 0 ){
-        //  for(int s = 0; s < seisTrace.size(); s++)
-        //    out << seisTrace[s] << std::endl;
-        //}
-
-        dzW =  estimation_simbox->getdz(i0,j0);
-        ztopW =  estimation_simbox->getTop(i0,j0);
-        FindPeakTrace(seis_trace, z_peak_well, peak_well, b_well, dzW, ztopW);
-
-        //seis_trace = seisCube[l]->getRealTrace2(i0+i, j0+j);
-        seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0);
-        SmoothTrace(seis_trace);
-        if(i==0){
-          for(size_t s = 0; s < seis_trace.size(); s++)
-            out << seis_trace[s] << std::endl;
+    // Remove WELLMISSING data from wells
+    for(unsigned int i=0; i<n_data_with_wellmissing; i++){
+      // TWT is the variable we are testing for WELLMISSING values
+      double dummy = continuous_logs_unblocked_temp.find("TWT")->second[i];
+      if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
+        x_pos_unblocked.push_back(continuous_logs_well.find("X_pos")->second[i]);
+        y_pos_unblocked.push_back(continuous_logs_well.find("Y_pos")->second[i]);
+        z_pos_unblocked.push_back(continuous_logs_well.find("TVD")->second[i]);
+        twt_unblocked.push_back(continuous_logs_well.find("TWT")->second[i]);
+        if(facies_log_defined_)
+          facies_unblocked.push_back(discrete_logs_well.find("Facies")->second[i]);
+      
+        // Loop over continuous variables and push back this element
+        for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
+          continuous_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
         }
 
-        dz =  estimation_simbox->getdz(i0+i, j0+j);
-        ztop =  estimation_simbox->getTop(i0+i, j0+j);
-        FindPeakTrace(seis_trace, z_peak, peak, b, dz, ztop);
+        // Loop over discrete variables and push back this element
+        for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
+          discrete_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
+        }
 
-        PeakMatch(z_peak,peak,b,z_peak_well,peak_well,b_well);//Finds the matching peaks in two traces
-        z_shift[(i+2) + (j+2)*nZx] = ComputeShift(z_peak,z_peak_well,z_pos_[0]);
+        n_data++;
+      }
+    }
+  }catch(NRLib::Exception & e) {
+    err_text += "Error: "+std::string(e.what());
+    failed = true;
+  }
 
-        for(k = 1; k < n_blocks_; k++){
-          //Check if well changes lateral position
-          if((i_pos_[k]- i_pos_[k-1] == 0) && (j_pos_[k] - j_pos_[k-1] == 0))
-            z_shift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = ComputeShift(z_peak,z_peak_well,z_pos_[k]);
-          else{
-            //well has changed lateral position and we adapt to the new well position
-            //seis_trace = seisCube[l]->getRealTrace2(i_pos_[k],j_pos_[k]);
-            seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i_pos_[k], j_pos_[k]);
-            SmoothTrace(seis_trace);
-            dzW = estimation_simbox->getdz(i_pos_[k],j_pos_[k]);
-            ztopW = estimation_simbox->getTop(i_pos_[k],j_pos_[k]);
-            FindPeakTrace(seis_trace, z_peak_well, peak_well, b_well, dzW, ztopW);
+}
 
-            //seis_trace = seisCube[l]->getRealTrace2(i_pos_[k]+i, j_pos_[k]+j);
-            seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i_pos_[k]+i, j_pos_[k]+j);
-            SmoothTrace(seis_trace);
-            dz = estimation_simbox->getdz(i_pos_[k]+i, j_pos_[k]+j);
-            ztop = estimation_simbox->getTop(i_pos_[k]+i, j_pos_[k]+j);
-            FindPeakTrace(seis_trace, z_peak, peak, b, dz, ztop);
+void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+                                                const Simbox                                        * estimation_simbox,
+                                                float                                        ** refl_coef,
+                                                int                                             n_angles,
+                                                const std::vector<float>                      & angle_weight,
+                                                float                                           max_shift,
+                                                int                                             i_max_offset,
+                                                int                                             j_max_offset,
+                                                const std::vector<Surface *>                    limits,
+                                                int                                           & i_move,
+                                                int                                           & j_move,
+                                                float                                         & k_move){
+  int   polarity;
+  int   i,j,k,l,m;
+  int   start, length;
+  float sum;
+  float shift_F;
+  float max_tot;
+  float f1,f2,f3;
 
-            PeakMatch(z_peak,peak,b,z_peak_well,peak_well,b_well);
+  int nx            = seismic_data[0].GetNx();
+  int ny            = seismic_data[0].GetNy();
+  int nzp           = seismic_data[0].GetNz();
+  int cnzp          = nzp/2+1;
+  int rnzp          = 2*cnzp;
+  int i_tot_offset    = 2*i_max_offset+1;
+  int j_tot_offset    = 2*j_max_offset+1;
+  int polarityMax   = 0;
+  float shift       = 0.0f;
+  float max_value_tot = 0;
+  float total_weight = 0;
+  float dz          = static_cast<float>(estimation_simbox->getdz());
 
-            z_shift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = ComputeShift(z_peak, z_peak_well, z_pos_[k]);
+  std::vector<double> seis_log(n_blocks_);
+  std::vector<double> seis_data(n_layers_);
+  std::vector<double> vp_vert(n_layers_);
+  std::vector<double> vs_vert(n_layers_);
+  std::vector<double> rho_vert(n_layers_);
+
+
+  std::vector<int>   i_offset(i_tot_offset);
+  std::vector<int>   j_offset(j_tot_offset);
+  std::vector<int>   shift_I(n_angles);
+  std::vector<int>   shift_I_max(n_angles);
+  std::vector<float> max_value(n_angles);
+  std::vector<float> max_value_max(n_angles);
+
+  fftw_real    ** cpp_r               = new fftw_real*[n_angles];
+  fftw_complex ** cpp_c               = reinterpret_cast<fftw_complex**>(cpp_r);
+
+  fftw_real    ** cor_cpp_r           = new fftw_real*[n_angles];
+  fftw_complex ** cor_cpp_c           = reinterpret_cast<fftw_complex**>(cor_cpp_r);
+
+  fftw_real    ** seis_r              = new fftw_real*[n_angles];
+  fftw_complex ** seis_c              = reinterpret_cast<fftw_complex**>(seis_r);
+
+  fftw_real    ** ccor_seis_cpp_r     = new fftw_real*[n_angles];
+  fftw_complex ** ccor_seis_cpp_c     = reinterpret_cast<fftw_complex**>(ccor_seis_cpp_r);
+
+  fftw_real    ** ccor_seis_cpp_Max_r = new fftw_real*[n_angles];
+
+  for( i=0; i<n_angles; i++ ){
+    max_value_max[i] = 0.0f;
+    shift_I_max[i]   = 0;
+  }
+
+  // make offset vectors
+  for(i=-i_max_offset; i<i_max_offset+1; i++){
+    i_offset[i+i_max_offset]=i;
+  }
+  for(j=-j_max_offset; j<j_max_offset+1; j++){
+    j_offset[j+j_max_offset]=j;
+  }
+
+  GetVerticalTrendLimited(GetVpUnblocked(), vp_vert, limits);
+  GetVerticalTrendLimited(GetVsUnblocked(), vs_vert, limits);
+  GetVerticalTrendLimited(GetRhoUnblocked(), rho_vert, limits);
+
+  std::vector<bool> has_data(n_layers_);
+  for(i = 0 ; i < n_layers_ ; i++) {
+    has_data[i] = vp_vert[i] != RMISSING && vs_vert[i] != RMISSING && rho_vert[i] != RMISSING;
+  }
+  FindContinuousPartOfData(has_data,n_layers_,start,length);
+
+  for( j=0; j<n_angles; j++ ){
+    seis_r[j]              = new fftw_real[rnzp];
+    cpp_r[j]               = new fftw_real[rnzp];
+    cor_cpp_r[j]           = new fftw_real[rnzp];
+    ccor_seis_cpp_r[j]     = new fftw_real[rnzp];
+    ccor_seis_cpp_Max_r[j] = new fftw_real[rnzp];
+  }
+
+  // Calculate reflection coefficients
+  for( j=0; j<n_angles; j++ ){
+    for(i=0; i<rnzp; i++){
+      cpp_r[j][i] = 0;
+    }
+    FillInCpp(refl_coef[j],start,length,cpp_r[j],nzp);
+    Utils::fft(cpp_r[j],cpp_c[j],nzp);
+    EstimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
+    Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
+  }
+
+  std::vector<NRLib::Grid<float> > seis_cube_small(n_angles,NRLib::Grid<float> (i_tot_offset,j_tot_offset,n_blocks_));
+
+  for (j = 0 ; j < n_angles ; j++)
+  {
+    //seismic_data[j]->setAccessMode(FFTGrid::RANDOMACCESS);
+    for (k = 0; k < i_tot_offset; k++)
+    {
+      for (l = 0; l < j_tot_offset; l++)
+      {
+        GetBlockedGrid(&seismic_data[j], estimation_simbox, seis_log,i_offset[k],j_offset[l]);
+        for (m = 0; m < static_cast<int>(n_blocks_); m++)
+        {
+          seis_cube_small[j](k, l, m) = static_cast<float>(seis_log[m]);
+        }
+      }
+    }
+    //seis_cube[j]->endAccess();
+  }
+
+  // Loop through possible well locations
+  for(k=0; k<i_tot_offset; k++){
+    if(i_pos_[0]+i_offset[k]<0 || i_pos_[0]+i_offset[k]>nx-1) //Check if position is within seismic range
+      continue;
+
+    for(l=0; l<j_tot_offset; l++){
+      if(j_pos_[0]+j_offset[l]<0 || j_pos_[0]+j_offset[l]>ny-1) //Check if position is within seismic range
+        continue;
+
+      for( j=0; j<n_angles; j++ ){
+
+        for (m=0; m<static_cast<int>(n_blocks_); m++)
+          seis_log[m] = seis_cube_small[j](k,l,m);
+
+        GetVerticalTrend(seis_log, seis_data);
+        FillInSeismic(seis_data,start,length,seis_r[j],nzp);
+
+        Utils::fft(seis_r[j],seis_c[j],nzp);
+        EstimateCor(seis_c[j],cpp_c[j],ccor_seis_cpp_c[j],cnzp);
+        Utils::fftInv(ccor_seis_cpp_c[j],ccor_seis_cpp_r[j],nzp);
+      }
+
+      // if the sum from -max_shift to max_shift ms is
+      // positive then polarity is positive
+      dz = static_cast<float>(estimation_simbox->getRelThick(i_pos_[0]+i_offset[k],j_pos_[0]+j_offset[l])*estimation_simbox->getdz());
+      sum = 0;
+      for( j=0; j<n_angles; j++ ){
+        if(angle_weight[j] > 0){
+          for(i=0;i<ceil(max_shift/dz);i++)//zero included
+            sum+=ccor_seis_cpp_r[j][i];
+          for(i=0;i<floor(max_shift/dz);i++)
+            sum+=ccor_seis_cpp_r[j][nzp-i-1];
+        }
+      }
+      polarity=-1;
+      if(sum > 0)
+        polarity=1;
+
+      // Find maximum correlation and corresponding shift for each angle
+      max_tot = 0.0;
+      for( j=0; j<n_angles; j++ ){
+        if(angle_weight[j]>0){
+          max_value[j] = 0.0f;
+          shift_I[j]=0;
+          for(i=0;i<ceil(max_shift/dz);i++){
+            if(ccor_seis_cpp_r[j][i]*polarity > max_value[j]){
+              max_value[j] = ccor_seis_cpp_r[j][i]*polarity;
+              shift_I[j] = i;
+            }
           }
-        }
-      }
-    }
-
-    double dx = estimation_simbox->getdx();
-    double dy = estimation_simbox->getdy();
-
-    ComputeGradient(q_epsilon, q_epsilon_data, z_shift, nZx, nZx, dx, dy);
-  }
-
-  SmoothGradient(x_gradient, y_gradient, q_epsilon, q_epsilon_data, sigma_gradient);
-  // NBNB Odd slår av estimeringen for å teste om det gir bedre resultat
- /* for(k = 0; k < nBlocks_; k++){
-    xGradient[k]=0.0;
-    yGradient[k]=0.0;
-  }*/
-
-}
-
-void BlockedLogsCommon::SmoothTrace(std::vector<float> &trace)
-{
-  float smoothing_distance = 40; //ms in each direction
-  int  L = static_cast<int>(ceil(smoothing_distance/dz_)); //number of lags in the gauss kernel
-  float sigma = 10 /dz_; // ms / (ms/cell)
-
-  unsigned int n_trace = static_cast<unsigned int>(trace.size());
-  std::vector<float> gk(2*L+1);
-  std::vector<float> s_trace(n_trace);
-  unsigned int i;
-  int j;
-  float tmp;
-  for(j = -L; j <= L; j++){
-    tmp = (j*j)/(2*sigma*sigma);
-    gk[j+L] = exp(-tmp);
-  }
-
-  float N;
-  for(i = 0; i < n_trace; i++){
-    N = 0;
-    for(j = -L; j <= L; j++){
-      if(i+j >= 0 && i+j < n_trace){
-        s_trace[i] += gk[j+L]*trace[i+j];
-        N += gk[j+L];
-      }
-    }
-    s_trace[i] /= N;
-  }
-
-  for(i = 0; i < n_trace; i++)
-    trace[i] = s_trace[i];
-}
-
-void BlockedLogsCommon::FindPeakTrace(std::vector<float> &trace, std::vector<double> &z_peak, std::vector<double> &peak,
-                                      std::vector<double> &b, double dz, double z_top)
-{
-  int k;
-  double x1, x2, x3, y1, y2, y3, y11, y12, y21;
-  int N = static_cast<int>(trace.size());
-  z_peak.resize(N); peak.resize(N); b.resize(N);
-
-  double a;
-  double c;
-  int counter = 0;
-  for(k = 1; k < N-1; k++){
-    if((trace[k] >= trace[k-1] && trace[k] > trace[k+1]) || (trace[k] <= trace[k-1] && trace[k] < trace[k+1])){
-      //Data point for interpolation
-      x1 = -dz; x2 = 0; x3 = dz;
-      y1 = static_cast<double>(trace[k-1]); y2 = static_cast<double>(trace[k]); y3 = static_cast<double>(trace[k+1]);
-
-      //Newton interpolation method
-      y11 = (y2 - y1) / (x2 - x1); y12 = (y3 - y2) / (x3 - x2);
-      y21 = (y12 - y11) / (x3 - x1);
-
-      //y = ax + bx^2 + c
-      c = y1 - y11*x1 + y21*x1*x2;
-      a = y11 - y21*x1 - y21*x2;
-      b[counter] = y21;
-      //zPeak = -a/2b
-
-      z_peak[counter] = - a/(2.0*b[counter]);
-
-      double tmp = a*z_peak[counter] + b[counter]*z_peak[counter]*z_peak[counter] + c;
-      peak[counter] = tmp;
-      //Transform back to original z-axis
-      z_peak[counter] += z_top + k*dz;
-      counter++;
-
-    }
-  }
-  z_peak.resize(counter); b.resize(counter); peak.resize(counter);
-
-}
-
-void BlockedLogsCommon::PeakMatch(std::vector<double> &z_peak, std::vector<double> &peak, std::vector<double> &b,
-                                  std::vector<double> &z_peak_w, std::vector<double> &peak_w, std::vector<double> &bW)
-{
-  //This routine matches the peaks from two traces and returns the set of peak positions that matches.
-  unsigned int i, j;
-  std::vector<double> pW(z_peak.size());
-  std::vector<double> p(z_peak.size());
-
-  double diffz;
-
-  double maxdiffz = 5 * dz_; //matching criteria: Peaks must be no longer that 5 cells apart. (marita: input parameter?)
-  double diffp = 0.5; //matcing the size of the peaks NBNB-Frode: This should maybe be an input parameter!
-
-  int counter = 0;
-  unsigned int lim = 0;
-  for(i = 0; i < z_peak_w.size(); i++){
-    for(j = lim; j < z_peak.size(); j++){
-      diffz = fabs(z_peak_w[i] - z_peak[j]);
-      if(diffz < maxdiffz){
-        //Check if the peaks point in the same direction
-        if((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
-          // Check for difference in peak size
-          if((fabs(peak_w[i] - peak[j]))/(fabs(peak_w[i]) + fabs(peak[j])) < diffp){
-            pW[counter] = z_peak_w[i];
-            p[counter] =  z_peak[j];
-            counter++;
-            lim = j + 1;
+          for(i=0;i<floor(max_shift/dz);i++){
+            if(ccor_seis_cpp_r[j][nzp-1-i]*polarity > max_value[j]){
+              max_value[j] = ccor_seis_cpp_r[j][nzp-1-i]*polarity;
+              shift_I[j] = -1-i;
+            }
           }
+          max_tot += angle_weight[j]*max_value[j]; //Find weighted total maximum correlation
+        }
+      }
+
+      if(max_tot > max_value_tot){
+        max_value_tot = max_tot;
+        polarityMax = polarity;
+        i_move       = i_offset[k];
+        j_move       = j_offset[l];
+        for(m=0; m<n_angles; m++){
+          shift_I_max[m]   = shift_I[m];
+          max_value_max[m] = max_value[m];
+          for(i=0;i<rnzp;i++)
+            ccor_seis_cpp_Max_r[m][i] = ccor_seis_cpp_r[m][i];
         }
       }
     }
   }
-  z_peak_w.resize(counter); z_peak.resize(counter);
-  for(i = 0; i < static_cast<unsigned int>(counter); i++){
-    z_peak_w[i] = pW[i];
-    z_peak[i] =  p[i];
+
+  for(i=0; i<n_angles; i++){
+    shift_I[i] = shift_I_max[i];
+    max_value[i] = max_value_max[i];
+    for(j=0;j<rnzp;j++)
+      ccor_seis_cpp_r[i][j] = ccor_seis_cpp_Max_r[i][j];
   }
+  polarity = polarityMax;
 
-}
-
-double BlockedLogsCommon::ComputeShift(std::vector<double> &z_peak, std::vector<double> &z_peak_w, double z0)
-{
-  //This routine computes the position of z0 between two peaks in the well and finds the corresponding distance in
-  //the other trace. Then zShift is the difference in z between the two.
-  unsigned int N = static_cast<unsigned int>(z_peak.size());
-  if(N == 0)
-    return RMISSING; //The case of no match in the traces
-  else{
-    unsigned int i;
-    int pos = 0;
-    double zShift;
-    if(z0 < z_peak_w[0])
-      zShift = z_peak_w[0] - z_peak[0];
-    else if(z0 >= z_peak_w[N-1])
-      zShift = z_peak_w[N-1] - z_peak[N-1];
-    else{
-      for(i = 0; i < N-1; i++){
-        if(z0 >= z_peak_w[i] && z0 < z_peak_w[i+1]){
-          pos = i;
-          i = N;
+  // Find kMove in optimal location
+  for(j=0; j<n_angles; j++){
+    if(angle_weight[j]>0){
+      if(shift_I[j] < 0){
+        if(ccor_seis_cpp_r[j][nzp+shift_I[j]-1]*polarity < max_value[j]) //then local max
+        {
+          f1 = ccor_seis_cpp_r[j][nzp+shift_I[j]-1];
+          f2 = ccor_seis_cpp_r[j][nzp+shift_I[j]];
+          int ind3;
+          if(shift_I[j]==-1)
+            ind3 = 0;
+          else
+            ind3=nzp+shift_I[j]+1;
+          f3 = ccor_seis_cpp_r[j][ind3];
+          float x0=(f1-f3)/(2*(f1+f3-2*f2));
+          shift_F=shift_I[j]+x0;
         }
+        else  // do as good as we can
+          shift_F=float(shift_I[j]);
       }
-      zShift = z0 - (z_peak[pos] + (z0 - z_peak_w[pos])/(z_peak_w[pos+1]-z_peak_w[pos])*(z_peak[pos+1]-z_peak[pos]));
-    }
-
-    return zShift;
-  }
-}
-
-void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vector<double> &q_epsilon_data,
-                                        std::vector<double> &z_shift, int nx, int ny, double dx, double dy)
-{
-  //This fit the model zshift(x,y)= beta0 + beta1*x + beta2*y  ==> beta1 is x-gradient and beta2 is y-gradient
-  int i, j, k, l;
-  std::vector<double> Z(3*nx*ny);
-  std::vector<double> Y(nx*ny);
-  std::vector<double> cov(9);
-  std::vector<double> invcov(9);
-  std::vector<double> regM(3*nx*ny);
-
-  static bool append = false;
-
-  char* buffer = new char[1000];
-  sprintf(buffer,"%s.txt", "C:/Outputfiles/gradNoSmooth");
-  std::ofstream out;
-  if(append){
-    out.open(buffer, std::ios::app|std::ios::out);
-  }
-  else{
-    out.open(buffer);
-    append = true;
-  }
-  delete [] buffer;
-
-  int ndata;
-  double data;
-
-  int cy, cz;
-  int counter1 = 0;
-  int counter2 = 0;
-  for(l = 0; l < n_blocks_; l++){
-    cy = 0; cz = 0;
-    for(j = 0; j < ny; j++){
-      for(i = 0; i < nx; i++){
-        data = z_shift[i + j*nx + l*nx*ny];
-        if(data != RMISSING){
-          Y[cy] = data;
-          Z[cz] = 1.0;
-          Z[cz + 1] = (i-(nx-1)/2)*dx;
-          Z[cz + 2] = (j-(ny-1)/2)*dy;
-          cy++;
-          cz += 3;
+      else //positive or zero shift
+      {
+        if(ccor_seis_cpp_r[j][shift_I[j]+1]*polarity < max_value[j]) //then local max
+        {
+          f3 = ccor_seis_cpp_r[j][shift_I[j]+1];
+          f2 = ccor_seis_cpp_r[j][shift_I[j]];
+          int ind1;
+          if(shift_I[j]==0)
+            ind1 = nzp-1;
+          else
+            ind1=shift_I[j]-1;
+          f1 = ccor_seis_cpp_r[j][ind1];
+          float x0=(f1-f3)/(2*(f1+f3-2*f2));
+          shift_F=shift_I[j]+x0;
         }
+        else  // do as good as we can
+          shift_F=float(shift_I[j]);
       }
-    }
-    Y.resize(cy);
-    Z.resize(cz);
-
-    ndata = cy;
-
-    //Compute inverse covariance (ZtZ)^-1 (diagonal matrix for our purpose)
-    double tmp;
-    for(j = 0; j < 3; j++){
-      for(i = 0; i < 3; i++){
-        tmp = 0;
-        for(k = 0; k < ndata; k++)
-          tmp += Z[i + 3*k] * Z[j + 3*k];
-        cov[i + 3*j] = tmp;
-      }
-    }
-    double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
-                  +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
-
-    if(det != 0){
-      invcov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
-      invcov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
-      invcov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
-      invcov[3] = (cov[5]*cov[6] - cov[3]*cov[8]) / det;
-      invcov[4] = (cov[0]*cov[8] - cov[2]*cov[6]) / det;
-      invcov[5] = (cov[2]*cov[3] - cov[0]*cov[5]) / det;
-      invcov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
-      invcov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
-      invcov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
-
-
-
-      //Compute regression matrix (ZtZ)^-1Zt
-      regM.resize(static_cast<unsigned int>(3*ndata));
-      for(j = 0; j < 3; j++){
-        for(i = 0; i < ndata; i++){
-          tmp = 0;
-          for(k = 0; k < 3; k++)
-            tmp += invcov[k + 3*j]*Z[k + 3*i];
-          regM[i + j*ndata] = tmp;
-        }
-      }
-
-
-      //Compute beta_1(gradientx) og beta_2(gradienty), beta_0 not necessary
-      double beta0 = 0;
-      double beta1 = 0;
-      double beta2 = 0;
-      for(j = 0; j < ndata; j++){
-        beta0 += regM[j]*Y[j];
-        beta1 += regM[j + ndata]*Y[j];
-        beta2 += regM[j + 2*ndata]*Y[j];}
-      double sigma2 = 0;
-      double sigmatmp;
-      for(j = 0; j < ndata; j++){
-        sigmatmp = Y[j] - beta0*Z[j*3] - beta1*Z[j*3 + 1] - beta2*Z[j*3 + 2];
-        sigma2 += sigmatmp*sigmatmp;
-      }
-
-      double qa = sigma2*invcov[4];
-      double qb = sigma2*invcov[8];
-
-      out << beta1 << " " << beta2 << " " << qa << " " << qb << std::endl;
-
-      //cov(beta) = sigma2*(ZtZ)^{-1}
-      q_epsilon[counter1] += cov[4]/sigma2;
-      q_epsilon[counter1+1] += cov[5]/sigma2;
-      q_epsilon[counter1+2] += cov[8]/sigma2;
-      q_epsilon[counter1+3] += 0;
-      counter1 += 4;
-
-      q_epsilon_data[counter2] += (cov[4]* beta1 + cov[5]*beta2) / sigma2;
-      q_epsilon_data[counter2+1] += (cov[5]* beta1 + cov[8]*beta2) / sigma2;
-      counter2 += 2;
-
+      shift += angle_weight[j]*shift_F*dz;//weigthing shift according to well_weight
+      total_weight += angle_weight[j];
     }
   }
+
+  shift/=total_weight;
+  k_move = shift;
+
+  for( j=0; j<n_angles; j++ ){
+    delete [] ccor_seis_cpp_Max_r[j];
+    delete [] ccor_seis_cpp_r[j];
+    delete [] cor_cpp_r[j];
+    delete [] seis_r[j];
+    delete [] cpp_r[j];
+  }
+
+
+  delete [] ccor_seis_cpp_Max_r;
+  delete [] ccor_seis_cpp_r;
+  delete [] cor_cpp_r;
+  delete [] seis_r;
+  delete [] cpp_r;
 }
 
-void BlockedLogsCommon::SmoothGradient(std::vector<double>               & x_gradient,
-                                       std::vector<double>               & y_gradient,
-                                       std::vector<double>               & q_epsilon,
-                                       std::vector<double>               & q_epsilon_data,
-                                       std::vector<std::vector<double> > & sigma_gradient)
-{
-  int i, j;
-  int n_beta = n_blocks_* 2;
-
-  NRLib::SymmetricMatrix q_beta_data = NRLib::SymmetricZeroMatrix(n_beta);
-
-  //Set the prior precicion values
-  double a, b, c;
-  ComputePrecisionMatrix(a,b,c);
-
-  //Initialize the Qm|d matrix
-  for(i = 0; i < n_beta - 2; i++){
-    q_beta_data(i,i)   = c + q_epsilon[2*i];
-    q_beta_data(i,i+2) = b;
-    if(i % 2 == 0)
-      q_beta_data(i,i+1) = q_epsilon[2*i+1];
-    else
-      q_beta_data(i,i+1) = 0;
-  }
-  //Edge effects
-  q_beta_data(0,0             )  += a - c;
-  q_beta_data(1,1)               += a - c;
-  q_beta_data(n_beta-2,n_beta-2)  = c + q_epsilon[2*(n_beta-2)];
-  q_beta_data(n_beta-1,n_beta-1)  = c + q_epsilon[2*(n_beta-1)];
-  q_beta_data(n_beta-2,n_beta-1)  = q_epsilon[2*(n_beta-2)+1];
-
-  // Inversion of precision matrix
-
-  NRLib::Matrix I = NRLib::IdentityMatrix(n_beta);
-
-  // Compute the inverse of Qbeta_data
-  // First we do cholesky factorization LL^T = covD
-  // Solve Q inverse
-  NRLib::CholeskySolve(q_beta_data, I);
-
-  //Compute the product (Qbeta_Data)^-1 Qepsilon_data
-  NRLib::Vector res(n_beta);
-
-  for(i = 0; i < n_beta; i++){
-    double tmp = 0;
-    for(j = 0; j < n_beta; j++)
-      tmp += I(i,j)*q_epsilon_data[j];
-    res(i) = tmp;
-  }
-
-  // Return Sigma_gradient
-  sigma_gradient.resize(n_beta);
-  std::vector<double> tmp_vec(n_beta);
-  for(i = 0; i < n_beta; i++){
-    for(j = 0; j < n_beta; j++)
-      tmp_vec[j] = I(i,j);
-    sigma_gradient[i] = tmp_vec;
-  }
-
-
-  int counter = 0;
-  for(i = 0; i < n_blocks_; i++){
-    x_gradient[i] = res(counter);
-    y_gradient[i] = res(counter+1);
-    counter += 2;
-  }
-
-  /*
-   char* buffer2 = new char[1000];
-   sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
-   std::ofstream out2(buffer2);
-   for(i = 0; i < nBlocks_; i++){
-       out2 << xGradient[i] << " " << yGradient[i];
-     out2 << std::endl;
-   }
-  delete [] buffer2;
-  */
-}
-
-void BlockedLogsCommon::ComputePrecisionMatrix(double &a, double &b, double &c)
-{
-  double minDist = static_cast<double>(lateral_threshold_gradient_);
-  double sigma_m =  static_cast<double>(sigma_m_);
-  double zQ = 1.645; //default 95% confidence interval
-
-  double K = (dz_ /(minDist*zQ))*(dz_ /(minDist*zQ));
-  double alpha = 1 - K/(2*sigma_m);
-
-  double alpha_2 = alpha*alpha;
-  double gamma_2 = sigma_m*sigma_m*(1-alpha_2);
-
-  a = 1/sigma_m + alpha_2/gamma_2;
-  b = - sqrt(alpha_2)/gamma_2;
-  c = (alpha_2 + 1)/gamma_2;
-
-}
-
-void BlockedLogsCommon::GetBlockedGrid(const Simbox         * estimation_simbox,
-                                       const SeismicStorage * seismic_data,
-                                       double               * blockedLog,
-                                       int                    i_offset,
-                                       int                    j_offset)
-{
-  for (int m = 0 ; m < n_blocks_ ; m++) {
-    blockedLog[m] = seismic_data->GetRealTraceValue(estimation_simbox, i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
-  }
-}
-
-void
-BlockedLogsCommon::GetVerticalTrend(const std::vector<double> & blocked_log,
-                                    double * trend)
-{
-  if (blocked_log.size() > 0 && trend != NULL) {
-    int * count = new int[n_layers_];
+void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>          & blocked_log, 
+                                                std::vector<double>                & trend, 
+                                                const std::vector<Surface *>       & limits){
+  if (blocked_log.size() > 0 && trend.size() > 0) {
+    std::vector<int> count(n_layers_);
     for (int k = 0 ; k < n_layers_ ; k++) {
-      trend[k] = 0.0f;
+      trend[k] = 0.0;
       count[k] = 0;
     }
-    for (int m = 0 ; m < n_blocks_ ; m++) {
+    for (int m = 0 ; m < static_cast<int>(n_blocks_) ; m++) {
       if (blocked_log[m] != RMISSING) {
-        trend[k_pos_[m]] += blocked_log[m];
-        count[k_pos_[m]]++;
+        if(limits.size() == 0 ||
+           (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
+            limits[1]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) >= z_pos_blocked_[m])) {
+          trend[k_pos_[m]] += blocked_log[m];
+          count[k_pos_[m]]++;
+        }
       }
     }
     for (int k = 0 ; k < n_layers_ ; k++) {
@@ -958,30 +873,30 @@ BlockedLogsCommon::GetVerticalTrend(const std::vector<double> & blocked_log,
       else
         trend[k] = RMISSING;
     }
-    if(interpolate_ == true)
-      InterpolateTrend(blocked_log, trend);
-    delete [] count;
+    if(interpolate_)
+      InterpolateTrend(blocked_log,trend,limits);
+
   }
   else {
     if (blocked_log.size() == 0)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
-    if (trend == NULL)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrendLimited(): Trying to use an undefined blocked log\n");
+    if (trend.size() == 0)
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrendLimited(): Trying to use an undefined trend\n");
     exit(1);
   }
 }
 
 void
-BlockedLogsCommon::InterpolateTrend(const std::vector<double> & blocked_log,
-                                    double * trend)
+BlockedLogsCommon::InterpolateTrend(const double  * blocked_log, 
+                                    double        * trend)
 {
-  for (int m = 1 ; m < n_blocks_ ; m++) {
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
     if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
       if(k_pos_[m] < k_pos_[m-1])
         delta = -1;
-      float step_mult = static_cast<float>(delta)/static_cast<float>(k_pos_[m]-k_pos_[m-1]);
-      float t = step_mult;
+      double step_mult = static_cast<double>(delta)/static_cast<double>(k_pos_[m]-k_pos_[m-1]);
+      double t = step_mult;
       for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
         if(trend[j] == RMISSING)
           trend[j] = t*blocked_log[m]+(1-t)*blocked_log[m-1];
@@ -991,19 +906,57 @@ BlockedLogsCommon::InterpolateTrend(const std::vector<double> & blocked_log,
   }
 }
 
-void BlockedLogsCommon::FindContiniousPartOfData(const std::vector<bool> & has_data,
+void         BlockedLogsCommon::InterpolateTrend(const std::vector<double>    & blocked_log, 
+                                                 std::vector<double>          & trend){
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
+    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+      int delta = 1;
+      if(k_pos_[m] < k_pos_[m-1])
+        delta = -1;
+      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if(trend[j] == RMISSING)
+          trend[j] = blocked_log[m-1];
+      }
+    }
+  }
+}
+
+void  BlockedLogsCommon::InterpolateTrend(const std::vector<double>      & blocked_log, 
+                                          std::vector<double>            & trend, 
+                                          const std::vector<Surface *>   & limits){
+  for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
+    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+      int delta = 1;
+      if(k_pos_[m] < k_pos_[m-1])
+        delta = -1;
+      float step_mult = static_cast<float>(delta)/static_cast<float>(k_pos_[m]-k_pos_[m-1]);
+      float t = step_mult;
+      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if(trend[j] == RMISSING) {
+          if(limits.size() == 0 ||
+             (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
+              limits[1]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) >= z_pos_blocked_[m])) {
+            trend[j] = t*blocked_log[m]+(1-t)*blocked_log[m-1];
+          }
+        }
+        t += step_mult;
+      }
+    }
+  }
+}
+
+void BlockedLogsCommon::FindContinuousPartOfData(const std::vector<bool> & hasData,
                                                  int                       nz,
                                                  int                     & start,
-                                                 int                     & length)
-{
+                                                 int                     & length) const{
   int  i;
-  int  l_pice             =  0;
+  int  l_pice            =  0;
   int  length_max_pice    = -1;
   int  start_longest_pice =  0;
   bool previous_had_data  = false;
 
   for(i = 0; i < nz ;i++){
-    if(has_data[i]){
+    if(hasData[i]){
       if(! previous_had_data)
         l_pice=1;
       else
@@ -1039,62 +992,111 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
                                   int           start,
                                   int           length,
                                   fftw_real   * cpp_r,
-                                  int           nzp)
-{
+                                  int           nzp){
   int i;
 
   for(i=0;i<nzp;i++)
     cpp_r[i]=0;
 
-  double * alpha_vert = new double[n_layers_];
-  double * beta_vert  = new double[n_layers_];
-  double * rho_vert   = new double[n_layers_];
+  std::vector<double> vp_vert(n_layers_);
+  std::vector<double> vs_vert(n_layers_);
+  std::vector<double> rho_vert(n_layers_);
 
-  //std::vector<double> alpha_vert(n_layers_);
-  //std::vector<double> beta_vert(n_layers_);
-  //std::vector<double> rho_vert(n_layers_);
-
-  GetVerticalTrend(GetVp(), alpha_vert);
-  GetVerticalTrend(GetVs(), beta_vert);
-  GetVerticalTrend(GetRho(), rho_vert);
+  GetVerticalTrend(GetVpBlocked(), vp_vert);
+  GetVerticalTrend(GetVsBlocked(), vs_vert);
+  GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
   for(i=start;i < start+length-1;i++)
   {
-    float ei1 = ComputeElasticImpedance(alpha_vert[i],beta_vert[i],rho_vert[i],coeff);
-    float ei2 = ComputeElasticImpedance(alpha_vert[i+1],beta_vert[i+1],rho_vert[i+1],coeff);
-    cpp_r[i] =  ei2-ei1;
+    double ei1 = ComputeElasticImpedance(vp_vert[i], static_cast<float>(vs_vert[i]),static_cast<float>(rho_vert[i]),coeff);
+    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]),coeff);
+    cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
-  delete [] alpha_vert;
-  delete [] beta_vert;
-  delete [] rho_vert;
 
 }
 
-float BlockedLogsCommon::ComputeElasticImpedance(double         alpha,
-                                                 double         beta,
-                                                 double         rho,
-                                                 const float  * coeff) const
+double BlockedLogsCommon::ComputeElasticImpedance(double         vp,
+                                                 float         vs,
+                                                 float         rho,
+                                                 const float * coeff) const
 {
   // vp, vs, rho are logtransformed
-  float ang_imp;
+  double ang_imp;
 
-  ang_imp = float(coeff[0]*alpha+coeff[1]*beta+coeff[2]*rho );
+  ang_imp = coeff[0]*vp+coeff[1]*vs+coeff[2]*rho;
 
-  return(ang_imp);
+  return ang_imp;
 }
 
-void BlockedLogsCommon::FillInSeismic(double     * seismicData,
-                                      int         start,
-                                      int         length,
-                                      fftw_real * seis_r,
-                                      int         nzp) const
-{
+
+
+void     BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_log, 
+                                             std::vector<double>        & trend){
+  if (blocked_log.size() > 0 && trend.size() > 0) {
+    std::vector<double> count(n_layers_);
+    for (int k = 0 ; k < n_layers_ ; k++) {
+      trend[k] = 0.0;
+      count[k] = 0;
+    }
+    for (int m = 0 ; m < static_cast<int>(n_blocks_) ; m++) {
+      if (blocked_log[m] != RMISSING) {
+        trend[k_pos_[m]] += blocked_log[m];
+        count[k_pos_[m]]++;
+      }
+    }
+    for (int k = 0 ; k < n_layers_ ; k++) {
+      if (count[k] > 0)
+        trend[k] = trend[k]/count[k];
+      else
+        trend[k] = RMISSING;
+    }
+    if(interpolate_ == true)
+      InterpolateTrend(blocked_log,trend);
+
+  }
+  else {
+    if (blocked_log.size() == 0)
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrend(): Trying to use an undefined blocked log\n");
+    if (trend.size() == 0)
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrend(): Trying to use an undefined trend\n");
+    exit(1);
+  }
+}
+
+void BlockedLogsCommon::EstimateCor(fftw_complex * var1_c,
+                                    fftw_complex * var2_c,
+                                    fftw_complex * ccor_1_2_c,
+                                    int            cnzp) const{
+  for(int i=0;i<cnzp;i++){
+    ccor_1_2_c[i].re =  var1_c[i].re*var2_c[i].re + var1_c[i].im*var2_c[i].im;
+    ccor_1_2_c[i].im = -var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
+  }
+}
+
+void BlockedLogsCommon::GetBlockedGrid(const SeismicStorage   * grid,
+                                       const Simbox           * estimation_simbox,
+                                       std::vector<double>    & blocked_log,
+                                       int                      i_offset,
+                                       int                      j_offset){
+  for (int m = 0 ; m < static_cast<float>(n_blocks_) ; m++) {
+    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
+    blocked_log[m] = grid->GetRealTraceValue(estimation_simbox, i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
+
+  }
+}
+
+
+void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
+                                      int                     start,
+                                      int                     length,
+                                      fftw_real             * seis_r,
+                                      int                     nzp) const{
   int i;
   for(i=0; i<nzp; i++)
     seis_r[i] = 0.0;
 
   for(i=start; i<start+length; i++)
-    seis_r[i] = seismicData[i];
+    seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
 /*
   int lTregion = 3;
   int* modify  = getIndexPrior(start,lTregion,nzp);
@@ -1104,71 +1106,13 @@ void BlockedLogsCommon::FillInSeismic(double     * seismicData,
 
 }
 
-void BlockedLogsCommon::EstimateCor(fftw_complex * var1_c,
-                                    fftw_complex * var2_c,
-                                    fftw_complex * ccor_1_2_c,
-                                    int            cnzp) const
-{
-  for(int i=0;i<cnzp;i++){
-    ccor_1_2_c[i].re =  var1_c[i].re*var2_c[i].re + var1_c[i].im*var2_c[i].im;
-    ccor_1_2_c[i].im = -var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
-  }
-}
-
-void BlockedLogsCommon::SetLogFromVerticalTrend(float      * vertical_trend,
-                                                double       z0,              // z-value of center in top layer
-                                                double       dz,              // dz in vertical trend
-                                                int          nz,              // layers in vertical trend
-                                                std::string  type,
-                                                int          i_angle)
-{
-  if (type != "WELL_SYNTHETIC_SEISMIC")
-  {
-    float * blocked_log = new float[n_blocks_];
-
-    SetLogFromVerticalTrend(blocked_log, GetZpos(), n_blocks_,
-                            vertical_trend, z0, dz, nz);
-
-    if (type == "ALPHA_SEISMIC_RESOLUTION")
-      alpha_seismic_resolution_ = blocked_log;
-    else if (type == "BETA_SEISMIC_RESOLUTION")
-      beta_seismic_resolution_ = blocked_log;
-    else if (type == "RHO_SEISMIC_RESOLUTION")
-      rho_seismic_resolution_ = blocked_log;
-    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
-      if (actual_synt_seismic_data_ == NULL)
-        actual_synt_seismic_data_ = new float * [n_angles_]; // "nAngles is set along with real_seismic_data_" Now: Currently not set.
-      actual_synt_seismic_data_[i_angle] = blocked_log;
-    }
-    else {
-      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
-                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
-      exit(1);
-    }
-  }
-  else if (type == "WELL_SYNTHETIC_SEISMIC") {
-    if (well_synt_seismic_data_ == NULL)
-    {
-      well_synt_seismic_data_ = new float * [n_angles_];
-      for (int i=0; i<n_angles_; i++)
-      {
-        well_synt_seismic_data_[i] = new float[n_blocks_];
-        for (int j=0; j<n_blocks_; j++)
-          well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
-      }
-    }
-    SetLogFromVerticalTrend(well_synt_seismic_data_[i_angle], GetZpos(), n_blocks_,
-                            vertical_trend, z0, dz, nz);
-  }
-}
-
-void BlockedLogsCommon::SetLogFromVerticalTrend(float     *& blocked_log,
-                                                const std::vector<double> & zpos,
-                                                int          n_blocks,
-                                                float      * vertical_trend,
-                                                double       z0,
-                                                double       dzVt,
-                                                int          nz)
+void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>   & blocked_log,
+                                                std::vector<double>   & z_pos,
+                                                int                     n_blocks,
+                                                std::vector<double>   & vertical_trend,
+                                                double                  z0,
+                                                double                  dzVt,
+                                                int                     nz)
 {
   //
   // Initialise as undefined
@@ -1182,10 +1126,10 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(float     *& blocked_log,
   for (int i=0 ; i<n_blocks ; i++) {
     double dz;
     if (i==n_blocks-1)
-      dz = zpos[i]-zpos[i-1];
+      dz = z_pos[i]-z_pos[i-1];
     else
-      dz = zpos[i+1]-zpos[i];
-    double zi = zpos[i];
+      dz = z_pos[i+1]-z_pos[i];
+    double zi = z_pos[i];
     double a  = zi - 0.5*dz;     // Top of blocked log cell
     double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
 
@@ -1199,18 +1143,145 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(float     *& blocked_log,
     float value;
     if (j==nz) {
       // We have come to the end of the end-of-vertical-trend
-      value = vertical_trend[j-1];
+      value = static_cast<float>(vertical_trend[j-1]);
     }
     else if (b >= a+dz) {
       // One single vertical-trend-cell covers a blocked log cell completely.
-      value = vertical_trend[j];
+      value = static_cast<float>(vertical_trend[j]);
     }
     else {
       double zj = b + 0.5*dzVt; // Center of vertical trend cell
-      value = vertical_trend[j]* static_cast<float>((zj+dzVt-zi)/dzVt) + vertical_trend[j]*static_cast<float>((zi-zj)/dzVt);
+      value = static_cast<float>( vertical_trend[j]* (zj+dzVt-zi)/dzVt + vertical_trend[j]*(zi-zj)/dzVt);
     }
     blocked_log[i] = value;
 
     //LogKit::LogFormatted(LogKit::Error,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
   }
 }
+
+void  BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>    & vertical_trend,
+                                                 double                   z0,              // z-value of center in top layer
+                                                 double                   dz,              // dz in vertical trend
+                                                 int                      nz,              // layers in vertical trend
+                                                 std::string              type,
+                                                 int                      i_angle)
+{
+  if (type != "WELL_SYNTHETIC_SEISMIC")
+  {
+    std::vector<double> blocked_log(n_blocks_);
+
+    SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                            vertical_trend, z0, dz, nz);
+
+    if (type == "ALPHA_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
+    else if (type == "BETA_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
+    else if (type == "RHO_SEISMIC_RESOLUTION")
+      cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
+    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+      if (actual_synt_seismic_data_.size() == 0)
+        actual_synt_seismic_data_.resize(n_angles_); // nAngles is set along with real_seismic_data_
+      actual_synt_seismic_data_[i_angle] = blocked_log;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
+                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
+      exit(1);
+    }
+  }
+  else if (type == "WELL_SYNTHETIC_SEISMIC") {
+    if (well_synt_seismic_data_.size() == 0)
+    {
+      well_synt_seismic_data_.resize(n_angles_);
+      for (int i=0; i<n_angles_; i++)
+      {
+        well_synt_seismic_data_[i].resize(n_blocks_);
+        for (int j=0; j<static_cast<int>(n_blocks_); j++)
+          well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
+      }
+    }
+    SetLogFromVerticalTrend(well_synt_seismic_data_[i_angle], z_pos_blocked_, n_blocks_,
+                            vertical_trend, z0, dz, nz);
+  }
+}
+
+//------------------------------------------------------------------------------
+int BlockedLogsCommon::FindMostProbable(const std::vector<int>  & count,
+                                        int                       n_facies,
+                                        int                       block_index)
+{
+  int  maxIndex     = IMISSING;
+  int  maxCount     = 0;
+  bool inconclusive = false;
+
+  for (int i=0 ; i < n_facies ; i++ ) {
+    if (count[i] > 0 && count[i] > maxCount) {
+      maxCount     = count[i];
+      maxIndex     = i;
+      inconclusive = false;
+    }
+    else if (count[i] > 0 && count[i] == maxCount) {
+      inconclusive = true;
+    }
+  }
+
+  if (inconclusive) {
+    std::vector<int> equal;
+    for (int i=0 ; i < n_facies ; i++ ) {
+      if (count[i] == maxCount) {
+        equal.push_back(i);
+      }
+    }
+    int j = (block_index + 1) % equal.size();
+    maxIndex = equal[j];
+  }
+
+  return (maxIndex);
+}
+
+/*
+void  BlockedLogs::SetLogFromGrid(SeismicStorage    * grid,
+                                  int                 i_angle,
+                                  int                 n_angles,
+                                  std::string         type)
+{
+  std::vector<double> blocked_log(n_blocks_);
+
+  for (int m = 0 ; m < n_blocks_ ; m++) {
+    grid->GetRealTraceValue(
+    blocked_log[m] = grid->getRealValue(ipos_[m], jpos_[m], kpos_[m]);
+  }
+
+  if (nAngles_ == 0)
+    nAngles_ = nAngles;
+
+  if (type == "REFLECTION_COEFFICIENT") {
+    if (cpp_ == NULL)
+      cpp_ = new float * [nAngles_];
+    cpp_[iAngle] = blockedLog;
+  }
+  else if (type == "SEISMIC_DATA") {
+    if (real_seismic_data_ == NULL)
+      real_seismic_data_ = new float * [nAngles_];
+    real_seismic_data_[iAngle] = blockedLog;
+  }
+  else if (type == "FACIES_PROB") {
+    if (facies_prob_ == NULL)
+      facies_prob_ = new float * [nFacies_];
+    facies_prob_[iAngle] = blockedLog;
+  }
+  else if (type == "ALPHA_PREDICTED")
+    alpha_predicted_ = blockedLog;
+  else if (type == "BETA_PREDICTED")
+    beta_predicted_ = blockedLog;
+  else if (type == "RHO_PREDICTED")
+    rho_predicted_ = blockedLog;
+
+  else {
+    LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
+                         +"\" in BlockedLogs::setLogFromGrid()\n");
+    exit(1);
+  }
+}
+*/

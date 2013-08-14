@@ -1559,7 +1559,7 @@ void BlockedLogs::estimateCor(fftw_complex * var1_c,
   }
 }
 
-void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
+void BlockedLogs::findContinuousPartOfData(const std::vector<bool> & hasData,
                                            int                       nz,
                                            int                     & start,
                                            int                     & length) const
@@ -1687,7 +1687,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   for(i = 0 ; i < nLayers_ ; i++) {
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
   }
-  findContiniousPartOfData(hasData,nLayers_,start,length);
+  findContinuousPartOfData(hasData,nLayers_,start,length);
 
   for( j=0; j<nAngles; j++ ){
     seis_r[j]              = new fftw_real[rnzp];
@@ -2452,7 +2452,7 @@ void BlockedLogs::generateSyntheticSeismic(const float   * const * reflCoef,
   for( i=0 ; i<nLayers_; i++ )
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
 
-  findContiniousPartOfData(hasData,nLayers_,start,length);
+  findContinuousPartOfData(hasData,nLayers_,start,length);
 
   float scale = static_cast<float>(timeSimbox->getRelThick(ipos_[0], jpos_[0]));
 

@@ -112,6 +112,7 @@ RMSWell::RMSWell(const std::string& filename)
       }
       else {
         contlogs[k].push_back(ReadNext<double>(ist, line));
+        //if(k==3 && contlogs[k]!= WELLMISSING)
         k++;
       }
     }
@@ -132,6 +133,10 @@ RMSWell::RMSWell(const std::string& filename)
      k++;
    }
   }
+
+  // find n_data including WELLMISSING values
+  unsigned int n_data = GetContLog("TWT").size();
+  this->SetNumberOfData(n_data);
 }
 
 

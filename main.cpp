@@ -178,7 +178,7 @@ int main(int argc, char** argv)
     XmlModelFile modelFile(argv[1]);
     InputFiles     * inputFiles     = modelFile.getInputFiles();
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
-    CommonData     * commonData     = NULL;
+    CommonData     * common_data     = NULL;
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
 
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
     AND MODEL SETTINGS
     -------------------------------------------------------------*/
 
-    CommonData * common_data = new CommonData(modelSettings, inputFiles);
+    common_data = new CommonData(modelSettings, inputFiles);
 
     Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;
@@ -334,7 +334,7 @@ int main(int argc, char** argv)
 
     delete modelAVOstatic;
     delete modelGeneral;
-    delete commonData;
+    delete common_data;
     delete modelSettings;
     delete inputFiles;
 
