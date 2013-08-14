@@ -118,16 +118,47 @@ private:
                        InputFiles     * inputFiles,
                        std::string    & err_text);
 
-  bool ReadWellData(ModelSettings     * modelSettings,
-                    Simbox            * estimation_simbox,
-                    InputFiles        * inputFiles,
-                    std::string       & err_text);
+  bool ReadWellData(ModelSettings                   * model_settings,
+                    Simbox                          * estimation_simbox,
+                    InputFiles                      * input_files,
+                    std::vector<std::string>          & log_names,
+                    const std::vector<std::string>  & log_names_from_user,
+                    const std::vector<bool>         & inverse_velocity,
+                    bool                              facies_log_given,
+                    std::string                     & err_text);
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
                                std::vector<NRLib::Well>                       & wells,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::string                                    & err_text);
+
+  bool       CheckThatDataCoverGrid(const SegY            * segy,
+                                    float                   offset,
+                                    const Simbox          * timeCutSimbox,
+                                    float                   guard_zone);
+
+  void ProcessLogsNorsarWell(NRLib::Well                      & new_well,
+                             std::vector<std::string>         & log_names_from_user,
+                             const std::vector<bool>          & inverse_velocity,
+                             bool                               facies_log_given,
+                             std::string                      & error_text,
+                             bool                             & failed);
+
+  void ProcessLogsRMSWell(NRLib::Well                     & new_well,
+                          std::vector<std::string>  & log_names_from_user,
+                          const std::vector<bool>         & inverse_velocity,
+                          bool                              facies_log_given,
+                          std::string                     & error_text,
+                          bool                            & failed);
+
+
+  bool  SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_settings,
+                                            InputFiles     * input_files);
+
+  bool  WaveletHandling(ModelSettings                     * model_settings,
+                        InputFiles                        * input_files);
+
 
   //bool       CheckThatDataCoverGrid(const SegY            * segy,
   //                                  float                   offset,
@@ -162,8 +193,6 @@ private:
                     const int        n_facies,
                     std::vector<int> facies_nr);
 
-  bool  SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_settings,
-                                            InputFiles     * input_files);
 
   float  ** ReadMatrix(const std::string                  & file_name,
                        int                                  n1,
@@ -176,11 +205,6 @@ private:
                                      const ModelSettings  * model_settings,
                                      int                    number_of_angles,
                                      int                    this_time_lapse);
-
-  bool  WaveletHandling(ModelSettings                     * model_settings,
-                        InputFiles                        * input_files);
-
-
 
   int Process1DWavelet(const ModelSettings                      * modelSettings,
                        const InputFiles                         * inputFiles,
@@ -264,9 +288,16 @@ private:
                         const MultiIntervalGrid                             * multiple_interval_grid,
                         const std::vector<CravaTrend>                       & trend_cubes,
                         const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
+                        int                                                   n_trend_cubes,
                         std::string                                         & error_text,
                         bool                                                & failed);
 
+  void PrintExpectationAndCovariance(const std::vector<double>   & expectation,
+                                     const NRLib::Grid2D<double> & covariance,
+                                     const bool                  & has_trend) const;
+
+  bool EstimateWaveletShape();
+  bool EstimatePriorCorrelation();
   bool SetupPriorFaciesProb(ModelSettings  * model_settings,
                             InputFiles     * input_files,
                             std::string    & err_text);
@@ -368,7 +399,6 @@ private:
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;
-  bool wavelet_handling_;
   bool wavelet_estimation_shape_;
   bool prior_corr_estimation_;
   bool setup_estimation_rock_physics_;
@@ -376,6 +406,7 @@ private:
   bool setup_trend_cubes_;
   bool setup_prior_facies_probabilities_;
   bool setup_background_model_;
+  bool wavelet_handling_;
 
   MultiIntervalGrid       * multiple_interval_grid_;
   Simbox                    estimation_simbox_;
@@ -384,6 +415,7 @@ private:
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
 
   // Well logs
+  std::vector<std::string>                      log_names_;
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
@@ -394,8 +426,8 @@ private:
   // trend cubes
   int                                                           n_trend_cubes_;
   std::vector<CravaTrend>                                       trend_cubes_;
-  std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
-  std::map<std::string, std::vector<DistributionWithTrend *> >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model
+  std::vector<std::map<std::string, std::vector<DistributionsRock *> > >    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
+  std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
 
   // prior facies
   std::vector<std::vector<float> >        prior_facies_;                  ///< Prior facies probabilities
@@ -412,8 +444,6 @@ private:
 
   std::map<int, float **>   reflection_matrix_;
   bool                      reflection_matrix_from_file_; //False: created from global vp/vs
-
-  std::vector<Wavelet*>     temporary_wavelets_; //One wavelet per angle
 
   std::map<int, Wavelet**>   wavelets_;
   std::map<int, std::vector<Grid2D *> > local_noise_scale_;
@@ -432,6 +462,8 @@ private:
 
   //Simbox                     * estimation_simbox_;
   //NRLib::Volume              * full_inversion_volume_;
+
+  std::vector<Wavelet*>     temporary_wavelets_; //One wavelet per angle
 
 };
 #endif

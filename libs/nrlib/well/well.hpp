@@ -40,8 +40,8 @@ namespace NRLib {
          int                 imissing = -999);
 
     /// Construct well from file
-    Well(const std::string & file_name,
-         bool              & read_ok);
+    Well(const std::string              & file_name,
+         bool                           & read_ok);
 
     /// Constructor
     /// \param[in] cont_log Continuous logs
@@ -54,6 +54,8 @@ namespace NRLib {
     /// Destructor
     ~Well();
 
+    /// Check existence of discrete log
+    bool HasDiscLog(const std::string & name) const;
     /// Check existence of continuous log
     bool HasContLog(const std::string& name) const;
 
@@ -68,8 +70,8 @@ namespace NRLib {
     const std::vector<int> & GetDiscLog(const std::string& name) const;
 
     /// Read a well from a file-name
-    void ReadWell(const std::string & file_name,
-                  bool              & read_ok);
+    void ReadWell(const std::string              & file_name,
+                  bool                           & read_ok);
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
@@ -123,6 +125,12 @@ namespace NRLib {
     const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
+    /// Facies
+    bool                                  HasFaciesLog()  const  { return has_facies_log_                      ;}
+    /// Get number of facies
+    int                                   GetNFacies()    const  { return static_cast<int>(facies_map_.size()) ;}
+    /// Map integer log to facies name
+    const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
   protected:
     /// Set number of data
@@ -138,14 +146,15 @@ namespace NRLib {
     std::map<std::string,std::vector<int> >    disc_log_;
     /// Name of well
     std::string well_name_;
-
     /// Missing value for continous logs.
     double well_rmissing_;
     /// Missing value for discrete logs.
     int    well_imissing_;
     /// Parameter from ModelGeneral
-    bool                      is_deviated_;
-
+    bool                        is_deviated_;
+    /// Facies variables
+    bool                        has_facies_log_;
+    std::map<int, std::string>  facies_map_;
   };
 
 }

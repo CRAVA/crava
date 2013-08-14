@@ -1711,6 +1711,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n",  logNames[2].c_str());
       if (modelSettings->getFaciesLogGiven())
         LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",logNames[4].c_str());
+      if (modelSettings->getPorosityLogGiven())
+        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  logNames[5].c_str());
     }
     else
     {

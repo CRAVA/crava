@@ -37,7 +37,7 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     indRockPhysics_(0),
-    logNames_(5),
+    logNames_(6),
     inverseVelocity_(2)
 {
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
@@ -160,6 +160,7 @@ ModelSettings::ModelSettings(void)
   noVsFaciesProb_          =    false;
   useFilterForProb_        =     true;
   faciesLogGiven_          =    false;
+  porosityLogGiven_        =    false;
   depthDataOk_             =    false;
   parallelTimeSurfaces_    =    false;
   useLocalWavelet_         =    false;
