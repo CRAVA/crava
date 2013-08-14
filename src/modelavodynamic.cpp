@@ -1061,9 +1061,9 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
       error += process1DWavelet(modelSettings,
                                 inputFiles,
                                 timeSimbox,
-                                seisCube,
+                                //seisCube,
                                 wells,
-                                waveletEstimInterval,
+                                //waveletEstimInterval,
                                 reflectionMatrix[i],
                                 errText,
                                 wavelet[i],
@@ -1073,17 +1073,17 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
       error += process3DWavelet(modelSettings,
                                 inputFiles,
                                 timeSimbox,
-                                seisCube,
-                                wells,
-                                waveletEstimInterval,
+                                //seisCube,
+                                //wells,
+                                //waveletEstimInterval,
                                 reflectionMatrix[i],
                                 errText,
                                 wavelet[i],
-                                i,
-                                refTimeGradX,
-                                refTimeGradY,
-                                tGradX,
-                                tGradY);
+                                i);
+                                //refTimeGradX,
+                                //refTimeGradY,
+                                //tGradX,
+                                //tGradY
 
     if(localNoiseScale_[i]!=NULL)
       localNoiseSet = true;
@@ -1107,9 +1107,9 @@ int
 ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
                                   const InputFiles             * inputFiles,
                                   const Simbox                 * timeSimbox,
-                                  const FFTGrid        * const * seisCube,
+                                  //const FFTGrid        * const * seisCube,
                                   std::vector<WellData *>        wells,
-                                  const std::vector<Surface *> & waveletEstimInterval,
+                                  //const std::vector<Surface *> & waveletEstimInterval,
                                   const float                  * reflectionMatrix,
                                   std::string                  & errText,
                                   Wavelet                     *& wavelet,
@@ -1292,17 +1292,13 @@ int
 ModelAVODynamic::process3DWavelet(const ModelSettings                     * modelSettings,
                                   const InputFiles                        * inputFiles,
                                   const Simbox                            * timeSimbox,
-                                  const FFTGrid                   * const * seisCube,
-                                  const std::vector<WellData *>           & wells,
-                                  const std::vector<Surface *>            & waveletEstimInterval,
+                                  //const FFTGrid                   * const * seisCube,
+                                  //const std::vector<WellData *>           & wells,
+                                  //const std::vector<Surface *>            & waveletEstimInterval,
                                   const float                             * reflectionMatrix,
                                   std::string                             & errText,
                                   Wavelet                                *& wavelet,
-                                  unsigned int                              i,
-                                  const NRLib::Grid2D<float>              & refTimeGradX,
-                                  const NRLib::Grid2D<float>              & refTimeGradY,
-                                  const std::vector<std::vector<double> > & tGradX,
-                                  const std::vector<std::vector<double> > & tGradY)
+                                  unsigned int                              i)
 {
   int error = 0;
   if (estimateWavelet_[i]) {
@@ -1349,11 +1345,11 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
   }
   if (error == 0) {
     wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,i));
-    bool localEst = (modelSettings->getEstimateLocalScale(thisTimeLapse_,i) ||
+/*    bool localEst = (modelSettings->getEstimateLocalScale(thisTimeLapse_,i) ||
                      modelSettings->getEstimateLocalShift(thisTimeLapse_,i) ||
                      modelSettings->getEstimateLocalNoise(thisTimeLapse_,i) ||
                      modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i) ||
-                     modelSettings->getEstimateSNRatio(thisTimeLapse_,i));
+                     modelSettings->getEstimateSNRatio(thisTimeLapse_,i)); */
 
     //if (localEst && modelSettings->getForwardModeling() == false) {
     //  float SNRatio = wavelet->calculateSNRatio(timeSimbox,

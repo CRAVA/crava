@@ -27,6 +27,7 @@
 #include <map>
 
 
+
 namespace NRLib {
   class Well{
   public:
@@ -39,8 +40,8 @@ namespace NRLib {
          int                 imissing = -999);
 
     /// Construct well from file
-    Well(const std::string & file_name,
-         bool              & read_ok);
+    Well(const std::string              & file_name,
+         bool                           & read_ok);
 
     /// Constructor
     /// \param[in] cont_log Continuous logs
@@ -53,6 +54,8 @@ namespace NRLib {
     /// Destructor
     ~Well();
 
+    /// Check existence of discrete log
+    bool HasDiscLog(const std::string & name) const;
     /// Check existence of continuous log
     bool HasContLog(const std::string& name) const;
 
@@ -67,8 +70,8 @@ namespace NRLib {
     const std::vector<int> & GetDiscLog(const std::string& name) const;
 
     /// Read a well from a file-name
-    void ReadWell(const std::string & file_name,
-                  bool              & read_ok);
+    void ReadWell(const std::string              & file_name,
+                  bool                           & read_ok);
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
@@ -90,10 +93,16 @@ namespace NRLib {
     bool IsMissing(double x) const;
     /// Return true if n is missing
     bool IsMissing(int n) const;
+    /// Check if deviated
+    bool IsDeviated() { return is_deviated_; }
     /// Return cont. missing value
     double GetContMissing() const { return(well_rmissing_); }
+    /// Return number of time data
+    int GetNData(void)      const  { return n_data_  ;}
     /// Return disc. missing value
     int GetIntMissing() const { return(well_imissing_); }
+    /// Set deviated
+    void SetDeviated(bool b)  {is_deviated_ = b   ;}
     /// Set missing values
     void SetMissing(double value) {well_rmissing_ = value; well_imissing_ = static_cast<int>(value);}
     /// Return discrete value at position index in log with name logname
@@ -116,6 +125,19 @@ namespace NRLib {
     const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
+    /// Facies 
+    bool                                  HasFaciesLog()  const  { return has_facies_log_                      ;}
+    /// Get number of facies
+    int                                   GetNFacies()    const  { return static_cast<int>(facies_map_.size()) ;}
+    /// Map integer log to facies name
+    const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
+
+  protected:
+    /// Set number of data
+    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+
+    // Number of time data including WELLMISSING values
+    unsigned int              n_data_;
 
   private:
     /// Continuous logs
@@ -124,11 +146,16 @@ namespace NRLib {
     std::map<std::string,std::vector<int> >    disc_log_;
     /// Name of well
     std::string well_name_;
-
     /// Missing value for continous logs.
     double well_rmissing_;
     /// Missing value for discrete logs.
     int    well_imissing_;
+    /// Parameter from ModelGeneral
+    bool                        is_deviated_;
+    /// Facies variables
+    bool                        has_facies_log_;
+    std::map<int, std::string>  facies_map_;
+    
   };
 
 }

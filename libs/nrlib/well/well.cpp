@@ -64,25 +64,39 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
-Well::~Well()
-{}
+Well::~Well(){
+
+}
+
 
 void
-Well::ReadWell(const std::string  & file_name,
-               bool               & read_ok)
+Well::ReadWell(const std::string              & file_name,
+               bool                           & read_ok)
 {
   if(file_name.find(".nwh",0) != std::string::npos) {
     NRLib::NorsarWell well(file_name);
     well_name_ = well.GetWellName();
     cont_log_ = well.GetContLog();
+    n_data_ = well.GetNData();
     disc_log_ = well.GetDiscLog();
     read_ok = true;
+    // assume that facies logs from norsar wells are not used
+    has_facies_log_ = false;
   }
   else if(file_name.find(".rms",0) != std::string::npos) {
     NRLib::RMSWell well(file_name);
     well_name_ = well.GetWellName();
+    n_data_ = well.GetNData();
     cont_log_ = well.GetContLog();
     disc_log_ = well.GetDiscLog();
+    const std::map<int, std::string> facies_map = well.GetDiscNames("FACIES");
+    if(facies_map.size() > 0){
+      has_facies_log_ = true;
+      facies_map_ = facies_map;
+    }
+    else{
+      has_facies_log_ = false;
+    }
     read_ok = true;
   }
   else
@@ -96,6 +110,16 @@ Well::AddContLog(const std::string& name, const std::vector<double>& log)
   cont_log_[name] = log;
 }
 
+
+bool Well::HasDiscLog(const std::string& name) const{
+  std::map<std::string, std::vector<int> >::const_iterator it = disc_log_.find(name);
+  if(it != disc_log_.end()){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
 
 bool
 Well::HasContLog(const std::string& name) const

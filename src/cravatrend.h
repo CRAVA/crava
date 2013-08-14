@@ -3,11 +3,13 @@
 
 #include <stdio.h>
 
-#include "src/modelsettings.h"
+#include "src/simbox.h"
+#include "src/intervalsimbox.h"
+#include "src/fftgrid.h"
 
-class Simbox;
+class ModelSettings;
 class InputFiles;
-class FFTGrid;
+class ModelGeneral;
 
 class CravaTrend
 {
@@ -21,6 +23,16 @@ public:
              bool                         & failed,
              std::string                  & errTxt,
              const InputFiles             * inputFiles);
+
+  CravaTrend(const IntervalSimbox                   * interval_simbox,
+             const Simbox                           * time_cut_simbox,
+             const ModelSettings                    * model_settings,
+             const InputFiles                       * input_files,
+             const std::string                      & interval_name,
+             const std::vector<int>                 & trend_cube_type,
+             const std::vector<std::string>         & trend_cube_parameters,
+             bool                                   & failed,
+             std::string                            & err_txt);
 
   ~CravaTrend();
 

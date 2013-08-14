@@ -1711,6 +1711,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n",  logNames[2].c_str());
       if (modelSettings->getFaciesLogGiven())
         LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",logNames[4].c_str());
+      if (modelSettings->getPorosityLogGiven())
+        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  logNames[5].c_str());
     }
     else
     {
@@ -3679,7 +3681,7 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
   float   maxOffset   = modelSettings->getMaxWellOffset();
   double  angle       = timeSimbox_->getAngle();
   double  dx          = timeSimbox_->getdx();
-  double  dy          = timeSimbox_->getdx();
+  double  dy          = timeSimbox_->getdy();
   std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
 
   std::vector<float> angleWeight(nAngles);

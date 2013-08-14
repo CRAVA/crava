@@ -11,7 +11,6 @@
 
 #include "src/definitions.h"
 #include "src/io.h"
-#include "src/vario.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -20,6 +19,7 @@
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
+#include "src/vario.h"
 
 class Simbox;
 
@@ -181,6 +181,7 @@ public:
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
+  bool                             getPorosityLogGiven(void)            const { return porosityLogGiven_                          ;}
   const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
   const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
@@ -220,8 +221,8 @@ public:
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
   std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
-  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval()                                     const { return priorFaciesProbInterval_                                            ;}
-  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval()                                 const { return volumefractionInterval_                                             ;}
+  const std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval()                                     const { return priorFaciesProbInterval_                                            ;}
+  const std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval()                                 const { return volumefractionInterval_                                             ;}
   int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                                       ;}
   const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
   int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}
@@ -311,6 +312,7 @@ public:
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
+  void addLogName(const std::string & log_name)           { logNames_.push_back(log_name)                        ;}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
@@ -402,6 +404,7 @@ public:
   void setNoVsFaciesProb(bool noVsFaciesProb)             { noVsFaciesProb_           = noVsFaciesProb           ;}
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
+  void setPorosityLogGiven(bool porosityGiven)            { porosityLogGiven_         = porosityGiven            ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
   void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;}
@@ -728,6 +731,7 @@ private:
   bool                              noVsFaciesProb_;             ///< Do not use Vs for faciesprob.
   bool                              useFilterForProb_;           ///< Use filtered logs for facies probs, otherwise, use sampled inversion.
   bool                              faciesLogGiven_;
+  bool                              porosityLogGiven_;
   bool                              depthDataOk_;                ///< We have what we need to do depth conversion
   bool                              parallelTimeSurfaces_;
   bool                              useLocalWavelet_;            ///< Wavelets are multiplied with gain and shift maps

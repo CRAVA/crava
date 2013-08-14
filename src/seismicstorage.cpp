@@ -42,6 +42,8 @@ SeismicStorage::SeismicStorage(std::string     file_name,
 
 SeismicStorage::~SeismicStorage()
 {
+  delete segy_;
+  delete storm_grid_;
 }
 
 std::vector<float>
@@ -82,6 +84,41 @@ SeismicStorage::GetTraceData(int index) const
   return trace_data;
 }
 
+int SeismicStorage::GetNx() const{
+  int nx  = 0;
+  if (seismic_type_ == SEGY)
+    nx = segy_->GetGeometry()->GetNx();
+  else if(seismic_type_ == STORM)
+    nx = storm_grid_->GetNI();
+  else 
+    nx = 0;
+
+  return nx;
+}
+
+int SeismicStorage::GetNy() const{
+  int ny  = 0;
+  if (seismic_type_ == SEGY)
+    ny = segy_->GetGeometry()->GetNy();
+  else if(seismic_type_ == STORM)
+    ny = storm_grid_->GetNJ();
+  else 
+    ny = 0;
+
+  return ny;
+} 
+
+int SeismicStorage::GetNz() const{
+  int nz  = 0;
+  if (seismic_type_ == SEGY)
+    nz = segy_->GetNz();
+  else if(seismic_type_ == STORM)
+    nz = storm_grid_->GetNK();
+  else 
+    nz = 0;
+
+  return nz;
+} 
 
 void
 SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
@@ -121,8 +158,8 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     double y_tmp = 0.0;
     double z_tmp = 0.0;
 
-    int index_i = 0;
-    int index_j = 0;
+    size_t index_i = 0;
+    size_t index_j = 0;
     int trace_index = 0;
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));
