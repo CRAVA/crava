@@ -125,7 +125,7 @@ namespace NRLib {
     const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
-    /// Facies 
+    /// Facies
     bool                                  HasFaciesLog()  const  { return has_facies_log_                      ;}
     /// Get number of facies
     int                                   GetNFacies()    const  { return static_cast<int>(facies_map_.size()) ;}
@@ -155,7 +155,6 @@ namespace NRLib {
     /// Facies variables
     bool                        has_facies_log_;
     std::map<int, std::string>  facies_map_;
-    
   };
 
 }

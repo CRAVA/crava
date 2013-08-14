@@ -29,7 +29,7 @@ public:
   const std::vector<IntervalSimbox>                      & GetIntervalSimboxes() const           { return interval_simboxes_    ;}
   const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]          ;}
   const IntervalSimbox                                   * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i] ;}
-  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const { return parameters_               ;}
+  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_               ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
 
   //SET FUNCTIONS
@@ -79,6 +79,19 @@ private:
                                       std::vector<NRLib::Grid<float> >          & rho_interval,
                                       const std::vector<IntervalSimbox>         & interval_simboxes,
                                       std::vector<double>                       & relative_grid_resolution) const;
+
+  //void  BuildSeismicPropertyZones(InputFiles                               * input_files,
+  //                                std::vector<NRLib::Grid<float>>          & alpha_zones,
+  //                                std::vector<NRLib::Grid<float>>          & beta_zones,
+  //                                std::vector<NRLib::Grid<float>>          & rho_zones,
+  //                                const std::vector<Surface>               & surfaces,
+  //                                const std::map<std::string, std::string> & interval_corr_dir_files,
+  //                                const std::map<std::string, std::string> & interval_corr_dir_top_files,
+  //                                const std::map<std::string, std::string> & interval_corr_dir_base_files,
+  //                                const std::map<std::string, bool>        & top_conforms,
+  //                                const std::map<std::string, bool>        & base_conforms,
+  //                                const std::vector<std::string>           & interval_names,
+  //                                const std::vector<float>                 & dz) const;
 
   // CLASS VARIABLES
 

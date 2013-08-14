@@ -122,14 +122,16 @@ public:
   virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
                                                const Simbox                * /*simbox*/,
                                                const SeismicStorage             * /*seismic_data*/,
-                                               const std::vector<BlockedLogsCommon *> &  /*blocked_logs*/) {return 1.0f;}
+                                               //const std::vector<BlockedLogsCommon *> &  /*blocked_logs*/,
+                                               const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/) {return 1.0f;}
                                                //const FFTGrid               * /*seisCube*/,
                                                //std::vector<WellData *> /*wells*/) {return 1.0f;}
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
                                                 const SeismicStorage  * /*seismic_data*/,
-                                                const std::vector<BlockedLogsCommon *>  /*blocked_logs_common*/,
+                                                //const std::vector<BlockedLogsCommon *>  /*blocked_logs_common*/,
+                                                const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                                 //const FFTGrid         * /*seisCube*/,
                                                 //std::vector<WellData *> /*wells*/,
                                                 const ModelSettings   * /*modelSettings*/,
@@ -150,7 +152,8 @@ public:
 
   virtual float calculateSNRatio(const Simbox                             * /*simbox*/,
                                  const SeismicStorage                     * /*seismic_data*/,
-                                 const std::vector<BlockedLogsCommon *>     /*blocked_logs_common*/,
+                                 //const std::vector<BlockedLogsCommon *>     /*blocked_logs_common*/,
+                                 const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                  //const FFTGrid                            * /*seisCube*/,
                                  //const std::vector<WellData *>            & /*wells*/,
                                  const ModelSettings                      * /*modelSettings*/,

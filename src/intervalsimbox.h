@@ -143,7 +143,7 @@ public:
   void           GetMinMaxZ(double      & min_z,
                             double      & max_z) const;
 
-  double         GetTop(int               i, 
+  double         GetTop(int               i,
                         int               j) const;
 
   double         GetBot(int               i,
@@ -203,7 +203,7 @@ public:
 
   NRLib::Vector  FindPlane(const Surface * surf);
 
-  int            IsInside(double                x, 
+  int            IsInside(double                x,
                           double                y) const;
 
   int            InsideRectangle(const SegyGeometry     * geometry) const;
@@ -213,7 +213,7 @@ public:
                                   const std::string     & subdir,
                                   int                     output_format);
 
-  int            CalculateDz(double                       lz_limit, 
+  int            CalculateDz(double                       lz_limit,
                              std::string                & errText);
 
   bool           IsAligned(const SegyGeometry           * geometry) const; //Checks if IL/XL form geometry maps nicely.
