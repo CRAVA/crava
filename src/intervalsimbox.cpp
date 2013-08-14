@@ -155,7 +155,7 @@ IntervalSimbox::IntervalSimbox(const Simbox         * simbox,
     shift_bot += dz-residual;
     nz++;
   }
-    
+
   new_base_surface.Add(shift_bot);
   new_base_surface.AddNonConform(&(bot_surface));
 
@@ -191,10 +191,10 @@ IntervalSimbox::IntervalSimbox(const Simbox         * simbox,
   xl_step_X_      = simbox->getXLStepX();
   xl_step_Y_      = simbox->getXLStepY();
   // HOW SHOULD THIS BE DONE?
-  (void) top_surface; 
-  (void) base_surface; 
-  (void) top_corr_surface; 
-  (void) base_corr_surface; 
+  (void) top_surface;
+  (void) base_surface;
+  (void) top_corr_surface;
+  (void) base_corr_surface;
   (void) err_text;
   (void) failed;
 }
@@ -479,7 +479,7 @@ void IntervalSimbox::GetMinMaxZ(double      & min_z,
   max_z = GetZMax(nx_,ny_);
 }
 
-int IntervalSimbox::IsInside(double                x, 
+int IntervalSimbox::IsInside(double                x,
                              double                y) const{
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
   double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
@@ -563,7 +563,7 @@ int IntervalSimbox::InsideRectangle(const SegyGeometry *  geometry) const{
   return error;
 }
 
-double IntervalSimbox::GetTop(int i, 
+double IntervalSimbox::GetTop(int i,
                               int j) const{
   double x, y;
   GetXYCoord(i,j,x,y);
@@ -573,7 +573,7 @@ double IntervalSimbox::GetTop(int i,
   return(zTop);
 }
 
-double  IntervalSimbox::GetTop(double x, 
+double  IntervalSimbox::GetTop(double x,
                                double y) const{
   double zTop = GetTopSurface().GetZ(x, y);
   if(GetTopSurface().IsMissing(zTop))
@@ -581,7 +581,7 @@ double  IntervalSimbox::GetTop(double x,
   return(zTop);
 }
 
-double  IntervalSimbox::GetBot(int  i, 
+double  IntervalSimbox::GetBot(int  i,
                                int  j) const{
   double x, y;
   GetXYCoord(i,j,x,y);
@@ -591,7 +591,7 @@ double  IntervalSimbox::GetBot(int  i,
   return(zBot);
 }
 
-double  IntervalSimbox::GetBot(double   x, 
+double  IntervalSimbox::GetBot(double   x,
                                double   y) const
 {
   double z_bot = GetBotSurface().GetZ(x, y);
@@ -600,11 +600,11 @@ double  IntervalSimbox::GetBot(double   x,
   return(z_bot);
 }
 
-std::string IntervalSimbox::GetStormHeader(int  cubetype, 
-                                           int  nx, 
-                                           int  ny, 
-                                           int  nz, 
-                                           bool flat, 
+std::string IntervalSimbox::GetStormHeader(int  cubetype,
+                                           int  nx,
+                                           int  ny,
+                                           int  nz,
+                                           bool flat,
                                            bool ascii) const{
   if(flat == false)
     assert(top_name_ != "");
@@ -664,7 +664,7 @@ IntervalSimbox::SetTopBotName(const std::string & topname,
   bot_name_ = IO::getFilePrefix()+botname+suffix;
 }
 
-int IntervalSimbox::CalculateDz(double          lz_limit, 
+int IntervalSimbox::CalculateDz(double          lz_limit,
                                 std::string   & err_text){
   if(status_ == NODEPTH || status_ == EMPTY)
     status_ = EXTERNALERROR; //At this stage, lack of depth is an error

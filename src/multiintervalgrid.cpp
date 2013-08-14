@@ -167,7 +167,7 @@ void   MultiIntervalGrid::SetUpIntervalSimboxes(const ModelSettings             
     std::map<std::string, std::string>::const_iterator it_base    = corr_dir_base_surfaces.find(interval_name);
     std::map<std::string, bool>::const_iterator it_top_conform    = corr_dir_top_conform.find(interval_name);
     std::map<std::string, bool>::const_iterator it_base_conform   = corr_dir_base_conform.find(interval_name);
-    
+
     // Make a simbox for the original interval --------------------------------------------
     //SegyGeometry * geometry = model_settings->getAreaParameters();
     simboxes[i] = Simbox(estimation_simbox);
@@ -178,31 +178,31 @@ void   MultiIntervalGrid::SetUpIntervalSimboxes(const ModelSettings             
     // Case 1: Single correlation surface
     if(it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
       Surface * corr_surf = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
-      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers,  top_surface, base_surface, corr_surf, 
+      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers,  top_surface, base_surface, corr_surf,
                                             err_text, failed);
     }
     // Case 2: Top and base correlation surfaces
     else if(it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
       Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
-      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed, 
+      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                               corr_surf_top, corr_surf_base);
     }
     // Case 3: Top conform and base conform
     else if(it_top_conform == corr_dir_top_conform.end() && it_base_conform == corr_dir_base_conform.end()){
-      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed,  
+      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                               NULL, NULL);
     }
     // Case 4: Top correlation surface and base conform
     else if(it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base_conform == corr_dir_base_conform.end()){
       Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
-      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed, 
+      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                               corr_surf_top, NULL);
     }
     // Case 5: Top conform and base correlation surface
     else if(it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
-      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed, 
+      interval_simboxes[i] = IntervalSimbox(&simboxes[i], interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                               NULL, corr_surf_base);
     }
     // else something is wrong
@@ -216,9 +216,9 @@ void   MultiIntervalGrid::SetUpIntervalSimboxes(const ModelSettings             
 
 Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file_name,
                                                      const Simbox         & estimation_simbox) const{
-  
+
   Surface * new_surface = NULL;
-  
+
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
     new_surface = new Surface(file_name);
   }
@@ -229,7 +229,7 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file
     FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
                                 estimation_simbox.getlx(), estimation_simbox.getly(),
                                 estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
-    
+
     new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(file_name.c_str()));
   }
 

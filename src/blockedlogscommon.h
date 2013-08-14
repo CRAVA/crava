@@ -26,7 +26,7 @@ public:
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
-                    bool                               interpolate, 
+                    bool                               interpolate,
                     bool                             & failed,
                     std::string                      & err_text);
 
@@ -45,10 +45,6 @@ public:
                               int                           & j_move,
                               float                         & k_move);
 
-  void         FindContinuousPartOfData(const std::vector<bool> & hasData,
-                                        int                       nz,
-                                        int                     & start,
-                                        int                     & length) const;
 
   //GET FUNCTIONS --------------------------------
 
@@ -59,7 +55,7 @@ public:
   const std::vector<double>            & GetXpos(void)         const   { return x_pos_blocked_                                                        ;}
   const std::vector<double>            & GetYpos(void)         const   { return y_pos_blocked_                                                        ;}
   const std::vector<double>            & GetZpos(void)         const   { return z_pos_blocked_                                                        ;}
-  
+
   const std::vector<double>            & GetTVD(void)          const   { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetTWT(void)          const   { return twt_blocked_                                                          ;}
 
@@ -78,42 +74,74 @@ public:
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
 
-  void                  GetVerticalTrend(const std::vector<double>  & blockedLog, 
-                                         std::vector<double>        & trend);
+  void                                   GetVerticalTrend(const std::vector<double>  & blocked_log,
+                                                          std::vector<double>        & trend);
 
-  void    GetVerticalTrendLimited(const std::vector<double>       & blocked_log, 
-                                  std::vector<double>             & trend, 
-                                  const std::vector<Surface *>    & limits);
+  void                                   GetVerticalTrend(const int        * blocked_log,
+                                                          std::vector<int> & trend);
 
-    void        GetBlockedGrid(const SeismicStorage   * grid,
-                               const Simbox           * estimation_simbox,
-                               std::vector<double>    & blocked_log,
-                               int                      i_offset = 0,
-                               int                      j_offset = 0);
+  void                                   GetVerticalTrendLimited(const std::vector<double>       & blocked_log,
+                                                                 std::vector<double>             & trend,
+                                                                 const std::vector<Surface *>    & limits);
 
-    void                      EstimateCor(fftw_complex    * var1_c,
-                                          fftw_complex    * var2_c,
-                                          fftw_complex    * ccor_1_2_c,
-                                          int               cnzp) const;
+  void                                   GetBlockedGrid(const SeismicStorage   * grid,
+                                                        const Simbox           * estimation_simbox,
+                                                        std::vector<double>    & blocked_log,
+                                                        int                      i_offset = 0,
+                                                        int                      j_offset = 0);
 
-    void                      FillInCpp(const float   * coeff,
-                                        int             start,
-                                        int             length,
-                                        fftw_real     * cpp_r,
-                                        int             nzp);
 
-    void  SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
-                                  double                  z0,              // z-value of center in top layer
-                                  double                  dz,              // dz in vertical trend
-                                  int                     nz,              // layers in vertical trend
-                                  std::string             type,
-                                  int                     iAngle);
+  // FUNCTIONS -----------------------------------
 
-    void        FillInSeismic(std::vector<double> & seismic_data,
-                          int                   start,
-                          int                   length,
-                          fftw_real           * seis_r,
-                          int                   nzp) const;
+  void                                   EstimateCor(fftw_complex * var1_c,
+                                                     fftw_complex * var2_c,
+                                                     fftw_complex * ccor_1_2_c,
+                                                     int            cnzp) const;
+
+  void                                   FillInCpp(const float * coeff,
+                                                   int           start,
+                                                   int           length,
+                                                   fftw_real   * cpp_r,
+                                                   int           nzp);
+
+  void                                   SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
+                                                                 double                  z0,              // z-value of center in top layer
+                                                                 double                  dz,              // dz in vertical trend
+                                                                 int                     nz,              // layers in vertical trend
+                                                                 std::string             type,
+                                                                 int                     i_angle);
+
+  void                                   FillInSeismic(std::vector<double> & seismic_data,
+                                                       int                   start,
+                                                       int                   length,
+                                                       fftw_real           * seis_r,
+                                                       int                   nzp) const;
+
+  void                                   SetSeismicGradient(double                            v0,
+                                                            const NRLib::Grid2D<float>   &    structure_depth_grad_x,
+                                                            const NRLib::Grid2D<float>   &    structure_depth_grad_y,
+                                                            const NRLib::Grid2D<float>   &    ref_time_grad_x,
+                                                            const NRLib::Grid2D<float>   &    ref_time_grad_y,
+                                                            std::vector<double>          &    x_gradient,
+                                                            std::vector<double>          &    y_gradient);
+
+  void                                   SetTimeGradientSettings(float distance, float sigma_m);
+
+  void                                   FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
+                                                             const Simbox                      * const estimation_simbox,
+                                                             int                                 n_angles,
+                                                             std::vector<double>               & x_gradient,
+                                                             std::vector<double>               & y_gradient,
+                                                             std::vector<std::vector<double> > & sigma_gradient);
+
+  void                                   FindContinuousPartOfData(const std::vector<bool> & hasData,
+                                                                  int                       nz,
+                                                                  int                     & start,
+                                                                  int                     & length) const;
+
+  int                                    FindMostProbable(const int * count,
+                                                          int         n_facies,
+                                                          int         block_index);
 
 private:
 
@@ -127,15 +155,21 @@ private:
                                                 double                  dzVt,
                                                 int                     nz);
 
-  void         InterpolateTrend(const double   * blocked_log, 
+  void         InterpolateTrend(const double   * blocked_log,
                                 double         * trend);
 
-  void         InterpolateTrend(const std::vector<double>    & blocked_log, 
+  void         InterpolateTrend(const std::vector<double> & blocked_log,
+                                double                    * trend);
+
+  void         InterpolateTrend(const std::vector<double>    & blocked_log,
                                 std::vector<double>          & trend);
 
-  void          InterpolateTrend(const std::vector<double>      & blocked_log, 
-                                 std::vector<double>            & trend, 
-                                 const std::vector<Surface *>   & limits);
+  void         InterpolateTrend(const std::vector<double>      & blocked_log,
+                                 std::vector<double>           & trend,
+                                 const std::vector<Surface *>  & limits);
+
+  void         InterpolateTrend(const int        * blocked_log,
+                                std::vector<int> & trend);
 
   double ComputeElasticImpedance(double         vp,
                                  float         vs,
@@ -198,6 +232,41 @@ private:
                          int                       n_facies,
                          int                       block_index);
 
+  void    SmoothTrace(std::vector<float> &trace);
+
+  void    FindPeakTrace(std::vector<float> &trace, std::vector<double> &z_peak, std::vector<double> &peak,
+                        std::vector<double> &b, double dz, double z_top);
+
+  void    PeakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
+                    std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+
+  double  ComputeShift(std::vector<double> &z_peak, std::vector<double> &z_peak_w, double z0);
+
+  void    ComputeGradient(std::vector<double> &q_epsilon, std::vector<double> &q_epsilon_data,
+                          std::vector<double> &z_shift, int nx, int ny, double dx, double dy);
+
+  void    SmoothGradient(std::vector<double>               & x_gradient,
+                         std::vector<double>               & y_gradient,
+                         std::vector<double>               & q_epsilon,
+                         std::vector<double>               & q_epsilon_data,
+                         std::vector<std::vector<double> > & sigma_gradient);
+
+  void    ComputePrecisionMatrix(double &a, double &b, double &c);
+
+
+  float   ComputeElasticImpedance(double         alpha,
+                                  double         beta,
+                                  double         rho,
+                                  const float * coeff) const;
+
+  void    SetLogFromVerticalTrend(float     *& blocked_log,
+                                  const std::vector<double> & zpos,
+                                  int          nBlocks,
+                                  float      * vertical_trend,
+                                  double       z0,
+                                  double       dzVt,
+                                  int          nz);
+
   // CLASS VARIABLES -----------------------------
 
   unsigned int       n_blocks_;         // number of blocks
@@ -232,6 +301,9 @@ private:
   std::vector<std::vector<double> > actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
   std::vector<std::vector<double> > well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
 
+  float lateral_threshold_gradient_; //Minimum lateral distance where gradient lines must not cross
+  float sigma_m_; //Smoothing factor for the gradients
+
   // Unblocked values
 
   std::vector<double> x_pos_unblocked_;
@@ -243,17 +315,29 @@ private:
   std::map<std::string, std::vector<double> > continuous_logs_unblocked_;  // Map between variable name and unblocked continuous log
   std::map<std::string, std::vector<int> > discrete_logs_unblocked_;       // Map between variable name and unblocked discrete log
 
+  ///H Copied from blockedlogs.h, they are only set in SetLogFromVerticalTrend. Are they needed later?
+  float        * alpha_seismic_resolution_; ///<
+  float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
+  float        * rho_seismic_resolution_;   ///<
+  //float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
+  //float       ** well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
+  int            n_angles_;                  ///< Number of AVA stacks
+
   bool                      interpolate_;              ///<
 
-  int                       n_angles_;                 ///< Number of angles
+  //int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
+
+  int                       n_facies_;
 
   int                       first_M_;                   ///< First well log entry contributing to blocked well
   int                       last_M_;                    ///< Last well log entry contributing to blocked well
 
   int                       first_B_;                   ///< First block with contribution from well log
   int                       last_B_;                    ///< Last block with contribution from well log
+
+
 
 };
 #endif

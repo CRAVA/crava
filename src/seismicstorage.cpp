@@ -90,7 +90,7 @@ int SeismicStorage::GetNx() const{
     nx = segy_->GetGeometry()->GetNx();
   else if(seismic_type_ == STORM)
     nx = storm_grid_->GetNI();
-  else 
+  else
     nx = 0;
 
   return nx;
@@ -102,11 +102,11 @@ int SeismicStorage::GetNy() const{
     ny = segy_->GetGeometry()->GetNy();
   else if(seismic_type_ == STORM)
     ny = storm_grid_->GetNJ();
-  else 
+  else
     ny = 0;
 
   return ny;
-} 
+}
 
 int SeismicStorage::GetNz() const{
   int nz  = 0;
@@ -114,11 +114,11 @@ int SeismicStorage::GetNz() const{
     nz = segy_->GetNz();
   else if(seismic_type_ == STORM)
     nz = storm_grid_->GetNK();
-  else 
+  else
     nz = 0;
 
   return nz;
-} 
+}
 
 void
 SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
@@ -158,8 +158,8 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     double y_tmp = 0.0;
     double z_tmp = 0.0;
 
-    size_t index_i = 0;
-    size_t index_j = 0;
+    int index_i = 0;
+    int index_j = 0;
     int trace_index = 0;
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));
@@ -184,7 +184,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
         //Store length
         double top = storm_grid_->GetTopSurface().GetZ(x_tmp, y_tmp);
         double bot = storm_grid_->GetBotSurface().GetZ(x_tmp, y_tmp);
-        trace_length.push_back(std::abs(bot-top));
+        trace_length.push_back(std::abs(static_cast<float>(bot-top)));
 
         trace_index++;
       }
