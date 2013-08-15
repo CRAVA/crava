@@ -194,8 +194,11 @@ void NRLib::ReadIrapClassicAsciiSurf(const std::string & filename,
     ReadNext<int>(file, line);
     ReadNext<int>(file, line);
     ReadNext<int>(file, line);
+    //double lx = (ni-1)*dx;
+    //double ly = (nj-1)*dy;
     double lx = (x_max - x_min)*cos(angle);
     double ly = (y_max - y_min)*cos(angle);
+
 
     if (!NRLibPrivate::Equal(lx/(ni-1), dx)) {
       std::string text = "Inconsistent data in file. dx != lx/(nx-1).\n";
@@ -213,6 +216,7 @@ void NRLib::ReadIrapClassicAsciiSurf(const std::string & filename,
       text += "ly/(ny-1) = "+NRLib::ToString(ly/(nj - 1),2);
       throw FileFormatError(text);
     }
+
 
     surface.Resize(ni, nj);
     surface.SetDimensions(x_min, y_min, lx, ly);

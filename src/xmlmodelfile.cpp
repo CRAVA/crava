@@ -363,12 +363,15 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs");
   legalCommands.push_back("dts");
   legalCommands.push_back("density");
+  legalCommands.push_back("porosity");
   legalCommands.push_back("facies");
 
+  // 0: Time
   std::string value;
   if(parseValue(root, "time", value, errTxt) == true)
     modelSettings_->setLogName(0, value);
 
+  // 1: Vp
   bool vp = parseValue(root, "vp", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(1, value);
@@ -384,6 +387,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 2: Vs
   bool vs = parseValue(root, "vs", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(3, value);
@@ -399,13 +403,22 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 3: Density
   if(parseValue(root, "density", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
+  
+  // 4: Facies
   if(parseValue(root, "facies", value, errTxt) == true) {
     modelSettings_->setLogName(4, value);
     modelSettings_->setFaciesLogGiven(true);
   }
 
+  // 5: Porosity
+  if(parseValue(root, "porosity", value, errTxt) == true) {
+    modelSettings_->setLogName(5, value);
+    modelSettings_->setPorosityLogGiven(true);
+  }
+  
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -4459,7 +4472,10 @@ XmlModelFile::parseAreaFromSurface(TiXmlNode * node, std::string & errTxt)
   }
   bool snapToSeismicData = false;
   if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
-    modelSettings_->setSnapGridToSeismicData(true);
+    if(snapToSeismicData)
+      modelSettings_->setSnapGridToSeismicData(true);
+    else
+      modelSettings_->setSnapGridToSeismicData(false);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -4572,12 +4588,6 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
 
   if (snapToSeismicData) {
     modelSettings_->setSnapGridToSeismicData(true);
-    dx = lx;
-    dy = ly;
-    if(densX)
-      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-    if(densY)
-      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
   }
   else {
     if (!densX)
