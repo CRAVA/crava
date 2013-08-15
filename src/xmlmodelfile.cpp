@@ -4588,14 +4588,6 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
 
   if (snapToSeismicData) {
     modelSettings_->setSnapGridToSeismicData(true);
-    /*
-    dx = lx;
-    dy = ly;
-    if(densX)
-      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-    if(densY)
-      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
-    */
   }
   else {
     if (!densX)
