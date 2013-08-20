@@ -5163,6 +5163,7 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("rock-physics-distributions");
   legalCommands.push_back("error-file");
   legalCommands.push_back("task-file");
+  legalCommands.push_back("rock-physics-trends");
 
   bool value;
   int otherFlag = 0;
@@ -5180,6 +5181,8 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += IO::ERROR_FILE;
   if(parseBool(root, "task-file", value, errTxt) == true && value == true)
     otherFlag += IO::TASK_FILE;
+  if(parseBool(root, "rock-physics-trends", value, errTxt) == true && value == true)
+    otherFlag += IO::ROCK_PHYSICS_TRENDS;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
 
