@@ -50,10 +50,10 @@ BlockedLogsForRockPhysics::BlockedLogsForRockPhysics(WellData         * well,
   float * blocked_porosity = NULL;
   int   * blocked_facies   = NULL;
 
-  BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy), firstM, lastM, nBlocks, blocked_alpha);
-  BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy),  firstM, lastM, nBlocks, blocked_beta);
-  BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy),   firstM, lastM, nBlocks, blocked_rho);
-  //BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dymmy), firstM, lastM, nBlocks, blocked_porosity); //NBNB Marit: Can not implement well->getPorosity(dymmy) before multizone inversion is ready
+  BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy),    firstM, lastM, nBlocks, blocked_alpha);
+  BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy),     firstM, lastM, nBlocks, blocked_beta);
+  BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy),      firstM, lastM, nBlocks, blocked_rho);
+  BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dummy), firstM, lastM, nBlocks, blocked_porosity);
 
   BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 

@@ -24,6 +24,7 @@
 #include "src/simbox.h"
 #include "src/gridmapping.h"
 #include "src/timings.h"
+#include "src/rmstrace.h"
 
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/surface/regularsurface.hpp"
@@ -32,8 +33,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
                                                const ModelGeneral            * modelGeneral,
                                                const InputFiles              * inputFiles,
                                                const int                     & vintage)
-: rms_data_(NULL),
-  thisTimeLapse_(vintage)
+: thisTimeLapse_(vintage)
 {
   std::string errTxt = "";
 
@@ -44,12 +44,9 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
                   failed_surfaces);
 
   bool failed_rms_data = false;
-  processRMSData(rms_data_,
-                 modelSettings,
+  processRMSData(modelSettings,
                  inputFiles,
                  modelGeneral->getTimeSimbox(),
-                 modelGeneral->getTimeDepthMapping(),
-                 modelGeneral->getTimeCutMapping(),
                  errTxt,
                  failed_rms_data);
 
@@ -68,7 +65,6 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
 
 ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
-  delete rms_data_;
 }
 
 void
@@ -98,12 +94,9 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 }
 
 void
-ModelTravelTimeDynamic::processRMSData(FFTGrid                 *& rms_data,
-                                       const ModelSettings      * modelSettings,
+ModelTravelTimeDynamic::processRMSData(const ModelSettings      * /*modelSettings*/,
                                        const InputFiles         * inputFiles,
-                                       const Simbox             * timeSimbox,
-                                       GridMapping              * timeDepthMapping,
-                                       const GridMapping        * timeCutMapping,
+                                       const Simbox             * /*timeSimbox*/,
                                        std::string              & errTxt,
                                        bool                     & failed)
 
@@ -113,82 +106,128 @@ ModelTravelTimeDynamic::processRMSData(FFTGrid                 *& rms_data,
 
   LogKit::WriteHeader("Reading RMS travel time data");
 
-  const SegyGeometry * geometry = new const SegyGeometry;
-  rms_data                      = new FFTGrid;
-
-  float offset = modelSettings->getTravelTimeSegyOffset(thisTimeLapse_);
-  if(offset < 0)
-    offset = modelSettings->getSegyOffset(thisTimeLapse_);
-
-  const Simbox * timeCutSimbox = NULL;
-  if (timeCutMapping != NULL)
-    timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
-  else
-    timeCutSimbox = timeSimbox;
-
   const std::string & file_name = inputFiles->getRmsVelocities(thisTimeLapse_);
-  std::string         data_name = "RMS data";
   std::string         tmpErrText = "";
 
-  ModelGeneral::readGridFromFile(file_name,
-                                 data_name,
-                                 offset,
-                                 rms_data,
-                                 geometry,
-                                 modelSettings->getTravelTimeTraceHeaderFormat(thisTimeLapse_),
-                                 FFTGrid::DATA,
-                                 timeSimbox,
-                                 timeCutSimbox,
-                                 modelSettings,
-                                 tmpErrText);
+  readRMSData(file_name, tmpErrText);
 
   if(tmpErrText != "") {
-    tmpErrText += "\nReading of file \'"+file_name+"\' for "+data_name+" failed.\n";
     errTxt += tmpErrText;
     failed = true;
   }
 
 
-  LogKit::LogFormatted(LogKit::Low,"\n");
+  Timings::setTimeSeismic(wall,cpu);
+}
 
-  if(failed == false) {
-    bool segyVolumesRead = false;
+//----------------------------------------------------------------------------
+void
+ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
+                                    std::string       & errTxt)
+{
 
-    if (geometry != NULL)
-      segyVolumesRead = true;
+  int error = 0;
 
-    if (segyVolumesRead == true) {
-      LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-      LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+  std::ifstream file;
+  NRLib::OpenRead(file, fileName);
 
-      if (geometry != NULL) {
-        double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
-        if (geoAngle < 0)
-          geoAngle += 360.0;
-        LogKit::LogFormatted(LogKit::Low,"RMS travel time data   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
-                             geometry->GetX0(), geometry->GetY0(),
-                             geometry->Getlx(), geometry->Getly(), geoAngle,
-                             geometry->GetDx(), geometry->GetDy());
-      }
-    }
-
-    if((modelSettings->getOutputGridsOther() & IO::RMS_VELOCITIES) > 0) {
-      std::string baseName = IO::PrefixTravelTimeData();
-      std::string sgriLabel = std::string("RMS travel time data");
-
-      rms_data->writeFile(baseName,
-                          IO::PathToTravelTimeData(),
-                          timeSimbox,
-                          sgriLabel,
-                          offset,
-                          timeDepthMapping,
-                          timeCutMapping,
-                          *modelSettings->getTraceHeaderFormatOutput());
-    }
-
-    if (geometry != NULL)
-      delete geometry;
+  if(file == 0) {
+    error = 1;
+    errTxt += "Could not open RMS data file "+fileName+" for reading.\n";
   }
 
-  Timings::setTimeSeismic(wall,cpu);
+
+  int line = 0;
+
+  while(line < 32) {
+    NRLib::DiscardRestOfLine(file,line,false);
+  }
+
+  std::string endWord = "::Goodbye::";
+  std::string token   = "";
+
+  int j       = 0;
+  int IL      = IMISSING;
+  int XL      = IMISSING;
+  double utmx = RMISSING;
+  double utmy = RMISSING;
+
+  std::vector<double> time;
+  std::vector<double> velocity;
+
+  while(NRLib::CheckEndOfFile(file) == false) {
+
+    try {
+
+      NRLib::ReadNextToken(file,token,line);
+
+      if(token != endWord) {
+        int    this_il       = NRLib::ParseType<int>(token);
+        int    this_xl       = NRLib::ReadNext<int>(file,line);
+        double this_utmx     = NRLib::ReadNext<double>(file,line);
+        double this_utmy     = NRLib::ReadNext<double>(file,line);
+        double this_time     = NRLib::ReadNext<double>(file,line);
+        double this_velocity = NRLib::ReadNext<double>(file,line);
+
+
+        if(time.size() > 1) {
+
+          if( (IL != this_il) || (XL != this_xl) ) {
+            RMSTrace trace(IL,
+                           XL,
+                           utmx,
+                           utmy,
+                           time,
+                           velocity);
+
+            rms_traces_.push_back(trace);
+
+            time.clear();
+            velocity.clear();
+
+            j = -1;
+          }
+        }
+
+        IL = this_il;
+        XL = this_xl;
+        utmx = this_utmx;
+        utmy = this_utmy;
+        time.push_back(this_time);
+        velocity.push_back(this_velocity);
+
+        j++;
+      }
+
+      else {
+        RMSTrace trace(IL,
+                       XL,
+                       utmx,
+                       utmy,
+                       time,
+                       velocity);
+
+        rms_traces_.push_back(trace);
+
+        break;
+      }
+
+    }
+    catch (NRLib::IOError e) {
+      std::string text;
+      text += std::string("\nERROR: Reading of RMS data \'") + fileName + "\' failed.\n";
+      text += std::string("\nERROR message is \'") + e.what() + "\'";
+      LogKit::LogMessage(LogKit::Error,text);
+      errTxt += text;
+      exit(1);
+    }
+  }
+
+  file.close();
+  file.clear();
+
+  int n_traces = static_cast<int>(rms_traces_.size());
+
+  LogKit::LogFormatted(LogKit::Low, "\nRead "+NRLib::ToString(n_traces)+" RMS traces in file "+fileName+"\n");
+
 }
