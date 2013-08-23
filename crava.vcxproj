@@ -335,6 +335,7 @@
     <ClCompile Include="src\posteriorelasticpdf4d.cpp" />
     <ClCompile Include="src\program.cpp" />
     <ClCompile Include="src\qualitygrid.cpp" />
+    <ClCompile Include="src\rmstrace.cpp" />
     <ClCompile Include="src\rockphysicsinversion4d.cpp" />
     <ClCompile Include="src\seismicparametersholder.cpp" />
     <ClCompile Include="src\simbox.cpp">
@@ -1356,6 +1357,7 @@
     <ClInclude Include="rplib\dryrockwalton.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\rmstrace.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
