@@ -21,7 +21,7 @@ TimeEvolution::TimeEvolution(int                                     i_max,
   LogKit::WriteHeader("Setting up matrices for time evolution");
   std::list<int> time;
   time_line.GetAllTimes(time);
-  number_of_timesteps_ = static_cast<int>( time.size() );
+  number_of_timesteps_ = static_cast<int>(dist_rock.size());
   SetUpEvolutionMatrices(evolution_matrix_, cov_correction_term_, mean_correction_term_, i_max, time_line, dist_rock);
 }
 
