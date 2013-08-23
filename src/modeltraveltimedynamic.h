@@ -19,6 +19,7 @@ class FFTGrid;
 class InputFiles;
 class ModelGeneral;
 class SeismicParametersHolder;
+class RMSTrace;
 
 class ModelTravelTimeDynamic
 {
@@ -41,17 +42,18 @@ private:
                                                 std::string            & errTxt,
                                                 bool                   & failed);
 
-  void                          processRMSData(FFTGrid                 *& rms_data,
-                                               const ModelSettings      * modelSettings,
+  void                          processRMSData(const ModelSettings      * modelSettings,
                                                const InputFiles         * inputFiles,
                                                const Simbox             * timeSimbox,
-                                               GridMapping              * timeDepthMapping,
-                                               const GridMapping        * timeCutMapping,
                                                std::string              & errTxt,
                                                bool                     & failed);
 
+  void                          readRMSData(const std::string & fileName,
+                                            std::string       & errTxt);
+
+
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
-  FFTGrid                 * rms_data_;              ///< RMS data U^2
+  std::vector<RMSTrace>     rms_traces_;
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.

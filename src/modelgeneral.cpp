@@ -206,10 +206,10 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
              }
           }
-          //Activate below when travel time is ready.
-          //Travel time ebefore AVO for same vintage.
-          //if(travel time for this vintage)
-          //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+          //Travel time before AVO for same vintage.
+          if(modelSettings->getTravelTimeTimeLapse(i) == true)
+            timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+
           if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
             timeLine_->AddEvent(time, TimeLine::AVO, i);
         }

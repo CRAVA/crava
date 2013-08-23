@@ -38,7 +38,6 @@ public:
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
-  TraceHeaderFormat              * getTravelTimeTraceHeaderFormat(int i)const { return travelTimeTHF_[i]                          ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
@@ -48,6 +47,7 @@ public:
   int                              getNumberOfAngles(int i)             const { return static_cast<int>(timeLapseAngle_[i].size());}
   int                              getNumberOfTimeLapses(void)          const { return static_cast<int>(timeLapseAngle_.size())   ;}
   bool                             getGravityTimeLapse(int i)           const { return timeLapseGravimetry_[i]                    ;}
+  bool                             getTravelTimeTimeLapse(int i)        const { return timeLapseTravelTime_[i]                    ;}
   int                              getNumberOfVintages(void)            const { return static_cast<int>(vintageYear_.size())      ;}
   int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}
   int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
@@ -140,7 +140,6 @@ public:
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
   const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
-  float                            getTravelTimeSegyOffset(int i)       const { return travelTimeSegyOffset_[i]                   ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
@@ -361,7 +360,6 @@ public:
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
-  void addTravelTimeSegyOffset(float offset)              { travelTimeSegyOffset_.push_back(offset)              ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
@@ -429,8 +427,6 @@ public:
   void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
   void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}
 
-  void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
-
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
 
   void setCorrDirTopConform(bool topConformCorrelation)   { topConformCorrelation_   = topConformCorrelation     ;}
@@ -478,7 +474,8 @@ public:
                                                             timeLapseSNRatio_.push_back(SNRatio_);
                                                             timeLapseUseLocalNoise_.push_back(useLocalNoise_);}
 
-  void addTimeLapseGravimetry(bool gravimetry)             {timeLapseGravimetry_.push_back(gravimetry)           ;}
+  void addTimeLapseGravimetry(bool gravimetry)            { timeLapseGravimetry_.push_back(gravimetry)           ;}
+  void addTimeLapseTravelTime(bool travelTime)            { timeLapseTravelTime_.push_back(travelTime)           ;}
 
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
   void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
@@ -527,8 +524,6 @@ private:
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
-  std::vector<TraceHeaderFormat *>  travelTimeTHF_;              // traceheader for travel time data, time lapse vector
-  std::vector<float>                travelTimeSegyOffset_;       // Local segy offset for travel time data, one for each time lapse
 
   std::vector<int>                  seismicType_;                ///< PP- or PS- seismic
   std::vector<float>                angle_;                      ///< Angles
@@ -550,6 +545,7 @@ private:
   std::vector<bool>                 useRickerWavelet_;
   std::vector<bool>                 timeLapseUseLocalNoise_;
   std::vector<bool>                 timeLapseGravimetry_;
+  std::vector<bool>                 timeLapseTravelTime_;
 
   std::vector<std::vector<bool> >   timeLapseEstimateLocalShift_;// Estimate local wavelet shift
   std::vector<std::vector<bool> >   timeLapseEstimateLocalScale_;// Estimate local wavelet scale
