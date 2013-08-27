@@ -108,9 +108,9 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   // 3. SET UP BACKGROUND MODEL ----------------------------------------------------------
 
-  std::vector<NRLib::Grid<float> > vp_intervals(n_intervals_);
-  std::vector<NRLib::Grid<float> > vs_intervals(n_intervals_);
-  std::vector<NRLib::Grid<float> > rho_intervals(n_intervals_);
+  std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
+  std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
+  std::vector<NRLib::Grid<double> > rho_intervals(n_intervals_);
 
   if(!failed){
     try{
@@ -335,9 +335,9 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   surface = Surface(x0, y0, lx, ly, eroded_surface);
 }
 
-void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<float> >          & vp_interval,
-                                                      std::vector<NRLib::Grid<float> >          & vs_interval,
-                                                      std::vector<NRLib::Grid<float> >          & rho_interval,
+void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
+                                                      std::vector<NRLib::Grid<double> >          & vs_interval,
+                                                      std::vector<NRLib::Grid<double> >          & rho_interval,
                                                       const std::vector<IntervalSimbox>        & interval_simboxes,
                                                       std::vector<double>                      & relative_grid_resolution) const{
   (void) relative_grid_resolution;
@@ -390,9 +390,9 @@ void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<fl
     //NRLib::Volume volume(x_min, y_min, lx, ly, interval_simboxes[i].GetTopSurface(), interval_simboxes[i].GetBotSurface(), angle);
     int nz_zone = 1;// static_cast<int>(std::ceil(max_distance/dz[i-1]));
 
-    vp_interval[i]  = NRLib::Grid<float>(nx, ny, nz_zone, 0);
-    vs_interval[i]  = NRLib::Grid<float>(nx, ny, nz_zone, 0);
-    rho_interval[i] = NRLib::Grid<float>(nx, ny, nz_zone, 0);
+    vp_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
+    vs_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
+    rho_interval[i] = NRLib::Grid<double>(nx, ny, nz_zone, 0);
 
     //For each interval, store the actual vertical resolution relative to the wanted.
     //relative_grid_resolution_.push_back();

@@ -667,10 +667,10 @@ ModelAVODynamic::processBackground(Background                    *& background,
           backModel[i]->setType(FFTGrid::PARAMETER);
         }
 
-        if(modelSettings->getMultizoneBackground() == false)
-          background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
-        else
-          background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
+        //if(modelSettings->getMultizoneBackground() == false) //Background() is changed because of CommonData
+        //  background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+        //else
+        //  background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
 
         if(velocity != NULL)
           delete velocity;

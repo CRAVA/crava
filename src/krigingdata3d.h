@@ -25,6 +25,13 @@ public:
                        const int   * jpos,
                        const int   * kpos,
                        const int     nd);
+  void         addData(const double * alpha,
+                       const double * beta,
+                       const double * rho,
+                       const int   * ipos,
+                       const int   * jpos,
+                       const int   * kpos,
+                       const int     nd);
   void         divide(void);
   void         writeToFile(const std::string type);
 

@@ -15,6 +15,7 @@
 #include "src/tasklist.h"
 #include "src/seismicstorage.h"
 #include "src/multiintervalgrid.h"
+#include "src/background.h"
 
 //#include "rplib/distributionsrock.h"
 
@@ -304,9 +305,10 @@ private:
 
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                    const InputFiles   * input_files,
-                                   std::string        & tmp_err_text) const;
+                                   std::string        & tmp_err_text,
+                                   int                  i_interval) const;
 
-  void CommonData::SetFaciesNamesFromRockPhysics();
+  void CommonData::SetFaciesNamesFromRockPhysics(int i_interval);
 
   void ReadPriorFaciesProbCubes(const InputFiles        * input_files,
                                 ModelSettings           * model_settings,
@@ -363,8 +365,8 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
-  void LoadVelocity(FFTGrid              *& velocity,
-                    const IntervalSimbox * interval_simbox, //timeSimbox,
+  void LoadVelocity(FFTGrid             *& velocity,
+                    const Simbox         * interval_simbox, //timeSimbox,
                     const Simbox         * simbox, //timeCutSimbox,
                     const ModelSettings  * model_settings,
                     const std::string    & velocity_field,
@@ -380,6 +382,16 @@ private:
                                        FFTGrid                                & vs,
                                        FFTGrid                                & rho,
                                        int                                      i_interval);
+
+  void SetupExtendedBackgroundSimbox(Simbox   * simbox,
+                                     Surface  * corr_surf,
+                                     Simbox  *& bg_simbox,
+                                     int        output_format,
+                                     int        output_domain,
+                                     int        other_output);
+
+  NRLib::Grid<double>
+  FFTGridRealToGrid(const FFTGrid * fft_grid);
 
   bool optimizeWellLocations();
   bool estimateWaveletShape();
@@ -432,6 +444,9 @@ private:
   // prior facies
   std::vector<std::vector<float> >        prior_facies_;                  ///< Prior facies probabilities
   std::vector<std::vector<FFTGrid *> >    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities
+
+  // Background models
+  //std::vector<Background * > background_models_;
 
   //Well variables not contained in NRlib::Well
   //std::map<std::string, int>                        timemissing_;

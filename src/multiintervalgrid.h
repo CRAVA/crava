@@ -74,9 +74,9 @@ private:
                                     double       & x_max,
                                     double       & y_max) const;
 
-  void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<float> >          & vp_interval,
-                                      std::vector<NRLib::Grid<float> >          & vs_interval,
-                                      std::vector<NRLib::Grid<float> >          & rho_interval,
+  void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
+                                      std::vector<NRLib::Grid<double> >          & vs_interval,
+                                      std::vector<NRLib::Grid<double> >          & rho_interval,
                                       const std::vector<IntervalSimbox>         & interval_simboxes,
                                       std::vector<double>                       & relative_grid_resolution) const;
 
