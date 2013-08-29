@@ -10,6 +10,7 @@
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/definitions.h"
 #include "src/io.h"
@@ -18,10 +19,42 @@ class Simbox : public NRLib::Volume
 {
 public:
   Simbox(void);
-  Simbox(double x0, double y0, const Surface & z0, double lx,
-         double ly, double lz, double rot, double dx, double dy, double dz); //Assumes constant thickness.
-  Simbox(const Simbox *simbox);
+
+  Simbox(double                 x0,
+         double                 y0,
+         const Surface        & z0,
+         double                 lx,
+         double                 ly,
+         double                 lz,
+         double                 rot,
+         double                 dx,
+         double                 dy,
+         double                 dz); //Assumes constant thickness.
+
+  Simbox(const Simbox         * simbox,
+         const std::string    & interval_name,
+         int                    n_layers,
+         const Surface        & top_surface,
+         const Surface        & bot_surface,
+         Surface              * single_corr_surface,
+         std::string          & err_text,
+         bool                 & failed);
+
+  Simbox(const Simbox         * simbox,
+         const std::string    & interval_name,
+         int                    n_layers,
+         const Surface        & top_surface,
+         const Surface        & base_surface,
+         std::string          & err_text,
+         bool                 & failed,
+         const Surface        * top_corr_surface,
+         const Surface        * base_corr_surface);
+
+  Simbox(const Simbox         *simbox);
+
   ~Simbox();
+
+  // GET functions ------------------------------------------------------
 
   int            getIndex(double x, double y, double z)   const;
   int            getClosestZIndex(double x, double y, double z);
@@ -35,7 +68,6 @@ public:
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
   void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
   void           getZCoord(int zInd, double x, double y, double &z) const;
-
   int            getnx()                         const { return nx_                      ;}
   int            getny()                         const { return ny_                      ;}
   int            getnz()                         const { return nz_                      ;}
@@ -59,35 +91,57 @@ public:
   double         getXLStepX()                    const { return xlStepX_                 ;}
   double         getXLStepY()                    const { return xlStepY_                 ;}
   bool           getIsConstantThick()            const { return constThick_              ;}
+  std::string    GetIntervalName()               const { return interval_name_           ;}
   double         getMinRelThick()                const { return minRelThick_             ;} // Returns minimum relative thickness.
+  const Surface* GetTopErodedSurface()           const { return top_eroded_surface_      ;}
+  const Surface* GetBaseErodedSurface()          const { return base_eroded_surface_     ;}
+
   double         getRelThick(int i, int j)       const;                                     // Local relative thickness.
   double         getRelThick(double x, double y) const;                                     // Local relative thickness.
   double         getAvgRelThick(void)            const;
   void           getMinMaxZ(double & minZ, double & maxZ) const;
-  double         getTopZMin() const {return(GetTopZMin(nx_,ny_));}
-  double         getTopZMax() const {return(GetTopZMax(nx_,ny_));}
-  double         getBotZMin() const {return(GetBotZMin(nx_,ny_));}
-  double         getBotZMax() const {return(GetBotZMax(nx_,ny_));}
+  double         GetErodedTopZMin()              const { return GetTopErodedSurface()->Min()  ;}
+  double         GetErodedTopZMax()              const { return GetTopErodedSurface()->Max()  ;}
+  double         GetErodedBotZMin()              const { return GetBaseErodedSurface()->Min() ;}
+  double         GetErodedBotZMax()              const { return GetBaseErodedSurface()->Max() ;}
+  double         getTopZMin()                    const { return(GetTopZMin(nx_,ny_))          ;}
+  double         getTopZMax()                    const { return(GetTopZMax(nx_,ny_))          ;}
+  double         getBotZMin()                    const { return(GetBotZMin(nx_,ny_))          ;}
+  double         getBotZMax()                    const { return(GetBotZMax(nx_,ny_))          ;}
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
   double         getTop(int i, int j) const;
   double         getBot(int i, int j) const;
   double         getTop(double x, double y) const;
   double         getBot(double x, double y) const;
+  double         GetTopErodedSurface(int i, int j) const;
+  double         GetTopErodedSurface(double x, double y) const;
+  double         GetBotErodedSurface(int i, int j) const;
+  double         GetBotErodedSurface(double x, double y) const;
   std::string    getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
-  void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
+
+  // SET functions ------------------------------------------------------
+
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
-  int            calculateDz(double lzLimit, std::string & errText);
+  void           SetTopBotErodedSurfaces(const Surface * top_surf, const Surface base_surf);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
-  bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);
   void           setDepth(const NRLib::Surface<double>& top_surf, const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck);
+
+  // other public functions
+
+  void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
+  int            calculateDz(double lzLimit, std::string & errText);
+  bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
   int            status() const {return(status_);}
   void           externalFailure() {status_ = EXTERNALERROR;}
   void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;
   enum           simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
+  NRLib::Vector  FindPlane(const Surface * surf);
+  Surface *      CreatePlaneSurface(const NRLib::Vector & planeParams,
+                                    Surface             * templateSurf) const;
 
 private:
   double         dx_, dy_, dz_;            // Working resolution.
@@ -96,6 +150,10 @@ private:
   double         cosrot_, sinrot_;         // Saving time in transformations.
   std::string    topName_;
   std::string    botName_;
+  std::string    interval_name_;
+
+  Surface      * top_eroded_surface_;      // Original top surface before padding (eroded if there are multiple intervals)
+  Surface      * base_eroded_surface_;     // Original base surface before padding (eroded if there are multiple intervals)
 
   //Note: IL/XL information is just carried passively by this class.
   double         inLine0_, crossLine0_;    // XL, IL at origin, not necessarily int.
