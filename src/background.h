@@ -308,7 +308,9 @@ private:
                                               //const std::vector<int>   & erosion_priority,
                                               MultiIntervalGrid          * multiple_interval_grid,
                                               //const std::vector<int>     & erosion_priority,
-                                              const std::vector<NRLib::Surface<double> > & surface,
+                                              //const std::vector<NRLib::Surface<double> > & surfaces,
+                                              //std::vector<const NRLib::Surface<double>& > surface,
+                                              std::vector<const NRLib::Surface<double> *>,
                                               const std::vector<double>  & surface_uncertainty,
                                               const bool                   isFile) const;
 
@@ -376,7 +378,9 @@ private:
                                            MultiIntervalGrid                * multiple_interval_grid,
                                            //const Simbox                     * simbox,
                                            //const std::vector<int>           & erosion_priority,
-                                           const std::vector<NRLib::Surface<double> >       & surface,
+                                           //const std::vector<NRLib::Surface<double> > & surface,
+                                           //std::vector<const NRLib::Surface<double>& > surface_test,
+                                           std::vector<const NRLib::Surface<double> *> surfaces,
                                            const std::vector<double>        & surface_uncertainty,
                                            const bool                         is_file,
                                            const std::string                & type) const;

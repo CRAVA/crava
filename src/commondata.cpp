@@ -4191,6 +4191,8 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
     wells_[i].SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
   }
 
+  //std::vector<NRLib::Grid<double> > test1;
+
 
   Background * background = NULL;
 

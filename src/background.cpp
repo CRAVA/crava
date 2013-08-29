@@ -1292,18 +1292,31 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
 
   const std::vector<Surface> & eroded_surfaces = multiple_interval_grid->GetErodedSurfaces(); ///H Get eroded surfaces from simboxes instead?
 
-  std::vector<NRLib::Surface<double> > surfaces;
-  surfaces.push_back(multiple_interval_grid->GetSimbox(0)->GetTopSurface());
+
+
+  std::vector<const NRLib::Surface<double> *> surfaces; //(n_intervals+1);
+
+  const NRLib::Surface<double> & tmp = multiple_interval_grid->GetSimbox(0)->GetTopSurface();
+  surfaces.push_back(&tmp);
+
+  //std::vector<const NRLib::Surface<double>& > surfaces;
+  //surfaces.push_back(tmp);
+
+  //surfaces[0] = tmp; //multiple_interval_grid->GetSimbox(0)->GetTopSurface();
+  //surfaces.push_back(&multiple_interval_grid->GetSimbox(0)->GetTopSurface());
 
   for(int i=0; i<n_intervals; i++) {
 
     const Simbox * simbox = multiple_interval_grid->GetSimbox(i);
-    surfaces.push_back(simbox->GetBotSurface());
+
+    //const NRLib::Surface<double> & tmp_surface = simbox->GetBotSurface();
+    surfaces.push_back(&simbox->GetBotSurface());
+    //surfaces.push_back(simbox->GetBotSurface());
 
     const CovGrid2D & cov_grid_2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
     float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
-    LogKit::LogFormatted(LogKit::Low,"\nZone%2d:",i+1);
+    LogKit::LogFormatted(LogKit::Low,"\nInterval%2d:",i+1);
 
     int nz = static_cast<int>(vp_zones[i].GetNK());
 
@@ -1644,7 +1657,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
                                         MultiIntervalGrid                          * multiple_interval_grid,
                                         //const Simbox                     * simbox,
                                         //const std::vector<int>           & erosion_priority,
-                                        const std::vector<NRLib::Surface<double> > & surface,
+                                        //const std::vector<NRLib::Surface<double> > & surface,
+                                        //std::vector<const NRLib::Surface<double>& > surface,
+                                        std::vector<const NRLib::Surface<double> *> surfaces,
                                         const std::vector<double>                  & surface_uncertainty,
                                         const bool                                   is_file,
                                         const std::string                          & type) const
@@ -1656,9 +1671,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
   int n_intervals = multiple_interval_grid->GetNIntervals();
   const std::vector<int> & erosion_priority = multiple_interval_grid->GetErosionPriorities();
 
-  for(int i = 0; i < n_intervals; i++) {
+  for(int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
-    const Simbox * simbox = multiple_interval_grid->GetSimbox(i);
+    const Simbox * simbox = multiple_interval_grid->GetSimbox(i_interval);
 
     int nx = simbox->getnx();
     int ny = simbox->getny();
@@ -1676,21 +1691,21 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
       << "\n  |    |    |    |    |    |    |    |    |    |    |  "
       << "\n  ^";
 
-    bg_vp[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-    bg_vs[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-    bg_rho[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+    bg_vp[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+    bg_vs[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+    bg_rho[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
 
-    bg_vp[i]->createRealGrid();
-    bg_vs[i]->createRealGrid();
-    bg_rho[i]->createRealGrid();
+    bg_vp[i_interval]->createRealGrid();
+    bg_vs[i_interval]->createRealGrid();
+    bg_rho[i_interval]->createRealGrid();
 
-    bg_vp[i]->setType(FFTGrid::PARAMETER);
-    bg_vs[i]->setType(FFTGrid::PARAMETER);
-    bg_rho[i]->setType(FFTGrid::PARAMETER);
+    bg_vp[i_interval]->setType(FFTGrid::PARAMETER);
+    bg_vs[i_interval]->setType(FFTGrid::PARAMETER);
+    bg_rho[i_interval]->setType(FFTGrid::PARAMETER);
 
-    bg_vp[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    bg_vs[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    bg_vs[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+    bg_vp[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
+    bg_vs[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
+    bg_vs[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
 
     // Beta distributed uncertainty on each surface
     // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
@@ -1707,7 +1722,7 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
         simbox->getXYCoord(i, j, x, y);
 
         for(int k=0; k<n_intervals+1; k++)
-          z_surface(i, j, k) = surface[k].GetZ(x,y); //H?
+          z_surface(i, j, k) = surfaces[k]->GetZ(x,y); //H?
       }
     }
 
@@ -1762,9 +1777,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
             //bg_vs(i,j,k) = vs;
             //bg_rho(i,j,k) = rho;
 
-            bg_vp[i]->setRealValue(i, j, k, float(vp));
-            bg_vs[i]->setRealValue(i, j, k, float(vs));
-            bg_rho[i]->setRealValue(i, j, k, float(rho));
+            bg_vp[i_interval]->setRealValue(i, j, k, float(vp));
+            bg_vs[i_interval]->setRealValue(i, j, k, float(vs));
+            bg_rho[i_interval]->setRealValue(i, j, k, float(rho));
           }
 
           else {
@@ -1772,9 +1787,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
             //bg_vs(i,j,k) = 0;
             //bg_rho(i,j,k) = 0;
 
-            bg_vp[i]->setRealValue(i, j, k, 0);
-            bg_vs[i]->setRealValue(i, j, k, 0);
-            bg_rho[i]->setRealValue(i, j, k, 0);
+            bg_vp[i_interval]->setRealValue(i, j, k, 0);
+            bg_vs[i_interval]->setRealValue(i, j, k, 0);
+            bg_rho[i_interval]->setRealValue(i, j, k, 0);
           }
         }
       }
@@ -1787,9 +1802,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
       }
     }
 
-    bg_vp[i]->endAccess();
-    bg_vs[i]->endAccess();
-    bg_rho[i]->endAccess();
+    bg_vp[i_interval]->endAccess();
+    bg_vs[i_interval]->endAccess();
+    bg_rho[i_interval]->endAccess();
   }
 }
 
@@ -3035,7 +3050,9 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
                                            //const std::vector<int>           & erosion_priority,
                                            MultiIntervalGrid          * multiple_interval_grid,
                                            //const std::vector<int>     & erosion_priority,
-                                           const std::vector<NRLib::Surface<double> > & surfaces,
+                                           //const std::vector<NRLib::Surface<double> > & surfaces,
+                                           //std::vector<const NRLib::Surface<double>& > surfaces,
+                                           std::vector<const NRLib::Surface<double> *> surfaces,
                                            const std::vector<double>  & surface_uncertainty,
                                            const bool                   is_file) const
 {
