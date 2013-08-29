@@ -121,7 +121,6 @@ FFTGrid::~FFTGrid()
 void
 FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
                                    const Simbox * timeSimbox,
-                                   const Simbox * timeCutSimbox,
                                    float         smooth_length,
                                    int         & missingTracesSimbox,
                                    int         & missingTracesPadding,

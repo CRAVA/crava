@@ -6,7 +6,6 @@
 #define MULTIINTERVALGRID_H
 
 #include "src/definitions.h"
-#include "src/intervalsimbox.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
@@ -24,12 +23,12 @@ public:
   ~MultiIntervalGrid();
 
   //GET FUNCTIONS
-  int                                                      GetNIntervals()       const           { return n_intervals_          ;}
-  const std::vector<Simbox>                              & GetSimboxes() const                   { return simboxes_             ;}
-  const std::vector<IntervalSimbox>                      & GetIntervalSimboxes() const           { return interval_simboxes_    ;}
-  const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]          ;}
-  const IntervalSimbox                                   * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i] ;}
-  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_               ;}
+  int                                                      GetNIntervals()       const           { return n_intervals_            ;}
+  //const std::vector<Simbox>                              & GetSimboxes() const                   { return simboxes_               ;}
+  const std::vector<Simbox>                              & GetIntervalSimboxes() const           { return interval_simboxes_      ;}
+  //const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]           ;}
+  const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
+  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
 
   //SET FUNCTIONS
@@ -37,19 +36,33 @@ public:
 
 private:
 
-  void  SetUpIntervalSimboxes(const ModelSettings                       * model_settings,
+  void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
                               const Simbox                              * estimation_simbox,
                               const std::vector<std::string>            & interval_names,
                               const std::vector<Surface>                & eroded_surfaces,
-                              std::vector<IntervalSimbox>               & interval_simboxes,
-                              std::vector<Simbox>                       & simboxes,
+                              std::vector<Simbox>                       & interval_simboxes,
                               const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_top_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_base_surfaces,
                               const std::map<std::string, bool>         & corr_dir_top_conform,
                               const std::map<std::string, bool>         & corr_dir_base_conform,
+                              std::vector<double>                       & desired_grid_resolution,
+                              std::vector<double>                       & relative_grid_resolution,
                               std::string                               & err_text,
                               bool                                      & failed) const;
+
+  void  SetupIntervalSimbox(ModelSettings                               * model_settings,
+                            const Simbox                                * estimation_simbox,
+                            Simbox                                      & interval_simboxes,
+                            const std::string                           & corr_dir_single_surf,
+                            const std::string                           & corr_dir_top_surf,
+                            const std::string                           & corr_dir_base_surf,
+                            bool                                          corr_dir_top_conform,
+                            bool                                          corr_dir_base_conform,
+                            double                                      & desired_grid_resolution,
+                            double                                      & relative_grid_resolution,
+                            std::string                                 & err_text,
+                            bool                                        & failed) const;
 
   Surface * MakeSurfaceFromFileName(const std::string        & file_name,
                                     const Simbox             & estimation_simbox) const;
@@ -77,8 +90,33 @@ private:
   void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<float> >          & vp_interval,
                                       std::vector<NRLib::Grid<float> >          & vs_interval,
                                       std::vector<NRLib::Grid<float> >          & rho_interval,
-                                      const std::vector<IntervalSimbox>         & interval_simboxes,
+                                      const std::vector<Simbox>                 & interval_simboxes,
                                       std::vector<double>                       & relative_grid_resolution) const;
+
+  void  EstimateZPaddingSize(Simbox          * simbox,
+                             ModelSettings   * model_settings) const;
+
+  int   SetPaddingSize(int        nx, 
+                       double     px) const;
+
+  int   FindClosestFactorableNumber(int leastint) const;
+
+  void  LogIntervalInformation(const Simbox         & simbox,
+                               const std::string    & interval_name,
+                               const std::string    & header_text1,
+                               const std::string    & header_text2) const;
+
+  void  LogIntervalInformation(const Simbox      * simbox,
+                               const std::string & header_text1,
+                               const std::string & header_text2) const;
+
+  double  FindResolution(const Surface * top_surface,
+                         const Surface * base_surface,
+                         const Simbox  * estimation_simbox,
+                         int             n_layers) const;
+
+  void  EstimateXYPaddingSizes(Simbox          * interval_simbox,
+                               ModelSettings   * model_settings) const;
 
   //void  BuildSeismicPropertyZones(InputFiles                               * input_files,
   //                                std::vector<NRLib::Grid<float>>          & alpha_zones,
@@ -95,12 +133,14 @@ private:
 
   // CLASS VARIABLES
 
-  size_t n_intervals_;
+  size_t                                               n_intervals_;
+  bool                                                 multiple_interval_setting_;
 
-  std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
-  std::vector<IntervalSimbox>                          interval_simboxes_;        // extended simbox with correlation direction, must have same size as the parameters vector
+  //std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
+  std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector
   std::vector<std::vector<NRLib::Grid<double> > >      parameters_;               // must have same size as the simbox vector
 
+  std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.
 
 };

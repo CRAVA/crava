@@ -40,6 +40,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_estimation_rock_physics_(false),
   trend_cubes_(false),
   setup_multigrid_(false),
+  setup_prior_correlation_(false),
   multiple_interval_grid_(NULL)
 {
   bool failed = false;
@@ -53,7 +54,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 2. read seismic data
   if(ReadSeismicData(model_settings, input_files, err_text) == true)
-    read_seismic_ = true; //True or false if there is no seismic data?
+    read_seismic_ = true;
 
   // 3. read well data
   if(!failed){
@@ -77,7 +78,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 5. Reflection matrix and wavelet
   if(!failed){
     SetupReflectionMatrixAndTempWavelet(model_settings,
-                                      input_files);
+                                        input_files);
   }
   //setup_reflection_matrix_ and temporary_wavelet_ are set inside the function.
 
@@ -111,7 +112,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
     if(model_settings->getTrendCubeParameters().size() > 0){ // If trends are used, the setup of trend cubes must be ok as well
       if(setup_trend_cubes_){
         SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
-                         mapped_blocked_logs_, n_trend_cubes_, err_text,failed);
+                         mapped_blocked_logs_, n_trend_cubes_, err_text, failed);
         setup_estimation_rock_physics_ = !failed;
       }
     }
@@ -138,9 +139,17 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   }
 
+  // 13. Setup of prior correlation
+  if(read_wells_ && setup_multigrid_ && read_seismic_){
+    SetupPriorCorrelation(model_settings, input_files, multiple_interval_grid_->GetIntervalSimboxes(), multiple_interval_grid_->GetIntervalSimboxes(), 
+                          model_settings->getPriorFaciesProbIntervals(), trend_cubes_, seismic_data_, err_text, failed);
+    setup_prior_correlation_ = !failed;
+  }
+
 }
 
 CommonData::~CommonData() {
+  delete multiple_interval_grid_;
   //delete estimation_simbox_;
   //delete full_inversion_volume_;
 }
@@ -287,7 +296,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     }
   }
 
-  // SET THE AREA FOR THE ESTIMATION SIMBOX
+  // SET THE AREA FOR THE ESTIMATION SIMBOX AND CHECK THAT IT IS OK -------------------------------------------------------------
 
   if(!failed){
     const SegyGeometry * area_params = model_settings->getAreaParameters();
@@ -297,26 +306,85 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       WriteAreas(area_params,&estimation_simbox_,area_type);
       err_text += "The specified AREA extends outside the surface(s).\n";
     }
-  }
+    else{
+      LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
+      LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+      double azimuth = (-1)*estimation_simbox.getAngle()*(180.0/M_PI);
+      if (azimuth < 0)
+        azimuth += 360.0;
+      LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
+                           area_type.c_str(),
+                           estimation_simbox.getx0(), estimation_simbox.gety0(),
+                           estimation_simbox.getlx(), estimation_simbox.getly(), azimuth,
+                           estimation_simbox.getdx(), estimation_simbox.getdy());
+    }
 
-  // SET TOP AND BASE SURFACES FOR THE FORWARD/INVERSION INTERVALS -----------------------------------------------
+    float min_hor_res = model_settings->getMinHorizontalRes();
+    if (estimation_simbox.getdx() < min_hor_res || estimation_simbox.getdy() < min_hor_res){
+      failed = true;
+      err_text += "The horizontal resolution in dx and dy should normally be above "+NRLib::ToString(min_hor_res)
+        +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
+    }
 
-  // if multiple intervals
-  if(model_settings->getIntervalNames().size() > 0){
-    SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text, failed);
-  }
-  // single interval described by either one or two surfaces
-  else{
-    SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text, failed);
-  }
+    // SET IL/XL GEOMETRY IN ESTIMATION SIMBOX -------------------------------------------------------------------------------------
+    if(!failed){
 
+      //
+      // Set IL/XL information in geometry
+      // ---------------------------------
+      //
+      // Skip for estimation mode if possible:
+      //   a) For speed
+      //   b) Grid data may not be available.
+      if (model_settings->getEstimationMode() == false || estimation_mode_need_ILXL == true) {
+        if(ILXL_geometry == NULL) {
+          int gridType = IO::findGridType(grid_file);
+          bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
+          if (ilxl_info_available) {
+            LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+grid_file+"\'\n");
+            std::string tmp_err_text;
+            GetGeometryFromGridOnFile(grid_file,
+                                      model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
+                                      ILXL_geometry,
+                                      tmp_err_text);
+            if(ILXL_geometry == NULL) {
+              err_text += tmp_err_text;
+              failed = true;
+            }
+          }
+          else {
+            LogKit::LogFormatted(LogKit::High,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+grid_file+"\'\n");
+          }
+        }
+        if(ILXL_geometry != NULL) {
+          if(estimation_simbox.isAligned(ILXL_geometry))
+            estimation_simbox.setILXL(ILXL_geometry);
+          delete ILXL_geometry;
+        }
+      }
+
+      // Rotate variograms relative to simbox
+      model_settings->rotateVariograms(static_cast<float> (estimation_simbox.getAngle()));
+
+      // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
+
+      // if multiple intervals
+      if(model_settings->getIntervalNames().size() > 0){
+        SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text, failed);
+      }
+      // single interval described by either one or two surfaces
+      else{
+        SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text, failed);
+      }
+    }
+  }
   return (!failed);
 }
 
 
-bool CommonData::ReadSeismicData(ModelSettings * model_settings,
-                                 InputFiles * input_files,
-                                 std::string & err_text) {
+bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
+                                 InputFiles     * input_files,
+                                 std::string    & err_text) {
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
 
@@ -514,18 +582,19 @@ bool CommonData::ReadSeismicData(ModelSettings * model_settings,
 bool
 CommonData::CheckThatDataCoverGrid(const SegY   * segy,
                                    float          offset,
-                                   const Simbox * time_cut_simbox,
+                                   const Simbox * time_simbox,
                                    float          guard_zone,
-                                   std::string &  err_text)
-{
+                                   std::string &  err_text) const{
   // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
   float dz = segy->GetDz();
   float z0 = offset + 0.5f*dz;
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(time_cut_simbox->getTopZMin());
-  float bot_grid = static_cast<float>(time_cut_simbox->getBotZMax());
+  float top_grid = static_cast<float>(time_simbox->GetErodedTopZMin());
+  float bot_grid = static_cast<float>(time_simbox->GetErodedBotZMax());
+  //float top_grid = static_cast<float>(time_cut_simbox->getTopZMin());
+  //float bot_grid = static_cast<float>(time_cut_simbox->getBotZMax());
 
   // Find guard zone
   float top_guard = top_grid - guard_zone;
@@ -574,6 +643,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
                               std::string                    & err_text) {
   bool failed = false;
 
+  // Get all log names given by user
   for(size_t i = 0; i<log_names_from_user.size(); i++){
     log_names.push_back(log_names_from_user[i]);
   }
@@ -2509,11 +2579,14 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
                                   estimation_simbox.getAngle(),
                                   x_min,y_min,x_max,y_max);
     if (NRLib::IsNumber(top_surface_file_name)) {
+      LogKit::LogFormatted(LogKit::Low,"Top surface: Flat surface at depth %11.2f \n", atof(top_surface_file_name.c_str()));
       // Find the smallest surface that covers the simbox. For simplicity
       // we use only four nodes (nx=ny=2).
+
       top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(top_surface_file_name.c_str()));
     }
     else {
+      LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
       top_surface = new Surface(top_surface_file_name);
     }
   }
@@ -2528,12 +2601,14 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
       top_surface->Add(d_top);
       base_surface = new Surface(*top_surface);
       base_surface->Add(lz);
+      LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
       //full_inversion_volume->SetSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
     }
     else { //Two reference surfaces
       const std::string & base_surface_file_name = surf_file[1];
       try {
         if (NRLib::IsNumber(base_surface_file_name)) {
+          LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
           // Find the smallest surface that covers the simbox. For simplicity
           // we use only four nodes (nx=ny=2).
           double x_min, x_max;
@@ -2545,6 +2620,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
           base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
         }
         else {
+          LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
           base_surface = new Surface(base_surface_file_name);
         }
       }
@@ -2645,6 +2721,8 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
 
   // Get interval surface data ------------------------------------------------------------------------------
 
+  LogKit::LogFormatted(LogKit::Low,"Setting top and base surfaces for the entire inversion volume:\n");
+
   const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
   unsigned int                              n_intervals                            =  interval_names.size();
   const std::map<std::string, std::string>  interval_base_time_surfaces            =  input_files->getIntervalBaseTimeSurfaces();
@@ -2660,6 +2738,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
 
   try{
     if(NRLib::IsNumber(top_surface_file_name)){
+      LogKit::LogFormatted(LogKit::Low,"Top surface: Flat surface at depth %11.2f \n", atof(top_surface_file_name.c_str()));
       double x_min, x_max;
       double y_min, y_max;
       FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
@@ -2668,6 +2747,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(top_surface_file_name.c_str()));
     }
     else{
+      LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
       top_surface = new Surface(top_surface_file_name);
     }
 
@@ -2680,6 +2760,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   if(!failed){
     try{
       if(NRLib::IsNumber(base_surface_file_name)){
+        LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
         double x_min, x_max;
         double y_min, y_max;
         FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
@@ -2688,6 +2769,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
         base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
       }
       else{
+        LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + base_surface_file_name +" \n");
         base_surface = new Surface(base_surface_file_name);
       }
     }
@@ -2751,7 +2833,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   try{
     for (unsigned int i=0; i<wells.size(); i++){
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-        &estimation_simbox, model_settings->getRunFromPanel(), failed, err_text);
+                                                              &estimation_simbox, model_settings->getRunFromPanel(), failed, err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
     }
   }catch(NRLib::Exception & e){
@@ -3048,21 +3130,62 @@ void   CommonData::SetupTrendCubes(ModelSettings                  * model_settin
                                    MultiIntervalGrid              * multiple_interval_grid,
                                    std::string                    & error_text,
                                    bool                           & failed){
-
-  const std::vector<std::string> trend_cube_parameters = model_settings->getTrendCubeParameters();
-  const std::vector<int>         trend_cube_type       = model_settings->getTrendCubeType();
+  LogKit::WriteHeader("Setting up Trend Cubes");
+  
+  // Get trend variables from model settings
+  const std::vector<std::string>  trend_cube_parameters     = model_settings->getTrendCubeParameters();
+  const std::vector<int>          trend_cube_type           = model_settings->getTrendCubeType();
   trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
-  const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
+  const std::vector<std::string>  interval_names            =  model_settings->getIntervalNames();
+
+  // Initialize values
+  FFTGrid                 * trend_cube                      = NULL;
+  std::vector<FFTGrid *>    trend_cube_intervals(multiple_interval_grid->GetNIntervals(), NULL);
+
   try{
-    for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
+
+    for(size_t i = 0; i< trend_cubes_.size(); i++){
+      if(trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) {
+        // 1. Read the file into an FFTGrid
+        const std::string         log_name   = "Trend cube '"+trend_cube_parameters[i]+"'";
+        const SegyGeometry      * dummy1     = NULL;
+        const TraceHeaderFormat * dummy2     = NULL;
+        const float               offset     = model_settings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+        ReadGridFromFile(input_files->getTrendCube(i),
+                         log_name,
+                         offset,
+                         trend_cube,
+                         dummy1,
+                         dummy2,
+                         FFTGrid::PARAMETER,
+                         multiple_interval_grid->GetIntervalSimbox(i),
+                         //multiple_interval_grid->GetSimbox(i),
+                         model_settings,
+                         error_text,
+                         true);
+
+        if(error_text != "") {
+          error_text += "Reading of file \'"+input_files->getTrendCube(i)+"\' failed\n";
+          failed     = true;
+        }
+
+        // 2. Resample the FFTGrid into the intervals
+        // TODO
+        for(int j = 0; j<multiple_interval_grid->GetNIntervals(); j++){
+          trend_cube_intervals[j] = trend_cube;
+        }
+      }
+    }
+
+    for(int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
 
       trend_cubes_[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
-                                   multiple_interval_grid->GetSimbox(i),
                                    model_settings,
                                    input_files,
                                    interval_names[i],
                                    trend_cube_type,
                                    trend_cube_parameters,
+                                   trend_cube_intervals[i],
                                    failed,
                                    error_text);
 
@@ -3070,6 +3193,11 @@ void   CommonData::SetupTrendCubes(ModelSettings                  * model_settin
   }catch(NRLib::Exception & e){
     error_text+= e.what();
     failed = true;
+  }
+  // Clean up
+  delete trend_cube;
+  for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
+    delete trend_cube_intervals[i];
   }
 }
 
@@ -3080,8 +3208,7 @@ void CommonData::SetupRockPhysics(const ModelSettings                           
                                   const std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
                                   int                                                 n_trend_cubes,
                                   std::string                                       & error_text,
-                                  bool                                              & failed)
-{
+                                  bool                                              & failed){
   LogKit::WriteHeader("Processing Rock Physics");
 
   // rock physics data
@@ -3467,7 +3594,7 @@ CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                 const std::vector<double> z_pos = blocked_log->GetZpos();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
-                  const IntervalSimbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
+                  const Simbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
 
                   const double z_top  = interval_simbox->GetTopSurface().GetZ(x_pos[i], y_pos[i]);
                   const double z_base = interval_simbox->GetBotSurface().GetZ(x_pos[i], y_pos[i]);
@@ -3673,8 +3800,8 @@ CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
       }
       else if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
       {
-        const IntervalSimbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
-        const Simbox * simbox = multiple_interval_grid_->GetSimbox(i_interval);
+        const Simbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
+        const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
 
         ReadPriorFaciesProbCubes(input_files,
                                  model_settings,
@@ -3713,8 +3840,8 @@ void
 CommonData::ReadPriorFaciesProbCubes(const InputFiles        * input_files,
                                      ModelSettings           * model_settings,
                                      std::vector<FFTGrid *>  & prior_facies_prob_cubes,
-                                     const IntervalSimbox          * interval_simbox,
-                                     const Simbox                  * time_cut_simbox,
+                                     const Simbox            * interval_simbox,
+                                     const Simbox            * time_cut_simbox,
                                      std::string             & err_text)
 {
   int n_facies = static_cast<int>(facies_names_.size());
@@ -3738,7 +3865,7 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles        * input_files,
       // since ReadGridFromFile calls functions in fftgrid.cpp that needs to be Simbox.
       Simbox * time_simbox = new Simbox(time_cut_simbox);
       time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
-                            interval_simbox->GetNz(), model_settings->getRunFromPanel());
+                            interval_simbox->getnz(), model_settings->getRunFromPanel());
 
       //From ModelGeneral
       ReadGridFromFile(faciesProbFile,
@@ -3749,7 +3876,7 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles        * input_files,
                        dummy2,
                        FFTGrid::PARAMETER,
                        time_simbox,
-                       time_cut_simbox,
+                       //time_cut_simbox,
                        model_settings,
                        error_text,
                        true);
@@ -3845,11 +3972,10 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
                              const TraceHeaderFormat * format,
                              int                       grid_type,
                              const Simbox            * time_simbox, //timeSimBox
-                             const Simbox            * time_cut_simbox, //timeCutSimbox
+                             //const Simbox            * time_cut_simbox, //timeCutSimbox
                              const ModelSettings     * model_settings,
                              std::string             & err_text,
-                             bool                      nopadding)
-{
+                             bool                      nopadding) const{
   int fileType = IO::findGridType(file_name);
 
   if(fileType == IO::CRAVA)
@@ -3880,7 +4006,7 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
     grid->readCravaFile(file_name, err_text, nopadding);
   }
   else if(fileType == IO::SEGY)
-    ReadSegyFile(file_name, grid, time_simbox, time_cut_simbox, model_settings, geometry,
+    ReadSegyFile(file_name, grid, time_simbox, model_settings, geometry,
                  grid_type, par_name, offset, format, err_text, nopadding);
   else if(fileType == IO::STORM)
     ReadStormFile(file_name, grid, grid_type, par_name, time_simbox, model_settings, err_text, false, nopadding);
@@ -3909,8 +4035,7 @@ CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, boo
 void
 CommonData::ReadSegyFile(const std::string       & file_name,
                          FFTGrid                *& target,
-                         const Simbox            * time_simbox, //Simbox * timeSimbox
-                         const Simbox            * time_cut_simbox, //Simbox * timeCutSimbox
+                         const Simbox            * time_simbox,
                          const ModelSettings     * model_settings,
                          const SegyGeometry     *& geometry,
                          int                       grid_type,
@@ -3918,8 +4043,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
                          float                     offset,
                          const TraceHeaderFormat * format,
                          std::string             & err_text,
-                         bool                      nopadding)
-{
+                         bool                      nopadding) const{
   SegY * segy = NULL;
   bool failed = false;
   target = NULL;
@@ -3948,10 +4072,10 @@ CommonData::ReadSegyFile(const std::string       & file_name,
 
     std::string errTxt = "";
     if(CheckThatDataCoverGrid(segy,
-                           offset,
-                           time_cut_simbox,
-                           guard_zone,
-                           errTxt) == true)
+                              offset,
+                              time_simbox,
+                              guard_zone,
+                              errTxt) == true)
     {
 
     //if (errTxt == "") {
@@ -3962,7 +4086,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
       float padding         = 2*guard_zone;
       bool  relativePadding = false;
 
-      segy->ReadAllTraces(time_cut_simbox,
+      segy->ReadAllTraces(time_simbox,
                           padding,
                           onlyVolume,
                           relativePadding);
@@ -4016,7 +4140,6 @@ CommonData::ReadSegyFile(const std::string       & file_name,
     if (grid_type == FFTGrid::DATA) {
       target->fillInSeismicDataFromSegY(segy,
                                         time_simbox,
-                                        time_cut_simbox,
                                         model_settings->getSmoothLength(),
                                         missingTracesSimbox,
                                         missingTracesPadding,
@@ -4076,8 +4199,7 @@ CommonData::ReadStormFile(const std::string   & f_name,
                           const ModelSettings * model_settings,
                           std::string         & err_text,
                           bool                  scale,
-                          bool                  nopadding)
-{
+                          bool                  nopadding) const{
   StormContGrid * stormgrid = NULL;
   bool failed = false;
 
@@ -4388,8 +4510,8 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 }
 
 void CommonData::LoadVelocity(FFTGrid              *& velocity,
-                              const IntervalSimbox * interval_simbox, //timeSimbox,
-                              const Simbox         * simbox, //timeCutSimbox,
+                              const Simbox         * interval_simbox, //timeSimbox,
+                              //const Simbox         * simbox, //timeCutSimbox,
                               const ModelSettings  * model_settings,
                               const std::string    & velocity_field,
                               bool                 & velocity_from_inversion,
@@ -4413,9 +4535,9 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
     std::string error_text("");
 
     //Create a temporary simbox, since ReadGridFromFile doesn't handle IntervalSimbox
-    Simbox * time_simbox = new Simbox(simbox);
-    time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
-                            interval_simbox->GetNz(), model_settings->getRunFromPanel());
+    //Simbox * time_simbox = new Simbox(simbox);
+    //time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
+    //                        interval_simbox->getnz(), model_settings->getRunFromPanel());
 
     ReadGridFromFile(velocity_field,
                      "velocity field",
@@ -4424,8 +4546,8 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
                      dummy1,
                      dummy2,
                      FFTGrid::PARAMETER,
-                     time_simbox, //timeSimbox,
-                     simbox, //timeCutSimbox,
+                     interval_simbox, //timeSimbox,
+                     //simbox, //timeCutSimbox,
                      model_settings,
                      error_text);
 
@@ -4480,19 +4602,20 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
   }
 }
 
-std::map<std::string, DistributionsRock *>
-CommonData::GetRockDistributionTime0() const
+std::vector<std::map<std::string, DistributionsRock *> >  CommonData::GetRockDistributionTime0() const
 {
-  std::map<std::string, DistributionsRock *> rock_dist_t0;
+  std::vector<std::map<std::string, DistributionsRock *> > rock_dist_t0;
 
-  ///H INTERVALS
-  //for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-  //  std::string name = it->first;
-  //  std::vector<DistributionsRock *> rock_dist = it->second;
-  //  rock_dist_t0[name] = rock_dist[0];
-  //}
+  for(size_t i = 0; i < rock_distributions_.size(); i++){
+      
+    for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i].begin(); it != rock_distributions_[i].end(); it++) {
+      std::string name = it->first;
+      std::vector<DistributionsRock *> rock_dist = it->second;
+      rock_dist_t0[i][name] = rock_dist[0];
+    }
+  }
 
-  return(rock_dist_t0);
+  return rock_dist_t0;
 }
 
 void CommonData::GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
@@ -4655,4 +4778,536 @@ void CommonData::PrintExpectationAndCovariance(const std::vector<double>   & exp
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
   LogKit::LogFormatted(LogKit::Low,"\n");
+}
+
+void CommonData::SetupPriorCorrelation(ModelSettings                                                * model_settings,
+                                       const InputFiles                                             * input_files,
+                                       const std::vector<Simbox>                                    & interval_simboxes,
+                                       const std::vector<Simbox>                                    & simboxes,
+                                       const std::map<std::string, std::map<std::string, float> >   & prior_facies,
+                                       const std::vector<CravaTrend>                                & trend_cubes,
+                                       const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
+                                       std::string                                                  & err_text,
+                                       bool                                                         & failed){
+
+  LogKit::WriteHeader("Setup of Prior Covariance");
+
+
+/*ModelGeneral::processPriorCorrelations(Background                     * background,
+                                       std::vector<WellData *>          wells,
+                                       const Simbox                   * timeSimbox,
+                                       const ModelSettings            * modelSettings,
+                                       const std::vector<float>       & priorFacies,
+                                       FFTGrid                       ** seisCube,
+                                       const InputFiles               * inputFiles,
+                                       SeismicParametersHolder        & seismicParameters,
+                                       std::string                    & errText,
+                                       bool                           & failed)*/
+
+  bool print_result = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
+                        model_settings->getEstimationMode() == true);
+
+  size_t n_intervals  = simboxes.size();
+  size_t n_facies     = static_cast<int>(prior_facies_[0].size());
+
+  if (model_settings->getDoInversion() || print_result)
+  {
+
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
+
+    // Parameter covariance -----------------------------------------------------------------------
+
+    // Get parameter covariance file
+    const std::string & param_cov_file    = input_files->getParamCorrFile();
+    // If the parameter covariance file is empty and rock physics is being used
+    bool param_cov_from_rock_physics      = (param_cov_file == "" && model_settings->getFaciesProbFromRockPhysics());
+    // If there is no parameter cov file and no rock physics, estimate parameter covariance
+    bool estimate_param_cov = (param_cov_file == "" && !param_cov_from_rock_physics);
+
+    //
+    // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
+    // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
+    //
+    std::vector<float **> param_corr_array;
+    bool          failed_param_corr   = false;
+    std::string   tmp_err_text("");
+
+    // 1. If there is a param cov file defined, use this
+    if(param_cov_file != "") {
+      param_corr_array.resize(1,NULL);
+      param_corr_array[0] = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text);
+      ValidateCorrelationMatrix(param_corr_array[0], model_settings, tmp_err_text);
+      if(param_corr_array[0] == NULL || tmp_err_text != "") {
+        err_text += "Reading of file "+param_cov_file+" for parameter covariance matrix failed\n";
+        err_text += tmp_err_text;
+        failed_param_corr = true;
+      }
+    }
+    // 2. If no param cov file and rock physics is used, estimate param cov at lag 0 from the rp distribution
+    // (One 3x3 correlation matrix per interval)
+    else if (param_cov_from_rock_physics) {
+
+      param_corr_array.resize(n_intervals, NULL);
+      estimate_param_cov = false;
+      
+      for(size_t i = 0; i<n_intervals; i++){
+        param_corr_array[i] = new float * [3];
+        for(int j=0;j<3;j++) {
+          param_corr_array[i][j] = new float[3];
+        }
+      }
+
+      std::vector<std::vector<DistributionsRock *> > rock_distribution(n_intervals);
+      typedef std::vector<std::map<std::string, DistributionsRock *> > Rp_Map_Type;
+      Rp_Map_Type rp_map = GetRockDistributionTime0();
+
+      for(size_t i = 0; i<n_intervals; i++){
+        for(size_t j=0; j<n_facies; j++) {
+          std::map<std::string, DistributionsRock *>::iterator iter = rp_map[i].find(facies_names_[j]);
+          if(iter != rp_map[i].end())
+            rock_distribution[i][j] = iter->second;
+        }
+      }
+
+      // Each grid2d has to be 3x3
+      std::vector<NRLib::Grid2D<double> > param_corr;
+
+      for(size_t i = 0; i<n_intervals; i++){
+        param_corr[i].Resize(3,3);
+        /*CalculateCovariancesFromRockPhysics(rock_distribution[i],
+                                            prior_facies,
+                                            trend_cubes[i],
+                                            param_corr[i],
+                                            err_text);*/
+      }
+
+      // cast to float
+      for(int w = 0; w<n_intervals; w++){
+        for(int i=0; i<3; i++) {
+          for(int j=0; j<3; j++)
+            param_corr_array[w][i][j] = static_cast<float>(param_corr[w](i,j));
+        }
+      }
+
+      if (tmp_err_text != "")
+      {
+        err_text += "Parameter covariance matrix from rock physics failed\n";
+        err_text += tmp_err_text;
+        failed_param_corr = true;
+      }
+    }
+
+    //
+    // Estimate lateral correlation ------------------------------------------------------------
+    //
+    for (size_t i = 0; i<n_intervals; i++){
+      prior_corr_XY_[i] = FindCorrXYGrid(&(simboxes[i]), model_settings);
+    }
+
+    // 20130816 EN: Removed estimation of lateral correlation by seismic data
+
+    // Temporal correlation --------------------------------------------------------------------
+
+    for (size_t i = 0; i<n_intervals; i++){
+    }
+
+    // Number of 
+    int n_corr_T = model_settings->getNZpad();
+    if((n_corr_T % 2) == 0)
+      n_corr_T = n_corr_T/2+1;
+    else
+      n_corr_T = n_corr_T/2;
+    /*
+    std::vector<float> corr_T;
+
+    const std::string & corr_time_file    = input_files->getTempCorrFile();
+    bool estimate_temp_correlation        = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
+
+    bool failed_temp_corr = false;
+
+    if(!estimate_temp_correlation)
+    {
+      // Use variogram
+      if(model_settings->getUseVerticalVariogram() == true) {
+        corr_T.resize(n_corr_T+1);
+        float tempCorrRange = model_settings->getTemporalCorrelationRange();
+        float dz = static_cast<float>(timeSimbox->getdz());
+        for(int i=0; i<=n_corr_T; i++){
+          //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
+          corr_T[i] = exp(-3*dz*i/tempCorrRange);
+        }
+      }
+      // Defined in text file
+      else{
+        std::string tmp_err_text("");
+        float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
+        if(corr_mat == NULL)
+        {
+          err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
+          err_text += tmp_err_text;
+          failed_temp_corr = true;
+        }
+        corr_T.resize(n_corr_T);
+        if (!failed_temp_corr)
+        {
+          for(int i=0;i<n_corr_T;i++)
+            corr_T[i] = corr_mat[0][i+1];
+          delete [] corr_mat[0];
+          delete [] corr_mat;
+        }
+      }
+    }
+
+    float ** pointVar0 = NULL;
+    if (estimateParamCov || estimateTempCorr) //Need well estimation
+    {
+      std::string tmpErrTxt;
+      Analyzelog * analyze = new Analyzelog(wells,
+                                            background,
+                                            timeSimbox,
+                                            modelSettings,
+                                            tmpErrTxt);
+      if (tmpErrTxt != "") {
+        errText += tmpErrTxt;
+        failedParamCorr = true;
+      }
+
+      if(estimateParamCov)
+        param_corr = analyze->getVar0();
+      else
+        delete [] analyze->getVar0();
+
+      pointVar0 = analyze->getPointVar0();
+
+      float * estCorrT = analyze->getCorrT();
+      if(estimateTempCorr) {
+        corrT.resize(nCorrT);
+        int nEst = analyze->getNumberOfLags();
+        int i, max = nEst;
+        if(max > nCorrT)
+          max = nCorrT;
+        for(i=0;i<max;i++)
+          corrT[i] = estCorrT[i];
+        if(i<nCorrT) {
+          LogKit::LogFormatted(LogKit::High,
+            "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, nCorrT);
+          for(;i<nCorrT;i++)
+            corrT[i] = 0.0f;
+        }
+      }
+      delete [] estCorrT;
+
+      delete analyze;
+    }
+
+    if (failed_param_corr || failedTempCorr)
+      failed = true;
+
+    if (!failed) {
+
+      const int nx        = timeSimbox->getnx();
+      const int ny        = timeSimbox->getny();
+      const int nz        = timeSimbox->getnz();
+      const int nxPad     = modelSettings->getNXpad();
+      const int nyPad     = modelSettings->getNYpad();
+      const int nzPad     = modelSettings->getNZpad();
+
+      float dt = static_cast<float>(timeSimbox->getdz());
+      float lowCut = modelSettings->getLowCut();
+      int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+
+      float corrGradI;
+      float corrGradJ;
+      getCorrGradIJ(corrGradI, corrGradJ);
+      //makeCorr2DPositiveDefinite( priorCorrXY_);
+
+      seismicParameters.setCorrelationParameters(param_corr,
+                                                 corrT,
+                                                 priorCorrXY_,
+                                                 lowIntCut,
+                                                 corrGradI,
+                                                 corrGradJ,
+                                                 nx,
+                                                 ny,
+                                                 nz,
+                                                 nxPad,
+                                                 nyPad,
+                                                 nzPad);
+
+      for(int i=0; i<3; i++)
+        delete [] param_corr[i];
+      delete [] param_corr;
+
+      if(printResult)
+        seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);
+      seismicParameters.printPriorVariances();
+    }
+
+
+    if(failedTempCorr == true || failedParamCorr == true)
+    {
+      err_text += "Could not construct prior covariance. Unknown why...\n";
+      failed = true;
+    }
+    */
+    Timings::setTimePriorCorrelation(wall,cpu);
+  }
+}
+
+void CommonData::ValidateCorrelationMatrix(float               ** C,
+                                           const ModelSettings *  model_settings,
+                                           std::string         &  err_txt){
+  float minAlpha = model_settings->getVarAlphaMin();
+  float maxAlpha = model_settings->getVarAlphaMax();
+  float minBeta  = model_settings->getVarBetaMin();
+  float maxBeta  = model_settings->getVarBetaMax();
+  float minRho   = model_settings->getVarRhoMin();
+  float maxRho   = model_settings->getVarRhoMax();
+
+  float C00      = C[0][0];
+  float C11      = C[1][1];
+  float C22      = C[2][2];
+  float C01      = C[0][1];
+  float C10      = C[1][0];
+  float C02      = C[0][2];
+  float C20      = C[2][0];
+  float C12      = C[1][2];
+  float C21      = C[2][1];
+
+  if (C00 < minAlpha || C00 > maxAlpha) {
+    err_txt += "The prior Vp variance is outside valid range:\n";
+    err_txt += "  Given value   : " + NRLib::ToString(C00) + "\n";
+    err_txt += "  Minimum value : " + NRLib::ToString(minAlpha) + "\n";
+    err_txt += "  Maximum value : " + NRLib::ToString(maxAlpha) + "\n";
+  }
+  if (C11 < minBeta || C11 > maxBeta) {
+    err_txt += "The prior Vs variance is outside valid range:\n";
+    err_txt += "  Given value   : " + NRLib::ToString(C11) + "\n";
+    err_txt += "  Minimum value : " + NRLib::ToString(minBeta) + "\n";
+    err_txt += "  Maximum value : " + NRLib::ToString(maxBeta) + "\n";
+  }
+  if (C22 < minRho || C22 > maxRho) {
+    err_txt += "The prior density variance is outside valid range:\n";
+    err_txt += "  Given value   : " + NRLib::ToString(C22) + "\n";
+    err_txt += "  Minimum value : " + NRLib::ToString(minRho) + "\n";
+    err_txt += "  Maximum value : " + NRLib::ToString(maxRho) + "\n";
+  }
+
+  float corr01 = C01/(std::sqrt(C00)*std::sqrt(C11));
+  float corr02 = C02/(std::sqrt(C00)*std::sqrt(C22));
+  float corr12 = C12/(std::sqrt(C11)*std::sqrt(C22));
+
+  if (corr01 < -1.0 || corr01 > 1.0) {
+    err_txt += "The prior Vp-Vs correlation is illegal (" + NRLib::ToString(corr01) + ")\n";
+  }
+  if (corr02 < -1.0 || corr02 > 1.0) {
+    err_txt += "The prior Vp-Rho correlation is illegal (" + NRLib::ToString(corr02) + ")\n";
+  }
+  if (corr12 < -1.0 || corr12 > 1.0) {
+    err_txt += "The prior Vs-Rho correlation is illegal (" + NRLib::ToString(corr12) + ")\n";
+  }
+
+  if (std::abs(C01 - C10) > 0.0f) {
+    err_txt += "The prior covariance matrix is not symmetric in Vp and Vs\n";
+    err_txt += "  Corr(Vp,Vs) : " + NRLib::ToString(C01) + "\n";
+    err_txt += "  Corr(Vs,Vp) : " + NRLib::ToString(C10) + "\n";
+  }
+  if (std::abs(C02 - C20) > 0.0f) {
+    err_txt += "The prior covariance matrix is not symmetric in Vp and Rho\n";
+    err_txt += "  Corr(Vp,Rho) : " + NRLib::ToString(C02) + "\n";
+    err_txt += "  Corr(Rho,Vp) : " + NRLib::ToString(C20) + "\n";
+  }
+  if (std::abs(C12 - C21) > 0.0f) {
+    err_txt += "The prior covariance matrix is not symmetric in Vs and Rho\n";
+    err_txt += "  Corr(Vs,Rho) : " + NRLib::ToString(C12) + "\n";
+    err_txt += "  Corr(Rho,Vs) : " + NRLib::ToString(C21) + "\n";
+  }
+}
+
+void  CommonData::CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+                                                      const std::vector<float>                         & probability,
+                                                      const CravaTrend                                 & trend_cubes,
+                                                      NRLib::Grid2D<double>                            & param_corr,
+                                                      std::string                                      & err_txt){
+
+  LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
+
+  bool has_trend = false;
+  for(size_t i=0; i<rock_distribution.size(); i++) {
+    std::vector<bool> rock_has_trend = rock_distribution[i]->HasTrend();
+
+    for(int j=0; j<2; j++) {
+      if(rock_has_trend[j] == true)
+        has_trend = true;
+    }
+  }
+
+  if(has_trend == true) {
+
+    std::vector<int> trend_cube_size = trend_cubes.GetSizeTrendCubes();
+
+    const int nx = trend_cube_size[0];
+    const int ny = trend_cube_size[1];
+    const int nz = trend_cube_size[2];
+
+    int modulus = 100;
+
+    float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+    float nextMonitor = monitorSize;
+    std::cout
+      << "\n  0%       20%       40%       60%       80%      100%"
+      << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+      << "\n  ^";
+
+
+    // Local storage for summed combined variances
+    NRLib::Grid2D<double> sumVariance(3,3,0);
+
+    int n_samples = 0;
+
+    for (int k = 0; k < nz; k++) {
+      for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+
+          if( ( (i+1)*(j+1)*(k+1) ) % modulus == 0) {
+
+            std::vector<double> trend_position = trend_cubes.GetTrendPosition(i,j,k);
+
+            NRLib::Grid2D<double> sigma_sum(3,3,0);
+
+            CalculateCovarianceInTrendPosition(rock_distribution,
+                                               probability,
+                                               trend_position,
+                                               sigma_sum);
+
+
+            for(size_t a=0; a<3; a++){
+              for(size_t b=0; b<3; b++)
+                sumVariance(a,b) += sigma_sum(a,b);
+            }
+
+            n_samples++;
+          }
+        }
+      }
+
+      // Log progress
+      if (k+1 >= static_cast<int>(nextMonitor) && k < nz) {
+        nextMonitor += monitorSize;
+        std::cout << "^";
+        fflush(stdout);
+      }
+    }
+
+    if (n_samples > 0) {
+      for (int i=0; i<3; i++) {
+        for (int j=0; j<3; j++)
+          param_corr(i,j) = sumVariance(i,j)/n_samples;
+      }
+    }
+
+    else
+      err_txt += "Could not build a covariance structure from rock physics.\n";
+  }
+
+  else {
+    std::vector<double> trend_position(2, 0.0);
+
+    NRLib::Grid2D<double> sigma_sum(3,3,0);
+
+    CalculateCovarianceInTrendPosition(rock_distribution,
+                                       probability,
+                                       trend_position,
+                                       sigma_sum);
+
+
+    for (int i=0; i<3; i++) {
+      for (int j=0; j<3; j++)
+        param_corr(i,j) = sigma_sum(i,j);
+    }
+
+  }
+}
+
+void  CommonData::CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+                                                     const std::vector<float>               & probability,
+                                                     const std::vector<double>              & trend_position,
+                                                     NRLib::Grid2D<double>                  & sigma_sum) const{
+  int number_of_facies = static_cast<int>(rock_distribution.size());
+
+  std::vector<std::vector<double> > expectation_m(number_of_facies);
+
+  for(int f = 0; f < number_of_facies; f++)
+    expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
+
+  // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
+  std::vector<float> expectations(3, 0);
+  for(int f = 0; f < number_of_facies; f++){
+    expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
+    expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
+    expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
+  }
+
+  // Compute combined variance for all facies in the given grid cell.
+  // Calculation of variance for a set of pdfs with given probability in the rock physics model:
+  //
+  // Var(X) = E([X-E(X)]^2) = E([X - E(X|facies)]^2) + E([E(X|facies) -E(X)]^2) = E(Var(X|facies)) + Var(E(X|facies))
+  //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
+  // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
+  //
+  // For all facies: Summing up expected value of variances and variance of expected values
+
+  for(int f = 0; f < number_of_facies; f++) {
+    NRLib::Grid2D<double> sigma = rock_distribution[f]->GetLogCovariance(trend_position);
+
+    // For all elements in the 3x3 matrix of the combined variance
+    for(size_t a=0; a<3; a++) {
+      for(size_t b=0; b<3; b++) {
+        double sigma_weigth = probability[f] * (sigma(a,b) + (expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]));
+        sigma_sum(a,b)     += sigma_weigth;
+      }
+    }
+  }
+}
+
+Surface * CommonData::FindCorrXYGrid(const Simbox           * time_simbox, 
+                                     const ModelSettings    * model_settings) const{
+
+  float dx  = static_cast<float>(time_simbox->getdx());
+  float dy  = static_cast<float>(time_simbox->getdy());
+
+  int   nx  = model_settings->getNXpad();
+  int   ny  = model_settings->getNYpad();
+
+  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+
+  if(model_settings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
+  {
+    int refi,refj;
+    for(int j=0;j<ny;j++)
+    {
+      for(int i=0;i<nx;i++)
+      {
+        if(i<(nx/2+1))
+        {
+          refi = i;
+        }
+        else
+        {
+          refi = i-nx;
+        }
+        if(j< (ny/2+1))
+        {
+          refj = j;
+        }
+        else
+        {
+          refj = j-ny;
+        }
+        (*grid)(j*nx+i) = model_settings->getLateralCorr()->corr(refi*dx, refj*dy);
+      }
+    }
+  }
+  return(grid);
 }

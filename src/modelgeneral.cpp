@@ -397,7 +397,6 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     if (gridType == FFTGrid::DATA) {
       target->fillInSeismicDataFromSegY(segy,
                                         timeSimbox,
-                                        timeCutSimbox,
                                         modelSettings->getSmoothLength(),
                                         missingTracesSimbox,
                                         missingTracesPadding,

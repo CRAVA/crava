@@ -1825,23 +1825,27 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
   modelSettings_->setCorrDirIntervalUsed(true);
 
-  bool singel_surface = false;
+  bool single_surface = false;
   bool top_surface = false;
   bool base_surface = false;
 
   std::string filename;
   if(parseFileName(root, "single-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirIntervalFile(interval_name, filename);
-    singel_surface = true;
+    modelSettings_->setCorrDirIntervalBaseConform(interval_name,false);
+    modelSettings_->setCorrDirIntervalTopConform(interval_name, false);
+    single_surface = true;
   }
 
   if(parseFileName(root, "top-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirIntervalTopSurfaceFile(interval_name, filename);
+    modelSettings_->setCorrDirIntervalTopConform(interval_name, false);
     top_surface = true;
   }
 
   if(parseFileName(root, "base-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirIntervalBaseSurfaceFile(interval_name, filename);
+    modelSettings_->setCorrDirIntervalBaseConform(interval_name,false);
     base_surface = true;
   }
 
@@ -1853,8 +1857,8 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
   if(parseBool(root, "base-conform", base_conform, errTxt) == true)
     modelSettings_->setCorrDirIntervalBaseConform(interval_name, true);
 
-  if(singel_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
-    errTxt += "For interval " + interval_name + " a singel surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
+  if(single_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
+    errTxt += "For interval " + interval_name + " a single surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
 
   if(top_surface == true && top_conform == true)
     errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + " where only one is allowed.\n";
@@ -6221,8 +6225,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFiles();
       const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
       const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
-      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConforms();
-      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConforms();
+      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConform();
+      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
 
       int single_count = interval_corr_dir_file.size();
       int top_count =  interval_corr_dir_top_file.size() + interval_top_conform_correlation.size();
