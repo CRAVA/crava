@@ -5,6 +5,7 @@
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 #include "src/modelgeneral.h"
+#include "src/commondata.h"
 
 CravaTrend::CravaTrend()
 {
@@ -161,36 +162,26 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
   }
 }
 
-CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
-                       const Simbox                     * time_cut_simbox,
+CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
                        const ModelSettings              * model_settings,
                        const InputFiles                 * input_files,
                        const std::string                & interval_name,
                        const std::vector<int>           & trend_cube_type,
                        const std::vector<std::string>   & trend_cube_parameters,
+                       FFTGrid                          * trend_cube,
                        bool                             & failed,
                        std::string                      & err_txt){
-
-  n_samples_ = 1000;
-
-  // Set up temporary time simbox
-  Simbox * time_simbox = new Simbox(time_cut_simbox);
-  time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
-                        interval_simbox->GetNz(), model_settings->getRunFromPanel());
-
-  //const std::vector<std::string> trend_cube_parameters = modelSettings->getTrendCubeParameters();
-  //const std::vector<int>         trend_cube_type       = modelSettings->getTrendCubeType();
-  n_trend_cubes_                                       = static_cast<int>(trend_cube_parameters.size());
+  // Class variables
+  n_samples_      = 1000;
+  n_trend_cubes_  = static_cast<int>(trend_cube_parameters.size());
 
   std::vector<std::string> trend_cube_names(n_trend_cubes_);
 
   if(n_trend_cubes_ > 0) {
 
-    std::string errorText  = "";
-
-    const int nx   = interval_simbox->GetNx();
-    const int ny   = interval_simbox->GetNy();
-    const int nz   = interval_simbox->GetNz();
+    const int nx   = interval_simbox->getnx();
+    const int ny   = interval_simbox->getny();
+    const int nz   = interval_simbox->getnz();
     const int nxp  = nx;
     const int nyp  = ny;
     const int nzp  = nz;
@@ -198,38 +189,12 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
 
     for(int grid_number=0; grid_number<n_trend_cubes_; grid_number++) {
 
-      FFTGrid * trend_cube = NULL;
-
-      const std::string   log_name   = "Interval '" +interval_name + "': trend cube '"+trend_cube_parameters[grid_number]+"'";
-
+      // 1 Trend cube from file ------------------------------------------------
       if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {
-
-        trend_cube_names[grid_number] = input_files->getTrendCube(grid_number);
-
-        const SegyGeometry      * dummy1     = NULL;
-        const TraceHeaderFormat * dummy2     = NULL;
-        const float               offset     = model_settings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
-
-        ModelGeneral::readGridFromFile(trend_cube_names[grid_number],
-                                       log_name,
-                                       offset,
-                                       trend_cube,
-                                       dummy1,
-                                       dummy2,
-                                       FFTGrid::PARAMETER,
-                                       time_simbox,
-                                       time_cut_simbox,
-                                       model_settings,
-                                       errorText,
-                                       true);
-
-        if(errorText != "") {
-          errorText += "Reading of file \'"+trend_cube_names[grid_number]+"\' failed\n";
-          err_txt    += errorText;
-          failed     = true;
-        }
+        // Do nothing
       }
 
+      // 2 Trend cube from stratigraphic depth  -------------------------------
       else if(trend_cube_type[grid_number] == ModelSettings::STRATIGRAPHIC_DEPTH) {
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
@@ -242,6 +207,7 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
           for(int j=0; j<nyp; j++) {
             for(int i=0; i<rnxp; i++) {
               if(i < nx)
+                // value is set to k index
                 trend_cube->setRealValue(i, j, k, static_cast<float>(k));
               else
                 trend_cube->setRealValue(i, j, k, 0);
@@ -252,6 +218,7 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
         trend_cube->endAccess();
       }
 
+      // 3 Trend cube from depth  ------------------------------------------------
       else if(trend_cube_type[grid_number] == ModelSettings::TWT) {
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
@@ -264,7 +231,8 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
           for(int j=0; j<nyp; j++) {
             for(int i=0; i<rnxp; i++) {
               if(i < nx) {
-                float value = static_cast<float>(interval_simbox->GetTop(i,j) + interval_simbox->GetDz(i,j)*k);
+                // value is set to depth from simbox
+                float value = static_cast<float>(interval_simbox->getTop(i,j) + interval_simbox->getdz(i,j)*k);
                 trend_cube->setRealValue(i, j, k, value);
               }
               else
@@ -310,14 +278,13 @@ CravaTrend::CravaTrend(const IntervalSimbox             * interval_simbox,
 
       if(model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
         std::string fileName = IO::PrefixTrendCubes() + "_" + interval_name + trend_cube_parameters[grid_number];
-        writeToFile(time_simbox, trend_cube, fileName, "trend cube");
+        writeToFile(interval_simbox, trend_cube, fileName, "trend cube");
       }
 
-      delete trend_cube;
+      //delete trend_cube;
 
     }
   }
-  delete time_simbox;
 }
 
 CravaTrend::~CravaTrend()

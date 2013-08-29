@@ -4,8 +4,8 @@
 #include <stdio.h>
 
 #include "src/simbox.h"
-#include "src/intervalsimbox.h"
 #include "src/fftgrid.h"
+#include "src/commondata.h"
 
 class ModelSettings;
 class InputFiles;
@@ -24,13 +24,13 @@ public:
              std::string                  & errTxt,
              const InputFiles             * inputFiles);
 
-  CravaTrend(const IntervalSimbox                   * interval_simbox,
-             const Simbox                           * time_cut_simbox,
+  CravaTrend(const Simbox                           * interval_simbox,
              const ModelSettings                    * model_settings,
              const InputFiles                       * input_files,
              const std::string                      & interval_name,
              const std::vector<int>                 & trend_cube_type,
              const std::vector<std::string>         & trend_cube_parameters,
+             FFTGrid                                * trend_cube,
              bool                                   & failed,
              std::string                            & err_txt);
 

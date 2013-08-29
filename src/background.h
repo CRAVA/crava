@@ -310,7 +310,7 @@ private:
                                               //const std::vector<int>     & erosion_priority,
                                               //const std::vector<NRLib::Surface<double> > & surfaces,
                                               //std::vector<const NRLib::Surface<double>& > surface,
-                                              std::vector<const NRLib::Surface<double> *>,
+                                              std::vector<const NRLib::Surface<double> *> surfaces,
                                               const std::vector<double>  & surface_uncertainty,
                                               const bool                   isFile) const;
 

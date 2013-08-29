@@ -229,13 +229,13 @@ public:
   const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
   int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}
 
-  bool                               getCorrDirTopConform(void)                      const { return topConformCorrelation_                             ;}
-  bool                               getCorrDirBaseConform(void)                     const { return baseConformCorrelation_                            ;}
-  const std::map<std::string, bool>& getCorrDirIntervalTopConforms(void)             const { return intervalTopConformCorrelation_                     ;}
-  bool                               getCorrDirIntervalTopConform(std::string name)  const { return intervalTopConformCorrelation_.find(name)->second  ;}
-  const std::map<std::string, bool>& getCorrDirIntervalBaseConforms(void)            const { return intervalBaseConformCorrelation_                    ;}
-  bool                               getCorrDirIntervalBaseConform(std::string name) const { return intervalBaseConformCorrelation_.find(name)->second ;}
-  bool                               getCorrDirIntervalUsed(void)                    const { return intervalCorrelationUsed_                           ;}
+  bool                               getCorrDirTopConform(void)                       const { return topConformCorrelation_                             ;}
+  bool                               getCorrDirBaseConform(void)                      const { return baseConformCorrelation_                            ;}
+  const std::map<std::string, bool>& getCorrDirIntervalTopConform()                   const { return intervalTopConformCorrelation_                     ;}
+  bool                               getCorrDirIntervalTopConform(std::string name)   const { return intervalTopConformCorrelation_.find(name)->second  ;}
+  const std::map<std::string, bool>& getCorrDirIntervalBaseConform()                  const { return intervalBaseConformCorrelation_                    ;}
+  bool                               getCorrDirIntervalBaseConform(std::string name)  const { return intervalBaseConformCorrelation_.find(name)->second ;}
+  bool                               getCorrDirIntervalUsed(void)                     const { return intervalCorrelationUsed_                           ;}
 
 
 

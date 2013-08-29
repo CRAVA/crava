@@ -101,10 +101,10 @@ InputFiles::addInputPathAndCheckFiles()
 
   std::map<std::string, std::string>::iterator j;
   for(j=interval_base_time_surface_.begin();j != interval_base_time_surface_.end();j++) {
-    errTxt += addPathAndCheck(j->second);
+    errTxt += addPathAndCheck(j->second, true);
   }
   for(j=interval_base_depth_surface_.begin();j != interval_base_depth_surface_.end();j++) {
-    errTxt += addPathAndCheck(j->second);
+    errTxt += addPathAndCheck(j->second, true);
   }
   for(j=interval_corrDirFiles_.begin();j != interval_corrDirFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);

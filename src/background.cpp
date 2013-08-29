@@ -1296,7 +1296,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
 
   std::vector<const NRLib::Surface<double> *> surfaces; //(n_intervals+1);
 
-  const NRLib::Surface<double> & tmp = multiple_interval_grid->GetSimbox(0)->GetTopSurface();
+  const NRLib::Surface<double> & tmp = multiple_interval_grid->GetIntervalSimbox(0)->GetTopSurface();
   surfaces.push_back(&tmp);
 
   //std::vector<const NRLib::Surface<double>& > surfaces;
@@ -1307,7 +1307,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
 
   for(int i=0; i<n_intervals; i++) {
 
-    const Simbox * simbox = multiple_interval_grid->GetSimbox(i);
+    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
 
     //const NRLib::Surface<double> & tmp_surface = simbox->GetBotSurface();
     surfaces.push_back(&simbox->GetBotSurface());
@@ -1673,7 +1673,7 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
 
   for(int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
-    const Simbox * simbox = multiple_interval_grid->GetSimbox(i_interval);
+    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i_interval);
 
     int nx = simbox->getnx();
     int ny = simbox->getny();
@@ -2046,7 +2046,7 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
 
   for(int i=0; i<n_intervals; i++) {
 
-    const Simbox * simbox = multiple_interval_grid->GetSimbox(i);
+    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
 
     int    nx        = simbox->getnx();
     int    ny        = simbox->getny();
@@ -3085,7 +3085,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
   for(int i=0; i < n_intervals; i++) {
 
     std::string interval_name = multiple_interval_grid->GetIntervalName(i);
-    const Simbox * simbox = multiple_interval_grid->GetSimbox(i);
+    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
 
     FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp[i], true, is_file);
     FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs[i], true, is_file);
