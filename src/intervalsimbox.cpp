@@ -66,8 +66,7 @@ IntervalSimbox::IntervalSimbox(const Simbox         * simbox,
                                const Surface        & bot_surface,
                                Surface              * single_corr_surface,
                                std::string          & err_text,
-                               bool                 & failed)
-{
+                               bool                 & failed){
   interval_name_  = interval_name;
   status_         = simbox->status();
   cosrot_         = cos(simbox->GetAngle());
