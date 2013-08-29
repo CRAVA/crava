@@ -365,6 +365,16 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
+  void GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
+                        double                    & avg,
+                        double                    & min,
+                        double                    & max);
+
+  void SubtractGrid(NRLib::Grid<double>       & to_grid,
+                    const NRLib::Grid<double> & from_grid);
+
+  void ChangeSignGrid(NRLib::Grid<double> & grid);
+
   void LoadVelocity(FFTGrid             *& velocity,
                     const Simbox         * interval_simbox, //timeSimbox,
                     const Simbox         * simbox, //timeCutSimbox,
@@ -378,6 +388,7 @@ private:
 
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
+                                       //std::vector<NRLib::Grid<double> >      & parameters,
                                        FFTGrid                                & vp,
                                        FFTGrid                                & vs,
                                        FFTGrid                                & rho,
@@ -438,7 +449,9 @@ private:
   // trend cubes
   int                                                           n_trend_cubes_;
   std::vector<CravaTrend>                                       trend_cubes_;
-  std::vector<std::map<std::string, std::vector<DistributionsRock *> > >    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
+
+  std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
+  //std::vector<std::map<std::string, std::vector<DistributionsRock *> > >    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
 
   // prior facies

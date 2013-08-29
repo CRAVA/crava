@@ -3119,7 +3119,7 @@ void CommonData::SetupRockPhysics(const ModelSettings                           
 
   //
   reservoir_variables_.resize(n_trend_cubes);
-  rock_distributions_.resize(n_trend_cubes);
+  //rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
   for(int i=0; i<n_trend_cubes; i++){ // the number of trend cubes is the same as the number of intervals
@@ -3807,11 +3807,13 @@ CommonData::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
 
   // Compare names in wells with names given in rock physics prior model
   if(rock_distributions_.size() > 0) {
-    int n_rocks  = static_cast<int>(rock_distributions_[i_interval].size());
+    //int n_rocks  = static_cast<int>(rock_distributions_[i_interval].size());
+    int n_rocks  = static_cast<int>(rock_distributions_.size());
     if(n_rocks > n_facies)
       tmp_err_text += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
     for(int i=0; i<n_facies; i++) {
-      if(rock_distributions_[i_interval].find(facies_names_[i]) == rock_distributions_[i_interval].end())
+      //if(rock_distributions_[i_interval].find(facies_names_[i]) == rock_distributions_[i_interval].end())
+      if(rock_distributions_.find(facies_names_[i]) == rock_distributions_.end())
         tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
     }
   }
@@ -3846,12 +3848,13 @@ CommonData::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
 }
 
 void
-CommonData::SetFaciesNamesFromRockPhysics(int i_interval)
+CommonData::SetFaciesNamesFromRockPhysics(int i_interval) //H
 {
   typedef std::map<std::string, DistributionsRock *> mapType;
 
   int i = 0;
-  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i_interval].begin(); it != rock_distributions_[i_interval].end(); it++) {
+  //for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i_interval].begin(); it != rock_distributions_[i_interval].end(); it++) {
+  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     facies_names_.push_back(it->first);
     //faciesLabels_.push_back(i);
     i++;
@@ -4205,26 +4208,26 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
     //else
     //  timeCutSimbox = timeSimbox;
 
-    FFTGrid * back_model[3];
-    const int nx    = estimation_simbox_.getnx(); //interval_simbox->GetNx(); //timeSimbox->getnx();
-    const int ny    = estimation_simbox_.getny(); //interval_simbox->GetNy(); //timeSimbox->getny();
-    const int nz    = estimation_simbox_.getnz(); //interval_simbox->GetNz(); //timeSimbox->getnz();
-    const int nx_pad = model_settings->getNXpad();
-    const int ny_pad = model_settings->getNYpad();
-    const int nz_pad = model_settings->getNZpad();
+    //FFTGrid * back_model_tmp[3];
+    //const int nx    = estimation_simbox_.getnx(); //interval_simbox->GetNx(); //timeSimbox->getnx();
+    //const int ny    = estimation_simbox_.getny(); //interval_simbox->GetNy(); //timeSimbox->getny();
+    //const int nz    = estimation_simbox_.getnz(); //interval_simbox->GetNz(); //timeSimbox->getnz();
+    //const int nx_pad = model_settings->getNXpad();
+    //const int ny_pad = model_settings->getNYpad();
+    //const int nz_pad = model_settings->getNZpad();
     if (model_settings->getGenerateBackground()) {
 
       if(model_settings->getGenerateBackgroundFromRockPhysics() == false) {
 
         FFTGrid * velocity = NULL;
-        std::string backVelFile = input_files->getBackVelFile();
-        if (backVelFile != ""){
+        std::string back_vel_file = input_files->getBackVelFile();
+        if (back_vel_file != ""){
           bool dummy;
           LoadVelocity(velocity,
                        &estimation_simbox_, //timeSimbox, ///H Correct with estimation_simbox_?
                        &estimation_simbox_, //timeCutSimbox,
                        model_settings,
-                       backVelFile,
+                       back_vel_file,
                        dummy,
                        err_text,
                        failed);
@@ -4235,11 +4238,11 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             err_text += "There is no variogram available for the background modelling.\n";
             failed = true;
           }
-          for (int i=0 ; i<3 ; i++)
-          {
-            back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-            back_model[i]->setType(FFTGrid::PARAMETER);
-          }
+          //for (int i=0 ; i<3 ; i++)
+          //{
+          //  back_model_tmp[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+          //  back_model_tmp[i]->setType(FFTGrid::PARAMETER);
+          //}
 
           //NRLib::Grid<double> vp_grid; //H Get these from multiple_interval_grid_ or remove the initializaion of them in MultiIntervalGrid and add them from here.
           //NRLib::Grid<double> vs_grid;
@@ -4289,34 +4292,63 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           //
           //NRLib::Grid<double> velocity_grid = FFTGridRealToGrid(velocity);
 
-          if(model_settings->getMultizoneBackground() == true)
-            background = new Background(back_model, wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles()); //Kun multizone på bakgrunnsmodell.
-          else if(model_settings->getIntervalNames().size() == 0) //Hverken multizone eller multiinterval
-            background = new Background(back_model, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings); //Hverken multizone eller multiinterval.
+
+          if(model_settings->getIntervalNames().size() == 0) {
+
+            std::vector<NRLib::Grid<double> > back_model;
+
+            if(model_settings->getMultizoneBackground() == true)
+              background = new Background(back_model, wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles()); //Kun multizone på bakgrunnsmodell.
+            else //Hverken multizone eller multiinterval
+              background = new Background(back_model, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings); //Hverken multizone eller multiinterval.
+
+            //NRLib::Grid<double> vp_grid = FFTGridRealToGrid(back_model_tmp[0]); //H Get these from multiple_interval_grid_ or remove the initializaion of them in MultiIntervalGrid and add them from here.
+            //NRLib::Grid<double> vs_grid = FFTGridRealToGrid(back_model_tmp[1]);
+            //NRLib::Grid<double> rho_grid = FFTGridRealToGrid(back_model_tmp[2]);
+
+            //std::vector<NRLib::Grid<double> > back_model;
+            //back_model.push_back(vp_grid);
+            //back_model.push_back(vs_grid);
+            //back_model.push_back(rho_grid);
+
+            multiple_interval_grid_->AddParametersForInterval(0, back_model);
+
+          }
           else { //Ikke multizone på bakgrunnsmodell, men multiinterval
 
-            FFTGrid * back_model_tmp[3];
-            Background * background_tmp = NULL;
 
-            for(int i = 0; i < model_settings->getIntervalNames().size(); i++) {
-
-              const Simbox * simbox = multiple_interval_grid_->GetSimbox(i);
-              const int nx = simbox->getnx();
-              const int ny = simbox->getny();
-              const int nz = simbox->getnz();
-
-              std::vector<std::string> interval_files;
-              //interval_files.push_back(simbox->get
-
-              //background_tmp = new Background(back_model_tmp, simbox, model_settings)
+            //Background * background_tmp = NULL;
 
 
+            //for(int i = 0; i < model_settings->getIntervalNames().size(); i++) {
+            //
+            //  FFTGrid * back_model_tmp[3];
+            //  std::vector<NRLib::Grid<double> > back_model;
 
+            //  const Simbox * simbox = multiple_interval_grid_->GetSimbox(i);
+            //  const int nx = simbox->getnx();
+            //  const int ny = simbox->getny();
+            //  const int nz = simbox->getnz();
+
+            //  for (int j = 0; j<3; j++) {
+            //    back_model_tmp[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+            //    back_model_tmp[i]->setType(FFTGrid::PARAMETER);
+            //  }
+
+              //std::vector<std::string> interval_files;
+              //interval_files.push_back(simbox->
+
+              std::vector<std::vector<NRLib::Grid<double> > > background_parameters; //Koble mot multiple_interval_grid_
+
+              Background(background_parameters, wells_, multiple_interval_grid_, model_settings);
+
+            for(int i = 0; i < model_settings->getIntervalNames().size(); i++)
+              multiple_interval_grid_->AddParametersForInterval(i, background_parameters[i]);
 
             }
+
+
           }
-
-
 
           //else if(model_settings->getIntervalNames().size() > 0) //multiple_interval_grid_->GetNIntervals() > 0)
           //  background = new Background(back_model, wells_, timeSimbox, model_settings, input_files->getMultizoneSurfaceFiles()); //Ikke multizone på bakgrunnsmodell, men multiintervall.
@@ -4330,46 +4362,114 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           if(velocity != NULL)
             delete velocity;
-        }
+        //}
       }
       else {
 
-        for (int i=0 ; i<3 ; i++) {
-          back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-          back_model[i]->createRealGrid();
-          back_model[i]->setType(FFTGrid::PARAMETER);
+        for(int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+
+          const Simbox * simbox = multiple_interval_grid_->GetSimbox(i);
+
+          const int nx    = simbox->getnx();
+          const int ny    = simbox->getny();
+          const int nz    = simbox->getnz();
+          const int nx_pad = model_settings->getNXpad();
+          const int ny_pad = model_settings->getNYpad();
+          const int nz_pad = model_settings->getNZpad();
+
+          std::vector<NRLib::Grid<double> > parameters(3);
+
+          //parameters[0].Resize(nx, ny, nz);
+          //parameters[1].Resize(nx, ny, nz);
+          //parameters[2].Resize(nx, ny, nz);
+          FFTGrid vp_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+          FFTGrid vs_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+          FFTGrid rho_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+          vp_grid.createRealGrid();
+          vs_grid.createRealGrid();
+          rho_grid.createRealGrid();
+          vp_grid.setType(FFTGrid::PARAMETER);
+          vs_grid.setType(FFTGrid::PARAMETER);
+          rho_grid.setType(FFTGrid::PARAMETER);
+
+
+          //for (int i=0 ; i<3 ; i++) {
+          //  back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+          //  back_model[i]->createRealGrid();
+          //  back_model[i]->setType(FFTGrid::PARAMETER);
+          //}
+
+
+          // Get prior probabilities for the facies in a vector
+          std::vector<std::string> facies_names = facies_names_; //modelGeneral->getFaciesNames();
+          int                      n_facies     = static_cast<int>(facies_names.size());
+
+          std::vector<float> prior_probability = prior_facies_[i]; //modelGeneral->getPriorFacies();
+
+          //std::vector<DistributionsRock *> rock_distribution = rock_distributions_[i];
+
+
+          std::vector<DistributionsRock *> rock_distribution(n_facies);  //Get from rock_distributions_
+
+          typedef std::map<std::string, DistributionsRock *> rf_map_type;
+          rf_map_type rf_map = GetRockDistributionTime0();
+
+
+          //typedef std::map<std::string, DistributionsRock *> rfMapType;
+          //rfMapType rfMap = rock_distributions_[i];
+
+          //typedef std::map<std::string, std::vector<DistributionsRock *> > rf_map_type;
+          //rf_map_type rf_map = rock_distributions_[i];
+
+          //for(int i = 0; i < n_facies; i++) {
+          //  rf_map_type::iterator iter = rf_map.find(facies_names[i]);
+          //  if(iter != rf_map.end())
+          //    rock_distribution[i] = iter->second;
+          //}
+
+          for(int j = 0; j < n_facies; j++) {
+            rf_map_type::iterator iter = rf_map.find(facies_names[j]);
+            if(iter != rf_map.end())
+              rock_distribution[j] = iter->second;
+          }
+
+          // filling in the backModel in Background
+          GenerateRockPhysics3DBackground(rock_distribution,
+                                          prior_probability,
+                                          //parameters,
+                                          vp_grid,
+                                          vs_grid,
+                                          rho_grid,
+                                          //*back_model[0],
+                                          //*back_model[1],
+                                          //*back_model[2],
+                                          i);
+
+          parameters[0] = FFTGridRealToGrid(&vp_grid);
+          parameters[1] = FFTGridRealToGrid(&vs_grid);
+          parameters[2] = FFTGridRealToGrid(&rho_grid);
+
+          multiple_interval_grid_->AddParametersForInterval(i, parameters);
+
+          //background = new Background(back_model);
+
         }
-
-
-        // Get prior probabilities for the facies in a vector
-        std::vector<std::string> facies_names = facies_names_; //modelGeneral->getFaciesNames();
-        int                      n_facies     = static_cast<int>(facies_names.size());
-
-        std::vector<float> prior_probability = prior_facies_[i_interval]; //modelGeneral->getPriorFacies();
-
-        std::vector<DistributionsRock *> rock_distribution(n_facies);  //Get from rock_distributions_
-        typedef std::map<std::string, DistributionsRock *> rfMapType;
-        rfMapType rfMap = GetRockDistributionTime0();
-
-        for(int i=0; i<n_facies; i++) {
-          rfMapType::iterator iter = rfMap.find(facies_names[i]);
-          if(iter != rfMap.end())
-            rock_distribution[i] = iter->second;
-        }
-
-        // filling in the backModel in Background
-        GenerateRockPhysics3DBackground(rock_distribution,
-                                        prior_probability,
-                                        *back_model[0],
-                                        *back_model[1],
-                                        *back_model[2],
-                                        i_interval);
-
-        background = new Background(back_model);
-
       }
     }
     else {
+
+      FFTGrid * back_model[3];
+      //const int nx    = estimation_simbox_.getnx();
+      //const int ny    = estimation_simbox_.getny();
+      //const int nz    = estimation_simbox_.getnz();
+      //const int nx_pad = model_settings->getNXpad();
+      //const int ny_pad = model_settings->getNYpad();
+      //const int nz_pad = model_settings->getNZpad();
+      int n_intervals = multiple_interval_grid_->GetNIntervals();
+
+      std::vector<std::vector<NRLib::Grid<double> > > parameters(n_intervals); //For intervals.
+
+
       std::vector<std::string> par_name;
       if (model_settings->getUseAIBackground())
         par_name.push_back("AI "+model_settings->getBackgroundType());
@@ -4385,37 +4485,37 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       for(int i=0 ; i<3 ; i++)
       {
-        float constBackValue = model_settings->getConstBackValue(i);
+        float const_back_value = model_settings->getConstBackValue(i);
 
-        const std::string & backFile = input_files->getBackFile(i);
+        const std::string & back_file = input_files->getBackFile(i);
 
-        if(constBackValue < 0)
+        if(const_back_value < 0)
         {
-          if(backFile.size() > 0)
+          if(back_file.size() > 0)
           {
             const SegyGeometry      * dummy1 = NULL;
             const TraceHeaderFormat * dummy2 = NULL;
-            const float               offset = model_settings->getSegyOffset(thisTimeLapse);
+            const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic setSegyOffset(thisTimeLapse) was used.
             std::string errorText("");
 
-            Simbox * time_simbox = new Simbox(simbox);
-            time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
-                                  interval_simbox->GetNz(), model_settings->getRunFromPanel());
+            //Simbox * time_simbox = new Simbox(simbox);
+            //time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
+            //                      interval_simbox->GetNz(), model_settings->getRunFromPanel());
 
-            ReadGridFromFile(backFile,
+            ReadGridFromFile(back_file,
                              par_name[i],
                              offset,
                              back_model[i],
                              dummy1,
                              dummy2,
                              FFTGrid::PARAMETER,
-                             time_simbox, //interval_simbox, //timeSimbox,
-                             simbox, //timeCutSimbox,
+                             &estimation_simbox_, //interval_simbox, //timeSimbox,
+                             &estimation_simbox_, //timeCutSimbox, //Not used
                              model_settings,
                              errorText);
             if(errorText != "")
             {
-              errorText += "Reading of file '"+backFile+"' for parameter '"+par_name[i]+"' failed\n\n";
+              errorText += "Reading of file '"+back_file+"' for parameter '"+par_name[i]+"' failed\n\n";
               err_text += errorText;
               failed = true;
             }
@@ -4430,13 +4530,41 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             err_text += "Reading of file for parameter "+par_name[i]+" failed. No file name is given.\n";
             failed = true;
           }
+
+          NRLib::Grid<double> parameter_tmp = FFTGridRealToGrid(back_model[i]);
+          parameters[0].push_back(parameter_tmp);
+
         }
-        else if(constBackValue > 0)
+        else if(const_back_value > 0)
         {
-          back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-          back_model[i]->setType(FFTGrid::PARAMETER);
-          back_model[i]->fillInConstant(float( log( constBackValue )));
-          back_model[i]->calculateStatistics();
+          for(int j = 0; j < n_intervals; j++) { //Will be 1 if multiple intervals is not used
+
+            int nx = 0;
+            int ny = 0;
+            int nz = 0;
+
+            if(model_settings->getIntervalNames().size() > 0) {
+              const Simbox * simbox = multiple_interval_grid_->GetSimbox(i);
+              nx = simbox->getnx();
+              ny = simbox->getny();
+              nz = simbox->getnz();
+            }
+            else {
+              nx = estimation_simbox_.getnx();
+              ny = estimation_simbox_.getny();
+              nz = estimation_simbox_.getnz();
+            }
+
+            NRLib::Grid<double> param_tmp(nx, ny, nz, log(const_back_value));
+
+            parameters[j].push_back(param_tmp);
+
+            //back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
+            //back_model[i]->setType(FFTGrid::PARAMETER);
+            //back_model[i]->fillInConstant(float( log( const_back_value )));
+            //back_model[i]->calculateStatistics();
+
+          }
         }
         else
         {
@@ -4444,43 +4572,70 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           failed = true;
         }
       }
+
+      //Split/resample for multi_interval?
+
+
       if (failed == false) {
 
-        LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
-        LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
-        for(int i=0 ; i<3 ; i++) {
-          LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
-                               par_name[i].c_str(),
-                               back_model[i]->getAvgReal(),
-                               back_model[i]->getMinReal(),
-                               back_model[i]->getMaxReal());
+        for(int i = 0; i < parameters.size(); i++) {
+
+          LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid_->GetIntervalName(i) + "\n");
+          LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
+          LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
+          for(int j=0 ; j<3 ; j++) {
+
+            double avg;
+            double min;
+            double max;
+
+            GetAvgMinMaxGrid(parameters[i][j], avg, min, max);
+
+            LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
+                                 par_name[i].c_str(),
+                                 avg,
+                                 min,
+                                 max);
+                                 //back_model[i]->getAvgReal(),
+                                 //back_model[i]->getMinReal(),
+                                 //back_model[i]->getMaxReal());
+          }
+          if (model_settings->getUseAIBackground())   { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
+            LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
+            SubtractGrid(parameters[i][0], parameters[i][2]);
+            //back_model[0]->subtract(back_model[2]);
+          }
+          if (model_settings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
+            LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
+            SubtractGrid(parameters[i][1], parameters[i][2]);
+            //back_model[1]->subtract(back_model[2]);
+          }
+          else if (model_settings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
+            LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
+            SubtractGrid(parameters[i][1], parameters[i][0]);
+            ChangeSignGrid(parameters[i][1]);
+            //back_model[1]->subtract(back_model[0]);
+            //back_model[1]->changeSign();
+          }
+          //background = new Background(back_model);
+
         }
-        if (model_settings->getUseAIBackground())   { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
-          LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
-          back_model[0]->subtract(back_model[2]);
-        }
-        if (model_settings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
-          LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
-          back_model[1]->subtract(back_model[2]);
-        }
-        else if (model_settings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
-          LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
-          back_model[1]->subtract(back_model[0]);
-          back_model[1]->changeSign();
-        }
-        background = new Background(back_model);
       }
+
+      for(int i = 0; i < n_intervals; i++)
+        multiple_interval_grid_->AddParametersForInterval(i, parameters[i]);
+
     }
 
-    if (failed == false) {
-      if((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-        background->writeBackgrounds(timeSimbox,
-                                     timeDepthMapping,
-                                     timeCutMapping,
-                                     model_settings->getFileGrid(),
-                                     *model_settings->getTraceHeaderFormatOutput());
-      }
-    }
+    //if (failed == false) { //H Writing of background models?
+    //  if((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
+    //    background->writeBackgrounds(timeSimbox,
+    //                                 timeDepthMapping,
+    //                                 timeCutMapping,
+    //                                 model_settings->getFileGrid(),
+    //                                 *model_settings->getTraceHeaderFormatOutput());
+    //  }
+    //}
 
     //background_models_.push_back(background);
 
@@ -4495,6 +4650,79 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   return true;
 
 }
+
+void CommonData::GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
+                                  double                    & avg,
+                                  double                    & min,
+                                  double                    & max) {
+
+  int ni = grid.GetNI();
+  int nj = grid.GetNJ();
+  int nk = grid.GetNK();
+
+  double sum = 0.0;
+  max = -std::numeric_limits<double>::infinity();
+  min = +std::numeric_limits<double>::infinity();
+
+  double value = 0.0;
+
+
+
+  for(int i = 0; i < ni; i++) {
+    for(int j = 0; j < nj; j++) {
+      for(int k = 0; k < nk; k++) {
+        value = grid(i,j,k);
+        sum += value;
+
+        if(value > max)
+          max = value;
+
+        if(value < min)
+          min = value;
+
+      }
+    }
+  }
+
+  avg = sum /= grid.GetN();
+
+}
+
+void CommonData::SubtractGrid(NRLib::Grid<double>       & to_grid,
+                              const NRLib::Grid<double> & from_grid) {
+
+  int ni = to_grid.GetNI();
+  int nj = to_grid.GetNJ();
+  int nk = to_grid.GetNK();
+
+  for(int i = 0; i < ni; i++) {
+    for(int j = 0; j < nj; j++) {
+      for(int k = 0; k < nk; k++) {
+        to_grid(i,j,k) -= from_grid(i,j,k);
+      }
+    }
+  }
+}
+
+void CommonData::ChangeSignGrid(NRLib::Grid<double> & grid) {
+
+  int ni = grid.GetNI();
+  int nj = grid.GetNJ();
+  int nk = grid.GetNK();
+
+  for(int i = 0; i < ni; i++) {
+    for(int j = 0; j < nj; j++) {
+      for(int k = 0; k < nk; k++) {
+        grid(i,j,k) *= -1;
+      }
+    }
+  }
+
+}
+
+
+
+
 
 NRLib::Grid<double>
 CommonData::FFTGridRealToGrid(const FFTGrid * fft_grid) {
@@ -4625,18 +4853,18 @@ CommonData::GetRockDistributionTime0() const
 {
   std::map<std::string, DistributionsRock *> rock_dist_t0;
 
-  ///H INTERVALS
-  //for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-  //  std::string name = it->first;
-  //  std::vector<DistributionsRock *> rock_dist = it->second;
-  //  rock_dist_t0[name] = rock_dist[0];
-  //}
+  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    std::string name = it->first;
+    std::vector<DistributionsRock *> rock_dist = it->second;
+    rock_dist_t0[name] = rock_dist[0];
+  }
 
   return(rock_dist_t0);
 }
 
 void CommonData::GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                                  const std::vector<float>               & probability,
+                                                 //std::vector<NRLib::Grid<double> >      & parameters,
                                                  FFTGrid                                & vp,
                                                  FFTGrid                                & vs,
                                                  FFTGrid                                & rho,

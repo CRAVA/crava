@@ -29,10 +29,16 @@ public:
   const std::vector<IntervalSimbox>                      & GetIntervalSimboxes() const           { return interval_simboxes_    ;}
   const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]          ;}
   const IntervalSimbox                                   * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i] ;}
-  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_               ;}
+  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_            ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
+  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]     ;}
+  const std::vector<Surface>                             & GetErodedSurfaces() const             { return eroded_surfaces_       ;}
+  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_    ;}
+  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_         ;}
 
   //SET FUNCTIONS
+
+  void  AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)      { parameters_[i] = parameters;}
 
 
 private:
@@ -96,6 +102,10 @@ private:
   // CLASS VARIABLES
 
   size_t n_intervals_;
+  std::vector<std::string> interval_names_;
+  std::vector<Surface>     eroded_surfaces_; ///H Eroded surfaces stored in simboxes?
+  std::vector<int>         erosion_priorities_;
+  std::vector<std::string> surface_files_;
 
   std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
   std::vector<IntervalSimbox>                          interval_simboxes_;        // extended simbox with correlation direction, must have same size as the parameters vector

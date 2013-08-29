@@ -15,24 +15,25 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      std::string    & err_text,
                                      bool           & failed){
 
-  std::vector<std::string> interval_names = model_settings->getIntervalNames();
-  n_intervals_ = static_cast<int>(interval_names.size());
+  std::vector<std::string> interval_names_ = model_settings->getIntervalNames();
+  n_intervals_ = static_cast<int>(interval_names_.size());
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
 
   Surface               * top_surface = NULL;
   Surface               * base_surface = NULL;
-  std::vector<Surface>    eroded_surfaces(n_intervals_+1);
+  //std::vector<Surface>    eroded_surfaces(n_intervals_+1);
+  eroded_surfaces_.resize(n_intervals_+1);
   std::string             previous_interval_name("");
   std::string             top_surface_file_name_temp("");
   std::string             base_surface_file_name_temp("");
   std::vector<Surface>    surfaces;
-  std::vector<int>        erosion_priorities;
+  //std::vector<int>        erosion_priorities_;
 
   // if there are multiple intervals
   if(n_intervals_ > 0){
     surfaces.resize(n_intervals_+1); //Store surfaces.
-    erosion_priorities.resize(n_intervals_+1);
+    erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
   }
   // if there is only one interval
@@ -45,7 +46,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   try{
     top_surface_file_name_temp = input_files->getTimeSurfFile(0);
-    erosion_priorities[0] = erosion_priority_top_surface;
+    erosion_priorities_[0] = erosion_priority_top_surface;
 
     top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
     surfaces[0] = *top_surface;
@@ -54,14 +55,14 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
       std::string interval_name = model_settings->getIntervalName(i);
       base_surface_file_name_temp = input_files->getIntervalBaseTimeSurface(interval_name);
-      erosion_priorities[i+1] = erosion_priority_base_surfaces.find(interval_name)->second;
+      erosion_priorities_[i+1] = erosion_priority_base_surfaces.find(interval_name)->second;
 
       base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
       surfaces[i] =  *base_surface;
     }
 
-    ErodeAllSurfaces(eroded_surfaces,
-                     erosion_priorities,
+    ErodeAllSurfaces(eroded_surfaces_,
+                     erosion_priorities_,
                      surfaces,
                      *estimation_simbox);
   }
@@ -74,8 +75,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   //Set up a vector of simboxes, one per interval.
 
-  simboxes_.resize(interval_names.size());
-  interval_simboxes_.resize(interval_names.size());
+  simboxes_.resize(interval_names_.size());
+  interval_simboxes_.resize(interval_names_.size());
 
   if(!failed){
     try{
@@ -87,8 +88,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
       SetUpIntervalSimboxes(model_settings,
                             estimation_simbox,
-                            interval_names,
-                            eroded_surfaces,
+                            interval_names_,
+                            eroded_surfaces_,
                             interval_simboxes_,
                             simboxes_,
                             corr_dir_single_surfaces,
@@ -107,6 +108,9 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
 
   // 3. SET UP BACKGROUND MODEL ----------------------------------------------------------
+
+  if(model_settings->getIntervalNames().size() > 0)
+    parameters_.resize(model_settings->getIntervalNames().size());
 
   std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
   std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
@@ -136,6 +140,15 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     err_text += e.what();
     }
   }
+
+  // Add inn surface files.
+  surface_files_.push_back(input_files->getTimeSurfFile(0));
+
+  const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getIntervalBaseTimeSurfaces();
+  for(int i = 0; i > n_intervals_; i++) {
+    surface_files_.push_back(interval_base_time_surfaces.find(interval_names_[i])->second);
+  }
+
 }
 
 MultiIntervalGrid::~MultiIntervalGrid(){
