@@ -15,9 +15,14 @@ RMSTrace::RMSTrace(int                 & IL,
   XL_(XL),
   utmx_(utmx),
   utmy_(utmy),
-  time_(time),
   velocity_(velocity)
 {
+  int s_to_ms = 1000;
+
+  time_.resize(time.size());
+  for(size_t i=0; i<time.size(); i++)
+    time_[i] = time[i] * s_to_ms;
+
 }
 
 RMSTrace::~RMSTrace()
