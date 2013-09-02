@@ -2501,6 +2501,7 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.reserve(8);
   legalCommands.push_back("label");
   legalCommands.push_back("use");
   legalCommands.push_back("tabulated");
@@ -2508,6 +2509,7 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("batzle-wang-brine");
+  legalCommands.push_back("span-wagner-co2");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -2535,6 +2537,8 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
   if(parseHill(root, constituent_type, label, errTxt) == true)
     given++;
   if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseSpanWagnerCO2(root, constituent_type, label, errTxt) == true)
     given++;
 
   if(given == 0)
@@ -2767,6 +2771,45 @@ XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::strin
   }
   else if(constituent == ModelSettings::ROCK) {
     errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a rock\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseSpanWagnerCO2(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("span-wagner-co2");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("pressure");
+  legalCommands.push_back("temperature");
+
+  std::string dummy;
+
+  std::vector<DistributionWithTrendStorage *> pressure;
+  if(parseDistributionWithTrend(root, "pressure", pressure, dummy, false, errTxt) == false)
+    errTxt += "The pressure must be given in the Span-Wagner CO2 model\n";
+
+  std::vector<DistributionWithTrendStorage *> temperature;
+  if(parseDistributionWithTrend(root, "temperature", temperature, dummy, false, errTxt) == false)
+    errTxt += "The temperature must be given in the Span-Wagner CO2 model\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new CO2FluidStorage(pressure, temperature);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Span-Wagner CO2 model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Span-Wagner CO2 model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    errTxt += "Implementation error: The Span-Wagner CO2 model can not be used to make a rock\n";
   }
 
   checkForJunk(root, errTxt, legalCommands);

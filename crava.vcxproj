@@ -264,6 +264,10 @@
     <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp" />
     <ClCompile Include="rplib\distributionsdryrockwalton.cpp" />
     <ClCompile Include="rplib\dryrockwalton.cpp" />
+    <ClCompile Include="rplib\table_rho1.cpp" />
+    <ClCompile Include="rplib\table_rho2.cpp" />
+    <ClCompile Include="rplib\table_vp1.cpp" />
+    <ClCompile Include="rplib\table_vp2.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1354,6 +1358,10 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="rplib\table_rho1.h" />
+    <ClInclude Include="rplib\table_rho2.h" />
+    <ClInclude Include="rplib\table_vp1.h" />
+    <ClInclude Include="rplib\table_vp2.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />

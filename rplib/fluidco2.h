@@ -3,6 +3,10 @@
 
 #include "rplib/fluid.h"
 
+#include <vector>
+
+
+
 class FluidCO2 : public Fluid {
 public:
 
@@ -20,8 +24,12 @@ public:
 
   virtual Fluid *             Clone()                                                               const;
 
-  void                        ComputeElasticParams(double temp, double pore_pressure);
+  void                        ComputeElasticParams(double temp, double pressure);
+  void                        DebugTest();
 
+  double                      GetCritTemp()                                                         const { return 30.9783;}
+  double                      GetCritPressure()                                                     const { return 7.3772; }
+  const std::vector<double>   GetPFunc()                                                                  { std::vector<double> pfunc(4); pfunc[0] = 0.000003883701221; pfunc[1] = 0.000930453898625; pfunc[2] = 0.092759127015099, pfunc[3] = 3.480623887319762; return pfunc;}
 };
 
 #endif
