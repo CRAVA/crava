@@ -88,6 +88,7 @@ private:
   bool parseHill(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseConstituent(TiXmlNode * node, std::string & constituent_label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseCO2(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseWalton(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEM(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);

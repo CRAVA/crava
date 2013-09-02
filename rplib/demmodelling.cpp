@@ -548,6 +548,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
                                          double& effective_shear_modulus,
                                          double& effective_density)
 {
+  DebugTestCO2Model();
   std::vector<double> dummy_u(3);
   for(size_t  i= 0; i < dummy_u.size(); i++)
     dummy_u[i] = 0;
@@ -982,6 +983,12 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   delete distr_temperature;
 
   delete distr_salinity;
+}
+
+void
+DEMTools::DebugTestCO2Model() {
+  std::vector<double> u(2, 0.0);
+  FluidCO2 fluid_co2(30.0, 0.5, u);
 }
 
 //void

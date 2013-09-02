@@ -87,6 +87,8 @@ namespace DEMTools {
                                       double& effective_shear_modulus,
                                       double& effective_density);
 
+  void DebugTestCO2Model();
+
   // not working because Distribution->DistributionWithTrend
   //void DebugTestDeletionAndCopying();
 

@@ -3,6 +3,8 @@
 
 #include "rplib/fluid.h"
 
+
+
 class FluidCO2 : public Fluid {
 public:
 
@@ -20,7 +22,7 @@ public:
 
   virtual Fluid *             Clone()                                                               const;
 
-  void                        ComputeElasticParams(double temp, double pore_pressure);
+  void                        ComputeElasticParams(double temp, double pressure);
 
 };
 
