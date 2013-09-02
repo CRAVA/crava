@@ -20,14 +20,19 @@ public:
 
   ~RMSTrace();
 
+  const double                    getUtmx()               const { return utmx_             ; }
+  const double                    getUtmy()               const { return utmy_             ; }
+
+  const std::vector<double>       getTime()               const { return time_             ; }
+
 private:
 
   int                 IL_;
   int                 XL_;
-  double              utmx_;
-  double              utmy_;
-  std::vector<double> time_;
-  std::vector<double> velocity_;
+  double              utmx_;                      // m
+  double              utmy_;                      // m
+  std::vector<double> time_;                      // ms
+  std::vector<double> velocity_;                  // m/s
 
 };
 

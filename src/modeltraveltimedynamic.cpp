@@ -94,9 +94,9 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 }
 
 void
-ModelTravelTimeDynamic::processRMSData(const ModelSettings      * /*modelSettings*/,
+ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
                                        const InputFiles         * inputFiles,
-                                       const Simbox             * /*timeSimbox*/,
+                                       const Simbox             * timeSimbox,
                                        std::string              & errTxt,
                                        bool                     & failed)
 
@@ -106,10 +106,40 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * /*modelSetting
 
   LogKit::WriteHeader("Reading RMS travel time data");
 
-  const std::string & file_name = inputFiles->getRmsVelocities(thisTimeLapse_);
+  const std::string & file_name  = inputFiles->getRmsVelocities(thisTimeLapse_);
   std::string         tmpErrText = "";
 
   readRMSData(file_name, tmpErrText);
+
+  int n_rms_traces     = static_cast<int>(rms_traces_.size());
+  int n_layers_above   = 10;
+  int n_layers_below   = 10;
+  int n_layers_simbox  = timeSimbox->getnz();
+  int n_layers_padding = modelSettings->getNZpad();
+  int n_layers         = n_layers_above + n_layers_padding + n_layers_below;
+
+  double t_top;
+  double t_bot;
+  double dt_simbox;
+
+  for(int i=0; i<n_rms_traces; i++) {
+
+    getCoordinates(timeSimbox,
+                   rms_traces_[i],
+                   t_top,
+                   t_bot,
+                   dt_simbox);
+
+    NRLib::Grid2D<double> G = calculateG(rms_traces_[i].getTime(),
+                                         t_top,
+                                         t_bot,
+                                         dt_simbox,
+                                         n_layers,
+                                         n_layers_above,
+                                         n_layers_below,
+                                         n_layers_simbox,
+                                         n_layers_padding);
+  }
 
   if(tmpErrText != "") {
     errTxt += tmpErrText;
@@ -230,4 +260,95 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
   LogKit::LogFormatted(LogKit::Low, "\nRead "+NRLib::ToString(n_traces)+" RMS traces in file "+fileName+"\n");
 
+}
+
+double
+ModelTravelTimeDynamic::findMaxTime() const
+{
+
+  int n_rms_traces = static_cast<int>(rms_traces_.size());
+
+  double max_time = 0;
+
+  for(int i=0; i<n_rms_traces; i++) {
+    const std::vector<double> & rms_time = rms_traces_[i].getTime();
+    double max = rms_time[rms_time.size()-1];
+
+    if(max > max_time)
+      max_time = max;
+  }
+
+  return max_time;
+}
+
+NRLib::Grid2D<double>
+ModelTravelTimeDynamic::calculateG(const std::vector<double> & rms_time,
+                                   const double              & t_top,
+                                   const double              & t_bot,
+                                   const double              & dt_simbox,
+                                   const int                 & n_layers,
+                                   const int                 & n_layers_above,
+                                   const int                 & n_layers_below,
+                                   const int                 & n_layers_simbox,
+                                   const int                 & n_layers_padding) const
+{
+  std::vector<double> t(n_layers + 1, 0);
+  std::vector<double> dt(n_layers + 1, 0);
+
+  double max_time = findMaxTime();
+
+  double dt_above  = static_cast<double>(  t_top             / n_layers_above);
+  double dt_below  = static_cast<double>( (max_time - t_bot) / n_layers_below);
+
+  for(int j=0; j<n_layers + 1; j++) {
+    if(j < n_layers_above) {
+      t[j]  = j * dt_above;
+      dt[j] = dt_above;
+    }
+    else if(j >= n_layers_above && j < n_layers_above + n_layers_simbox) {
+      t[j]  = t_top + (j - n_layers_above) * dt_simbox;
+      dt[j] = dt_simbox;
+    }
+    else if(j >= n_layers_above + n_layers_padding) {
+      t[j]  = t_bot + (j - n_layers_above - n_layers_padding) * dt_below;
+      dt[j] = dt_below;
+    }
+  }
+
+  int n_rms_data = static_cast<int>(rms_time.size());
+
+  NRLib::Grid2D<double> G(n_rms_data, n_layers, 0);
+
+  for(int j=0; j<n_rms_data; j++) {
+    int k=0;
+    while(rms_time[j] >= t[k] && k < n_layers) {
+      G(j,k) = dt[k] / rms_time[j];
+      k++;
+    }
+    if(k < n_layers)
+      G(j,k) = (rms_time[j] - t[k-1]) / rms_time[j];
+  }
+
+  return G;
+}
+
+void
+ModelTravelTimeDynamic::getCoordinates(const Simbox   * timeSimbox,
+                                       const RMSTrace & rms_trace,
+                                       double         & t_top,
+                                       double         & t_bot,
+                                       double         & dt_simbox) const
+{
+
+  const double x = rms_trace.getUtmx();
+  const double y = rms_trace.getUtmy();
+
+  int i_ind;
+  int j_ind;
+
+  timeSimbox->getIndexes(x, y, i_ind, j_ind);
+
+  t_top     = timeSimbox->getTop(i_ind, j_ind);
+  t_bot     = timeSimbox->getBot(i_ind, j_ind);
+  dt_simbox = timeSimbox->getdz(i_ind, j_ind);
 }

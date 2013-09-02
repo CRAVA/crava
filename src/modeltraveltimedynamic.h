@@ -51,6 +51,23 @@ private:
   void                          readRMSData(const std::string & fileName,
                                             std::string       & errTxt);
 
+  double                        findMaxTime() const;
+
+  NRLib::Grid2D<double>         calculateG(const std::vector<double> & rms_time,
+                                           const double              & t_top,
+                                           const double              & t_bot,
+                                           const double              & dt_simbox,
+                                           const int                 & n_layers,
+                                           const int                 & n_layers_above,
+                                           const int                 & n_layers_below,
+                                           const int                 & n_layers_simbox,
+                                           const int                 & n_layers_padding) const;
+
+  void                          getCoordinates(const Simbox   * timeSimbox,
+                                               const RMSTrace & rms_trace,
+                                               double         & t_top,
+                                               double         & t_bot,
+                                               double         & dt_simbox) const;
 
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
   std::vector<RMSTrace>     rms_traces_;
