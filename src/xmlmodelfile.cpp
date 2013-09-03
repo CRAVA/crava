@@ -406,7 +406,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   // 3: Density
   if(parseValue(root, "density", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
-  
+
   // 4: Facies
   if(parseValue(root, "facies", value, errTxt) == true) {
     modelSettings_->setLogName(4, value);
@@ -418,7 +418,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setLogName(5, value);
     modelSettings_->setPorosityLogGiven(true);
   }
-  
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1132,11 +1132,11 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("rms-data");
   legalCommands.push_back("horizon-file");
 
   if(parseRMSVelocities(root, errTxt) == false)
-    errTxt += "<travel-time><rms-velocities> needs to be given\n";
+    errTxt += "<travel-time><rms-data> needs to be given in <survey>\n";
 
   std::string horizon;
   int n_horizons = 0;
@@ -1156,7 +1156,7 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  TiXmlNode * root = node->FirstChildElement("rms-data");
   if(root == 0)
     return(false);
 
@@ -1167,7 +1167,7 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "file-name", rms_file, errTxt) == true)
     inputFiles_->addRmsVelocity(rms_file);
   else
-    errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
+    errTxt += "<travel-time><rms-data><file-name> needs to be given\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1287,6 +1287,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("earth-model");
   legalCommands.push_back("local-wavelet");
   legalCommands.push_back("rock-physics");
+  legalCommands.push_back("rms-velocities");
 
   parseBackground(root, errTxt);
   parseEarthModel(root,errTxt);
@@ -1321,6 +1322,8 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
+
+  parsePriorRMSVelocities(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1872,6 +1875,71 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("above-reservoir");
+  legalCommands.push_back("below-reservoir");
+
+  modelSettings_->setRMSPriorGiven(true);
+
+  if(parseAboveReservoir(root, errTxt) == false)
+    errTxt += "<above-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  if(parseBelowReservoir(root, errTxt) == false)
+    errTxt += "<below-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseAboveReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("above-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("n-layers");
+
+  int n_layers;
+
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersAbove(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBelowReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("below-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("n-layers");
+
+  int n_layers;
+
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersBelow(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -5945,6 +6013,12 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       !(modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
                         "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
+
+  /// RMS velocity consistency
+  if(modelSettings_->getTravelTimeTimeLapse(0) == true) {
+    if(modelSettings_->getRMSPriorGiven() == false)
+      errTxt += "<rms-velocities> need to be given in <prior-model> when RMS data are given in <survey><travel-time>\n";
+  }
 
   }
 

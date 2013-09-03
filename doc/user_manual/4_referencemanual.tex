@@ -1629,7 +1629,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+\subsubsection{\hbracket{rms-data}}\newkw{rms-data}
  \slist
    \item \Description Elements controlling the RMS velocities $U^2$
    \item \Argument 
@@ -3807,6 +3807,41 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Description Generates a trend cube following the two way travel time
    \item \Argument 'yes' or 'no
    \item \Default 'no'
+ \elist
+
+\subsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+ \slist
+   \item \Description Prior information for the RMS data
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{above-reservoir}}\newkw{above-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data above the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\newkw{n-layers}
+ \slist
+   \item \Description Number of layers to be used from t=0 at the surface to the top of the reservoir
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{below-reservoir}}\newkw{below-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data below the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\rnewkw{n-layers}{n-layers-below}
+ \slist
+   \item \Description Number of layers to be used from the base of the reservoir to the deepest observed time for the RMS velocities in \kw{rms-data}
+   \item \Argument Integer
+   \item \Default
  \elist
 
 \section{Value assignments}\newkw{value-assignments}

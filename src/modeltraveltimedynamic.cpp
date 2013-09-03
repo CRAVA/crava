@@ -112,8 +112,8 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
   readRMSData(file_name, tmpErrText);
 
   int n_rms_traces     = static_cast<int>(rms_traces_.size());
-  int n_layers_above   = 10;
-  int n_layers_below   = 10;
+  int n_layers_above   = modelSettings->getRMSnLayersAbove();
+  int n_layers_below   = modelSettings->getRMSnLayersBelow();
   int n_layers_simbox  = timeSimbox->getnz();
   int n_layers_padding = modelSettings->getNZpad();
   int n_layers         = n_layers_above + n_layers_padding + n_layers_below;
