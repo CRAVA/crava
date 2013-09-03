@@ -984,16 +984,16 @@
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
-    <ClCompile Include="rplib\surf_rho1.cpp">
+    <ClCompile Include="rplib\table_rho1.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
-    <ClCompile Include="rplib\surf_rho2.cpp">
+    <ClCompile Include="rplib\table_rho2.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
-    <ClCompile Include="rplib\surf_vp1.cpp">
+    <ClCompile Include="rplib\table_vp1.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
-    <ClCompile Include="rplib\surf_vp2.cpp">
+    <ClCompile Include="rplib\table_vp2.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1658,16 +1658,16 @@
     <ClInclude Include="libs\nrlib\random\dSFMT.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
-    <ClInclude Include="rplib\surf_rho1.h">
+    <ClInclude Include="rplib\table_rho1.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
-    <ClInclude Include="rplib\surf_rho2.h">
+    <ClInclude Include="rplib\table_rho2.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
-    <ClInclude Include="rplib\surf_vp1.h">
+    <ClInclude Include="rplib\table_vp1.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
-    <ClInclude Include="rplib\surf_vp2.h">
+    <ClInclude Include="rplib\table_vp2.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
   </ItemGroup>

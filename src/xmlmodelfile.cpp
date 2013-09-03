@@ -2538,7 +2538,7 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
     given++;
   if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
     given++;
-  if(parseCO2(root, constituent_type, label, errTxt) == true)
+  if(parseSpanWagnerCO2(root, constituent_type, label, errTxt) == true)
     given++;
 
   if(given == 0)
@@ -2778,7 +2778,7 @@ XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::strin
 }
 
 bool
-XmlModelFile::parseCO2(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+XmlModelFile::parseSpanWagnerCO2(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("span-wagner-co2");
   if(root == 0)
