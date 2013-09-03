@@ -1290,7 +1290,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
   std::vector<float *> trend_vs_zone(n_intervals);
   std::vector<float *> trend_rho_zone(n_intervals);
 
-  const std::vector<Surface> & eroded_surfaces = multiple_interval_grid->GetErodedSurfaces(); ///H Get eroded surfaces from simboxes instead?
+  //const std::vector<Surface> & eroded_surfaces = multiple_interval_grid->GetErodedSurfaces(); ///H Get eroded surfaces from simboxes instead?
 
 
 
@@ -1331,7 +1331,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
     StormContGrid eroded_zone;
 
     BuildErodedIntervals(eroded_zone,
-                         eroded_surfaces,
+                         //eroded_surfaces,
                          nz,
                          simbox,
                          i);
@@ -1884,7 +1884,7 @@ Background::BuildErodedZones(StormContGrid                & eroded_zone,
 //---------------------------------------------------------------------------
 void
 Background::BuildErodedIntervals(StormContGrid                & eroded_interval,
-                                 const std::vector<Surface>   & eroded_surfaces,
+                                 //const std::vector<Surface>   & eroded_surfaces,
                                  const int                    & nz,
                                  const Simbox                 * simbox,
                                  const int                    & i) const
@@ -1897,8 +1897,10 @@ Background::BuildErodedIntervals(StormContGrid                & eroded_interval,
   double ly        = simbox->GetLY();
   double angle     = simbox->getAngle();
 
+  const Surface * top_eroded_surface = simbox->GetTopErodedSurface();
+  const Surface * base_eroded_surface = simbox->GetBaseErodedSurface();
 
-  NRLib::Volume volume(x_min, y_min, lx, ly, eroded_surfaces[i], eroded_surfaces[i+1], angle);
+  NRLib::Volume volume(x_min, y_min, lx, ly, *top_eroded_surface, *base_eroded_surface, angle);
 
   eroded_interval = StormContGrid(volume, nx, ny, nz);
 

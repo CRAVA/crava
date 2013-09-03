@@ -18,7 +18,7 @@
 BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
                                      const Simbox    * const estimation_simbox,
                                      bool              interpolate,
-                                     bool            & failed,
+                                     //bool            & failed,
                                      std::string     & err_text,
                                      float             max_hz_background,
                                      float             max_hz_seismic) {
@@ -45,9 +45,9 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
+  bool failed = false;
 
   // Remove missing values
-
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
@@ -74,13 +74,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
-                                     bool                             & failed,
+                                     //bool                             & failed,
                                      std::string                      & err_text){
   n_angles_ = 0;
   well_name_ = well_data->GetWellName();
   n_layers_ = estimation_simbox->getnz();
   n_blocks_ = 0;
   interpolate_ = interpolate;
+  bool failed = false;
 
   // Get well name
   well_name_ = well_data->GetWellName();

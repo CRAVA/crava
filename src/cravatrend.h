@@ -31,7 +31,7 @@ public:
              const std::vector<int>                 & trend_cube_type,
              const std::vector<std::string>         & trend_cube_parameters,
              FFTGrid                                * trend_cube,
-             bool                                   & failed,
+             //bool                                   & failed,
              std::string                            & err_txt);
 
   ~CravaTrend();

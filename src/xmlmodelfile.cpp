@@ -1993,6 +1993,14 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
+  //If facies are given as probabilities under parseFacies and multiinterval are used, set all intervals equal to this value.
+  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
+    for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
+      const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
+      const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProb();
+      modelSettings_->addPriorFaciesProbInterval(interval_name_tmp, facies_map_tmp);
+    }
+  }
 
   while(parseFaciesInterval(root,errTxt)==true);
 
@@ -4315,7 +4323,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   std::vector<int> erosion_priorities;
   erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
-  if(interval_names.size() == erosion_priorities.size()){
+  if(interval_names.size() != erosion_priorities.size()){ //H Changed to !=
     for (unsigned int i=0; i<interval_names.size(); i++){
       erosion_priorities.push_back(modelSettings_->getErosionPriorityBaseSurface(interval_names[i]));
     }
@@ -4329,7 +4337,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   }
   if(priorities_ok == false){
     err_txt += "The erosion priorities are not unique in command <"+root->ValueStr()+"> "
-      +lineColumnText(root)+".\n";
+      +lineColumnText(root)+". The top-surface has a default priority of 1.\n";
   }
 
   checkForJunk(root, err_txt, legalCommands);

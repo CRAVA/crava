@@ -89,7 +89,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                          *estimation_simbox);
       }
       else{
-        err_text+= "Erosion of surfaces failed because the interval surfaces could not be set up correctly.\n";
+        err_text += "Erosion of surfaces failed because the interval surfaces could not be set up correctly.\n";
       }
     }
     // if multiple-intervals is NOT used in model settings
@@ -173,30 +173,30 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
   std::vector<NRLib::Grid<double> > rho_intervals(n_intervals_);
 
-  if(!failed){
-    try{
+  //if(!failed){
+  //  try{
 
-      //dz to vector
-      //std::vector<float> dz;
-      //for(size_t i = 0; i < n_intervals_; i++)
-      //  dz.push_back( interval_simboxes_[i].GetDz()*interval_simboxes_[i].GetAvgRelThick() * 4 );
-      //float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
+  //    //dz to vector
+  //    //std::vector<float> dz;
+  //    //for(size_t i = 0; i < n_intervals_; i++)
+  //    //  dz.push_back( interval_simboxes_[i].GetDz()*interval_simboxes_[i].GetAvgRelThick() * 4 );
+  //    //float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
-      if(n_intervals_ > 0){ // It is possible to give only one interval in multiple-intervals
-        BuildSeismicPropertyIntervals(vp_intervals,
-                                      vs_intervals,
-                                      rho_intervals,
-                                      interval_simboxes_,
-                                      relative_grid_resolution_);
-      }else{
-        // what ?
-      }
-    }
-    catch(NRLib::Exception & e){
-    failed = true;
-    err_text += e.what();
-    }
-  }
+  //    if(n_intervals_ > 0){ // It is possible to give only one interval in multiple-intervals
+  //      BuildSeismicPropertyIntervals(vp_intervals,
+  //                                    vs_intervals,
+  //                                    rho_intervals,
+  //                                    interval_simboxes_,
+  //                                    relative_grid_resolution_);
+  //    }else{
+  //      // what ?
+  //    }
+  //  }
+  //  catch(NRLib::Exception & e){
+  //  failed = true;
+  //  err_text += e.what();
+  //  }
+  //}
 
   // Add inn surface files.
   surface_files_.push_back(input_files->getTimeSurfFile(0));
@@ -262,12 +262,15 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     //SegyGeometry * geometry = model_settings->getAreaParameters();
 
     float min_samp_dens = model_settings->getMinSamplingDensity();
-    if (interval_simboxes[i].getdz()*interval_simboxes[i].getMinRelThick() < min_samp_dens){
-      failed   = true;
-      err_text += "We normally discourage denser sampling than "+NRLib::ToString(min_samp_dens);
-      err_text += "ms in the time grid. If you really need\nthis, please use ";
-      err_text += "<project-settings><advanced-settings><minimum-sampling-density>\n";
-    }
+    double tmp = interval_simboxes[i].getMinRelThick();
+
+    //if (interval_simboxes[i].getdz()*interval_simboxes[i].getMinRelThick() < min_samp_dens){ ///H Commented out. Move this?
+    //  failed   = true;
+    //  err_text += "We normally discourage denser sampling than "+NRLib::ToString(min_samp_dens);
+    //  err_text += "ms in the time grid. If you really need\nthis, please use ";
+    //  err_text += "<project-settings><advanced-settings><minimum-sampling-density>\n";
+    //}
+
 
     // Make extended interval_simbox for the inversion interval ---------------------------
 
@@ -408,10 +411,10 @@ void MultiIntervalGrid::FindSmallestSurfaceGeometry(const double   x0,
 }
 
 // --------------------------------------------------------------------------------
-void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>            & eroded_surfaces,
-                                          const std::vector<int>          & erosion_priorities,
-                                          const std::vector<Surface>      & surfaces,
-                                          const Simbox                    & simbox) const{
+void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_surfaces,
+                                          const std::vector<int>     & erosion_priorities,
+                                          const std::vector<Surface> & surfaces,
+                                          const Simbox               & simbox) const{
   int    n_surf     = static_cast<int>(eroded_surfaces.size());
 
   for(int i=0; i<n_surf; i++) {

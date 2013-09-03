@@ -53,10 +53,10 @@ private:
   void LoadWellMoveInterval(const InputFiles             * input_files,
                             const Simbox                 * estimation_simbox,
                             std::vector<Surface *>       & well_move_interval,
-                            std::string                  & err_text,
-                            bool                         & failed);
+                            std::string                  & err_text);
+                            //bool                         & failed);
 
-  void  OptimizeWellLocations(ModelSettings                                 * model_settings,
+  bool  OptimizeWellLocations(ModelSettings                                 * model_settings,
                               InputFiles                                    * input_files,
                               const Simbox                                  * estimation_simbox,
                               //const NRLib::Volume                           & volume,
@@ -64,8 +64,8 @@ private:
                               std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                               std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                               std::map<int, float **>                       & reflection_matrix,
-                              std::string                                   & err_text,
-                              bool                                          & failed);
+                              std::string                                   & err_text);
+                              //bool                                          & failed);
 
   void MoveWell(const NRLib::Well & well,
                 const Simbox      * simbox,
@@ -155,23 +155,27 @@ private:
                              std::vector<std::string>         & log_names_from_user,
                              const std::vector<bool>          & inverse_velocity,
                              bool                               facies_log_given,
-                             std::string                      & error_text,
-                             bool                             & failed);
+                             std::string                      & error_text);
+                             //bool                             & failed);
 
   void ProcessLogsRMSWell(NRLib::Well                     & new_well,
-                          std::vector<std::string>  & log_names_from_user,
+                          std::vector<std::string>        & log_names_from_user,
                           const std::vector<bool>         & inverse_velocity,
                           bool                              facies_log_given,
-                          std::string                     & error_text,
-                          bool                            & failed);
+                          std::string                     & error_text);
+                          //bool                            & failed);
 
+  bool  SetupReflectionMatrix(ModelSettings  * model_settings,
+                              InputFiles     * input_files,
+                              std::string    & err_text);
 
-  bool  SetupReflectionMatrixAndTempWavelet(ModelSettings  * model_settings,
-                                            InputFiles     * input_files);
+  bool  SetupTemporaryWavelet(ModelSettings * model_settings,
+                              InputFiles    * input_files,
+                              std::string   & err_text);
 
-  bool  WaveletHandling(ModelSettings                     * model_settings,
-                        InputFiles                        * input_files);
-
+  bool  WaveletHandling(ModelSettings * model_settings,
+                        InputFiles    * input_files,
+                        std::string   & err_text);
 
   //bool       CheckThatDataCoverGrid(const SegY            * segy,
   //                                  float                   offset,
@@ -195,11 +199,12 @@ private:
   void ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
                                    std::string                well_file_name,
                                    std::vector<int>         & facies_nr,
-                                   std::vector<std::string> & facies_names);
+                                   std::vector<std::string> & facies_names,
+                                   std::string              & err_txt);
 
   void SetFaciesNamesFromWells(ModelSettings            *& model_settings,
-                               std::string               & err_text,
-                               bool                      & failed);
+                               std::string               & err_text);
+                               //bool                      & failed);
 
   void GetMinMaxFnr(int            & min,
                     int            & max,
@@ -290,20 +295,20 @@ private:
                                const Grid2D   * grid,
                                Surface       *& surface);
 
-  void  SetupTrendCubes(ModelSettings                     * model_settings,
-                        InputFiles                        * input_files,
-                        MultiIntervalGrid                 * multiple_interval_grid,
-                        std::string                       & error_text,
-                        bool                              & failed);
+  bool SetupTrendCubes(ModelSettings                     * model_settings,
+                       InputFiles                        * input_files,
+                       MultiIntervalGrid                 * multiple_interval_grid,
+                       std::string                       & error_text);
+                       //bool                              & failed);
 
-  void SetupRockPhysics(const ModelSettings                                 * model_settings,
+  bool SetupRockPhysics(const ModelSettings                                 * model_settings,
                         const InputFiles                                    * input_files,
                         const MultiIntervalGrid                             * multiple_interval_grid,
                         const std::vector<CravaTrend>                       & trend_cubes,
                         const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                         int                                                   n_trend_cubes,
-                        std::string                                         & error_text,
-                        bool                                                & failed);
+                        std::string                                         & error_text);
+                        //bool                                                & failed);
 
   void PrintExpectationAndCovariance(const std::vector<double>   & expectation,
                                      const NRLib::Grid2D<double> & covariance,
@@ -317,16 +322,16 @@ private:
 
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                    const InputFiles   * input_files,
-                                   std::string        & tmp_err_text,
-                                   int                  i_interval) const;
+                                   std::string        & tmp_err_text) const;
+                                   //int                  i_interval) const;
 
-  void CommonData::SetFaciesNamesFromRockPhysics(int i_interval);
+  void CommonData::SetFaciesNamesFromRockPhysics();
 
   void ReadPriorFaciesProbCubes(const InputFiles        * input_files,
                                 ModelSettings           * model_settings,
                                 std::vector<FFTGrid *>  & prior_facies_prob_cubes,
                                 const Simbox            * interval_simbox,
-                                const Simbox            * time_cut_simbox,
+                                //const Simbox            * time_cut_simbox,
                                 std::string             & err_text);
 
   static FFTGrid  * CreateFFTGrid(int nx,
@@ -382,8 +387,8 @@ private:
                     const ModelSettings  * model_settings,
                     const std::string    & velocity_field,
                     bool                 & velocity_from_inversion,
-                    std::string          & err_text,
-                    bool                 & failed);
+                    std::string          & err_text);
+                    //bool                 & failed);
 
   //std::vector<std::map<std::string, DistributionsRock *> > GetRockDistributionTime0() const;
   std::map<std::string, DistributionsRock *> GetRockDistributionTime0() const;
@@ -403,17 +408,26 @@ private:
                                      int        output_domain,
                                      int        other_output);
 
+  void SetupExtendedBackgroundSimbox(Simbox   * simbox,
+                                     Surface  * top_corr_surf,
+                                     Surface  * base_corr_surf,
+                                     Simbox  *& bg_simbox,
+                                     int        output_format,
+                                     int        output_domain,
+                                     int        other_output);
+
   NRLib::Grid<double>
   FFTGridRealToGrid(const FFTGrid * fft_grid);
-  void SetupPriorCorrelation(ModelSettings                                                * model_settings,
-                            const InputFiles                                              * input_files,
-                            const std::vector<Simbox>                                     & interval_simboxes,
-                            const std::vector<Simbox>                                     & simboxes,
-                            const std::map<std::string, std::map<std::string, float> >    & prior_facies,
-                            const std::vector<CravaTrend>                                 & trend_cubes,
-                            const std::map<int, std::vector<SeismicStorage> >             & seismic_data,
-                            std::string                                                   & err_text,
-                            bool                                                          & failed);
+
+  bool SetupPriorCorrelation(ModelSettings                                                * model_settings,
+                             const InputFiles                                             * input_files,
+                             const std::vector<Simbox>                                    & interval_simboxes,
+                             const std::vector<Simbox>                                    & simboxes,
+                             const std::map<std::string, std::map<std::string, float> >   & prior_facies,
+                             const std::vector<CravaTrend>                                & trend_cubes,
+                             const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
+                             std::string                                                  & err_text);
+                             //bool                                                       & failed);
 
   void  CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
                                             const std::vector<float>                         & probability,

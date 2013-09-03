@@ -486,7 +486,7 @@ private:
                                 const int                    & i) const;
 
   void         BuildErodedIntervals(StormContGrid                & eroded_zone,
-                                    const std::vector<Surface>   & eroded_surfaces,
+                                    //const std::vector<Surface>   & eroded_surfaces,
                                     const int                    & nz,
                                     const Simbox                 * simbox,
                                     const int                    & i) const;
