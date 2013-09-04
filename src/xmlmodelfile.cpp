@@ -363,12 +363,15 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs");
   legalCommands.push_back("dts");
   legalCommands.push_back("density");
+  legalCommands.push_back("porosity");
   legalCommands.push_back("facies");
 
+  // 0: Time
   std::string value;
   if(parseValue(root, "time", value, errTxt) == true)
     modelSettings_->setLogName(0, value);
 
+  // 1: Vp
   bool vp = parseValue(root, "vp", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(1, value);
@@ -384,6 +387,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 2: Vs
   bool vs = parseValue(root, "vs", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(3, value);
@@ -399,11 +403,20 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  // 3: Density
   if(parseValue(root, "density", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
+
+  // 4: Facies
   if(parseValue(root, "facies", value, errTxt) == true) {
     modelSettings_->setLogName(4, value);
     modelSettings_->setFaciesLogGiven(true);
+  }
+
+  // 5: Porosity
+  if(parseValue(root, "porosity", value, errTxt) == true) {
+    modelSettings_->setLogName(5, value);
+    modelSettings_->setPorosityLogGiven(true);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -671,8 +684,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(parseTravelTime(root, errTxt) == false) {
     inputFiles_->addTravelTimeHorizon("");
     inputFiles_->addRmsVelocity("");
-    modelSettings_->addTravelTimeTraceHeaderFormat(NULL);
-    modelSettings_->addDefaultTravelTimeSegyOffset();
+    modelSettings_->addTimeLapseTravelTime(false);
   }
   inputFiles_->addTimeLapseTravelTime();
 
@@ -1135,6 +1147,8 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
   if(n_horizons == 0)
     inputFiles_->addTravelTimeHorizon("");
 
+  modelSettings_->addTimeLapseTravelTime(true);
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1148,24 +1162,12 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
-  legalCommands.push_back("segy-start-time");
-  legalCommands.push_back("segy-format");
 
   std::string rms_file;
   if(parseFileName(root, "file-name", rms_file, errTxt) == true)
     inputFiles_->addRmsVelocity(rms_file);
   else
     errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
-
-  float start_time;
-  if(parseValue(root, "segy-start-time", start_time, errTxt) == true)
-    modelSettings_->addTravelTimeSegyOffset(start_time);
-  else
-    modelSettings_->addDefaultTravelTimeSegyOffset();
-
-  TraceHeaderFormat * thf = NULL;
-  parseTraceHeaderFormat(root, "segy-format", thf, errTxt);
-  modelSettings_->addTravelTimeTraceHeaderFormat(thf);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -3586,7 +3588,7 @@ XmlModelFile::parseEvolve(TiXmlNode * node, std::string & errTxt)
 
   double correlation;
   if(parseValue(root, "one-year-correlation", correlation, errTxt) == true) {
-    if(correlation <= -1 || correlation >= 1)
+    if(correlation < -1 || correlation > 1)
       errTxt += "The <one-year-correlation> of the <reservoir-variable> should be in the interval (-1,1) in <evolve>\n";
   }
   else
@@ -4502,7 +4504,10 @@ XmlModelFile::parseAreaFromSurface(TiXmlNode * node, std::string & errTxt)
   }
   bool snapToSeismicData = false;
   if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
-    modelSettings_->setSnapGridToSeismicData(true);
+    if(snapToSeismicData)
+      modelSettings_->setSnapGridToSeismicData(true);
+    else
+      modelSettings_->setSnapGridToSeismicData(false);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -4615,12 +4620,6 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
 
   if (snapToSeismicData) {
     modelSettings_->setSnapGridToSeismicData(true);
-    dx = lx;
-    dy = ly;
-    if(densX)
-      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-    if(densY)
-      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
   }
   else {
     if (!densX)
@@ -5196,6 +5195,7 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("rock-physics-distributions");
   legalCommands.push_back("error-file");
   legalCommands.push_back("task-file");
+  legalCommands.push_back("rock-physics-trends");
 
   bool value;
   int otherFlag = 0;
@@ -5213,6 +5213,8 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += IO::ERROR_FILE;
   if(parseBool(root, "task-file", value, errTxt) == true && value == true)
     otherFlag += IO::TASK_FILE;
+  if(parseBool(root, "rock-physics-trends", value, errTxt) == true && value == true)
+    otherFlag += IO::ROCK_PHYSICS_TRENDS;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
 
@@ -6277,6 +6279,21 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       j++;
     }
   }
+
+  // Check facies names. At leas one rock needs to be given prior probebility
+  // Find facies names
+  std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
+  std::map<std::string, std::string> facies_cubes   = inputFiles_->getPriorFaciesProbFile();
+  std::vector<std::string> all_facies_names;
+
+  for(std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
+    all_facies_names.push_back(it_prob->first);
+  for(std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
+    all_facies_names.push_back(it_cube->first);
+
+
+  if(all_facies_names.size() == 0)
+    errTxt += "At least one facies needs to be given a prior probability in <prior-model><facies-probabilities>.\n";
 
   // Check vintages in <rock-physics><evolve>
   // Compare vintages in <reservoir> with vintages in <survey>

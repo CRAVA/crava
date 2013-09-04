@@ -26,6 +26,7 @@ public:
            int                              indicatorWavelet,
            int                              indicatorBGTrend,
            int                              indicatorRealVs,
+           bool                             porosityLogGiven,
            bool                             faciesLogGiven);
   ~WellData(void);
 
@@ -33,6 +34,7 @@ public:
   const float       * getBeta(int &nData) const;
   const float       * getRho(int &nData) const;
   const int         * getFacies(int &nData) const;
+  const float       * getPorosity(int &nData) const;
   const float       * getAlphaBackgroundResolution(int &nData) const;
   const float       * getBetaBackgroundResolution(int &nData) const;
   const float       * getRhoBackgroundResolution(int &nData) const;
@@ -92,9 +94,9 @@ public:
 
 private:
   void                readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
-                                  const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
+                                  const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
   void                readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
-                                     const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
+                                     const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
   void                mergeCells(const std::string & name, double * log_resampled, double * log,
                                  int ii, int istart, int iend, bool debug);
   void                mergeCells(const std::string & name, float * log_resampled, float * log,
@@ -125,6 +127,7 @@ private:
   float                   * beta_;
   float                   * rho_;
   int                     * facies_;
+  float                   * porosity_;
 
   float                   * alpha_background_resolution_; // Vp  - filtered to background resolution
   float                   * beta_background_resolution_;  //
@@ -159,6 +162,11 @@ private:
   int                       faciesok_;                    // all faciesnumbers read are present in header
 
 };
+
+inline const float* WellData::getPorosity(int &nData) const{
+  nData = nd_;
+  return porosity_;
+}
 
 inline const float* WellData::getAlpha(int &nData) const
 {

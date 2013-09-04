@@ -19,7 +19,7 @@ CorrelatedRockSamples::CreateSamples(int                                     i_m
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
-  int k_max = static_cast<int>( time.size() );
+  int k_max = static_cast<int>(dist_rock.size() );
 
   // Set up time vectors, the same for all sets of correlated samples.
   time_line.ReSet();
@@ -85,7 +85,7 @@ CorrelatedRockSamples::CreateSamplesExtended(int                                
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
-  int k_max = static_cast<int>( time.size() );
+  int k_max = static_cast<int>(dist_rock.size());
 
   // Set up time vectors, the same for all sets of correlated samples.
   time_line.ReSet();

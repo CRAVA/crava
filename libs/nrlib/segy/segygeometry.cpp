@@ -1292,6 +1292,8 @@ SegyGeometry::findAreaILXL(SegyGeometry * tempGeometry)
 {
   double x0   = tempGeometry->GetX0();
   double y0   = tempGeometry->GetY0();
+  double dx   = tempGeometry->GetDx();
+  double dy   = tempGeometry->GetDy();
   double lx   = tempGeometry->Getlx();
   double ly   = tempGeometry->Getly();
   double rot  = tempGeometry->GetAngle();
@@ -1364,13 +1366,83 @@ SegyGeometry::findAreaILXL(SegyGeometry * tempGeometry)
   intMinXL = std::max(intMinXL, minXL_);
   intMaxXL = std::min(intMaxXL, maxXL_);
 
+  //
+  // Round the inversion resolution dXL and dIL to the nearest multiple
+  // of XLStep and ILSstep.
+  //
+  bool XLStep_to_dXL = false;
+  double diff_angle = rot - this->rot_; // difference between inversion angle and seismic angle
+  if(diff_angle <= NRLib::Pi/4 && diff_angle> -NRLib::Pi/4){
+    XLStep_to_dXL = true;
+  }else if(diff_angle <= 3*NRLib::Pi/4 && diff_angle > NRLib::Pi/4){
+    XLStep_to_dXL = false;
+  }else if(diff_angle <= -NRLib::Pi/4 && diff_angle >-3*NRLib::Pi/4){
+    XLStep_to_dXL = false;
+  }else{
+    XLStep_to_dXL= true;
+  }
+
+  // dx and dy are the step sizes requested by the user
+  // XLStep_*dx_ is the step size in the seismic.
+  int XLStep_rounded, ILStep_rounded;
+
+  if(XLStep_to_dXL){ // The angle between the inversion x-axis and seismic XL-axis is between -90 and 90 degrees
+
+    XLStep_rounded = static_cast<int> (floor(dx/(dx_*XLStep_) + 0.5));
+    ILStep_rounded = static_cast<int> (floor(dy/(dy_*ILStep_) + 0.5));
+
+    if(XLStep_rounded < XLStep_){
+      XLStep_rounded = XLStep_;
+    }
+    else if(XLStep_rounded > intMaxXL - intMinXL){
+      XLStep_rounded = intMaxXL - intMinXL;
+    }
+
+    if(ILStep_rounded < ILStep_){
+      ILStep_rounded = ILStep_;
+    }
+    else if(ILStep_rounded > intMaxIL - intMinIL){
+      ILStep_rounded = intMaxIL - intMinIL;
+    }
+    LogKit::LogFormatted(LogKit::Low,"\nSnapping to seismic data:\n");
+    LogKit::LogFormatted(LogKit::Low,"The resolution of the requested inversion area is rounded to the nearest multiple of the seismic resolution:\n");
+    LogKit::LogFormatted(LogKit::Low,"From dx = %7.2f to dXL= %d*%7.2f= %7.2f.\n", dx, XLStep_rounded , dx_ , dx_*XLStep_rounded);
+    LogKit::LogFormatted(LogKit::Low,"From dy = %7.2f to dIL= %d*%7.2f= %7.2f.\n", dy, ILStep_rounded , dy_ , dy_*ILStep_rounded);
+  }
+  else{ // The angle between the inversion x-axis and seismic XL-axis is greater than 90 degrees
+
+    XLStep_rounded = static_cast<int>(floor(dy/(dx_*XLStep_)+0.5));
+    ILStep_rounded = static_cast<int>(floor(dx/(dy_*ILStep_)+0.5));
+
+    if(XLStep_rounded < XLStep_){
+      XLStep_rounded = XLStep_;
+    }
+    else if(XLStep_rounded > intMaxXL - intMinXL){
+      XLStep_rounded = intMaxXL - intMinXL;
+    }
+
+    if(ILStep_rounded < ILStep_){
+      ILStep_rounded = ILStep_;
+    }else if(ILStep_rounded > intMaxIL - intMinIL){
+      ILStep_rounded = intMaxIL - intMinIL;
+    }
+
+    LogKit::LogFormatted(LogKit::Low,"\nSnapping to seismic data:\n");
+    LogKit::LogFormatted(LogKit::Low,"\nThe angle between the x-axis of the inversion area and the seismic data exceeds 45 degrees, so the requested\n");
+    LogKit::LogFormatted(LogKit::Low,"dx is used as requested dIL, and the requested dy is used as requested dXL.\n");
+    LogKit::LogFormatted(LogKit::Low,"The resolution of the requested inversion area is rounded to the nearest multiple of the seismic resolution:\n");
+    LogKit::LogFormatted(LogKit::Low,"From dx = %7.2f to dXL= %d*%7.2f= %7.2f.\n", dx, XLStep_rounded , dx_ , dx_*XLStep_rounded);
+    LogKit::LogFormatted(LogKit::Low,"From dy = %7.2f to dIL= %d*%7.2f= %7.2f.\n", dy, ILStep_rounded , dy_ , dy_*ILStep_rounded);
+
+  }
+
   std::vector<int> areaILXL(6);
   areaILXL[0] = intMinIL;
   areaILXL[1] = intMaxIL;
   areaILXL[2] = intMinXL;
   areaILXL[3] = intMaxXL;
-  areaILXL[4] = ILStep_;   // Enforce same step as original seismic data
-  areaILXL[5] = XLStep_;   // Enforce same step as original seismic data
+  areaILXL[4] = ILStep_rounded;
+  areaILXL[5] = XLStep_rounded;
 
   return areaILXL;
 }

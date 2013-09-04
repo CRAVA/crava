@@ -45,9 +45,9 @@ public:
   @param[in] traces  Traces from segY cube
   */
   SegyGeometry(std::vector<SegYTrace *> &traces);
-  SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL information not available, generates internally.
+  SegyGeometry(double x0,double y0,double dXL,double dIL, size_t n_XL,size_t n_IL, ///< When XL, IL information not available, generates internally.
                double rot);
-  SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL is available.
+  SegyGeometry(double x0,double y0,double dXL,double dIL, size_t n_XL,size_t n_IL, ///< When XL, IL is available.
                double IL0, double XL0, double ilStepX, double ilStepY,
                double xlStepX, double xlStepY, double rot);
   SegyGeometry(const RegularSurface<double> surf);
@@ -114,13 +114,15 @@ private:
   void   SetupGeometrySingleTrace(const SegYTrace * trace);
 
   double x0_, y0_;                  ///<
-  double dx_, dy_;                  ///< Cell increments
-  size_t nx_, ny_;                  ///< Grid dimensions
+/// !! Here, dx, dy, nx and ny are step sizes and number of points of the local coordinate system !!
+  double dx_, dy_;                  ///< Cell increments along XL and IL axes
+  size_t nx_, ny_;                  ///< Grid dimensions along XL and IL axes
   double in_line0_, cross_line0_;   ///< Start value for inline and crossline
-  double il_stepX_, il_stepY_;      ///< Change in IL when moving one unit along x/y (global)
-  double xl_stepX_, xl_stepY_;      ///< Change in XL when moving one unit along x/y (global)
+/// !! Here, X and Y are the coordinates along the global UTM coordinate system !!
+  double il_stepX_, il_stepY_;      ///< Change in IL (local) when moving one unit along x/y (global)
+  double xl_stepX_, xl_stepY_;      ///< Change in XL (local) when moving one unit along x/y (global)
   double sin_rot_, cos_rot_;        ///<
-  double rot_;                      ///<
+  double rot_;                      ///< Angle of the local XL-axis relative to the global UTMX axis
 
   int IL0_, XL0_;                   ///<
   int minIL_, maxIL_, ILStep_;      ///< inline start,stop and step
