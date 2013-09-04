@@ -1846,7 +1846,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
     }
   }
-  else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE || 
+  else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE ||
            areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
     LogKit::LogFormatted(LogKit::Low," taken from surface\n");
     LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+inputFiles->getAreaSurfaceFile()+"\n");
