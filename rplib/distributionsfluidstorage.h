@@ -160,4 +160,25 @@ private:
   std::vector<DistributionWithTrendStorage *> salinity_;
 };
 
+//----------------------------------------------------------------------------------//
+class CO2FluidStorage : public DistributionsFluidStorage {
+public:
+  CO2FluidStorage(std::vector<DistributionWithTrendStorage *> pressure,
+                  std::vector<DistributionWithTrendStorage *> temperature);
+
+
+  virtual ~CO2FluidStorage();
+
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                                                       const std::string                                              & path,
+                                                                       const std::vector<std::string>                                 & trend_cube_parameters,
+                                                                       const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                                                       const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
+                                                                       std::string                                                    & errTxt) const;
+
+private:
+  std::vector<DistributionWithTrendStorage *> pressure_;
+  std::vector<DistributionWithTrendStorage *> temperature_;
+};
+
 #endif
