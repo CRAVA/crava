@@ -31,6 +31,9 @@ public:
 
   ~ModelTravelTimeDynamic();
 
+  void                          doInversion(const Simbox            * timeSimbox,
+                                            SeismicParametersHolder & seismicParameters) const;
+
   bool                          getFailed()                const { return failed_                 ;}
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
@@ -44,7 +47,6 @@ private:
 
   void                          processRMSData(const ModelSettings      * modelSettings,
                                                const InputFiles         * inputFiles,
-                                               const Simbox             * timeSimbox,
                                                std::string              & errTxt,
                                                bool                     & failed);
 
@@ -71,6 +73,15 @@ private:
 
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
   std::vector<RMSTrace>     rms_traces_;
+
+  int                       n_layers_above_;        ///< Number of layers to be used in the RMS inversion above the reservoir
+  int                       n_layers_below_;        ///< Number of layers to be used in the RMS inversion below the reservoir
+
+  double                    var_vp_above_;          ///< Var(Vp) above the reservoir // Ønsker egentlig Var(Vp^2)
+  double                    var_vp_below_;          ///< Var(Vp) below the reservoir // Ønsker egentlig Var(Vp^2)
+
+  double                    range_above_;           ///< Range of the temporal corralation function used above the reservoir
+  double                    range_below_;           ///< Range of the temporal corralation function used below the reservoir
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.

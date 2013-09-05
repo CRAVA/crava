@@ -1909,10 +1909,24 @@ XmlModelFile::parseAboveReservoir(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("n-layers");
 
-  int n_layers;
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpAbove(variance);
 
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeAbove(range);
+
+
+  int n_layers;
   if(parseValue(root, "n-layers", n_layers, errTxt) == false)
     errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
   else
@@ -1930,10 +1944,23 @@ XmlModelFile::parseBelowReservoir(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("n-layers");
 
-  int n_layers;
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpBelow(variance);
 
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeBelow(range);
+
+  int n_layers;
   if(parseValue(root, "n-layers", n_layers, errTxt) == false)
     errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
   else

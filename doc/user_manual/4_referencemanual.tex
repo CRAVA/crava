@@ -2284,7 +2284,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  
  \subsection{\hbracket{temporal-correlation-range}}\newkw{temporal-correlation-range}
   \slist
-    \item \Description Parameter for exponential variogram for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
+    \item \Description Range (ms) in exponential variogram used for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
     \item \Argument Value
     \item \Default
  \elist
@@ -3845,6 +3845,20 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default
  \elist
 
+\paragraph{\hbracket{variance-vp}}\newkw{variance-vp}
+ \slist
+   \item \Description Variance for $V_p$ in the zone above the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-above}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation above the reservoir. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
 \paragraph{\hbracket{n-layers}}\newkw{n-layers}
  \slist
    \item \Description Number of layers to be used from t=0 at the surface to the top of the reservoir
@@ -3856,6 +3870,20 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Prior information for the RMS data below the reservoir
    \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{variance-vp}}\rnewkw{variance-vp}{variance-vp-below}
+ \slist
+   \item \Description Variance for $V_p$ in the zone below the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-below}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation below the reservoir. 
+   \item \Argument Value
    \item \Default
  \elist
 

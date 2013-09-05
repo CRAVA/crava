@@ -25,12 +25,13 @@
 #include "src/gridmapping.h"
 #include "src/timings.h"
 #include "src/rmstrace.h"
+#include "src/vario.h"
 
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/surface/regularsurface.hpp"
 
 ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
-                                               const ModelGeneral            * modelGeneral,
+                                               const ModelGeneral            * /*modelGeneral*/,
                                                const InputFiles              * inputFiles,
                                                const int                     & vintage)
 : thisTimeLapse_(vintage)
@@ -46,7 +47,6 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
   bool failed_rms_data = false;
   processRMSData(modelSettings,
                  inputFiles,
-                 modelGeneral->getTimeSimbox(),
                  errTxt,
                  failed_rms_data);
 
@@ -96,7 +96,6 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 void
 ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
                                        const InputFiles         * inputFiles,
-                                       const Simbox             * timeSimbox,
                                        std::string              & errTxt,
                                        bool                     & failed)
 
@@ -111,35 +110,14 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 
   readRMSData(file_name, tmpErrText);
 
-  int n_rms_traces     = static_cast<int>(rms_traces_.size());
-  int n_layers_above   = modelSettings->getRMSnLayersAbove();
-  int n_layers_below   = modelSettings->getRMSnLayersBelow();
-  int n_layers_simbox  = timeSimbox->getnz();
-  int n_layers_padding = modelSettings->getNZpad();
-  int n_layers         = n_layers_above + n_layers_padding + n_layers_below;
+  n_layers_above_   = modelSettings->getRMSnLayersAbove();
+  n_layers_below_   = modelSettings->getRMSnLayersBelow();
 
-  double t_top;
-  double t_bot;
-  double dt_simbox;
+  var_vp_above_     = modelSettings->getRMSVarianceVpAbove();
+  var_vp_below_     = modelSettings->getRMSVarianceVpBelow();
 
-  for(int i=0; i<n_rms_traces; i++) {
-
-    getCoordinates(timeSimbox,
-                   rms_traces_[i],
-                   t_top,
-                   t_bot,
-                   dt_simbox);
-
-    NRLib::Grid2D<double> G = calculateG(rms_traces_[i].getTime(),
-                                         t_top,
-                                         t_bot,
-                                         dt_simbox,
-                                         n_layers,
-                                         n_layers_above,
-                                         n_layers_below,
-                                         n_layers_simbox,
-                                         n_layers_padding);
-  }
+  range_above_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
+  range_below_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
 
   if(tmpErrText != "") {
     errTxt += tmpErrText;
@@ -351,4 +329,100 @@ ModelTravelTimeDynamic::getCoordinates(const Simbox   * timeSimbox,
   t_top     = timeSimbox->getTop(i_ind, j_ind);
   t_bot     = timeSimbox->getBot(i_ind, j_ind);
   dt_simbox = timeSimbox->getdz(i_ind, j_ind);
+}
+
+//-----------------------------------------------------------------------------------------//
+void
+ModelTravelTimeDynamic::doInversion(const Simbox            * timeSimbox,
+                                    SeismicParametersHolder & seismicParameters) const
+{
+
+  FFTGrid * covariance_grid_log_vp = seismicParameters.GetCovBeta();
+
+  int n_rms_traces     = static_cast<int>(rms_traces_.size());
+  int n_layers_simbox  = timeSimbox->getnz();
+  int n_layers_padding = covariance_grid_log_vp->getNzp();
+  int n_layers         = n_layers_above_ + n_layers_padding + n_layers_below_;
+
+  double t_top;
+  double t_bot;
+  double dt_simbox;
+
+  // Variables for Sigma_m
+  Vario * variogram_above = new GenExpVario(1, static_cast<float>(range_above_));
+  Vario * variogram_below = new GenExpVario(1, static_cast<float>(range_below_));
+
+
+  std::vector<float> corrT_above(n_layers_above_ + 1);
+  std::vector<float> corrT_below(n_layers_below_ + 1);
+
+  double max_time = findMaxTime();
+
+
+  for(int i=0; i<n_rms_traces; i++) {
+
+    getCoordinates(timeSimbox,
+                   rms_traces_[i],
+                   t_top,
+                   t_bot,
+                   dt_simbox);
+
+    NRLib::Grid2D<double> G = calculateG(rms_traces_[i].getTime(),
+                                         t_top,
+                                         t_bot,
+                                         dt_simbox,
+                                         n_layers,
+                                         n_layers_above_,
+                                         n_layers_below_,
+                                         n_layers_simbox,
+                                         n_layers_padding);
+
+    // Sigma_m
+    float dt_above  = static_cast<float>( t_top             / n_layers_above_);
+    float dt_below  = static_cast<float>((max_time - t_bot) / n_layers_below_);
+
+    for(int j=0; j<=n_layers_above_; j++)
+      corrT_above[j] = variogram_above->corr(j*dt_above, 0);
+    for(int j=0; j<=n_layers_below_; j++)
+      corrT_below[j] = variogram_below->corr(j*dt_below, 0);
+
+    /*
+    double utmx = rms_traces_[i].getUtmx();
+    double utmy = rms_traces_[i].getUtmy();
+    int    i_ind;
+    int    j_ind;
+    int    z_ind;
+    timeSimbox->getIndexes(utmx, utmy, 0, i_ind, j_ind, z_ind);
+    */
+    NRLib::Grid2D<double> Sigma_m(n_layers, n_layers, 0);
+
+    for(int j=0; j<n_layers_above_; j++) {
+      int count = 0;
+      for(int k=j; k<n_layers_above_; k++) {
+        Sigma_m(j,k) = var_vp_above_ * corrT_above[count];
+        Sigma_m(k,j) = Sigma_m(j,k);
+        count ++;
+      }
+    }
+
+    for(int j=n_layers_above_; j<n_layers_above_+n_layers_padding; j++) {
+      int count = 0;
+      for(int k=j; k<n_layers_above_+n_layers_padding; j++) {
+        double cov_log_vp = covariance_grid_log_vp->getRealValue(0, 0, count); // NBNB: Skal ha Var(Vp^2), ikke var(log Vp)
+        Sigma_m(j,k) = cov_log_vp;
+        Sigma_m(k,j) = cov_log_vp;
+        count ++;
+      }
+    }
+
+    for(int j=n_layers_above_+n_layers_padding; j<n_layers; j++) {
+      int count = 0;
+      for(int k=j; k<n_layers; k++) {
+        Sigma_m(j,k) = var_vp_below_ * corrT_below[count];
+        Sigma_m(k,j) = Sigma_m(j,k);
+        count ++;
+      }
+    }
+
+  }
 }
