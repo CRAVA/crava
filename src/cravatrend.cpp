@@ -169,8 +169,7 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
                        const std::vector<int>           & trend_cube_type,
                        const std::vector<std::string>   & trend_cube_parameters,
                        FFTGrid                          * trend_cube,
-                       //bool                             & failed,
-                       std::string                      & err_txt){
+                       std::string                      & err_txt) {
   // Class variables
   n_samples_      = 1000;
   n_trend_cubes_  = static_cast<int>(trend_cube_parameters.size());
@@ -282,7 +281,6 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
       }
 
       //delete trend_cube;
-
     }
   }
 }

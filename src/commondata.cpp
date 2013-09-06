@@ -50,10 +50,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
   multiple_interval_grid_(NULL),
   time_line_(NULL)
 {
-  //bool failed = false;
-  std::string err_text = "";
 
   LogKit::WriteHeader("Common Data");
+  std::string err_text = "";
 
   // 1. set up outer simbox
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
@@ -92,9 +91,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 9. Trend Cubes
   if(setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
-    //bool trend_failed = false;
-    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, err_text); //, trend_failed);
-    //setup_trend_cubes_ = !trend_failed;
+    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, err_text);
   }
 
   // 10. Rock Physics
@@ -145,6 +142,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 16. Data for Travel time Inversion
 
+
 }
 
 CommonData::~CommonData() {
@@ -160,7 +158,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                             std::string     & err_text_common) {
 
   // parameters
-  //bool failed = false;
   std::string err_text = "";
   std::string grid_file("");
   int  area_specification  = model_settings->getAreaSpecification();
@@ -277,7 +274,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
             err_text += "Error: "+std::string(e.what());
             geometry->WriteILXL(true);
             geometry = NULL;
-            //failed = true;
           }
         }
         delete full_geometry;
@@ -285,7 +281,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       else {
         geometry->WriteILXL();
       }
-      //if(!failed) {
       if(err_text == "") {
         model_settings->setAreaParameters(geometry);
         ILXL_geometry = geometry;
@@ -293,7 +288,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     }
     else {
       err_text += tmp_err_text;
-      //failed = true;
     }
   }
 
@@ -351,7 +345,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                       tmp_err_text);
             if(ILXL_geometry == NULL) {
               err_text += tmp_err_text;
-              //failed = true;
             }
           }
           else {
@@ -372,11 +365,11 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
       // if multiple intervals
       if(model_settings->getIntervalNames().size() > 0){
-        SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text, failed);
+        SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text);
       }
       // single interval described by either one or two surfaces
       else{
-        SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text, failed);
+        SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text);
       }
     }
   }
@@ -387,7 +380,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   }
 
   return true;
-  //return (failed);
 }
 
 
@@ -395,9 +387,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
                                  InputFiles     * input_files,
                                  std::string    & err_text_common) {
 
-
-  //bool failed = false;
-  std::string err_text = "";
+   std::string err_text = "";
 
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
@@ -416,9 +406,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
 
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
-
   int n_timeLapses = model_settings->getNumberOfTimeLapses();
-  //int error = 0;
 
   for(int thisTimeLapse = 0; thisTimeLapse < n_timeLapses; thisTimeLapse++) {
 
@@ -486,7 +474,6 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           }
           else {
             err_text += "Data from segy-file " + filename + " is not read.\n";
-            //failed = true;
           }
 
         } //SEGY
@@ -501,7 +488,6 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           catch (NRLib::Exception & e)
           {
             err_text += "Error when reading storm-file " + filename +": " + NRLib::ToString(e.what()) + "\n";
-            //failed = true;
           }
 
           if(err_text == "") {
@@ -519,7 +505,6 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         } //STORM / SGRI
         else {
           err_text += "Error when reading file " + filename +". File type not recognized.\n";
-          //failed = true;
         }
       } //nAngles
 
@@ -528,71 +513,13 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
     }//ifSeismicFiles
   } //n_timeLapses
 
-
   if(err_text != "") {
     err_text_common += err_text;
     return false;
   }
 
   return true;
-  //return failed;
 }
-
-//bool
-//CommonData::CheckThatDataCoverGrid(const SegY   * segy,
-//                                   float          offset,
-//                                   //const Simbox * timeCutSimbox,
-//                                   //const NRLib::Volume   full_inversion_volume,
-//                                   float          guard_zone)
-//{
-//  // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
-//  float dz = segy->GetDz();
-//  float z0 = offset + 0.5f*dz;
-//  float zn = z0 + (segy->GetNz() - 1)*dz;
-//
-//  // Top and base of interval of interest
-//  //float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
-//  //float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
-//
-//  //Use this instead? input for timeCutSimbox is estimation_simbox_
-//  int nx = estimation_simbox_.getnx();
-//  int ny = estimation_simbox_.getny();
-//  float top_grid = static_cast<float>(full_inversion_volume_.GetTopZMin(nx, ny));
-//  float bot_grid = static_cast<float>(full_inversion_volume_.GetBotZMax(nx, ny));
-//
-//  // Find guard zone
-//  float top_guard = top_grid - guard_zone;
-//  float bot_guard = bot_grid + guard_zone;
-//
-//  if (top_guard < z0) {
-//    float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
-//    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data above the interval of interest. The seismic data\n"
-//                                          " must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a "
-//                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-//                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-//                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-//                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-//                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-//                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-//                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
-//    return false;
-//  }
-//  if (bot_guard > zn) {
-//    float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
-//    LogKit::LogFormatted(LogKit::Warning, "\nThere is not enough seismic data below the interval of interest. The seismic data\n"
-//                                          "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a "
-//                                          + NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n"
-//                                          + "  Seismic data start (CRAVA grid) : "+NRLib::ToString(z0,1)+"\n"
-//                                          + "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n"
-//                                          + "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n"
-//                                          + "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n"
-//                                          + "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n"
-//                                          + "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n");
-//    return false;
-//  }
-//
-//  return true;
-//}
 
 bool
 CommonData::CheckThatDataCoverGrid(const SegY   * segy,
@@ -659,7 +586,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
                               const std::vector<bool>        & inverse_velocity,
                               bool                             facies_log_given,
                               std::string                    & err_text_common) {
-  //bool failed = false;
+
   std::string err_text = "";
 
   // Get all log names given by user
@@ -687,9 +614,9 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       //else if(well_file_name.find(".rms",0) != std::string::npos) {
       //  ProcessLogsRMSWell(new_well, err_text, failed);
       if(well_file_name.find(".nwh",0) != std::string::npos)
-        ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);//, failed);
+        ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
       else if(well_file_name.find(".rms",0) != std::string::npos)
-        ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);//, failed);
+        ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
         //if(model_settings->getFaciesLogGiven()) {
         //  ReadFaciesNamesFromWellFile(model_settings, well_file_name, facies_nr_tmp, facies_names_tmp, err_txt);
@@ -714,12 +641,11 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     }
   }catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
-    //failed = true;
   }
 
   ///H ?
   if(model_settings->getFaciesLogGiven())
-    SetFaciesNamesFromWells(model_settings, err_text);//, failed);
+    SetFaciesNamesFromWells(model_settings, err_text);
 
   if(err_text != "") {
     err_text_common += err_text;
@@ -727,16 +653,14 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
   }
 
   return true;
-
-  //return failed;
 }
 
 void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_well,
                                        std::vector<std::string>        & log_names_from_user,
                                        const std::vector<bool>         & inverse_velocity,
                                        bool                              facies_log_given,
-                                       std::string                     & error_text) {
-                                       //bool                            & failed){
+                                       std::string                     & err_text) {
+
   const int factor_kilometer = 1000;
 
   if(log_names_from_user.size() == 0){
@@ -750,11 +674,9 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
   for(size_t i = 0; i<log_names_from_user.size(); i++){
     // If the well does not contain the log specified by the user, return an error message
     if(!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])){
-      error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
-      //failed = true;
+      err_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
     }
   }
-
 
   // Norsar wells must have a UTMX log
   if(new_well.HasContLog("UTMX")){
@@ -765,8 +687,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
     new_well.AddContLog("X_pos", x_pos_temp);
     new_well.RemoveContLog("UTMX");
   }else{
-    //failed = true;
-    error_text += "Could not find log 'UTMX' in well file "+new_well.GetWellName()+".\n";
+    err_text += "Could not find log 'UTMX' in well file "+new_well.GetWellName()+".\n";
   }
 
   // Norsar wells must have a UTMY log
@@ -778,8 +699,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
     new_well.AddContLog("Y_pos", y_pos_temp);
     new_well.RemoveContLog("UTMY");
   }else{
-    //failed = true;
-    error_text += "Could not find log 'UTMY' in well file "+new_well.GetWellName()+".\n";
+    err_text += "Could not find log 'UTMY' in well file "+new_well.GetWellName()+".\n";
   }
 
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
@@ -800,8 +720,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
     new_well.SetNumberOfNonMissingData(nonmissing_data);
 
   }else{ // Process MD log if TVD is not available?
-    //failed = true;
-    error_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
+    err_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
   }
 
   // Time is always entry 0 in the log name list and is always called TWT
@@ -845,7 +764,6 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
     }
   }
 
-
 }
 
 void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
@@ -853,7 +771,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
                                     const std::vector<bool>         & inverse_velocity,
                                     bool                              facies_log_given,
                                     std::string                     & error_text) {
-                                    //bool                            & failed){
 
   const double factor_usfeet_to_meters = 304800.0;
 
@@ -869,7 +786,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     // If the well does not contain the log specified by the user, return an error message
     if(!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])){
       error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
-      //failed = true;
     }
   }
 
@@ -878,7 +794,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     new_well.AddContLog("X_pos", new_well.GetContLog("x"));
     new_well.RemoveContLog("x");
   }else{
-    //failed = true;
     error_text += "Could not find log 'x' in well file "+new_well.GetWellName()+".\n";
   }
 
@@ -887,7 +802,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     new_well.AddContLog("Y_pos", new_well.GetContLog("y"));
     new_well.RemoveContLog("y");
   }else{
-    //failed = true;
     error_text += "Could not find log 'y' in well file "+new_well.GetWellName()+".\n";
   }
 
@@ -896,7 +810,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     new_well.AddContLog("TVD", new_well.GetContLog("z"));
     new_well.RemoveContLog("z");
   }else{
-    //failed = true;
     error_text += "Could not find log 'z' in well file "+new_well.GetWellName()+".\n";
   }
 
@@ -1076,11 +989,9 @@ CommonData::ReadFaciesNamesFromWellFile(ModelSettings            * model_setting
   //facies_names_wells_.push_back(facies_names_tmp);
 }
 
-void
-CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_settings,
-                                    std::string               & err_text)
-                                    //bool                      & failed)
-{
+void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_settings,
+                                         std::string               & err_text) {
+
   int min,max;
   int globalmin = 0;
   int globalmax = 0;
@@ -1134,8 +1045,6 @@ CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_settings,
         else if(names[fnr] != name)
         {
           err_text += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
-          //failed = true;
-          //error++;
         }
       }
     }
@@ -1187,7 +1096,6 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
 
   //If Vp/Vs is given per interval: A default reflection matrix is set up here, and then altered later per interval.
 
-  //bool failed = false;
   std::string err_text = "";
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
@@ -1211,10 +1119,6 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
       if(reflection_matrix == NULL) {
         err_text += "Reading of file "+refl_matr_file+ " for reflection matrix failed\n";
         err_text += tmp_err_text;
-        //LogKit::LogFormatted(LogKit::Error, "Reading of file "+refl_matr_file+ " for reflection matrix failed\n");
-        //LogKit::LogFormatted(LogKit::Error, tmp_err_text);
-        //failed = true;
-        //return false;
       }
       else
         LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
@@ -1245,8 +1149,6 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   }
 
   return true;
-
-  //return failed;
 }
 
 bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
@@ -1255,12 +1157,8 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
 
-  //bool failed = false;
   std::string err_text = "";
   int n_timelapses = model_settings->getNumberOfTimeLapses();
-
-
-  //if(model_settings->getOptimizeWellLocation() == false && read_seismic_ == true) {
 
   //3. Use Ricker - wavelet.
   //4. 1 wavelet per angle
@@ -1334,10 +1232,6 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
     int tmp_error = 0;
     Wavelet * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
 
-    //if(tmp_error > 0)
-    //  failed = true;
-
-    //if(failed = false)
     if(tmp_error == 0)
       temporary_wavelets_.push_back(wavelet_tmp);
     else
@@ -1350,8 +1244,6 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
   }
 
   return true;
-
-  //return failed;
 }
 
 float ** CommonData::ReadMatrix(const std::string & file_name,
@@ -1469,12 +1361,10 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix
 
 bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                  InputFiles    * input_files,
-                                 std::string   & err_text_common)
-{
+                                 std::string   & err_text_common) {
+
   int n_timeLapses = model_settings->getNumberOfTimeLapses();
   int error = 0;
-  (void) input_files;
-  //bool failed = false;
   std::string err_text = "";
 
   std::string err_text_tmp("");
@@ -1483,7 +1373,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
   if(err_text_tmp != "")
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
-    //LogKit::LogFormatted(LogKit::Error, "Error when finding wavelet estimation interval: " + err_text + "\n");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -1566,13 +1455,11 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
             if(estimation_simbox_.CheckSurface(tmp_surf) == true)
               correlation_direction = new Surface(tmp_surf);
             else {
-              err_text += "Error: Correlation surface does not cover volume.\n"; //H Er estimation_simbox_ allerede utvidet? i makeTimeSimboxes er dette gjort før utvidelsen.
-              failed = true;
-            }
+              err_text += "Error: Correlation surface does not cover volume.\n"; //H Er estimation_simbox_ allerede utvidet? i makeTimeSimboxes er denne sjekken gjort før utvidelsen.
+             }
           }
           catch (NRLib::Exception & e) {
             err_text += e.what();
-            failed = true;
           }
 
           double v0=model_settings->getAverageVelocity();
@@ -1590,7 +1477,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
         }
         else{
           err_text += "Problems reading reference time surface in (x,y).\n";
-          failed = true;
         }
       }
       bool estimateWellGradient = model_settings->getEstimateWellGradientFromSeismic();
@@ -1599,15 +1485,11 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       std::vector<std::vector<double> > SigmaXY;
 
       for(size_t w = 0; w < n_wells; w++) {
-        if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))){
+        if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
           double v0=model_settings->getAverageVelocity();
-
           mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
-          //blocked_logs_common_[w]->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
-        }else{
-          //blocked_logs_common_[w]->SetTimeGradientSettings(distance, sigma_m);
+        } else {
           mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          //blocked_logs_common_[w]->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
           mapped_blocked_logs_.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
         }
       }
@@ -1708,11 +1590,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
   }
 
   return true;
-
-  //if(error > 0)
-  //  failed = true;
-
-  //return failed;
 }
 
 void
@@ -1746,7 +1623,6 @@ CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
     }
     catch (NRLib::Exception & e) {
       err_text += e.what();
-      //failed = true;
     }
 
     try {
@@ -1759,7 +1635,6 @@ CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
     }
     catch (NRLib::Exception & e) {
       err_text += e.what();
-      //failed = true;
     }
   }
 
@@ -2624,9 +2499,10 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
                                            NRLib::Volume                    & full_inversion_volume,
                                            Simbox                           & estimation_simbox,
                                            const std::vector<std::string>   & surf_file,
-                                           std::string                      & err_text,
-                                           bool                             & failed)
-{
+                                           std::string                      & err_text) {
+                                           //bool                             & failed)
+  bool failed = false;
+
   const std::string & top_surface_file_name = surf_file[0];
 
   //bool   generate_seismic    = model_settings->getForwardModeling();
@@ -2794,12 +2670,13 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
                                               NRLib::Volume                   & full_inversion_volume,
                                               Simbox                          & estimation_simbox,
                                               const InputFiles                * input_files,
-                                              std::string                     & err_text,
-                                              bool                            & failed){
+                                              std::string                     & err_text) {
+                                              //bool                            & failed){
 
   // Get interval surface data ------------------------------------------------------------------------------
 
   LogKit::LogFormatted(LogKit::Low,"Setting top and base surfaces for the entire inversion volume:\n");
+  bool failed = false;
 
   const std::vector<std::string>            interval_names                         =  model_settings->getIntervalNames();
   unsigned int                              n_intervals                            =  interval_names.size();
@@ -2894,8 +2771,8 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
                                          const Simbox                                   & estimation_simbox,
                                          std::vector<NRLib::Well>                       & wells,
                                          std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
-                                         std::string                                    & err_text_common){
-  //bool failed = false;
+                                         std::string                                    & err_text_common) {
+
   std::string err_text = "";
 
   LogKit::WriteHeader("Blocking wells for estimation");
@@ -2921,7 +2798,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     }
   }catch(NRLib::Exception & e){
     err_text += e.what();
-    //failed = true;
   }
 
   if(err_text != "") {
@@ -2930,8 +2806,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   }
 
   return true;
-
-  //return failed;
 }
 
 
@@ -2944,15 +2818,13 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                                         std::map<int, float **>                       & reflection_matrix,
                                         std::string                                   & err_text_common) {
-                                        //bool                                          & failed){
 
-  //bool failed = false;
   std::string err_text = "";
 
   LogKit::WriteHeader("Estimating optimized well location");
 
   std::vector<Surface *>      well_move_interval;
-  LoadWellMoveInterval(input_files, estimation_simbox, well_move_interval, err_text);//, failed);
+  LoadWellMoveInterval(input_files, estimation_simbox, well_move_interval, err_text);
 
   size_t n_wells = wells.size();
 
@@ -2984,7 +2856,6 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     std::string well_name = wells[w].GetWellName();
     std::map<std::string, BlockedLogsCommon * >::iterator it = mapped_blocked_logs.find(well_name);
     if(it == mapped_blocked_logs.end()){
-      //failed = true;
       err_text += "Blocked log not found for well  " + wells[w].GetWellName() + "\n";
       break;
     }
@@ -3179,7 +3050,6 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
                                       const Simbox                 * estimation_simbox,
                                       std::vector<Surface *>       & well_move_interval,
                                       std::string                  & err_text) {
-                                      //bool                         & failed) {
 
   const double x0 = estimation_simbox->getx0();
   const double y0 = estimation_simbox->gety0();
@@ -3205,7 +3075,6 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
     }
     catch (NRLib::Exception & e) {
       err_text += e.what();
-      //failed = true;
     }
 
     try {
@@ -3218,7 +3087,6 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
     }
     catch (NRLib::Exception & e) {
       err_text += e.what();
-      //failed = true;
     }
   }
 }
@@ -3227,7 +3095,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                                  InputFiles                     * input_files,
                                  MultiIntervalGrid              * multiple_interval_grid,
                                  std::string                    & err_text_common) {
-                                 //bool                           & failed){
+
   LogKit::WriteHeader("Setting up Trend Cubes");
 
   std::string err_text = "";
@@ -3269,7 +3137,6 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
         if(err_text_tmp != "") {
           err_text += "Reading of file \'"+input_files->getTrendCube(i)+"\' failed\n";
           err_text += err_text_tmp;
-          //failed     = true;
         }
 
         // 2. Resample the FFTGrid into the intervals
@@ -3289,14 +3156,12 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                                    trend_cube_type,
                                    trend_cube_parameters,
                                    trend_cube_intervals[i],
-                                   //failed,
                                    err_text);
 
     }
   }catch(NRLib::Exception & e){
     err_text += e.what();
-    //failed = true;
-  }
+   }
   // Clean up
   delete trend_cube;
   //for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){ //H This failed.
@@ -3309,7 +3174,6 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   }
 
   return true;
-
 }
 
 bool CommonData::SetupRockPhysics(const ModelSettings                               * model_settings,
@@ -3319,9 +3183,9 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                                   const std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
                                   int                                                 n_trend_cubes,
                                   std::string                                       & err_text_common) {
-                                  //bool                                              & failed) {
+
   LogKit::WriteHeader("Processing Rock Physics");
-  //bool failed = false;
+
   std::string err_text = "";
 
   // rock physics data
@@ -3562,12 +3426,9 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   if(err_text != "") {
     err_text_common += err_text;
     return false;
-    //failed = true;
   }
 
   return true;
-
-  //return failed;
 }
 
 bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
@@ -3575,7 +3436,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                                       std::string    & err_text_common) {
 
   std::vector<Surface *> outer_facies_estim_interval; // Whole facies interval for all zones/intervals
-  //bool failed = false;
   std::string err_text = "";
 
   //if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion())
@@ -3593,7 +3453,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                                 //0);
 
     if (tmp_err_text != "") {
-      //failed = true;
       err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
     }
 
@@ -3624,7 +3483,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
       }
       catch (NRLib::Exception & e) {
         err_text += e.what();
-        //failed = true;
       }
 
       try {
@@ -3637,7 +3495,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
       }
       catch (NRLib::Exception & e) {
         err_text += e.what();
-        //failed = true;
       }
     }
 
@@ -3939,9 +3796,10 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                                  tmp_err_text);
 
         if(tmp_err_text != "") {
-          //failed = true;
           err_text += tmp_err_text;
         }
+
+        //H Resample if intervals? Need to put prior_facies_prob_cubes_ into multiintervalgrid.
 
         typedef std::map<std::string,std::string> mapType;
         mapType myMap = input_files->getPriorFaciesProbFile();
@@ -4019,7 +3877,6 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles        * input_files,
         error_text += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
                      +facies_names_[i]+"\' failed\n";
         err_text += error_text;
-        //failed = true;
       }
     }
     else
@@ -4408,7 +4265,7 @@ bool
 CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                  InputFiles     * input_files,
                                  std::string    & err_text_common) {
-  //bool failed = false;
+
   std::string err_text = "";
 
   if (model_settings->getForwardModeling())
@@ -4420,7 +4277,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   TimeKit::getTime(wall,cpu);
 
   //Add in if wells are used for background model
-  for(int i = 0; i < wells_.size(); i++) {
+  for(size_t i = 0; i < wells_.size(); i++) {
     wells_[i].SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
   }
 
@@ -4462,13 +4319,11 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                        back_vel_file,
                        dummy,
                        err_text);
-                       //failed);
         }
         if (err_text == "") {
 
           if(model_settings->getBackgroundVario() == NULL) {
             err_text += "There is no variogram available for the background modelling.\n";
-            //failed = true;
           }
 
           Surface * correlation_direction;
@@ -4484,7 +4339,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
               correlation_direction = new Surface(tmpSurf);
             else {
               err_text += "Error: Correlation surface does not cover volume.\n"; //In ModelGeneral this test is done against timeSimBox before it is expanded (=timeCutSimbox)
-              //failed = true;
             }
 
             //Background simbox
@@ -4499,7 +4353,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           }
 
-          for(int i = 0; i < wells_.size(); i++) {
+          for(size_t i = 0; i < wells_.size(); i++) {
             BlockedLogsCommon * bl_bg = NULL;
 
             if(bg_simbox == NULL)
@@ -4510,7 +4364,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             mapped_bg_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells_[i].GetWellName(), bl_bg));
           }
 
-          //}
 
           if(model_settings->getIntervalNames().size() == 0) {
             std::vector<NRLib::Grid<double> > back_model;
@@ -4527,15 +4380,17 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
             Background(background_parameters, wells_, multiple_interval_grid_, model_settings);
 
-            for(int i = 0; i < model_settings->getIntervalNames().size(); i++)
+            for(size_t i = 0; i < model_settings->getIntervalNames().size(); i++)
               multiple_interval_grid_->AddParametersForInterval(i, background_parameters[i]);
 
           }
+
+          if(bl_bg != NULL)
+            delete bl_bg;
         }
 
         if(velocity != NULL)
           delete velocity;
-        //}
       }
       else {
 
@@ -4687,10 +4542,8 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                              model_settings,
                              err_text_tmp);
             if(err_text_tmp != "") {
-              //err_text_tmp += "Reading of file '"+back_file+"' for parameter '"+par_name[i]+"' failed\n\n";
               err_text += err_text_tmp;
               err_text += "Reading of file '"+back_file+"' for parameter '"+par_name[i]+"' failed\n\n";
-              //failed = true;
             }
             else {
               back_model[i]->calculateStatistics();
@@ -4701,7 +4554,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           else
           {
             err_text += "Reading of file for parameter "+par_name[i]+" failed. No file name is given.\n";
-            //failed = true;
           }
 
           NRLib::Grid<double> parameter_tmp = FFTGridRealToGrid(back_model[i]);
@@ -4742,7 +4594,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         else
         {
           err_text += "Trying to set background model to 0 for parameter "+par_name[i]+"\n";
-          //failed = true;
         }
       }
 
@@ -4751,7 +4602,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       if (err_text == "") {
 
-        for(int i = 0; i < parameters.size(); i++) {
+        for(size_t i = 0; i < parameters.size(); i++) {
 
           LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid_->GetIntervalName(i) + "\n");
           LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
@@ -4822,9 +4673,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   }
 
   return true;
-
-  //return failed;
-
 }
 
 void CommonData::GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
@@ -4938,7 +4786,7 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
                               const std::string    & velocity_field,
                               bool                 & velocity_from_inversion,
                               std::string          & err_text) {
-                              //bool                 & failed)
+
   LogKit::WriteHeader("Setup time-to-depth relationship");
 
   if(model_settings->getVelocityFromInversion() == true)
@@ -5012,13 +4860,11 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
         text += "\naborting...\n";
         err_text += "Reading of file '"+velocity_field+"' for background velocity field failed.\n";
         err_text += text;
-        //failed = true;
       }
     }
     else {
       err_text_tmp += "Reading of file \'"+velocity_field+"\' for background velocity field failed.\n";
       err_text += err_text_tmp;
-      //failed = true;
     }
   }
 }
@@ -5375,13 +5221,10 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
                                        const std::vector<CravaTrend>                                & trend_cubes,
                                        const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
                                        std::string                                                  & err_text_common) {
-                                       //bool                                                         & failed){
 
   LogKit::WriteHeader("Setup of Prior Covariance");
 
   std::string err_text = "";
-
-  //bool failed = false;
 
 /*ModelGeneral::processPriorCorrelations(Background                     * background,
                                        std::vector<WellData *>          wells,
@@ -5665,9 +5508,6 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
   }
 
   return true;
-
-  //return failed;
-
 }
 
 void CommonData::ValidateCorrelationMatrix(float               ** C,
@@ -5931,16 +5771,18 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
                                InputFiles    * input_files,
                                std::string   & err_text_common) {
 
-    //Set up timeline.
-    time_line_ = new TimeLine();
-    std::string err_text = "";
+  //Set up timeline.
+  time_line_ = new TimeLine();
+  std::string err_text = "";
 
-    bool first_gravimetric_event = true;
-    for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
-      //Vintages may have both travel time and AVO
+  bool first_gravimetric_event = true;
+  for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
+    //Vintages may have both travel time and AVO
+
+    try {
       int time = ComputeTime(model_settings->getVintageYear(i),
-                             model_settings->getVintageMonth(i),
-                             model_settings->getVintageDay(i));
+                              model_settings->getVintageMonth(i),
+                              model_settings->getVintageDay(i));
         // Do gravity first
         if(model_settings->getGravityTimeLapse(i)){
           if(first_gravimetric_event){
@@ -5959,13 +5801,18 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
       if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
         time_line_->AddEvent(time, TimeLine::AVO, i);
     }
-
-    //H 4D-part set ut later (3 b) 10)
-
-    if(err_text != "") {
-      err_text_common += err_text;
-      return true;
+    catch(NRLib::Exception & e) {
+      err_text += "Error setting up TimeLine: " + std::string(e.what());
     }
+
+  }
+
+  //H 4D-part set ut later (3 b) 10)
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
 
   return true;
 }

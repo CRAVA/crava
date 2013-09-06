@@ -119,15 +119,15 @@ private:
                                     NRLib::Volume                  & full_inversion_volume,
                                     Simbox                         & estimation_simbox,
                                     const InputFiles               * input_files,
-                                    std::string                    & err_text,
-                                    bool                           & failed);
+                                    std::string                    & err_text);
+                                    //bool                           & failed);
 
   void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                  NRLib::Volume                    & full_inversion_volume,
                                  Simbox                           & estimation_simbox,
                                  const std::vector<std::string>   & surf_file,
-                                 std::string                      & err_text,
-                                 bool                             & failed);
+                                 std::string                      & err_text);
+                                 //bool                             & failed);
 
   bool ReadSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles,
@@ -508,10 +508,9 @@ private:
 
   // prior facies
   std::vector<std::vector<float> >        prior_facies_;                  ///< Prior facies probabilities
-  std::vector<std::vector<FFTGrid *> >    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities
+  std::vector<std::vector<FFTGrid *> >    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
 
   TimeLine                * time_line_;
-  //TimeEvolution             time_evolution_;
 
   // Background models
   //std::vector<Background * > background_models_;

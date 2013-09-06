@@ -12,7 +12,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      InputFiles     * input_files,
                                      const Simbox   * estimation_simbox,
                                      std::string    & err_text,
-                                     bool           & failed){
+                                     bool           & failed) {
 
   std::vector<std::string> interval_names_ = model_settings->getIntervalNames();
   n_intervals_ = static_cast<int>(interval_names_.size());
