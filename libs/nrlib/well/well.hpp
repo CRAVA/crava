@@ -26,7 +26,7 @@
 #include <sstream>
 #include <map>
 
-
+#include "nrlib/stormgrid/stormcontgrid.hpp"
 
 namespace NRLib {
   class Well{
@@ -132,12 +132,26 @@ namespace NRLib {
     /// Map integer log to facies name
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
+    /// Set number of non-missing data
+    void SetNumberOfNonMissingData(int n_data_nonmissing)  {n_data_nonmissing_ = n_data_nonmissing ;}
+
+    const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
+
+    void SetUseForBackgroundTrend(int use_for_background_trend) {use_for_background_trend_ = use_for_background_trend ;}
+
+    bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
+
+    int CheckStormgrid(StormContGrid & stormgrid) const;
+
   protected:
     /// Set number of data
     void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
 
     // Number of time data including WELLMISSING values
     unsigned int              n_data_;
+
+    // Number of data excluding WELLMISSING values
+    unsigned int              n_data_nonmissing_;
 
   private:
     /// Continuous logs
@@ -155,6 +169,12 @@ namespace NRLib {
     /// Facies variables
     bool                        has_facies_log_;
     std::map<int, std::string>  facies_map_;
+
+    int                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings.
+
+    // Number of data excluding WELLMISSING values
+    //unsigned int              n_data_nonmissing_;
+
   };
 
 }

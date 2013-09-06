@@ -42,6 +42,13 @@ public:
                                                  int          & missingTracesPadding,
                                                  int          & deadTracesSimbox,
                                                  std::string  & errTxt);
+  void                 fillInSeismicDataFromStorm(const StormContGrid * grid,
+                                                  const Simbox        * timeSimbox,
+                                                  float                 smooth_length,
+                                                  int                 & missingTracesSimbox,
+                                                  int                 & missingTracesPadding,
+                                                  int                 & deadTracesSimbox,
+                                                  std::string         & errTxt);
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
                                               float                z0_data,
                                               float                zn_data,

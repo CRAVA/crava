@@ -30,6 +30,7 @@
 #include "rmswell.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../iotools/fileio.hpp"
+#include "src/definitions.h"
 
 using namespace NRLib;
 
@@ -98,11 +99,20 @@ RMSWell::RMSWell(const std::string& filename)
   std::vector<std::vector<int> > disclogs(ndisc);
   std::vector<std::vector<double> > contlogs(ncont);
 
+  //int legal_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
+  //double dummy_z = WELLMISSING;
+
   while(getline(file,dummy)) {
     std::istringstream ist(dummy);
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y
     contlogs[2].push_back(ReadNext<double>(ist, line)); //z
+    //dummy_z = ReadNext<double>(ist, line);
+    //contlogs[2].push_back(dummy_z); //z
+
+    //if(dummy_z != WELLMISSING)
+    //  legal_data++;
+
     j = 0;
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
@@ -137,6 +147,8 @@ RMSWell::RMSWell(const std::string& filename)
   // find n_data including WELLMISSING values
   unsigned int n_data = GetContLog("TWT").size();
   this->SetNumberOfData(n_data);
+  //this->SetNumberOfLegalData(legal_data);
+
 }
 
 

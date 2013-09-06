@@ -64,6 +64,59 @@ Kriging1D::krigVector(float * data,
   }
   delete [] index;
 }
+//-----------------------------------------------------------------------
+void
+Kriging1D::krigVector(double * data,
+                      float  * trend,
+                      int     nd,
+                      float   dz)
+{
+  //
+  // This class takes the incomplete vector 'data' and fills it using kriging.
+  //
+  int * index = new int[nd];
+
+  double range = 500.0;
+  double power =   1.5;
+
+  int md;
+  locateValidData(data, index, nd, md);
+
+  if (md < nd) {
+    subtractTrend(data, trend, index, md);
+
+    double ** K;  // Kriging matrix
+    double ** C;  // Kriging matrix cholesky decomposed
+    double *  k;  // Kriging vector
+
+    allocateSpaceForMatrixEq(K, C, k, md);
+    fillKrigingMatrix(K, index, md, range, power, static_cast<double>(dz));
+    cholesky(K, C, md);
+
+    for (int krigK = 0 ; krigK < nd ; krigK++) {
+      if (data[krigK] == RMISSING) {
+        fillKrigingVector(k, index, md, range, power, static_cast<double>(dz), krigK);
+        lib_matrAxeqbR(md, C, k); // solve kriging equation
+
+        data[krigK] = 0.0f;
+        for (int i = 0 ; i < md ; i++) {
+          data[krigK] += static_cast<float>(k[i]) * data[index[i]];
+        }
+      }
+    }
+    deAllocateSpaceForMatrixEq(K, C, k, md);
+
+    addTrend(data, trend, nd);
+
+    bool debug = false;
+    if (debug) {
+      for (int i = 0 ; i < nd ; i++) {
+        LogKit::LogFormatted(LogKit::Low," i krigedData[i] : %3d  %.5f\n",i,data[i]);
+      }
+    }
+  }
+  delete [] index;
+}
 
 //-----------------------------------------------------------------------
 void
@@ -71,6 +124,35 @@ Kriging1D::locateValidData(float * data,
                            int   * index,
                            int     nd,
                            int   & md)
+{
+  int count = 0;
+  for (int i = 0 ; i < nd ; i++) {
+    if (data[i] != RMISSING) {
+      index[count] = i;
+      count++;
+    }
+  }
+  if (count == 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
+    LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
+  }
+  md = count;
+
+  bool debug = false;
+  if (debug) {
+    LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
+    for (int i = 0 ; i < md ; i++) {
+      LogKit::LogFormatted(LogKit::Low," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+void
+Kriging1D::locateValidData(double * data,
+                           int    * index,
+                           int      nd,
+                           int    & md)
 {
   int count = 0;
   for (int i = 0 ; i < nd ; i++) {
@@ -115,9 +197,39 @@ Kriging1D::subtractTrend(float * data,
 
 //-----------------------------------------------------------------------
 void
+Kriging1D::subtractTrend(double * data,
+                         float  * trend,
+                         int    * index,
+                         int      md)
+{
+  for (int i = 0 ; i < md ; i++) {
+    data[index[i]] -= trend[index[i]];
+  }
+  bool debug = false;
+  if (debug) {
+    LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
+    for (int i = 0 ; i < md ; i++) {
+      LogKit::LogFormatted(LogKit::Low," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+void
 Kriging1D::addTrend(float * data,
                     float * trend,
                     int     nd)
+{
+  for (int i = 0 ; i < nd ; i++) {
+    data[i] += trend[i];
+  }
+}
+
+//-----------------------------------------------------------------------
+void
+Kriging1D::addTrend(double * data,
+                    float  * trend,
+                    int      nd)
 {
   for (int i = 0 ; i < nd ; i++) {
     data[i] += trend[i];

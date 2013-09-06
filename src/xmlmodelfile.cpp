@@ -1993,6 +1993,14 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
+  //If facies are given as probabilities under parseFacies and multiinterval are used, set all intervals equal to this value.
+  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
+    for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
+      const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
+      const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProb();
+      modelSettings_->addPriorFaciesProbInterval(interval_name_tmp, facies_map_tmp);
+    }
+  }
 
   while(parseFaciesInterval(root,errTxt)==true);
 
@@ -4315,7 +4323,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   std::vector<int> erosion_priorities;
   erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
-  if(interval_names.size() == erosion_priorities.size()){
+  if(interval_names.size() != erosion_priorities.size()){ //H Changed to !=
     for (unsigned int i=0; i<interval_names.size(); i++){
       erosion_priorities.push_back(modelSettings_->getErosionPriorityBaseSurface(interval_names[i]));
     }
@@ -4329,7 +4337,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   }
   if(priorities_ok == false){
     err_txt += "The erosion priorities are not unique in command <"+root->ValueStr()+"> "
-      +lineColumnText(root)+".\n";
+      +lineColumnText(root)+". The top-surface has a default priority of 1.\n";
   }
 
   checkForJunk(root, err_txt, legalCommands);
@@ -6229,8 +6237,18 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
 
       int single_count = interval_corr_dir_file.size();
-      int top_count =  interval_corr_dir_top_file.size() + interval_top_conform_correlation.size();
-      int base_count = interval_top_conform_correlation.size() + interval_base_conform_correlation.size();
+
+      int top_count =  interval_corr_dir_top_file.size();
+      for(std::map<std::string, bool>::const_iterator it = interval_top_conform_correlation.begin(); it != interval_top_conform_correlation.end(); it++) {
+        if(it->second == true)
+          top_count++;
+      }
+
+      int base_count = interval_corr_dir_base_file.size();
+      for(std::map<std::string, bool>::const_iterator it = interval_base_conform_correlation.begin(); it != interval_base_conform_correlation.end(); it++) {
+        if(it->second == true)
+          base_count++;
+      }
 
       if(top_count != base_count) //This shouldn't happen, there is a check in parseIntervalCorrelationDirection if either top or base is used without the other.
         errTxt += "Some intervals in <correlation-direction> have defined a top-surface or top-conform without a base-surface or base-conform (or vice versa).\n";

@@ -154,6 +154,62 @@ KrigingData3D::addData(const float * alpha,
 }
 
 //---------------------------------------------------------------------
+void
+KrigingData3D::addData(const double * alpha,
+                       const double * beta,
+                       const double * rho,
+                       const int   * ipos,
+                       const int   * jpos,
+                       const int   * kpos,
+                       const int     nd)
+{
+  for (int m = 0 ; m < nd ; m++)
+  {
+    const int i = ipos[m];
+    const int j = jpos[m];
+    const int k = kpos[m];
+
+    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING)
+    {
+      double a,b,r;
+
+      if (alpha[m] != RMISSING)
+        a = exp(alpha[m]);
+      else
+        a = RMISSING;
+
+      if (beta[m] != RMISSING)
+        b = exp(beta[m]);
+      else
+        b = RMISSING;
+
+      if (rho[m] != RMISSING)
+        r = exp(rho[m]);
+      else
+        r = RMISSING;
+
+      int index = gotBlock(i,j,k);
+      if (index == -1)
+      {
+        data_[nd_] = new CBWellPt(i, j, k);
+        data_[nd_]->AddLog(a, b, r);
+        nd_++;
+      }
+      else
+      {
+        data_[index]->AddLog(a, b, r);
+        //
+        // This is not a problem for CRAVA, but normally two wells should not share the same
+        // set of blocks (with the possible exception of side-tracks).
+        //
+        LogKit::LogFormatted(LogKit::DebugLow,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice. This is not a problem",i,j,k);
+        LogKit::LogFormatted(LogKit::DebugLow,"\n      but may indicate that the grid is too coarse, or that you have wells with side-tracks?\n");
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------
 int
 KrigingData3D::gotBlock(int i, int j, int k) const
 {
