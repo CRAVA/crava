@@ -26,6 +26,7 @@
 
 #include "lib/timekit.hpp"
 #include "src/timings.h"
+#include "src/timeline.h"
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files):
@@ -34,14 +35,21 @@ CommonData::CommonData(ModelSettings  * model_settings,
   read_wells_(false),
   block_wells_(false),
   setup_reflection_matrix_(false),
+  temporary_wavelet_(false),
   optimize_well_location_(false),
-  wavelet_estimation_shape_(false),
-  prior_corr_estimation_(false),
-  setup_estimation_rock_physics_(false),
-  trend_cubes_(false),
+  wavelet_handling_(false),
+  //wavelet_estimation_shape_(false),
   setup_multigrid_(false),
+  setup_trend_cubes_(false),
+  setup_estimation_rock_physics_(false),
+  setup_prior_facies_probabilities_(false),
   setup_prior_correlation_(false),
-  multiple_interval_grid_(NULL)
+  setup_timeline_(false),
+  //prior_corr_estimation_(false),
+  //trend_cubes_(false),
+  refmat_from_file_global_vpvs_(false),
+  multiple_interval_grid_(NULL),
+  time_line_(NULL)
 {
   //bool failed = false;
   std::string err_text = "";
@@ -66,13 +74,13 @@ CommonData::CommonData(ModelSettings  * model_settings,
     block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, mapped_blocked_logs_, err_text);
 
   // 5. Reflection matrix and wavelet
-  setup_reflection_matrix_ = !SetupReflectionMatrix(model_settings, input_files, err_text);
+  setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
   if(model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
     temporary_wavelet_ = SetupTemporaryWavelet(model_settings, input_files, err_text);
   //SetupReflectionMatrixAndTempWavelet(model_settings, input_files, err_text);
 
   // 6. Optimization of well location
-  if(model_settings->getOptimizeWellLocation())
+  if(model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
   // 8. Setup of multiple interval grid
@@ -131,8 +139,12 @@ CommonData::CommonData(ModelSettings  * model_settings,
     setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, multiple_interval_grid_->GetIntervalSimboxes(), multiple_interval_grid_->GetIntervalSimboxes(),
                                                      model_settings->getPriorFaciesProbIntervals(), trend_cubes_, seismic_data_, err_text);
 
+  // 14. Set up TimeLine class
+  setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
 
+  // 15. Data for gravity inversion
 
+  // 16. Data for Travel time Inversion
 
 }
 
@@ -600,6 +612,9 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
   //float top_grid = static_cast<float>(time_cut_simbox->getTopZMin());
   //float bot_grid = static_cast<float>(time_cut_simbox->getBotZMax());
 
+  //float test = time_simbox->GetTopSurface().Max();
+  //float test = time_simbox->GetErosionTop().Max();
+
   // Find guard zone
   float top_guard = top_grid - guard_zone;
   float bot_guard = bot_grid + guard_zone;
@@ -665,8 +680,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       bool read_ok = false;
       NRLib::Well new_well(well_file_name, read_ok);
 
-      std::vector<int> facies_nr_tmp;
-      std::vector<std::string> facies_names_tmp;
+      //std::vector<int> facies_nr_tmp;
+      //std::vector<std::string> facies_names_tmp;
 
       //if(well_file_name.find(".nwh",0) != std::string::npos)
       //  ProcessLogsNorsarWell(new_well, err_text, failed); ///H Facies names from Norsar logs?
@@ -1167,11 +1182,14 @@ CommonData::GetMinMaxFnr(int            & min,
 
 bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
                                        InputFiles    * input_files,
-                                       std::string   & err_text) {
+                                       std::string   & err_text_common) {
 
   LogKit::WriteHeader("Setting up reflection matrix");
 
-  bool failed = false;
+  //If Vp/Vs is given per interval: A default reflection matrix is set up here, and then altered later per interval.
+
+  //bool failed = false;
+  std::string err_text = "";
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
@@ -1196,30 +1214,40 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
         err_text += tmp_err_text;
         //LogKit::LogFormatted(LogKit::Error, "Reading of file "+refl_matr_file+ " for reflection matrix failed\n");
         //LogKit::LogFormatted(LogKit::Error, tmp_err_text);
-        failed = true;
+        //failed = true;
         //return false;
       }
       else
         LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+
+      refmat_from_file_global_vpvs_ = true;
     }
 
     else if(vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
       double vsvp = 1.0/vpvs;
       SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
+      refmat_from_file_global_vpvs_ = true;
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
-      double vsvp = 1/2;
+      double vsvp = 0.5;
       SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
+      refmat_from_file_global_vpvs_ = false;
     }
 
     reflection_matrix_[i] = reflection_matrix;
 
   } //nTimeLapses
 
-  return failed;
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
 
+  return true;
+
+  //return failed;
 }
 
 bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
@@ -1357,7 +1385,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
   }
   if(failed == false) {
     if(index != n1*n2) {
-      failed == true;
+      failed = true;
       err_text += "Found "+NRLib::ToString(index)+" in file "+file_name+", expected "+NRLib::ToString(n1*n2)+".\n";
     }
   }
@@ -4255,7 +4283,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
                                         deadTracesSimbox,
                                         err_text);
     }
-    else {
+    else {  //Change to new resample algorithm for all grid types.
       missingTracesSimbox = target->fillInFromSegY(segy,
                                                    time_simbox, //timeSimbox,
                                                    par_name,
@@ -4349,7 +4377,7 @@ CommonData::ReadStormFile(const std::string   & f_name,
     target->setType(grid_type);
 
     try {
-      outsideTraces = target->fillInFromStorm(time_simbox, stormgrid, par_name, scale, nopadding);
+      outsideTraces = target->fillInFromStorm(time_simbox, stormgrid, par_name, scale, nopadding);  //Change to new resample algorithm
     }
     catch (NRLib::Exception & e) {
       err_text += std::string(e.what());
@@ -4882,7 +4910,7 @@ CommonData::FFTGridRealToGrid(const FFTGrid * fft_grid) {
     int nx = fft_grid->getNx();
     int ny = fft_grid->getNy();
     int nz = fft_grid->getNz();
-    int nxp = fft_grid->getNxp();
+    //int nxp = fft_grid->getNxp();
     int nyp = fft_grid->getNyp();
     int nzp = fft_grid->getNzp();
 
@@ -5898,4 +5926,61 @@ Surface * CommonData::FindCorrXYGrid(const Simbox           * time_simbox,
     }
   }
   return(grid);
+}
+
+bool CommonData::SetupTimeLine(ModelSettings * model_settings,
+                               InputFiles    * input_files,
+                               std::string   & err_text_common) {
+
+  //Set up timeline.
+  time_line_ = new TimeLine();
+  std::string err_text = "";
+
+  bool first_gravimetric_event = true;
+  for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
+    //Vintages may have both travel time and AVO
+    int time = ComputeTime(model_settings->getVintageYear(i),
+                           model_settings->getVintageMonth(i),
+                           model_settings->getVintageDay(i));
+      // Do gravity first
+      if(model_settings->getGravityTimeLapse(i)){
+        if(first_gravimetric_event){
+          // Do not save first gravity event in timeline
+          first_gravimetric_event = false;
+        }
+        else{
+          time_line_->AddEvent(time, TimeLine::GRAVITY, i);
+        }
+    }
+
+    //Activate below when travel time is ready.
+    //Travel time ebefore AVO for same vintage.
+    //if(travel time for this vintage)
+    //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+    if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
+      time_line_->AddEvent(time, TimeLine::AVO, i);
+  }
+
+  //if(model_settings->getDo4DInversion() && setup_estimation_rock_physics_ == true) {
+
+  //  SetFaciesNamesFromRockPhysics();
+  //  bool failed_background;
+
+  //  NRLib::Vector initial_mean(6);
+  //  NRLib::Matrix initial_cov(6,6);
+
+  //  Process4DBackground(model_settings, input_files, seismicParameters, err_text, failed_background, initial_mean, initial_cov);
+
+  //  time_evolution_ = TimeEvolution(10000, *time_line_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+  //  time_evolution_.SetInitialMean(initial_mean);
+  //  time_evolution_.SetInitialCov(initial_cov);
+  //}
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return true;
+  }
+
+  return true;
+
 }

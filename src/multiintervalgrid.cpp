@@ -674,7 +674,8 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
       estimation_simbox->getXYCoord(i,j,x,y);
       double z_top  = top_surface->GetZ(x,y);
       double z_base = base_surface->GetZ(x,y);
-      double resolution = (z_top - z_base) / n_layers ;
+      //double resolution = (z_top - z_base) / n_layers ;
+      double resolution = (z_base - z_top) / n_layers; //H Changed since z_top < z_base
       if(resolution > max_resolution)
         max_resolution = resolution;
     }

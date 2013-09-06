@@ -6237,8 +6237,18 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
 
       int single_count = interval_corr_dir_file.size();
-      int top_count =  interval_corr_dir_top_file.size() + interval_top_conform_correlation.size();
-      int base_count = interval_top_conform_correlation.size() + interval_base_conform_correlation.size();
+
+      int top_count =  interval_corr_dir_top_file.size();
+      for(std::map<std::string, bool>::const_iterator it = interval_top_conform_correlation.begin(); it != interval_top_conform_correlation.end(); it++) {
+        if(it->second == true)
+          top_count++;
+      }
+
+      int base_count = interval_corr_dir_base_file.size();
+      for(std::map<std::string, bool>::const_iterator it = interval_base_conform_correlation.begin(); it != interval_base_conform_correlation.end(); it++) {
+        if(it->second == true)
+          base_count++;
+      }
 
       if(top_count != base_count) //This shouldn't happen, there is a check in parseIntervalCorrelationDirection if either top or base is used without the other.
         errTxt += "Some intervals in <correlation-direction> have defined a top-surface or top-conform without a base-surface or base-conform (or vice versa).\n";

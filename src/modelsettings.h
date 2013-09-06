@@ -222,7 +222,7 @@ public:
 
   std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
   std::map<std::string, float>                         getPriorFaciesProbInterval(std::string interval_name)            const { return priorFaciesProbInterval_.find(interval_name)->second                ;}
-  const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbIntervals()                                    const { return priorFaciesProbInterval_                                            ;}
+  const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbIntervals()                            const { return priorFaciesProbInterval_                                            ;}
   std::map<std::string, float>                         getVolumeFractionsProbInterval(std::string interval_name)        const { return volumefractionInterval_.find(interval_name)->second                 ;}
   std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbIntervals()                                const { return volumefractionInterval_                                             ;}
   int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                                       ;}

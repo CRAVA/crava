@@ -16,11 +16,13 @@
 #include "src/seismicstorage.h"
 #include "src/multiintervalgrid.h"
 #include "src/background.h"
+//#include "src/timeevolution.h"
 
 class CravaTrend;
 class InputFiles;
 class ModelSettings;
 class ModelGeneral;
+class TimeLine;
 
 class CommonData{
 public:
@@ -447,6 +449,10 @@ private:
   Surface * FindCorrXYGrid(const Simbox           * time_simbox,
                            const ModelSettings    * model_settings) const;
 
+  bool  SetupTimeLine(ModelSettings * model_settings,
+                      InputFiles    * input_files,
+                      std::string   & err_text_common);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
@@ -465,15 +471,16 @@ private:
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;
-  bool wavelet_estimation_shape_;
-  bool prior_corr_estimation_;
-  bool setup_estimation_rock_physics_;
+  bool wavelet_handling_;
+  //bool wavelet_estimation_shape_;
   bool setup_multigrid_;
   bool setup_trend_cubes_;
+  bool setup_estimation_rock_physics_;
   bool setup_prior_facies_probabilities_;
   bool setup_background_model_;
-  bool wavelet_handling_;
   bool setup_prior_correlation_;
+  bool setup_timeline_;
+  //bool prior_corr_estimation_;
 
   MultiIntervalGrid       * multiple_interval_grid_;
   Simbox                    estimation_simbox_;
@@ -503,6 +510,9 @@ private:
   std::vector<std::vector<float> >        prior_facies_;                  ///< Prior facies probabilities
   std::vector<std::vector<FFTGrid *> >    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities
 
+  TimeLine                * time_line_;
+  //TimeEvolution             time_evolution_;
+
   // Background models
   //std::vector<Background * > background_models_;
 
@@ -516,7 +526,7 @@ private:
   //std::map<std::string, int>                        nFacies_;
 
   std::map<int, float **>                 reflection_matrix_;
-  bool                                    reflection_matrix_from_file_; //False: created from global vp/vs
+  bool                                    refmat_from_file_global_vpvs_; //True if reflection matrix is from file or set up from global vp/vs value.
 
   std::map<int, Wavelet**>                wavelets_;
   std::map<int, std::vector<Grid2D *> >   local_noise_scale_;
