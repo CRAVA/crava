@@ -26,7 +26,6 @@
 
 #include "lib/timekit.hpp"
 #include "src/timings.h"
-#include "src/timeline.h"
 
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files):
@@ -5932,55 +5931,41 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
                                InputFiles    * input_files,
                                std::string   & err_text_common) {
 
-  //Set up timeline.
-  time_line_ = new TimeLine();
-  std::string err_text = "";
+    //Set up timeline.
+    time_line_ = new TimeLine();
+    std::string err_text = "";
 
-  bool first_gravimetric_event = true;
-  for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
-    //Vintages may have both travel time and AVO
-    int time = ComputeTime(model_settings->getVintageYear(i),
-                           model_settings->getVintageMonth(i),
-                           model_settings->getVintageDay(i));
-      // Do gravity first
-      if(model_settings->getGravityTimeLapse(i)){
-        if(first_gravimetric_event){
-          // Do not save first gravity event in timeline
-          first_gravimetric_event = false;
-        }
-        else{
-          time_line_->AddEvent(time, TimeLine::GRAVITY, i);
-        }
+    bool first_gravimetric_event = true;
+    for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
+      //Vintages may have both travel time and AVO
+      int time = ComputeTime(model_settings->getVintageYear(i),
+                             model_settings->getVintageMonth(i),
+                             model_settings->getVintageDay(i));
+        // Do gravity first
+        if(model_settings->getGravityTimeLapse(i)){
+          if(first_gravimetric_event){
+            // Do not save first gravity event in timeline
+            first_gravimetric_event = false;
+          }
+          else{
+            time_line_->AddEvent(time, TimeLine::GRAVITY, i);
+          }
+      }
+
+      //Activate below when travel time is ready.
+      //Travel time ebefore AVO for same vintage.
+      //if(travel time for this vintage)
+      //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+      if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
+        time_line_->AddEvent(time, TimeLine::AVO, i);
     }
 
-    //Activate below when travel time is ready.
-    //Travel time ebefore AVO for same vintage.
-    //if(travel time for this vintage)
-    //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
-    if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
-      time_line_->AddEvent(time, TimeLine::AVO, i);
-  }
+    //H 4D-part set ut later (3 b) 10)
 
-  //if(model_settings->getDo4DInversion() && setup_estimation_rock_physics_ == true) {
-
-  //  SetFaciesNamesFromRockPhysics();
-  //  bool failed_background;
-
-  //  NRLib::Vector initial_mean(6);
-  //  NRLib::Matrix initial_cov(6,6);
-
-  //  Process4DBackground(model_settings, input_files, seismicParameters, err_text, failed_background, initial_mean, initial_cov);
-
-  //  time_evolution_ = TimeEvolution(10000, *time_line_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
-  //  time_evolution_.SetInitialMean(initial_mean);
-  //  time_evolution_.SetInitialCov(initial_cov);
-  //}
-
-  if(err_text != "") {
-    err_text_common += err_text;
-    return true;
-  }
+    if(err_text != "") {
+      err_text_common += err_text;
+      return true;
+    }
 
   return true;
-
 }
