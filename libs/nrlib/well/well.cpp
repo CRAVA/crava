@@ -27,6 +27,11 @@
 #include "norsarwell.hpp"
 #include "rmswell.hpp"
 
+#include "nrlib/iotools/logkit.hpp"
+//#include "nrlib/stormgrid/stormcontgrid.hpp"
+
+#include "nrlib/surface/surface.hpp"
+
 using namespace NRLib;
 
 Well::Well()
@@ -268,4 +273,51 @@ size_t Well::GetContLogLength(const std::string& logname) const
   assert(item != cont_log_.end());
 
   return (item->second).size();
+}
+
+int Well::CheckStormgrid(StormContGrid & stormgrid) const
+{
+  bool insideArea = false;
+  int  error      = 1;
+
+  //if(timemissing_ == 0) { //Timemissing not stored when reading logs in commondata ReadWell?
+
+    NRLib::Surface<double> & top  = stormgrid.GetTopSurface();
+    NRLib::Surface<double> & base = stormgrid.GetBotSurface();
+
+    std::vector<double> x_pos = GetContLog().find("X_pos")->second; //H Works for both RMS and Norsar wells? Use blocked logs?
+    std::vector<double> y_pos = GetContLog().find("Y_pos")->second;
+    std::vector<double> z_pos = GetContLog().find("TVD")->second;
+
+    for(int i=0; i < n_data_nonmissing_; i++) { //nd_
+
+      if(stormgrid.IsInside(x_pos[i], y_pos[i])) {
+        insideArea = true;
+        //
+        // Correct handling of top and base checking.
+        //
+        double z_top  = top.GetZ(x_pos[i], y_pos[i]);
+        double z_base = base.GetZ(x_pos[i], y_pos[i]);
+
+        if(z_pos[i] > z_top && z_pos[i] < z_base) {
+          error = 0;
+          break;
+        }
+      }
+    }
+  //}
+  //else
+  //  error = 0;
+
+  if (error) {
+    if (insideArea) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+": ");
+      LogKit::LogFormatted(LogKit::Low,"IGNORED. Well does not hit the inversion volume.\n");
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+": ");
+      LogKit::LogFormatted(LogKit::Low,"IGNORED. Well is not inside the inversion area.\n");
+    }
+  }
+  return(error);
 }

@@ -530,9 +530,9 @@ Wavelet1D::~Wavelet1D()
 
 Wavelet1D::Wavelet1D(const ModelSettings * modelSettings,
                      const float         * reflCoef,
-                     float           theta,
-                     float           peakFrequency,
-                     int           & errCode)
+                     float                 theta,
+                     float                 peakFrequency,
+                     int                 & errCode)
   : Wavelet(modelSettings, reflCoef, theta, 1, peakFrequency, errCode)
 {
 }

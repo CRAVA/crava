@@ -30,8 +30,14 @@ public:
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
+  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]     ;}
+  //const std::vector<Surface>                             & GetErodedSurfaces() const             { return eroded_surfaces_       ;}
+  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_    ;}
+  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_         ;}
 
   //SET FUNCTIONS
+
+  void  AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)      { parameters_[i] = parameters;}
 
 
 private:
@@ -87,16 +93,16 @@ private:
                                     double       & x_max,
                                     double       & y_max) const;
 
-  void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<float> >          & vp_interval,
-                                      std::vector<NRLib::Grid<float> >          & vs_interval,
-                                      std::vector<NRLib::Grid<float> >          & rho_interval,
+  void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
+                                      std::vector<NRLib::Grid<double> >          & vs_interval,
+                                      std::vector<NRLib::Grid<double> >          & rho_interval,
                                       const std::vector<Simbox>                 & interval_simboxes,
                                       std::vector<double>                       & relative_grid_resolution) const;
 
   void  EstimateZPaddingSize(Simbox          * simbox,
                              ModelSettings   * model_settings) const;
 
-  int   SetPaddingSize(int        nx, 
+  int   SetPaddingSize(int        nx,
                        double     px) const;
 
   int   FindClosestFactorableNumber(int leastint) const;
@@ -135,6 +141,10 @@ private:
 
   size_t                                               n_intervals_;
   bool                                                 multiple_interval_setting_;
+  std::vector<std::string> interval_names_;
+  std::vector<Surface>     eroded_surfaces_; ///H Eroded surfaces stored in simboxes?
+  std::vector<int>         erosion_priorities_;
+  std::vector<std::string> surface_files_;
 
   //std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
   std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector

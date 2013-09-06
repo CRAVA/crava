@@ -26,6 +26,7 @@ SeismicStorage::SeismicStorage(std::string   file_name,
    angle_(angle),
    seismic_type_(seismic_type),
    segy_(segy)
+   //storm_grid_(NULL)
 {
 }
 
@@ -37,13 +38,16 @@ SeismicStorage::SeismicStorage(std::string     file_name,
    angle_(angle),
    seismic_type_(seismic_type),
    storm_grid_(storm_grid)
+   //segy_(NULL)
 {
 }
 
 SeismicStorage::~SeismicStorage()
 {
-  delete segy_;
-  delete storm_grid_;
+  //if(segy_ != NULL)
+  //  delete segy_;
+  //if(storm_grid_ != NULL)
+  //  delete storm_grid_;
 }
 
 std::vector<float>

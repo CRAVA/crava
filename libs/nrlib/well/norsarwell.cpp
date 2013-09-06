@@ -28,6 +28,7 @@
 #include "norsarwell.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../iotools/fileio.hpp"
+#include "src/definitions.h"
 
 using namespace NRLib;
 
@@ -199,6 +200,9 @@ NorsarWell::ReadLogs(const std::string & filename, int n_col, int n_row, int ski
 
   int baseline = line;
   int i,j; //For use in error message.
+
+  //int legal_data = 0;
+
   try {
     for(i=0;i<n_row;i++) {
       for(j=0;j<n_col;j++)
@@ -217,12 +221,17 @@ NorsarWell::ReadLogs(const std::string & filename, int n_col, int n_row, int ski
           throw (NRLib::IOError(error));
         }
       }
+      //if(result[0][i] != WELLMISSING) //H [0] First?
+      //  legal_data++;
     }
   }
   catch (NRLib::EndOfFile) {
     std::string error = "Unexpected end of file "+filename+": Expected to read "+NRLib::ToString(n_row*n_col)+"elements, found only "+NRLib::ToString(i*n_col+j)+".";
     throw (NRLib::IOError(error));
   }
+
+  //this->SetNumberOfLegalData(legal_data);
+
   return(result);
 }
 
