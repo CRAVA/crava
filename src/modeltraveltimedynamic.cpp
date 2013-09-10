@@ -2,39 +2,18 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#define _USE_MATH_DEFINES
-
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <time.h>
-#include <assert.h>
-#include <limits.h>
-#include <cmath>
-
 #include "lib/timekit.hpp"
-
-#include "src/modelgeneral.h"
 #include "src/modeltraveltimedynamic.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
-#include "src/seismicparametersholder.h"
-#include "src/fftgrid.h"
-#include "src/simbox.h"
-#include "src/gridmapping.h"
 #include "src/timings.h"
 #include "src/rmstrace.h"
-#include "src/vario.h"
-
-#include "nrlib/iotools/fileio.hpp"
-#include "nrlib/surface/regularsurface.hpp"
 
 ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
-                                               const ModelGeneral            * /*modelGeneral*/,
                                                const InputFiles              * inputFiles,
                                                const int                     & vintage)
-: thisTimeLapse_(vintage)
+: rms_traces_(0),
+  thisTimeLapse_(vintage)
 {
   std::string errTxt = "";
 
@@ -65,6 +44,8 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
 
 ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
+  for(size_t i=0; i<rms_traces_.size(); i++)
+    delete rms_traces_[i];
 }
 
 void
@@ -181,12 +162,12 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
         if(time.size() > 1) {
 
           if( (IL != this_il) || (XL != this_xl) ) {
-            RMSTrace trace(IL,
-                           XL,
-                           utmx,
-                           utmy,
-                           time,
-                           velocity);
+            RMSTrace * trace = new RMSTrace(IL,
+                                            XL,
+                                            utmx,
+                                            utmy,
+                                            time,
+                                            velocity);
 
             rms_traces_.push_back(trace);
 
@@ -208,12 +189,12 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
       }
 
       else {
-        RMSTrace trace(IL,
-                       XL,
-                       utmx,
-                       utmy,
-                       time,
-                       velocity);
+        RMSTrace * trace = new RMSTrace(IL,
+                                        XL,
+                                        utmx,
+                                        utmy,
+                                        time,
+                                        velocity);
 
         rms_traces_.push_back(trace);
 
@@ -238,191 +219,4 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
   LogKit::LogFormatted(LogKit::Low, "\nRead "+NRLib::ToString(n_traces)+" RMS traces in file "+fileName+"\n");
 
-}
-
-double
-ModelTravelTimeDynamic::findMaxTime() const
-{
-
-  int n_rms_traces = static_cast<int>(rms_traces_.size());
-
-  double max_time = 0;
-
-  for(int i=0; i<n_rms_traces; i++) {
-    const std::vector<double> & rms_time = rms_traces_[i].getTime();
-    double max = rms_time[rms_time.size()-1];
-
-    if(max > max_time)
-      max_time = max;
-  }
-
-  return max_time;
-}
-
-NRLib::Grid2D<double>
-ModelTravelTimeDynamic::calculateG(const std::vector<double> & rms_time,
-                                   const double              & t_top,
-                                   const double              & t_bot,
-                                   const double              & dt_simbox,
-                                   const int                 & n_layers,
-                                   const int                 & n_layers_above,
-                                   const int                 & n_layers_below,
-                                   const int                 & n_layers_simbox,
-                                   const int                 & n_layers_padding) const
-{
-  std::vector<double> t(n_layers + 1, 0);
-  std::vector<double> dt(n_layers + 1, 0);
-
-  double max_time = findMaxTime();
-
-  double dt_above  = static_cast<double>(  t_top             / n_layers_above);
-  double dt_below  = static_cast<double>( (max_time - t_bot) / n_layers_below);
-
-  for(int j=0; j<n_layers + 1; j++) {
-    if(j < n_layers_above) {
-      t[j]  = j * dt_above;
-      dt[j] = dt_above;
-    }
-    else if(j >= n_layers_above && j < n_layers_above + n_layers_simbox) {
-      t[j]  = t_top + (j - n_layers_above) * dt_simbox;
-      dt[j] = dt_simbox;
-    }
-    else if(j >= n_layers_above + n_layers_padding) {
-      t[j]  = t_bot + (j - n_layers_above - n_layers_padding) * dt_below;
-      dt[j] = dt_below;
-    }
-  }
-
-  int n_rms_data = static_cast<int>(rms_time.size());
-
-  NRLib::Grid2D<double> G(n_rms_data, n_layers, 0);
-
-  for(int j=0; j<n_rms_data; j++) {
-    int k=0;
-    while(rms_time[j] >= t[k] && k < n_layers) {
-      G(j,k) = dt[k] / rms_time[j];
-      k++;
-    }
-    if(k < n_layers)
-      G(j,k) = (rms_time[j] - t[k-1]) / rms_time[j];
-  }
-
-  return G;
-}
-
-void
-ModelTravelTimeDynamic::getCoordinates(const Simbox   * timeSimbox,
-                                       const RMSTrace & rms_trace,
-                                       double         & t_top,
-                                       double         & t_bot,
-                                       double         & dt_simbox) const
-{
-
-  const double x = rms_trace.getUtmx();
-  const double y = rms_trace.getUtmy();
-
-  int i_ind;
-  int j_ind;
-
-  timeSimbox->getIndexes(x, y, i_ind, j_ind);
-
-  t_top     = timeSimbox->getTop(i_ind, j_ind);
-  t_bot     = timeSimbox->getBot(i_ind, j_ind);
-  dt_simbox = timeSimbox->getdz(i_ind, j_ind);
-}
-
-//-----------------------------------------------------------------------------------------//
-void
-ModelTravelTimeDynamic::doInversion(const Simbox            * timeSimbox,
-                                    SeismicParametersHolder & seismicParameters) const
-{
-
-  FFTGrid * covariance_grid_log_vp = seismicParameters.GetCovBeta();
-
-  int n_rms_traces     = static_cast<int>(rms_traces_.size());
-  int n_layers_simbox  = timeSimbox->getnz();
-  int n_layers_padding = covariance_grid_log_vp->getNzp();
-  int n_layers         = n_layers_above_ + n_layers_padding + n_layers_below_;
-
-  double t_top;
-  double t_bot;
-  double dt_simbox;
-
-  // Variables for Sigma_m
-  Vario * variogram_above = new GenExpVario(1, static_cast<float>(range_above_));
-  Vario * variogram_below = new GenExpVario(1, static_cast<float>(range_below_));
-
-
-  std::vector<float> corrT_above(n_layers_above_ + 1);
-  std::vector<float> corrT_below(n_layers_below_ + 1);
-
-  double max_time = findMaxTime();
-
-
-  for(int i=0; i<n_rms_traces; i++) {
-
-    getCoordinates(timeSimbox,
-                   rms_traces_[i],
-                   t_top,
-                   t_bot,
-                   dt_simbox);
-
-    NRLib::Grid2D<double> G = calculateG(rms_traces_[i].getTime(),
-                                         t_top,
-                                         t_bot,
-                                         dt_simbox,
-                                         n_layers,
-                                         n_layers_above_,
-                                         n_layers_below_,
-                                         n_layers_simbox,
-                                         n_layers_padding);
-
-    // Sigma_m
-    float dt_above  = static_cast<float>( t_top             / n_layers_above_);
-    float dt_below  = static_cast<float>((max_time - t_bot) / n_layers_below_);
-
-    for(int j=0; j<=n_layers_above_; j++)
-      corrT_above[j] = variogram_above->corr(j*dt_above, 0);
-    for(int j=0; j<=n_layers_below_; j++)
-      corrT_below[j] = variogram_below->corr(j*dt_below, 0);
-
-    /*
-    double utmx = rms_traces_[i].getUtmx();
-    double utmy = rms_traces_[i].getUtmy();
-    int    i_ind;
-    int    j_ind;
-    int    z_ind;
-    timeSimbox->getIndexes(utmx, utmy, 0, i_ind, j_ind, z_ind);
-    */
-    NRLib::Grid2D<double> Sigma_m(n_layers, n_layers, 0);
-
-    for(int j=0; j<n_layers_above_; j++) {
-      int count = 0;
-      for(int k=j; k<n_layers_above_; k++) {
-        Sigma_m(j,k) = var_vp_above_ * corrT_above[count];
-        Sigma_m(k,j) = Sigma_m(j,k);
-        count ++;
-      }
-    }
-
-    for(int j=n_layers_above_; j<n_layers_above_+n_layers_padding; j++) {
-      int count = 0;
-      for(int k=j; k<n_layers_above_+n_layers_padding; j++) {
-        double cov_log_vp = covariance_grid_log_vp->getRealValue(0, 0, count); // NBNB: Skal ha Var(Vp^2), ikke var(log Vp)
-        Sigma_m(j,k) = cov_log_vp;
-        Sigma_m(k,j) = cov_log_vp;
-        count ++;
-      }
-    }
-
-    for(int j=n_layers_above_+n_layers_padding; j<n_layers; j++) {
-      int count = 0;
-      for(int k=j; k<n_layers; k++) {
-        Sigma_m(j,k) = var_vp_below_ * corrT_below[count];
-        Sigma_m(k,j) = Sigma_m(j,k);
-        count ++;
-      }
-    }
-
-  }
 }

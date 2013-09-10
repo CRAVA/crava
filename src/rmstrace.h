@@ -18,6 +18,8 @@ public:
            std::vector<double> & time,
            std::vector<double> & velocity);
 
+  RMSTrace();
+
   ~RMSTrace();
 
   const double                    getUtmx()               const { return utmx_             ; }

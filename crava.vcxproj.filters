@@ -999,6 +999,9 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\rmsinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1674,6 +1677,9 @@
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
     <ClInclude Include="src\rmstrace.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rmsinversion.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>

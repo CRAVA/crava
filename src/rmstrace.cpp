@@ -4,7 +4,6 @@
 
 #include "src/rmstrace.h"
 
-//---------------------------------------------------------------------------
 RMSTrace::RMSTrace(int                 & IL,
                    int                 & XL,
                    double              & utmx,
@@ -23,6 +22,10 @@ RMSTrace::RMSTrace(int                 & IL,
   for(size_t i=0; i<time.size(); i++)
     time_[i] = time[i] * s_to_ms;
 
+}
+
+RMSTrace::RMSTrace()
+{
 }
 
 RMSTrace::~RMSTrace()
