@@ -1909,9 +1909,17 @@ XmlModelFile::parseAboveReservoir(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-top");
   legalCommands.push_back("variance-vp");
   legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-top", mean, errTxt) == false)
+    errTxt += "<mean-vp-top> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpTop(mean);
+
 
   double variance;
   if(parseValue(root, "variance-vp", variance, errTxt) == false)
@@ -1944,9 +1952,16 @@ XmlModelFile::parseBelowReservoir(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-base");
   legalCommands.push_back("variance-vp");
   legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-base", mean, errTxt) == false)
+    errTxt += "<mean-vp-base> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpBase(mean);
 
   double variance;
   if(parseValue(root, "variance-vp", variance, errTxt) == false)

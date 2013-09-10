@@ -94,6 +94,9 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
   n_layers_above_   = modelSettings->getRMSnLayersAbove();
   n_layers_below_   = modelSettings->getRMSnLayersBelow();
 
+  mean_vp_top_      = modelSettings->getRMSMeanVpTop();
+  mean_vp_base_     = modelSettings->getRMSMeanVpBase();
+
   var_vp_above_     = modelSettings->getRMSVarianceVpAbove();
   var_vp_below_     = modelSettings->getRMSVarianceVpBelow();
 

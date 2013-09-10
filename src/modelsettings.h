@@ -223,6 +223,8 @@ public:
   bool                             getRMSPriorGiven()                   const { return RMSPriorGiven_                             ;}
   int                              getRMSnLayersAbove()                 const { return RMSnLayersAbove_                           ;}
   int                              getRMSnLayersBelow()                 const { return RMSnLayersBelow_                           ;}
+  double                           getRMSMeanVpTop()                    const { return RMSMeanVpTop_                              ;}
+  double                           getRMSMeanVpBase()                   const { return RMSMeanVpBase_                             ;}
   double                           getRMSVarianceVpAbove()              const { return RMSVarianceVpAbove_                        ;}
   double                           getRMSVarianceVpBelow()              const { return RMSVarianceVpBelow_                        ;}
   double                           getRMSTemporalCorrelationRangeAbove()const { return RMSTemporalCorrRangeAbove_                 ;}
@@ -453,6 +455,8 @@ public:
   void setRMSPriorGiven(bool given)                       { RMSPriorGiven_   = given                             ;}
   void setRMSnLayersAbove(int n_layers)                   { RMSnLayersAbove_ = n_layers                          ;}
   void setRMSnLayersBelow(int n_layers)                   { RMSnLayersBelow_ = n_layers                          ;}
+  void setRMSMeanVpTop(double mean)                       { RMSMeanVpTop_ = mean                               ;}
+  void setRMSMeanVpBase(double mean)                      { RMSMeanVpBase_ = mean                               ;}
   void setRMSVarianceVpAbove(double var)                  { RMSVarianceVpAbove_ = var                            ;}
   void setRMSVarianceVpBelow(double var)                  { RMSVarianceVpBelow_ = var                            ;}
   void setRMSTemporalCorrelationRangeAbove(double range)  { RMSTemporalCorrRangeAbove_ = range                   ;}
@@ -547,6 +551,8 @@ private:
   bool                              RMSPriorGiven_;              // True if prior information is given for RMS inversion
   int                               RMSnLayersAbove_;            // n layers above the reservoir in inversion of RMS velocities
   int                               RMSnLayersBelow_;            // n layers below the reservoir in inversion of RMS velocities
+  double                            RMSMeanVpTop_;               // E(Vp) at the top of the zone above the reservoir, that is, at sea level
+  double                            RMSMeanVpBase_;              // E(Vp) at the base of the zone below the reservoir
   double                            RMSVarianceVpAbove_;         // Var(Vp) above the reservoir in inversion of RMS velocities
   double                            RMSVarianceVpBelow_;         // Var(Vp) below the reservoir in inversion of RMS velocities
   double                            RMSTemporalCorrRangeAbove_;  // Temporal corralation range (ms) for exponential variogram above the reservoir in inversion of RMS velocities

@@ -26,6 +26,7 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   double cpu  = 0.0;
   TimeKit::getTime(wall,cpu);
 
+  FFTGrid * mean_log_vp = seismicParameters.GetMuAlpha();
   FFTGrid * cov_log_vp  = seismicParameters.GetCovBeta();
 
   Simbox * timeSimbox = modelGeneral->getTimeSimbox();
@@ -34,6 +35,8 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   const int n_layers_above  = modelTravelTimeDynamic->getNLayersAbove();
   const int n_layers_below  = modelTravelTimeDynamic->getNLayersBelow();
+  const double mean_vp_top  = modelTravelTimeDynamic->getMeanVpTop();
+  const double mean_vp_base = modelTravelTimeDynamic->getMeanVpBase();
   const double var_vp_above = modelTravelTimeDynamic->getVarVpAbove();
   const double var_vp_below = modelTravelTimeDynamic->getVarVpBelow();
   const double range_above  = modelTravelTimeDynamic->getRangeAbove();
@@ -55,30 +58,21 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   for(int i=0; i<n_rms_traces; i++) {
 
-    double t_top;
-    double t_bot;
-    double dt_simbox;
-
-    getCoordinates(timeSimbox,
-                   rms_traces[i],
-                   t_top,
-                   t_bot,
-                   dt_simbox);
-
     do1DInversion(n_layers_above,
                   n_layers_below,
                   n_layers_simbox,
                   n_layers_padding,
                   variogram_above,
                   variogram_below,
+                  mean_vp_top,
+                  mean_vp_base,
                   var_vp_above,
                   var_vp_below,
-                  t_top,
-                  t_bot,
-                  dt_simbox,
                   max_time,
+                  rms_traces[i],
+                  mean_log_vp,
                   cov_grid_log_vp,
-                  rms_traces[i]->getTime());
+                  timeSimbox);
 
   }
 
@@ -103,15 +97,35 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
                             const int                   & n_layers_padding,
                             const Vario                 * variogram_above,
                             const Vario                 * variogram_below,
+                            const double                & mean_vp_top,
+                            const double                & mean_vp_base,
                             const double                & var_vp_above,
                             const double                & var_vp_below,
-                            const double                & t_top,
-                            const double                & t_bot,
-                            const double                & dt_simbox,
                             const double                & max_time,
+                            const RMSTrace              * rms_trace,
+                            const FFTGrid               * mean_log_vp,
                             const std::vector<double>   & cov_grid_log_vp,
-                            const std::vector<double>   & time) const
+                            const Simbox                * timeSimbox) const
 {
+  const std::vector<double> time = rms_trace->getTime();
+
+  double utmx = rms_trace->getUtmx();
+  double utmy = rms_trace->getUtmy();
+
+  int i_ind;
+  int j_ind;
+
+  timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
+
+  double t_top     = timeSimbox->getTop(i_ind, j_ind);
+  double t_bot     = timeSimbox->getBot(i_ind, j_ind);
+  double dt_simbox = timeSimbox->getdz(i_ind,  j_ind);
+
+  double log_vp_top_reservoir  = mean_log_vp->getRealValue(i_ind, j_ind, 0);
+  double log_vp_base_reservoir = mean_log_vp->getRealValue(i_ind, j_ind, n_layers_simbox-1);
+
+  std::vector<double> mean_vp_sqrt_above = calculateMeanVp(std::log(mean_vp_top), log_vp_top_reservoir, n_layers_above);
+  std::vector<double> mean_vp_sqrt_below = calculateMeanVp(log_vp_base_reservoir, std::log(mean_vp_base), n_layers_below);
 
   NRLib::Grid2D<double> G = calculateG(time,
                                        t_top,
@@ -149,6 +163,20 @@ RMSInversion::getCovLogVp(const FFTGrid * cov_log_vp) const
   return cov_grid_log_vp;
 
 }
+//-----------------------------------------------------------------------------------------//
+std::vector<double>
+RMSInversion::calculateMeanVp(const double & top_value,
+                              const double & base_value,
+                              const int    & n_layers) const
+{
+  std::vector<double> mean_vp(n_layers+1);
+
+  for(int j=0; j<n_layers+1; j++)
+    mean_vp[j] = top_value + j * (base_value - top_value) / n_layers;
+
+  return mean_vp;
+}
+
 
 //-----------------------------------------------------------------------------------------//
 
@@ -284,26 +312,4 @@ RMSInversion::makeSigma_m(const double              & t_top,
   return Sigma_m;
 }
 
-//-----------------------------------------------------------------------------------------//
-
-void
-RMSInversion::getCoordinates(const Simbox   * timeSimbox,
-                             const RMSTrace * rms_trace,
-                             double         & t_top,
-                             double         & t_bot,
-                             double         & dt_simbox) const
-{
-
-  const double x = rms_trace->getUtmx();
-  const double y = rms_trace->getUtmy();
-
-  int i_ind;
-  int j_ind;
-
-  timeSimbox->getIndexes(x, y, i_ind, j_ind);
-
-  t_top     = timeSimbox->getTop(i_ind, j_ind);
-  t_bot     = timeSimbox->getBot(i_ind, j_ind);
-  dt_simbox = timeSimbox->getdz(i_ind,  j_ind);
-}
 

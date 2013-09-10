@@ -27,6 +27,8 @@ public:
   const std::vector<RMSTrace *> getRMSTraces()             const { return rms_traces_             ;}
   const int                     getNLayersAbove()          const { return n_layers_above_         ;}
   const int                     getNLayersBelow()          const { return n_layers_below_         ;}
+  const double                  getMeanVpTop()             const { return mean_vp_top_            ;}
+  const double                  getMeanVpBase()            const { return mean_vp_base_           ;}
   const double                  getVarVpAbove()            const { return var_vp_above_           ;}
   const double                  getVarVpBelow()            const { return var_vp_below_           ;}
   const double                  getRangeAbove()            const { return range_above_            ;}
@@ -54,6 +56,9 @@ private:
 
   int                       n_layers_above_;        ///< Number of layers to be used in the RMS inversion above the reservoir
   int                       n_layers_below_;        ///< Number of layers to be used in the RMS inversion below the reservoir
+
+  double                    mean_vp_top_;           // E(Vp) at the top of the zone above the reservoir, that is, at sea level
+  double                    mean_vp_base_;          // E(Vp) at the base of the zone below the reservoir
 
   double                    var_vp_above_;          ///< Var(Vp) above the reservoir // Ønsker egentlig Var(Vp^2)
   double                    var_vp_below_;          ///< Var(Vp) below the reservoir // Ønsker egentlig Var(Vp^2)
