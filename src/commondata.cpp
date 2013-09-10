@@ -3976,9 +3976,9 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
     int nx_pad, ny_pad, nz_pad;
     if(nopadding)
     {
-      nx_pad = time_simbox->getnx(); //timeSimbox->getnx();
-      ny_pad = time_simbox->getny(); //timeSimbox->getny();
-      nz_pad = time_simbox->getnz(); //timeSimbox->getnz();
+      nx_pad = time_simbox->getnx();
+      ny_pad = time_simbox->getny();
+      nz_pad = time_simbox->getnz();
     }
     else
     {
@@ -3987,9 +3987,9 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
       nz_pad = model_settings->getNZpad();
     }
     LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-    grid = CreateFFTGrid(time_simbox->getnx(), //timeSimbox->getnx(),
-                         time_simbox->getny(), //timeSimbox->getny(),
-                         time_simbox->getnz(), //timeSimbox->getnz(),
+    grid = CreateFFTGrid(time_simbox->getnx(),
+                         time_simbox->getny(),
+                         time_simbox->getnz(),
                          nx_pad,
                          ny_pad,
                          nz_pad,
@@ -4063,12 +4063,12 @@ CommonData::ReadSegyFile(const std::string       & file_name,
 
     float guard_zone = model_settings->getGuardZone();
 
-    std::string errTxt = "";
+    std::string err_txt_tmp = "";
     if(CheckThatDataCoverGrid(segy,
                               offset,
                               time_simbox,
                               guard_zone,
-                              errTxt) == true)
+                              err_txt_tmp) == true)
     {
 
     //if (errTxt == "") {
@@ -4086,7 +4086,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
       segy->CreateRegularGrid();
     }
     else {
-      err_text += errTxt;
+      err_text += err_txt_tmp;
       failed = true;
     }
   }
@@ -4141,7 +4141,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
     }
     else {  //Change to new resample algorithm for all grid types.
       missingTracesSimbox = target->fillInFromSegY(segy,
-                                                   time_simbox, //timeSimbox,
+                                                   time_simbox,
                                                    par_name,
                                                    nopadding);
     }
@@ -4349,7 +4349,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             //H Create a backgroundsimbox based on the different options for correlation direction? top/base conform.
             //Similiar to MultiIntervalGrid::SetupIntervalSimbox
 
-
+            //SetupExtendedBackgroundSimbox( two correlations surfaces);
 
           }
 
@@ -4407,9 +4407,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           std::vector<NRLib::Grid<double> > parameters(3);
 
-          //parameters[0].Resize(nx, ny, nz);
-          //parameters[1].Resize(nx, ny, nz);
-          //parameters[2].Resize(nx, ny, nz);
           FFTGrid vp_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
           FFTGrid vs_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
           FFTGrid rho_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
@@ -4420,28 +4417,16 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           vs_grid.setType(FFTGrid::PARAMETER);
           rho_grid.setType(FFTGrid::PARAMETER);
 
-
-          //for (int i=0 ; i<3 ; i++) {
-          //  back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-          //  back_model[i]->createRealGrid();
-          //  back_model[i]->setType(FFTGrid::PARAMETER);
-          //}
-
-
           // Get prior probabilities for the facies in a vector
-          std::vector<std::string> facies_names = facies_names_; //modelGeneral->getFaciesNames();
+          std::vector<std::string> facies_names = facies_names_;
           int                      n_facies     = static_cast<int>(facies_names.size());
 
-          std::vector<float> prior_probability = prior_facies_[i]; //modelGeneral->getPriorFacies();
-
-          //std::vector<DistributionsRock *> rock_distribution = rock_distributions_[i];
-
+          std::vector<float> prior_probability = prior_facies_[i];
 
           std::vector<DistributionsRock *> rock_distribution(n_facies);  //Get from rock_distributions_
 
           typedef std::map<std::string, DistributionsRock *> rf_map_type;
           rf_map_type rf_map = GetRockDistributionTime0();
-
 
           //typedef std::map<std::string, DistributionsRock *> rfMapType;
           //rfMapType rfMap = rock_distributions_[i];
@@ -4464,13 +4449,9 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           // filling in the backModel in Background
           GenerateRockPhysics3DBackground(rock_distribution,
                                           prior_probability,
-                                          //parameters,
                                           vp_grid,
                                           vs_grid,
                                           rho_grid,
-                                          //*back_model[0],
-                                          //*back_model[1],
-                                          //*back_model[2],
                                           i);
 
           parameters[0] = FFTGridRealToGrid(&vp_grid);
@@ -5774,6 +5755,13 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   //Set up timeline.
   time_line_ = new TimeLine();
   std::string err_text = "";
+  //Activate below when gravity data are ready.
+  //Do gravity first.
+  //for(int i=0;i<modelSettings->getNumberOfGravityData();i++) {
+  //  int time = computeTime(modelSettings->getGravityYear[i],
+  //                         modelSettings->getGravityMonth[i],
+  //                         modelSettings->getGravityDay[i]);
+  //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
 
   bool first_gravimetric_event = true;
   for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
@@ -5798,6 +5786,8 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
       //Travel time ebefore AVO for same vintage.
       //if(travel time for this vintage)
       //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+      //Travel time before AVO for same vintage.
+
       if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
         time_line_->AddEvent(time, TimeLine::AVO, i);
     }
