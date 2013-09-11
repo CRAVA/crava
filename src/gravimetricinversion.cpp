@@ -40,16 +40,16 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   TimeKit::getTime(wall,cpu);
 
   State4D state4d         = modelGeneral->getState4D();
-  Simbox * upscaledSimbox = modelGravityStatic->GetUpscaledSimbox();
+//  Simbox * upscaledSimbox = modelGravityStatic->GetUpscaledSimbox();
   lag_index_              = modelGravityStatic->GetLagIndex();
 
   int nxp               = seismicParameters.GetMuRho()->getNxp();
   int nyp               = seismicParameters.GetMuRho()->getNyp();
   int nzp               = seismicParameters.GetMuRho()->getNzp();
 
-  int nx_upscaled       = upscaledSimbox->getnx();
-  int ny_upscaled       = upscaledSimbox->getny();
-  int nz_upscaled       = upscaledSimbox->getnz();
+  int nx_upscaled       = modelGravityStatic->GetNx_upscaled();
+  int ny_upscaled       = modelGravityStatic->GetNy_upscaled();
+  int nz_upscaled       = modelGravityStatic->GetNz_upscaled();
 
   int nxp_upscaled      = modelGravityStatic->GetNxp_upscaled();
   int nyp_upscaled      = modelGravityStatic->GetNyp_upscaled();
@@ -67,15 +67,14 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   }
   upscaling_kernel_conj->conjugate();  // Conjugate only in FFT domain.
 
-  /*
+
   // For testing
-  if(upscalingKernel_conj->getIsTransformed()){
-    GetMeanForTransformation(upscalingKernel_conj);
-    upscalingKernel_conj->invFFTInPlace();
-    GetMeanForTransformation(upscalingKernel_conj);
-    upscalingKernel_conj->fftInPlace();
+  if(upscaling_kernel_conj->getIsTransformed()){
+    GetMeanForTransformation(upscaling_kernel_conj);
+    upscaling_kernel_conj->invFFTInPlace();
+    GetMeanForTransformation(upscaling_kernel_conj);
+    upscaling_kernel_conj->fftInPlace();
   }
-  */
 
   FFTGrid * upscaling_kernel_abs = new FFTGrid(modelGravityStatic->GetUpscalingKernel());
   upscaling_kernel_abs->realAbs();
@@ -225,9 +224,12 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   NRLib::InitializeMatrix(Sigma_error, 0.0);
 
   // Use from std dev input - here only temporary crap
-  double e = 0.00001;
+  double e = 0.1;
   for(int i = 0; i < 30; i++)
     Sigma_error(i,i) = pow(e,2);
+
+  NRLib::WriteMatrixToFile("Sigma.txt",  Sigma);
+  NRLib::WriteMatrixToFile("Sigma_error.txt", Sigma_error);
 
   NRLib::Vector      gravity_data(30);
   std::vector<float> d = modelGravityDynamic->GetGravityResponse();
@@ -253,12 +255,14 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
     ExpandCovMatrixWithLevelShift(Sigma, shift_parameter);
   }
 
+  NRLib::WriteVectorToFile("Rho_prior.txt", Rho);
+
   NRLib::Vector Rho_posterior  (Np_up);
   NRLib::Matrix Sigma_posterior(Np_up, Np_up);
 
   NRLib::Matrix GT         = NRLib::transpose(G);
   NRLib::Matrix G_Sigma    = G * Sigma;
-  NRLib::Matrix G_Sigma_GT =  G_Sigma * GT;
+  NRLib::Matrix G_Sigma_GT = G_Sigma * GT;
   NRLib::Matrix Sigma_GT   = Sigma * GT;
 
   NRLib::Matrix inv_G_Sigma_GT_plus_Sigma_error = G_Sigma_GT + Sigma_error;
@@ -287,6 +291,8 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
     RemoveLevelShiftFromVector(Rho_posterior, level_shift);
     RemoveLevelShiftFromCovMatrix(Sigma_posterior);
   }
+  NRLib::WriteVectorToFile("Rho_posterior.txt", Rho_posterior);
+
 
   // Reshape back to FFTGrid
   ReshapeVectorToFFTGrid(upscaled_mean_rho_total, Rho_posterior);
@@ -305,6 +311,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   /// Posterior upscaled covariance
   FFTGrid * posterior_upscaled_cov_rho_total = new FFTGrid(nx_upscaled, ny_upscaled, nz_upscaled,
                                                            nxp_upscaled, nyp_upscaled, nzp_upscaled);
+  posterior_upscaled_cov_rho_total->createRealGrid();
   posterior_upscaled_cov_rho_total->setType(FFTGrid::PARAMETER);
 
   ReshapeCovMatrixToFFTGrid(posterior_upscaled_cov_rho_total, Sigma_posterior);
@@ -316,7 +323,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
                                      nxp_upscaled, nyp_upscaled, nzp_upscaled);
   fft_factor->createRealGrid();
   fft_factor->setType(FFTGrid::PARAMETER);
-  fft_factor->fillInConstant(1.0);  // ikke i padded omr?de
+  fft_factor->fillInConstant(1.0);  // ikke i padded område
 
   // Need to be in FFT-domain
   if(upscaled_cov_rho_total->getIsTransformed() == false)
@@ -379,11 +386,22 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
      posterior_upscaled_cov_rho_total->fftInPlace();
 
   //Backsample in Fourier domain
-  Backsample(posterior_upscaled_cov_rho_total, cov_rho_total);  // covRhoTotal is now posterior! NB b?r ha prior??
+  Backsample(posterior_upscaled_cov_rho_total, cov_rho_total);  // covRhoTotal is now posterior! NB bør ha prior??
 
   // Deconvolution: Do pointwise division in FFTdomain - twice
   Divide(cov_rho_total, upscaling_kernel_abs);
   Divide(cov_rho_total, upscaling_kernel_abs);
+
+
+   // Only for debugging purposes
+  if(posterior_upscaled_cov_rho_total->getIsTransformed() == true)
+    posterior_upscaled_cov_rho_total->invFFTInPlace();
+  NRLib::Matrix Post_sigma_temp(Np_up, Np_up);
+  NRLib::InitializeMatrix (Post_sigma_temp, 0.0);
+
+  ReshapeCovAccordingToLag(Post_sigma_temp, posterior_upscaled_cov_rho_total);
+  NRLib::WriteMatrixToFile("Sigma_posterior.txt", Post_sigma_temp);
+
 
   // For transforming back to log-domain, need to be in real domain
   if(cov_rho_total->getIsTransformed())
@@ -466,6 +484,8 @@ seismicParameters.FFTCovGrids();
 float
   GravimetricInversion::GetSigmaForTransformation(FFTGrid * sigma)
 {
+  // NB NB SJEKKE DENNE OGSÅ
+
   float sigma_squared = 0;
   if(sigma->getIsTransformed() == false){
     // Aksessmode?
@@ -511,6 +531,7 @@ float
 float
   GravimetricInversion::GetMeanForTransformation(FFTGrid * grid)
 {
+  // NB NB Sjekke denne!!
   float mean = 0;
 
   if(grid->getIsTransformed() == true){
@@ -623,7 +644,7 @@ void
   std::vector<int> y_indices(nyp_up);
   std::vector<int> z_indices(nzp_up);
 
-  // Sikre ogs? for b?de partalls og oddetalls nxp_up's
+  // Sikre også for både partalls og oddetalls nxp_up's
   for(int i = 0; i<nxp_up; i++){
     if(i<nxp_up_half)
       x_indices[i] = i;
@@ -681,7 +702,7 @@ void
   std::vector<int> y_indices(nyp_up);
   std::vector<int> z_indices(nzp_up);
 
-  // Sikre ogs? for b?de partalls og oddetalls nxp_up's
+  // Sikre også for både partalls og oddetalls nxp_up's
   for(int i = 0; i<nxp_up; i++){
     if(i<nxp_up_half)
       x_indices[i] = i;
@@ -760,7 +781,7 @@ void
     for(int j = 1; j <= nyp; j++){
       for(int k = 1; k <= nzp; k++){
         I =  i + (j-1)*nxp + (k-1)*nxp*nyp;
-        grid->setNextReal(static_cast<float>(vec(I-1)));  // Sjekke rekkef?lge!!! SetNextReal()
+        grid->setNextReal(static_cast<float>(vec(I-1)));  // Sjekke rekkefølge!!! SetNextReal()
       }
     }
   }
@@ -1030,7 +1051,7 @@ void
   modelGravityDynamic->SetSyntheticData(synthetic_data);
 
   // Dump synthetic data and full size matrix
-  NRLib::WriteVectorToFile("Syntehtic_data",  synthetic_data);
-  NRLib::WriteMatrixToFile("FullSizeGMatrix", G_fullsize);
+  NRLib::WriteVectorToFile("Synthetic_data.txt",  synthetic_data);
+  //NRLib::WriteMatrixToFile("FullSizeGMatrix.txt", G_fullsize);
 
 }

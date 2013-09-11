@@ -49,6 +49,8 @@ public:
   void                          SetSyntheticData(NRLib::Vector data) { synthetic_data_ = data     ;}
 
 private:
+  bool                      debug_;
+
   bool                      failed_;              ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;      ///< Detailed failed information.
 

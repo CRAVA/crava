@@ -32,10 +32,11 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
 {
   modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
 
+  debug_                  = true;
   failed_                 = false;
   before_injection_start_ = false; // When do we know what this should be??
 
-  bool failedLoadingModel = false; // Usikker p? om trenger to slike failed-variable...
+  bool failedLoadingModel = false; // Usikker på om trenger to slike failed-variable...
   bool failedReadingFile  = false;
   std::string errText("");
 
@@ -93,10 +94,12 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
     z_upscaling_factor_ = 5;
 
     SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
+    // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
+    // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
 
-    LogKit::LogFormatted(LogKit::Low, "Setting up upscaled time simbox ...");
-    MakeUpscaledTimeSimbox(modelSettings, fullTimeSimbox, nx_upscaled_, ny_upscaled_, nz_upscaled_);
-    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+    dx_upscaled_ = fullTimeSimbox->GetLX()/nx_upscaled_;
+    dy_upscaled_ = fullTimeSimbox->GetLY()/ny_upscaled_;
+    dz_upscaled_ = fullTimeSimbox->GetLZ()/nz_upscaled_;
 
     LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
     MakeUpscalingKernel(modelSettings, fullTimeSimbox);  // sjekk at er over nxp
@@ -189,35 +192,6 @@ ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
   delete [] tmpRes;
 }
 
-void ModelGravityStatic::MakeUpscaledTimeSimbox(ModelSettings * modelSettings,
-                                                Simbox        * fullTimeSimbox,
-                                                int nx_upscaled,
-                                                int ny_upscaled,
-                                                int nz_upscaled)
-{
-  //NB: Trenger hjelp til ? sjekke denne!!
-
-  double x0 = fullTimeSimbox->getx0();
-  double y0 = fullTimeSimbox->gety0();
-  const Surface & z0 = dynamic_cast<const Surface &>(fullTimeSimbox->GetTopSurface());
-  double lx = fullTimeSimbox->getlx();
-  double ly = fullTimeSimbox->getly();
-  double lz = fullTimeSimbox->getlz();
-  double rot = fullTimeSimbox->getAngle();  //Usikker!!
-  //double dx = fullTimeSimbox->getdx();
-  //double dy = fullTimeSimbox->getdy();
-  //double dz = fullTimeSimbox->getdz();
-
-  // Eller oppgi oppskaleringsfaktor og dele dx p? det.
-
-  double dx_up = lx/nx_upscaled;
-  double dy_up = ly/ny_upscaled;
-  double dz_up = lz/nz_upscaled;
-
-  upscaled_time_simbox_ = new Simbox(x0, y0, z0, lx, ly, lz, rot, dx_up, dy_up, dz_up);
-
-}
-
 void
 ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * fullTimeSimbox)
 {
@@ -229,25 +203,24 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * 
   int nyp = modelSettings->getNYpad();
   int nzp = modelSettings->getNZpad();
 
-  int nx_upscaled = upscaled_time_simbox_->getnx();
-  int ny_upscaled = upscaled_time_simbox_->getny();
-  int nz_upscaled = upscaled_time_simbox_->getnz();
-
   upscaling_kernel_ = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
   upscaling_kernel_->setType(FFTGrid::PARAMETER);
   upscaling_kernel_->fillInConstant(0.0);
 
   upscaling_kernel_->setAccessMode(FFTGrid::WRITE);
 
-  for(int k = 0; k < nz_upscaled; k++)
-    for(int j = 0; j < ny_upscaled; j++)
-      for(int i = 0; i < nx_upscaled; i++)
+  for(int k = 0; k < nz_upscaled_; k++)
+    for(int j = 0; j < ny_upscaled_; j++)
+      for(int i = 0; i < nx_upscaled_; i++)
         upscaling_kernel_->setRealValue(i, j, k, 1.0);
 
   upscaling_kernel_->endAccess();
 
+  //Er dette riktig skalering?
+  upscaling_kernel_->multiplyByScalar(static_cast<float>(nxp_upscaled_*nyp_upscaled_*nzp_upscaled_)/static_cast<float>(nxp*nyp*nzp)); // Padded or non-padded values?
+
   // Dump upscaling kernel
-  upscaling_kernel_->writeAsciiFile("UpcalingKernel");
+  upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt");
   ParameterOutput::writeToFile(fullTimeSimbox, modelGeneral_, modelSettings, upscaling_kernel_ , "UpscalingKernel_2", "", true);
 }
 
@@ -294,7 +267,7 @@ void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_u
                 else
                   ind3 = nz_upscaled + lag_k + 1;
 
-                lag_index_[I-1][J-1][0] = ind1 - 1;   // NB -1
+                lag_index_[I-1][J-1][0] = ind1 - 1;   // NB: -1
                 lag_index_[I-1][J-1][1] = ind2 - 1;
                 lag_index_[I-1][J-1][2] = ind3 - 1;
               }
@@ -313,7 +286,6 @@ void
 ModelGravityStatic::SetUpscaledPaddingSize(ModelSettings * modelSettings)
 {
   // Find original nxp, nyp, nzp
-  // Heller hente fra simbox??
   int nxpad = modelSettings->getNXpad();
   int nypad = modelSettings->getNYpad();
   int nzpad = modelSettings->getNZpad();

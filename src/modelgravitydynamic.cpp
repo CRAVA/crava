@@ -49,13 +49,14 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
                                          SeismicParametersHolder      & seismicParameters)
 
 {
-  modelGeneral_ = modelGeneral;    // For ? bruke full size time simbox. L?se dette bedre...
+  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
 
+  debug_                  = true;
   failed_                 = false;
   thisTimeLapse_          = t;
 
   bool failedLoadingModel = false;
-  bool failedReadingFile = false;
+  bool failedReadingFile  = false;
   std::string errText("");
 
   int nObs = 30;     // should this be given in input file
@@ -115,20 +116,42 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
                                        SeismicParametersHolder & seismicParameters)
 {
   // Building gravity matrix for each time vintage, using updated mean Vp in generating the grid.
-  Simbox * upscaledTimeSimbox = modelGravityStatic->GetUpscaledSimbox();
+  double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
+
   Simbox * fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
 
-  int nx_upscaled = upscaledTimeSimbox->getnx();
-  int ny_upscaled = upscaledTimeSimbox->getny();
-  int nz_upscaled = upscaledTimeSimbox->getnz();
+    // Use vp_current, found in Seismic parameters holder here.
+  FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMuAlpha());  // for upscaling
+  FFTGrid * meanAlphaFullSize = new FFTGrid(expMeanAlpha);                    // for full size matrix
 
   int nx = fullSizeTimeSimbox->getnx();
   int ny = fullSizeTimeSimbox->getny();
   int nz = fullSizeTimeSimbox->getnz();
 
+  double dx = fullSizeTimeSimbox->getdx();
+  double dy = fullSizeTimeSimbox->getdy();
+  double dz = fullSizeTimeSimbox->getdz();  //Tvilsomt?
+
+  int nxp = expMeanAlpha->getNxp();
+  int nyp = expMeanAlpha->getNyp();
+  int nzp = expMeanAlpha->getNzp();
+
   int nxp_upscaled = modelGravityStatic->GetNxp_upscaled();
   int nyp_upscaled = modelGravityStatic->GetNyp_upscaled();
   int nzp_upscaled = modelGravityStatic->GetNzp_upscaled();
+
+  int upscaling_factor_x = nxp/nxp_upscaled;
+  int upscaling_factor_y = nyp/nyp_upscaled;
+  int upscaling_factor_z = nzp/nzp_upscaled;
+
+  // dimensions of one grid cell
+  double dx_upscaled = dx*upscaling_factor_x;
+  double dy_upscaled = dy*upscaling_factor_y;
+  double dz_upscaled = dz*upscaling_factor_z;
+
+  int nx_upscaled = modelGravityStatic->GetNx_upscaled();
+  int ny_upscaled = modelGravityStatic->GetNy_upscaled();
+  int nz_upscaled = modelGravityStatic->GetNz_upscaled();
 
   int N_upscaled = nx_upscaled*ny_upscaled*nz_upscaled;
   int N_fullsize = nx*ny*nz;
@@ -137,12 +160,6 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
 
   G_         .resize(nObs, N_upscaled);
   G_fullsize_.resize(nObs, N_fullsize);
-
-  double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
-
-  // Use vp_current, found in Seismic parameters holder here.
-  FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMuAlpha());  // for upscaling
-  FFTGrid * meanAlphaFullSize = new FFTGrid(expMeanAlpha);                    // for full size matrix
 
   // Need to be in real domain for transforming from log domain
   if(expMeanAlpha->getIsTransformed())
@@ -173,21 +190,6 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
 
   upscaledMeanAlpha->invFFTInPlace();
 
-  // dimensions of one grid cell
-  double dx_upscaled = upscaledTimeSimbox->getdx();
-  double dy_upscaled = upscaledTimeSimbox->getdy();
-
-  double dx = fullSizeTimeSimbox->getdx();
-  double dy = fullSizeTimeSimbox->getdy();
-
-  int nxp = expMeanAlpha->getNxp();
-  int nyp = expMeanAlpha->getNyp();
-  int nzp = expMeanAlpha->getNzp();
-
-  int upscaling_factor_x = nxp/nxp_upscaled;
-  int upscaling_factor_y = nyp/nyp_upscaled;
-  int upscaling_factor_z = nzp/nzp_upscaled;
-
   float x0, y0, z0; // Coordinates for the observations points
   int J = 0;        // Index in matrix counting cell number
   int I = 0;
@@ -197,6 +199,9 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   double localMass;
   double localDistanceSquared;
 
+  NRLib::Matrix UpscaledCoord(nx_upscaled*ny_upscaled*nz_upscaled, 3);
+  NRLib::Matrix FullSizeCoord(nx*ny*nz, 3);
+
   for(int i = 0; i < nObs; i++){
     x0 = observation_location_utmx_[i];
     y0 = observation_location_utmy_[i];
@@ -205,9 +210,9 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
      J = 0; I = 0;
 
     // Loop through upscaled simbox to get x, y, z for each grid cell
-    for(int ii = 0; ii < nx_upscaled; ii++){
+    for(int ii = 0; ii < nx_upscaled; ii++){   // eller k først
       for(int jj = 0; jj < ny_upscaled; jj++){
-        for(int kk = 0; kk < nz_upscaled; kk++){
+        for(int kk = 0; kk < nz_upscaled; kk++){   // eller i sist??
           double x, y, z;
           vp = upscaledMeanAlpha->getRealValue(ii,jj,kk);
 
@@ -229,17 +234,16 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
                 fullSizeTimeSimbox->getCoord(iii, jjj, kkk, x, y, z);
                 x_local += x;
                 y_local += y;
-                z_local += z;
+                z_local += z;   // NB NB Need time depth mapping!!
 
                 dt_local += fullSizeTimeSimbox->getdz(iii, jjj); // also average dt?
               }
             }
           }
-          x_local  /= upscaling_factor_x;
-          y_local  /= upscaling_factor_y;
-          z_local  /= upscaling_factor_z;
-          dt_local /= upscaling_factor_z;
-
+          x_local  /= (upscaling_factor_x*upscaling_factor_y*upscaling_factor_z);
+          y_local  /= (upscaling_factor_x*upscaling_factor_y*upscaling_factor_z);
+          z_local  /= (upscaling_factor_x*upscaling_factor_y*upscaling_factor_z);
+          dt_local /= (upscaling_factor_x*upscaling_factor_y*upscaling_factor_z);
 
           // Find fraction of dx_upscaled and dy_upscaled according to indicies
           double xfactor = 1;
@@ -263,6 +267,16 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
           else{
             yfactor = (ny - jstart)/upscaling_factor_y;
           }
+          if(debug_){ // OBS
+            dt_local = 1;
+            vp = 160;
+          }
+
+          if(debug_){
+            UpscaledCoord(J, 0) = x_local;
+            UpscaledCoord(J, 1) = y_local;
+            UpscaledCoord(J, 2) = z_local;
+          }
 
           localMass = (xfactor*dx_upscaled)*(yfactor*dy_upscaled)*dt_local*vp*0.5*1000; // units kg
           localDistanceSquared = pow((x_local-x0),2) + pow((y_local-y0),2) + pow((z_local-z0),2); //units m^2
@@ -280,9 +294,18 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
           fullSizeTimeSimbox->getCoord(ii, jj, kk, x, y, z); // assuming these are center positions...
           vp = meanAlphaFullSize->getRealValue(ii, jj, kk);
           dt = fullSizeTimeSimbox->getdz(ii, jj);
-
+          if(debug_){
+            dt = 1;  // such that vp*dt = 80
+            vp= 160; // = 2*80, dz i matlab er 80   //
+          }
          // int simbox_i = expMeanAlpha->getXSimboxIndex(ii);
          // int simbox_j = expMeanAlpha->getYSimboxIndex(jj);
+
+          if(debug_){
+            FullSizeCoord(I, 0) = x;
+            FullSizeCoord(I, 1) = y;
+            FullSizeCoord(I, 2) = z;
+          }
 
           localMass = dx*dy*dt*vp*0.5*1000; // units kg
           localDistanceSquared = pow((x-x0),2) + pow((y-y0),2) + pow((z-z0),2); //units m^2
@@ -300,9 +323,14 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   //delete meanAlphaFullSize;
   //delete upscaledMeanAlpha;
 
-  // Dump G_ matrix
-
-  // Dump G_fullsize_ matrix
+  if(debug_){
+    NRLib::WriteMatrixToFile("UpscaledCoords.txt", UpscaledCoord);
+    NRLib::WriteMatrixToFile("FullSizeCoords.txt", FullSizeCoord);
+    // Dump G_ matrix
+    NRLib::WriteMatrixToFile("UpscaledGMatrix_dynamicClass.txt", G_);
+    // Dump G_fullsize_ matrix
+    NRLib::WriteMatrixToFile("FullSizeGMatrix_dynamicClass.txt", G_fullsize_);
+  }
 }
 
 

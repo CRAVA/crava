@@ -453,6 +453,14 @@ private:
                       InputFiles    * input_files,
                       std::string   & err_text_common);
 
+  bool  SetupGravityInversion(ModelSettings * model_settings,
+                              InputFiles    * input_files,
+                              std::string   & err_text_common);
+
+  bool  SetupTravelTimeInversion(ModelSettings * model_settings,
+                                 InputFiles    * input_files,
+                                 std::string   & err_text_common);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
@@ -481,6 +489,8 @@ private:
   bool setup_prior_correlation_;
   bool setup_timeline_;
   //bool prior_corr_estimation_;
+  bool setup_gravity_inversion_;
+  bool setup_traveltime_inversion_;
 
   MultiIntervalGrid       * multiple_interval_grid_;
   Simbox                    estimation_simbox_;

@@ -45,6 +45,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_prior_correlation_(false),
   setup_timeline_(false),
   //prior_corr_estimation_(false),
+  setup_gravity_inversion_(false),
+  setup_traveltime_inversion_(false),
   //trend_cubes_(false),
   refmat_from_file_global_vpvs_(false),
   multiple_interval_grid_(NULL),
@@ -139,8 +141,10 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
 
   // 15. Data for gravity inversion
+  setup_gravity_inversion_ = SetupGravityInversion(model_settings, input_files, err_text);
 
   // 16. Data for Travel time Inversion
+  setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
 
 }
@@ -5805,4 +5809,40 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   }
 
   return true;
+}
+
+bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
+                                       InputFiles    * input_files,
+                                       std::string   & err_text_common) {
+
+  std::string err_text = "";
+
+
+
+
+
+
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+}
+
+bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
+                                          InputFiles    * input_files,
+                                          std::string   & err_text_common) {
+
+  std::string err_text = "";
+
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+
 }
