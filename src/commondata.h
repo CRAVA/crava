@@ -480,6 +480,12 @@ private:
                                  InputFiles    * input_files,
                                  std::string   & err_text_common);
 
+  void  ProcessHorizons(std::vector<Surface>   & horizons,
+                        const InputFiles       * input_files,
+                        std::string            & err_text,
+                        bool                   & failed,
+                        int                      i_timelapse);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
@@ -586,6 +592,10 @@ private:
   std::vector<std::vector<float> >        gravity_std_dev_;              ///< Vector to store base line gravity standard deviation
 
   ModelGravityStatic                    * model_gravity_static_;
+
+  //Traveltime parameters per timelapse
+  std::vector<std::vector<Surface> >      horizons_;              ///< Horizons used for horizon inversion
+  std::vector<FFTGrid *>                  rms_data_;              ///< RMS data U^2
 
 };
 #endif

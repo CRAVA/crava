@@ -4510,7 +4510,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           {
             const SegyGeometry      * dummy1 = NULL;
             const TraceHeaderFormat * dummy2 = NULL;
-            const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic setSegyOffset(thisTimeLapse) was used.
+            const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used. Create loop over timelapses?
             std::string err_text_tmp = "";
 
             //Simbox * time_simbox = new Simbox(simbox);
@@ -6098,14 +6098,139 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,
                                           std::string   & err_text_common) {
 
+  //This is from ModelTravelTimeDynamic. Need to add from ModelTravelTimeStatic when it is added.
   std::string err_text = "";
 
+  bool failed_surfaces = false;
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
+
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall, cpu);
+
+  for(int i_timelapse = 0; i_timelapse < n_timelapses; i_timelapse++) {
+
+    ProcessHorizons(horizons_[i_timelapse],
+                    input_files,
+                    err_text,
+                    failed_surfaces,
+                    i_timelapse);
+
+    //From ModelTravelTimeDynamic::processRmsData
+
+    LogKit::WriteHeader("Reading RMS travel time data for timelapse " + NRLib::ToString(i_timelapse));
+    bool failed = false;
+    const SegyGeometry * geometry = new const SegyGeometry;
+    FFTGrid * rms_data            = new FFTGrid;
+
+    float offset = model_settings->getTravelTimeSegyOffset(i_timelapse);
+    if(offset < 0)
+      offset = model_settings->getSegyOffset(i_timelapse);
+
+    //const Simbox * timeCutSimbox = NULL;
+    //if (timeCutMapping != NULL)
+    //  timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+    //else
+    //  timeCutSimbox = timeSimbox;
+
+    const std::string & file_name = input_files->getRmsVelocities(i_timelapse);
+    std::string         data_name = "RMS data";
+    std::string         tmp_err_text = "";
+
+    ReadGridFromFile(file_name,
+                     data_name,
+                     offset,
+                     rms_data,
+                     geometry,
+                     model_settings->getTravelTimeTraceHeaderFormat(i_timelapse),
+                     FFTGrid::DATA,
+                     &estimation_simbox_, //timeSimbox,
+                     //timeCutSimbox,
+                     model_settings,
+                     tmp_err_text);
+
+    if(tmp_err_text != "") {
+      tmp_err_text += "\nReading of file \'"+file_name+"\' for "+data_name+" for timelapse " + NRLib::ToString(i_timelapse) + "failed.\n";
+      err_text += tmp_err_text;
+      failed = true;
+    }
+
+    if(failed = false)
+      rms_data_.push_back(rms_data);
+
+    LogKit::LogFormatted(LogKit::Low,"\n");
+
+    if(failed == false) {
+      bool segy_volumes_read = false;
+
+      if (geometry != NULL)
+        segy_volumes_read = true;
+
+      if (segy_volumes_read == true) {
+        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+
+        if (geometry != NULL) {
+          double geo_angle = (-1)*estimation_simbox_.getAngle()*(180/M_PI);
+          if (geo_angle < 0)
+            geo_angle += 360.0;
+          LogKit::LogFormatted(LogKit::Low,"RMS travel time data   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
+                               geometry->GetX0(), geometry->GetY0(),
+                               geometry->Getlx(), geometry->Getly(), geo_angle,
+                               geometry->GetDx(), geometry->GetDy());
+        }
+      }
+
+      //if((modelSettings->getOutputGridsOther() & IO::RMS_VELOCITIES) > 0) {
+      //  std::string baseName = IO::PrefixTravelTimeData();
+      //  std::string sgriLabel = std::string("RMS travel time data");
+
+      //  rms_data->writeFile(baseName,
+      //                      IO::PathToTravelTimeData(),
+      //                      timeSimbox,
+      //                      sgriLabel,
+      //                      offset,
+      //                      timeDepthMapping,
+      //                      timeCutMapping,
+      //                      *modelSettings->getTraceHeaderFormatOutput());
+      //}
+
+      if (geometry != NULL)
+        delete geometry;
+    }
+
+    Timings::setTimeSeismic(wall, cpu);
+  } //i_timelapse
 
   if(err_text != "") {
+    err_text_common += "Error(s) while loadting travel time data";
     err_text_common += err_text;
     return false;
   }
 
   return true;
+}
+
+void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
+                                 const InputFiles       * input_files,
+                                 std::string            & err_text,
+                                 bool                   & failed,
+                                 int                      i_timelapse)
+{
+  const std::vector<std::string> & travel_time_horizons = input_files->getTravelTimeHorizons(i_timelapse);
+
+  int n_horizons = static_cast<int>(travel_time_horizons.size());
+
+  if(n_horizons == 1) {
+    if(travel_time_horizons[0] != "") {
+      err_text += "Only one surface is given for inversion of the horizons in the travel time data. At least two surfaces should be given\n";
+      failed = true;
+    }
+  }
+
+  else {
+    horizons.resize(n_horizons);
+    for(int i=0; i<n_horizons; i++)
+      horizons[i] = Surface(travel_time_horizons[i]);
+  }
 
 }
