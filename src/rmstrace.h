@@ -26,6 +26,7 @@ public:
   const double                    getUtmy()               const { return utmy_             ; }
 
   const std::vector<double>       getTime()               const { return time_             ; }
+  const std::vector<double>       getVelocity()           const { return velocity_         ; }
 
 private:
 

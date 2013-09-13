@@ -1162,12 +1162,19 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
+  legalCommands.push_back("standard-deviation");
 
   std::string rms_file;
   if(parseFileName(root, "file-name", rms_file, errTxt) == true)
     inputFiles_->addRmsVelocity(rms_file);
   else
     errTxt += "<travel-time><rms-data><file-name> needs to be given\n";
+
+  double value;
+  if(parseValue(root, "standard-deviation", value, errTxt) == true)
+    modelSettings_->setRMSStandardDeviation(value);
+  else
+    errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

@@ -36,6 +36,7 @@ private:
                                               const double                & var_vp_above,
                                               const double                & var_vp_below,
                                               const double                & max_time,
+                                              const double                & standard_deviation,
                                               const RMSTrace              * rms_trace,
                                               const FFTGrid               * mu_log_vp,
                                               const std::vector<double>   & cov_grid_log_vp,
@@ -50,6 +51,9 @@ private:
                                            const int                 & n_layers_below,
                                            const int                 & n_layers_simbox,
                                            const int                 & n_layers_padding) const;
+
+  NRLib::Grid2D<double>         calculateSigmaDSqrt(const std::vector<double> & rms_velocity,
+                                                    const double              & standard_deviation) const;
 
   std::vector<double>           generateMuLogVpModel(const FFTGrid * mu_log_vp,
                                                      const int     & i_ind,
