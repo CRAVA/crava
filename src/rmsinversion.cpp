@@ -33,14 +33,15 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
 
-  const int n_layers_above  = modelTravelTimeDynamic->getNLayersAbove();
-  const int n_layers_below  = modelTravelTimeDynamic->getNLayersBelow();
-  const double mu_vp_top    = modelTravelTimeDynamic->getMeanVpTop();
-  const double mu_vp_base   = modelTravelTimeDynamic->getMeanVpBase();
-  const double var_vp_above = modelTravelTimeDynamic->getVarVpAbove();
-  const double var_vp_below = modelTravelTimeDynamic->getVarVpBelow();
-  const double range_above  = modelTravelTimeDynamic->getRangeAbove();
-  const double range_below  = modelTravelTimeDynamic->getRangeBelow();
+  const int n_layers_above        = modelTravelTimeDynamic->getNLayersAbove();
+  const int n_layers_below        = modelTravelTimeDynamic->getNLayersBelow();
+  const double mu_vp_top          = modelTravelTimeDynamic->getMeanVpTop();
+  const double mu_vp_base         = modelTravelTimeDynamic->getMeanVpBase();
+  const double var_vp_above       = modelTravelTimeDynamic->getVarVpAbove();
+  const double var_vp_below       = modelTravelTimeDynamic->getVarVpBelow();
+  const double range_above        = modelTravelTimeDynamic->getRangeAbove();
+  const double range_below        = modelTravelTimeDynamic->getRangeBelow();
+  const double standard_deviation = modelTravelTimeDynamic->getStandardDeviation();
 
   int n_rms_traces     = static_cast<int>(rms_traces.size());
   int n_layers_simbox  = timeSimbox->getnz();
@@ -69,6 +70,7 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                   var_vp_above,
                   var_vp_below,
                   max_time,
+                  standard_deviation,
                   rms_traces[i],
                   mu_log_vp,
                   cov_grid_log_vp,
@@ -102,6 +104,7 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
                             const double                & var_vp_above,
                             const double                & var_vp_below,
                             const double                & max_time,
+                            const double                & standard_deviation,
                             const RMSTrace              * rms_trace,
                             const FFTGrid               * mu_log_vp,
                             const std::vector<double>   & cov_grid_log_vp,
@@ -131,6 +134,8 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
                                        n_layers_simbox,
                                        n_layers_padding);
 
+
+  NRLib::Grid2D<double> Sigma_d_sqrt = calculateSigmaDSqrt(rms_trace->getVelocity(), standard_deviation);
 
   //// Calculate mu_m and Sigma_m
   float  dt_above = static_cast<float>( t_top             / n_layers_above);
@@ -216,6 +221,31 @@ RMSInversion::calculateG(const std::vector<double> & rms_time,
   }
 
   return G;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+NRLib::Grid2D<double>
+RMSInversion::calculateSigmaDSqrt(const std::vector<double> & rms_velocity,
+                                  const double              & standard_deviation) const
+{
+  int n                 = static_cast<int>(rms_velocity.size());
+  const double variance = std::sqrt(standard_deviation);
+
+  NRLib::Grid2D<double> I(n, n, 0);
+
+  for(int i=0; i<n; i++)
+    I(i,i) = 1;
+
+  NRLib::Grid2D<double> Sigma_d_sqrt(n, n, 0);
+
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++) {
+      Sigma_d_sqrt(i,j) = 4 * std::sqrt(rms_velocity[i]) * variance * I(i,j) + 2* std::sqrt(variance) * I(i,j);
+    }
+  }
+
+  return Sigma_d_sqrt;
 }
 
 //-----------------------------------------------------------------------------------------//

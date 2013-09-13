@@ -91,6 +91,8 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 
   readRMSData(file_name, tmpErrText);
 
+  standard_deviation_ = modelSettings->getRMSStandardDeviation();
+
   n_layers_above_   = modelSettings->getRMSnLayersAbove();
   n_layers_below_   = modelSettings->getRMSnLayersBelow();
 

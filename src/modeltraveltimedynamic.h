@@ -33,6 +33,7 @@ public:
   const double                  getVarVpBelow()            const { return var_vp_below_           ;}
   const double                  getRangeAbove()            const { return range_above_            ;}
   const double                  getRangeBelow()            const { return range_below_            ;}
+  const double                  getStandardDeviation()     const { return standard_deviation_     ;}
 
 
 private:
@@ -54,14 +55,16 @@ private:
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
   std::vector<RMSTrace *>   rms_traces_;
 
+  double                    standard_deviation_;    ///< Observation error for the RMS data
+
   int                       n_layers_above_;        ///< Number of layers to be used in the RMS inversion above the reservoir
   int                       n_layers_below_;        ///< Number of layers to be used in the RMS inversion below the reservoir
 
   double                    mean_vp_top_;           // E(Vp) at the top of the zone above the reservoir, that is, at sea level
   double                    mean_vp_base_;          // E(Vp) at the base of the zone below the reservoir
 
-  double                    var_vp_above_;          ///< Var(Vp) above the reservoir // Ønsker egentlig Var(Vp^2)
-  double                    var_vp_below_;          ///< Var(Vp) below the reservoir // Ønsker egentlig Var(Vp^2)
+  double                    var_vp_above_;          ///< Var(Vp) above the reservoir
+  double                    var_vp_below_;          ///< Var(Vp) below the reservoir
 
   double                    range_above_;           ///< Range of the temporal corralation function used above the reservoir
   double                    range_below_;           ///< Range of the temporal corralation function used below the reservoir
