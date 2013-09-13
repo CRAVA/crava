@@ -40,6 +40,7 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/volume/volume.hpp"
 
+//H Lage constructor som passer med at innlesning er flyttet til CommonData
 
 ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
                                          const ModelGeneral           * modelGeneral,
@@ -106,19 +107,50 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
   failed_ = failedLoadingModel || failedReadingFile;
   failed_details_.push_back(failedReadingFile);
 
-  }
+}
+
+ModelGravityDynamic::ModelGravityDynamic(ModelGravityStatic       * modelGravityStatic,
+                                         Simbox                   * simbox,
+                                         SeismicParametersHolder  & seismicParameters,
+                                         const std::vector<float> & observation_location_utmx,
+                                         const std::vector<float> & observation_location_utmy,
+                                         const std::vector<float> & observation_location_depth,
+                                         const std::vector<float> & gravity_response,
+                                         const std::vector<float> & gravity_std_dev)
+{
+  //modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
+  observation_location_utmx_  = observation_location_utmx;
+  observation_location_utmy_  = observation_location_utmy;
+  observation_location_depth_ = observation_location_depth;
+  gravity_response_           = gravity_response;
+  gravity_std_dev_            = gravity_std_dev;
+
+  debug_                  = true;
+  failed_                 = false;
+
+  LogKit::WriteHeader("Setting up gravimetric time lapse");
+
+  LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
+  BuildGMatrix(modelGravityStatic, seismicParameters, simbox);
+  LogKit::LogFormatted(LogKit::Low, "ok.\n");
+}
 
 ModelGravityDynamic::~ModelGravityDynamic(void)
 {
 }
 
 void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravityStatic,
-                                       SeismicParametersHolder & seismicParameters)
+                                       SeismicParametersHolder & seismicParameters,
+                                       Simbox                  * simbox)
 {
   // Building gravity matrix for each time vintage, using updated mean Vp in generating the grid.
   double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
 
-  Simbox * fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
+  Simbox * fullSizeTimeSimbox = NULL;
+  if(simbox == NULL)
+    fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
+  else
+    fullSizeTimeSimbox = simbox;
 
     // Use vp_current, found in Seismic parameters holder here.
   FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMuAlpha());  // for upscaling

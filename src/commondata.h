@@ -17,12 +17,14 @@
 #include "src/multiintervalgrid.h"
 #include "src/background.h"
 //#include "src/timeevolution.h"
+//#include "src/modelgravitystatic.h"
 
 class CravaTrend;
 class InputFiles;
 class ModelSettings;
-class ModelGeneral;
+//class ModelGeneral;
 class TimeLine;
+class ModelGravityStatic;
 
 class CommonData{
 public:
@@ -457,6 +459,23 @@ private:
                               InputFiles    * input_files,
                               std::string   & err_text_common);
 
+  void  ReadGravityDataFile(const std::string   & file_name,
+                            const std::string   & read_reason,
+                            int                   n_obs,
+                            int                   n_columns,
+                            std::vector <float> & obs_loc_utmx,
+                            std::vector <float> & obs_loc_utmy,
+                            std::vector <float> & obs_loc_depth,
+                            std::vector <float> & gravity_response,
+                            std::vector <float> & gravity_std_dev,
+                            std::string         & err_text);
+
+  //void  SetUpscaledPaddingSize(ModelSettings * model_settings);
+
+  //int   SetPaddingSize(int original_nxp, int upscaling_factor);
+
+  //std::vector<int> FindClosestFactorableNumber(int leastint);
+
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,
                                  std::string   & err_text_common);
@@ -558,6 +577,15 @@ private:
   //NRLib::Volume                       * full_inversion_volume_;
 
   std::vector<Wavelet*>                   temporary_wavelets_; //One wavelet per angle
+
+  //Gravimetry parameters per timelapse
+  std::vector<std::vector<float> >        observation_location_utmx_;    ///< Vectors to store observation location coordinates
+  std::vector<std::vector<float> >        observation_location_utmy_;
+  std::vector<std::vector<float> >        observation_location_depth_;
+  std::vector<std::vector<float> >        gravity_response_;             ///< Vector to store base line gravity response
+  std::vector<std::vector<float> >        gravity_std_dev_;              ///< Vector to store base line gravity standard deviation
+
+  ModelGravityStatic                    * model_gravity_static_;
 
 };
 #endif

@@ -13,6 +13,10 @@ public:
   ModelGravityStatic(ModelSettings        *& modelSettings,
                      ModelGeneral         *& modelGeneral,
                      const InputFiles      * inputFiles);
+
+  ModelGravityStatic(ModelSettings      *& modelSettings,
+                     Simbox              * simbox);
+
   ~ModelGravityStatic();
 
   bool                          GetFailed()                const { return failed_                 ;}

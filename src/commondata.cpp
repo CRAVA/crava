@@ -27,6 +27,8 @@
 #include "lib/timekit.hpp"
 #include "src/timings.h"
 
+#include "src/modelgravitystatic.h"
+
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files):
   outer_temp_simbox_(false),
@@ -647,7 +649,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     err_text += "Error: " + NRLib::ToString(e.what());
   }
 
-  ///H ?
+  ///H This will not work if ReadFaciesNamesFromWellFile is not run. Update this to use disc-log facies stored from ProcessLogsNorsarWell/ProcessLogsRMSWell.
   if(model_settings->getFaciesLogGiven())
     SetFaciesNamesFromWells(model_settings, err_text);
 
@@ -5817,19 +5819,280 @@ bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
 
   std::string err_text = "";
 
+  bool failed                 = false;
+  bool before_injection_start = false; // When do we know what this should be??
 
+  bool do_gravity_inversion = true;
+  int number_gravity_files  = 0;
+  for(int i = 0; i < model_settings->getNumberOfVintages(); i++) {
+    if(model_settings->getGravityTimeLapse(i))
+      number_gravity_files++;
+  }
 
+  if(number_gravity_files == 0) {
+    // Everything is ok - we do not need gravity inversion
+    do_gravity_inversion = false;
+  }
 
+  if(number_gravity_files == 1) {
+    do_gravity_inversion = false;
+    err_text+="Need at least two gravity surveys for inversion.";
+  }
 
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
 
+  observation_location_utmx_.resize(n_timelapses);
+  observation_location_utmy_.resize(n_timelapses);
+  observation_location_depth_.resize(n_timelapses);
+  gravity_response_.resize(n_timelapses);
+  gravity_std_dev_.resize(n_timelapses);
+
+  // Set up gravimetric baseline
+  if(do_gravity_inversion) {
+
+    for(int i_timelapse = 0; i_timelapse < n_timelapses; i_timelapse++) {
+
+      // Find gravity data file for this timelapse
+      std::string fileName = input_files->getGravimetricData(i_timelapse);
+
+      int n_obs = 30;     //user input
+      int n_columns = 5;  // We require data files to have five columns
+
+      std::vector<float> observation_location_utmx_tmp(n_obs);
+      std::vector<float> observation_location_utmy_tmp(n_obs);
+      std::vector<float> observation_location_depth_tmp(n_obs);
+      std::vector<float> gravity_response_tmp(n_obs);
+      std::vector<float> gravity_std_dev_tmp(n_obs);
+
+      if(i_timelapse == 0) {
+
+        ReadGravityDataFile(fileName, "gravimetric base survey",
+                            n_obs, n_columns,
+                            observation_location_utmx_tmp,
+                            observation_location_utmy_tmp,
+                            observation_location_depth_tmp,
+                            gravity_response_tmp,
+                            gravity_std_dev_tmp,
+                            err_text);
+      }
+      else if(i_timelapse <= model_settings->getNumberOfVintages()) {
+
+        ReadGravityDataFile(fileName,
+                            "gravimetric survey ", // +thisTimeLapse_,
+                            n_obs, n_columns,
+                            observation_location_utmx_tmp,
+                            observation_location_utmy_tmp,
+                            observation_location_depth_tmp,
+                            gravity_response_tmp,
+                            gravity_std_dev_tmp,
+                            err_text);
+      }
+
+      observation_location_utmx_.push_back(observation_location_utmx_tmp);
+      observation_location_utmy_.push_back(observation_location_utmy_tmp);
+      observation_location_depth_.push_back(observation_location_depth_tmp);
+      gravity_response_.push_back(gravity_response_tmp);
+      gravity_std_dev_.push_back(gravity_std_dev_tmp);
+
+    }
+  }
+
+  if(err_text == "") {
+    model_gravity_static_ = new ModelGravityStatic(model_settings, &estimation_simbox_);
+  }
 
   if(err_text != "") {
+    err_text_common += "Error(s) with gravimetric surveys";
     err_text_common += err_text;
     return false;
   }
 
   return true;
 }
+
+void CommonData::ReadGravityDataFile(const std::string   & file_name,
+                                     const std::string   & read_reason,
+                                     int                   n_obs,
+                                     int                   n_columns,
+                                     std::vector <float> & obs_loc_utmx,
+                                     std::vector <float> & obs_loc_utmy,
+                                     std::vector <float> & obs_loc_depth,
+                                     std::vector <float> & gravity_response,
+                                     std::vector <float> & gravity_std_dev,
+                                     std::string         & err_text) {
+
+  float * tmpRes = new float[n_obs*n_columns+1];
+  std::ifstream in_file;
+  NRLib::OpenRead(in_file, file_name);
+  std::string text = "Reading "+read_reason+" from file "+file_name+" ... ";
+  LogKit::LogFormatted(LogKit::Low,text);
+  std::string storage;
+  int index = 0;
+  bool failed = false;
+
+  while(failed == false && in_file >> storage) {
+    if(index < n_obs*n_columns) {
+      try {
+        tmpRes[index] = NRLib::ParseType<float>(storage);
+      }
+      catch (NRLib::Exception & e) {
+        err_text += "Error in "+file_name+"\n";
+        err_text += e.what();
+        failed = true;
+      }
+    }
+    index++;
+  }
+  if(failed == false) {
+    if(index != n_obs*n_columns) {
+      failed = true;
+      err_text += "Found "+NRLib::ToString(index)+" in file "+file_name+", expected "+NRLib::ToString(n_obs*n_columns)+".\n";
+    }
+  }
+
+  if(failed == false) {
+    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+    index = 0;
+    for(int i=0; i < n_obs; i++) {
+      obs_loc_utmx[i] = tmpRes[index];
+      index++;
+      obs_loc_utmy[i] = tmpRes[index];
+      index++;
+      obs_loc_depth[i] = tmpRes[index];
+      index++;
+      gravity_response[i] = tmpRes[index];
+      index++;
+      gravity_std_dev[i] = tmpRes[index];
+      index++;
+    }
+  }
+  else{
+    failed = true;
+    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+  }
+  delete [] tmpRes;
+}
+
+//void CommonData::SetUpscaledPaddingSize(ModelSettings * model_settings)
+//{
+//  // Find original nxp, nyp, nzp
+//  int nxpad = model_settings->getNXpad();
+//  int nypad = model_settings->getNYpad();
+//  int nzpad = model_settings->getNZpad();
+//
+//  int nxpad_up = SetPaddingSize(nxpad, x_upscaling_factor_);
+//  int nypad_up = SetPaddingSize(nypad, y_upscaling_factor_);
+//  int nzpad_up = SetPaddingSize(nzpad, z_upscaling_factor_);
+//
+//  // Initilizing!
+//  nxp_upscaled_ = nxpad_up;
+//  nyp_upscaled_ = nypad_up;
+//  nzp_upscaled_ = nzpad_up;
+//
+//  nx_upscaled_ = nxpad_up;
+//  ny_upscaled_ = nypad_up;
+//  nz_upscaled_ = nzpad_up;
+//
+//  // Set true upscaling factors
+//  x_upscaling_factor_ = nxpad/nxp_upscaled_;
+//  y_upscaling_factor_ = nypad/nyp_upscaled_;
+//  z_upscaling_factor_ = nzpad/nzp_upscaled_;
+//
+//}
+
+
+//int CommonData::SetPaddingSize(int original_nxp, int upscaling_factor)
+//{
+//  int leastint = static_cast<int>(ceil(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
+//  //int maxint = static_cast<int>(floor(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
+//
+//  std::vector<int> exp_list = FindClosestFactorableNumber(original_nxp);
+//
+//  int closestprod = original_nxp;
+//
+//  int factor   =       1;
+//
+//  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
+//  for(int i=0;i<exp_list[0]+1;i++)
+//    for(int j=0;j<exp_list[1]+1;j++)
+//      for(int k=0;k<exp_list[2]+1;k++)
+//        for(int l=0;l<exp_list[3]+1;l++)
+//          for(int m=0;m<exp_list[4]+1;m++)
+//            for(int n=exp_list[4];n<exp_list[5]+1;n++)
+//            {
+//              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
+//                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+//              if ((factor >=  leastint) &&  (factor <  closestprod))
+//              {
+//                closestprod=factor;
+//              }
+//            }
+//            return closestprod;
+//}
+
+//// Same as in FFTGrid-class, however, this one returns list of exponents
+//std::vector<int> CommonData::FindClosestFactorableNumber(int leastint)
+//{
+//  int i,j,k,l,m,n;
+//  int factor   =       1;
+//
+//  std::vector<int> exp_list(6);
+//
+//  int maxant2    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(2.0f) ));
+//  int maxant3    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(3.0f) ));
+//  int maxant5    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(5.0f) ));
+//  int maxant7    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(7.0f) ));
+//  int maxant11   = 0;
+//  int maxant13   = 0;
+//
+//  int closestprod= static_cast<int>(pow(2.0f,maxant2));
+//  exp_list[0] = maxant2;
+//  exp_list[1] = 0;
+//  exp_list[2] = 0;
+//  exp_list[3] = 0;
+//  exp_list[4] = 0;
+//  exp_list[5] = 0;
+//
+//  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
+//  for(i=0;i<maxant2+1;i++)
+//    for(j=0;j<maxant3+1;j++)
+//      for(k=0;k<maxant5+1;k++)
+//        for(l=0;l<maxant7+1;l++)
+//          for(m=0;m<maxant11+1;m++)
+//            for(n=maxant11;n<maxant13+1;n++)
+//            {
+//              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
+//                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+//              if ((factor >=  leastint) &&  (factor <  closestprod))
+//              {
+//                exp_list[0] = i;
+//                exp_list[1] = j;
+//                exp_list[2] = k;
+//                exp_list[3] = l;
+//                exp_list[4] = m;
+//                exp_list[5] = n;
+//                closestprod=factor;
+//              }
+//            }
+//  return exp_list;
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,

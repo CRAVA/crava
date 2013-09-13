@@ -122,6 +122,42 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
   failed_details_.push_back(failedReadingFile);
 }
 
+ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings, //To be run with CommonData
+                                       Simbox              * simbox)
+{
+
+  //modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
+
+  failed_                 = false;
+  before_injection_start_ = false; // When do we know what this should be??
+
+  // Set up gravimetric baseline
+  LogKit::WriteHeader("Setting up gravimetric baseline");
+
+  x_upscaling_factor_ = 10;   // user input...
+  y_upscaling_factor_ = 10;
+  z_upscaling_factor_ = 5;
+
+  SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
+  // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
+  // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
+
+  dx_upscaled_ = simbox->GetLX()/nx_upscaled_;
+  dy_upscaled_ = simbox->GetLY()/ny_upscaled_;
+  dz_upscaled_ = simbox->GetLZ()/nz_upscaled_;
+
+  LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
+  MakeUpscalingKernel(modelSettings, simbox);  // sjekk at er over nxp
+  LogKit::LogFormatted(LogKit::Low, "ok.\n");
+
+  LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
+                                                                        + NRLib::ToString(nyp_upscaled_) + " x "
+                                                                        + NRLib::ToString(nzp_upscaled_) + ") ...");
+  MakeLagIndex(nxp_upscaled_, nyp_upscaled_, nzp_upscaled_); // NBNB including padded region!
+    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+
+}
+
 
 ModelGravityStatic::~ModelGravityStatic(void)
 {
@@ -220,8 +256,8 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * 
   upscaling_kernel_->multiplyByScalar(static_cast<float>(nxp_upscaled_*nyp_upscaled_*nzp_upscaled_)/static_cast<float>(nxp*nyp*nzp)); // Padded or non-padded values?
 
   // Dump upscaling kernel
-  upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt");
-  ParameterOutput::writeToFile(fullTimeSimbox, modelGeneral_, modelSettings, upscaling_kernel_ , "UpscalingKernel_2", "", true);
+  //upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt"); //H ModelGeneral_ not included in CommonData, this will be removed.
+  //ParameterOutput::writeToFile(fullTimeSimbox, modelGeneral_, modelSettings, upscaling_kernel_ , "UpscalingKernel_2", "", true);
 }
 
 void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled)
