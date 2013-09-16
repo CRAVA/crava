@@ -52,9 +52,10 @@ Well::Well(const std::string & name,
 
 
 Well::Well(const std::string & file_name,
-           bool              & read_ok)
+           bool              & read_ok,
+           const std::string & facies_log)
 {
-  ReadWell(file_name, read_ok);
+  ReadWell(file_name, read_ok, facies_log);
 }
 
 
@@ -76,7 +77,8 @@ Well::~Well(){
 
 void
 Well::ReadWell(const std::string              & file_name,
-               bool                           & read_ok)
+               bool                           & read_ok,
+               const std::string              & facies_log)
 {
   if(file_name.find(".nwh",0) != std::string::npos) {
     NRLib::NorsarWell well(file_name);
@@ -94,7 +96,13 @@ Well::ReadWell(const std::string              & file_name,
     n_data_ = well.GetNData();
     cont_log_ = well.GetContLog();
     disc_log_ = well.GetDiscLog();
-    const std::map<int, std::string> facies_map = well.GetDiscNames("FACIES");
+
+    std::map<int, std::string> facies_map;
+    if(well.HasDiscLog(facies_log))
+      facies_map = well.GetDiscNames(facies_log);
+    //if(well.HasDiscLog("FACIES"))
+    //  facies_map = well.GetDiscNames("FACIES");
+
     if(facies_map.size() > 0){
       has_facies_log_ = true;
       facies_map_ = facies_map;

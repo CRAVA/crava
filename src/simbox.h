@@ -123,7 +123,9 @@ public:
   // SET functions ------------------------------------------------------
 
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
-  void           SetTopBotErodedSurfaces(const Surface * top_surf, const Surface base_surf);
+  //void           SetTopBotErodedSurfaces(const Surface * top_surf, const Surface base_surf);
+  void           SetTopBotErodedSurfaces(Surface top_surf, Surface base_surf) { top_eroded_surface_ = &top_surf; base_eroded_surface_ = &base_surf;};
+  void           SetErodedSurfaces(Surface * top_surf, Surface * bot_surf);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);

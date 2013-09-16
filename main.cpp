@@ -205,7 +205,7 @@ int main(int argc, char** argv)
     AND MODEL SETTINGS
     -------------------------------------------------------------*/
 
-    //common_data = new CommonData(modelSettings, inputFiles);
+    common_data = new CommonData(modelSettings, inputFiles);
 
     Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;

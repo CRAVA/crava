@@ -27,8 +27,6 @@
 #include "lib/timekit.hpp"
 #include "src/timings.h"
 
-#include "src/modelgravitystatic.h"
-
 CommonData::CommonData(ModelSettings  * model_settings,
                        InputFiles     * input_files):
   outer_temp_simbox_(false),
@@ -393,7 +391,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
                                  InputFiles     * input_files,
                                  std::string    & err_text_common) {
 
-   std::string err_text = "";
+  std::string err_text = "";
 
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
@@ -406,37 +404,34 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
     return(false);
 
   //Skip if mode is estimation and wavelet/noise is not set for estimation.
-
   if(model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
     return(false);
 
-
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
-  int n_timeLapses = model_settings->getNumberOfTimeLapses();
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
 
-  for(int thisTimeLapse = 0; thisTimeLapse < n_timeLapses; thisTimeLapse++) {
+  LogKit::WriteHeader("Reading seismic data");
 
-    if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
+  for(int this_timelapse = 0; this_timelapse < n_timelapses; this_timelapse++) {
 
-      LogKit::WriteHeader("Reading seismic data");
+    if(input_files->getNumberOfSeismicFiles(this_timelapse) > 0) {
 
+      std::vector<float> angles = model_settings->getAngle(this_timelapse);
+      std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
 
-      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
-      std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
-
-      int n_angles = model_settings->getNumberOfAngles(thisTimeLapse);
+      int n_angles = model_settings->getNumberOfAngles(this_timelapse);
       std::vector<SeismicStorage> seismic_data_angle;
 
       for (int i = 0 ; i < n_angles; i++) {
 
-        std::string filename = input_files->getSeismicFile(thisTimeLapse,i);
-        int fileType = IO::findGridType(filename);
+        std::string filename = input_files->getSeismicFile(this_timelapse, i);
+        int file_type = IO::findGridType(filename);
 
-        if(fileType == IO::SEGY) { //From ModelGeneral::readSegyFile
+        if(file_type == IO::SEGY) { //From ModelGeneral::readSegyFile
 
           SegY * segy = NULL;
 
-          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(thisTimeLapse,i);
+          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(this_timelapse, i);
 
           if(format == NULL) { //Unknown format
             std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
@@ -454,25 +449,24 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           else //Known format, read directly.
             segy = new SegY(filename, offset[i], *format);
 
-
           float guard_zone = model_settings->getGuardZone();
 
-          if(CheckThatDataCoverGrid(segy,
-                                    offset[i],
-                                    &estimation_simbox_, ///H full_inversion_volume?
-                                    guard_zone,
-                                    err_text) == true)
-          {
-
+          bool cover_ok = false;
+          cover_ok = CheckThatDataCoverGrid(segy,
+                                            offset[i],
+                                            &estimation_simbox_, ///H full_inversion_volume?
+                                            guard_zone,
+                                            err_text);
+          if(cover_ok) {
             float padding = 2*guard_zone;
-            bool relativePadding = false;
-            bool onlyVolume = true;
+            bool relative_padding = false;
+            bool only_volume = true;
 
             //"Bruk full_inversion_volume i kallet til som klippevolum i kallet til SegY-leseren."
             segy->ReadAllTraces(&full_inversion_volume_, // timeCutSimBox.
                                 padding,
-                                onlyVolume,
-                                relativePadding);
+                                only_volume,
+                                relative_padding);
             segy->CreateRegularGrid();
 
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
@@ -483,7 +477,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           }
 
         } //SEGY
-        else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
+        else if(file_type == IO::STORM || file_type == IO::SGRI) { //From ModelGeneral::readStormFile
           StormContGrid * stormgrid = NULL;
 
           try
@@ -499,11 +493,9 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           if(err_text == "") {
             SeismicStorage seismicdata_tmp;
 
-            if(fileType == IO::STORM)
-
+            if(file_type == IO::STORM)
               seismicdata_tmp = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
             else
-
               seismicdata_tmp = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
 
             seismic_data_angle.push_back(seismicdata_tmp);
@@ -514,7 +506,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         }
       } //nAngles
 
-      seismic_data_[thisTimeLapse] = seismic_data_angle;
+      seismic_data_[this_timelapse] = seismic_data_angle;
 
     }//ifSeismicFiles
   } //n_timeLapses
@@ -539,13 +531,14 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(time_simbox->GetErodedTopZMin());
-  float bot_grid = static_cast<float>(time_simbox->GetErodedBotZMax());
+  float top_grid = static_cast<float>(time_simbox->getTopZMin());
+  float bot_grid = static_cast<float>(time_simbox->getBotZMax());
+
+  //float top_grid = static_cast<float>(time_simbox->GetTopSurface().Min()); //same as getTopZMin()
+  //float bot_grid = static_cast<float>(time_simbox->GetBotSurface().Max());
+
   //float top_grid = static_cast<float>(time_cut_simbox->getTopZMin());
   //float bot_grid = static_cast<float>(time_cut_simbox->getBotZMax());
-
-  //float test = time_simbox->GetTopSurface().Max();
-  //float test = time_simbox->GetErosionTop().Max();
 
   // Find guard zone
   float top_guard = top_grid - guard_zone;
@@ -596,45 +589,47 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
   std::string err_text = "";
 
   // Get all log names given by user
-  for(size_t i = 0; i<log_names_from_user.size(); i++){
-    log_names.push_back(log_names_from_user[i]);
+  for(size_t i = 0; i<log_names_from_user.size(); i++) {
+    if(log_names_from_user[i] != "")
+      log_names.push_back(log_names_from_user[i]);
   }
 
-  int nWells = model_settings->getNumberOfWells();
-  std::vector<float> dev_angle(nWells);
+  int n_wells = model_settings->getNumberOfWells();
+  std::vector<float> dev_angle(n_wells);
   try{
-    if(nWells > 0)
+    if(n_wells > 0)
       LogKit::WriteHeader("Reading wells");
 
-    for(int i=0 ; i<nWells; i++) {
+    for(int i=0 ; i<n_wells; i++) {
 
       std::string well_file_name = input_files->getWellFile(i);
       bool read_ok = false;
-      NRLib::Well new_well(well_file_name, read_ok);
 
-      //std::vector<int> facies_nr_tmp;
-      //std::vector<std::string> facies_names_tmp;
+      // If the facies log is given, it is always entry 4 in the log name list
+      std::string facies_log = "FACIES";
+      if(log_names_from_user.size() > 4 && log_names_from_user[4] != "")
+        facies_log = log_names_from_user[4];
 
-      //if(well_file_name.find(".nwh",0) != std::string::npos)
-      //  ProcessLogsNorsarWell(new_well, err_text, failed); ///H Facies names from Norsar logs?
-      //else if(well_file_name.find(".rms",0) != std::string::npos) {
-      //  ProcessLogsRMSWell(new_well, err_text, failed);
+      NRLib::Well new_well(well_file_name, read_ok, facies_log);
+      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
+
+      std::vector<int> facies_nr;
+      std::vector<std::string> facies_names;
+
       if(well_file_name.find(".nwh",0) != std::string::npos)
         ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
       else if(well_file_name.find(".rms",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
-        //if(model_settings->getFaciesLogGiven()) {
-        //  ReadFaciesNamesFromWellFile(model_settings, well_file_name, facies_nr_tmp, facies_names_tmp, err_txt);
+      //Store facies names.
+      if(model_settings->getFaciesLogGiven()) {
+        ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names, err_text);
 
-        //  facies_log_wells_.push_back(true);
-        //}
-        //else
-        //  facies_log_wells_.push_back(false);
-      //}
+        facies_log_wells_.push_back(true);
+      }
 
-      //facies_nr_wells_.push_back(facies_nr_tmp);
-      //facies_names_wells_.push_back(facies_names_tmp);
+      facies_nr_wells_.push_back(facies_nr);
+      facies_names_wells_.push_back(facies_names);
 
       if(read_ok == true){
         wells_.push_back(new_well);
@@ -649,8 +644,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     err_text += "Error: " + NRLib::ToString(e.what());
   }
 
-  ///H This will not work if ReadFaciesNamesFromWellFile is not run. Update this to use disc-log facies stored from ProcessLogsNorsarWell/ProcessLogsRMSWell.
-  if(model_settings->getFaciesLogGiven())
+  if(model_settings->getFaciesLogGiven() && err_text == "")
     SetFaciesNamesFromWells(model_settings, err_text);
 
   if(err_text != "") {
@@ -820,7 +814,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
-  const std::vector<double> & z_tmp = new_well.GetContLog("z");
+  const std::vector<double> & z_tmp = new_well.GetContLog("TVD");
   for(int i = 0; i < z_tmp.size(); i++) {
     if(z_tmp[i] != WELLMISSING)
       nonmissing_data++;
@@ -882,123 +876,141 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 }
 
+//void
+//CommonData::ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
+//                                        std::string                well_file_name,
+//                                        std::vector<int>         & facies_nr,
+//                                        std::vector<std::string> & facies_names,
+//                                        std::string              & err_txt)
+//{
+//  std::ifstream file;
+//  std::string token;
+//  std::string dummy_str;
+//  std::string well_name;
+//  NRLib::OpenRead(file, well_file_name);
+//
+//  int nlog; // number of logs in file
+//  int line = 0;
+//  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
+//  NRLib::DiscardRestOfLine(file,line,false);
+//  NRLib::ReadNextToken(file, token, line);
+//  well_name = token;
+//  NRLib::DiscardRestOfLine(file,line,false); //xpos, ypos.
+//
+//  //facies_wells_.push_back(well_name);
+//
+//  nlog   = NRLib::ReadNext<int>(file, line);
+//
+//  int nVar = 5;       // z,alpha,beta,rho, and facies
+//  std::vector<std::string> log_names = model_settings->getLogNames();
+//
+//  std::vector<std::string> parameterList(5);
+//  if(log_names[0] != "") // Assume that all lognames are filled present if first is.
+//  {
+//    parameterList = log_names;
+//  }
+//  else
+//  {
+//  parameterList[0] = "TWT";
+//  parameterList[1] = "DT";
+//  parameterList[2] = "RHOB";
+//  parameterList[3] = "DTS";
+//  parameterList[4] = "FACIES";
+//  }
+//
+//  int * pos = new int[nVar];
+//  for(int i=0;i<nVar;i++)
+//    pos[i] = IMISSING;
+//
+//  std::string facies_log_name;
+//
+//  //Find number of facies
+//  int n_facies = 0;
+//  for(int i=0; i < nlog; i++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    for(int j=0; j < nVar; j++)
+//    {
+//      if( NRLib::Uppercase(token)==parameterList[j])
+//      {
+//        pos[j] = i + 4;
+//        if(j==4)
+//        {
+//          facies_log_name = parameterList[4];
+//          // facies log - save names
+//          NRLib::ReadNextToken(file,token,line); // read code word DISC
+//          if (token != "DISC")
+//          {
+//            err_txt += "Facies log must be discrete for well " + well_file_name + ".\n";
+//            return;
+//            //LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
+//          }
+//          // Find number of facies
+//          std::getline(file, dummy_str);
+//          std::vector<std::string> tokenLine = NRLib::GetTokens(dummy_str);
+//          n_facies = static_cast<int>(tokenLine.size())/2;
+//        }
+//      }
+//    }
+//    if (token != "DISC")
+//      NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//
+//  file.close();
+//  file.clear();
+//
+//  int k;
+//  facies_nr.resize(n_facies);
+//  facies_names.resize(n_facies);
+//  //std::vector<int> facies_nr_tmp(n_facies);
+//  //std::vector<std::string> facies_names_tmp(n_facies);
+//
+//  NRLib::OpenRead(file, well_file_name);
+//  line = 0;
+//  for(int i=0; i < 4+nlog; i++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    if (NRLib::Uppercase(token) == parameterList[4])
+//    {
+//      NRLib::ReadNextToken(file,token,line); // read code word DISC
+//      // facies types given here
+//      for(k=0; k < n_facies; k++)
+//      {
+//        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
+//        facies_nr[k] = NRLib::ParseType<int>(token);
+//        NRLib::ReadNextToken(file,token,line);
+//        facies_names[i] = token;
+//      }
+//    }
+//    NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//
+//  //facies_nr_wells_.push_back(facies_nr_tmp);
+//  //facies_names_wells_.push_back(facies_names_tmp);
+//}
+
 void
-CommonData::ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
-                                        std::string                well_file_name,
+CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                         std::vector<int>         & facies_nr,
                                         std::vector<std::string> & facies_names,
                                         std::string              & err_txt)
 {
-  std::ifstream file;
-  std::string token;
-  std::string dummy_str;
-  std::string well_name;
-  NRLib::OpenRead(file, well_file_name);
+  const std::map<int, std::string> & facies_map = well.GetFaciesMap();
+  int n_facies = facies_map.size();
 
-  int nlog; // number of logs in file
-  int line = 0;
-  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
-  NRLib::DiscardRestOfLine(file,line,false);
-  NRLib::ReadNextToken(file, token, line);
-  well_name = token;
-  NRLib::DiscardRestOfLine(file,line,false); //xpos, ypos.
-
-  //facies_wells_.push_back(well_name);
-
-  nlog   = NRLib::ReadNext<int>(file, line);
-
-  int nVar = 5;       // z,alpha,beta,rho, and facies
-  std::vector<std::string> log_names = model_settings->getLogNames();
-
-  std::vector<std::string> parameterList(5);
-  if(log_names[0] != "") // Assume that all lognames are filled present if first is.
-  {
-    parameterList = log_names;
-  }
-  else
-  {
-  parameterList[0] = "TWT";
-  parameterList[1] = "DT";
-  parameterList[2] = "RHOB";
-  parameterList[3] = "DTS";
-  parameterList[4] = "FACIES";
-  }
-
-  int * pos = new int[nVar];
-  for(int i=0;i<nVar;i++)
-    pos[i] = IMISSING;
-
-  std::string facies_log_name;
-
-  //Find number of facies
-  int n_facies = 0;
-  for(int i=0; i < nlog; i++)
-  {
-    NRLib::ReadNextToken(file,token,line);
-    for(int j=0; j < nVar; j++)
-    {
-      if( NRLib::Uppercase(token)==parameterList[j])
-      {
-        pos[j] = i + 4;
-        if(j==4)
-        {
-          facies_log_name = parameterList[4];
-          // facies log - save names
-          NRLib::ReadNextToken(file,token,line); // read code word DISC
-          if (token != "DISC")
-          {
-            err_txt += "Facies log must be discrete for well " + well_file_name + ".\n";
-            return;
-            //LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
-          }
-          // Find number of facies
-          std::getline(file, dummy_str);
-          std::vector<std::string> tokenLine = NRLib::GetTokens(dummy_str);
-          n_facies = static_cast<int>(tokenLine.size())/2;
-        }
-      }
-    }
-    if (token != "DISC")
-      NRLib::DiscardRestOfLine(file,line,false);
-  }
-
-  file.close();
-  file.clear();
-
-  int k;
   facies_nr.resize(n_facies);
   facies_names.resize(n_facies);
-  //std::vector<int> facies_nr_tmp(n_facies);
-  //std::vector<std::string> facies_names_tmp(n_facies);
 
-  NRLib::OpenRead(file, well_file_name);
-  line = 0;
-  for(int i=0; i < 4+nlog; i++)
-  {
-    NRLib::ReadNextToken(file,token,line);
-    if (NRLib::Uppercase(token) == parameterList[4])
-    {
-      NRLib::ReadNextToken(file,token,line); // read code word DISC
-      // facies types given here
-      for(k=0; k < n_facies; k++)
-      {
-        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
-        facies_nr[k] = NRLib::ParseType<int>(token);
-        NRLib::ReadNextToken(file,token,line);
-        facies_names[i] = token;
-      }
-    }
-    NRLib::DiscardRestOfLine(file,line,false);
+  for(int i = 0; i < facies_map.size(); i++) {
+    facies_nr[i] = i;
+    facies_names[i] = facies_map.find(i)->second;
   }
-
-  //facies_nr_wells_.push_back(facies_nr_tmp);
-  //facies_names_wells_.push_back(facies_names_tmp);
 }
 
 void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_settings,
                                          std::string               & err_text) {
 
-  int min,max;
+  int min, max;
   int globalmin = 0;
   int globalmax = 0;
   int n_facies = 0;
@@ -1008,9 +1020,8 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
     n_facies = facies_names_wells_[w].size();
     facies_nr = facies_nr_wells_[w];
 
-    if(facies_log_wells_[w] == true) //wells[w]->isFaciesLogDefined())
+    if(facies_log_wells_[w] == true)
     {
-      //wells[w]->getMinMaxFnr(min,max);
       GetMinMaxFnr(min,max, n_facies, facies_nr);
 
       if(first==true)
@@ -1029,27 +1040,24 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
     }
   }
 
-  int nnames = globalmax - globalmin + 1;
-  std::vector<std::string> names(nnames);
+  int n_names = globalmax - globalmin + 1;
+  std::vector<std::string> names(n_names);
 
-  for(int w=0; w < model_settings->getNumberOfWells(); w++)
-  {
-    //if(wells[w]->isFaciesLogDefined())
-    if(facies_log_wells_[w] == true)
-    {
-      n_facies = n_facies = facies_names_wells_[w].size();
-      for(int i=0 ; i < n_facies; i++)
-      {
-        //std::string name = wells[w]->getFaciesName(i);
-        //int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
+  for(int w=0; w < model_settings->getNumberOfWells(); w++) {
+
+    if(facies_log_wells_[w] == true) {
+
+      n_facies = facies_names_wells_[w].size();
+
+      for(int i=0 ; i < n_facies; i++) {
+
         std::string name = facies_names_wells_[w][i];
         int         fnr  = facies_nr_wells_[w][i] - globalmin;
 
         if(names[fnr] == "") {
           names[fnr] = name;
         }
-        else if(names[fnr] != name)
-        {
+        else if(names[fnr] != name) {
           err_text += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
         }
       }
@@ -1058,18 +1066,18 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
 
   LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
   LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
-  for(int i=0 ; i<nnames ; i++)
+  for(int i=0 ; i < n_names ; i++) {
     if(names[i] != "")
       LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
+  }
 
-  int nFacies = 0;
-  for(int i=0 ; i<nnames ; i++)
-    if(names[i] != "")
-      nFacies++;
+  //n_facies = 0;
+  //for(int i=0 ; i < n_names ; i++)
+  //  if(names[i] != "")
+  //    n_facies++;
 
-  for(int i=0 ; i<nnames ; i++) {
+  for(int i=0 ; i < n_names ; i++) {
     if(names[i] != "") {
-      //faciesLabels_.push_back(globalmin + i);
       facies_names_.push_back(names[i]);
     }
   }
@@ -5897,9 +5905,10 @@ bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
     }
   }
 
-  if(err_text == "") {
-    model_gravity_static_ = new ModelGravityStatic(model_settings, &estimation_simbox_);
-  }
+  //ModelGravityStatic is set up in 3 c.
+  //if(err_text == "") {
+  //  model_gravity_static_ = new ModelGravityStatic(model_settings, &estimation_simbox_);
+  //}
 
   if(err_text != "") {
     err_text_common += "Error(s) with gravimetric surveys";
@@ -5972,127 +5981,6 @@ void CommonData::ReadGravityDataFile(const std::string   & file_name,
   }
   delete [] tmpRes;
 }
-
-//void CommonData::SetUpscaledPaddingSize(ModelSettings * model_settings)
-//{
-//  // Find original nxp, nyp, nzp
-//  int nxpad = model_settings->getNXpad();
-//  int nypad = model_settings->getNYpad();
-//  int nzpad = model_settings->getNZpad();
-//
-//  int nxpad_up = SetPaddingSize(nxpad, x_upscaling_factor_);
-//  int nypad_up = SetPaddingSize(nypad, y_upscaling_factor_);
-//  int nzpad_up = SetPaddingSize(nzpad, z_upscaling_factor_);
-//
-//  // Initilizing!
-//  nxp_upscaled_ = nxpad_up;
-//  nyp_upscaled_ = nypad_up;
-//  nzp_upscaled_ = nzpad_up;
-//
-//  nx_upscaled_ = nxpad_up;
-//  ny_upscaled_ = nypad_up;
-//  nz_upscaled_ = nzpad_up;
-//
-//  // Set true upscaling factors
-//  x_upscaling_factor_ = nxpad/nxp_upscaled_;
-//  y_upscaling_factor_ = nypad/nyp_upscaled_;
-//  z_upscaling_factor_ = nzpad/nzp_upscaled_;
-//
-//}
-
-
-//int CommonData::SetPaddingSize(int original_nxp, int upscaling_factor)
-//{
-//  int leastint = static_cast<int>(ceil(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
-//  //int maxint = static_cast<int>(floor(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
-//
-//  std::vector<int> exp_list = FindClosestFactorableNumber(original_nxp);
-//
-//  int closestprod = original_nxp;
-//
-//  int factor   =       1;
-//
-//  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
-//  for(int i=0;i<exp_list[0]+1;i++)
-//    for(int j=0;j<exp_list[1]+1;j++)
-//      for(int k=0;k<exp_list[2]+1;k++)
-//        for(int l=0;l<exp_list[3]+1;l++)
-//          for(int m=0;m<exp_list[4]+1;m++)
-//            for(int n=exp_list[4];n<exp_list[5]+1;n++)
-//            {
-//              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-//                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
-//              if ((factor >=  leastint) &&  (factor <  closestprod))
-//              {
-//                closestprod=factor;
-//              }
-//            }
-//            return closestprod;
-//}
-
-//// Same as in FFTGrid-class, however, this one returns list of exponents
-//std::vector<int> CommonData::FindClosestFactorableNumber(int leastint)
-//{
-//  int i,j,k,l,m,n;
-//  int factor   =       1;
-//
-//  std::vector<int> exp_list(6);
-//
-//  int maxant2    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(2.0f) ));
-//  int maxant3    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(3.0f) ));
-//  int maxant5    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(5.0f) ));
-//  int maxant7    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(7.0f) ));
-//  int maxant11   = 0;
-//  int maxant13   = 0;
-//
-//  int closestprod= static_cast<int>(pow(2.0f,maxant2));
-//  exp_list[0] = maxant2;
-//  exp_list[1] = 0;
-//  exp_list[2] = 0;
-//  exp_list[3] = 0;
-//  exp_list[4] = 0;
-//  exp_list[5] = 0;
-//
-//  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
-//  for(i=0;i<maxant2+1;i++)
-//    for(j=0;j<maxant3+1;j++)
-//      for(k=0;k<maxant5+1;k++)
-//        for(l=0;l<maxant7+1;l++)
-//          for(m=0;m<maxant11+1;m++)
-//            for(n=maxant11;n<maxant13+1;n++)
-//            {
-//              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-//                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
-//              if ((factor >=  leastint) &&  (factor <  closestprod))
-//              {
-//                exp_list[0] = i;
-//                exp_list[1] = j;
-//                exp_list[2] = k;
-//                exp_list[3] = l;
-//                exp_list[4] = m;
-//                exp_list[5] = n;
-//                closestprod=factor;
-//              }
-//            }
-//  return exp_list;
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,

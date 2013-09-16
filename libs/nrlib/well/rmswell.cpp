@@ -117,7 +117,14 @@ RMSWell::RMSWell(const std::string& filename)
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
-        disclogs[j].push_back(ReadNext<int>(ist, line));
+        //H problem with ReadNext<int> and facies on the form -9.9900000e+002. Add in solution from WellData::readRMSWell.
+        double dummy = ReadNext<double>(ist, line);
+        if(dummy != WELLMISSING)
+          disclogs[j].push_back(static_cast<int>(dummy));
+        else
+          disclogs[j].push_back(IMISSING);
+
+        //disclogs[j].push_back(ReadNext<int>(ist, line));
         j++;
       }
       else {

@@ -353,20 +353,20 @@ private:
   int n_continuous_logs_;     // Number of continuous logs
   int n_discrete_logs_;       // Number of discrete logs
 
-  std::map<std::string, std::vector<double> > continuous_logs_blocked_;  // Map between variable name and blocked continuous log
-  std::map<std::string, std::vector<int> > discrete_logs_blocked_;       // Map between variable name and blocked discrete log
+  std::map<std::string, std::vector<double> > continuous_logs_blocked_;         // Map between variable name and blocked continuous log
+  std::map<std::string, std::vector<int> >    discrete_logs_blocked_;           // Map between variable name and blocked discrete log
 
-  std::map<std::string, std::vector<double> > cont_logs_seismic_resolution_;  // Map between variable name and blocked continuous log
-  std::map<std::string, std::vector<int> > disc_logs_seismic_resolution_;  // Map between variable name and blocked discrete log
+  std::map<std::string, std::vector<double> > cont_logs_seismic_resolution_;    // Map between variable name and blocked continuous log
+  std::map<std::string, std::vector<int> >    disc_logs_seismic_resolution_;    // Map between variable name and blocked discrete log
 
-  std::map<std::string, std::vector<double> > cont_logs_background_resolution_;  // Map between variable name and blocked continuous log
-  std::map<std::string, std::vector<int> > disc_logs_background_resolution_;  // Map between variable name and blocked discrete log
+  std::map<std::string, std::vector<double> > cont_logs_background_resolution_; // Map between variable name and blocked continuous log
+  std::map<std::string, std::vector<int> >    disc_logs_background_resolution_; // Map between variable name and blocked discrete log
 
-  std::map<std::string, std::vector<double> > cont_logs_highcut_background_;  // Continuous logs high-cut filtered to background resolution (log-domain)
-  std::map<std::string, std::vector<int> > disc_logs_highcut_background_; // Discrete logs high-cut filtered to background resolution (log-domain)
+  std::map<std::string, std::vector<double> > cont_logs_highcut_background_;    // Continuous logs high-cut filtered to background resolution (log-domain)
+  std::map<std::string, std::vector<int> >    disc_logs_highcut_background_;    // Discrete logs high-cut filtered to background resolution (log-domain)
 
-  std::vector<std::vector<double> > actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
-  std::vector<std::vector<double> > well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
+  std::vector<std::vector<double> >           actual_synt_seismic_data_;        ///< Forward modelled seismic data using local wavelet
+  std::vector<std::vector<double> >           well_synt_seismic_data_;          ///< Forward modelled seismic data using wavelet estimated in well
 
   float lateral_threshold_gradient_; //Minimum lateral distance where gradient lines must not cross
   float sigma_m_; //Smoothing factor for the gradients
@@ -395,8 +395,6 @@ private:
   //int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
-
-  //int                       n_facies_;
 
   int                       first_M_;                   ///< First well log entry contributing to blocked well
   int                       last_M_;                    ///< Last well log entry contributing to blocked well
