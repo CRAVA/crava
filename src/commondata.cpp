@@ -45,6 +45,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_prior_correlation_(false),
   setup_timeline_(false),
   //prior_corr_estimation_(false),
+  setup_gravity_inversion_(false),
+  setup_traveltime_inversion_(false),
   //trend_cubes_(false),
   refmat_from_file_global_vpvs_(false),
   multiple_interval_grid_(NULL),
@@ -139,8 +141,10 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
 
   // 15. Data for gravity inversion
+  setup_gravity_inversion_ = SetupGravityInversion(model_settings, input_files, err_text);
 
   // 16. Data for Travel time Inversion
+  setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
 
 }
@@ -387,7 +391,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
                                  InputFiles     * input_files,
                                  std::string    & err_text_common) {
 
-   std::string err_text = "";
+  std::string err_text = "";
 
   //Skip if there is no AVO-seismic.
   int timelaps_seismic_files = 0;
@@ -400,37 +404,34 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
     return(false);
 
   //Skip if mode is estimation and wavelet/noise is not set for estimation.
-
   if(model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
     return(false);
 
-
   const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
-  int n_timeLapses = model_settings->getNumberOfTimeLapses();
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
 
-  for(int thisTimeLapse = 0; thisTimeLapse < n_timeLapses; thisTimeLapse++) {
+  LogKit::WriteHeader("Reading seismic data");
 
-    if(input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) {
+  for(int this_timelapse = 0; this_timelapse < n_timelapses; this_timelapse++) {
 
-      LogKit::WriteHeader("Reading seismic data");
+    if(input_files->getNumberOfSeismicFiles(this_timelapse) > 0) {
 
+      std::vector<float> angles = model_settings->getAngle(this_timelapse);
+      std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
 
-      std::vector<float> angles = model_settings->getAngle(thisTimeLapse);
-      std::vector<float> offset = model_settings->getLocalSegyOffset(thisTimeLapse);
-
-      int n_angles = model_settings->getNumberOfAngles(thisTimeLapse);
+      int n_angles = model_settings->getNumberOfAngles(this_timelapse);
       std::vector<SeismicStorage> seismic_data_angle;
 
       for (int i = 0 ; i < n_angles; i++) {
 
-        std::string filename = input_files->getSeismicFile(thisTimeLapse,i);
-        int fileType = IO::findGridType(filename);
+        std::string filename = input_files->getSeismicFile(this_timelapse, i);
+        int file_type = IO::findGridType(filename);
 
-        if(fileType == IO::SEGY) { //From ModelGeneral::readSegyFile
+        if(file_type == IO::SEGY) { //From ModelGeneral::readSegyFile
 
           SegY * segy = NULL;
 
-          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(thisTimeLapse,i);
+          TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(this_timelapse, i);
 
           if(format == NULL) { //Unknown format
             std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
@@ -448,25 +449,24 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           else //Known format, read directly.
             segy = new SegY(filename, offset[i], *format);
 
-
           float guard_zone = model_settings->getGuardZone();
 
-          if(CheckThatDataCoverGrid(segy,
-                                    offset[i],
-                                    &estimation_simbox_, ///H full_inversion_volume?
-                                    guard_zone,
-                                    err_text) == true)
-          {
-
+          bool cover_ok = false;
+          cover_ok = CheckThatDataCoverGrid(segy,
+                                            offset[i],
+                                            &estimation_simbox_, ///H full_inversion_volume?
+                                            guard_zone,
+                                            err_text);
+          if(cover_ok) {
             float padding = 2*guard_zone;
-            bool relativePadding = false;
-            bool onlyVolume = true;
+            bool relative_padding = false;
+            bool only_volume = true;
 
             //"Bruk full_inversion_volume i kallet til som klippevolum i kallet til SegY-leseren."
             segy->ReadAllTraces(&full_inversion_volume_, // timeCutSimBox.
                                 padding,
-                                onlyVolume,
-                                relativePadding);
+                                only_volume,
+                                relative_padding);
             segy->CreateRegularGrid();
 
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
@@ -477,7 +477,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           }
 
         } //SEGY
-        else if(fileType == IO::STORM || fileType == IO::SGRI) { //From ModelGeneral::readStormFile
+        else if(file_type == IO::STORM || file_type == IO::SGRI) { //From ModelGeneral::readStormFile
           StormContGrid * stormgrid = NULL;
 
           try
@@ -493,11 +493,9 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           if(err_text == "") {
             SeismicStorage seismicdata_tmp;
 
-            if(fileType == IO::STORM)
-
+            if(file_type == IO::STORM)
               seismicdata_tmp = SeismicStorage(filename, SeismicStorage::STORM, angles[i], stormgrid);
             else
-
               seismicdata_tmp = SeismicStorage(filename, SeismicStorage::SGRI, angles[i], stormgrid);
 
             seismic_data_angle.push_back(seismicdata_tmp);
@@ -508,7 +506,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         }
       } //nAngles
 
-      seismic_data_[thisTimeLapse] = seismic_data_angle;
+      seismic_data_[this_timelapse] = seismic_data_angle;
 
     }//ifSeismicFiles
   } //n_timeLapses
@@ -533,13 +531,14 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(time_simbox->GetErodedTopZMin());
-  float bot_grid = static_cast<float>(time_simbox->GetErodedBotZMax());
+  float top_grid = static_cast<float>(time_simbox->getTopZMin());
+  float bot_grid = static_cast<float>(time_simbox->getBotZMax());
+
+  //float top_grid = static_cast<float>(time_simbox->GetTopSurface().Min()); //same as getTopZMin()
+  //float bot_grid = static_cast<float>(time_simbox->GetBotSurface().Max());
+
   //float top_grid = static_cast<float>(time_cut_simbox->getTopZMin());
   //float bot_grid = static_cast<float>(time_cut_simbox->getBotZMax());
-
-  //float test = time_simbox->GetTopSurface().Max();
-  //float test = time_simbox->GetErosionTop().Max();
 
   // Find guard zone
   float top_guard = top_grid - guard_zone;
@@ -590,45 +589,47 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
   std::string err_text = "";
 
   // Get all log names given by user
-  for(size_t i = 0; i<log_names_from_user.size(); i++){
-    log_names.push_back(log_names_from_user[i]);
+  for(size_t i = 0; i<log_names_from_user.size(); i++) {
+    if(log_names_from_user[i] != "")
+      log_names.push_back(log_names_from_user[i]);
   }
 
-  int nWells = model_settings->getNumberOfWells();
-  std::vector<float> dev_angle(nWells);
+  int n_wells = model_settings->getNumberOfWells();
+  std::vector<float> dev_angle(n_wells);
   try{
-    if(nWells > 0)
+    if(n_wells > 0)
       LogKit::WriteHeader("Reading wells");
 
-    for(int i=0 ; i<nWells; i++) {
+    for(int i=0 ; i<n_wells; i++) {
 
       std::string well_file_name = input_files->getWellFile(i);
       bool read_ok = false;
-      NRLib::Well new_well(well_file_name, read_ok);
 
-      //std::vector<int> facies_nr_tmp;
-      //std::vector<std::string> facies_names_tmp;
+      // If the facies log is given, it is always entry 4 in the log name list
+      std::string facies_log = "FACIES";
+      if(log_names_from_user.size() > 4 && log_names_from_user[4] != "")
+        facies_log = log_names_from_user[4];
 
-      //if(well_file_name.find(".nwh",0) != std::string::npos)
-      //  ProcessLogsNorsarWell(new_well, err_text, failed); ///H Facies names from Norsar logs?
-      //else if(well_file_name.find(".rms",0) != std::string::npos) {
-      //  ProcessLogsRMSWell(new_well, err_text, failed);
+      NRLib::Well new_well(well_file_name, read_ok, facies_log);
+      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
+
+      std::vector<int> facies_nr;
+      std::vector<std::string> facies_names;
+
       if(well_file_name.find(".nwh",0) != std::string::npos)
         ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
       else if(well_file_name.find(".rms",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
-        //if(model_settings->getFaciesLogGiven()) {
-        //  ReadFaciesNamesFromWellFile(model_settings, well_file_name, facies_nr_tmp, facies_names_tmp, err_txt);
+      //Store facies names.
+      if(model_settings->getFaciesLogGiven()) {
+        ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names, err_text);
 
-        //  facies_log_wells_.push_back(true);
-        //}
-        //else
-        //  facies_log_wells_.push_back(false);
-      //}
+        facies_log_wells_.push_back(true);
+      }
 
-      //facies_nr_wells_.push_back(facies_nr_tmp);
-      //facies_names_wells_.push_back(facies_names_tmp);
+      facies_nr_wells_.push_back(facies_nr);
+      facies_names_wells_.push_back(facies_names);
 
       if(read_ok == true){
         wells_.push_back(new_well);
@@ -643,8 +644,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     err_text += "Error: " + NRLib::ToString(e.what());
   }
 
-  ///H ?
-  if(model_settings->getFaciesLogGiven())
+  if(model_settings->getFaciesLogGiven() && err_text == "")
     SetFaciesNamesFromWells(model_settings, err_text);
 
   if(err_text != "") {
@@ -814,7 +814,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
-  const std::vector<double> & z_tmp = new_well.GetContLog("z");
+  const std::vector<double> & z_tmp = new_well.GetContLog("TVD");
   for(int i = 0; i < z_tmp.size(); i++) {
     if(z_tmp[i] != WELLMISSING)
       nonmissing_data++;
@@ -876,123 +876,141 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 }
 
+//void
+//CommonData::ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
+//                                        std::string                well_file_name,
+//                                        std::vector<int>         & facies_nr,
+//                                        std::vector<std::string> & facies_names,
+//                                        std::string              & err_txt)
+//{
+//  std::ifstream file;
+//  std::string token;
+//  std::string dummy_str;
+//  std::string well_name;
+//  NRLib::OpenRead(file, well_file_name);
+//
+//  int nlog; // number of logs in file
+//  int line = 0;
+//  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
+//  NRLib::DiscardRestOfLine(file,line,false);
+//  NRLib::ReadNextToken(file, token, line);
+//  well_name = token;
+//  NRLib::DiscardRestOfLine(file,line,false); //xpos, ypos.
+//
+//  //facies_wells_.push_back(well_name);
+//
+//  nlog   = NRLib::ReadNext<int>(file, line);
+//
+//  int nVar = 5;       // z,alpha,beta,rho, and facies
+//  std::vector<std::string> log_names = model_settings->getLogNames();
+//
+//  std::vector<std::string> parameterList(5);
+//  if(log_names[0] != "") // Assume that all lognames are filled present if first is.
+//  {
+//    parameterList = log_names;
+//  }
+//  else
+//  {
+//  parameterList[0] = "TWT";
+//  parameterList[1] = "DT";
+//  parameterList[2] = "RHOB";
+//  parameterList[3] = "DTS";
+//  parameterList[4] = "FACIES";
+//  }
+//
+//  int * pos = new int[nVar];
+//  for(int i=0;i<nVar;i++)
+//    pos[i] = IMISSING;
+//
+//  std::string facies_log_name;
+//
+//  //Find number of facies
+//  int n_facies = 0;
+//  for(int i=0; i < nlog; i++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    for(int j=0; j < nVar; j++)
+//    {
+//      if( NRLib::Uppercase(token)==parameterList[j])
+//      {
+//        pos[j] = i + 4;
+//        if(j==4)
+//        {
+//          facies_log_name = parameterList[4];
+//          // facies log - save names
+//          NRLib::ReadNextToken(file,token,line); // read code word DISC
+//          if (token != "DISC")
+//          {
+//            err_txt += "Facies log must be discrete for well " + well_file_name + ".\n";
+//            return;
+//            //LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
+//          }
+//          // Find number of facies
+//          std::getline(file, dummy_str);
+//          std::vector<std::string> tokenLine = NRLib::GetTokens(dummy_str);
+//          n_facies = static_cast<int>(tokenLine.size())/2;
+//        }
+//      }
+//    }
+//    if (token != "DISC")
+//      NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//
+//  file.close();
+//  file.clear();
+//
+//  int k;
+//  facies_nr.resize(n_facies);
+//  facies_names.resize(n_facies);
+//  //std::vector<int> facies_nr_tmp(n_facies);
+//  //std::vector<std::string> facies_names_tmp(n_facies);
+//
+//  NRLib::OpenRead(file, well_file_name);
+//  line = 0;
+//  for(int i=0; i < 4+nlog; i++)
+//  {
+//    NRLib::ReadNextToken(file,token,line);
+//    if (NRLib::Uppercase(token) == parameterList[4])
+//    {
+//      NRLib::ReadNextToken(file,token,line); // read code word DISC
+//      // facies types given here
+//      for(k=0; k < n_facies; k++)
+//      {
+//        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
+//        facies_nr[k] = NRLib::ParseType<int>(token);
+//        NRLib::ReadNextToken(file,token,line);
+//        facies_names[i] = token;
+//      }
+//    }
+//    NRLib::DiscardRestOfLine(file,line,false);
+//  }
+//
+//  //facies_nr_wells_.push_back(facies_nr_tmp);
+//  //facies_names_wells_.push_back(facies_names_tmp);
+//}
+
 void
-CommonData::ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
-                                        std::string                well_file_name,
+CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                         std::vector<int>         & facies_nr,
                                         std::vector<std::string> & facies_names,
                                         std::string              & err_txt)
 {
-  std::ifstream file;
-  std::string token;
-  std::string dummy_str;
-  std::string well_name;
-  NRLib::OpenRead(file, well_file_name);
+  const std::map<int, std::string> & facies_map = well.GetFaciesMap();
+  int n_facies = facies_map.size();
 
-  int nlog; // number of logs in file
-  int line = 0;
-  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
-  NRLib::DiscardRestOfLine(file,line,false);
-  NRLib::ReadNextToken(file, token, line);
-  well_name = token;
-  NRLib::DiscardRestOfLine(file,line,false); //xpos, ypos.
-
-  //facies_wells_.push_back(well_name);
-
-  nlog   = NRLib::ReadNext<int>(file, line);
-
-  int nVar = 5;       // z,alpha,beta,rho, and facies
-  std::vector<std::string> log_names = model_settings->getLogNames();
-
-  std::vector<std::string> parameterList(5);
-  if(log_names[0] != "") // Assume that all lognames are filled present if first is.
-  {
-    parameterList = log_names;
-  }
-  else
-  {
-  parameterList[0] = "TWT";
-  parameterList[1] = "DT";
-  parameterList[2] = "RHOB";
-  parameterList[3] = "DTS";
-  parameterList[4] = "FACIES";
-  }
-
-  int * pos = new int[nVar];
-  for(int i=0;i<nVar;i++)
-    pos[i] = IMISSING;
-
-  std::string facies_log_name;
-
-  //Find number of facies
-  int n_facies = 0;
-  for(int i=0; i < nlog; i++)
-  {
-    NRLib::ReadNextToken(file,token,line);
-    for(int j=0; j < nVar; j++)
-    {
-      if( NRLib::Uppercase(token)==parameterList[j])
-      {
-        pos[j] = i + 4;
-        if(j==4)
-        {
-          facies_log_name = parameterList[4];
-          // facies log - save names
-          NRLib::ReadNextToken(file,token,line); // read code word DISC
-          if (token != "DISC")
-          {
-            err_txt += "Facies log must be discrete for well " + well_file_name + ".\n";
-            return;
-            //LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
-          }
-          // Find number of facies
-          std::getline(file, dummy_str);
-          std::vector<std::string> tokenLine = NRLib::GetTokens(dummy_str);
-          n_facies = static_cast<int>(tokenLine.size())/2;
-        }
-      }
-    }
-    if (token != "DISC")
-      NRLib::DiscardRestOfLine(file,line,false);
-  }
-
-  file.close();
-  file.clear();
-
-  int k;
   facies_nr.resize(n_facies);
   facies_names.resize(n_facies);
-  //std::vector<int> facies_nr_tmp(n_facies);
-  //std::vector<std::string> facies_names_tmp(n_facies);
 
-  NRLib::OpenRead(file, well_file_name);
-  line = 0;
-  for(int i=0; i < 4+nlog; i++)
-  {
-    NRLib::ReadNextToken(file,token,line);
-    if (NRLib::Uppercase(token) == parameterList[4])
-    {
-      NRLib::ReadNextToken(file,token,line); // read code word DISC
-      // facies types given here
-      for(k=0; k < n_facies; k++)
-      {
-        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
-        facies_nr[k] = NRLib::ParseType<int>(token);
-        NRLib::ReadNextToken(file,token,line);
-        facies_names[i] = token;
-      }
-    }
-    NRLib::DiscardRestOfLine(file,line,false);
+  for(int i = 0; i < facies_map.size(); i++) {
+    facies_nr[i] = i;
+    facies_names[i] = facies_map.find(i)->second;
   }
-
-  //facies_nr_wells_.push_back(facies_nr_tmp);
-  //facies_names_wells_.push_back(facies_names_tmp);
 }
 
 void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_settings,
                                          std::string               & err_text) {
 
-  int min,max;
+  int min, max;
   int globalmin = 0;
   int globalmax = 0;
   int n_facies = 0;
@@ -1002,9 +1020,8 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
     n_facies = facies_names_wells_[w].size();
     facies_nr = facies_nr_wells_[w];
 
-    if(facies_log_wells_[w] == true) //wells[w]->isFaciesLogDefined())
+    if(facies_log_wells_[w] == true)
     {
-      //wells[w]->getMinMaxFnr(min,max);
       GetMinMaxFnr(min,max, n_facies, facies_nr);
 
       if(first==true)
@@ -1023,27 +1040,24 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
     }
   }
 
-  int nnames = globalmax - globalmin + 1;
-  std::vector<std::string> names(nnames);
+  int n_names = globalmax - globalmin + 1;
+  std::vector<std::string> names(n_names);
 
-  for(int w=0; w < model_settings->getNumberOfWells(); w++)
-  {
-    //if(wells[w]->isFaciesLogDefined())
-    if(facies_log_wells_[w] == true)
-    {
-      n_facies = n_facies = facies_names_wells_[w].size();
-      for(int i=0 ; i < n_facies; i++)
-      {
-        //std::string name = wells[w]->getFaciesName(i);
-        //int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
+  for(int w=0; w < model_settings->getNumberOfWells(); w++) {
+
+    if(facies_log_wells_[w] == true) {
+
+      n_facies = facies_names_wells_[w].size();
+
+      for(int i=0 ; i < n_facies; i++) {
+
         std::string name = facies_names_wells_[w][i];
         int         fnr  = facies_nr_wells_[w][i] - globalmin;
 
         if(names[fnr] == "") {
           names[fnr] = name;
         }
-        else if(names[fnr] != name)
-        {
+        else if(names[fnr] != name) {
           err_text += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
         }
       }
@@ -1052,18 +1066,18 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
 
   LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
   LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
-  for(int i=0 ; i<nnames ; i++)
+  for(int i=0 ; i < n_names ; i++) {
     if(names[i] != "")
       LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
+  }
 
-  int nFacies = 0;
-  for(int i=0 ; i<nnames ; i++)
-    if(names[i] != "")
-      nFacies++;
+  //n_facies = 0;
+  //for(int i=0 ; i < n_names ; i++)
+  //  if(names[i] != "")
+  //    n_facies++;
 
-  for(int i=0 ; i<nnames ; i++) {
+  for(int i=0 ; i < n_names ; i++) {
     if(names[i] != "") {
-      //faciesLabels_.push_back(globalmin + i);
       facies_names_.push_back(names[i]);
     }
   }
@@ -3976,9 +3990,9 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
     int nx_pad, ny_pad, nz_pad;
     if(nopadding)
     {
-      nx_pad = time_simbox->getnx(); //timeSimbox->getnx();
-      ny_pad = time_simbox->getny(); //timeSimbox->getny();
-      nz_pad = time_simbox->getnz(); //timeSimbox->getnz();
+      nx_pad = time_simbox->getnx();
+      ny_pad = time_simbox->getny();
+      nz_pad = time_simbox->getnz();
     }
     else
     {
@@ -3987,9 +4001,9 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
       nz_pad = model_settings->getNZpad();
     }
     LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-    grid = CreateFFTGrid(time_simbox->getnx(), //timeSimbox->getnx(),
-                         time_simbox->getny(), //timeSimbox->getny(),
-                         time_simbox->getnz(), //timeSimbox->getnz(),
+    grid = CreateFFTGrid(time_simbox->getnx(),
+                         time_simbox->getny(),
+                         time_simbox->getnz(),
                          nx_pad,
                          ny_pad,
                          nz_pad,
@@ -4063,12 +4077,12 @@ CommonData::ReadSegyFile(const std::string       & file_name,
 
     float guard_zone = model_settings->getGuardZone();
 
-    std::string errTxt = "";
+    std::string err_txt_tmp = "";
     if(CheckThatDataCoverGrid(segy,
                               offset,
                               time_simbox,
                               guard_zone,
-                              errTxt) == true)
+                              err_txt_tmp) == true)
     {
 
     //if (errTxt == "") {
@@ -4086,7 +4100,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
       segy->CreateRegularGrid();
     }
     else {
-      err_text += errTxt;
+      err_text += err_txt_tmp;
       failed = true;
     }
   }
@@ -4141,7 +4155,7 @@ CommonData::ReadSegyFile(const std::string       & file_name,
     }
     else {  //Change to new resample algorithm for all grid types.
       missingTracesSimbox = target->fillInFromSegY(segy,
-                                                   time_simbox, //timeSimbox,
+                                                   time_simbox,
                                                    par_name,
                                                    nopadding);
     }
@@ -4349,7 +4363,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             //H Create a backgroundsimbox based on the different options for correlation direction? top/base conform.
             //Similiar to MultiIntervalGrid::SetupIntervalSimbox
 
-
+            //SetupExtendedBackgroundSimbox( two correlations surfaces);
 
           }
 
@@ -4407,9 +4421,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           std::vector<NRLib::Grid<double> > parameters(3);
 
-          //parameters[0].Resize(nx, ny, nz);
-          //parameters[1].Resize(nx, ny, nz);
-          //parameters[2].Resize(nx, ny, nz);
           FFTGrid vp_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
           FFTGrid vs_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
           FFTGrid rho_grid = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
@@ -4420,28 +4431,16 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           vs_grid.setType(FFTGrid::PARAMETER);
           rho_grid.setType(FFTGrid::PARAMETER);
 
-
-          //for (int i=0 ; i<3 ; i++) {
-          //  back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-          //  back_model[i]->createRealGrid();
-          //  back_model[i]->setType(FFTGrid::PARAMETER);
-          //}
-
-
           // Get prior probabilities for the facies in a vector
-          std::vector<std::string> facies_names = facies_names_; //modelGeneral->getFaciesNames();
+          std::vector<std::string> facies_names = facies_names_;
           int                      n_facies     = static_cast<int>(facies_names.size());
 
-          std::vector<float> prior_probability = prior_facies_[i]; //modelGeneral->getPriorFacies();
-
-          //std::vector<DistributionsRock *> rock_distribution = rock_distributions_[i];
-
+          std::vector<float> prior_probability = prior_facies_[i];
 
           std::vector<DistributionsRock *> rock_distribution(n_facies);  //Get from rock_distributions_
 
           typedef std::map<std::string, DistributionsRock *> rf_map_type;
           rf_map_type rf_map = GetRockDistributionTime0();
-
 
           //typedef std::map<std::string, DistributionsRock *> rfMapType;
           //rfMapType rfMap = rock_distributions_[i];
@@ -4464,13 +4463,9 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           // filling in the backModel in Background
           GenerateRockPhysics3DBackground(rock_distribution,
                                           prior_probability,
-                                          //parameters,
                                           vp_grid,
                                           vs_grid,
                                           rho_grid,
-                                          //*back_model[0],
-                                          //*back_model[1],
-                                          //*back_model[2],
                                           i);
 
           parameters[0] = FFTGridRealToGrid(&vp_grid);
@@ -4523,7 +4518,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           {
             const SegyGeometry      * dummy1 = NULL;
             const TraceHeaderFormat * dummy2 = NULL;
-            const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic setSegyOffset(thisTimeLapse) was used.
+            const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used. Create loop over timelapses?
             std::string err_text_tmp = "";
 
             //Simbox * time_simbox = new Simbox(simbox);
@@ -5774,6 +5769,13 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   //Set up timeline.
   time_line_ = new TimeLine();
   std::string err_text = "";
+  //Activate below when gravity data are ready.
+  //Do gravity first.
+  //for(int i=0;i<modelSettings->getNumberOfGravityData();i++) {
+  //  int time = computeTime(modelSettings->getGravityYear[i],
+  //                         modelSettings->getGravityMonth[i],
+  //                         modelSettings->getGravityDay[i]);
+  //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
 
   bool first_gravimetric_event = true;
   for(int i=0; i < model_settings->getNumberOfVintages(); i++) {
@@ -5798,6 +5800,8 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
       //Travel time ebefore AVO for same vintage.
       //if(travel time for this vintage)
       //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+      //Travel time before AVO for same vintage.
+
       if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
         time_line_->AddEvent(time, TimeLine::AVO, i);
     }
@@ -5815,4 +5819,306 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   }
 
   return true;
+}
+
+bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
+                                       InputFiles    * input_files,
+                                       std::string   & err_text_common) {
+
+  std::string err_text = "";
+
+  bool failed                 = false;
+  bool before_injection_start = false; // When do we know what this should be??
+
+  bool do_gravity_inversion = true;
+  int number_gravity_files  = 0;
+  for(int i = 0; i < model_settings->getNumberOfVintages(); i++) {
+    if(model_settings->getGravityTimeLapse(i))
+      number_gravity_files++;
+  }
+
+  if(number_gravity_files == 0) {
+    // Everything is ok - we do not need gravity inversion
+    do_gravity_inversion = false;
+  }
+
+  if(number_gravity_files == 1) {
+    do_gravity_inversion = false;
+    err_text+="Need at least two gravity surveys for inversion.";
+  }
+
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
+
+  observation_location_utmx_.resize(n_timelapses);
+  observation_location_utmy_.resize(n_timelapses);
+  observation_location_depth_.resize(n_timelapses);
+  gravity_response_.resize(n_timelapses);
+  gravity_std_dev_.resize(n_timelapses);
+
+  // Set up gravimetric baseline
+  if(do_gravity_inversion) {
+
+    for(int i_timelapse = 0; i_timelapse < n_timelapses; i_timelapse++) {
+
+      // Find gravity data file for this timelapse
+      std::string fileName = input_files->getGravimetricData(i_timelapse);
+
+      int n_obs = 30;     //user input
+      int n_columns = 5;  // We require data files to have five columns
+
+      std::vector<float> observation_location_utmx_tmp(n_obs);
+      std::vector<float> observation_location_utmy_tmp(n_obs);
+      std::vector<float> observation_location_depth_tmp(n_obs);
+      std::vector<float> gravity_response_tmp(n_obs);
+      std::vector<float> gravity_std_dev_tmp(n_obs);
+
+      if(i_timelapse == 0) {
+
+        ReadGravityDataFile(fileName, "gravimetric base survey",
+                            n_obs, n_columns,
+                            observation_location_utmx_tmp,
+                            observation_location_utmy_tmp,
+                            observation_location_depth_tmp,
+                            gravity_response_tmp,
+                            gravity_std_dev_tmp,
+                            err_text);
+      }
+      else if(i_timelapse <= model_settings->getNumberOfVintages()) {
+
+        ReadGravityDataFile(fileName,
+                            "gravimetric survey ", // +thisTimeLapse_,
+                            n_obs, n_columns,
+                            observation_location_utmx_tmp,
+                            observation_location_utmy_tmp,
+                            observation_location_depth_tmp,
+                            gravity_response_tmp,
+                            gravity_std_dev_tmp,
+                            err_text);
+      }
+
+      observation_location_utmx_.push_back(observation_location_utmx_tmp);
+      observation_location_utmy_.push_back(observation_location_utmy_tmp);
+      observation_location_depth_.push_back(observation_location_depth_tmp);
+      gravity_response_.push_back(gravity_response_tmp);
+      gravity_std_dev_.push_back(gravity_std_dev_tmp);
+
+    }
+  }
+
+  //ModelGravityStatic is set up in 3 c.
+  //if(err_text == "") {
+  //  model_gravity_static_ = new ModelGravityStatic(model_settings, &estimation_simbox_);
+  //}
+
+  if(err_text != "") {
+    err_text_common += "Error(s) with gravimetric surveys";
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+}
+
+void CommonData::ReadGravityDataFile(const std::string   & file_name,
+                                     const std::string   & read_reason,
+                                     int                   n_obs,
+                                     int                   n_columns,
+                                     std::vector <float> & obs_loc_utmx,
+                                     std::vector <float> & obs_loc_utmy,
+                                     std::vector <float> & obs_loc_depth,
+                                     std::vector <float> & gravity_response,
+                                     std::vector <float> & gravity_std_dev,
+                                     std::string         & err_text) {
+
+  float * tmpRes = new float[n_obs*n_columns+1];
+  std::ifstream in_file;
+  NRLib::OpenRead(in_file, file_name);
+  std::string text = "Reading "+read_reason+" from file "+file_name+" ... ";
+  LogKit::LogFormatted(LogKit::Low,text);
+  std::string storage;
+  int index = 0;
+  bool failed = false;
+
+  while(failed == false && in_file >> storage) {
+    if(index < n_obs*n_columns) {
+      try {
+        tmpRes[index] = NRLib::ParseType<float>(storage);
+      }
+      catch (NRLib::Exception & e) {
+        err_text += "Error in "+file_name+"\n";
+        err_text += e.what();
+        failed = true;
+      }
+    }
+    index++;
+  }
+  if(failed == false) {
+    if(index != n_obs*n_columns) {
+      failed = true;
+      err_text += "Found "+NRLib::ToString(index)+" in file "+file_name+", expected "+NRLib::ToString(n_obs*n_columns)+".\n";
+    }
+  }
+
+  if(failed == false) {
+    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+    index = 0;
+    for(int i=0; i < n_obs; i++) {
+      obs_loc_utmx[i] = tmpRes[index];
+      index++;
+      obs_loc_utmy[i] = tmpRes[index];
+      index++;
+      obs_loc_depth[i] = tmpRes[index];
+      index++;
+      gravity_response[i] = tmpRes[index];
+      index++;
+      gravity_std_dev[i] = tmpRes[index];
+      index++;
+    }
+  }
+  else{
+    failed = true;
+    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+  }
+  delete [] tmpRes;
+}
+
+bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
+                                          InputFiles    * input_files,
+                                          std::string   & err_text_common) {
+
+  //This is from ModelTravelTimeDynamic. Need to add from ModelTravelTimeStatic when it is added.
+  std::string err_text = "";
+
+  bool failed_surfaces = false;
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
+
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall, cpu);
+
+  for(int i_timelapse = 0; i_timelapse < n_timelapses; i_timelapse++) {
+
+    ProcessHorizons(horizons_[i_timelapse],
+                    input_files,
+                    err_text,
+                    failed_surfaces,
+                    i_timelapse);
+
+    //From ModelTravelTimeDynamic::processRmsData
+
+    LogKit::WriteHeader("Reading RMS travel time data for timelapse " + NRLib::ToString(i_timelapse));
+    bool failed = false;
+    const SegyGeometry * geometry = new const SegyGeometry;
+    FFTGrid * rms_data            = new FFTGrid;
+
+    float offset = model_settings->getTravelTimeSegyOffset(i_timelapse);
+    if(offset < 0)
+      offset = model_settings->getSegyOffset(i_timelapse);
+
+    //const Simbox * timeCutSimbox = NULL;
+    //if (timeCutMapping != NULL)
+    //  timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+    //else
+    //  timeCutSimbox = timeSimbox;
+
+    const std::string & file_name = input_files->getRmsVelocities(i_timelapse);
+    std::string         data_name = "RMS data";
+    std::string         tmp_err_text = "";
+
+    ReadGridFromFile(file_name,
+                     data_name,
+                     offset,
+                     rms_data,
+                     geometry,
+                     model_settings->getTravelTimeTraceHeaderFormat(i_timelapse),
+                     FFTGrid::DATA,
+                     &estimation_simbox_, //timeSimbox,
+                     //timeCutSimbox,
+                     model_settings,
+                     tmp_err_text);
+
+    if(tmp_err_text != "") {
+      tmp_err_text += "\nReading of file \'"+file_name+"\' for "+data_name+" for timelapse " + NRLib::ToString(i_timelapse) + "failed.\n";
+      err_text += tmp_err_text;
+      failed = true;
+    }
+
+    if(failed = false)
+      rms_data_.push_back(rms_data);
+
+    LogKit::LogFormatted(LogKit::Low,"\n");
+
+    if(failed == false) {
+      bool segy_volumes_read = false;
+
+      if (geometry != NULL)
+        segy_volumes_read = true;
+
+      if (segy_volumes_read == true) {
+        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+
+        if (geometry != NULL) {
+          double geo_angle = (-1)*estimation_simbox_.getAngle()*(180/M_PI);
+          if (geo_angle < 0)
+            geo_angle += 360.0;
+          LogKit::LogFormatted(LogKit::Low,"RMS travel time data   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
+                               geometry->GetX0(), geometry->GetY0(),
+                               geometry->Getlx(), geometry->Getly(), geo_angle,
+                               geometry->GetDx(), geometry->GetDy());
+        }
+      }
+
+      //if((modelSettings->getOutputGridsOther() & IO::RMS_VELOCITIES) > 0) {
+      //  std::string baseName = IO::PrefixTravelTimeData();
+      //  std::string sgriLabel = std::string("RMS travel time data");
+
+      //  rms_data->writeFile(baseName,
+      //                      IO::PathToTravelTimeData(),
+      //                      timeSimbox,
+      //                      sgriLabel,
+      //                      offset,
+      //                      timeDepthMapping,
+      //                      timeCutMapping,
+      //                      *modelSettings->getTraceHeaderFormatOutput());
+      //}
+
+      if (geometry != NULL)
+        delete geometry;
+    }
+
+    Timings::setTimeSeismic(wall, cpu);
+  } //i_timelapse
+
+  if(err_text != "") {
+    err_text_common += "Error(s) while loadting travel time data";
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+}
+
+void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
+                                 const InputFiles       * input_files,
+                                 std::string            & err_text,
+                                 bool                   & failed,
+                                 int                      i_timelapse)
+{
+  const std::vector<std::string> & travel_time_horizons = input_files->getTravelTimeHorizons(i_timelapse);
+
+  int n_horizons = static_cast<int>(travel_time_horizons.size());
+
+  if(n_horizons == 1) {
+    if(travel_time_horizons[0] != "") {
+      err_text += "Only one surface is given for inversion of the horizons in the travel time data. At least two surfaces should be given\n";
+      failed = true;
+    }
+  }
+
+  else {
+    horizons.resize(n_horizons);
+    for(int i=0; i<n_horizons; i++)
+      horizons[i] = Surface(travel_time_horizons[i]);
+  }
+
 }
