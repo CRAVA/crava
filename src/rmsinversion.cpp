@@ -9,6 +9,8 @@
 #include "src/modelgeneral.h"
 #include "src/rmstrace.h"
 
+#include "nrlib/flens/nrlib_flens.hpp"
+
 #include "lib/timekit.hpp"
 
 RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
@@ -135,6 +137,8 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
                                        n_layers_padding);
 
 
+  std::vector<double> d_sqrt = calculateDSqrt(rms_trace->getVelocity());
+
   NRLib::Grid2D<double> Sigma_d_sqrt = calculateSigmaDSqrt(rms_trace->getVelocity(), standard_deviation);
 
   //// Calculate mu_m and Sigma_m
@@ -142,12 +146,36 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
   float  dt_below = static_cast<float>((max_time - t_bot) / n_layers_below);
 
   // Model
-  std::vector<double>   mu_log_vp_model    = generateMuLogVpModel(mu_log_vp, i_ind, j_ind); //Her kan RMISSING legges til ved behov
-  NRLib::Grid2D<double> Sigma_log_vp_model = generateSigmaModel(cov_grid_log_vp); // Har fjernet paddingen fra denne
+  std::vector<double>   mu_log_vp_model    = generateMuLogVpModel(mu_log_vp, i_ind, j_ind);
+  NRLib::Grid2D<double> Sigma_log_vp_model = generateSigmaModel(cov_grid_log_vp);
   std::vector<double>   mu_vp_sqrt_model;
   NRLib::Grid2D<double> Sigma_vp_sqrt_model;
 
   calculateSecondCentralMomentLogNormal(mu_log_vp_model, Sigma_log_vp_model, mu_vp_sqrt_model, Sigma_vp_sqrt_model);
+
+  NRLib::Matrix Sigma_log_m(n_layers_padding, n_layers_padding);
+  NRLib::Matrix Sigma_sqrt_m(n_layers_padding, n_layers_padding);
+  NRLib::Vector mu_log_m(n_layers_padding);
+  NRLib::Vector mu_sqrt_m(n_layers_padding);
+  for(int i=0; i<n_layers_padding; i++) {
+    mu_log_m(i) = mu_log_vp_model[i];
+    mu_sqrt_m(i) = mu_vp_sqrt_model[i];
+    for(int j=0; j<n_layers_padding; j++) {
+      Sigma_log_m(i,j) = Sigma_log_vp_model(i,j);
+      Sigma_sqrt_m(i,j) = Sigma_vp_sqrt_model(i,j);
+    }
+  }
+
+  std::string name_Sigma_m = "Sigma_log_m";
+  NRLib::WriteMatrixToFile(name_Sigma_m, Sigma_log_m);
+
+  std::string name_Sigma_m_sqrt = "Sigma_m_sqrt";
+  NRLib::WriteMatrixToFile(name_Sigma_m_sqrt, Sigma_sqrt_m);
+
+  NRLib::WriteVectorToFile("mu_log_m", mu_log_m);
+
+  NRLib::WriteVectorToFile("mu_m_sqrt", mu_sqrt_m);
+
 
   // Above
   std::vector<double>   mu_vp_above    = generateMuVpAbove(mu_vp_top, std::exp(mu_log_vp_model[0]), n_layers_above);
@@ -169,6 +197,130 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
   std::vector<double>   mu_m    = generateMuCombined(mu_vp_sqrt_above, mu_vp_sqrt_model, mu_vp_sqrt_below);
   NRLib::Grid2D<double> sigma_m = generateSigmaCombined(Sigma_vp_sqrt_above, Sigma_vp_sqrt_model, Sigma_vp_sqrt_below);
 
+  std::vector<double> mu_post;
+  NRLib::Grid2D<double> Sigma_post;
+
+  calculatePosteriorModel(d_sqrt,
+                          Sigma_d_sqrt,
+                          mu_m,
+                          sigma_m,
+                          G,
+                          mu_post,
+                          Sigma_post);
+}
+//-----------------------------------------------------------------------------------------//
+void
+RMSInversion::calculatePosteriorModel(const std::vector<double>   & d,
+                                      const NRLib::Grid2D<double> & Sigma_d,
+                                      const std::vector<double>   & mu_m,
+                                      const NRLib::Grid2D<double> & Sigma_m,
+                                      const NRLib::Grid2D<double> & G,
+                                      std::vector<double>         & mu_post,
+                                      NRLib::Grid2D<double>       & Sigma_post) const
+{
+  int n_layers = static_cast<int>(mu_m.size());
+  int n_data   = static_cast<int>(d.size());
+
+  NRLib::Vector mu_m1(n_layers);
+  for(int i=0; i<n_layers; i++)
+    mu_m1(i) = mu_m[i];
+
+  NRLib::Matrix Sigma_m1(n_layers, n_layers);
+  for(int i=0; i<n_layers; i++) {
+    for(int j=0; j<n_layers; j++)
+      Sigma_m1(i,j) = Sigma_m(i,j);
+  }
+
+  NRLib::Matrix G1(n_data, n_layers);
+  for(int i=0; i<n_data; i++) {
+    for(int j=0; j<n_layers; j++)
+      G1(i,j) = G(i,j);
+  }
+
+  NRLib::Matrix G1_transpose(n_layers, n_data);
+  for(int i=0; i<n_data; i++) {
+    for(int j=0; j<n_layers; j++)
+      G1_transpose(j,i) = G(i,j);
+  }
+
+  NRLib::Vector d1(n_data);
+  for(int i=0; i<n_data; i++)
+    d1(i) = d[i];
+
+  NRLib::Matrix Sigma_d1(n_data, n_data);
+  for(int i=0; i<n_data; i++) {
+    for(int j=0; j<n_data; j++)
+      Sigma_d1(i,j) = Sigma_d(i,j);
+  }
+
+  NRLib::Vector dataMean            = G1 * mu_m1;
+  NRLib::Vector diff                = d1 - dataMean;
+  NRLib::Matrix dataModelCovariance = G1 * Sigma_m1;
+  NRLib::Matrix modelDataCovariance = Sigma_m1 * G1_transpose;
+  NRLib::Matrix dataCovariance      = dataModelCovariance * G1_transpose + Sigma_d1;
+
+  //NRLib::Matrix data_covariance_inv = dataCovariance;
+  //NRLib::Invert(data_covariance_inv);
+
+  std::string name_G1 = "G";
+  NRLib::WriteMatrixToFile(name_G1, G1);
+
+  std::string name_Sigma_m = "Sigma_m";
+  NRLib::WriteMatrixToFile(name_Sigma_m, Sigma_m1);
+
+  std::string name_Sigma_d = "Sigma_d";
+  NRLib::WriteMatrixToFile(name_Sigma_d, Sigma_d1);
+
+
+
+  NRLib::SymmetricMatrix data_covariance_inv_sym(n_data);
+
+  for(int i=0; i<n_data; i++) {
+    for(int j=0; j<=i; j++)
+      data_covariance_inv_sym(j,i) = dataCovariance(i,j);
+  }
+
+  NRLib::CholeskyInvert(data_covariance_inv_sym);
+
+  NRLib::Matrix data_covariance_inv(n_data, n_data);
+  for(int i=0; i<n_data; i++) {
+    for(int j=i; j<n_data; j++) {
+      data_covariance_inv(i,j) = data_covariance_inv_sym(i,j);
+      data_covariance_inv(j,i) = data_covariance_inv(i,j);
+    }
+  }
+
+  NRLib::Matrix helpMat    = modelDataCovariance * data_covariance_inv;
+  NRLib::Vector mu_help    = helpMat * diff;
+  NRLib::Matrix Sigma_help = helpMat * dataModelCovariance;
+
+  NRLib::Vector mu_post1    = mu_m1 + mu_help;
+  NRLib::Matrix Sigma_post1 = Sigma_m1 - Sigma_help;
+
+  mu_post.resize(n_layers);
+  for(int i=0; i<n_layers; i++)
+    mu_post[i] = mu_post1(i);
+
+  Sigma_post.Resize(n_layers, n_layers);
+  for(int i=0; i<n_layers; i++) {
+    for(int j=0; j<n_layers; j++)
+      Sigma_post(i,j) = Sigma_post1(i,j);
+  }
+
+}
+
+//-----------------------------------------------------------------------------------------//
+std::vector<double>
+RMSInversion::calculateDSqrt(const std::vector<double> & d) const
+{
+  int n = static_cast<int>(d.size());
+
+  std::vector<double> d_sqrt(n);
+
+  for(int i=0; i<n; i++)
+    d_sqrt[i] = std::sqrt(d[i]);
+
+  return d_sqrt;
 }
 //-----------------------------------------------------------------------------------------//
 
@@ -270,11 +422,11 @@ RMSInversion::generateSigmaVp(const float  & dt,
 std::vector<double>
 RMSInversion::getCovLogVp(const FFTGrid * cov_log_vp) const
 {
-  int n_layers_padding = cov_log_vp->getNz(); //cov_log_vp->getNzp();
+  int n_layers_padding = cov_log_vp->getNzp();
 
   std::vector<double> cov_grid_log_vp(n_layers_padding, 0);
   for(int j=0; j<n_layers_padding; j++)
-    cov_grid_log_vp[j] = cov_log_vp->getRealValue(0, 0, j);
+    cov_grid_log_vp[j] = cov_log_vp->getRealValue(0, 0, j, true);
 
   return cov_grid_log_vp;
 
@@ -287,16 +439,14 @@ RMSInversion::generateMuLogVpModel(const FFTGrid * mu_log_vp,
                                    const int     & i_ind,
                                    const int     & j_ind) const
 {
-  std::vector<float> mu_log_vp_model_float = mu_log_vp->getRealTrace2(i_ind, j_ind);
 
-  int n = static_cast<int>(mu_log_vp_model_float.size());
+  int n_layers_padding = mu_log_vp->getNzp();
 
-  std::vector<double> mu_double(n);
+  std::vector<double> mu_grid_log_vp(n_layers_padding, 0);
+  for(int j=0; j<n_layers_padding; j++)
+    mu_grid_log_vp[j] = mu_log_vp->getRealValue(i_ind, j_ind, j, true);
 
-  for(int i=0; i<n; i++)
-    mu_double[i] = static_cast<double>(mu_log_vp_model_float[i]);
-
-  return mu_double;
+  return mu_grid_log_vp;
 
 }
 
@@ -507,13 +657,43 @@ RMSInversion::calculateCentralMomentLogNormal(const std::vector<double>   & mu_l
   for(int i=0; i<n; i++)
     I(i,i) = 1;
 
-
   for(int i=0; i<n; i++)
     mu_vp_trans[i] = std::exp(mu_log_vp[i] + 0.5 * variance_log_vp(i, i));
 
+
+  // Sigma = VxAxV^T
+  // exp(Sigma) = Vxexp(A)xV^T
+  NRLib::Matrix var_mat(n,n);
   for(int i=0; i<n; i++) {
     for(int j=0; j<n; j++)
-      variance_vp_trans(i,j) = mu_vp_trans[i] * mu_vp_trans[j] *(std::exp(variance_log_vp(i,j)) - I(i,j));
+      var_mat(i,j) = variance_log_vp(i,j);
+  }
+
+  NRLib::Vector eigen_values(n);
+  NRLib::Matrix eigen_vectors(n,n);
+  NRLib::ComputeEigenVectors(var_mat, eigen_values, eigen_vectors);
+
+  NRLib::Matrix eigen_vectors_transpose(n,n);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      eigen_vectors_transpose(j,i) = eigen_vectors(i,j);
+  }
+
+  NRLib::Matrix lambda_exp(n,n,0);
+  for(int i=0; i<n; i++)
+    lambda_exp(i,i) = std::exp(eigen_values(i));
+
+  NRLib::Matrix Sigma_exp1(n,n);
+  NRLib::Matrix Sigma_exp(n,n);
+
+  Sigma_exp1 = eigen_vectors * lambda_exp;
+  Sigma_exp  = Sigma_exp1    * eigen_vectors_transpose;
+
+  NRLib::WriteMatrixToFile("Sigma_exp", Sigma_exp);
+
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      variance_vp_trans(i,j) = mu_vp_trans[i] * mu_vp_trans[j] *(Sigma_exp(i,j) - I(i,j));
   }
 
 }
@@ -528,18 +708,72 @@ RMSInversion::calculateCentralMomentLogNormalInverse(const std::vector<double>  
 {
   int n = static_cast<int>(mu_vp_trans.size());
 
-  mu_log_vp.resize(n);
-  variance_log_vp.Resize(n, n, 0);
+  NRLib::Matrix I = NRLib::IdentityMatrix(n);
 
+  NRLib::Matrix Sigma_star(n,n);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      Sigma_star(i,j) = variance_vp_trans(i,j);
+  }
+
+  NRLib::Matrix divide(n,n);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      divide(i,j) = mu_vp_trans[i] * mu_vp_trans[j];
+  }
+
+  NRLib::Matrix frac(n,n);
+
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      frac(i,j) = Sigma_star(i,j) / divide(i,j);
+  }
+
+
+  NRLib::Matrix A = I + frac;
+
+  NRLib::Vector eigen_values(n);
+  NRLib::Matrix eigen_vectors(n,n);
+  NRLib::ComputeEigenVectors(A, eigen_values, eigen_vectors);
+
+  NRLib::Matrix eigen_vectors_transpose(n,n);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      eigen_vectors_transpose(j,i) = eigen_vectors(i,j);
+  }
+
+  NRLib::Matrix lambda_log = NRLib::IdentityMatrix(n);
+  for(int i=0; i<n; i++)
+    lambda_log(i,i) = std::log(eigen_values(i));
+
+  NRLib::Matrix Sigma_log1(n,n);
+  NRLib::Matrix Sigma_log(n,n);
+
+  Sigma_log1 = eigen_vectors * lambda_log;
+  Sigma_log  = Sigma_log1    * eigen_vectors_transpose;
+
+
+  variance_log_vp.Resize(n, n, 0);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<n; j++)
+      variance_log_vp(i,j) = Sigma_log(i,j);
+  }
+
+
+  mu_log_vp.resize(n);
+
+
+  /*
   NRLib::Grid2D<double> I(n, n, 0);
   for(int i=0; i<n; i++)
     I(i,i) = 1;
+
 
   for(int i=0; i<n; i++) {
     for(int j=0; j<n; j++)
       variance_log_vp(i,j) = std::log(I(i,j) + variance_vp_trans(i,j) / (mu_vp_trans[i] * mu_vp_trans[j]));
   }
-
+  */
   for(int i=0; i<n; i++)
     mu_log_vp[i] = std::log(mu_vp_trans[i]) - 0.5 * variance_log_vp(i,i);
 

@@ -42,6 +42,14 @@ private:
                                               const std::vector<double>   & cov_grid_log_vp,
                                               const Simbox                * timeSimbox) const;
 
+  void                          calculatePosteriorModel(const std::vector<double>   & d,
+                                                        const NRLib::Grid2D<double> & Sigma_d,
+                                                        const std::vector<double>   & mu_m,
+                                                        const NRLib::Grid2D<double> & Sigma_m,
+                                                        const NRLib::Grid2D<double> & G,
+                                                        std::vector<double>         & mu_post,
+                                                        NRLib::Grid2D<double>       & Sigma_post) const;
+
   NRLib::Grid2D<double>         calculateG(const std::vector<double> & rms_time,
                                            const double              & t_top,
                                            const double              & t_bot,
@@ -51,6 +59,8 @@ private:
                                            const int                 & n_layers_below,
                                            const int                 & n_layers_simbox,
                                            const int                 & n_layers_padding) const;
+
+  std::vector<double>           calculateDSqrt(const std::vector<double> & d) const;
 
   NRLib::Grid2D<double>         calculateSigmaDSqrt(const std::vector<double> & rms_velocity,
                                                     const double              & standard_deviation) const;
