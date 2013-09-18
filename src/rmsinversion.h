@@ -60,10 +60,26 @@ private:
                                            const int                 & n_layers_simbox,
                                            const int                 & n_layers_padding) const;
 
-  std::vector<double>           calculateDSqrt(const std::vector<double> & d) const;
+  std::vector<double>           calculateDSquare(const std::vector<double> & d) const;
 
-  NRLib::Grid2D<double>         calculateSigmaDSqrt(const std::vector<double> & rms_velocity,
+  NRLib::Grid2D<double>         calculateSigmaDSquare(const std::vector<double> & rms_velocity,
                                                     const double              & standard_deviation) const;
+
+  void                          calculateMuSigma_mSquare(const std::vector<double> & mu_log_vp_model,
+                                                         const std::vector<double> & cov_grid_log_vp,
+                                                         const double              & max_time,
+                                                         const int                 & n_layers_above,
+                                                         const int                 & n_layers_below,
+                                                         const double              & t_top,
+                                                         const double              & t_base,
+                                                         const double              & mu_vp_top,
+                                                         const double              & mu_vp_base,
+                                                         const double              & var_vp_above,
+                                                         const double              & var_vp_below,
+                                                         const Vario               * variogram_above,
+                                                         const Vario               * variogram_below,
+                                                         std::vector<double>       & mu_vp_square,
+                                                         NRLib::Grid2D<double>     & Sigma_vp_square) const;
 
   std::vector<double>           generateMuLogVpModel(const FFTGrid * mu_log_vp,
                                                      const int     & i_ind,
@@ -101,10 +117,10 @@ private:
 
   std::vector<double>           getCovLogVp(const FFTGrid * cov_log_vp) const;
 
-  void                          transformVpToVpSqrt(const std::vector<double>   & mu_vp,
-                                                    const NRLib::Grid2D<double> & Sigma_vp,
-                                                    std::vector<double>         & mu_vp_sqrt,
-                                                    NRLib::Grid2D<double>       & Sigma_vp_sqrt) const;
+  void                          transformVpToVpSquare(const std::vector<double>   & mu_vp,
+                                                      const NRLib::Grid2D<double> & Sigma_vp,
+                                                      std::vector<double>         & mu_vp_square,
+                                                      NRLib::Grid2D<double>       & Sigma_vp_square) const;
 
   void                          calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                 const NRLib::Grid2D<double> & variance_log_vp,
@@ -113,8 +129,8 @@ private:
 
   void                          calculateSecondCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                       const NRLib::Grid2D<double> & variance_log_vp,
-                                                                      std::vector<double>         & mu_vp_sqrt,
-                                                                      NRLib::Grid2D<double>       & variance_vp_sqrt) const;
+                                                                      std::vector<double>         & mu_vp_square,
+                                                                      NRLib::Grid2D<double>       & variance_vp_square) const;
 
   void                          calculateCentralMomentLogNormalInverse(const std::vector<double>   & mu_vp_trans,
                                                                        const NRLib::Grid2D<double> & variance_vp_trans,
