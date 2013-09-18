@@ -171,7 +171,8 @@ public:
                              LOCAL_NOISE         =  8,
                              ROCK_PHYSICS        = 16,
                              ERROR_FILE          = 32,
-                             TASK_FILE           = 64};
+                             TASK_FILE           = 64,
+                             ROCK_PHYSICS_TRENDS = 128};
 
   enum           outputWavelets{WELL_WAVELETS    = 1,
                                 GLOBAL_WAVELETS  = 2,

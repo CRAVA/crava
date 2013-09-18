@@ -38,7 +38,6 @@ public:
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
-  TraceHeaderFormat              * getTravelTimeTraceHeaderFormat(int i)const { return travelTimeTHF_[i]                          ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
@@ -48,6 +47,7 @@ public:
   int                              getNumberOfAngles(int i)             const { return static_cast<int>(timeLapseAngle_[i].size());}
   int                              getNumberOfTimeLapses(void)          const { return static_cast<int>(timeLapseAngle_.size())   ;}
   bool                             getGravityTimeLapse(int i)           const { return timeLapseGravimetry_[i]                    ;}
+  bool                             getTravelTimeTimeLapse(int i)        const { return timeLapseTravelTime_[i]                    ;}
   int                              getNumberOfVintages(void)            const { return static_cast<int>(vintageYear_.size())      ;}
   int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}
   int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
@@ -140,7 +140,6 @@ public:
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
   const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
-  float                            getTravelTimeSegyOffset(int i)       const { return travelTimeSegyOffset_[i]                   ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
@@ -181,6 +180,7 @@ public:
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
+  bool                             getPorosityLogGiven(void)            const { return porosityLogGiven_                          ;}
   const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
   const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
@@ -309,6 +309,7 @@ public:
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
+  void addLogName(const std::string & log_name)           { logNames_.push_back(log_name)                        ;}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
@@ -361,7 +362,6 @@ public:
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
-  void addTravelTimeSegyOffset(float offset)              { travelTimeSegyOffset_.push_back(offset)              ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
@@ -400,6 +400,7 @@ public:
   void setNoVsFaciesProb(bool noVsFaciesProb)             { noVsFaciesProb_           = noVsFaciesProb           ;}
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
+  void setPorosityLogGiven(bool porosityGiven)            { porosityLogGiven_         = porosityGiven            ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
   void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;}
@@ -428,8 +429,6 @@ public:
   void addDefaultSegyOffset(void)                         { segyOffset_.push_back(0.0f)                          ;}
   void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
   void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}
-
-  void addDefaultTravelTimeSegyOffset()                   { travelTimeSegyOffset_.push_back(-1.0f)               ;}
 
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
 
@@ -478,7 +477,8 @@ public:
                                                             timeLapseSNRatio_.push_back(SNRatio_);
                                                             timeLapseUseLocalNoise_.push_back(useLocalNoise_);}
 
-  void addTimeLapseGravimetry(bool gravimetry)             {timeLapseGravimetry_.push_back(gravimetry)           ;}
+  void addTimeLapseGravimetry(bool gravimetry)            { timeLapseGravimetry_.push_back(gravimetry)           ;}
+  void addTimeLapseTravelTime(bool travelTime)            { timeLapseTravelTime_.push_back(travelTime)           ;}
 
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
   void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
@@ -527,8 +527,6 @@ private:
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
-  std::vector<TraceHeaderFormat *>  travelTimeTHF_;              // traceheader for travel time data, time lapse vector
-  std::vector<float>                travelTimeSegyOffset_;       // Local segy offset for travel time data, one for each time lapse
 
   std::vector<int>                  seismicType_;                ///< PP- or PS- seismic
   std::vector<float>                angle_;                      ///< Angles
@@ -550,6 +548,7 @@ private:
   std::vector<bool>                 useRickerWavelet_;
   std::vector<bool>                 timeLapseUseLocalNoise_;
   std::vector<bool>                 timeLapseGravimetry_;
+  std::vector<bool>                 timeLapseTravelTime_;
 
   std::vector<std::vector<bool> >   timeLapseEstimateLocalShift_;// Estimate local wavelet shift
   std::vector<std::vector<bool> >   timeLapseEstimateLocalScale_;// Estimate local wavelet scale
@@ -728,6 +727,7 @@ private:
   bool                              noVsFaciesProb_;             ///< Do not use Vs for faciesprob.
   bool                              useFilterForProb_;           ///< Use filtered logs for facies probs, otherwise, use sampled inversion.
   bool                              faciesLogGiven_;
+  bool                              porosityLogGiven_;
   bool                              depthDataOk_;                ///< We have what we need to do depth conversion
   bool                              parallelTimeSurfaces_;
   bool                              useLocalWavelet_;            ///< Wavelets are multiplied with gain and shift maps

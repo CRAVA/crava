@@ -78,17 +78,9 @@ namespace DEMTools {
                                       double& effective_shear_modulus,
                                       double& effective_density);
 
-  // not working  because Distribution->DistributionWithTrend
-  /*void DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
-                                      double& effective_shear_modulus,
-                                      double& effective_density);*/
-
   void DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
                                       double& effective_shear_modulus,
                                       double& effective_density);
-
-  // not working because Distribution->DistributionWithTrend
-  //void DebugTestDeletionAndCopying();
 
   void UpdateU(std::vector<double>          & u,
                double                         corr_param,

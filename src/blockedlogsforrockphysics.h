@@ -29,6 +29,7 @@ public:
   const std::vector<double> & getS1(void) {return s1_;}
   const std::vector<double> & getS2(void) {return s2_;}
 
+
 private:
 
   void                     calculateBulkShear(const int & nBlocks,

@@ -1633,11 +1633,13 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_porosity)
         porosity_dist_with_trend[i] = porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, porosity_given_facies, s1, s2, tmpErrTxt);
+
       else
         porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_bulk_weight)
         bulk_weight_dist_with_trend[i] = bulk_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, bulk_weight_given_facies, s1, s2, tmpErrTxt);
+
       else
         bulk_weight_dist_with_trend[i] = bulk_weight_dist_with_trend[i-1]->Clone();
 
