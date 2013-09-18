@@ -89,7 +89,9 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
       }
     }
 
-    const std::vector<std::vector<float> > dummy_blocked_logs;
+    const std::vector<std::vector<float> >  dummy_blocked_logs;
+    const std::vector<std::vector<double> > dummy_s1;
+    const std::vector<std::vector<double> > dummy_s2;
 
     for(int i=0; i<n_constituents; i++)
       CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
@@ -106,7 +108,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
 
         if(i < n_vintages_constit[s]) {
           if(constituent_volume_fraction[s][i] != NULL)
-            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, errTxt);
         }
         else {
           if(all_volume_fractions[i-1][s] != NULL)
@@ -157,7 +159,9 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
         alpha[i] = 1;
     }
 
-    const std::vector<std::vector<float> > dummy_blocked_logs;
+    const std::vector<std::vector<float> >  dummy_blocked_logs;
+    const std::vector<std::vector<double> > dummy_s1;
+    const std::vector<std::vector<double> > dummy_s2;
 
     std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
 
@@ -170,7 +174,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
 
         if(i < n_vintages_constit[s]) {
           if(constituent_volume_fraction[s][i] != NULL)
-            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+            all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, errTxt);
         }
         else {
           if(all_volume_fractions[i-1][s] != NULL)
@@ -420,7 +424,9 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
         errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_s1;
+  const std::vector<std::vector<double> > dummy_s2;
 
   std::vector<DistributionsDryRock *>  dist_dryrock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
@@ -433,27 +439,27 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
 
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_vp)
-        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_vs)
-        vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        vs_dist_with_trend[i] = vs_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         vs_dist_with_trend[i] = vs_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_mineral_k)
-        mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         mineral_k_dist_with_trend[i] = mineral_k_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_porosity)
-        porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
@@ -636,7 +642,9 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
         errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_s1;
+  const std::vector<std::vector<double> > dummy_s2;
 
   std::vector<DistributionsDryRock *>  dist_dryrock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
@@ -648,27 +656,27 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_bulk)
-        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_shear)
-        shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_porosity)
-        porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        porosity_dist_with_trend[i] = total_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         porosity_dist_with_trend[i] = porosity_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_mineral_k)
-        mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        mineral_k_dist_with_trend[i] = mineral_k_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         mineral_k_dist_with_trend[i] = mineral_k_dist_with_trend[i-1]->Clone();
 
@@ -1034,7 +1042,9 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const int                       
     }
   }
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_s1;
+  const std::vector<std::vector<double> > dummy_s2;
 
   std::vector<DistributionsDryRock *>                  final_dist_dryrock(n_vintages, NULL);
   std::vector<std::vector<DistributionWithTrend *> > all_volume_fractions(n_vintages);
@@ -1068,7 +1078,7 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const int                       
 
         if(i < n_vintages_aspect[s]) {
           if(inclusion_aspect_ratio_[s][i] != NULL)
-            all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+            all_aspect_ratios[i][s] = inclusion_aspect_ratio_[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
         }
         else
           all_aspect_ratios[i][s] = all_aspect_ratios[i-1][s]->Clone();
@@ -1078,7 +1088,7 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const int                       
 
         if(i < n_vintages_volume[s]) {
           if(volume_fractions[s][i] != NULL)
-            all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+            all_volume_fractions[i][s] = volume_fractions[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
         }
         else
           all_volume_fractions[i][s] = all_volume_fractions[i-1][s]->Clone();
@@ -1205,7 +1215,9 @@ GenerateDistributionsDryRock(const int                                          
   int n_vintages_porosity                 = static_cast<int>(distr_porosity_.size());
   int n_vintages_coord_number             = static_cast<int>(distr_coord_number_.size());
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_s1;
+  const std::vector<std::vector<double> > dummy_s2;
 
   std::vector<DistributionsDryRock *>    dist_solid(n_vintages, NULL);
   std::vector<DistributionWithTrend *>   dwt_friction_weight(n_vintages, NULL);
@@ -1216,22 +1228,22 @@ GenerateDistributionsDryRock(const int                                          
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_friction_weight)
-        dwt_friction_weight[i] = distr_friction_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        dwt_friction_weight[i] = distr_friction_weight_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         dwt_friction_weight[i] = dwt_friction_weight[i-1]->Clone();
 
       if(i < n_vintages_pressure)
-        dwt_pressure[i] = distr_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        dwt_pressure[i] = distr_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         dwt_pressure[i] = dwt_pressure[i-1]->Clone();
 
       if(i < n_vintages_porosity)
-        dwt_porosity[i] = distr_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        dwt_porosity[i] = distr_porosity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         dwt_porosity[i] = dwt_porosity[i-1]->Clone();
 
       if(i < n_vintages_coord_number)
-        dwt_coord_number[i] = distr_coord_number_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        dwt_coord_number[i] = distr_coord_number_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         dwt_coord_number[i] = dwt_coord_number[i-1]->Clone();
     }

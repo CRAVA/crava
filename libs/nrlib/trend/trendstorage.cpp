@@ -2,6 +2,7 @@
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"
+#include "../grid/grid2d.hpp"
 
 #include "../surface/regularsurface.hpp"
 #include "../iotools/fileio.hpp"
@@ -46,7 +47,11 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
                                     const std::vector<std::string>          & /*trend_cube_parameters*/,
                                     const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                     const std::vector<std::vector<float> >  & blocked_logs,
-                                    std::string                             & errTxt) const
+                                    const std::vector<std::vector<double> > & /*s1*/,
+                                    const std::vector<std::vector<double> > & /*s2*/,
+                                    const int                               & /*type*/,
+                                    const NRLib::Trend                      * /*mean_trend*/,
+                                    std::string                             & /*errTxt*/) const
 {
   double mean = 0;
   if(estimate_ == true)
@@ -89,6 +94,10 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
                               const std::vector<std::string>          & trend_cube_parameters,
                               const std::vector<std::vector<double> > & trend_cube_sampling,
                               const std::vector<std::vector<float> >  & blocked_logs,
+                              const std::vector<std::vector<double> > & /*s1*/,
+                              const std::vector<std::vector<double> > & /*s2*/,
+                              const int                               & /*type*/,
+                              const NRLib::Trend                      * /*mean_trend*/,
                               std::string                             & errTxt) const
 {
   Trend * trend = NULL;
@@ -204,15 +213,73 @@ Trend *
 Trend2DStorage::GenerateTrend(const std::string                       & path,
                               const std::vector<std::string>          & trend_cube_parameters,
                               const std::vector<std::vector<double> > & trend_cube_sampling,
-                              const std::vector<std::vector<float> >  & /*blocked_logs*/,
+                              const std::vector<std::vector<float> >  & blocked_logs,
+                              const std::vector<std::vector<double> > & s1,
+                              const std::vector<std::vector<double> > & s2,
+                              const int                               & type,
+                              const NRLib::Trend                      * mean_trend,
                               std::string                             & errTxt) const
 {
   Trend * trend = NULL;
 
-  if(estimate_ == true)
-    errTxt += "Estimation of 1D trend in rock physics models has not been implemented yet\n";
+  if(estimate_ == true) {
+    // gud: errTxt += "Estimation of 1D trend in rock physics models has not been implemented yet\n";
 
-  else {
+    size_t                            ns1        = trend_cube_sampling[0].size();
+    size_t                            ns2        = trend_cube_sampling[1].size();
+
+    int                               reference1 = 1;
+    int                               reference2 = 2;
+
+    double                            increment1 = trend_cube_sampling[0][1] - trend_cube_sampling[0][0];
+    double                            increment2 = trend_cube_sampling[1][1] - trend_cube_sampling[1][0];
+
+    Grid2D<double>                    trend_grid(ns1, ns2, RMISSING);
+
+    if (type == TrendStorage::MEAN) {
+
+      std::vector<std::vector<double> > mean_surface(ns1, std::vector<double>(ns2, RMISSING));
+
+      Estimate2DTrend(blocked_logs, trend_cube_sampling, s1, s2, mean_surface, errTxt);
+
+      for (size_t i = 0; i < ns1; i++) {
+        for (size_t j = 0; j < ns2; j++) {
+          trend_grid(i, j) = mean_surface[i][j];
+        }
+      }
+      trend = new Trend2D(trend_grid, reference1, reference2, increment1, increment2);
+    }
+
+    if (type == TrendStorage::VAR) {
+      if (mean_trend != NULL) {
+
+        std::vector<std::vector<double> > mean_surface(ns1, std::vector<double>(ns2, RMISSING));
+
+        for (size_t i = 0; i < ns1; i++) {
+          for (size_t j = 0; j < ns2; j++) {
+            double s1_i        = trend_cube_sampling[0][i];
+            double s2_j        = trend_cube_sampling[1][j];
+            double s3_dummy    = 0.0;
+
+            mean_surface[i][j] = mean_trend->GetValue(s1_i, s2_j, s3_dummy);
+          }
+        }
+
+        std::vector<std::vector<double> > var_surface(ns1, std::vector<double>(ns2, RMISSING));
+
+        Estimate2DVariance(blocked_logs, trend_cube_sampling, s1, s2, mean_surface, var_surface, errTxt);
+
+        for (size_t i = 0; i < ns1; i++) {
+          for (size_t j = 0; j < ns2; j++) {
+            trend_grid(i, j) = var_surface[i][j];
+          }
+        }
+        trend = new Trend2D(trend_grid, reference1, reference2, increment1, increment2);
+      } else {
+        errTxt += "Error: Invalid trend surface for variance estimation.\n";
+      }
+    }
+  } else {
 
     int reference1 = 0;
     int reference2 = 0;

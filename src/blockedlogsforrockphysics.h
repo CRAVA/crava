@@ -19,12 +19,15 @@ public:
 
   ~BlockedLogsForRockPhysics(void);
 
-  std::vector<float>       getAlphaForFacies(const std::string & facies_name);
-  std::vector<float>       getBetaForFacies(const std::string & facies_name);
-  std::vector<float>       getRhoForFacies(const std::string & facies_name);
-  std::vector<float>       getBulkForFacies(const std::string & facies_name);
-  std::vector<float>       getShearForFacies(const std::string & facies_name);
-  std::vector<float>       getPorosityForFacies(const std::string & facies_name);
+  std::vector<float>          getAlphaForFacies(const std::string & facies_name);
+  std::vector<float>          getBetaForFacies(const std::string & facies_name);
+  std::vector<float>          getRhoForFacies(const std::string & facies_name);
+  std::vector<float>          getBulkForFacies(const std::string & facies_name);
+  std::vector<float>          getShearForFacies(const std::string & facies_name);
+  std::vector<float>          getPorosityForFacies(const std::string & facies_name);
+
+  const std::vector<double> & getS1(void) {return s1_;}
+  const std::vector<double> & getS2(void) {return s2_;}
 
 private:
 

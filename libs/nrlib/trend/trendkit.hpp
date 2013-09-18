@@ -68,6 +68,113 @@ namespace NRLib {
   void            Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
                                   std::vector<double>                     & trend);
 
+  void            Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                  const std::vector<std::vector<double> > & s1,
+                                  const std::vector<std::vector<double> > & s2,
+                                  std::vector<std::vector<double> >       & trend,
+                                  std::string                             & errTxt);
+
+
+  void            Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
+                                     const std::vector<std::vector<double> > & trend_cube_sampling,
+                                     const std::vector<std::vector<double> > & s1,
+                                     const std::vector<std::vector<double> > & s2,
+                                     const std::vector<std::vector<double> > & trend,
+                                     std::vector<std::vector<double> >       & var,
+                                     std::string                             & errTxt);
+
+  void            LocalLinearRegression2DSurface(const std::vector<double>         & x,
+                                                 const std::vector<double>         & y,
+                                                 const std::vector<double>         & z,
+                                                 const std::vector<double>         & w,
+                                                 const std::vector<double>         & x0,
+                                                 const std::vector<double>         & y0,
+                                                 std::vector<std::vector<double> > & z0,
+                                                 std::vector<std::vector<double> > & w0,
+                                                 const double                        bandwidth_x,
+                                                 const double                        bandwidth_y,
+                                                 bool                              & complete_surface);
+
+  double          CalculateVariance(const std::vector<double> & x);
+
+  double          CalculateBandwidth(const std::vector<double> & x,
+                                     const double                scale,
+                                     const double                power);
+
+  size_t          FindLowerBoundInSortedVector(const std::vector<double> & x,
+                                               const double                x_0);
+
+  size_t          FindUpperBoundInSortedVector(const std::vector<double> & x,
+                                               const double                x_0);
+
+  void            SortOrderAndRank(const std::vector<double> & x,
+                                   std::vector<double>       & x_sort,
+                                   std::vector<size_t>       & x_order,
+                                   std::vector<size_t>       & x_rank);
+
+  void            MakeNewGridResolution(const std::vector<double> & x0,
+                                        std::vector<double>       & x0_regridded,
+                                        const double                bandwidth_x);
+
+  bool            CheckIfVectorIsSorted(const std::vector<double> & x);
+
+  void            MakeBinnedDataset(std::vector<double>               & x,
+                                    std::vector<double>               & y,
+                                    std::vector<double>               & z,
+                                    std::vector<double>               & w,
+                                    const std::vector<double>         & x0,
+                                    const std::vector<double>         & y0);
+
+
+  bool            PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
+                                   const std::vector<std::vector<double> > & trend_cube_sampling,
+                                   const std::vector<std::vector<double> > & s1,
+                                   const std::vector<std::vector<double> > & s2,
+                                   std::vector<double>                     & x,
+                                   std::vector<double>                     & y,
+                                   std::vector<double>                     & z,
+                                   std::vector<double>                     & w,
+                                   std::vector<double>                     & x0,
+                                   std::vector<double>                     & y0,
+                                   double                                  & bandwidth_x,
+                                   double                                  & bandwidth_y,
+                                   const double                              scale,
+                                   std::string                             & errTxt);
+
+  void            BilinearBinning(const std::vector<double>               & x,
+                                  const std::vector<double>               & y,
+                                  const std::vector<double>               & z,
+                                  const std::vector<double>               & x0,
+                                  const std::vector<double>               & y0,
+                                  std::vector<std::vector<double> >       & z0,
+                                  std::vector<std::vector<double> >       & w0);
+
+void              BilinearInterpolation(const std::vector<double>               & x,
+                                        const std::vector<double>               & y,
+                                        const std::vector<std::vector<double> > & z,
+                                        const std::vector<double>               & x0,
+                                        const std::vector<double>               & y0,
+                                        std::vector<std::vector<double> >       & z0);
+
+  double          Interpolate(const std::vector<double>               & x,
+                              const std::vector<double>               & y,
+                              const std::vector<std::vector<double> > & z,
+                              const double                              x0,
+                              const double                              y0);
+
+  void            KernelSmoother2DSurface(const std::vector<double>         & x,
+                                          const std::vector<double>         & y,
+                                          const std::vector<double>         & z,
+                                          const std::vector<double>         & w,
+                                          const std::vector<double>         & x0,
+                                          const std::vector<double>         & y0,
+                                          std::vector<std::vector<double> > & z0,
+                                          std::vector<std::vector<double> > & w0,
+                                          const double                        bandwidth_x,
+                                          const double                        bandwidth_y,
+                                          bool                              & complete_surface);
+
   void            SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
                                                        const std::vector<int> & count,
                                                        const int              & iWells);

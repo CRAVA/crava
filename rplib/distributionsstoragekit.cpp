@@ -301,6 +301,11 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
                           const std::vector<std::vector<float> >            & blocked_logs,
                           std::string                                       & errTxt)
 {
+  std::vector<std::vector<double> > dummy_s1;
+  std::vector<std::vector<double> > dummy_s2;
+
+  NRLib::Trend * mean_trend_dummy = NULL;
+
   for(size_t i=0; i<test_objects.size(); i++) {
 
     if(test_objects[i] != NULL) {
@@ -308,7 +313,15 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
         const DeltaDistributionWithTrendStorage * delta = dynamic_cast<const DeltaDistributionWithTrendStorage *>(test_objects[i]);
 
         NRLib::TrendStorage * mean_storage = delta->CloneMean();
-        NRLib::Trend        * mean         = mean_storage->GenerateTrend(path, trend_cube_parameters, trend_cube_sampling, blocked_logs, errTxt);
+        NRLib::Trend        * mean         = mean_storage->GenerateTrend(path,
+                                                                         trend_cube_parameters,
+                                                                         trend_cube_sampling,
+                                                                         blocked_logs,
+                                                                         dummy_s1,
+                                                                         dummy_s2,
+                                                                         NRLib::TrendStorage::MEAN,
+                                                                         mean_trend_dummy,
+                                                                         errTxt);
 
         double min = mean->GetMinValue();
         double max = mean->GetMaxValue();
