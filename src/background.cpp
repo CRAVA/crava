@@ -338,7 +338,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     surface[i] = Surface(surface_files[i]);
 
   std::vector<Surface> regular_surface(nZones+1);
-  RegularizeZoneSurfaces(surface, 
+  RegularizeZoneSurfaces(surface,
                          simbox,
                          regular_surface); //Subsequent code needs all surfaces to be equally sampled.
 

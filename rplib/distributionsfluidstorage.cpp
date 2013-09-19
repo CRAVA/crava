@@ -685,7 +685,9 @@ CO2FluidStorage::GenerateDistributionsFluid(const int                           
   int n_vintages_pressure    = static_cast<int>(pressure_.size());
   int n_vintages_temperature = static_cast<int>(temperature_.size());
 
-  const std::vector<std::vector<float> > dummy_blocked_logs;
+  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_s1;
+  const std::vector<std::vector<double> > dummy_s2;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> pressure_dist_with_trend(n_vintages, NULL);
@@ -694,12 +696,12 @@ CO2FluidStorage::GenerateDistributionsFluid(const int                           
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_pressure)
-        pressure_dist_with_trend[i] = pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        pressure_dist_with_trend[i] = pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_temperature)
-        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
       else
         temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
 

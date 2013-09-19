@@ -590,10 +590,10 @@ LocalLinearRegression2DSurface(const std::vector<double>         & x,
 
   for (size_t i = 0; i < x0.size(); i++) {
 
-  	double x_low        = x0[i] - threshold*bandwidth_x;
+    double x_low        = x0[i] - threshold*bandwidth_x;
     double x_upp        = x0[i] + threshold*bandwidth_x;
 
-  	size_t x_low_k      = FindLowerBoundInSortedVector(x_order, x_low);
+    size_t x_low_k      = FindLowerBoundInSortedVector(x_order, x_low);
     size_t x_upp_k      = FindUpperBoundInSortedVector(x_order, x_upp);
 
     for (size_t j = 0; j < y0.size(); j++) {
@@ -603,7 +603,7 @@ LocalLinearRegression2DSurface(const std::vector<double>         & x,
         double weight_total = 0.0;
 
         double y_low        = y0[j] - threshold*bandwidth_y;
-      	double y_upp        = y0[j] + threshold*bandwidth_y;
+        double y_upp        = y0[j] + threshold*bandwidth_y;
 
         size_t y_low_l      = FindLowerBoundInSortedVector(y_order, y_low);
         size_t y_upp_l      = FindUpperBoundInSortedVector(y_order, y_upp);
@@ -1087,7 +1087,7 @@ KernelSmoother2DSurface(const std::vector<double>         & x,
     double x_low        = x0[i] - threshold*bandwidth_x;
     double x_upp        = x0[i] + threshold*bandwidth_x;
 
-  	size_t x_low_k      = FindLowerBoundInSortedVector(x_order, x_low);
+    size_t x_low_k      = FindLowerBoundInSortedVector(x_order, x_low);
     size_t x_upp_k      = FindUpperBoundInSortedVector(x_order, x_upp);
 
     for (size_t j = 0; j < y0.size(); j++) {
@@ -1098,7 +1098,7 @@ KernelSmoother2DSurface(const std::vector<double>         & x,
         double z0_hat       = 0.0;
 
         double y_low        = y0[j] - threshold*bandwidth_y;
-      	double y_upp        = y0[j] + threshold*bandwidth_y;
+        double y_upp        = y0[j] + threshold*bandwidth_y;
 
         size_t y_low_l      = FindLowerBoundInSortedVector(y_order, y_low);
         size_t y_upp_l      = FindUpperBoundInSortedVector(y_order, y_upp);
@@ -1123,12 +1123,12 @@ KernelSmoother2DSurface(const std::vector<double>         & x,
         w0[i][j] = weight_total;
 
         if (weight_total > weight_total_limit) {
-        	z0[i][j] = z0_hat/weight_total;
+          z0[i][j] = z0_hat/weight_total;
         } else {
           z0[i][j]         = RMISSING;
           complete_surface = false;
         }
-    	}
+      }
     }
   }
 }

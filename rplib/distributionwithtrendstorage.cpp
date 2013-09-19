@@ -1,3 +1,4 @@
+#include "src/io.h"
 
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionwithtrend.h"
@@ -192,7 +193,16 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
                                                            mean_trend_dummy,
                                                            errTxt);
 
-    // gud: if (estimate == TRUE && "skriv til fil) " OG if (typeid() ...
+//  if (modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS_TRENDS) {
+//    if (typeid(*mean)  == typeid(Trend2D)) {
+//     // bruk utskrift for regularsurface
+//   }
+//
+//    if (typeid(*mean)  == typeid(Trend1D)) {
+//      // bruk utskrift for well
+//    }
+//  }
+
 
     NRLib::Trend * variance_trend   = variance_->GenerateTrend(path,
                                                                trend_cube_parameters,
@@ -203,6 +213,8 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
                                                                NRLib::TrendStorage::VAR,
                                                                mean_trend,
                                                                errTxt);
+
+
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
