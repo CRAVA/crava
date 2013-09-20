@@ -28,44 +28,41 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   double cpu  = 0.0;
   TimeKit::getTime(wall,cpu);
 
-  FFTGrid * mu_log_vp  = seismicParameters.GetMuAlpha();
-  FFTGrid * cov_log_vp = seismicParameters.GetCovBeta();
+  FFTGrid * mu_log_vp                 = seismicParameters.GetMuAlpha();
+  FFTGrid * cov_log_vp                = seismicParameters.GetCovBeta();
+  std::vector<double> cov_grid_log_vp = getCovLogVp(cov_log_vp);
 
   Simbox * timeSimbox = modelGeneral->getTimeSimbox();
 
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
+  const double mu_vp_top                   = modelTravelTimeDynamic->getMeanVpTop();
+  const double mu_vp_base                  = modelTravelTimeDynamic->getMeanVpBase();
+  const double var_vp_above                = modelTravelTimeDynamic->getVarVpAbove();
+  const double var_vp_below                = modelTravelTimeDynamic->getVarVpBelow();
+  const double range_above                 = modelTravelTimeDynamic->getRangeAbove();
+  const double range_below                 = modelTravelTimeDynamic->getRangeBelow();
+  const double standard_deviation          = modelTravelTimeDynamic->getStandardDeviation();
 
-  const int n_layers_above        = modelTravelTimeDynamic->getNLayersAbove();
-  const int n_layers_below        = modelTravelTimeDynamic->getNLayersBelow();
-  const double mu_vp_top          = modelTravelTimeDynamic->getMeanVpTop();
-  const double mu_vp_base         = modelTravelTimeDynamic->getMeanVpBase();
-  const double var_vp_above       = modelTravelTimeDynamic->getVarVpAbove();
-  const double var_vp_below       = modelTravelTimeDynamic->getVarVpBelow();
-  const double range_above        = modelTravelTimeDynamic->getRangeAbove();
-  const double range_below        = modelTravelTimeDynamic->getRangeBelow();
-  const double standard_deviation = modelTravelTimeDynamic->getStandardDeviation();
+  n_layers_above_                          = modelTravelTimeDynamic->getNLayersAbove();
+  n_layers_below_                          = modelTravelTimeDynamic->getNLayersBelow();
+  n_layers_model_                          = mu_log_vp->getNz();
+  n_layers_padding_                        = mu_log_vp->getNzp();
 
-  int n_rms_traces     = static_cast<int>(rms_traces.size());
-  int n_layers_simbox  = timeSimbox->getnz();
-  int n_layers_padding = cov_log_vp->getNzp();
+  int n_layers                             = n_layers_above_ + n_layers_below_ + n_layers_padding_;
+  int n_rms_traces                         = static_cast<int>(rms_traces.size());
+  double max_time                          = findMaxTime(rms_traces);
 
   Vario * variogram_above = new GenExpVario(1, static_cast<float>(range_above));
   Vario * variogram_below = new GenExpVario(1, static_cast<float>(range_below));
 
-  std::vector<float> corrT_above(n_layers_above + 1);
-  std::vector<float> corrT_below(n_layers_below + 1);
-
-  double max_time = findMaxTime(rms_traces);
-
-  std::vector<double> cov_grid_log_vp = getCovLogVp(cov_log_vp);
+  std::vector<double> cov_stationary(n_layers, 0);
 
   for(int i=0; i<n_rms_traces; i++) {
 
-    do1DInversion(n_layers_above,
-                  n_layers_below,
-                  n_layers_simbox,
-                  n_layers_padding,
-                  variogram_above,
+    std::vector<double>   mu_post;
+    NRLib::Grid2D<double> Sigma_post;
+
+    do1DInversion(variogram_above,
                   variogram_below,
                   mu_vp_top,
                   mu_vp_base,
@@ -76,8 +73,11 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                   rms_traces[i],
                   mu_log_vp,
                   cov_grid_log_vp,
-                  timeSimbox);
+                  timeSimbox,
+                  mu_post,
+                  Sigma_post);
 
+    addCovariance(n_rms_traces, Sigma_post, cov_stationary);
   }
 
   time(&time_end);
@@ -95,11 +95,7 @@ RMSInversion::~RMSInversion()
 
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::do1DInversion(const int                   & n_layers_above,
-                            const int                   & n_layers_below,
-                            const int                   & n_layers_simbox,
-                            const int                   & n_layers_padding,
-                            const Vario                 * variogram_above,
+RMSInversion::do1DInversion(const Vario                 * variogram_above,
                             const Vario                 * variogram_below,
                             const double                & mu_vp_top,
                             const double                & mu_vp_base,
@@ -110,10 +106,10 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
                             const RMSTrace              * rms_trace,
                             const FFTGrid               * mu_log_vp,
                             const std::vector<double>   & cov_grid_log_vp,
-                            const Simbox                * timeSimbox) const
+                            const Simbox                * timeSimbox,
+                            std::vector<double>         & mu_post,
+                            NRLib::Grid2D<double>       & Sigma_post) const
 {
-  const std::vector<double> time = rms_trace->getTime();
-
   double utmx = rms_trace->getUtmx();
   double utmy = rms_trace->getUtmy();
 
@@ -126,15 +122,13 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
   double t_bot     = timeSimbox->getBot(i_ind, j_ind);
   double dt_simbox = timeSimbox->getdz(i_ind,  j_ind);
 
+  const std::vector<double> time = rms_trace->getTime();
+
   NRLib::Grid2D<double> G = calculateG(time,
                                        t_top,
                                        t_bot,
                                        dt_simbox,
-                                       max_time,
-                                       n_layers_above,
-                                       n_layers_below,
-                                       n_layers_simbox,
-                                       n_layers_padding);
+                                       max_time);
 
   std::vector<double>   mu_log_vp_model = generateMuLogVpModel(mu_log_vp, i_ind, j_ind);
 
@@ -144,8 +138,6 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
   calculateMuSigma_mSquare(mu_log_vp_model,
                            cov_grid_log_vp,
                            max_time,
-                           n_layers_above,
-                           n_layers_below,
                            t_top,
                            t_bot,
                            mu_vp_top,
@@ -159,9 +151,6 @@ RMSInversion::do1DInversion(const int                   & n_layers_above,
 
   std::vector<double>   d_square       = calculateDSquare(rms_trace->getVelocity());
   NRLib::Grid2D<double> Sigma_d_square = calculateSigmaDSquare(rms_trace->getVelocity(), standard_deviation);
-
-  std::vector<double>   mu_post;
-  NRLib::Grid2D<double> Sigma_post;
 
   calculatePosteriorModel(d_square,
                           Sigma_d_square,
@@ -293,31 +282,27 @@ RMSInversion::calculateG(const std::vector<double> & rms_time,
                          const double              & t_top,
                          const double              & t_bot,
                          const double              & dt_simbox,
-                         const double              & max_time,
-                         const int                 & n_layers_above,
-                         const int                 & n_layers_below,
-                         const int                 & n_layers_simbox,
-                         const int                 & n_layers_padding) const
+                         const double              & max_time) const
 {
-  int n_layers = n_layers_above + n_layers_padding + n_layers_below;
+  int n_layers = n_layers_above_ + n_layers_padding_ + n_layers_below_;
 
   std::vector<double> t(n_layers + 1, 0);
   std::vector<double> dt(n_layers + 1, 0);
 
-  double dt_above  = static_cast<double>(  t_top             / n_layers_above);
-  double dt_below  = static_cast<double>( (max_time - t_bot) / n_layers_below);
+  double dt_above  = static_cast<double>(  t_top             / n_layers_above_);
+  double dt_below  = static_cast<double>( (max_time - t_bot) / n_layers_below_);
 
   for(int j=0; j<n_layers + 1; j++) {
-    if(j < n_layers_above) {
+    if(j < n_layers_above_) {
       t[j]  = j * dt_above;
       dt[j] = dt_above;
     }
-    else if(j >= n_layers_above && j < n_layers_above + n_layers_simbox) {
-      t[j]  = t_top + (j - n_layers_above) * dt_simbox;
+    else if(j >= n_layers_above_ && j < n_layers_above_ + n_layers_model_) {
+      t[j]  = t_top + (j - n_layers_above_) * dt_simbox;
       dt[j] = dt_simbox;
     }
-    else if(j >= n_layers_above + n_layers_padding) {
-      t[j]  = t_bot + (j - n_layers_above - n_layers_padding) * dt_below;
+    else if(j >= n_layers_above_ + n_layers_padding_) {
+      t[j]  = t_bot + (j - n_layers_above_ - n_layers_padding_) * dt_below;
       dt[j] = dt_below;
     }
   }
@@ -368,8 +353,6 @@ void
 RMSInversion::calculateMuSigma_mSquare(const std::vector<double> & mu_log_vp_model,
                                        const std::vector<double> & cov_grid_log_vp,
                                        const double              & max_time,
-                                       const int                 & n_layers_above,
-                                       const int                 & n_layers_below,
                                        const double              & t_top,
                                        const double              & t_base,
                                        const double              & mu_vp_top,
@@ -384,23 +367,23 @@ RMSInversion::calculateMuSigma_mSquare(const std::vector<double> & mu_log_vp_mod
 
   int n_layers_simbox = static_cast<int>(mu_log_vp_model.size());
 
-  float  dt_above = static_cast<float>( t_top              / n_layers_above);
-  float  dt_below = static_cast<float>((max_time - t_base) / n_layers_below);
+  float  dt_above = static_cast<float>( t_top              / n_layers_above_);
+  float  dt_below = static_cast<float>((max_time - t_base) / n_layers_below_);
 
   // Model
   NRLib::Grid2D<double> Sigma_log_vp_model = generateSigmaModel(cov_grid_log_vp);
 
   // Above
-  std::vector<double>   mu_vp_above    = generateMuVpAbove(mu_vp_top, std::exp(mu_log_vp_model[0]), n_layers_above);
-  NRLib::Grid2D<double> Sigma_vp_above = generateSigmaVp(dt_above, n_layers_above, var_vp_above, variogram_above);
+  std::vector<double>   mu_vp_above    = generateMuVpAbove(mu_vp_top, std::exp(mu_log_vp_model[0]));
+  NRLib::Grid2D<double> Sigma_vp_above = generateSigmaVp(dt_above, n_layers_above_, var_vp_above, variogram_above);
   std::vector<double>   mu_log_vp_above;
   NRLib::Grid2D<double> Sigma_log_vp_above;
 
   calculateCentralMomentLogNormalInverse(mu_vp_above, Sigma_vp_above, mu_log_vp_above, Sigma_log_vp_above);
 
   // Below
-  std::vector<double>   mu_vp_below    = generateMuVpBelow(std::exp(mu_log_vp_model[n_layers_simbox-1]), mu_vp_base, n_layers_below);
-  NRLib::Grid2D<double> Sigma_vp_below = generateSigmaVp(dt_below, n_layers_below, var_vp_below, variogram_below);
+  std::vector<double>   mu_vp_below    = generateMuVpBelow(std::exp(mu_log_vp_model[n_layers_simbox-1]), mu_vp_base);
+  NRLib::Grid2D<double> Sigma_vp_below = generateSigmaVp(dt_below, n_layers_below_, var_vp_below, variogram_below);
   std::vector<double>   mu_log_vp_below;
   NRLib::Grid2D<double> Sigma_log_vp_below;
 
@@ -468,12 +451,11 @@ RMSInversion::generateMuLogVpModel(const FFTGrid * mu_log_vp,
 
 std::vector<double>
 RMSInversion::generateMuVpAbove(const double & top_value,
-                                const double & base_value,
-                                const int    & n_layers) const
+                                const double & base_value) const
 {
-  std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_layers);
+  std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_layers_above_);
 
-  mu_vp.resize(n_layers);
+  mu_vp.resize(n_layers_above_);
 
   return mu_vp;
 }
@@ -482,15 +464,14 @@ RMSInversion::generateMuVpAbove(const double & top_value,
 
 std::vector<double>
 RMSInversion::generateMuVpBelow(const double & top_value,
-                                const double & base_value,
-                                const int    & n_layers) const
+                                const double & base_value) const
 {
-  std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_layers);
+  std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_layers_below_);
 
-  for(int i=0; i<n_layers; i++)
+  for(int i=0; i<n_layers_below_; i++)
     mu_vp[i] = mu_vp[i+1];
 
-  mu_vp.resize(n_layers);
+  mu_vp.resize(n_layers_below_);
 
   return mu_vp;
 }
@@ -747,4 +728,52 @@ RMSInversion::calculateSecondCentralMomentLogNormal(const std::vector<double>   
   variance_vp_square.Resize(n_layers, n_layers);
 
   calculateCentralMomentLogNormal(mu, variance, mu_vp_square, variance_vp_square);
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::addCovariance(const int                   & n_rms_traces,
+                            const NRLib::Grid2D<double> & Sigma_post,
+                            std::vector<double>         & cov_stationary) const
+{
+  int n = static_cast<int>(cov_stationary.size());
+
+
+  std::vector<double> circulant = makeCirculantCovariance(Sigma_post);
+
+  for(int i=0; i<n; i++)
+      cov_stationary[i] += circulant[i]/n_rms_traces;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+std::vector<double>
+RMSInversion::makeCirculantCovariance(const NRLib::Grid2D<double> & Sigma_post) const
+{
+  int n = static_cast<int>(Sigma_post.GetNI());
+
+  std::vector<double> circulant(n,0);
+
+
+
+  return circulant;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::writeMatrix(std::string                   file_name,
+                          const NRLib::Grid2D<double> & grid2d) const
+{
+  int n = static_cast<int>(grid2d.GetNI());
+  int m = static_cast<int>(grid2d.GetNJ());
+
+  NRLib::Matrix matrix(n,m);
+  for(int i=0; i<n; i++) {
+    for(int j=0; j<m; j++)
+      matrix(i,j) = grid2d(i,j);
+  }
+
+  NRLib::WriteMatrixToFile(file_name, matrix);
 }

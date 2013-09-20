@@ -25,11 +25,7 @@ public:
   ~RMSInversion();
 
 private:
-  void                          do1DInversion(const int                   & n_layers_above,
-                                              const int                   & n_layers_below,
-                                              const int                   & n_layers_simbox,
-                                              const int                   & n_layers_padding,
-                                              const Vario                 * variogram_above,
+  void                          do1DInversion(const Vario                 * variogram_above,
                                               const Vario                 * variogram_below,
                                               const double                & mu_vp_top,
                                               const double                & mu_vp_base,
@@ -40,7 +36,9 @@ private:
                                               const RMSTrace              * rms_trace,
                                               const FFTGrid               * mu_log_vp,
                                               const std::vector<double>   & cov_grid_log_vp,
-                                              const Simbox                * timeSimbox) const;
+                                              const Simbox                * timeSimbox,
+                                              std::vector<double>         & mu_post,
+                                              NRLib::Grid2D<double>       & Sigma_post) const;
 
   void                          calculatePosteriorModel(const std::vector<double>   & d,
                                                         const NRLib::Grid2D<double> & Sigma_d,
@@ -54,11 +52,7 @@ private:
                                            const double              & t_top,
                                            const double              & t_bot,
                                            const double              & dt_simbox,
-                                           const double              & max_time,
-                                           const int                 & n_layers_above,
-                                           const int                 & n_layers_below,
-                                           const int                 & n_layers_simbox,
-                                           const int                 & n_layers_padding) const;
+                                           const double              & max_time) const;
 
   std::vector<double>           calculateDSquare(const std::vector<double> & d) const;
 
@@ -68,8 +62,6 @@ private:
   void                          calculateMuSigma_mSquare(const std::vector<double> & mu_log_vp_model,
                                                          const std::vector<double> & cov_grid_log_vp,
                                                          const double              & max_time,
-                                                         const int                 & n_layers_above,
-                                                         const int                 & n_layers_below,
                                                          const double              & t_top,
                                                          const double              & t_base,
                                                          const double              & mu_vp_top,
@@ -86,12 +78,10 @@ private:
                                                      const int     & j_ind) const;
 
   std::vector<double>           generateMuVpAbove(const double & top_value,
-                                                  const double & base_value,
-                                                  const int    & n_layers) const;
+                                                  const double & base_value) const;
 
   std::vector<double>           generateMuVpBelow(const double & top_value,
-                                                  const double & base_value,
-                                                  const int    & n_layers) const;
+                                                  const double & base_value) const;
 
   std::vector<double>           generateMuVp(const double & top_value,
                                              const double & base_value,
@@ -138,6 +128,21 @@ private:
                                                                        NRLib::Grid2D<double>       & variance_log_vp) const;
 
   double                        findMaxTime(const std::vector<RMSTrace *> & rms_traces) const;
+
+  void                          addCovariance(const int                   & n_rms_traces,
+                                              const NRLib::Grid2D<double> & Sigma_post,
+                                              std::vector<double>         & cov_stationary) const;
+
+  std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & Sigma_post) const;
+
+  void                          writeMatrix(std::string                   file_name,
+                                            const NRLib::Grid2D<double> & grid2d) const;
+
+
+  int n_layers_above_;
+  int n_layers_below_;
+  int n_layers_model_;
+  int n_layers_padding_;
 
 };
 
