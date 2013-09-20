@@ -29,11 +29,11 @@ public:
   //const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]           ;}
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
-  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
-  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]     ;}
+  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return parameters_[i]          ;}
+  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]      ;}
   //const std::vector<Surface>                             & GetErodedSurfaces() const             { return eroded_surfaces_       ;}
-  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_    ;}
-  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_         ;}
+  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_     ;}
+  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_          ;}
 
   //SET FUNCTIONS
 

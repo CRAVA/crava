@@ -590,7 +590,6 @@ FFTGrid::resampleTrace(const std::vector<float> & data_trace,
   }
 }
 
-
 // Trilinear interpolation
 double FFTGrid::InterpolateTrilinear(double x_min,
                                      double x_max,

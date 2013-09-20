@@ -206,6 +206,12 @@ int main(int argc, char** argv)
     -------------------------------------------------------------*/
 
     common_data = new CommonData(modelSettings, inputFiles);
+    //Priormodell i 3D
+    SeismicParametersHolder seismicParametersCommon;
+    //Forventningsgrid (fra multisonegrid),
+
+    //korrelasjonsgrid (2m)
+
 
     Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;

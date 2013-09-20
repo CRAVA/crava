@@ -43,6 +43,8 @@ public:
                                                         FFTGrid  * muBeta,
                                                         FFTGrid  * muRho);
 
+  void                          setBackgroundParametersIntervals(const std::vector<std::vector<NRLib::Grid<double> > > & mu_parameters);
+
   void                          copyBackgroundParameters(FFTGrid  * muAlpha,
                                                          FFTGrid  * muBeta,
                                                          FFTGrid  * muRho);
@@ -138,6 +140,10 @@ private:
   FFTGrid * crCovAlphaBeta_;
   FFTGrid * crCovAlphaRho_ ;
   FFTGrid * crCovBetaRho_  ;
+
+  std::vector<NRLib::Grid<double> > mu_vp_; //Vector over intervals.
+  std::vector<NRLib::Grid<double> > mu_vs_;
+  std::vector<NRLib::Grid<double> > mu_rho_;
 
   NRLib::Matrix priorVar0_;
 

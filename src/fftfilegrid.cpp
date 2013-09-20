@@ -597,8 +597,6 @@ FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error, bo
     save();
 }
 
-
-
 void
 FFTFileGrid::load()
 {

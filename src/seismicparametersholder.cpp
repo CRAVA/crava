@@ -66,6 +66,20 @@ SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muAlpha,
   muBeta_    = muBeta;
   muRho_     = muRho;
 }
+
+//--------------------------------------------------------------------
+
+void
+SeismicParametersHolder::setBackgroundParametersIntervals(const std::vector<std::vector<NRLib::Grid<double> > > & mu_parameters)
+{
+  for(size_t i = 0; i < mu_parameters.size(); i++) {
+    mu_vp_.push_back(mu_parameters[i][0]);
+    mu_vs_.push_back(mu_parameters[i][1]);
+    mu_rho_.push_back(mu_parameters[i][2]);
+  }
+}
+
+
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muAlpha,

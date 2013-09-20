@@ -32,24 +32,38 @@ public:
 
   ~ CommonData();
 
+  enum                 gridTypes{CTMISSING, DATA, PARAMETER};
+
   //GET FUNCTIONS
 
   const Simbox                    & GetEstimationSimbox()     const { return estimation_simbox_     ;}
   const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_ ;}
   const std::vector<NRLib::Well>  & GetWells()                const { return wells_                 ;}
 
+  //void ReadGridFromFile(const std::string       & file_name,
+  //                      const std::string       & par_name,
+  //                      const float               offset,
+  //                      FFTGrid                *& grid,
+  //                      const SegyGeometry     *& geometry,
+  //                      const TraceHeaderFormat * format,
+  //                      int                       grid_type,
+  //                      const Simbox            * time_simbox,
+  //                      //const Simbox            * time_cut_simbox,
+  //                      const ModelSettings     * model_settings,
+  //                      std::string             & err_text,
+  //                      bool                      nopadding = false) const;
+
   void ReadGridFromFile(const std::string       & file_name,
                         const std::string       & par_name,
                         const float               offset,
-                        FFTGrid                *& grid,
+                        NRLib::Grid<double>     & grid,
                         const SegyGeometry     *& geometry,
                         const TraceHeaderFormat * format,
                         int                       grid_type,
                         const Simbox            * time_simbox,
-                        //const Simbox            * time_cut_simbox,
                         const ModelSettings     * model_settings,
-                        std::string             & err_text,
-                        bool                      nopadding = false) const;
+                        std::string             & err_text);
+                        //bool                      nopadding) const;
 
 private:
 
@@ -350,27 +364,79 @@ private:
                                   int nzp,
                                   bool fileGrid);
 
+  void ReadCravaFile(NRLib::Grid<double> & grid,
+                     const std::string   & file_name,
+                     std::string         & err_text);
+
+  //void ReadSegyFile(const std::string       & file_name,
+  //                  FFTGrid                *& target,
+  //                  const Simbox            * time_simbox, //Simbox * timeSimbox
+  //                  const ModelSettings     * model_settings,
+  //                  const SegyGeometry     *& geometry,
+  //                  int                       grid_type,
+  //                  const std::string       & par_name,
+  //                  float                     offset,
+  //                  const TraceHeaderFormat * format,
+  //                  std::string             & err_text,
+  //                  bool                      nopadding) const;
+
   void ReadSegyFile(const std::string       & file_name,
-                    FFTGrid                *& target,
-                    const Simbox            * time_simbox, //Simbox * timeSimbox
+                    NRLib::Grid<double>     & grid,
+                    const Simbox            * simbox,
                     const ModelSettings     * model_settings,
                     const SegyGeometry     *& geometry,
                     int                       grid_type,
                     const std::string       & par_name,
                     float                     offset,
                     const TraceHeaderFormat * format,
-                    std::string             & err_text,
-                    bool                      nopadding) const;
+                    std::string             & err_text);
+
+  void FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
+                                 const SegY          * segy,
+                                 const Simbox        * simbox,
+                                 float                 smooth_length,
+                                 int                 & missingTracesSimbox,
+                                 int                 & missingTracesPadding,
+                                 int                 & deadTracesSimbox,
+                                 std::string         & err_text);
+
+  int FindClosestFactorableNumber(int leastint);
+
+  void SmoothTraceInGuardZone(std::vector<float> & data_trace,
+                              float                z0_data,
+                              float                zn_data,
+                              float                dz_data,
+                              float                smooth_length,
+                              std::string        & err_text);
+
+  void ResampleTrace(const std::vector<float> & data_trace,
+                     const rfftwnd_plan       & fftplan1,
+                     const rfftwnd_plan       & fftplan2,
+                     fftw_real                * rAmpData,
+                     fftw_real                * rAmpFine,
+                     int                        cnt,
+                     int                        rnt,
+                     int                        cmt,
+                     int                        rmt);
+
+  //void ReadStormFile(const std::string   & f_name,
+  //                   FFTGrid            *& target,
+  //                   const int             grid_type,
+  //                   const std::string   & par_name,
+  //                   const Simbox        * time_simbox,
+  //                   const ModelSettings * model_settings,
+  //                   std::string         & err_text,
+  //                   bool                  scale,
+  //                   bool                  nopadding) const;
 
   void ReadStormFile(const std::string   & f_name,
-                     FFTGrid            *& target,
+                     NRLib::Grid<double> & grid,
                      const int             grid_type,
                      const std::string   & par_name,
                      const Simbox        * time_simbox,
                      const ModelSettings * model_settings,
                      std::string         & err_text,
-                     bool                  scale,
-                     bool                  nopadding) const;
+                     bool                  scale);
 
   bool SetupBackgroundModel(ModelSettings  * model_settings,
                             InputFiles     * input_files,
