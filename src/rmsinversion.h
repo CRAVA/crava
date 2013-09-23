@@ -25,12 +25,10 @@ public:
   ~RMSInversion();
 
 private:
-  void                          do1DInversion(const Vario                 * variogram_above,
-                                              const Vario                 * variogram_below,
-                                              const double                & mu_vp_top,
+  void                          do1DInversion(const double                & mu_vp_top,
                                               const double                & mu_vp_base,
-                                              const double                & var_vp_above,
-                                              const double                & var_vp_below,
+                                              const NRLib::Grid2D<double> & Sigma_m_above,
+                                              const NRLib::Grid2D<double> & Sigma_m_below,
                                               const double                & max_time,
                                               const double                & standard_deviation,
                                               const RMSTrace              * rms_trace,
@@ -59,19 +57,14 @@ private:
   NRLib::Grid2D<double>         calculateSigmaDSquare(const std::vector<double> & rms_velocity,
                                                     const double              & standard_deviation) const;
 
-  void                          calculateMuSigma_mSquare(const std::vector<double> & mu_log_vp_model,
-                                                         const std::vector<double> & cov_grid_log_vp,
-                                                         const double              & max_time,
-                                                         const double              & t_top,
-                                                         const double              & t_base,
-                                                         const double              & mu_vp_top,
-                                                         const double              & mu_vp_base,
-                                                         const double              & var_vp_above,
-                                                         const double              & var_vp_below,
-                                                         const Vario               * variogram_above,
-                                                         const Vario               * variogram_below,
-                                                         std::vector<double>       & mu_vp_square,
-                                                         NRLib::Grid2D<double>     & Sigma_vp_square) const;
+  void                          calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_model,
+                                                         const std::vector<double>   & cov_grid_log_vp,
+                                                         const double                & mu_vp_top,
+                                                         const double                & mu_vp_base,
+                                                         const NRLib::Grid2D<double> & Sigma_vp_above,
+                                                         const NRLib::Grid2D<double> & Sigma_vp_below,
+                                                         std::vector<double>         & mu_vp_square,
+                                                         NRLib::Grid2D<double>       & Sigma_vp_square) const;
 
   std::vector<double>           generateMuLogVpModel(const FFTGrid * mu_log_vp,
                                                      const int     & i_ind,
@@ -139,10 +132,12 @@ private:
                                             const NRLib::Grid2D<double> & grid2d) const;
 
 
-  int n_layers_above_;
-  int n_layers_below_;
-  int n_layers_model_;
-  int n_layers_padding_;
+  int n_above_;
+  int n_below_;
+  int n_model_;
+  int n_pad_above_;
+  int n_pad_below_;
+  int n_pad_model_;
 
 };
 
