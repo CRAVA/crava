@@ -51,21 +51,36 @@ FFTGrid()
   rsize_          = rnxp_*nyp_*nzp_;
   counterForGet_  = 0;
   counterForSet_  = 0;
-  istransformed_  = false;
+  istransformed_  = fftGrid->istransformed_;
   fNameIn_        = "";
   accMode_        = NONE;
   createRealGrid();
 
   setAccessMode(WRITE);
   fftGrid->setAccessMode(READ);
-  for(k=0;k<nzp_;k++) {
-    for(j=0;j<nyp_;j++) {
-      for(i=0;i<rnxp_;i++) {
-        value=fftGrid->getNextReal();
-        if (expTrans)
-          setNextReal(exp(value));
-        else
-          setNextReal(value);
+
+  if(istransformed_ == false){
+    createRealGrid();
+    for(k=0;k<nzp_;k++) {
+      for(j=0;j<nyp_;j++) {
+        for(i=0;i<rnxp_;i++) {
+          value=fftGrid->getNextReal();
+          if (expTrans)
+            setNextReal(exp(value));
+          else
+            setNextReal(value);
+        }
+      }
+    }
+  }
+  else{
+    createComplexGrid();
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<cnxp_;i++) {
+          fftw_complex value = fftGrid->getNextComplex();
+          setNextComplex(value);
+        }
       }
     }
   }
@@ -268,6 +283,23 @@ FFTFileGrid::setNextReal(float  value)
   return(0);
 }
 
+float
+FFTFileGrid::getFirstRealValue(){
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+
+  float value;
+
+  if(accMode_ != RANDOMACCESS) {
+    setAccessMode(READ);
+    value =  getNextReal();
+    endAccess();
+  }
+  else
+    value = static_cast<float>(rvalue_[0]);
+
+  return value;
+}
+
 int
 FFTFileGrid::square()
 {
@@ -402,6 +434,19 @@ FFTFileGrid::add(FFTGrid * fftGrid)
 }
 
 void
+FFTFileGrid::addScalar(float scalar)
+{
+ assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+  FFTGrid::addScalar(scalar);
+  if(accMode_ != RANDOMACCESS)
+    save();
+}
+
+void
 FFTFileGrid::subtract(FFTGrid * fftGrid)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -501,6 +546,26 @@ FFTFileGrid::multiply(FFTGrid * fftGrid)
     }
   }
   fftGrid->endAccess();
+
+  if(accMode_ != RANDOMACCESS)
+    save();
+}
+
+void
+FFTFileGrid::conjugate()
+{
+  assert(istransformed_);
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+
+  int i;
+  for(i=0;i<csize_;i++)
+  {
+    cvalue_[i].im = -cvalue_[i].im;
+  }
 
   if(accMode_ != RANDOMACCESS)
     save();

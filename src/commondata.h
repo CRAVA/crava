@@ -36,9 +36,10 @@ public:
 
   //GET FUNCTIONS
 
-  const Simbox                    & GetEstimationSimbox()     const { return estimation_simbox_     ;}
-  const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_ ;}
-  const std::vector<NRLib::Well>  & GetWells()                const { return wells_                 ;}
+  const Simbox                    & GetEstimationSimbox()     const { return estimation_simbox_      ;}
+  const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_  ;}
+  const std::vector<NRLib::Well>  & GetWells()                const { return wells_                  ;}
+  const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
 
   //void ReadGridFromFile(const std::string       & file_name,
   //                      const std::string       & par_name,
@@ -187,7 +188,7 @@ private:
                               std::string    & err_text);
 
   bool  SetupTemporaryWavelet(ModelSettings * model_settings,
-                              InputFiles    * input_files,
+                              //InputFiles    * input_files,
                               std::string   & err_text);
 
   bool  WaveletHandling(ModelSettings * model_settings,
@@ -221,8 +222,8 @@ private:
 
   void ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                    std::vector<int>         & facies_nr,
-                                   std::vector<std::string> & facies_names,
-                                   std::string              & err_txt);
+                                   std::vector<std::string> & facies_names);
+                                   //std::string              & err_txt);
 
   void SetFaciesNamesFromWells(ModelSettings            *& model_settings,
                                std::string               & err_text);
@@ -418,6 +419,28 @@ private:
                      int                        rnt,
                      int                        cmt,
                      int                        rmt);
+
+  void InterpolateGridValues(std::vector<float> & grid_trace,
+                             float                z0_grid,
+                             float                dz_grid,
+                             fftw_real          * rAmpFine,
+                             float                z0_data,
+                             float                dz_fine,
+                             int                  n_fine,
+                             int                  grid_nk);
+
+  int GetZSimboxIndex(int k,
+                      int grid_nk);
+
+  void SetTrace(const std::vector<float> & trace,
+                NRLib::Grid<double>      & grid,
+                size_t                     i,
+                size_t                     j);
+
+  void SetTrace(float                 value,
+                NRLib::Grid<double> & grid,
+                size_t                i,
+                size_t                j);
 
   //void ReadStormFile(const std::string   & f_name,
   //                   FFTGrid            *& target,

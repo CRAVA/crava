@@ -14,6 +14,7 @@ public:
                                                                                    //Not const, since it advances iterators.
   void ReSet();
   void GetAllTimes(std::list<int> & time) const {time = time_;}
+  void GetAllUniqueTimes(std::list<int> & time) const {time = time_; time.unique();};
 
   enum event_types{AVO, TRAVEL_TIME, GRAVITY};
 

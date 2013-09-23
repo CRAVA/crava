@@ -209,7 +209,7 @@ int main(int argc, char** argv)
     //Priormodell i 3D
     SeismicParametersHolder seismicParametersCommon;
     //Forventningsgrid (fra multisonegrid),
-
+    seismicParametersCommon.setBackgroundParametersIntervals(common_data->GetMultipleIntervalGrid()->GetParametersAllIntervals());
     //korrelasjonsgrid (2m)
 
 

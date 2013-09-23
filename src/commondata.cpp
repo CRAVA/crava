@@ -992,8 +992,8 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 void
 CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                         std::vector<int>         & facies_nr,
-                                        std::vector<std::string> & facies_names,
-                                        std::string              & err_txt)
+                                        std::vector<std::string> & facies_names)
+                                        //std::string              & err_txt)
 {
   const std::map<int, std::string> & facies_map = well.GetFaciesMap();
   int n_facies = facies_map.size();
@@ -1166,7 +1166,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
 }
 
 bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
-                                       InputFiles    * input_files,
+                                       //InputFiles    * input_files,
                                        std::string   & err_text_common) {
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
@@ -3799,14 +3799,12 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
       else if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
       {
         const Simbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
-        //const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
 
         tmp_err_text = "";
         ReadPriorFaciesProbCubes(input_files,
                                  model_settings,
                                  prior_facies_prob_cubes_[i_interval],
                                  interval_simbox,
-                                 //simbox,
                                  tmp_err_text);
 
         if(tmp_err_text != "") {
@@ -3861,27 +3859,27 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles        * input_files,
 
     if(iter!=myMap.end())
     {
-      const std::string & faciesProbFile = iter->second;
+      const std::string & facies_prob_file = iter->second;
       const SegyGeometry      * dummy1 = NULL;
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = model_settings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
       std::string error_text("");
 
       //From ModelGeneral
-      ReadGridFromFile(faciesProbFile,
+      ReadGridFromFile(facies_prob_file,
                        "priorfaciesprob",
                        offset,
                        prior_facies_prob_cubes[i],
                        dummy1,
                        dummy2,
-                       FFTGrid::PARAMETER,
+                       PARAMETER,
                        interval_simbox, //time_simbox,
                        model_settings,
                        error_text,
                        true);
       if(error_text != "")
       {
-        error_text += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
+        error_text += "Reading of file \'"+facies_prob_file+"\' for prior facies probability for facies \'"
                      +facies_names_[i]+"\' failed\n";
         err_text += error_text;
       }
@@ -4051,7 +4049,7 @@ CommonData::ReadGridFromFile(const std::string       & file_name,
     ReadSegyFile(file_name, grid, simbox, model_settings, geometry,
                  grid_type, par_name, offset, format, err_text);
   else if(fileType == IO::STORM)
-    ReadStormFile(file_name, grid, grid_type, par_name, simbox, model_settings, err_text, false);
+    ReadStormFile(file_name, grid, grid_type, par_name, simbox, model_settings, err_text, false);  //H Not active until new resample algorithm is added.
   else if(fileType == IO::SGRI)
     ReadStormFile(file_name, grid, grid_type, par_name, simbox, model_settings, err_text, true);
   else
@@ -4392,7 +4390,8 @@ CommonData::ReadSegyFile(const std::string       & file_name,
     grid.Resize(xpad, ypad, zpad);
 
     //if (grid_type == DATA) {
-      FillInSeismicDataFromSegY(segy,
+      FillInSeismicDataFromSegY(grid,
+                                segy,
                                 simbox,
                                 model_settings->getSmoothLength(),
                                 missingTracesSimbox,
@@ -4552,13 +4551,14 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
                         cmt,
                         rmt);
 
-          interpolateGridValues(grid_trace,
+          InterpolateGridValues(grid_trace,
                                 z0_grid,     // Centre of first cell
                                 dz_grid,
                                 rAmpFine,
                                 z0_data,     // Time of first data sample
                                 dz_min,
-                                rmt);
+                                rmt,
+                                grid.GetNK());
           err_text += err_text_tmp;
 
           if (err_text_tmp != "") {
@@ -4597,21 +4597,23 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
                    << std::setw(12) << grid_trace[k] << "\n";
             }
             fout.close();
-            exit(1);
+
+            err_text += err_text_tmp;
+            //exit(1);
           }
 
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
-          setTrace(grid_trace, i, j);
+          SetTrace(grid_trace, grid, i, j);
         }
         else {
-          setTrace(0.0f, i, j); // Dead traces (in case we allow them)
+          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
           deadTracesSimbox++;
         }
       }
       else {
-        setTrace(0.0f, i, j);   // Outside seismic data grid
+        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
         if (i < ni && j < nj)
           missingTracesSimbox++;
         else
@@ -4771,7 +4773,8 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
                                        fftw_real          * rAmpFine,
                                        float                z0_data,
                                        float                dz_fine,
-                                       int                  n_fine)
+                                       int                  n_fine,
+                                       int                  grid_nk)
 {
   //
   // Bilinear interpolation
@@ -4786,7 +4789,7 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
   int n_grid = static_cast<int>(grid_trace.size());
 
   for (int k = 0 ; k < n_grid ; k++) {
-    int refk = getZSimboxIndex(k);
+    int refk = GetZSimboxIndex(k, grid_nk);
     float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
     int   l1 = static_cast<int>(floor(dl));
     int   l2 = static_cast<int>(ceil(dl));
@@ -4810,6 +4813,41 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
         grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
       }
     }
+  }
+}
+
+int CommonData::GetZSimboxIndex(int k,
+                                int grid_nk)
+{
+  int refk;
+
+  if(k < grid_nk) //(nz_+nzp_)/2)
+    refk=k;
+  else
+    refk=k-grid_nk;
+
+  return refk;
+}
+
+void CommonData::SetTrace(const std::vector<float> & trace,
+                          NRLib::Grid<double>      & grid,
+                          size_t                     i,
+                          size_t                     j)
+{
+  for (int k = 0; k < grid.GetNK(); k++) {
+    grid(i, j, k) = static_cast<double>(trace[k]);
+    //setRealValue(i, j, k, trace[k], true);
+  }
+}
+
+void CommonData::SetTrace(float                 value,
+                          NRLib::Grid<double> & grid,
+                          size_t                i,
+                          size_t                j)
+{
+  for (int k = 0; k < grid.GetNK(); k++) {
+    grid(i, j, k) = static_cast<double>(value);
+    //setRealValue(i, j, k, value, true);
   }
 }
 
@@ -4914,9 +4952,16 @@ CommonData::ReadStormFile(const std::string   & f_name,
     err_text += e.what();
     failed = true;
   }
-  int xpad = model_settings->getNXpad();
-  int ypad = model_settings->getNYpad();
-  int zpad = model_settings->getNZpad();
+  //int xpad = model_settings->getNXpad();
+  //int ypad = model_settings->getNYpad();
+  //int zpad = model_settings->getNZpad();
+  //int xpad = grid.GetNI();
+  //int ypad = grid.GetNJ();
+  //int zpad = grid.GetNK();
+
+  int xpad = time_simbox->getnx();
+  int ypad = time_simbox->getny();
+  int zpad = time_simbox->getnz();
 
   int outsideTraces = 0;
   if(failed == false)
