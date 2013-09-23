@@ -148,7 +148,7 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
       return(0);
     }
     else {
-      ReadTrend1DJason(file_name,errTxt,trend_values,s_min,dz);
+      ReadTrend1D(file_name,errTxt,trend_values,s_min,dz);
 
       double s_max          = s_min + dz*static_cast<int>(trend_values.size());
 
@@ -255,13 +255,10 @@ Trend2DStorage::GenerateTrend(const std::string                       & path,
 
         std::vector<std::vector<double> > mean_surface(ns1, std::vector<double>(ns2, RMISSING));
 
+        int k_dummy = -999;
         for (size_t i = 0; i < ns1; i++) {
           for (size_t j = 0; j < ns2; j++) {
-            double s1_i        = trend_cube_sampling[0][i];
-            double s2_j        = trend_cube_sampling[1][j];
-            double s3_dummy    = 0.0;
-
-            mean_surface[i][j] = mean_trend->GetValue(s1_i, s2_j, s3_dummy);
+            mean_surface[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
           }
         }
 

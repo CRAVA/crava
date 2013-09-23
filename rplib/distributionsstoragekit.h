@@ -54,6 +54,7 @@ ReadRock(const int                                                   & n_vintage
          const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
          const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
          const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+         const int                                                     output_other,
          std::string                                                 & errTxt);
 
 std::vector<DistributionsSolid *>

@@ -67,7 +67,7 @@ public:
   virtual ~Trend1D();
 
   virtual Trend           * Clone()                                                                               const { return new Trend1D(*this) ;}
-  virtual double            GetTrendElement(int i, int j, int k)                                          const { if(reference_ == 1) return trend_[i];
+  virtual double            GetTrendElement(int i, int j, int k)                                                  const { if(reference_ == 1) return trend_[i];
                                                                                                                   else if (reference_ == 2) return trend_[j];
                                                                                                                   else return trend_[k];   }
   virtual int               GetReference(void)                                                                    const { return reference_         ;}
@@ -78,7 +78,7 @@ public:
   virtual int               GetTrendDimension(void)                                                               const;
   virtual double            GetValue(double s1,
                                      double s2,
-                                     double s3)                                                               const;
+                                     double s3)                                                                   const;
   virtual double            GetValue(double s1,
                                      double s2,
                                      double s3,

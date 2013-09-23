@@ -6,7 +6,6 @@
 
 #include "rplib/distributionwithtrend.h"
 
-
 class DistributionWithTrend;
 
 namespace NRLib {
@@ -30,6 +29,8 @@ public:
                                                                        const std::vector<std::vector<float> >  & /*blocked_logs*/,
                                                                        const std::vector<std::vector<double> > & /*s1 */,
                                                                        const std::vector<std::vector<double> > & /*s2 */,
+                                                                       const int                                 /*output_other*/,
+                                                                       std::string                               /*filename_prefix*/,
                                                                        std::string                             & /*errTxt*/)                    = 0;
 
   virtual NRLib::TrendStorage          * CloneMean() const = 0;
@@ -45,6 +46,11 @@ public:
   virtual double                         GetOneYearCorrelation() = 0;
 
   virtual bool                           GetEstimate() const = 0;
+
+  void                                   WriteTrendToFile(const std::string                       & filename,
+                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                          const NRLib::Trend                      * trend) const;
+
 };
 
 //--------------------------------------------------------------//
@@ -74,6 +80,8 @@ public:
                                                                          const std::vector<std::vector<float> >  & blocked_logs,
                                                                          const std::vector<std::vector<double> > & s1,
                                                                          const std::vector<std::vector<double> > & s2,
+                                                                         const int                                 output_other,
+                                                                         std::string                               filename_prefix,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -126,6 +134,8 @@ public:
                                                                          const std::vector<std::vector<float> >  & blocked_logs,
                                                                          const std::vector<std::vector<double> > & s1,
                                                                          const std::vector<std::vector<double> > & s2,
+                                                                         const int                                 output_other,
+                                                                         std::string                               filename_prefix,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -178,6 +188,8 @@ public:
                                                                          const std::vector<std::vector<float> >  & blocked_logs,
                                                                          const std::vector<std::vector<double> > & s1,
                                                                          const std::vector<std::vector<double> > & s2,
+                                                                         const int                                 output_other,
+                                                                         std::string                               filename_prefix,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;
@@ -243,6 +255,8 @@ public:
                                                                          const std::vector<std::vector<float> >  & blocked_logs,
                                                                          const std::vector<std::vector<double> > & s1,
                                                                          const std::vector<std::vector<double> > & s2,
+                                                                         const int                                 output_other,
+                                                                         std::string                               filename_prefix,
                                                                          std::string                             & errTxt);
 
   virtual NRLib::TrendStorage            * CloneMean() const;

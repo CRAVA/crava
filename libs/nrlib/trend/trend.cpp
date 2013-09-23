@@ -119,7 +119,7 @@ Trend1D::Trend1D(const std::string &filename, int reference)
   int file_format = NRLib::GetTrend1DFileFormat(filename, errTxt);
   if(file_format == 0){
     double s_min, s_max;
-    NRLib::ReadTrend1DJason(filename,errTxt, trend_, s_min, s_max);
+    NRLib::ReadTrend1D(filename,errTxt, trend_, s_min, s_max);
     if(errTxt !="")
       throw NRLib::Exception(errTxt);
   }

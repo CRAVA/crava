@@ -30,6 +30,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt)            const = 0;
 protected:
   std::vector<DistributionsRock *> CreateDistributionsRockMix(const int                                                       & n_vintages,
@@ -43,6 +44,7 @@ protected:
                                                               const std::map<std::string, DistributionsSolidStorage *>        & model_solid_storage,
                                                               const std::map<std::string, DistributionsDryRockStorage *>      & model_dry_rock_storage,
                                                               const std::map<std::string, DistributionsFluidStorage *>        & model_fluid_storage,
+                                                              const int                                                         output_other,
                                                               DEMTools::MixMethod                                               mix_method,
                                                               std::string                                                     & errTxt) const;
 
@@ -69,6 +71,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -103,6 +106,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -133,6 +137,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -159,6 +164,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -185,6 +191,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -214,6 +221,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -243,6 +251,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:
@@ -273,6 +282,7 @@ public:
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
                                                                      const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+                                                                     const int                                                     output_other,
                                                                      std::string                                                 & errTxt) const;
 
 private:

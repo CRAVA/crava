@@ -2394,6 +2394,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
     const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
     const std::vector<std::vector<double> >   dummy_s1;
     const std::vector<std::vector<double> >   dummy_s2;
+    const int                                 dummy_output_other = -999;
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2402,7 +2403,15 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++)
-        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2,  errTxt);
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path,
+                                                                   trend_cube_parameters,
+                                                                   trend_cube_sampling,
+                                                                   dummy_blocked_logs,
+                                                                   dummy_s1,
+                                                                   dummy_s2,
+                                                                   dummy_output_other,
+                                                                   "dummy",
+                                                                   errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2463,7 +2472,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
-
+            int output_other = modelSettings->getOtherOutputFlag();
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2479,6 +2488,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
                                                                                        fluid_storage,
+                                                                                       output_other,
                                                                                        rockErrTxt);
 
             if(rockErrTxt == "") {

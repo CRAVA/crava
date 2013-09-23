@@ -71,6 +71,7 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
   const std::vector<std::vector<float> >  dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
+  const int                               dummy_output_other = -999;
 
   for(int i=0; i<n_constituents; i++)
     CheckValuesInZeroOne(constituent_volume_fraction[i], "volume-fraction", path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
@@ -87,7 +88,15 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
 
       if(i < n_vintages_constit[s]) {
         if(constituent_volume_fraction[s][i] != NULL)
-          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, errTxt);
+          all_volume_fractions[i][s] = constituent_volume_fraction[s][i]->GenerateDistributionWithTrend(path,
+                                                                                                        trend_cube_parameters,
+                                                                                                        trend_cube_sampling,
+                                                                                                        dummy_blocked_logs,
+                                                                                                        dummy_s1,
+                                                                                                        dummy_s2,
+                                                                                                        dummy_output_other,
+                                                                                                        "dummy",
+                                                                                                        errTxt);
       }
       else {
         if(all_volume_fractions[i-1][s] != NULL)
@@ -181,6 +190,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
   const std::vector<std::vector<float> >  dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
+  const int                               dummy_output_other = -999;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
@@ -192,12 +202,28 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
     for(int i=0; i<n_vintages; i++) {
 
       if(i < n_vintages_vp)
-        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path,
+                                                                      trend_cube_parameters,
+                                                                      trend_cube_sampling,
+                                                                      dummy_blocked_logs,
+                                                                      dummy_s1,
+                                                                      dummy_s2,
+                                                                      dummy_output_other,
+                                                                      "dummy",
+                                                                      tmpErrTxt);
       else
         vp_dist_with_trend[i] = vp_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path,
+                                                                                trend_cube_parameters,
+                                                                                trend_cube_sampling,
+                                                                                dummy_blocked_logs,
+                                                                                dummy_s1,
+                                                                                dummy_s2,
+                                                                                dummy_output_other,
+                                                                                "dummy",
+                                                                                tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -297,6 +323,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   const std::vector<std::vector<float> >  dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
+  const int                               dummy_output_other = -999;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
@@ -305,12 +332,28 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_bulk)
-        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path,
+                                                                                  trend_cube_parameters,
+                                                                                  trend_cube_sampling,
+                                                                                  dummy_blocked_logs,
+                                                                                  dummy_s1,
+                                                                                  dummy_s2,
+                                                                                  dummy_output_other,
+                                                                                  "dummy",
+                                                                                  tmpErrTxt);
       else
         bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path,
+                                                                                trend_cube_parameters,
+                                                                                trend_cube_sampling,
+                                                                                dummy_blocked_logs,
+                                                                                dummy_s1,
+                                                                                dummy_s2,
+                                                                                dummy_output_other,
+                                                                                "dummy",
+                                                                                tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
@@ -589,6 +632,7 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
   const std::vector<std::vector<float> >  dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
+  const int                               dummy_output_other = -999;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> pressure_dist_with_trend(n_vintages, NULL);
@@ -598,17 +642,41 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_pressure)
-        pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        pressure_dist_with_trend[i] = pore_pressure_[i]->GenerateDistributionWithTrend(path,
+                                                                                       trend_cube_parameters,
+                                                                                       trend_cube_sampling,
+                                                                                       dummy_blocked_logs,
+                                                                                       dummy_s1,
+                                                                                       dummy_s2,
+                                                                                       dummy_output_other,
+                                                                                       "dummy",
+                                                                                       tmpErrTxt);
       else
         pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_temperature)
-        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path,
+                                                                                        trend_cube_parameters,
+                                                                                        trend_cube_sampling,
+                                                                                        dummy_blocked_logs,
+                                                                                        dummy_s1,
+                                                                                        dummy_s2,
+                                                                                        dummy_output_other,
+                                                                                        "dummy",
+                                                                                        tmpErrTxt);
       else
         temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_salinity)
-        salinity_dist_with_trend[i] = salinity_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        salinity_dist_with_trend[i] = salinity_[i]->GenerateDistributionWithTrend(path,
+                                                                                  trend_cube_parameters,
+                                                                                  trend_cube_sampling,
+                                                                                  dummy_blocked_logs,
+                                                                                  dummy_s1,
+                                                                                  dummy_s2,
+                                                                                  dummy_output_other,
+                                                                                  "dummy",
+                                                                                  tmpErrTxt);
       else
         salinity_dist_with_trend[i] = salinity_dist_with_trend[i-1]->Clone();
 
@@ -688,6 +756,7 @@ CO2FluidStorage::GenerateDistributionsFluid(const int                           
   const std::vector<std::vector<float> >  dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
+  const int                               dummy_output_other = -999;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> pressure_dist_with_trend(n_vintages, NULL);
@@ -696,12 +765,28 @@ CO2FluidStorage::GenerateDistributionsFluid(const int                           
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i < n_vintages_pressure)
-        pressure_dist_with_trend[i] = pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        pressure_dist_with_trend[i] = pressure_[i]->GenerateDistributionWithTrend(path,
+                                                                                  trend_cube_parameters,
+                                                                                  trend_cube_sampling,
+                                                                                  dummy_blocked_logs,
+                                                                                  dummy_s1,
+                                                                                  dummy_s2,
+                                                                                  dummy_output_other,
+                                                                                  "dummy",
+                                                                                  tmpErrTxt);
       else
         pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
 
       if(i < n_vintages_temperature)
-        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, dummy_s1, dummy_s2, tmpErrTxt);
+        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path,
+                                                                                        trend_cube_parameters,
+                                                                                        trend_cube_sampling,
+                                                                                        dummy_blocked_logs,
+                                                                                        dummy_s1,
+                                                                                        dummy_s2,
+                                                                                        dummy_output_other,
+                                                                                        "dummy",
+                                                                                        tmpErrTxt);
       else
         temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
 
