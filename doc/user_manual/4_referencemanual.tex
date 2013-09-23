@@ -1042,6 +1042,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 'no'
 \elist
 
+\paragraph{\hbracket{rock-physics-trends}}\newkw{rock-physics-trends}
+ \slist
+   \item \Description Writes rock physics trends estimated in \kw{trend-1d} and \kw{trend-2d} to file. Only available when the trends are estimated.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+\elist
+
 \subsubsection{\hbracket{file-output-prefix}}\newkw{file-output-prefix}
  \slist
    \item \Description Common prefix added to all files written in the run. Identifies the run.
@@ -1636,69 +1643,6 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\paragraph{\hbracket{segy-start-time}}\rnewkw{segy-start-time}{rms-velocities-segy-start-time}
- \slist
-   \item \Description Start time for the rms velocities. If not given, the start time is taken from \kw{segy-start-time}.
-   \item \Argument Value
-   \item \Default
- \elist
-
-\paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{rms-velocities-segy-format}
- \slist
-   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma. See Table \ref{tab:segyformats}.
-   \item \Argument Elements containing information about the segy format
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{standard-format}}\rnewkw{standard-format}{rms-velocities-standard-format}
- \slist
-   \item \Description Giving the starting format for modifications.
-   \item \Argument 'seisworks', 'iesx', 'charisma' or 'SIP'
-   \item \Default 'seisworks'
- \elist
-
-\subparagraph{\hbracket{location-x}}\rnewkw{location-x}{rms-velocities-location-x}
- \slist
-   \item \Description The byte location for the x-coordinate in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-y}}\rnewkw{location-y}{rms-velocities-location-y}
- \slist
-   \item \Description The byte location for the y-coordinate in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-il}}\rnewkw{location-il}{rms-velocities-location-il}
- \slist
-   \item \Description The byte location for the inline in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-xl}}\rnewkw{location-xl}{rms-velocities-location-xl}
- \slist
-   \item \Description The byte location for the crossline in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{rms-velocities-bypass-coordinate-scaling}
- \slist
-   \item \Description Indicates whether coordinate scaling information should be used.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-scaling-coefficient}}\rnewkw{location-scaling-coefficient}{rms-velocities-location-scaling-coefficient}
- \slist
-   \item \Description
-   \item \Argument Integer
-   \item \Default
- \elist
-
 \subsubsection{\hbracket{horizon-file}}\newkw{horizon-file}
  \slist
    \item \Description Repeated command, one for each horizon file. File name of the horizon file corresponding a the zone log of a well
@@ -1827,6 +1771,13 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description Name of the density log.
    \item \Argument String
    \item \Default %'RHOB'
+ \elist
+
+\subsubsection{\hbracket{porosity}}\rnewkw{porosity}{porosity2}
+ \slist
+   \item \Description Name of the porosity log. Leave empty if porosity is not included.
+   \item \Argument String
+   \item \Default
  \elist
 
 \subsubsection{\hbracket{facies}}\newkw{facies}
@@ -2855,21 +2806,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subparagraph{\hbracket{batzle-wang-brine}}\newkw{batzle-wang-brine}
  \slist
-   \item \Description The theoty of Batzle and Wang used for calculating the brine properties.
+   \item \Description The theory of Batzle and Wang used for calculating the brine properties.
    \item \Argument 
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{pore-pressure}}\newkw{pore-pressure}
  \slist
-   \item \Description
+   \item \Description Pressure given in MPa. Needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
 \subsubparagraph{\hbracket{temperature}}\newkw{temperature}
  \slist
-   \item \Description
+   \item \Description Temperature given in C. Needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
@@ -2880,6 +2831,28 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
+
+\subparagraph{\hbracket{span-wagner-co2}}\newkw{span-wagner-co2}
+ \slist
+   \item \Description Interpolation of the reported values from Span and Wagner used for calculating the CO2 properties.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{pressure}}\newkw{pressure}
+ \slist
+   \item \Description Pressure given in MPa. Needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{temperature}}\newkw{temperature}
+ \slist
+   \item \Description Temperature given in C. Needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
 
 \paragraph{\hbracket{solid}}\newkw{solid}
  \slist
