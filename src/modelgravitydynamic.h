@@ -7,8 +7,6 @@
 
 #include <stdio.h>
 
-//#include "src/definitions.h"
-//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
@@ -31,11 +29,6 @@ public:
                       int                            t,
                       SeismicParametersHolder      & seismicParameters);
 
-  // Possible other parameters?
-  // GridMapping timeDepthMapping
-  // Simbox timeSimbox
-  // Simbox timeBGSimbox
-
   ~ModelGravityDynamic();
 
   bool                          GetFailed()                const { return failed_                 ;}
@@ -49,8 +42,6 @@ public:
   void                          SetSyntheticData(NRLib::Vector data) { synthetic_data_ = data     ;}
 
 private:
-  bool                      debug_;
-
   bool                      failed_;              ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;      ///< Detailed failed information.
 
@@ -71,5 +62,4 @@ private:
 
   void BuildGMatrix(ModelGravityStatic      * modelGravityStatic, SeismicParametersHolder & seismicParameters);
 };
-
 #endif
