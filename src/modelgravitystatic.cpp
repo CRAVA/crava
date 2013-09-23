@@ -30,13 +30,12 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
                                        ModelGeneral         *& modelGeneral,
                                        const InputFiles      * inputFiles)
 {
-  modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
+  modelGeneral_           = modelGeneral;
 
-  debug_                  = false;
   failed_                 = false;
-  before_injection_start_ = false; // When do we know what this should be??
+  before_injection_start_ = false;
 
-  bool failedLoadingModel = false; // Usikker på om trenger to slike failed-variable...
+  bool failedLoadingModel = false;
   bool failedReadingFile  = false;
   std::string errText("");
 
@@ -94,21 +93,19 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
     z_upscaling_factor_ = 5;
 
     SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
-    // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
-    // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
 
     dx_upscaled_ = fullTimeSimbox->GetLX()/nx_upscaled_;
     dy_upscaled_ = fullTimeSimbox->GetLY()/ny_upscaled_;
     dz_upscaled_ = fullTimeSimbox->GetLZ()/nz_upscaled_;
 
     LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
-    MakeUpscalingKernel(modelSettings, fullTimeSimbox);  // sjekk at er over nxp
+    MakeUpscalingKernel(modelSettings, fullTimeSimbox);
     LogKit::LogFormatted(LogKit::Low, "ok.\n");
 
     LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
                                                                           + NRLib::ToString(nyp_upscaled_) + " x "
                                                                           + NRLib::ToString(nzp_upscaled_) + ") ...");
-    MakeLagIndex(nxp_upscaled_, nyp_upscaled_, nzp_upscaled_); // NBNB including padded region!
+    MakeLagIndex(nxp_upscaled_, nyp_upscaled_, nzp_upscaled_); // Including padded region!
     LogKit::LogFormatted(LogKit::Low, "ok.\n");
   }
 
@@ -216,12 +213,7 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * 
 
   upscaling_kernel_->endAccess();
 
-  //Er dette riktig skalering?
-  upscaling_kernel_->multiplyByScalar(static_cast<float>(nxp_upscaled_*nyp_upscaled_*nzp_upscaled_)/static_cast<float>(nxp*nyp*nzp)); // Padded or non-padded values?
-
-  // Dump upscaling kernel
-  upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt");
-  ParameterOutput::writeToFile(fullTimeSimbox, modelGeneral_, modelSettings, upscaling_kernel_ , "UpscalingKernel_2", "", true);
+  upscaling_kernel_->multiplyByScalar(static_cast<float>(nxp_upscaled_*nyp_upscaled_*nzp_upscaled_)/static_cast<float>(nxp*nyp*nzp));
 }
 
 void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled)
@@ -279,8 +271,6 @@ void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_u
               }
             }
       }
-
-      // Dump lag index array
 }
 void
 ModelGravityStatic::SetUpscaledPaddingSize(ModelSettings * modelSettings)
@@ -314,7 +304,6 @@ int
 ModelGravityStatic::SetPaddingSize(int original_nxp, int upscaling_factor)
 {
   int leastint = static_cast<int>(ceil(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
-  //int maxint = static_cast<int>(floor(static_cast<double>(original_nxp)/static_cast<double>(upscaling_factor)));
 
   std::vector<int> exp_list = findClosestFactorableNumber(original_nxp);
 
@@ -322,7 +311,6 @@ ModelGravityStatic::SetPaddingSize(int original_nxp, int upscaling_factor)
 
   int factor   =       1;
 
-  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
   for(int i=0;i<exp_list[0]+1;i++)
     for(int j=0;j<exp_list[1]+1;j++)
       for(int k=0;k<exp_list[2]+1;k++)
@@ -363,7 +351,6 @@ std::vector<int> ModelGravityStatic::findClosestFactorableNumber(int leastint)
   exp_list[4] = 0;
   exp_list[5] = 0;
 
-  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
   for(i=0;i<maxant2+1;i++)
     for(j=0;j<maxant3+1;j++)
       for(k=0;k<maxant5+1;k++)
