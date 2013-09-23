@@ -130,7 +130,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
 
   double dx = fullSizeTimeSimbox->getdx();
   double dy = fullSizeTimeSimbox->getdy();
-  double dz = fullSizeTimeSimbox->getdz();  //Tvilsomt?
+ // double dz = fullSizeTimeSimbox->getdz();  //Tvilsomt?
 
   int nxp = expMeanAlpha->getNxp();
   int nyp = expMeanAlpha->getNyp();
@@ -147,7 +147,6 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   // dimensions of one grid cell
   double dx_upscaled = dx*upscaling_factor_x;
   double dy_upscaled = dy*upscaling_factor_y;
-  double dz_upscaled = dz*upscaling_factor_z;
 
   int nx_upscaled = modelGravityStatic->GetNx_upscaled();
   int ny_upscaled = modelGravityStatic->GetNy_upscaled();
