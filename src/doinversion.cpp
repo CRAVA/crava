@@ -127,6 +127,7 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
 
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
                                                       inputFiles,
+                                                      modelGeneral->getTimeSimbox(),
                                                       vintage);
 
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();

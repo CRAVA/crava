@@ -35,8 +35,8 @@ private:
                                               const FFTGrid               * mu_log_vp,
                                               const std::vector<double>   & cov_grid_log_vp,
                                               const Simbox                * timeSimbox,
-                                              std::vector<double>         & mu_post,
-                                              NRLib::Grid2D<double>       & Sigma_post) const;
+                                              std::vector<double>         & mu_post_vp,
+                                              NRLib::Grid2D<double>       & Sigma_post_vp) const;
 
   void                          calculatePosteriorModel(const std::vector<double>   & d,
                                                         const NRLib::Grid2D<double> & Sigma_d,
@@ -88,8 +88,8 @@ private:
                                                       const NRLib::Grid2D<double> & Sigma_model,
                                                       const NRLib::Grid2D<double> & Sigma_below) const;
 
-  NRLib::Grid2D<double>         generateSigma(const double             & var,
-                                              const std::vector<float> & corrT) const;
+  NRLib::Grid2D<double>         generateSigma(const double              & var,
+                                              const std::vector<double> & corrT) const;
 
   NRLib::Grid2D<double>         generateSigmaVp(const float  & dt,
                                                 const int    & n_layers,
@@ -105,6 +105,11 @@ private:
                                                       std::vector<double>         & mu_vp_square,
                                                       NRLib::Grid2D<double>       & Sigma_vp_square) const;
 
+  void                          transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
+                                                      const NRLib::Grid2D<double> & Sigma_vp_square,
+                                                      std::vector<double>         & mu_vp,
+                                                      NRLib::Grid2D<double>       & Sigma_vp) const;
+
   void                          calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                 const NRLib::Grid2D<double> & variance_log_vp,
                                                                 std::vector<double>         & mu_vp_trans,
@@ -115,6 +120,11 @@ private:
                                                                       std::vector<double>         & mu_vp_square,
                                                                       NRLib::Grid2D<double>       & variance_vp_square) const;
 
+  void                          calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                                    const NRLib::Grid2D<double> & variance_log_vp,
+                                                                    std::vector<double>         & mu_vp,
+                                                                    NRLib::Grid2D<double>       & variance_vp) const;
+
   void                          calculateCentralMomentLogNormalInverse(const std::vector<double>   & mu_vp_trans,
                                                                        const NRLib::Grid2D<double> & variance_vp_trans,
                                                                        std::vector<double>         & mu_log_vp,
@@ -122,11 +132,20 @@ private:
 
   double                        findMaxTime(const std::vector<RMSTrace *> & rms_traces) const;
 
+  void                          findDtMax(const std::vector<RMSTrace *> & rms_traces,
+                                          const Simbox                  * timeSimbox,
+                                          const double                  & max_time,
+                                          float                         & dt_max_above,
+                                          float                         & dt_max_below) const;
+
   void                          addCovariance(const int                   & n_rms_traces,
                                               const NRLib::Grid2D<double> & Sigma_post,
-                                              std::vector<double>         & cov_stationary) const;
+                                              std::vector<double>         & cov_stationary_above,
+                                              std::vector<double>         & cov_stationary_model,
+                                              std::vector<double>         & cov_stationary_below) const;
 
-  std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & Sigma_post) const;
+  std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
+                                                        const int                   & n_nopad) const;
 
   void                          writeMatrix(std::string                   file_name,
                                             const NRLib::Grid2D<double> & grid2d) const;

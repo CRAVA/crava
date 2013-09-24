@@ -8,9 +8,11 @@
 #include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/rmstrace.h"
+#include "src/simbox.h"
 
 ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
                                                const InputFiles              * inputFiles,
+                                               const Simbox                  * timeSimbox,
                                                const int                     & vintage)
 : rms_traces_(0),
   thisTimeLapse_(vintage)
@@ -26,6 +28,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
   bool failed_rms_data = false;
   processRMSData(modelSettings,
                  inputFiles,
+                 timeSimbox,
                  errTxt,
                  failed_rms_data);
 
@@ -77,6 +80,7 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 void
 ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
                                        const InputFiles         * inputFiles,
+                                       const Simbox             * timeSimbox,
                                        std::string              & errTxt,
                                        bool                     & failed)
 
@@ -89,7 +93,7 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
   const std::string & file_name  = inputFiles->getRmsVelocities(thisTimeLapse_);
   std::string         tmpErrText = "";
 
-  readRMSData(file_name, tmpErrText);
+  readRMSData(file_name, timeSimbox, tmpErrText);
 
   standard_deviation_ = modelSettings->getRMSStandardDeviation();
 
@@ -117,6 +121,7 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 //----------------------------------------------------------------------------
 void
 ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
+                                    const Simbox      * timeSimbox,
                                     std::string       & errTxt)
 {
 
@@ -167,14 +172,21 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
         if(time.size() > 1) {
 
           if( (IL != this_il) || (XL != this_xl) ) {
-            RMSTrace * trace = new RMSTrace(IL,
-                                            XL,
-                                            utmx,
-                                            utmy,
-                                            time,
-                                            velocity);
 
-            rms_traces_.push_back(trace);
+            int i_ind;
+            int y_ind;
+            timeSimbox->getIndexes(this_utmx, this_utmy, i_ind, y_ind);
+
+            if(i_ind != IMISSING && y_ind != IMISSING) {
+              RMSTrace * trace = new RMSTrace(IL,
+                                              XL,
+                                              utmx,
+                                              utmy,
+                                              time,
+                                              velocity);
+
+              rms_traces_.push_back(trace);
+            }
 
             time.clear();
             velocity.clear();
@@ -194,16 +206,23 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
       }
 
       else {
-        RMSTrace * trace = new RMSTrace(IL,
-                                        XL,
-                                        utmx,
-                                        utmy,
-                                        time,
-                                        velocity);
 
-        rms_traces_.push_back(trace);
+        int i_ind;
+        int y_ind;
+        timeSimbox->getIndexes(utmx, utmy, i_ind, y_ind);
 
-        break;
+        if(i_ind != IMISSING && y_ind != IMISSING) {
+          RMSTrace * trace = new RMSTrace(IL,
+                                          XL,
+                                          utmx,
+                                          utmy,
+                                          time,
+                                          velocity);
+
+          rms_traces_.push_back(trace);
+
+          break;
+        }
       }
 
     }

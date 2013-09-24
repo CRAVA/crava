@@ -10,12 +10,14 @@
 class InputFiles;
 class ModelSettings;
 class RMSTrace;
+class Simbox;
 
 class ModelTravelTimeDynamic
 {
 public:
   ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
                          const InputFiles              * inputFiles,
+                         const Simbox                  * timeSimbox,
                          const int                     & vintage);
 
   ~ModelTravelTimeDynamic();
@@ -45,10 +47,12 @@ private:
 
   void                          processRMSData(const ModelSettings      * modelSettings,
                                                const InputFiles         * inputFiles,
+                                               const Simbox             * timeSimbox,
                                                std::string              & errTxt,
                                                bool                     & failed);
 
   void                          readRMSData(const std::string & fileName,
+                                            const Simbox      * timeSimbox,
                                             std::string       & errTxt);
 
 
