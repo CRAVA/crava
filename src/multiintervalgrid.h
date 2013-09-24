@@ -26,6 +26,7 @@ public:
   int                                                      GetNIntervals()       const           { return n_intervals_            ;}
   //const std::vector<Simbox>                              & GetSimboxes() const                   { return simboxes_               ;}
   const std::vector<Simbox>                              & GetIntervalSimboxes() const           { return interval_simboxes_      ;}
+  std::vector<Simbox>                                    & GetIntervalSimboxes()                 { return interval_simboxes_      ;}
   //const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]           ;}
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
@@ -36,8 +37,8 @@ public:
   const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_          ;}
 
   //SET FUNCTIONS
-
-  void  AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)      { parameters_[i] = parameters;}
+  void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]           = parameters  ;}
+  void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
 
 
 private:
@@ -124,21 +125,7 @@ private:
   void  EstimateXYPaddingSizes(Simbox          * interval_simbox,
                                ModelSettings   * model_settings) const;
 
-  //void  BuildSeismicPropertyZones(InputFiles                               * input_files,
-  //                                std::vector<NRLib::Grid<float>>          & alpha_zones,
-  //                                std::vector<NRLib::Grid<float>>          & beta_zones,
-  //                                std::vector<NRLib::Grid<float>>          & rho_zones,
-  //                                const std::vector<Surface>               & surfaces,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_files,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_top_files,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_base_files,
-  //                                const std::map<std::string, bool>        & top_conforms,
-  //                                const std::map<std::string, bool>        & base_conforms,
-  //                                const std::vector<std::string>           & interval_names,
-  //                                const std::vector<float>                 & dz) const;
-
   // CLASS VARIABLES
-
   size_t                                               n_intervals_;
   bool                                                 multiple_interval_setting_;
   std::vector<std::string> interval_names_;
@@ -149,6 +136,9 @@ private:
   //std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
   std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector
   std::vector<std::vector<NRLib::Grid<double> > >      parameters_;               // must have same size as the simbox vector
+  //H Change parameters_ to map?
+
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_facies_prob_cubes_;   //Vector over facies, then intervals.
 
   std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.
