@@ -76,7 +76,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 5. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
   if(model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
-    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, input_files, err_text);
+    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, err_text);
   //SetupReflectionMatrixAndTempWavelet(model_settings, input_files, err_text);
 
   // 6. Optimization of well location
@@ -623,7 +623,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
 
       //Store facies names.
       if(model_settings->getFaciesLogGiven()) {
-        ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names, err_text);
+        ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names);
 
         facies_log_wells_.push_back(true);
       }
@@ -3121,12 +3121,12 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   const std::vector<std::string>  interval_names            =  model_settings->getIntervalNames();
 
   // Initialize values
-  FFTGrid                 * trend_cube                      = NULL;
-  std::vector<FFTGrid *>    trend_cube_intervals(multiple_interval_grid->GetNIntervals(), NULL);
+  std::vector<std::vector<NRLib::Grid<double> > > trend_cubes;  //Vector(trends) vector(intervals)
+  trend_cubes.resize(trend_cube_parameters.size());
 
   try{
 
-    for(size_t i = 0; i< trend_cubes_.size(); i++){
+    for(size_t i = 0; i< trend_cube_parameters.size(); i++) {
       if(trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) {
         // 1. Read the file into an FFTGrid
         const std::string         log_name   = "Trend cube '"+trend_cube_parameters[i]+"'";
@@ -3138,12 +3138,12 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
         ReadGridFromFile(input_files->getTrendCube(i),
                          log_name,
                          offset,
-                         trend_cube,
+                         trend_cubes[i],
                          dummy1,
                          dummy2,
-                         FFTGrid::PARAMETER,
-                         multiple_interval_grid->GetIntervalSimbox(i),
-                         //multiple_interval_grid->GetSimbox(i),
+                         PARAMETER,
+                         multiple_interval_grid->GetIntervalSimboxes(),
+                         estimation_simbox_,
                          model_settings,
                          err_text_tmp,
                          true);
@@ -3152,16 +3152,15 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
           err_text += "Reading of file \'"+input_files->getTrendCube(i)+"\' failed\n";
           err_text += err_text_tmp;
         }
-
-        // 2. Resample the FFTGrid into the intervals
-        // TODO
-        for(int j = 0; j<multiple_interval_grid->GetNIntervals(); j++){
-          trend_cube_intervals[j] = trend_cube;
-        }
       }
     }
 
-    for(int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){
+    for(int i = 0; i<multiple_interval_grid->GetNIntervals(); i++) {
+
+      std::vector<NRLib::Grid<double> > trend_cubes_interval;
+      for(int j = 0; j < trend_cube_parameters.size(); j++) {
+        trend_cubes_interval.push_back(trend_cubes[j][i]);
+      }
 
       trend_cubes_[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
                                    model_settings,
@@ -3169,18 +3168,13 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                                    interval_names[i],
                                    trend_cube_type,
                                    trend_cube_parameters,
-                                   trend_cube_intervals[i],
+                                   trend_cubes_interval,
                                    err_text);
 
     }
   }catch(NRLib::Exception & e){
     err_text += e.what();
    }
-  // Clean up
-  delete trend_cube;
-  //for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++){ //H This failed.
-  //    delete trend_cube_intervals[i];
-  //}
 
   if(err_text != "") {
     err_text_common += err_text;
@@ -5356,8 +5350,8 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
             double avg;
             double min;
             double max;
-
-            GetAvgMinMaxGrid(parameters[i][j], avg, min, max);
+            parameters[i][j].GetAvgMinMax(avg, min, max);
+            //GetAvgMinMaxGrid(parameters[i][j], avg, min, max);
 
             LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
                                  par_name[i].c_str(),
@@ -5419,42 +5413,43 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   return true;
 }
 
-void CommonData::GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
-                                  double                    & avg,
-                                  double                    & min,
-                                  double                    & max) {
-
-  int ni = grid.GetNI();
-  int nj = grid.GetNJ();
-  int nk = grid.GetNK();
-
-  double sum = 0.0;
-  max = -std::numeric_limits<double>::infinity();
-  min = +std::numeric_limits<double>::infinity();
-
-  double value = 0.0;
-
-
-
-  for(int i = 0; i < ni; i++) {
-    for(int j = 0; j < nj; j++) {
-      for(int k = 0; k < nk; k++) {
-        value = grid(i,j,k);
-        sum += value;
-
-        if(value > max)
-          max = value;
-
-        if(value < min)
-          min = value;
-
-      }
-    }
-  }
-
-  avg = sum /= grid.GetN();
-
-}
+//Moved to grid.hpp
+//void CommonData::GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
+//                                  double                    & avg,
+//                                  double                    & min,
+//                                  double                    & max) {
+//
+//  int ni = grid.GetNI();
+//  int nj = grid.GetNJ();
+//  int nk = grid.GetNK();
+//
+//  double sum = 0.0;
+//  max = -std::numeric_limits<double>::infinity();
+//  min = +std::numeric_limits<double>::infinity();
+//
+//  double value = 0.0;
+//
+//
+//
+//  for(int i = 0; i < ni; i++) {
+//    for(int j = 0; j < nj; j++) {
+//      for(int k = 0; k < nk; k++) {
+//        value = grid(i,j,k);
+//        sum += value;
+//
+//        if(value > max)
+//          max = value;
+//
+//        if(value < min)
+//          min = value;
+//
+//      }
+//    }
+//  }
+//
+//  avg = sum /= grid.GetN();
+//
+//}
 
 void CommonData::SubtractGrid(NRLib::Grid<double>       & to_grid,
                               const NRLib::Grid<double> & from_grid) {

@@ -30,7 +30,8 @@ public:
              const std::string                      & interval_name,
              const std::vector<int>                 & trend_cube_type,
              const std::vector<std::string>         & trend_cube_parameters,
-             FFTGrid                                * trend_cube,
+             std::vector<NRLib::Grid<double> >      & trend_cubes,
+             //FFTGrid                                * trend_cube,
              //bool                                   & failed,
              std::string                            & err_txt);
 
@@ -43,6 +44,10 @@ public:
                                                                 const int & k) const;
 
   const std::vector<std::vector<double> >    & GetTrendCubeSampling()          const   { return trend_cube_sampling_;}
+
+  NRLib::Grid<double>                       &  GetTrendCube(int i)  {return trend_cubes_[i]; }
+
+  void SetTrendCubeSampling(int i, std::vector<double> sampling) {trend_cube_sampling_[i] = sampling;}
 
 private:
   void                                         writeToFile(const Simbox        * timeSimbox,

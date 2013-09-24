@@ -45,6 +45,7 @@ public:
     /// resized.
     /// \param val Initial cell value.
   void Resize(size_t ni, size_t nj, size_t nk, const A& val = A());
+  void GetAvgMinMax(A& avg, A& min, A& max);
 
   inline reference operator()(size_t i, size_t j, size_t k);
   inline reference operator()(size_t index);
@@ -108,6 +109,34 @@ void Grid<A>::Resize(size_t ni, size_t nj, size_t nk, const A& val)
   data_.resize(ni_ * nj_ * nk_, val);
 }
 
+template<class A>
+void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
+{
+  A sum = 0.0;
+  A value = 0.0;
+  max = -std::numeric_limits<A>::infinity();
+  min = +std::numeric_limits<A>::infinity();
+
+  for(int i = 0; i < ni_; i++) {
+    for(int j = 0; j < nj_; j++) {
+      for(int k = 0; k < nk_; k++) {
+        value = data_[GetIndex(i, j, k)];
+        sum += value;
+
+        if(value > max)
+          max = value;
+
+        if(value < min)
+          min = value;
+
+      }
+    }
+  }
+
+  avg = sum /= GetN();
+}
+
+
 
 template<class A>
 typename Grid<A>::reference Grid<A>::operator()(size_t i, size_t j, size_t k)
@@ -167,6 +196,33 @@ void Grid<A>::Swap(NRLib::Grid<A> &other)
   std::swap(nk_, other.nk_);
   data_.swap(other.data_);
 }
+
+//template<class A>
+//void Grid<A>::GetAvgMaxMin(double &avg, double &min, double &max) const
+//{
+//  double sum = 0.0;
+//  double value = 0.0;
+//  max = -std::numeric_limits<double>::infinity();
+//  min = +std::numeric_limits<double>::infinity();
+//
+//  for(int i = 0; i < ni_; i++) {
+//    for(int j = 0; j < nj_; j++) {
+//      for(int k = 0; k < nk_; k++) {
+//        value = grid(i,j,k);
+//        sum += value;
+//
+//        if(value > max)
+//          max = value;
+//
+//        if(value < min)
+//          min = value;
+//
+//      }
+//    }
+//  }
+//
+//  avg = sum /= GetN();
+//}
 
 }
 #endif

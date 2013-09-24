@@ -467,10 +467,10 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
-  void GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
-                        double                    & avg,
-                        double                    & min,
-                        double                    & max);
+  //void GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
+  //                      double                    & avg,
+  //                      double                    & min,
+  //                      double                    & max);
 
   void SubtractGrid(NRLib::Grid<double>       & to_grid,
                     const NRLib::Grid<double> & from_grid);
@@ -627,7 +627,7 @@ private:
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
-  std::vector<CravaTrend>                       trend_cubes_;
+  std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
   std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
