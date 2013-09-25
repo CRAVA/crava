@@ -65,7 +65,19 @@ public:
                         const Simbox                      & estimation_simbox,
                         const ModelSettings               * model_settings,
                         std::string                       & err_text,
-                        bool                                nopadding = true) ;
+                        bool                                nopadding = true);
+
+  void ReadGridFromFile(const std::string                 & file_name,
+                        const std::string                 & par_name,
+                        const float                         offset,
+                        NRLib::Grid<double>               & interval_grids,
+                        const SegyGeometry               *& geometry,
+                        const TraceHeaderFormat           * format,
+                        int                                 grid_type,
+                        const Simbox                      & simboxes,
+                        const ModelSettings               * model_settings,
+                        std::string                       & err_text,
+                        bool                                nopadding = true);
 
 private:
 
@@ -480,14 +492,12 @@ private:
   //void LoadVelocity(FFTGrid             *& velocity,
   //                  const Simbox         * interval_simbox, //timeSimbox,
   //                  const Simbox         * simbox, //timeCutSimbox,
-  void LoadVelocity(FFTGrid              *& velocity,
-                    const Simbox         * interval_simbox, //timeSimbox,
-                    //const Simbox         * simbox, //timeCutSimbox,
+  void LoadVelocity(NRLib::Grid<double>  & velocity,
+                    const Simbox         & interval_simbox,
                     const ModelSettings  * model_settings,
                     const std::string    & velocity_field,
                     bool                 & velocity_from_inversion,
                     std::string          & err_text);
-                    //bool                 & failed);
 
   //std::vector<std::map<std::string, DistributionsRock *> > GetRockDistributionTime0() const;
   std::map<std::string, DistributionsRock *> GetRockDistributionTime0() const;
@@ -671,6 +681,7 @@ private:
   //Traveltime parameters per timelapse
   std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
   //std::vector<FFTGrid *>                        rms_data_;                      ///< RMS data U^2
+  std::vector<NRLib::Grid<double> >             rms_data_;                      ///< RMS data U^2
 
 };
 #endif

@@ -4077,18 +4077,91 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
   }
 }
 
-FFTGrid*
-CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
-{
-  FFTGrid* fftGrid;
+void
+CommonData::ReadGridFromFile(const std::string                 & file_name,
+                             const std::string                 & par_name,
+                             const float                         offset,
+                             NRLib::Grid<double>               & grid,
+                             const SegyGeometry               *& geometry,
+                             const TraceHeaderFormat           * format,
+                             int                                 grid_type,
+                             const Simbox                      & simbox,
+                             const ModelSettings               * model_settings,
+                             std::string                       & err_text,
+                             bool                                nopadding) {
 
-  if(fileGrid)
-    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
-  else
-    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+  int fileType = IO::findGridType(file_name);
 
-  return(fftGrid);
+
+  if(fileType == IO::CRAVA)
+  {
+    int nx = simbox.getnx();
+    int ny = simbox.getny();
+    int nz = simbox.getnz();
+
+    grid.Resize(nx, ny, nz);
+
+    LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
+
+    ReadCravaFile(grid, file_name, err_text); //H Not adjusted for intervals. Depends on how we handle writing.
+    //grid->readCravaFile(file_name, err_text, nopadding);
+  }
+  else  {
+    std::vector<NRLib::Grid<double> > grids;  //H Copy of the whole grid or the reference. Will this update grid?
+    grids.push_back(grid);
+
+    std::vector<Simbox> simboxes;
+    simboxes.push_back(&simbox);
+
+    if(fileType == IO::SEGY)
+      ReadSegyFile(file_name,
+                   grids,
+                   simboxes,
+                   simbox,
+                   model_settings,
+                   geometry,
+                   grid_type,
+                   par_name,
+                   offset,
+                   format,
+                   err_text);
+    else if(fileType == IO::STORM)
+      ReadStormFile(file_name,  //H Not active until new resample algorithm is added.
+                    grids,
+                    grid_type,
+                    par_name,
+                    simboxes,
+                    model_settings,
+                    err_text,
+                    false);
+    else if(fileType == IO::SGRI)
+      ReadStormFile(file_name,
+                    grids,
+                    grid_type,
+                    par_name,
+                    simboxes,
+                    model_settings,
+                    err_text,
+                    true);
+    else
+    {
+      err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
+    }
+  }
 }
+
+//FFTGrid*
+//CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
+//{
+//  FFTGrid* fftGrid;
+//
+//  if(fileGrid)
+//    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+//  else
+//    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+//
+//  return(fftGrid);
+//}
 
 void CommonData::ReadCravaFile(NRLib::Grid<double> & grid,
                                const std::string   & file_name,
@@ -5065,13 +5138,12 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       if(model_settings->getGenerateBackgroundFromRockPhysics() == false) {
 
-        FFTGrid * velocity = NULL;
+        NRLib::Grid<double> velocity;
         std::string back_vel_file = input_files->getBackVelFile();
         if (back_vel_file != ""){
           bool dummy;
           LoadVelocity(velocity,
-                       &estimation_simbox_, //timeSimbox, ///H Correct with estimation_simbox_?
-                       //&estimation_simbox_, //timeCutSimbox,
+                       &estimation_simbox_,
                        model_settings,
                        back_vel_file,
                        dummy,
@@ -5145,9 +5217,6 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           if(bl_bg != NULL)
             delete bl_bg;
         }
-
-        if(velocity != NULL)
-          delete velocity;
       }
       else {
 
@@ -5518,9 +5587,8 @@ CommonData::FFTGridRealToGrid(const FFTGrid * fft_grid) {
 }
 
 
-void CommonData::LoadVelocity(FFTGrid              *& velocity,
-                              const Simbox         * interval_simbox, //timeSimbox,
-                              //const Simbox         * simbox, //timeCutSimbox,
+void CommonData::LoadVelocity(NRLib::Grid<double>  & velocity,
+                              const Simbox         & estimation_simbox,
                               const ModelSettings  * model_settings,
                               const std::string    & velocity_field,
                               bool                 & velocity_from_inversion,
@@ -5531,10 +5599,12 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
   if(model_settings->getVelocityFromInversion() == true)
   {
     velocity_from_inversion = true;
-    velocity = NULL;
+    //velocity = NULL;
+    return;
   }
   else if(velocity_field == "")
-    velocity = NULL;
+    //velocity = NULL;
+    return;
   else
   {
     const SegyGeometry      * dummy1 = NULL;
@@ -5542,20 +5612,14 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
     const float               offset = model_settings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string err_text_tmp         = "";
 
-    //Create a temporary simbox, since ReadGridFromFile doesn't handle IntervalSimbox
-    //Simbox * time_simbox = new Simbox(simbox);
-    //time_simbox->setDepth(interval_simbox->GetTopSurface(), interval_simbox->GetBotSurface(),
-    //                        interval_simbox->getnz(), model_settings->getRunFromPanel());
-
     ReadGridFromFile(velocity_field,
                      "velocity field",
                      offset,
                      velocity,
                      dummy1,
                      dummy2,
-                     FFTGrid::PARAMETER,
-                     interval_simbox, //timeSimbox,
-                     //simbox, //timeCutSimbox,
+                     PARAMETER,
+                     estimation_simbox,
                      model_settings,
                      err_text_tmp);
 
@@ -5565,29 +5629,41 @@ void CommonData::LoadVelocity(FFTGrid              *& velocity,
       //
       float log_min = model_settings->getAlphaMin();
       float log_max = model_settings->getAlphaMax();
-      const int nzp = velocity->getNzp();
-      const int nyp = velocity->getNyp();
-      const int nxp = velocity->getNxp();
-      const int nz = velocity->getNz();
-      const int ny = velocity->getNy();
-      const int nx = velocity->getNx();
+      //const int nzp = velocity->getNzp();
+      //const int nyp = velocity->getNyp();
+      //const int nxp = velocity->getNxp();
+      const int nz = velocity.GetNK();//->getNz();
+      const int ny = velocity.GetNJ();//->getNy();
+      const int nx = velocity.GetNI();//->getNx();
       int too_low  = 0;
       int too_high = 0;
-      velocity->setAccessMode(FFTGrid::READ);
-      int rnxp = 2*(nxp/2 + 1);
-      for (int k = 0; k < nzp; k++)
-        for (int j = 0; j < nyp; j++)
-          for (int i = 0; i < rnxp; i++) {
-            if(i < nx && j < ny && k < nz) {
-              float value = velocity->getNextReal();
-              if (value < log_min && value != RMISSING) {
-                too_low++;
-              }
-              if (value > log_max && value != RMISSING)
-                too_high++;
-            }
+      //velocity->setAccessMode(FFTGrid::READ);
+      //int rnxp = 2*(nxp/2 + 1);
+      //for (int k = 0; k < nzp; k++)
+      //  for (int j = 0; j < nyp; j++)
+      //    for (int i = 0; i < rnxp; i++) {
+      //      if(i < nx && j < ny && k < nz) {
+      //        float value = velocity->getNextReal();
+      //        if (value < log_min && value != RMISSING) {
+      //          too_low++;
+      //        }
+      //        if (value > log_max && value != RMISSING)
+      //          too_high++;
+      //      }
+      //    }
+      for(int k = 0; k < nz; k++) {
+        for(int j = 0; j < ny; j++) {
+          for(int i = 0; i < nx; i+) {
+            double value = velocity(i,j,k);
+            if(value < log_min && value != RMISSING)
+              too_low++;
+            if(value > log_max && value != RMISSING)
+              too_high++;
           }
-      velocity->endAccess();
+        }
+      }
+
+      //velocity->endAccess();
 
       if (too_low+too_high > 0) {
         std::string text;
@@ -6752,7 +6828,8 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
     LogKit::WriteHeader("Reading RMS travel time data for timelapse " + NRLib::ToString(i_timelapse));
     bool failed = false;
     const SegyGeometry * geometry = new const SegyGeometry;
-    FFTGrid * rms_data            = new FFTGrid;
+    //FFTGrid * rms_data            = new FFTGrid;
+    NRLib::Grid<double> rms_data;
 
     float offset = model_settings->getTravelTimeSegyOffset(i_timelapse);
     if(offset < 0)
@@ -6774,9 +6851,8 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                      rms_data,
                      geometry,
                      model_settings->getTravelTimeTraceHeaderFormat(i_timelapse),
-                     FFTGrid::DATA,
-                     &estimation_simbox_, //timeSimbox,
-                     //timeCutSimbox,
+                     DATA,
+                     estimation_simbox_,
                      model_settings,
                      tmp_err_text);
 

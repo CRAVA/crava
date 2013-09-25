@@ -53,6 +53,7 @@ private:
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
   FFTGrid                 * rms_data_;              ///< RMS data U^2
 
+
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
