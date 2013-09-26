@@ -14,6 +14,7 @@ class Simbox;
 class RMSTrace;
 class Vario;
 class FFTGrid;
+class KrigingData2D;
 
 class RMSInversion
 {
@@ -35,8 +36,8 @@ private:
                                               const FFTGrid               * mu_log_vp,
                                               const std::vector<double>   & cov_grid_log_vp,
                                               const Simbox                * timeSimbox,
-                                              std::vector<double>         & mu_post_vp,
-                                              NRLib::Grid2D<double>       & Sigma_post_vp) const;
+                                              std::vector<double>         & mu_post_log_vp,
+                                              NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
 
   void                          calculatePosteriorModel(const std::vector<double>   & d,
                                                         const NRLib::Grid2D<double> & Sigma_d,
@@ -110,6 +111,11 @@ private:
                                                       std::vector<double>         & mu_vp,
                                                       NRLib::Grid2D<double>       & Sigma_vp) const;
 
+  void                          transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
+                                                         const NRLib::Grid2D<double> & Sigma_vp_square,
+                                                         std::vector<double>         & mu_log_vp,
+                                                         NRLib::Grid2D<double>       & Sigma_log_vp) const;
+
   void                          calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                 const NRLib::Grid2D<double> & variance_log_vp,
                                                                 std::vector<double>         & mu_vp_trans,
@@ -138,6 +144,12 @@ private:
                                           float                         & dt_max_above,
                                           float                         & dt_max_below) const;
 
+  void                          setExpectation(const RMSTrace             * rms_trace,
+                                               const std::vector<double>  & post_vp,
+                                               std::vector<KrigingData2D> & mu_log_vp_post_above,
+                                               std::vector<KrigingData2D> & mu_log_vp_post_model,
+                                               std::vector<KrigingData2D> & mu_log_vp_post_below) const;
+
   void                          addCovariance(const int                   & n_rms_traces,
                                               const NRLib::Grid2D<double> & Sigma_post,
                                               std::vector<double>         & cov_stationary_above,
@@ -147,8 +159,14 @@ private:
   std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
                                                         const int                   & n_nopad) const;
 
+  void                          writeVector(std::string                 file_name,
+                                            const std::vector<double> & vec) const;
+
   void                          writeMatrix(std::string                   file_name,
                                             const NRLib::Grid2D<double> & grid2d) const;
+
+  FFTGrid *                     krigeExpectation3D(const Simbox               * simbox,
+                                                   std::vector<KrigingData2D> & mu_vp_post) const;
 
 
   int n_above_;

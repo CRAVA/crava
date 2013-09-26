@@ -6,12 +6,16 @@
 
 RMSTrace::RMSTrace(int                 & IL,
                    int                 & XL,
+                   int                 & i_index,
+                   int                 & j_index,
                    double              & utmx,
                    double              & utmy,
                    std::vector<double> & time,
                    std::vector<double> & velocity)
 : IL_(IL),
   XL_(XL),
+  i_index_(i_index),
+  j_index_(j_index),
   utmx_(utmx),
   utmy_(utmy),
   velocity_(velocity)

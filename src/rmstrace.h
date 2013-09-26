@@ -13,6 +13,8 @@ class RMSTrace
 public:
   RMSTrace(int                 & IL,
            int                 & XL,
+           int                 & i_index,
+           int                 & j_index,
            double              & utmx,
            double              & utmy,
            std::vector<double> & time,
@@ -22,16 +24,18 @@ public:
 
   ~RMSTrace();
 
-  const double                    getUtmx()               const { return utmx_             ; }
-  const double                    getUtmy()               const { return utmy_             ; }
+  const int                       getIIndex()             const { return i_index_            ;}
+  const int                       getJIndex()             const { return j_index_            ;}
 
-  const std::vector<double>       getTime()               const { return time_             ; }
-  const std::vector<double>       getVelocity()           const { return velocity_         ; }
+  const std::vector<double>       getTime()               const { return time_               ;}
+  const std::vector<double>       getVelocity()           const { return velocity_           ;}
 
 private:
 
   int                 IL_;
   int                 XL_;
+  int                 i_index_;                   // i-index in the timeSimbox
+  int                 j_index_;                   // j-index in the timeSimbox
   double              utmx_;                      // m
   double              utmy_;                      // m
   std::vector<double> time_;                      // ms

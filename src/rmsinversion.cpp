@@ -8,6 +8,9 @@
 #include "src/simbox.h"
 #include "src/modelgeneral.h"
 #include "src/rmstrace.h"
+#include "src/kriging2d.h"
+#include "src/krigingdata2d.h"
+#include "src/covgrid2d.h"
 
 #include "nrlib/flens/nrlib_flens.hpp"
 
@@ -67,6 +70,10 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   std::vector<double> cov_circulant_below(n_pad_below_, 0);
   std::vector<double> cov_circulant_model(n_pad_model_, 0);
 
+  std::vector<KrigingData2D> mu_log_vp_post_above(n_pad_above_);
+  std::vector<KrigingData2D> mu_log_vp_post_model(n_pad_model_);
+  std::vector<KrigingData2D> mu_log_vp_post_below(n_pad_below_);
+
   for(int i=0; i<n_rms_traces; i++) {
 
     std::vector<double>   mu_post;
@@ -85,16 +92,30 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                   mu_post,
                   Sigma_post);
 
-    addCovariance(n_rms_traces, Sigma_post, cov_circulant_above, cov_circulant_model, cov_circulant_below);
+    setExpectation(rms_traces[i],
+                   mu_post,
+                   mu_log_vp_post_above,
+                   mu_log_vp_post_model,
+                   mu_log_vp_post_below);
+
+    addCovariance(n_rms_traces,
+                  Sigma_post,
+                  cov_circulant_above,
+                  cov_circulant_model,
+                  cov_circulant_below);
 
   }
+
+  FFTGrid * exp_grid = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
+
+  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp";
+  exp_grid->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
 
   NRLib::Grid2D<double> stat_above = generateSigma(1, cov_circulant_above);
   NRLib::Grid2D<double> stat_model = generateSigma(1, cov_circulant_model);
   NRLib::Grid2D<double> stat_below = generateSigma(1, cov_circulant_below);
 
   NRLib::Grid2D<double> Sigma_stationary = generateSigmaCombined(stat_above, stat_model, stat_below);
-  writeMatrix("Sigma_stationary", Sigma_stationary);
 
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
@@ -121,16 +142,12 @@ RMSInversion::do1DInversion(const double                & mu_vp_top,
                             const FFTGrid               * mu_log_vp,
                             const std::vector<double>   & cov_grid_log_vp,
                             const Simbox                * timeSimbox,
-                            std::vector<double>         & mu_post_vp,
-                            NRLib::Grid2D<double>       & Sigma_post_vp) const
+                            std::vector<double>         & mu_post_log_vp,
+                            NRLib::Grid2D<double>       & Sigma_post_log_vp) const
 {
-  double utmx = rms_trace->getUtmx();
-  double utmy = rms_trace->getUtmy();
 
-  int i_ind;
-  int j_ind;
-
-  timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
+  int i_ind = rms_trace->getIIndex();
+  int j_ind = rms_trace->getJIndex();
 
   double t_top     = timeSimbox->getTop(i_ind, j_ind);
   double t_bot     = timeSimbox->getBot(i_ind, j_ind);
@@ -172,10 +189,10 @@ RMSInversion::do1DInversion(const double                & mu_vp_top,
                           mu_post,
                           Sigma_post);
 
-  transformVpSquareToVp(mu_post,
-                        Sigma_post,
-                        mu_post_vp,
-                        Sigma_post_vp);
+  transformVpSquareToLogVp(mu_post,
+                           Sigma_post,
+                           mu_post_log_vp,
+                           Sigma_post_log_vp);
 
 }
 //-----------------------------------------------------------------------------------------//
@@ -550,13 +567,8 @@ RMSInversion::findDtMax(const std::vector<RMSTrace *> & rms_traces,
 
   for(int i=0; i<n_rms_traces; i++) {
 
-    double utmx = rms_traces[i]->getUtmx();
-    double utmy = rms_traces[i]->getUtmy();
-
-    int i_ind;
-    int j_ind;
-
-    timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
+    int i_ind = rms_traces[i]->getIIndex();
+    int j_ind = rms_traces[i]->getJIndex();
 
     double t_top    = timeSimbox->getTop(i_ind, j_ind);
     double t_bot    = timeSimbox->getBot(i_ind, j_ind);
@@ -708,6 +720,28 @@ RMSInversion::transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
 
   calculateHalfCentralMomentLogNormal(mu_log_vp, Sigma_log_vp, mu_vp, Sigma_vp);
 }
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
+                                       const NRLib::Grid2D<double> & Sigma_vp_square,
+                                       std::vector<double>         & mu_log_vp,
+                                       NRLib::Grid2D<double>       & Sigma_log_vp) const
+{
+  int n_layers = static_cast<int>(mu_vp_square.size());
+
+  calculateCentralMomentLogNormalInverse(mu_vp_square, Sigma_vp_square, mu_log_vp, Sigma_log_vp);
+
+  for(int i=0; i<n_layers; i++)
+    mu_log_vp[i] = mu_log_vp[i] / 2;
+
+  for(int i=0; i<n_layers; i++) {
+    for(int j=0; j<n_layers; j++)
+      Sigma_log_vp(i,j) = Sigma_log_vp(i,j) / 4;
+  }
+}
+
 //-----------------------------------------------------------------------------------------//
 
 void
@@ -905,7 +939,20 @@ RMSInversion::makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
 
   return covT;
 }
+//-----------------------------------------------------------------------------------------//
 
+void
+RMSInversion::writeVector(std::string                 file_name,
+                          const std::vector<double> & vec) const
+{
+  int n = static_cast<int>(vec.size());
+
+  NRLib::Vector vector(n);
+  for(int i=0; i<n; i++)
+    vector(i) = vec[i];
+
+  NRLib::WriteVectorToFile(file_name, vector);
+}
 //-----------------------------------------------------------------------------------------//
 
 void
@@ -922,4 +969,113 @@ RMSInversion::writeMatrix(std::string                   file_name,
   }
 
   NRLib::WriteMatrixToFile(file_name, matrix);
+}
+
+//-------------------------------------------------------------------------------
+
+void
+RMSInversion::setExpectation(const RMSTrace             * rms_trace,
+                             const std::vector<double>  & post_vp,
+                             std::vector<KrigingData2D> & mu_log_vp_post_above,
+                             std::vector<KrigingData2D> & mu_log_vp_post_model,
+                             std::vector<KrigingData2D> & mu_log_vp_post_below) const
+{
+
+  int i_ind = rms_trace->getIIndex();
+  int j_ind = rms_trace->getJIndex();
+
+  for(int i=0; i<n_pad_above_; i++)
+    mu_log_vp_post_above[i].addData(i_ind, j_ind, static_cast<float>(post_vp[i]));
+
+  for(int i=0; i<n_pad_model_; i++)
+    mu_log_vp_post_model[i].addData(i_ind, j_ind, static_cast<float>(post_vp[i+n_pad_above_]));
+
+  for(int i=0; i<n_pad_below_; i++)
+    mu_log_vp_post_below[i].addData(i_ind, j_ind, static_cast<float>(post_vp[i+n_pad_above_+n_pad_model_]));
+
+}
+
+//-------------------------------------------------------------------------------
+
+FFTGrid *
+RMSInversion::krigeExpectation3D(const Simbox               * simbox,
+                                 std::vector<KrigingData2D> & mu_vp_post) const
+{
+
+  std::string text = "\nKriging 1D posterior RMS velocities to 3D:";
+
+  LogKit::LogFormatted(LogKit::Low,text);
+
+  const int    nx   = simbox->getnx();
+  const int    ny   = simbox->getny();
+  const int    nz   = simbox->getnz();
+
+  const int    nxp  = nx;
+  const int    nyp  = ny;
+  const int    nzp  = nz;
+  const int    rnxp = 2*(nxp/2 + 1);
+
+  const double x0   = simbox->getx0();
+  const double y0   = simbox->gety0();
+  const double lx   = simbox->getlx();
+  const double ly   = simbox->getly();
+
+  Vario * lateralVario = new GenExpVario(1, 2000, 2000);
+  CovGrid2D covGrid2D = Kriging2D::makeCovGrid2D(simbox, lateralVario, 0);
+
+  //
+  // Template surface to be kriged
+  //
+  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+
+  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
+  FFTGrid * bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+  bgGrid->createRealGrid();
+  bgGrid->setType(FFTGrid::PARAMETER);
+  bgGrid->setAccessMode(FFTGrid::WRITE);
+
+  for (int k=0 ; k<nzp ; k++) {
+
+    mu_vp_post[k].findMeanValues();
+
+    int n_data = mu_vp_post[k].getNumberOfData();
+
+    double mean_value = 0;
+    for(int i=0; i<n_data; i++)
+      mean_value += static_cast<double>(mu_vp_post[k].getData(i) / n_data);
+
+    surface.Assign(mean_value);
+
+    // Kriging of layer
+    Kriging2D::krigSurface(surface, mu_vp_post[k], covGrid2D);
+
+    // Set layer in background model from surface
+    for(int j=0 ; j<nyp ; j++) {
+      for(int i=0 ; i<rnxp ; i++) {
+        if(i<nxp)
+          bgGrid->setNextReal(float(surface(i,j)));
+        else
+          bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
+      }
+    }
+
+    // Log progress
+    if (k+1 >= static_cast<int>(nextMonitor))
+    {
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
+  }
+  bgGrid->endAccess();
+
+  delete lateralVario;
+
+  return bgGrid;
 }

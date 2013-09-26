@@ -174,12 +174,14 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
           if( (IL != this_il) || (XL != this_xl) ) {
 
             int i_ind;
-            int y_ind;
-            timeSimbox->getIndexes(this_utmx, this_utmy, i_ind, y_ind);
+            int j_ind;
+            timeSimbox->getIndexes(this_utmx, this_utmy, i_ind, j_ind);
 
-            if(i_ind != IMISSING && y_ind != IMISSING) {
+            if(i_ind != IMISSING && j_ind != IMISSING) {
               RMSTrace * trace = new RMSTrace(IL,
                                               XL,
+                                              i_ind,
+                                              j_ind,
                                               utmx,
                                               utmy,
                                               time,
@@ -208,12 +210,14 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
       else {
 
         int i_ind;
-        int y_ind;
-        timeSimbox->getIndexes(utmx, utmy, i_ind, y_ind);
+        int j_ind;
+        timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
 
-        if(i_ind != IMISSING && y_ind != IMISSING) {
+        if(i_ind != IMISSING && j_ind != IMISSING) {
           RMSTrace * trace = new RMSTrace(IL,
                                           XL,
+                                          i_ind,
+                                          j_ind,
                                           utmx,
                                           utmy,
                                           time,
