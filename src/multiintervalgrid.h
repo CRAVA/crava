@@ -38,6 +38,7 @@ public:
 
   //SET FUNCTIONS
   void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]           = parameters  ;}
+  void AddParameterForInterval(int i, int j, NRLib::Grid<double> parameter)                      { parameters_[i][j]        = parameter   ;}
   void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
 
 

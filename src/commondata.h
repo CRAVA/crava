@@ -369,13 +369,13 @@ private:
                                 const std::vector<Simbox>                       & interval_simboxes,
                                 std::string                                     & err_text);
 
-  static FFTGrid  * CreateFFTGrid(int nx,
-                                  int ny,
-                                  int nz,
-                                  int nxp,
-                                  int nyp,
-                                  int nzp,
-                                  bool fileGrid);
+  //static FFTGrid  * CreateFFTGrid(int nx,
+  //                                int ny,
+  //                                int nz,
+  //                                int nxp,
+  //                                int nyp,
+  //                                int nzp,
+  //                                bool fileGrid);
 
   void ReadCravaFile(NRLib::Grid<double> & grid,
                      const std::string   & file_name,
@@ -484,6 +484,11 @@ private:
   //                      double                    & min,
   //                      double                    & max);
 
+  void SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid,
+                                            const double          avg);
+
+  //void LogTransformGrid(NRLib::Grid<double> & grid);
+
   void SubtractGrid(NRLib::Grid<double>       & to_grid,
                     const NRLib::Grid<double> & from_grid);
 
@@ -505,9 +510,10 @@ private:
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
                                        //std::vector<NRLib::Grid<double> >      & parameters,
-                                       FFTGrid                                & vp,
-                                       FFTGrid                                & vs,
-                                       FFTGrid                                & rho,
+                                       NRLib::Grid<double>                    & vp,
+                                       NRLib::Grid<double>                    & vs,
+                                       NRLib::Grid<double>                    & rho,
+                                       Simbox                                 & simbox,
                                        int                                      i_interval);
 
   void SetupExtendedBackgroundSimbox(Simbox   * simbox,
@@ -525,8 +531,8 @@ private:
                                      int        output_domain,
                                      int        other_output);
 
-  NRLib::Grid<double>
-  FFTGridRealToGrid(const FFTGrid * fft_grid);
+  //NRLib::Grid<double>
+  //FFTGridRealToGrid(const FFTGrid * fft_grid);
 
   bool SetupPriorCorrelation(ModelSettings                                                * model_settings,
                              const InputFiles                                             * input_files,

@@ -42,14 +42,14 @@ public:
   //           const Simbox                   * timeBGSimbox,
   //           const ModelSettings            * modelSettings);
 
-  Background(std::vector<NRLib::Grid<double> > & parameters, //FFTGrid                          ** grids, //std::vector<NRLib::Grid<double> > & grids,
-             const std::vector<NRLib::Well>    & wells,
-             FFTGrid                          *& velocity,
-             const Simbox                      * time_simbox,
-             const Simbox                      * time_bg_simbox,
+  Background(std::vector<NRLib::Grid<double> >          & parameters,
+             const std::vector<NRLib::Well>             & wells,
+             NRLib::Grid<double>                        & velocity,
+             const Simbox                               * time_simbox,
+             const Simbox                               * time_bg_simbox,
              std::map<std::string, BlockedLogsCommon *> & bl,
              std::map<std::string, BlockedLogsCommon *> & bg_bl,
-             const ModelSettings               * modelSettings);
+             const ModelSettings                        * modelSettings);
 
   //Background(FFTGrid                       ** grids,
   //           const std::vector<WellData *>  & wells,
@@ -57,18 +57,18 @@ public:
   //           const ModelSettings            * modelSettings,
   //           const std::vector<std::string> & correlation_files);
 
-  Background(std::vector<NRLib::Grid<double> > & parameters, //FFTGrid                          ** grids, //std::vector<NRLib::Grid<double> > & grids, //FFTGrid                       ** grids,
+  Background(std::vector<NRLib::Grid<double> > & parameters,
              const std::vector<NRLib::Well>    & wells,
              const Simbox                      * timeSimbox,
              const ModelSettings               * modelSettings,
-             const std::vector<std::string>    & surface_files);
-             //std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs);
-
+             const std::vector<std::string>    & surface_files,
+             std::string                       & err_text);
 
   Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
              const std::vector<NRLib::Well>                  & wells,
              MultiIntervalGrid                               * multiple_interval_grid,
-             const ModelSettings                             * model_settings);
+             const ModelSettings                             * model_settings,
+             std::string                                     & err_text);
 
   Background(FFTGrid ** grids);
   ~Background(void);
@@ -96,7 +96,7 @@ public:
 
   void         releaseGrids(); //backModel grids are now taken care of by other classes.
 
-  NRLib::Grid<double> FFTGridRealToGrid(const FFTGrid * fft_grid);
+  //NRLib::Grid<double> FFTGridRealToGrid(const FFTGrid * fft_grid);
 
 private:
   //void         generateBackgroundModel(FFTGrid                      *& bgAlpha,
@@ -107,10 +107,10 @@ private:
   //                                     const Simbox                  * simbox,
   //                                     const ModelSettings           * modelSettings);
 
-  void         generateBackgroundModel(FFTGrid                                   *& bg_vp,
-                                       FFTGrid                                   *& bg_vs,
-                                       FFTGrid                                   *& bg_rho,
-                                       FFTGrid                                   *& velocity,
+  void         generateBackgroundModel(NRLib::Grid<double>                        & bg_vp,
+                                       NRLib::Grid<double>                        & bg_vs,
+                                       NRLib::Grid<double>                        & bg_rho,
+                                       NRLib::Grid<double>                        & velociy,
                                        const std::vector<NRLib::Well>             & wells,
                                        const Simbox                               * simbox,
                                        std::map<std::string, BlockedLogsCommon *> & bl,
@@ -125,33 +125,35 @@ private:
   //                                              const ModelSettings            * modelSettings,
   //                                              const std::vector<std::string> & surface_files);
 
-  void         GenerateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
-                                                FFTGrid                       *& bgBeta,
-                                                FFTGrid                       *& bgRho,
+  void         GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp,//FFTGrid                       *& bgAlpha,
+                                                NRLib::Grid<double>            & bg_vs,
+                                                NRLib::Grid<double>            & bg_rho,
                                                 const std::vector<NRLib::Well> & wells,
                                                 const Simbox                   * simbox,
                                                 const ModelSettings            * modelSettings,
-                                                const std::vector<std::string> & surface_files);
+                                                const std::vector<std::string> & surface_files,
+                                                std::string                    & err_text);
 
-  void         GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         & bg_vp,
-                                                    std::vector<FFTGrid *>         & bg_vs,
-                                                    std::vector<FFTGrid *>         & bg_rho,
-                                                    const std::vector<NRLib::Well> & wells,
-                                                    MultiIntervalGrid              * multiple_interval_grid,
-                                                    const ModelSettings            * model_settings);
+  void         GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double> > & bg_vp,
+                                                    std::vector<NRLib::Grid<double> > & bg_vs,
+                                                    std::vector<NRLib::Grid<double> > & bg_rho,
+                                                    const std::vector<NRLib::Well>    & wells,
+                                                    MultiIntervalGrid                 * multiple_interval_grid,
+                                                    const ModelSettings               * model_settings,
+                                                    std::string                       & err_text);
 
-  void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
-                                       FFTGrid      *& bgBeta,
-                                       FFTGrid      *& bgRho,
+  void         resampleBackgroundModel(NRLib::Grid<double> & bg_vp, //FFTGrid      *& bgAlpha,
+                                       NRLib::Grid<double> & bg_vs,
+                                       NRLib::Grid<double> & bg_rho,
                                        const Simbox  * timeBGsimbox,
                                        const Simbox  * timeSimbox,
                                        const ModelSettings * modelSettings);
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
-  void         padAndSetBackgroundModelInterval(std::vector<FFTGrid *> bg_vp,
-                                                std::vector<FFTGrid *> bg_vs,
-                                                std::vector<FFTGrid *> bg_rho);
+  //void         padAndSetBackgroundModelInterval(std::vector<FFTGrid *> bg_vp,
+  //                                              std::vector<FFTGrid *> bg_vs,
+  //                                              std::vector<FFTGrid *> bg_rho);
   void         createPaddedParameter(FFTGrid *& pNew,
                                      FFTGrid  * pOld);
 
@@ -330,13 +332,13 @@ private:
                                   const std::vector<const std::vector<int> >   jpos,
                                   const std::vector<const std::vector<int> >   kpos) const;
 
-  void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
-                                    FFTGrid                         *& bgGrid,
+  void         makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
+                                    NRLib::Grid<double>              & bg_grid,
                                     const float                      * trend,
                                     const Simbox                     * simbox,
-                                    const CovGrid2D                  & covGrid2D,
-                                    const std::string                & type,
-                                    bool                               isFile) const;
+                                    const CovGrid2D                  & cov_grid_2D,
+                                    const std::string                & type) const;
+                                    //bool                               isFile) const;
 
   void         makeTrendZone(const float   * trend,
                              StormContGrid & trend_zone) const;
@@ -346,9 +348,9 @@ private:
                               StormContGrid                    & kriged_zone,
                               const CovGrid2D                  & covGrid2D) const;
 
-  void         MakeMultizoneBackground(FFTGrid                                   *& bgAlpha,
-                                       FFTGrid                                   *& bgBeta,
-                                       FFTGrid                                   *& bgRho,
+  void         MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp, //FFTGrid                                   *& bgAlpha,
+                                       NRLib::Grid<double>              & bg_vs,
+                                       NRLib::Grid<double>              & bg_rho,
                                        const std::vector<StormContGrid> & vp_zones,
                                        const std::vector<StormContGrid> & vs_zones,
                                        const std::vector<StormContGrid> & rho_zones,
@@ -359,13 +361,13 @@ private:
                                        const bool                         isFile,
                                        const std::string                & type) const;
 
-  void         MakeMultiIntervalBackground(std::vector<FFTGrid *>           & bg_vp,
-                                           std::vector<FFTGrid *>           & bg_vs,
-                                           std::vector<FFTGrid *>           & bg_rho,
-                                           const std::vector<StormContGrid> & vp_zones,
-                                           const std::vector<StormContGrid> & vs_zones,
-                                           const std::vector<StormContGrid> & rho_zones,
-                                           MultiIntervalGrid                * multiple_interval_grid,
+  void         MakeMultiIntervalBackground(std::vector<NRLib::Grid<double> > & bg_vp,
+                                           std::vector<NRLib::Grid<double> > & bg_vs,
+                                           std::vector<NRLib::Grid<double> > & bg_rho,
+                                           const std::vector<StormContGrid>  & vp_zones,
+                                           const std::vector<StormContGrid>  & vs_zones,
+                                           const std::vector<StormContGrid>  & rho_zones,
+                                           MultiIntervalGrid                 * multiple_interval_grid,
                                            //const Simbox                     * simbox,
                                            //const std::vector<int>           & erosion_priority,
                                            //const std::vector<NRLib::Surface<double> > & surface,
@@ -384,7 +386,7 @@ private:
   //                                         int                             outputFlag,
   //                                         int                             nWells);
 
-  void         calculateVelocityDeviations(FFTGrid                        * velocity,
+  void         calculateVelocityDeviations(NRLib::Grid<double>            & velocity, //FFTGrid                        * velocity,
                                            const std::vector<NRLib::Well> & wells,
                                            const Simbox                   * simbox,
                                            std::map<std::string, BlockedLogsCommon *> & bl,
@@ -395,11 +397,17 @@ private:
                                            int                              outputFlag,
                                            int                              nWells);
 
-  void         resampleParameter(FFTGrid *& parameterNew,
-                                 FFTGrid  * parameterOld,
-                                 const Simbox   * simboxNew,
-                                 const Simbox   * simboxOld,
-                                 bool       isFile);
+  //void         resampleParameter(FFTGrid *& parameterNew,
+  //                               FFTGrid  * parameterOld,
+  //                               const Simbox   * simboxNew,
+  //                               const Simbox   * simboxOld,
+  //                               bool       isFile);
+
+  void         resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,        // Resample to
+                                 NRLib::Grid<double> & p_old, //FFTGrid  * pOld,        // Resample from
+                                 const Simbox        * simbox_new,
+                                 const Simbox        * simbox_old);
+
   void         calculateVerticalTrend(std::vector<float *> wellTrend,
                                       float              * trend,
                                       float                logMin,
@@ -486,15 +494,16 @@ private:
                                          const std::vector<Surface> & surf,
                                          const std::vector<int>     & correlation_structure,
                                          const Simbox               * simbox,
-                                         const float                & dz) const;
+                                         const float                & dz,
+                                         std::string                & err_text) const;
 
   void         BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
                                              std::vector<StormContGrid> & vs_zones,
                                              std::vector<StormContGrid> & rho_zones,
-                                             MultiIntervalGrid          * multiple_interval_grid) const;
+                                             MultiIntervalGrid          * multiple_interval_grid,
+                                             std::string                & err_text) const;
 
-
-  std::vector<FFTGrid *> back_model_interval_[3];
+  //std::vector<FFTGrid *> back_model_interval_[3];
   FFTGrid    * back_model_[3];       // Cubes for background model files.
   //std::vector<NRLib::Grid<double> > back_model_;
 

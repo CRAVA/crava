@@ -26,6 +26,8 @@
 #include <sstream>
 #include <vector>
 
+//#include "../../../src/definitions.h"
+
 namespace NRLib {
 
 template<class A>
@@ -46,6 +48,7 @@ public:
     /// \param val Initial cell value.
   void Resize(size_t ni, size_t nj, size_t nk, const A& val = A());
   void GetAvgMinMax(A& avg, A& min, A& max);
+  void LogTransform(A missing);
 
   inline reference operator()(size_t i, size_t j, size_t k);
   inline reference operator()(size_t index);
@@ -132,11 +135,24 @@ void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
       }
     }
   }
-
   avg = sum /= GetN();
 }
 
-
+template<class A>
+void Grid<A>::LogTransform(A missing)
+{
+  for(int i = 0; i < ni_; i++) {
+    for(int j = 0; j < nj_; j++) {
+      for(int k = 0; k < nk_; k++) {
+        A value = data_[GetIndex(i, j, k)];
+        if(value == missing || value <= 0.0) //First RMISSING
+          data_[GetIndex(i, j, k)] = 0.0;
+        else
+          data_[GetIndex(i, j, k)] = log(value);
+      }
+    }
+  }
+}
 
 template<class A>
 typename Grid<A>::reference Grid<A>::operator()(size_t i, size_t j, size_t k)
@@ -196,33 +212,6 @@ void Grid<A>::Swap(NRLib::Grid<A> &other)
   std::swap(nk_, other.nk_);
   data_.swap(other.data_);
 }
-
-//template<class A>
-//void Grid<A>::GetAvgMaxMin(double &avg, double &min, double &max) const
-//{
-//  double sum = 0.0;
-//  double value = 0.0;
-//  max = -std::numeric_limits<double>::infinity();
-//  min = +std::numeric_limits<double>::infinity();
-//
-//  for(int i = 0; i < ni_; i++) {
-//    for(int j = 0; j < nj_; j++) {
-//      for(int k = 0; k < nk_; k++) {
-//        value = grid(i,j,k);
-//        sum += value;
-//
-//        if(value > max)
-//          max = value;
-//
-//        if(value < min)
-//          min = value;
-//
-//      }
-//    }
-//  }
-//
-//  avg = sum /= GetN();
-//}
 
 }
 #endif
