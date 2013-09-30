@@ -206,11 +206,34 @@ int main(int argc, char** argv)
     -------------------------------------------------------------*/
 
     common_data = new CommonData(modelSettings, inputFiles);
-    //Priormodell i 3D
-    SeismicParametersHolder seismicParametersCommon;
-    //Forventningsgrid (fra multisonegrid),
-    seismicParametersCommon.setBackgroundParametersIntervals(common_data->GetMultipleIntervalGrid()->GetParametersAllIntervals());
-    //korrelasjonsgrid (2m)
+
+    //Loop over intervals
+    for(int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
+
+      //Priormodell i 3D
+      SeismicParametersHolder seismicParametersInterval;
+      //Forventningsgrid (fra multisonegrid)
+      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval));
+      //seismicParametersInterval.setBackgroundParametersIntervals(common_data->GetMultipleIntervalGrid()->GetParametersAllIntervals());
+
+      //korrelasjonsgrid (2m)
+      seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval));
+      seismicParametersInterval.setCrCovParameters(common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[0],
+                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[1],
+                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2]);
+      seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
+
+      //ModelGeneral
+
+
+
+    }
+
+
+
+
+
+
 
 
     Simbox * timeBGSimbox = NULL;

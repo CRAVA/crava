@@ -6316,6 +6316,12 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
                                                  nyPad,
                                                  nzPad);
 
+
+      //H
+      Need to save correlation parameters (prior_cov_ and prior_corr_) to be extracet in main.cpp (Store in multiintervalgrid?). Use CommonData::SetCorrelationParameters(?)
+      +priorVar0_
+      Fra punkt 3a) "Merk paddinga av griddet, pass på å få med eventuelle brukersette verdiar"
+
       for(int i=0; i<3; i++)
         delete [] param_corr[i];
       delete [] param_corr;
@@ -6599,6 +6605,67 @@ Surface * CommonData::FindCorrXYGrid(const Simbox           * time_simbox,
   }
   return(grid);
 }
+
+//void CommonData::SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
+//                                          const std::vector<float>  & prior_corr_t,
+//                                          Surface                   * prior_corr_XY,
+//                                          const int                 & min_int_fq,
+//                                          const float               & corr_grad_i,
+//                                          const float               & corr_grad_j,
+//                                          const int                 & nx,
+//                                          const int                 & ny,
+//                                          const int                 & nz,
+//                                          const int                 & nx_pad,
+//                                          const int                 & ny_pad,
+//                                          const int                 & nz_pad,
+//                                          int                         i_interval)
+//{
+//  prior_var_0_[i_interval].resize(3,3);
+//
+//  prior_var_0_[i_interval](0,0) = static_cast<double>(param_corr(0,0));
+//  prior_var_0_[i_interval](1,0) = static_cast<double>(param_corr(1,0));
+//  prior_var_0_[i_interval](2,0) = static_cast<double>(param_corr(2,0));
+//  prior_var_0_[i_interval](0,1) = static_cast<double>(param_corr(0,1));
+//  prior_var_0_[i_interval](1,1) = static_cast<double>(param_corr(1,1));
+//  prior_var_0_[i_interval](2,1) = static_cast<double>(param_corr(2,1));
+//  prior_var_0_[i_interval](0,2) = static_cast<double>(param_corr(0,2));
+//  prior_var_0_[i_interval](1,2) = static_cast<double>(param_corr(1,2));
+//  prior_var_0_[i_interval](2,2) = static_cast<double>(param_corr(2,2));
+//
+//
+//  // check if covariance is well conditioned and robustify
+//  NRLib::Vector e_vals(3);
+//  NRLib::Matrix e_vec(3,3);
+//  NRLib::Matrix tmp(3,3);
+//  tmp=prior_var_0_;
+//  NRLib::ComputeEigenVectors(tmp, e_vals,e_vec);
+//
+//  double max_val = e_vals(0);
+//
+//  for(int i=1;i<3;i++)
+//    if(max_val<e_vals(i))
+//      max_val=e_vals(i);
+//
+//  for(int k=0;k<3;k++){
+//    if(e_vals(k)<max_val*0.001){
+//      for(int i=0;i<3;i++)
+//        for(int j=0;j<3;j++)
+//          prior_var_0_[i_interval](i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
+//    }
+//  }
+//  //tmp=priorVar0_;
+//  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
+//
+//  createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
+//
+//  initializeCorrelations(priorCorrXY,
+//                         priorCorrT,
+//                         corrGradI,
+//                         corrGradJ,
+//                         minIntFq,
+//                         nzPad);
+//}
+
 
 bool CommonData::SetupTimeLine(ModelSettings * model_settings,
                                InputFiles    * input_files,

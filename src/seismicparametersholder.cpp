@@ -73,10 +73,36 @@ void
 SeismicParametersHolder::setBackgroundParametersIntervals(const std::vector<std::vector<NRLib::Grid<double> > > & mu_parameters)
 {
   for(size_t i = 0; i < mu_parameters.size(); i++) {
-    mu_vp_.push_back(mu_parameters[i][0]);
-    mu_vs_.push_back(mu_parameters[i][1]);
-    mu_rho_.push_back(mu_parameters[i][2]);
+    mu_vp_intervals_.push_back(mu_parameters[i][0]);
+    mu_vs_intervals_.push_back(mu_parameters[i][1]);
+    mu_rho_intervals_.push_back(mu_parameters[i][2]);
   }
+}
+
+void
+SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters)
+{
+  mu_vp_ = mu_parameters[0];
+  mu_vs_ = mu_parameters[1];
+  mu_rho_ = mu_parameters[2];
+}
+
+void
+SeismicParametersHolder::setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters)
+{
+  cov_vp_ = cov_parameters[0];
+  cov_vs_ = cov_parameters[1];
+  cov_rho_ = cov_parameters[2];
+}
+
+void
+SeismicParametersHolder::setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
+                                            const NRLib::Grid<double> & cr_cov_vp_rho,
+                                            const NRLib::Grid<double> & cr_cov_vs_rho)
+{
+  cr_cov_vp_vs_ = cr_cov_vp_vs;
+  cr_cov_vp_rho_ = cr_cov_vp_rho;
+  cr_cov_vs_rho_ = cr_cov_vs_rho;
 }
 
 

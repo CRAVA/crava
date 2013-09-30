@@ -36,9 +36,22 @@ public:
   const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_     ;}
   const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_          ;}
 
+  const std::vector<std::vector<NRLib::Grid<double> > > & GetCovParametersIntervals() const      { return prior_cov_              ;}
+  const std::vector<NRLib::Grid<double> >               & GetCovParametersInterval(int i) const  { return prior_cov_[i]           ;}
+  const std::vector<std::vector<NRLib::Grid<double> > > & GetCorrParametersIntervals() const     { return prior_corr_             ;}
+  const std::vector<NRLib::Grid<double> >               & GetCorrParametersInterval(int i) const { return prior_corr_[i]          ;}
+
+  const NRLib::Matrix                                   & GetPriorVar0(int i) const              { return prior_var_0_[i]         ;}
+
+
   //SET FUNCTIONS
-  void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]           = parameters  ;}
-  void AddParameterForInterval(int i, int j, NRLib::Grid<double> parameter)                      { parameters_[i][j]        = parameter   ;}
+  void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]    = parameters  ;}
+  void AddParameterForInterval(int i, int j, NRLib::Grid<double> parameter)                      { parameters_[i][j] = parameter   ;}
+  void AddParametersCovForInterval(int i, std::vector<NRLib::Grid<double> > cov)                 { prior_cov_[i]     = cov         ;}
+  void AddParametersCorrForInterval(int i, std::vector<NRLib::Grid<double> > corr)               { prior_corr_[i]    = corr        ;}
+  void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]   = prior_var_0 ;}
+
+
   void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
 
 
@@ -140,6 +153,10 @@ private:
   //H Change parameters_ to map?
 
   std::vector<std::vector<NRLib::Grid<double> > >      prior_facies_prob_cubes_;   //Vector over facies, then intervals.
+
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_cov_; //Vp, vs, rho //From CommonData -> SetupPriorCorrelation
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
+  std::vector<NRLib::Matrix>                           prior_var_0_;
 
   std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.

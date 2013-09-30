@@ -544,6 +544,20 @@ private:
                              std::string                                                  & err_text);
                              //bool                                                       & failed);
 
+  //void  SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
+  //                               const std::vector<float>  & priorCorrT,
+  //                               Surface                   * priorCorrXY,
+  //                               const int                 & minIntFq,
+  //                               const float               & corrGradI,
+  //                               const float               & corrGradJ,
+  //                               const int                 & nx,
+  //                               const int                 & ny,
+  //                               const int                 & nz,
+  //                               const int                 & nxPad,
+  //                               const int                 & nyPad,
+  //                               const int                 & nzPad,
+  //                               int                         i_interval);
+
   void  CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
                                             const std::vector<float>                         & probability,
                                             const CravaTrend                                 & trend_cubes,
@@ -673,7 +687,10 @@ private:
   std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells. (Intervals?)
 
   // Prior correlation
-  std::vector<Surface *>                        prior_corr_XY_;
+  std::vector<Surface *>                          prior_corr_XY_;
+  //std::vector<NRLib::Matrix>                      prior_var_0_;
+  //std::vector<std::vector<NRLib::Grid<double> > > prior_cov_; //Vp, vs, rho
+  //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 
   std::vector<Wavelet*>                         temporary_wavelets_;            ///< Wavelet per angle
 
@@ -686,7 +703,6 @@ private:
 
   //Traveltime parameters per timelapse
   std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
-  //std::vector<FFTGrid *>                        rms_data_;                      ///< RMS data U^2
   std::vector<NRLib::Grid<double> >             rms_data_;                      ///< RMS data U^2
 
 };
