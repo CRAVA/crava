@@ -8,7 +8,10 @@
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "nrlib/flens/nrlib_flens.hpp"
+#include "src/cravatrend.h"
 
+class CravaTrend;
 class MultiIntervalGrid
 {
 public:
@@ -29,6 +32,7 @@ public:
   std::vector<Simbox>                                    & GetIntervalSimboxes()                 { return interval_simboxes_      ;}
   //const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]           ;}
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
+  Simbox                                                 * GetIntervalSimbox2(int i)              { return &interval_simboxes_[i]  ;}
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return parameters_[i]          ;}
   const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]      ;}
@@ -43,6 +47,9 @@ public:
 
   const NRLib::Matrix                                   & GetPriorVar0(int i) const              { return prior_var_0_[i]         ;}
 
+  const std::vector<CravaTrend>                         & GetTrendCubes() const                  { return trend_cubes_            ;}
+  const CravaTrend                                      & GetTrendCube(int i) const              { return trend_cubes_[i]         ;}
+
 
   //SET FUNCTIONS
   void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]    = parameters  ;}
@@ -50,6 +57,7 @@ public:
   void AddParametersCovForInterval(int i, std::vector<NRLib::Grid<double> > cov)                 { prior_cov_[i]     = cov         ;}
   void AddParametersCorrForInterval(int i, std::vector<NRLib::Grid<double> > corr)               { prior_corr_[i]    = corr        ;}
   void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]   = prior_var_0 ;}
+  void AddTrendCubes(std::vector<CravaTrend> trend_cubes)                                        { trend_cubes_      = trend_cubes ;}
 
 
   void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
@@ -160,6 +168,8 @@ private:
 
   std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.
+
+  std::vector<CravaTrend>                              trend_cubes_;  //Trend cubes per interval.
 
 };
 

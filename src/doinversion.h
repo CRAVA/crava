@@ -21,6 +21,15 @@ void setupStaticModels(ModelGeneral           *& modelGeneral,
                        SeismicParametersHolder & seismicParameters,
                        Simbox                 *& timeBGSimbox);
 
+void setupStaticModels(ModelGeneral            *& modelGeneral,
+                       ModelAVOStatic          *& modelAVOstatic,
+                       ModelGravityStatic      *& modelGravityStatic,
+                       ModelSettings            * modelSettings,
+                       InputFiles               * inputFiles,
+                       SeismicParametersHolder  & seismicParameters,
+                       CommonData               * commonData,
+                       int                        i_interval);
+
 bool doFirstAVOInversion(ModelSettings           * modelSettings,
                          ModelGeneral            * modelGeneral,
                          ModelAVOStatic          * modelAVOStatic,

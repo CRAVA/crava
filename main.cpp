@@ -224,6 +224,15 @@ int main(int argc, char** argv)
       seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
 
       //ModelGeneral
+      setupStaticModels(modelGeneral,
+                        modelAVOstatic,
+                        modelGravityStatic,
+                        modelSettings,
+                        inputFiles,
+                        seismicParametersInterval,
+                        common_data,
+                        i_interval);
+
 
 
 

@@ -40,6 +40,7 @@ public:
   const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_  ;}
   const std::vector<NRLib::Well>  & GetWells()                const { return wells_                  ;}
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
+  MultiIntervalGrid               * GetMultipleIntervalGrid()       { return multiple_interval_grid_ ;}
 
   //void ReadGridFromFile(const std::string       & file_name,
   //                      const std::string       & par_name,
@@ -514,7 +515,8 @@ private:
                                        NRLib::Grid<double>                    & vs,
                                        NRLib::Grid<double>                    & rho,
                                        Simbox                                 & simbox,
-                                       int                                      i_interval);
+                                       const CravaTrend                       & trend_cube);
+                                       //int                                      i_interval);
 
   void SetupExtendedBackgroundSimbox(Simbox   * simbox,
                                      Surface  * corr_surf,
@@ -657,7 +659,7 @@ private:
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
-  std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
+  //std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
   std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval

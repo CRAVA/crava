@@ -100,12 +100,12 @@ CommonData::CommonData(ModelSettings  * model_settings,
   if(read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
     if(model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
       if(setup_trend_cubes_) {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
                                                           mapped_blocked_logs_, n_trend_cubes_, err_text);
       }
     }
     else {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
                                                           mapped_blocked_logs_, n_trend_cubes_, err_text);
     }
   }
@@ -135,7 +135,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 13. Setup of prior correlation
   if(read_wells_ && setup_multigrid_ && read_seismic_)
     setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, multiple_interval_grid_->GetIntervalSimboxes(), multiple_interval_grid_->GetIntervalSimboxes(),
-                                                     model_settings->getPriorFaciesProbIntervals(), trend_cubes_, seismic_data_, err_text);
+                                                     model_settings->getPriorFaciesProbIntervals(), multiple_interval_grid_->GetTrendCubes(), seismic_data_, err_text);
 
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
@@ -3113,16 +3113,17 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   LogKit::WriteHeader("Setting up Trend Cubes");
 
   std::string err_text = "";
+  //std::vector<CravaTrend> trend_cubes;
 
   // Get trend variables from model settings
   const std::vector<std::string>  trend_cube_parameters     = model_settings->getTrendCubeParameters();
   const std::vector<int>          trend_cube_type           = model_settings->getTrendCubeType();
-  trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
+  //trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
   const std::vector<std::string>  interval_names            =  model_settings->getIntervalNames();
 
   // Initialize values
-  std::vector<std::vector<NRLib::Grid<double> > > trend_cubes;  //Vector(trends) vector(intervals)
-  trend_cubes.resize(trend_cube_parameters.size());
+  std::vector<std::vector<NRLib::Grid<double> > > trend_cubes_tmp;  //Vector(trends) vector(intervals)
+  trend_cubes_tmp.resize(trend_cube_parameters.size());
 
   try{
 
@@ -3138,7 +3139,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
         ReadGridFromFile(input_files->getTrendCube(i),
                          log_name,
                          offset,
-                         trend_cubes[i],
+                         trend_cubes_tmp[i],
                          dummy1,
                          dummy2,
                          PARAMETER,
@@ -3155,23 +3156,31 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
       }
     }
 
+    std::vector<CravaTrend> trend_cubes;
+    trend_cubes.resize(multiple_interval_grid->GetNIntervals());
+
     for(int i = 0; i<multiple_interval_grid->GetNIntervals(); i++) {
 
       std::vector<NRLib::Grid<double> > trend_cubes_interval;
       for(int j = 0; j < trend_cube_parameters.size(); j++) {
-        trend_cubes_interval.push_back(trend_cubes[j][i]);
+        trend_cubes_interval.push_back(trend_cubes_tmp[j][i]);
       }
 
-      trend_cubes_[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
-                                   model_settings,
-                                   input_files,
-                                   interval_names[i],
-                                   trend_cube_type,
-                                   trend_cube_parameters,
-                                   trend_cubes_interval,
-                                   err_text);
+      trend_cubes[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
+                                  model_settings,
+                                  input_files,
+                                  interval_names[i],
+                                  trend_cube_type,
+                                  trend_cube_parameters,
+                                  trend_cubes_interval,
+                                  err_text);
 
     }
+
+    //Trend cubes stored in multiple interval grid
+    multiple_interval_grid->AddTrendCubes(trend_cubes);
+    n_trend_cubes_ = trend_cubes.size(); //Is this needed?
+
   }catch(NRLib::Exception & e){
     err_text += e.what();
    }
@@ -5242,7 +5251,8 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                         parameters[1],
                                         parameters[2],
                                         estimation_simbox_,
-                                        i_interval);
+                                        multiple_interval_grid_->GetTrendCube(i_interval));
+                                        //i_interval);
 
         multiple_interval_grid_->AddParametersForInterval(i_interval, parameters);
 
@@ -5727,7 +5737,8 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
                                                  NRLib::Grid<double>                    & vs,
                                                  NRLib::Grid<double>                    & rho,
                                                  Simbox                                 & simbox,
-                                                 int                                      i_interval)
+                                                 const CravaTrend                       & trend_cube)
+                                                 //int                                      i_interval)
 {
   // Set up of expectations grids
 
@@ -5804,7 +5815,8 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
 
         // Otherwise use trend values to get expectation values for each facies from the rock
         //else {
-        std::vector<double> trend_position = trend_cubes_[i_interval].GetTrendPosition(i,j,k);
+        //std::vector<double> trend_position = trend_cubes_[i_interval].GetTrendPosition(i,j,k);
+        std::vector<double> trend_position = trend_cube.GetTrendPosition(i,j,k);
 
         std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
 

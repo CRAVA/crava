@@ -45,6 +45,13 @@ public:
                const InputFiles         * inputFiles,
                SeismicParametersHolder  & seismicParameters,
                Simbox                  *& timeBGSimbox);
+
+  ModelGeneral(ModelSettings           *& modelSettings, //Multiple intervals
+               const InputFiles         * inputFiles,
+               SeismicParametersHolder  & seismicParameters,
+               CommonData               * common_data,
+               int                        i_interval);
+
   ~ModelGeneral();
 
   Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
