@@ -24,6 +24,7 @@ class ModelSettings;
 //class ModelGeneral;
 class TimeLine;
 //class ModelGravityStatic;
+class MultiIntervalGrid;
 
 class CommonData{
 public:
@@ -40,7 +41,7 @@ public:
   const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_  ;}
   const std::vector<NRLib::Well>  & GetWells()                const { return wells_                  ;}
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
-  MultiIntervalGrid               * GetMultipleIntervalGrid()       { return multiple_interval_grid_ ;}
+  MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
 
   //void ReadGridFromFile(const std::string       & file_name,
   //                      const std::string       & par_name,

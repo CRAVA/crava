@@ -61,6 +61,8 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsrock.h"
 
+//#include "src/multiintervalgrid.h"
+
 
 ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                            const InputFiles         * inputFiles,
@@ -330,8 +332,11 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
     //                 correlationDirection_, modelSettings, inputFiles,
     //                 errText, failedSimbox);
 
-    timeSimbox_ = commonData->GetMultipleIntervalGrid()->GetIntervalSimbox2(i_interval);
+    MultiIntervalGrid * multiple_interval_grid = commonData->GetMultipleIntervalGrid();
+    Simbox & tmp = multiple_interval_grid->GetIntervalSimboxE(0);
 
+    timeSimbox_ = &tmp;
+    //timeSimbox_ = commonData->GetMultipleIntervalGrid()->GetIntervalSimboxE(0);
 
     //if(!failedSimbox)
     //{

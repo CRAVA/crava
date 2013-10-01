@@ -38,6 +38,8 @@ class WellData;
 class SeismicParameters;
 class CravaTrend;
 
+//class MultiIntervalGrid;
+
 class ModelGeneral
 {
 public:
