@@ -355,7 +355,7 @@ Background::FFTGridRealToGrid(const FFTGrid * fft_grid) {
     int nx = fft_grid->getNx();
     int ny = fft_grid->getNy();
     int nz = fft_grid->getNz();
-    int nxp = fft_grid->getNxp();
+    //int nxp = fft_grid->getNxp();
     int nyp = fft_grid->getNyp();
     int nzp = fft_grid->getNzp();
 
@@ -558,15 +558,15 @@ Background::FFTGridRealToGrid(const FFTGrid * fft_grid) {
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(FFTGrid                      *& bg_vp,
-                                    FFTGrid                      *& bg_vs,
-                                    FFTGrid                      *& bg_rho,
-                                    FFTGrid                       *& velocity,
-                                    const std::vector<NRLib::Well> & wells,
-                                    const Simbox                   * simbox,
+Background::generateBackgroundModel(FFTGrid                                   *& bg_vp,
+                                    FFTGrid                                   *& bg_vs,
+                                    FFTGrid                                   *& bg_rho,
+                                    FFTGrid                                   *& velocity,
+                                    const std::vector<NRLib::Well>             & wells,
+                                    const Simbox                               * simbox,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                     std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                                    const ModelSettings            * model_settings)
+                                    const ModelSettings                        * model_settings)
 {
   const int   nz     = simbox->getnz();
   const int   n_wells = model_settings->getNumberOfWells();
@@ -1333,8 +1333,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
     BuildErodedIntervals(eroded_zone,
                          //eroded_surfaces,
                          nz,
-                         simbox,
-                         i);
+                         simbox);
 
     std::vector<bool> hit_zone(n_wells);
     checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
@@ -1886,8 +1885,7 @@ void
 Background::BuildErodedIntervals(StormContGrid                & eroded_interval,
                                  //const std::vector<Surface>   & eroded_surfaces,
                                  const int                    & nz,
-                                 const Simbox                 * simbox,
-                                 const int                    & i) const
+                                 const Simbox                 * simbox) const
 {
   int    nx        = simbox->getnx();
   int    ny        = simbox->getny();
@@ -3192,9 +3190,9 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>     & kriging_data_vp,
         if (bl_rho_well[m] == RMISSING)
           bl_rho_well[m] = vt_rho_well[k];
 
-        kriging_data_vp[k].addData(i, j, bl_vp_well[m]);
-        kriging_data_vs[k].addData(i, j, bl_vs_well[m]);
-        kriging_data_rho[k].addData(i, j, bl_rho_well[m]);
+        kriging_data_vp[k].addData(i, j, static_cast<float>(bl_vp_well[m]));
+        kriging_data_vs[k].addData(i, j, static_cast<float>(bl_vs_well[m]));
+        kriging_data_rho[k].addData(i, j, static_cast<float>(bl_rho_well[m]));
       }
 
       forLogging.addData(&bl_vp_well[0], &bl_vs_well[0], &bl_rho_well[0],
@@ -4072,67 +4070,67 @@ Background::setClassicVsVp()
 
 //-------------------------------------------------------------------------------
 void
-Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
-                                    FFTGrid      *& bgBeta,
-                                    FFTGrid      *& bgRho,
-                                    const Simbox  * timeBGSimbox,
-                                    const Simbox  * timeSimbox,
-                                    const ModelSettings * modelSettings)
+Background::resampleBackgroundModel(FFTGrid            *& bg_vp,
+                                    FFTGrid            *& bg_vs,
+                                    FFTGrid            *& bg_rho,
+                                    const Simbox        * time_bg_simbox,
+                                    const Simbox        * time_simbox,
+                                    const ModelSettings * model_settings)
 {
-  bool isFile = modelSettings->getFileGrid();
+  bool is_file = model_settings->getFileGrid();
 
-  if((modelSettings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-    std::string fileName1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
-    std::string fileName2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
-    std::string fileName3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
+  if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
+    std::string file_name_1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
+    std::string file_name_2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
+    std::string file_name_3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
 
-    FFTGrid * expAlpha = copyFFTGrid(bgAlpha, true, isFile);
-    expAlpha->writeFile(fileName1, IO::PathToBackground(), timeBGSimbox);
-    delete expAlpha;
+    FFTGrid * exp_vp = copyFFTGrid(bg_vp, true, is_file);
+    exp_vp->writeFile(file_name_1, IO::PathToBackground(), time_bg_simbox);
+    delete exp_vp;
 
-    FFTGrid * expBeta = copyFFTGrid(bgBeta, true, isFile);
-    expBeta->writeFile(fileName2, IO::PathToBackground(), timeBGSimbox);
-    delete expBeta;
+    FFTGrid * exp_vs = copyFFTGrid(bg_vs, true, is_file);
+    exp_vs->writeFile(file_name_2, IO::PathToBackground(), time_bg_simbox);
+    delete exp_vs;
 
-    FFTGrid * expRho = copyFFTGrid(bgRho, true, isFile);
-    expRho->writeFile(fileName3, IO::PathToBackground(), timeBGSimbox);
-    delete expRho;
+    FFTGrid * exp_rho = copyFFTGrid(bg_rho, true, is_file);
+    exp_rho->writeFile(file_name_3, IO::PathToBackground(), time_bg_simbox);
+    delete exp_rho;
   }
 
-  FFTGrid * resBgAlpha = NULL;
-  FFTGrid * resBgBeta = NULL;
-  FFTGrid * resBgRho = NULL;
+  FFTGrid * res_bg_vp = NULL;
+  FFTGrid * res_bg_vs = NULL;
+  FFTGrid * res_bg_rho = NULL;
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
-  resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
-  resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
-  resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
+  resampleParameter(res_bg_vp, bg_vp, time_simbox, time_bg_simbox, model_settings->getFileGrid());
+  resampleParameter(res_bg_vs, bg_vs, time_simbox, time_bg_simbox, model_settings->getFileGrid());
+  resampleParameter(res_bg_rho, bg_rho, time_simbox, time_bg_simbox, model_settings->getFileGrid());
 
-  if((modelSettings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-    std::string fileName1 = IO::PrefixBackground() + "Vp_InversionGrid";
-    std::string fileName2 = IO::PrefixBackground() + "Vs_InversionGrid";
-    std::string fileName3 = IO::PrefixBackground() + "Rho_InversionGrid";
+  if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
+    std::string file_name_1 = IO::PrefixBackground() + "Vp_InversionGrid";
+    std::string file_name_2 = IO::PrefixBackground() + "Vs_InversionGrid";
+    std::string file_name_3 = IO::PrefixBackground() + "Rho_InversionGrid";
 
-    FFTGrid * expResAlpha = copyFFTGrid(resBgAlpha, true, isFile);
-    expResAlpha->writeFile(fileName1, IO::PathToBackground(), timeSimbox);
-    delete expResAlpha;
+    FFTGrid * exp_res_vp = copyFFTGrid(res_bg_vp, true, is_file);
+    exp_res_vp->writeFile(file_name_1, IO::PathToBackground(), time_simbox);
+    delete exp_res_vp;
 
-    FFTGrid * expResBeta = copyFFTGrid(resBgBeta, true, isFile);
-    expResBeta->writeFile(fileName2, IO::PathToBackground(), timeSimbox);
-    delete expResBeta;
+    FFTGrid * exp_res_vs = copyFFTGrid(res_bg_vs, true, is_file);
+    exp_res_vs->writeFile(file_name_2, IO::PathToBackground(), time_simbox);
+    delete exp_res_vs;
 
-    FFTGrid * expResRho = copyFFTGrid(resBgRho, true, isFile);
-    expResRho->writeFile(fileName3, IO::PathToBackground(), timeSimbox);
-    delete expResRho;
+    FFTGrid * exp_res_rho = copyFFTGrid(res_bg_rho, true, is_file);
+    exp_res_rho->writeFile(file_name_3, IO::PathToBackground(), time_simbox);
+    delete exp_res_rho;
   }
 
-  delete bgAlpha;
-  delete bgBeta;
-  delete bgRho;
+  delete bg_vp;
+  delete bg_vs;
+  delete bg_rho;
 
-  bgAlpha = resBgAlpha;
-  bgBeta  = resBgBeta;
-  bgRho   = resBgRho;
+  bg_vp = res_bg_vp;
+  bg_vs = res_bg_vs;
+  bg_rho = res_bg_rho;
  }
 
 //-------------------------------------------------------------------------------

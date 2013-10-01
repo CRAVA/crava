@@ -107,15 +107,15 @@ private:
   //                                     const Simbox                  * simbox,
   //                                     const ModelSettings           * modelSettings);
 
-  void         generateBackgroundModel(FFTGrid                      *& bg_vp,
-                                       FFTGrid                      *& bg_vs,
-                                       FFTGrid                      *& bg_rho,
-                                       FFTGrid                       *& velocity,
-                                       const std::vector<NRLib::Well> & wells,
-                                       const Simbox                   * simbox,
+  void         generateBackgroundModel(FFTGrid                                   *& bg_vp,
+                                       FFTGrid                                   *& bg_vs,
+                                       FFTGrid                                   *& bg_rho,
+                                       FFTGrid                                   *& velocity,
+                                       const std::vector<NRLib::Well>             & wells,
+                                       const Simbox                               * simbox,
                                        std::map<std::string, BlockedLogsCommon *> & bl,
                                        std::map<std::string, BlockedLogsCommon *> & bg_bl,
-                                       const ModelSettings            * modelSettings);
+                                       const ModelSettings                        * model_settings);
 
   //void         generateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
   //                                              FFTGrid                       *& bgBeta,
@@ -187,7 +187,6 @@ private:
                                     std::vector<std::vector<double> >          & vtBeta,
                                     std::vector<std::vector<double> >          & vtRho,
                                     std::vector<const std::vector<int> >       & ipos,
-                                    //std::vector<const int *>       & ipos,
                                     std::vector<const std::vector<int> >       & jpos,
                                     std::vector<const std::vector<int> >       & kpos,
                                     std::vector<int>                           & nBlocks,
@@ -210,28 +209,19 @@ private:
   //                                      int                               & totBlocks,
   //                                      const int                         & nz) const;
 
-  void         getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>  & blocked_logs,
-                                     std::vector<std::vector<double> >           & bl_vp,
-                                     std::vector<std::vector<double> >           & bl_vs,
-                                     std::vector<std::vector<double> >           & bl_rho,
-                                     std::vector<std::vector<double> >           & vt_vp,
-                                     std::vector<std::vector<double> >           & vt_vs,
-                                     std::vector<std::vector<double> >           & vt_rho,
-                                     //std::vector<float *>              & blAlpha,
-                                     //std::vector<float *>              & blBeta,
-                                     //std::vector<float *>              & blRho,
-                                     //std::vector<float *>              & vtAlpha,
-                                     //std::vector<float *>              & vtBeta,
-                                     //std::vector<float *>              & vtRho,
-                                     std::vector<const std::vector<int> >       & ipos,
-                                     std::vector<const std::vector<int> >       & jpos,
-                                     std::vector<const std::vector<int> >       & kpos,
-                                     //std::vector<const int *>          & ipos,
-                                     //std::vector<const int *>          & jpos,
-                                     //std::vector<const int *>          & kpos,
-                                     std::vector<int>                  & n_blocks,
-                                     int                               & tot_blocks,
-                                     const int                         & nz) const;
+  void         getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>     & blocked_logs,
+                                        std::vector<std::vector<double> >    & bl_vp,
+                                        std::vector<std::vector<double> >    & bl_vs,
+                                        std::vector<std::vector<double> >    & bl_rho,
+                                        std::vector<std::vector<double> >    & vt_vp,
+                                        std::vector<std::vector<double> >    & vt_vs,
+                                        std::vector<std::vector<double> >    & vt_rho,
+                                        std::vector<const std::vector<int> > & ipos,
+                                        std::vector<const std::vector<int> > & jpos,
+                                        std::vector<const std::vector<int> > & kpos,
+                                        std::vector<int>                     & n_blocks,
+                                        int                                  & tot_blocks,
+                                        const int                            & nz) const;
 
   //void         getWellTrends(std::vector<float *>          & wellTrend,
   //                           std::vector<float *>          & highCutWellTrend,
@@ -488,8 +478,7 @@ private:
   void         BuildErodedIntervals(StormContGrid                & eroded_zone,
                                     //const std::vector<Surface>   & eroded_surfaces,
                                     const int                    & nz,
-                                    const Simbox                 * simbox,
-                                    const int                    & i) const;
+                                    const Simbox                 * simbox) const;
 
   void         BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
                                          std::vector<StormContGrid> & vs_zones,

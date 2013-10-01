@@ -1763,6 +1763,14 @@ FFTGrid::getFirstComplexValue()
   return( value );
 }
 
+float
+FFTGrid::getFirstRealValue()
+{
+  assert(istransformed_==false);
+  float value = static_cast<float>(rvalue_[0]);
+  return( value );
+}
+
 int
 FFTGrid::setNextComplex(fftw_complex value)
 {
@@ -2059,6 +2067,19 @@ FFTGrid::add(FFTGrid* fftGrid)
     }
   }
 }
+
+void
+FFTGrid::addScalar(float scalar)
+{
+  // Only addition of scalar in real domain
+  assert(istransformed_==false);
+  int i;
+  for(i=0;i < rsize_;i++)
+  {
+    rvalue_[i] += scalar;
+  }
+}
+
 void
 FFTGrid::subtract(FFTGrid* fftGrid)
 {
@@ -2126,6 +2147,16 @@ FFTGrid::multiply(FFTGrid* fftGrid)
     {
       rvalue_[i] *= fftGrid->rvalue_[i];
     }
+  }
+}
+
+void
+FFTGrid::conjugate()
+{
+  assert(istransformed_==true);
+  for(int i=0;i<csize_;i++)
+  {
+    cvalue_[i].im = -cvalue_[i].im;
   }
 }
 

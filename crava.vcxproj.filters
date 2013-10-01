@@ -996,6 +996,15 @@
     <ClCompile Include="src\intervalsimbox.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1677,6 +1686,15 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\intervalsimbox.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>

@@ -21,8 +21,9 @@
 class CravaTrend;
 class InputFiles;
 class ModelSettings;
-class ModelGeneral;
+//class ModelGeneral;
 class TimeLine;
+//class ModelGravityStatic;
 
 class CommonData{
 public:
@@ -198,8 +199,13 @@ private:
                           std::string                     & error_text,
                           bool                            & failed);
 
-  void ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
-                                   std::string                well_file_name,
+  //void ReadFaciesNamesFromWellFile(ModelSettings            * model_settings,
+  //                                 std::string                well_file_name,
+  //                                 std::vector<int>         & facies_nr,
+  //                                 std::vector<std::string> & facies_names,
+  //                                 std::string              & err_txt);
+
+  void ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                    std::vector<int>         & facies_nr,
                                    std::vector<std::string> & facies_names,
                                    std::string              & err_txt);
@@ -453,6 +459,37 @@ private:
                       InputFiles    * input_files,
                       std::string   & err_text_common);
 
+  bool  SetupGravityInversion(ModelSettings * model_settings,
+                              InputFiles    * input_files,
+                              std::string   & err_text_common);
+
+  void  ReadGravityDataFile(const std::string   & file_name,
+                            const std::string   & read_reason,
+                            int                   n_obs,
+                            int                   n_columns,
+                            std::vector <float> & obs_loc_utmx,
+                            std::vector <float> & obs_loc_utmy,
+                            std::vector <float> & obs_loc_depth,
+                            std::vector <float> & gravity_response,
+                            std::vector <float> & gravity_std_dev,
+                            std::string         & err_text);
+
+  //void  SetUpscaledPaddingSize(ModelSettings * model_settings);
+
+  //int   SetPaddingSize(int original_nxp, int upscaling_factor);
+
+  //std::vector<int> FindClosestFactorableNumber(int leastint);
+
+  bool  SetupTravelTimeInversion(ModelSettings * model_settings,
+                                 InputFiles    * input_files,
+                                 std::string   & err_text_common);
+
+  void  ProcessHorizons(std::vector<Surface>   & horizons,
+                        const InputFiles       * input_files,
+                        std::string            & err_text,
+                        bool                   & failed,
+                        int                      i_timelapse);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
@@ -481,10 +518,12 @@ private:
   bool setup_prior_correlation_;
   bool setup_timeline_;
   //bool prior_corr_estimation_;
+  bool setup_gravity_inversion_;
+  bool setup_traveltime_inversion_;
 
-  MultiIntervalGrid       * multiple_interval_grid_;
-  Simbox                    estimation_simbox_;
-  NRLib::Volume             full_inversion_volume_;
+  MultiIntervalGrid                           * multiple_interval_grid_;
+  Simbox                                        estimation_simbox_;
+  NRLib::Volume                                 full_inversion_volume_;
 
   std::map<int, std::vector<SeismicStorage> >   seismic_data_;
 
@@ -493,61 +532,55 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_; //
-  std::vector<std::string>                      continuous_logs_to_be_blocked_; // Continuous logs that should be blocked
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;   // Discrete logs that should be blocked
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;
+  std::vector<std::string>                      continuous_logs_to_be_blocked_; ///< Continuous logs that should be blocked
+  std::vector<std::string>                      discrete_logs_to_be_blocked_;   ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
-  int                                                                         n_trend_cubes_;
-  std::vector<CravaTrend>                                                     trend_cubes_;
+  int                                           n_trend_cubes_;
+  std::vector<CravaTrend>                       trend_cubes_;
 
-  std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
-  //std::vector<std::map<std::string, std::vector<DistributionsRock *> > >    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
-  //std::vector<std::map<std::string, std::vector<DistributionsRock *> > >      rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
+  std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
 
   // prior facies
-  std::vector<std::vector<float> >        prior_facies_;                  ///< Prior facies probabilities
-  std::vector<std::vector<FFTGrid *> >    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
+  std::vector<std::vector<float> >              prior_facies_;                  ///< Prior facies probabilities
+  std::vector<std::vector<FFTGrid *> >          prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
 
-  TimeLine                * time_line_;
+  // Timeline
+  TimeLine                                    * time_line_;
 
-  // Background models
-  //std::vector<Background * > background_models_;
+  std::map<int, float **>                       reflection_matrix_;
+  bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
-  //Well variables not contained in NRlib::Well
-  //std::map<std::string, int>                        timemissing_;
-  //std::map<std::string, double>                     xpos0_;
-  //std::map<std::string, double>                     ypos0_;
-  //std::map<std::string, std::vector<std::string> >  faciesnames_;
-  //std::map<std::string, std::vector<int> >          faciesNr_;
-  //std::map<std::string, int>                        faciesok_; //Bool?
-  //std::map<std::string, int>                        nFacies_;
+  std::map<int, Wavelet**>                      wavelets_;
+  std::map<int, std::vector<Grid2D *> >         local_noise_scale_;
+  std::map<int, std::vector<Grid2D *> >         local_shift_;
+  std::map<int, std::vector<Grid2D *> >         local_scale_;
+  std::map<int, std::vector<float> >            global_noise_estimate_;
+  std::map<int, std::vector<float> >            sn_ratio_;
 
-  std::map<int, float **>                 reflection_matrix_;
-  bool                                    refmat_from_file_global_vpvs_; //True if reflection matrix is from file or set up from global vp/vs value.
+  std::vector<std::vector<int> >                facies_nr_wells_;               ///< Facies Numbers per well.
+  std::vector<std::vector<std::string> >        facies_names_wells_;            ///< Facies Names per well
+  std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
-  std::map<int, Wavelet**>                wavelets_;
-  std::map<int, std::vector<Grid2D *> >   local_noise_scale_;
-  std::map<int, std::vector<Grid2D *> >   local_shift_;
-  std::map<int, std::vector<Grid2D *> >   local_scale_;
-  std::map<int, std::vector<float> >      global_noise_estimate_;
-  std::map<int, std::vector<float> >      sn_ratio_;
-
-  //std::vector<std::string>               facies_wells_;         ///< Names of wells with facies log
-  std::vector<std::vector<int> >          facies_nr_wells_;       ///< Facies Numbers per well.
-  std::vector<std::vector<std::string> >  facies_names_wells_;    ///< Facies Names per well
-  std::vector<bool>                       facies_log_wells_;      ///< True if this well has a facies log
-
-  std::vector<std::string>                facies_names_;          ///< Facies names combined for wells. (Intervals?)
+  std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells. (Intervals?)
 
   // Prior correlation
-  std::vector<Surface *>                  prior_corr_XY_;
+  std::vector<Surface *>                        prior_corr_XY_;
 
-  //Simbox                              * estimation_simbox_;
-  //NRLib::Volume                       * full_inversion_volume_;
+  std::vector<Wavelet*>                         temporary_wavelets_;            ///< Wavelet per angle
 
-  std::vector<Wavelet*>                   temporary_wavelets_; //One wavelet per angle
+  //Gravimetry parameters per timelapse
+  std::vector<std::vector<float> >              observation_location_utmx_;     ///< Vectors to store observation location coordinates
+  std::vector<std::vector<float> >              observation_location_utmy_;
+  std::vector<std::vector<float> >              observation_location_depth_;
+  std::vector<std::vector<float> >              gravity_response_;              ///< Vector to store base line gravity response
+  std::vector<std::vector<float> >              gravity_std_dev_;               ///< Vector to store base line gravity standard deviation
+
+  //Traveltime parameters per timelapse
+  std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
+  std::vector<FFTGrid *>                        rms_data_;                      ///< RMS data U^2
 
 };
 #endif

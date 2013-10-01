@@ -40,8 +40,9 @@ namespace NRLib {
          int                 imissing = -999);
 
     /// Construct well from file
-    Well(const std::string              & file_name,
-         bool                           & read_ok);
+    Well(const std::string & file_name,
+         bool              & read_ok,
+         const std::string & facies_log = "");
 
     /// Constructor
     /// \param[in] cont_log Continuous logs
@@ -71,7 +72,8 @@ namespace NRLib {
 
     /// Read a well from a file-name
     void ReadWell(const std::string              & file_name,
-                  bool                           & read_ok);
+                  bool                           & read_ok,
+                  const std::string              & facies_log = "");
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.

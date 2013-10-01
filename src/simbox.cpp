@@ -989,3 +989,13 @@ Surface * Simbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
   }
   return(result);
 }
+
+void Simbox::SetErodedSurfaces(Surface * top_surf,
+                               Surface * bot_surf)
+{
+  delete top_eroded_surface_;
+  top_eroded_surface_ = top_surf;
+
+  delete base_eroded_surface_;
+  base_eroded_surface_ = bot_surf;
+}
