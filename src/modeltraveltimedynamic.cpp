@@ -9,13 +9,16 @@
 #include "src/timings.h"
 #include "src/rmstrace.h"
 #include "src/simbox.h"
+#include "src/definitions.h"
 
 ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
                                                const InputFiles              * inputFiles,
                                                const Simbox                  * timeSimbox,
                                                const int                     & vintage)
 : rms_traces_(0),
-  thisTimeLapse_(vintage)
+  thisTimeLapse_(vintage),
+  simbox_above_(NULL),
+  simbox_below_(NULL)
 {
   std::string errTxt = "";
 
@@ -49,6 +52,9 @@ ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
   for(size_t i=0; i<rms_traces_.size(); i++)
     delete rms_traces_[i];
+
+  delete simbox_above_;
+  delete simbox_below_;
 }
 
 void
@@ -108,6 +114,19 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 
   range_above_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
   range_below_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
+
+  setupSimboxAbove(timeSimbox,
+                   modelSettings->getOutputGridFormat(),
+                   modelSettings->getOutputGridDomain(),
+                   modelSettings->getOtherOutputFlag(),
+                   modelSettings->getLzLimit(),
+                   tmpErrText);
+
+  setupSimboxBelow(timeSimbox,
+                   modelSettings->getOutputGridFormat(),
+                   modelSettings->getOutputGridDomain(),
+                   modelSettings->getOtherOutputFlag(),
+                   tmpErrText);
 
   if(tmpErrText != "") {
     errTxt += tmpErrText;
@@ -247,4 +266,109 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
   LogKit::LogFormatted(LogKit::Low, "\nRead "+NRLib::ToString(n_traces)+" RMS traces in file "+fileName+"\n");
 
+}
+
+//----------------------------------------------------------------------------
+
+void
+ModelTravelTimeDynamic::setupSimboxAbove(const Simbox  * timeSimbox,
+                                         const int     & outputFormat,
+                                         const int     & outputDomain,
+                                         const int     & otherOutput,
+                                         const double  & lz_limit,
+                                         std::string   & errTxt)
+{
+
+  std::string tmpErrTxt = "";
+
+  Surface top_simbox_surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
+
+  double xmin, xmax, ymin, ymax;
+
+  timeSimbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
+
+  double lx = xmax-xmin;
+  double ly = ymax-ymin;
+
+  int nx = timeSimbox->getnx();
+  int ny = timeSimbox->getny();
+
+  NRLib::Grid2D<double> z_grid_top(nx, ny, 0);
+
+  Surface top_surface = Surface(xmin, ymin, lx, ly, z_grid_top);
+
+  //
+  // Make new simbox
+  //
+  simbox_above_ = new Simbox(timeSimbox);
+  simbox_above_->setDepth(top_surface, top_simbox_surface, n_layers_above_);
+
+  int status = simbox_above_->calculateDz(lz_limit, tmpErrTxt);
+
+  if(status == Simbox::INTERNALERROR) {
+    errTxt += "A problem was encountered for the simbox above the reservoir in the RMS inversion\n";
+    errTxt += tmpErrTxt;
+  }
+
+
+  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Above_Reservoir";
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Above_Reservoir";
+    simbox_above_->writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToBackground(),
+                                    outputFormat);
+  }
+
+}
+
+//----------------------------------------------------------------------------
+
+void
+ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
+                                         const int     & outputFormat,
+                                         const int     & outputDomain,
+                                         const int     & otherOutput,
+                                         std::string   & errTxt)
+{
+  int n_rms_traces = rms_traces_.size();
+
+  double max_time = 0;
+
+  for(int i=0; i<n_rms_traces; i++) {
+    const std::vector<double> & rms_time = rms_traces_[i]->getTime();
+    double max = rms_time[rms_time.size()-1];
+
+    if(max > max_time)
+      max_time = max;
+  }
+
+  Surface bot_simbox_surface(dynamic_cast<const Surface &> (timeSimbox->GetBotSurface()));
+
+  double z_max = timeSimbox->getBotZMax();
+  double lz    = max_time - z_max;
+
+  //
+  // Make new simbox
+  //
+  simbox_below_ = new Simbox(timeSimbox);
+
+  double dz      = static_cast<double>(lz/n_layers_below_);
+  double z_shift = 0;
+
+  simbox_below_->setDepth(bot_simbox_surface, z_shift, lz, dz);
+
+  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Below_Reservoir";
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Below_Reservoir";
+    simbox_below_->writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToBackground(),
+                                    outputFormat);
+  }
+
+  if(lz < 0) {
+    errTxt += "A problem was encountered for the simbox below the reservoir in the RMS inversion\n";
+    errTxt += "There are no RMS data below the reservoir\n";
+  }
 }

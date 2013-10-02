@@ -31,11 +31,12 @@ private:
                                               const double                & mu_vp_base,
                                               const NRLib::Grid2D<double> & Sigma_m_above,
                                               const NRLib::Grid2D<double> & Sigma_m_below,
-                                              const double                & max_time,
                                               const double                & standard_deviation,
                                               const RMSTrace              * rms_trace,
                                               const FFTGrid               * mu_log_vp,
                                               const std::vector<double>   & cov_grid_log_vp,
+                                              const Simbox                * simbox_above,
+                                              const Simbox                * simbox_below,
                                               const Simbox                * timeSimbox,
                                               std::vector<double>         & mu_post_log_vp,
                                               NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
@@ -51,8 +52,9 @@ private:
   NRLib::Grid2D<double>         calculateG(const std::vector<double> & rms_time,
                                            const double              & t_top,
                                            const double              & t_bot,
-                                           const double              & dt_simbox,
-                                           const double              & max_time) const;
+                                           const double              & dt_above,
+                                           const double              & dt_below,
+                                           const double              & dt_simbox) const;
 
   std::vector<double>           calculateDSquare(const std::vector<double> & d) const;
 
@@ -93,7 +95,7 @@ private:
   NRLib::Grid2D<double>         generateSigma(const double              & var,
                                               const std::vector<double> & corrT) const;
 
-  NRLib::Grid2D<double>         generateSigmaVp(const float  & dt,
+  NRLib::Grid2D<double>         generateSigmaVp(const double & dt,
                                                 const int    & n_layers,
                                                 const double & var_vp,
                                                 const Vario  * variogram) const;
@@ -136,14 +138,6 @@ private:
                                                                        const NRLib::Grid2D<double> & variance_vp_trans,
                                                                        std::vector<double>         & mu_log_vp,
                                                                        NRLib::Grid2D<double>       & variance_log_vp) const;
-
-  double                        findMaxTime(const std::vector<RMSTrace *> & rms_traces) const;
-
-  void                          findDtMax(const std::vector<RMSTrace *> & rms_traces,
-                                          const Simbox                  * timeSimbox,
-                                          const double                  & max_time,
-                                          float                         & dt_max_above,
-                                          float                         & dt_max_below) const;
 
   void                          setExpectation(const RMSTrace             * rms_trace,
                                                const std::vector<double>  & post_vp,

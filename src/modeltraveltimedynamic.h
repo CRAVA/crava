@@ -27,8 +27,6 @@ public:
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   const std::vector<RMSTrace *> getRMSTraces()             const { return rms_traces_             ;}
-  const int                     getNLayersAbove()          const { return n_layers_above_         ;}
-  const int                     getNLayersBelow()          const { return n_layers_below_         ;}
   const double                  getMeanVpTop()             const { return mean_vp_top_            ;}
   const double                  getMeanVpBase()            const { return mean_vp_base_           ;}
   const double                  getVarVpAbove()            const { return var_vp_above_           ;}
@@ -36,6 +34,8 @@ public:
   const double                  getRangeAbove()            const { return range_above_            ;}
   const double                  getRangeBelow()            const { return range_below_            ;}
   const double                  getStandardDeviation()     const { return standard_deviation_     ;}
+  const Simbox *                getSimboxAbove()           const { return simbox_above_           ;}
+  const Simbox *                getSimboxBelow()           const { return simbox_below_           ;}
 
 
 private:
@@ -55,6 +55,18 @@ private:
                                             const Simbox      * timeSimbox,
                                             std::string       & errTxt);
 
+  void                          setupSimboxAbove(const Simbox  * timeSimbox,
+                                                 const int     & outputFormat,
+                                                 const int     & outputDomain,
+                                                 const int     & otherOutput,
+                                                 const double  & lz_limit,
+                                                 std::string   & errTxt);
+
+  void                          setupSimboxBelow(const Simbox  * timeSimbox,
+                                                 const int     & outputFormat,
+                                                 const int     & outputDomain,
+                                                 const int     & otherOutput,
+                                                 std::string   & errTxt);
 
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
   std::vector<RMSTrace *>   rms_traces_;
@@ -77,6 +89,9 @@ private:
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
   int                       thisTimeLapse_;         ///< Time lapse of the current travel time data set
+
+  Simbox *                  simbox_above_;          ///< Simbox to be used above the reservoir
+  Simbox *                  simbox_below_;          ///< Simbox to be used below the reservoir
 
 };
 

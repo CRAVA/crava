@@ -32,12 +32,13 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   double cpu  = 0.0;
   TimeKit::getTime(wall,cpu);
 
-  FFTGrid * mu_log_vp                 = seismicParameters.GetMuAlpha();
-  FFTGrid * cov_log_vp                = seismicParameters.GetCovBeta();
-  std::vector<double> cov_grid_log_vp = getCovLogVp(cov_log_vp);
+  FFTGrid * mu_log_vp                      = seismicParameters.GetMuAlpha();
+  FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
+  std::vector<double> cov_grid_log_vp      = getCovLogVp(cov_log_vp);
 
-  Simbox * timeSimbox = modelGeneral->getTimeSimbox();
-
+  const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
+  const Simbox * simbox_above              = modelTravelTimeDynamic->getSimboxAbove();
+  const Simbox * simbox_below              = modelTravelTimeDynamic->getSimboxBelow();
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
   const double mu_vp_top                   = modelTravelTimeDynamic->getMeanVpTop();
   const double mu_vp_base                  = modelTravelTimeDynamic->getMeanVpBase();
@@ -50,9 +51,9 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   Vario * variogram_above                  = new GenExpVario(1, static_cast<float>(range_above));
   Vario * variogram_below                  = new GenExpVario(1, static_cast<float>(range_below));
 
-  n_above_                                 = modelTravelTimeDynamic->getNLayersAbove();
-  n_below_                                 = modelTravelTimeDynamic->getNLayersBelow();
-  n_model_                                 = mu_log_vp->getNz();
+  n_above_                                 = simbox_above->getnz();
+  n_below_                                 = simbox_below->getnz();
+  n_model_                                 = timeSimbox  ->getnz();
   n_pad_above_                             = n_above_ + static_cast<int>(std::ceil(range_above));
   n_pad_below_                             = n_below_ + static_cast<int>(std::ceil(range_below));
   n_pad_model_                             = mu_log_vp->getNzp();
@@ -60,15 +61,13 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   int low_cut_model                        = modelGeneral->calculateLowIntCut(modelGeneral->getLowCut(), n_pad_model_, timeSimbox->getdz());
 
   int n_rms_traces                         = static_cast<int>(rms_traces.size());
-  double max_time                          = findMaxTime(rms_traces);
 
   float corrGradI;
   float corrGradJ;
   modelGeneral->getCorrGradIJ(corrGradI, corrGradJ);
 
-  float dt_max_above = 0;
-  float dt_max_below = 0;
-  findDtMax(rms_traces, timeSimbox, max_time, dt_max_above, dt_max_below);
+  double dt_max_above = simbox_above->getdz();
+  double dt_max_below = simbox_below->getdz();
 
   NRLib::Grid2D<double> Sigma_vp_above = generateSigmaVp(dt_max_above, n_pad_above_, var_vp_above, variogram_above);
   NRLib::Grid2D<double> Sigma_vp_below = generateSigmaVp(dt_max_below, n_pad_below_, var_vp_below, variogram_below);
@@ -90,11 +89,12 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                   mu_vp_base,
                   Sigma_vp_above,
                   Sigma_vp_below,
-                  max_time,
                   standard_deviation,
                   rms_traces[i],
                   mu_log_vp,
                   cov_grid_log_vp,
+                  simbox_above,
+                  simbox_below,
                   timeSimbox,
                   mu_post,
                   Sigma_post);
@@ -113,15 +113,26 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   }
 
-  FFTGrid * post_mu_log_vp  = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
+  FFTGrid * post_mu_log_vp_model  = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
+  FFTGrid * post_mu_log_vp_above  = krigeExpectation3D(simbox_above, mu_log_vp_post_above);
+  FFTGrid * post_mu_log_vp_below  = krigeExpectation3D(simbox_below, mu_log_vp_post_below);
 
-  FFTGrid * post_cov_log_vp = generatePosteriorCovGrid(timeSimbox,
-                                                       cov_circulant_model,
-                                                       modelGeneral->getPriorCorrXY(),
-                                                       corrGradI,
-                                                       corrGradJ,
-                                                       low_cut_model,
-                                                       n_pad_model_);
+  std::string fileName_above = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_above";
+  std::string fileName_model = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_model";
+  std::string fileName_below = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_below";
+
+  post_mu_log_vp_above->writeFile(fileName_above, IO::PathToBackground(), simbox_above, "NO_LABEL");
+  post_mu_log_vp_model->writeFile(fileName_model, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+  post_mu_log_vp_below->writeFile(fileName_below, IO::PathToBackground(), simbox_below, "NO_LABEL");
+
+
+  FFTGrid * post_cov_log_vp_model = generatePosteriorCovGrid(timeSimbox,
+                                                             cov_circulant_model,
+                                                             modelGeneral->getPriorCorrXY(),
+                                                             corrGradI,
+                                                             corrGradJ,
+                                                             low_cut_model,
+                                                             n_pad_model_);
 
 
 
@@ -131,8 +142,10 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   delete variogram_above;
   delete variogram_below;
 
-  delete post_mu_log_vp;
-  delete post_cov_log_vp;
+  delete post_mu_log_vp_model;
+  delete post_mu_log_vp_above;
+  delete post_mu_log_vp_below;
+  delete post_cov_log_vp_model;
 
 }
 
@@ -148,11 +161,12 @@ RMSInversion::do1DInversion(const double                & mu_vp_top,
                             const double                & mu_vp_base,
                             const NRLib::Grid2D<double> & Sigma_m_above,
                             const NRLib::Grid2D<double> & Sigma_m_below,
-                            const double                & max_time,
                             const double                & standard_deviation,
                             const RMSTrace              * rms_trace,
                             const FFTGrid               * mu_log_vp,
                             const std::vector<double>   & cov_grid_log_vp,
+                            const Simbox                * simbox_above,
+                            const Simbox                * simbox_below,
                             const Simbox                * timeSimbox,
                             std::vector<double>         & mu_post_log_vp,
                             NRLib::Grid2D<double>       & Sigma_post_log_vp) const
@@ -163,15 +177,19 @@ RMSInversion::do1DInversion(const double                & mu_vp_top,
 
   double t_top     = timeSimbox->getTop(i_ind, j_ind);
   double t_bot     = timeSimbox->getBot(i_ind, j_ind);
-  double dt_simbox = timeSimbox->getdz(i_ind,  j_ind);
+
+  double dt_above  = simbox_above->getdz(i_ind, j_ind);
+  double dt_below  = simbox_below->getdz(i_ind, j_ind);
+  double dt_simbox = timeSimbox  ->getdz(i_ind,  j_ind);
 
   const std::vector<double> time = rms_trace->getTime();
 
   NRLib::Grid2D<double> G = calculateG(time,
                                        t_top,
                                        t_bot,
-                                       dt_simbox,
-                                       max_time);
+                                       dt_above,
+                                       dt_below,
+                                       dt_simbox);
 
   std::vector<double>   mu_log_vp_model = generateMuLogVpModel(mu_log_vp, i_ind, j_ind);
 
@@ -328,16 +346,14 @@ NRLib::Grid2D<double>
 RMSInversion::calculateG(const std::vector<double> & rms_time,
                          const double              & t_top,
                          const double              & t_bot,
-                         const double              & dt_simbox,
-                         const double              & max_time) const
+                         const double              & dt_above,
+                         const double              & dt_below,
+                         const double              & dt_simbox) const
 {
   int n_layers = n_pad_above_ + n_pad_model_ + n_pad_below_;
 
   std::vector<double> t(n_layers + 1, 0);
   std::vector<double> dt(n_layers + 1, 0);
-
-  double dt_above  = static_cast<double>(  t_top             / n_above_);
-  double dt_below  = static_cast<double>( (max_time - t_bot) / n_below_);
 
   for(int j=0; j<n_layers + 1; j++) {
     if(j < n_above_) {
@@ -442,7 +458,7 @@ RMSInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_m
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::generateSigmaVp(const float  & dt,
+RMSInversion::generateSigmaVp(const double & dt,
                               const int    & n_layers,
                               const double & var_vp,
                               const Vario  * variogram) const
@@ -452,7 +468,7 @@ RMSInversion::generateSigmaVp(const float  & dt,
   std::vector<double> corrT(n_layers,0);
   corrT[0] = 1;
   for(int i=1; i<n_layers/2; i++) {
-    corrT[i] = static_cast<double>(variogram->corr(i*dt, 0));
+    corrT[i] = static_cast<double>(variogram->corr(static_cast<float>(i*dt), 0));
     corrT[n_layers-i] = corrT[i];
   }
 
@@ -544,54 +560,6 @@ RMSInversion::generateMuVp(const double & top_value,
     mu_vp[j] = top_value + j * (base_value - top_value) / n_layers;
 
   return mu_vp;
-}
-
-//-----------------------------------------------------------------------------------------//
-
-double
-RMSInversion::findMaxTime(const std::vector<RMSTrace *> & rms_traces) const
-{
-
-  int n_rms_traces = rms_traces.size();
-
-  double max_time = 0;
-
-  for(int i=0; i<n_rms_traces; i++) {
-    const std::vector<double> & rms_time = rms_traces[i]->getTime();
-    double max = rms_time[rms_time.size()-1];
-
-    if(max > max_time)
-      max_time = max;
-  }
-
-  return max_time;
-}
-
-//-----------------------------------------------------------------------------------------//
-void
-RMSInversion::findDtMax(const std::vector<RMSTrace *> & rms_traces,
-                        const Simbox                  * timeSimbox,
-                        const double                  & max_time,
-                        float                         & dt_max_above,
-                        float                         & dt_max_below) const
-{
-  int n_rms_traces = static_cast<int>(rms_traces.size());
-
-  for(int i=0; i<n_rms_traces; i++) {
-
-    int i_ind = rms_traces[i]->getIIndex();
-    int j_ind = rms_traces[i]->getJIndex();
-
-    double t_top    = timeSimbox->getTop(i_ind, j_ind);
-    double t_bot    = timeSimbox->getBot(i_ind, j_ind);
-    float  dt_above = static_cast<float>( t_top             / n_above_);
-    float  dt_below = static_cast<float>((max_time - t_bot) / n_below_);
-
-    if(dt_above > dt_max_above)
-      dt_max_above = dt_above;
-    if(dt_below > dt_max_below)
-      dt_max_below = dt_below;
-  }
 }
 
 //-----------------------------------------------------------------------------------------//
