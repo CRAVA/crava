@@ -6,6 +6,7 @@
 #define RMS_INVERSION_H
 
 #include "nrlib/grid/grid2d.hpp"
+#include "src/definitions.h"
 
 class ModelGeneral;
 class SeismicParametersHolder;
@@ -167,6 +168,18 @@ private:
 
   FFTGrid *                     krigeExpectation3D(const Simbox               * simbox,
                                                    std::vector<KrigingData2D> & mu_vp_post) const;
+
+  FFTGrid *                     generatePosteriorCovGrid(const Simbox               * simbox,
+                                                         const std::vector<double>  & cov_circulant,
+                                                         const Surface              * priorCorrXY,
+                                                         const float                & corrGradI,
+                                                         const float                & corrGradJ,
+                                                         const int                  & low_cut,
+                                                         const int                  & n_pad) const;
+
+  void                          findCovarianceAndCorrT(const std::vector<double> & cov_circ,
+                                                       std::vector<float>        & corr_circ,
+                                                       double                    & covariance) const;
 
 
   int n_above_;

@@ -99,6 +99,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
   forwardModeling_        = modelSettings->getForwardModeling();
   numberOfWells_          = modelSettings->getNumberOfWells();
 
+  lowCut_                 = modelSettings->getLowCut();
+
   priorCorrXY_            = NULL;
 
   {
@@ -2172,7 +2174,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     {
       LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
       LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
-      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
+      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",lowCut_);
       LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
       LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",modelSettings->getGuardZone());
       LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",modelSettings->getSmoothLength());
@@ -3956,9 +3958,8 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       const int nyPad     = modelSettings->getNYpad();
       const int nzPad     = modelSettings->getNZpad();
 
-      float dt = static_cast<float>(timeSimbox->getdz());
-      float lowCut = modelSettings->getLowCut();
-      int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+      double dt = timeSimbox->getdz();
+      int lowIntCut = calculateLowIntCut(lowCut_, nzPad, dt); // computes the integer whis corresponds to the low cut frequency.
 
       float corrGradI;
       float corrGradJ;
@@ -3983,7 +3984,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       delete [] paramCov;
 
       if(printResult)
-        seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);
+        seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, static_cast<float>(dt));
       seismicParameters.printPriorVariances();
     }
 
@@ -4941,4 +4942,14 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
   for(int i =0;i<nxp;i++)
     for(int j =0;j<nyp;j++)
        (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
+}
+
+int
+ModelGeneral::calculateLowIntCut(const float  & low_cut,
+                                 const int    & nzPad,
+                                 const double & dt) const
+{
+  int lowIntCut = int(floor(low_cut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+
+  return lowIntCut;
 }

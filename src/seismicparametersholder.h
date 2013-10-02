@@ -72,9 +72,13 @@ public:
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real                   * computeCircCorrT(const std::vector<float> & priorCorrT,
+  static fftw_real            * computeCircCorrT(const std::vector<float> & priorCorrT,
                                                  const int                & minIntFq,
-                                                 const int                & nzp) const;
+                                                 const int                & nzp);
+
+  static void                   makeCircCorrTPosDef(fftw_real * circCorrT,
+                                                    const int & minIntFq,
+                                                    const int & nzp);
 
   fftw_real                   * extractParamCorrFromCovAlpha(int nzp) const;
 
@@ -115,11 +119,6 @@ private:
   FFTGrid                     * createFFTGrid(int nx,  int ny,  int nz,
                                               int nxp, int nyp, int nzp,
                                               bool fileGrid);
-
-
-  void                          makeCircCorrTPosDef(fftw_real * circCorrT,
-                                                    const int & minIntFq,
-                                                    const int & nzp) const;
 
   void                         makeCorrXYPosDef(Surface         & priorCorrXY);
 

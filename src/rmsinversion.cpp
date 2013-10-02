@@ -11,6 +11,7 @@
 #include "src/kriging2d.h"
 #include "src/krigingdata2d.h"
 #include "src/covgrid2d.h"
+#include "src/definitions.h"
 
 #include "nrlib/flens/nrlib_flens.hpp"
 
@@ -56,8 +57,14 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   n_pad_below_                             = n_below_ + static_cast<int>(std::ceil(range_below));
   n_pad_model_                             = mu_log_vp->getNzp();
 
+  int low_cut_model                        = modelGeneral->calculateLowIntCut(modelGeneral->getLowCut(), n_pad_model_, timeSimbox->getdz());
+
   int n_rms_traces                         = static_cast<int>(rms_traces.size());
   double max_time                          = findMaxTime(rms_traces);
+
+  float corrGradI;
+  float corrGradJ;
+  modelGeneral->getCorrGradIJ(corrGradI, corrGradJ);
 
   float dt_max_above = 0;
   float dt_max_below = 0;
@@ -106,22 +113,27 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   }
 
-  FFTGrid * exp_grid = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
+  FFTGrid * post_mu_log_vp  = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
 
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp";
-  exp_grid->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+  FFTGrid * post_cov_log_vp = generatePosteriorCovGrid(timeSimbox,
+                                                       cov_circulant_model,
+                                                       modelGeneral->getPriorCorrXY(),
+                                                       corrGradI,
+                                                       corrGradJ,
+                                                       low_cut_model,
+                                                       n_pad_model_);
 
-  NRLib::Grid2D<double> stat_above = generateSigma(1, cov_circulant_above);
-  NRLib::Grid2D<double> stat_model = generateSigma(1, cov_circulant_model);
-  NRLib::Grid2D<double> stat_below = generateSigma(1, cov_circulant_below);
 
-  NRLib::Grid2D<double> Sigma_stationary = generateSigmaCombined(stat_above, stat_model, stat_below);
 
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
 
   delete variogram_above;
   delete variogram_below;
+
+  delete post_mu_log_vp;
+  delete post_cov_log_vp;
+
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -1078,4 +1090,59 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
   delete lateralVario;
 
   return bgGrid;
+}
+//-------------------------------------------------------------------------------
+FFTGrid *
+RMSInversion::generatePosteriorCovGrid(const Simbox               * simbox,
+                                       const std::vector<double>  & cov_circulant,
+                                       const Surface              * priorCorrXY,
+                                       const float                & corrGradI,
+                                       const float                & corrGradJ,
+                                       const int                  & low_cut,
+                                       const int                  & n_pad) const
+{
+
+  std::string text = "\nGenerating posterior covariance grid:";
+
+  const int    nx   = simbox->getnx();
+  const int    ny   = simbox->getny();
+  const int    nz   = simbox->getnz();
+
+  const int    nxp  = nx;
+  const int    nyp  = ny;
+  const int    nzp  = nz;
+
+  FFTGrid * covGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+  covGrid->createRealGrid();
+  covGrid->setType(FFTGrid::COVARIANCE);
+
+  std::vector<float> corr_circulant;
+  double             covariance;
+
+  findCovarianceAndCorrT(cov_circulant, corr_circulant, covariance);
+
+  fftw_real * circCorrT = SeismicParametersHolder::computeCircCorrT(corr_circulant, low_cut, n_pad);
+
+  covGrid->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  covGrid->multiplyByScalar(static_cast<float>(covariance));
+
+  fftw_free(circCorrT);
+
+  return covGrid;
+}
+//-------------------------------------------------------------------------------
+
+void
+RMSInversion::findCovarianceAndCorrT(const std::vector<double> & cov_circ,
+                                     std::vector<float>        & corr_circ,
+                                     double                    & covariance) const
+{
+  int n = static_cast<int>(cov_circ.size());
+
+  corr_circ.resize(n);
+
+  covariance = cov_circ[0];
+
+  for(int i=0; i<n; i++)
+    corr_circ[i] = static_cast<float>(cov_circ[i] / covariance);
 }
