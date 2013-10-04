@@ -318,6 +318,7 @@ ModelTravelTimeDynamic::setupSimboxAbove(const Simbox  * timeSimbox,
                                     baseSurf,
                                     IO::PathToBackground(),
                                     outputFormat);
+    simbox_above_->setTopBotName(topSurf, baseSurf, outputFormat);
   }
 
 }
@@ -365,6 +366,8 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
                                     baseSurf,
                                     IO::PathToBackground(),
                                     outputFormat);
+    simbox_below_->setTopBotName(topSurf, baseSurf, outputFormat);
+
   }
 
   if(lz < 0) {

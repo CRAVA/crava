@@ -7,6 +7,7 @@
 
 #include "nrlib/grid/grid2d.hpp"
 #include "src/definitions.h"
+#include "lib/utils.h"
 
 class ModelGeneral;
 class SeismicParametersHolder;
@@ -160,8 +161,9 @@ private:
   void                          writeMatrix(std::string                   file_name,
                                             const NRLib::Grid2D<double> & grid2d) const;
 
-  FFTGrid *                     krigeExpectation3D(const Simbox               * simbox,
-                                                   std::vector<KrigingData2D> & mu_vp_post) const;
+ void                           krigeExpectation3D(const Simbox               * simbox,
+                                                   std::vector<KrigingData2D> & kriging_post,
+                                                   FFTGrid                    * mu_post) const;
 
   FFTGrid *                     generatePosteriorCovGrid(const Simbox               * simbox,
                                                          const std::vector<double>  & cov_circulant,
@@ -175,6 +177,43 @@ private:
                                                        std::vector<float>        & corr_circ,
                                                        double                    & covariance) const;
 
+  void                          generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
+                                                               const std::vector<double> & post_circulant_cov,
+                                                               FFTGrid                   * pri_mu,
+                                                               FFTGrid                   * post_mu,
+                                                               FFTGrid                  *& stationary_observations,
+                                                               FFTGrid                  *& stationary_covariance) const;
+
+  void                          calculateStationaryObservations(const fftw_complex * pri_cov_c,
+                                                                const fftw_complex * var_e_c,
+                                                                FFTGrid            * pri_mu,
+                                                                FFTGrid            * post_mu,
+                                                                FFTGrid            * stat_d) const;
+
+  void                          calculateErrorVariance(const fftw_complex * pri_cov_c,
+                                                       const fftw_complex * post_cov_c,
+                                                       const int          & nzp,
+                                                       fftw_complex       * var_e_c) const;
+
+  void                          multiplyComplex(const fftw_complex * z1,
+                                                const fftw_complex * z2,
+                                                const int          & n,
+                                                fftw_complex       * z) const;
+
+  void                          divideComplex(const fftw_complex * z1,
+                                              const fftw_complex * z2,
+                                              const int          & n,
+                                              fftw_complex       * z) const;
+
+  void                          addComplex(const fftw_complex * z1,
+                                           const fftw_complex * z2,
+                                           const int          & n,
+                                           fftw_complex       * z) const;
+
+  void                          subtractComplex(const fftw_complex * z1,
+                                                const fftw_complex * z2,
+                                                const int          & n,
+                                                fftw_complex       * z) const;
 
   int n_above_;
   int n_below_;

@@ -17,6 +17,7 @@
 
 #include "lib/timekit.hpp"
 
+
 RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                            ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                            SeismicParametersHolder & seismicParameters)
@@ -57,6 +58,11 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   n_pad_above_                             = n_above_ + static_cast<int>(std::ceil(range_above));
   n_pad_below_                             = n_below_ + static_cast<int>(std::ceil(range_below));
   n_pad_model_                             = mu_log_vp->getNzp();
+
+  int nx                                   = mu_log_vp->getNx();
+  int ny                                   = mu_log_vp->getNy();
+  int nxp                                  = mu_log_vp->getNxp();
+  int nyp                                  = mu_log_vp->getNyp();
 
   int low_cut_model                        = modelGeneral->calculateLowIntCut(modelGeneral->getLowCut(), n_pad_model_, timeSimbox->getdz());
 
@@ -113,17 +119,48 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   }
 
-  FFTGrid * post_mu_log_vp_model  = krigeExpectation3D(timeSimbox, mu_log_vp_post_model);
-  FFTGrid * post_mu_log_vp_above  = krigeExpectation3D(simbox_above, mu_log_vp_post_above);
-  FFTGrid * post_mu_log_vp_below  = krigeExpectation3D(simbox_below, mu_log_vp_post_below);
+  //LogKit::LogFormatted(LogKit::Low, "\nAbove reservoir zone:");
+  //FFTGrid * post_mu_log_vp_above  = krigeExpectation3D(simbox_above, mu_log_vp_post_above);
 
-  std::string fileName_above = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_above";
+  //std::string fileName_above = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_above";
+  //post_mu_log_vp_above->writeFile(fileName_above, IO::PathToBackground(), simbox_above, "NO_LABEL");
+
+  LogKit::LogFormatted(LogKit::Low, "\nIn reservoir zone:");
+
+  FFTGrid * post_mu_log_vp_model = ModelGeneral::createFFTGrid(nx, ny, n_model_, nxp, nyp, n_pad_model_, false);
+  post_mu_log_vp_model->createRealGrid();
+  post_mu_log_vp_model->setType(FFTGrid::PARAMETER);
+
+  krigeExpectation3D(timeSimbox, mu_log_vp_post_model, post_mu_log_vp_model);
+
+  FFTGrid * stationary_d = ModelGeneral::createFFTGrid(nx, ny, n_model_, nxp, nyp, n_pad_model_, false);
+  stationary_d->createRealGrid();
+  stationary_d->setType(FFTGrid::DATA);
+
+  FFTGrid * stationary_covariance = ModelGeneral::createFFTGrid(nx, ny, n_model_, nxp, nyp, n_pad_model_, false);
+  stationary_covariance->createRealGrid();
+  stationary_covariance->setType(FFTGrid::COVARIANCE);
+
+  generateStationaryDistribution(cov_grid_log_vp,
+                                 cov_circulant_model,
+                                 mu_log_vp,
+                                 post_mu_log_vp_model,
+                                 stationary_d,
+                                 stationary_covariance);
+
+  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "stationary_observations";
+  stationary_d->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+
   std::string fileName_model = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_model";
-  std::string fileName_below = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_below";
-
-  post_mu_log_vp_above->writeFile(fileName_above, IO::PathToBackground(), simbox_above, "NO_LABEL");
   post_mu_log_vp_model->writeFile(fileName_model, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  post_mu_log_vp_below->writeFile(fileName_below, IO::PathToBackground(), simbox_below, "NO_LABEL");
+
+  //LogKit::LogFormatted(LogKit::Low, "\nBelow reservoir zone:");
+  //FFTGrid * post_mu_log_vp_below = NULL;
+  //krigeExpectation3D(simbox_below, mu_log_vp_post_below, post_mu_log_vp_below);
+
+  //std::string fileName_below = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_below";
+  //post_mu_log_vp_below->writeFile(fileName_below, IO::PathToBackground(), simbox_below, "NO_LABEL");
+
 
 
   FFTGrid * post_cov_log_vp_model = generatePosteriorCovGrid(timeSimbox,
@@ -143,9 +180,12 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   delete variogram_below;
 
   delete post_mu_log_vp_model;
-  delete post_mu_log_vp_above;
-  delete post_mu_log_vp_below;
+  //delete post_mu_log_vp_above;
+  //delete post_mu_log_vp_below;
+
   delete post_cov_log_vp_model;
+
+  delete stationary_d;
 
 }
 
@@ -977,9 +1017,10 @@ RMSInversion::setExpectation(const RMSTrace             * rms_trace,
 
 //-------------------------------------------------------------------------------
 
-FFTGrid *
+void
 RMSInversion::krigeExpectation3D(const Simbox               * simbox,
-                                 std::vector<KrigingData2D> & mu_vp_post) const
+                                 std::vector<KrigingData2D> & kriging_post,
+                                 FFTGrid                    * mu_post) const
 {
 
   std::string text = "\nKriging 1D posterior RMS velocities to 3D:";
@@ -1000,6 +1041,11 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
   const double lx   = simbox->getlx();
   const double ly   = simbox->getly();
 
+
+  FFTGrid * bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+  bgGrid->createRealGrid();
+  bgGrid->setType(FFTGrid::PARAMETER);
+
   Vario * lateralVario = new GenExpVario(1, 2000, 2000);
   CovGrid2D covGrid2D = Kriging2D::makeCovGrid2D(simbox, lateralVario, 0);
 
@@ -1008,32 +1054,29 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
   //
   Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
-  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  FFTGrid * bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
-  bgGrid->createRealGrid();
-  bgGrid->setType(FFTGrid::PARAMETER);
   bgGrid->setAccessMode(FFTGrid::WRITE);
 
   for (int k=0 ; k<nzp ; k++) {
 
-    mu_vp_post[k].findMeanValues();
+    kriging_post[k].findMeanValues();
 
-    int n_data = mu_vp_post[k].getNumberOfData();
+    int n_data = kriging_post[k].getNumberOfData();
 
     double mean_value = 0;
     for(int i=0; i<n_data; i++)
-      mean_value += static_cast<double>(mu_vp_post[k].getData(i) / n_data);
+      mean_value += static_cast<double>(kriging_post[k].getData(i) / n_data);
 
     surface.Assign(mean_value);
 
     // Kriging of layer
-    Kriging2D::krigSurface(surface, mu_vp_post[k], covGrid2D);
+    Kriging2D::krigSurface(surface, kriging_post[k], covGrid2D);
 
     // Set layer in background model from surface
     for(int j=0 ; j<nyp ; j++) {
@@ -1041,7 +1084,7 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
         if(i<nxp)
           bgGrid->setNextReal(float(surface(i,j)));
         else
-          bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
+          bgGrid->setNextReal(0);
       }
     }
 
@@ -1055,9 +1098,11 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
   }
   bgGrid->endAccess();
 
-  delete lateralVario;
+  Background::createPaddedParameter(mu_post, bgGrid);
 
-  return bgGrid;
+  delete bgGrid;
+
+  delete lateralVario;
 }
 //-------------------------------------------------------------------------------
 FFTGrid *
@@ -1113,4 +1158,211 @@ RMSInversion::findCovarianceAndCorrT(const std::vector<double> & cov_circ,
 
   for(int i=0; i<n; i++)
     corr_circ[i] = static_cast<float>(cov_circ[i] / covariance);
+}
+
+//-------------------------------------------------------------------------------
+void
+RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
+                                             const std::vector<double> & post_circulant_cov,
+                                             FFTGrid                   * pri_mu,
+                                             FFTGrid                   * post_mu,
+                                             FFTGrid                  *& stationary_observations,
+                                             FFTGrid                  *& /*stationary_covariance*/) const
+{
+
+  int nzp  = stationary_observations->getNzp();
+  int cnzp = nzp/2 + 1;
+  int rnzp = 2 * cnzp;
+
+  fftw_real    * pri_cov_r = new fftw_real[rnzp];
+  fftw_complex * pri_cov_c = reinterpret_cast<fftw_complex*>(pri_cov_r);
+
+  for(int i=0; i<nzp; i++)
+    pri_cov_r[i] = static_cast<float>(pri_circulant_cov[i]);
+
+  Utils::fft(pri_cov_r, pri_cov_c, nzp);
+
+  fftw_real    * post_cov_r = new fftw_real[rnzp];
+  fftw_complex * post_cov_c = reinterpret_cast<fftw_complex*>(post_cov_r);
+
+  for(int i=0; i<nzp; i++)
+    post_cov_r[i] = static_cast<float>(post_circulant_cov[i]);
+
+  Utils::fft(post_cov_r, post_cov_c, nzp);
+
+  fftw_complex * var_e_c = new fftw_complex[cnzp];
+
+  calculateErrorVariance(pri_cov_c, post_cov_c, nzp, var_e_c);
+
+
+  calculateStationaryObservations(pri_cov_c,
+                                  var_e_c,
+                                  pri_mu,
+                                  post_mu,
+                                  stationary_observations);
+
+
+  delete [] pri_cov_r;
+  delete [] post_cov_r;
+  delete [] var_e_c;
+}
+
+//-------------------------------------------------------------------------------
+
+void
+RMSInversion::calculateStationaryObservations(const fftw_complex * pri_cov_c,
+                                              const fftw_complex * var_e_c,
+                                              FFTGrid            * pri_mu,
+                                              FFTGrid            * post_mu,
+                                              FFTGrid            * stat_d) const
+{
+  // Calculate d = mu_pri + (var_pri+var_e)/var_pri * (mu_post-mu_pri)
+
+  int nyp = pri_mu->getNyp();
+  int nzp = pri_mu->getNzp();
+
+  int cnxp = pri_mu->getCNxp();
+
+  int cnzp = nzp/2 + 1;
+  int rnzp = 2 * cnzp;
+
+  fftw_real    * add_r = new fftw_real[rnzp];
+  fftw_complex * add_c = reinterpret_cast<fftw_complex*>(add_r);
+
+  addComplex(pri_cov_c, var_e_c, cnzp, add_c);
+
+  fftw_real    * divide_r = new fftw_real[rnzp];
+  fftw_complex * divide_c = reinterpret_cast<fftw_complex*>(divide_r);
+
+  divideComplex(add_c, pri_cov_c, cnzp, divide_c);
+
+  delete [] add_r;
+
+  pri_mu ->fftInPlace();
+  post_mu->fftInPlace();
+  stat_d ->fftInPlace();
+
+  pri_mu ->setAccessMode(FFTGrid::READ);
+  post_mu->setAccessMode(FFTGrid::READ);
+  stat_d ->setAccessMode(FFTGrid::WRITE);
+
+  fftw_complex div;
+  fftw_complex subtract;
+  fftw_complex multiply;
+  fftw_complex d;
+
+  for(int k=0; k<nzp; k++) {
+    if(k < cnzp)
+      div = divide_c[k];
+    else {
+      div.re =  divide_c[nzp-k].re;
+      div.im = -divide_c[nzp-k].im;
+    }
+    for(int j=0; j<nyp; j++) {
+      for(int i=0; i<cnxp; i++) {
+        fftw_complex pri_c  = pri_mu ->getNextComplex();
+        fftw_complex post_c = post_mu->getNextComplex();
+        subtractComplex(&post_c, &pri_c, 1, &subtract);
+        multiplyComplex(&div, &subtract, 1, &multiply);
+        addComplex(&pri_c, &multiply, 1, &d);
+        stat_d->setNextComplex(d);
+      }
+    }
+  }
+
+  pri_mu ->endAccess();
+  post_mu->endAccess();
+  stat_d ->endAccess();
+
+  pri_mu ->invFFTInPlace();
+  post_mu->invFFTInPlace();
+  stat_d ->invFFTInPlace();
+
+  delete [] divide_r;
+
+}
+
+//-------------------------------------------------------------------------------
+
+void
+RMSInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
+                                     const fftw_complex * post_cov_c,
+                                     const int          & nzp,
+                                     fftw_complex       * var_e_c) const
+{
+  // Calculate var_e = var_pri*var_post / (var_pri-var_post)
+
+  int cnzp = nzp/2 + 1;
+  int rnzp = 2 * cnzp;
+
+  fftw_real    * mult_r = new fftw_real[rnzp];
+  fftw_complex * mult_c = reinterpret_cast<fftw_complex*>(mult_r);
+
+  multiplyComplex(pri_cov_c, post_cov_c, cnzp, mult_c);
+
+  fftw_real    * subtract_r = new fftw_real[rnzp];
+  fftw_complex * subtract_c = reinterpret_cast<fftw_complex*>(subtract_r);
+
+  subtractComplex(pri_cov_c, post_cov_c, cnzp, subtract_c);
+
+  divideComplex(mult_c, subtract_c, cnzp, var_e_c);
+
+  delete [] mult_r;
+  delete [] subtract_r;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::multiplyComplex(const fftw_complex * z1,
+                              const fftw_complex * z2,
+                              const int          & n,
+                              fftw_complex       * z) const
+{
+  for(int i=0; i<n; i++) {
+    z[i].re = z1[i].re * z2[i].re - z1[i].im * z2[i].im;
+    z[i].im = z1[i].re * z2[i].im + z1[i].im * z2[i].re;
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::divideComplex(const fftw_complex * z1,
+                            const fftw_complex * z2,
+                            const int          & n,
+                            fftw_complex       * z) const
+{
+  for(int i=0; i<n; i++) {
+    z[i].re = (z1[i].re * z2[i].re + z1[i].im * z2[i].im) / (std::pow(z2[i].re, 2) + std::pow(z2[i].im, 2));
+    z[i].im = (z2[i].re * z1[i].im - z1[i].re * z2[i].im) / (std::pow(z2[i].re, 2) + std::pow(z2[i].im, 2));
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::addComplex(const fftw_complex * z1,
+                         const fftw_complex * z2,
+                         const int          & n,
+                         fftw_complex       * z) const
+{
+  for(int i=0; i<n; i++) {
+    z[i].re = z1[i].re + z2[i].re;
+    z[i].im = z1[i].im + z2[i].im;
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::subtractComplex(const fftw_complex * z1,
+                              const fftw_complex * z2,
+                              const int          & n,
+                              fftw_complex       * z) const
+{
+  for(int i=0; i<n; i++) {
+    z[i].re = z1[i].re - z2[i].re;
+    z[i].im = z1[i].im - z2[i].im;
+  }
 }
