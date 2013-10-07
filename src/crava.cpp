@@ -76,7 +76,7 @@ Crava::Crava(ModelSettings           * modelSettings,
   nxp_               = seismicParameters.GetMuAlpha()->getNxp();
   nyp_               = seismicParameters.GetMuAlpha()->getNyp();
   nzp_               = seismicParameters.GetMuAlpha()->getNzp();
-  lowCut_            = modelGeneral_->getLowCut();
+  lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
   energyTreshold_    = modelSettings_->getEnergyThreshold();

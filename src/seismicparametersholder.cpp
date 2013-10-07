@@ -430,7 +430,7 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 fftw_real *
 SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT,
                                           const int                & minIntFq,
-                                          const int                & nzp)
+                                          const int                & nzp) const
 {
   assert(priorCorrT[0] != 0);
 
@@ -466,7 +466,7 @@ SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT,
 void
 SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
                                              const int & minIntFq,
-                                             const int & nzp)
+                                             const int & nzp) const
 {
   fftw_complex * fftCircCorrT;
   fftCircCorrT = FFTGrid::fft1DzInPlace(circCorrT, nzp);

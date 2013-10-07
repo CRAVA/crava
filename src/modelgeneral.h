@@ -54,7 +54,6 @@ public:
   CravaTrend               & getTrendCubes()                  { return trend_cubes_            ;}
   CravaTrend                 getTrendCubes()            const { return trend_cubes_            ;}
   Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
-  float                      getLowCut()                const { return lowCut_                 ;}
 
   bool                       getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool                       getFailed()                const { return failed_                 ;}
@@ -210,8 +209,6 @@ public:
   void              lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
   void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
-
-  int               calculateLowIntCut(const float & low_cut, const int & nzPad, const double & dt) const;
 
 private:
   void              processWells(std::vector<WellData *> & wells,
@@ -391,8 +388,6 @@ private:
 
   bool                      forwardModeling_;
   int                       numberOfWells_;
-
-  float                     lowCut_;                     ///< lowest frequency that is inverted
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
   std::vector<FFTGrid *>    priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities

@@ -64,8 +64,6 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   int nxp                                  = mu_log_vp->getNxp();
   int nyp                                  = mu_log_vp->getNyp();
 
-  int low_cut_model                        = modelGeneral->calculateLowIntCut(modelGeneral->getLowCut(), n_pad_model_, timeSimbox->getdz());
-
   int n_rms_traces                         = static_cast<int>(rms_traces.size());
 
   float corrGradI;
@@ -143,6 +141,10 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   generateStationaryDistribution(cov_grid_log_vp,
                                  cov_circulant_model,
+                                 n_rms_traces,
+                                 modelGeneral->getPriorCorrXY(),
+                                 corrGradI,
+                                 corrGradJ,
                                  mu_log_vp,
                                  post_mu_log_vp_model,
                                  stationary_d,
@@ -161,18 +163,6 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   //std::string fileName_below = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "kriged_log_Vp_below";
   //post_mu_log_vp_below->writeFile(fileName_below, IO::PathToBackground(), simbox_below, "NO_LABEL");
 
-
-
-  FFTGrid * post_cov_log_vp_model = generatePosteriorCovGrid(timeSimbox,
-                                                             cov_circulant_model,
-                                                             modelGeneral->getPriorCorrXY(),
-                                                             corrGradI,
-                                                             corrGradJ,
-                                                             low_cut_model,
-                                                             n_pad_model_);
-
-
-
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
 
@@ -182,8 +172,6 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   delete post_mu_log_vp_model;
   //delete post_mu_log_vp_above;
   //delete post_mu_log_vp_below;
-
-  delete post_cov_log_vp_model;
 
   delete stationary_d;
 
@@ -1104,72 +1092,23 @@ RMSInversion::krigeExpectation3D(const Simbox               * simbox,
 
   delete lateralVario;
 }
-//-------------------------------------------------------------------------------
-FFTGrid *
-RMSInversion::generatePosteriorCovGrid(const Simbox               * simbox,
-                                       const std::vector<double>  & cov_circulant,
-                                       const Surface              * priorCorrXY,
-                                       const float                & corrGradI,
-                                       const float                & corrGradJ,
-                                       const int                  & low_cut,
-                                       const int                  & n_pad) const
-{
-
-  std::string text = "\nGenerating posterior covariance grid:";
-
-  const int    nx   = simbox->getnx();
-  const int    ny   = simbox->getny();
-  const int    nz   = simbox->getnz();
-
-  const int    nxp  = nx;
-  const int    nyp  = ny;
-  const int    nzp  = nz;
-
-  FFTGrid * covGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
-  covGrid->createRealGrid();
-  covGrid->setType(FFTGrid::COVARIANCE);
-
-  std::vector<float> corr_circulant;
-  double             covariance;
-
-  findCovarianceAndCorrT(cov_circulant, corr_circulant, covariance);
-
-  fftw_real * circCorrT = SeismicParametersHolder::computeCircCorrT(corr_circulant, low_cut, n_pad);
-
-  covGrid->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  covGrid->multiplyByScalar(static_cast<float>(covariance));
-
-  fftw_free(circCorrT);
-
-  return covGrid;
-}
-//-------------------------------------------------------------------------------
-
-void
-RMSInversion::findCovarianceAndCorrT(const std::vector<double> & cov_circ,
-                                     std::vector<float>        & corr_circ,
-                                     double                    & covariance) const
-{
-  int n = static_cast<int>(cov_circ.size());
-
-  corr_circ.resize(n);
-
-  covariance = cov_circ[0];
-
-  for(int i=0; i<n; i++)
-    corr_circ[i] = static_cast<float>(cov_circ[i] / covariance);
-}
 
 //-------------------------------------------------------------------------------
+
 void
 RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
                                              const std::vector<double> & post_circulant_cov,
+                                             const int                 & n_rms_traces,
+                                             const Surface             * priorCorrXY,
+                                             const float               & corrGradI,
+                                             const float               & corrGradJ,
                                              FFTGrid                   * pri_mu,
                                              FFTGrid                   * post_mu,
                                              FFTGrid                  *& stationary_observations,
-                                             FFTGrid                  *& /*stationary_covariance*/) const
+                                             FFTGrid                  *& stationary_covariance) const
 {
-
+  int nx   = stationary_observations->getNx();
+  int ny   = stationary_observations->getNy();
   int nzp  = stationary_observations->getNzp();
   int cnzp = nzp/2 + 1;
   int rnzp = 2 * cnzp;
@@ -1190,10 +1129,10 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
 
   Utils::fft(post_cov_r, post_cov_c, nzp);
 
-  fftw_complex * var_e_c = new fftw_complex[cnzp];
+  fftw_real    * var_e_r = new fftw_real[rnzp];
+  fftw_complex * var_e_c = reinterpret_cast<fftw_complex*>(var_e_r);
 
   calculateErrorVariance(pri_cov_c, post_cov_c, nzp, var_e_c);
-
 
   calculateStationaryObservations(pri_cov_c,
                                   var_e_c,
@@ -1202,9 +1141,17 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
                                   stationary_observations);
 
 
+  float factor = static_cast<float>(nx * ny) / static_cast<float>(n_rms_traces); // Multiply var_e_c with this factor to increase the variance as the RMS data are only observed in some of the traces
+
+  Utils::fftInv(var_e_c, var_e_r, nzp);
+  for(int i=0; i<nzp; i++)
+    var_e_r[i] *= factor;
+
+  stationary_covariance->fillInParamCorr(priorCorrXY, var_e_r, corrGradI, corrGradJ);
+
   delete [] pri_cov_r;
   delete [] post_cov_r;
-  delete [] var_e_c;
+  delete [] var_e_r;
 }
 
 //-------------------------------------------------------------------------------

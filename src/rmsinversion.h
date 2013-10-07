@@ -165,20 +165,12 @@ private:
                                                    std::vector<KrigingData2D> & kriging_post,
                                                    FFTGrid                    * mu_post) const;
 
-  FFTGrid *                     generatePosteriorCovGrid(const Simbox               * simbox,
-                                                         const std::vector<double>  & cov_circulant,
-                                                         const Surface              * priorCorrXY,
-                                                         const float                & corrGradI,
-                                                         const float                & corrGradJ,
-                                                         const int                  & low_cut,
-                                                         const int                  & n_pad) const;
-
-  void                          findCovarianceAndCorrT(const std::vector<double> & cov_circ,
-                                                       std::vector<float>        & corr_circ,
-                                                       double                    & covariance) const;
-
   void                          generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
                                                                const std::vector<double> & post_circulant_cov,
+                                                               const int                 & n_rms_traces,
+                                                               const Surface             * priorCorrXY,
+                                                               const float               & corrGradI,
+                                                               const float               & corrGradJ,
                                                                FFTGrid                   * pri_mu,
                                                                FFTGrid                   * post_mu,
                                                                FFTGrid                  *& stationary_observations,
