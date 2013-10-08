@@ -1140,6 +1140,8 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
                                   post_mu,
                                   stationary_observations);
 
+  std::vector<int> filter;
+  calculateFilter(pri_cov_c, post_cov_c, nzp, filter);
 
   float factor = static_cast<float>(nx * ny) / static_cast<float>(n_rms_traces); // Multiply var_e_c with this factor to increase the variance as the RMS data are only observed in some of the traces
 
@@ -1171,19 +1173,16 @@ RMSInversion::calculateStationaryObservations(const fftw_complex * pri_cov_c,
   int cnxp = pri_mu->getCNxp();
 
   int cnzp = nzp/2 + 1;
-  int rnzp = 2 * cnzp;
 
-  fftw_real    * add_r = new fftw_real[rnzp];
-  fftw_complex * add_c = reinterpret_cast<fftw_complex*>(add_r);
+  fftw_complex * add_c = new fftw_complex[cnzp];
 
   addComplex(pri_cov_c, var_e_c, cnzp, add_c);
 
-  fftw_real    * divide_r = new fftw_real[rnzp];
-  fftw_complex * divide_c = reinterpret_cast<fftw_complex*>(divide_r);
+  fftw_complex * divide_c = new fftw_complex[cnzp];
 
   divideComplex(add_c, pri_cov_c, cnzp, divide_c);
 
-  delete [] add_r;
+  delete [] add_c;
 
   pri_mu ->fftInPlace();
   post_mu->fftInPlace();
@@ -1225,7 +1224,7 @@ RMSInversion::calculateStationaryObservations(const fftw_complex * pri_cov_c,
   post_mu->invFFTInPlace();
   stat_d ->invFFTInPlace();
 
-  delete [] divide_r;
+  delete [] divide_c;
 
 }
 
@@ -1240,22 +1239,51 @@ RMSInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
   // Calculate var_e = var_pri*var_post / (var_pri-var_post)
 
   int cnzp = nzp/2 + 1;
-  int rnzp = 2 * cnzp;
 
-  fftw_real    * mult_r = new fftw_real[rnzp];
-  fftw_complex * mult_c = reinterpret_cast<fftw_complex*>(mult_r);
+  fftw_complex * mult_c = new fftw_complex[cnzp];
 
   multiplyComplex(pri_cov_c, post_cov_c, cnzp, mult_c);
 
-  fftw_real    * subtract_r = new fftw_real[rnzp];
-  fftw_complex * subtract_c = reinterpret_cast<fftw_complex*>(subtract_r);
+  fftw_complex * subtract_c = new fftw_complex[cnzp];
 
   subtractComplex(pri_cov_c, post_cov_c, cnzp, subtract_c);
 
   divideComplex(mult_c, subtract_c, cnzp, var_e_c);
 
-  delete [] mult_r;
-  delete [] subtract_r;
+  delete [] mult_c;
+  delete [] subtract_c;
+}
+
+//-------------------------------------------------------------------------------
+
+void
+RMSInversion::calculateFilter(const fftw_complex * pri_cov_c,
+                              const fftw_complex * post_cov_c,
+                              const int          & nzp,
+                              std::vector<int>   & filter) const
+{
+  // Fudge factor 1.04:
+  // Rules out cases where the error standard deviation is
+  // 5 times larger than the standard deviation in the parameter, 5 = sqrt(1/0.04)
+
+  int cnzp = nzp/2 + 1;
+
+  std::vector<double> abs_pri;
+  std::vector<double> abs_post;
+
+  absoulteComplex(pri_cov_c, cnzp, abs_pri);
+  absoulteComplex(post_cov_c, cnzp, abs_post);
+
+  filter.resize(nzp, 0);
+
+  for(int i=0; i<cnzp; i++) {
+    if(abs_pri[i] > abs_post[i] * 1.04)
+      filter[i] = 1;
+  }
+
+  for(int i=cnzp; i<nzp; i++)
+    filter[i] = filter[nzp-i];
+
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -1312,4 +1340,18 @@ RMSInversion::subtractComplex(const fftw_complex * z1,
     z[i].re = z1[i].re - z2[i].re;
     z[i].im = z1[i].im - z2[i].im;
   }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::absoulteComplex(const fftw_complex  * z,
+                              const int           & n,
+                              std::vector<double> & abs_z) const
+{
+  abs_z.resize(n);
+
+  for(int i=0; i<n; i++)
+    abs_z[i] = std::sqrt(std::pow(z[i].re, 2) + std::pow(z[i].im, 2));
+
 }

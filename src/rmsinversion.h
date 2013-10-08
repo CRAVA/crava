@@ -187,6 +187,11 @@ private:
                                                        const int          & nzp,
                                                        fftw_complex       * var_e_c) const;
 
+  void                          calculateFilter(const fftw_complex * pri_cov_c,
+                                                const fftw_complex * post_cov_c,
+                                                const int          & nzp,
+                                                std::vector<int>   & filter) const;
+
   void                          multiplyComplex(const fftw_complex * z1,
                                                 const fftw_complex * z2,
                                                 const int          & n,
@@ -206,6 +211,10 @@ private:
                                                 const fftw_complex * z2,
                                                 const int          & n,
                                                 fftw_complex       * z) const;
+
+  void                          absoulteComplex(const fftw_complex  * z,
+                                                const int           & n,
+                                                std::vector<double> & abs_z) const;
 
   int n_above_;
   int n_below_;
