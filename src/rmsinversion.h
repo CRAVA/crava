@@ -174,7 +174,8 @@ private:
                                                                FFTGrid                   * pri_mu,
                                                                FFTGrid                   * post_mu,
                                                                FFTGrid                  *& stationary_observations,
-                                                               FFTGrid                  *& stationary_covariance) const;
+                                                               FFTGrid                  *& stationary_covariance,
+                                                               std::vector<int>          & observation_filter) const;
 
   void                          calculateStationaryObservations(const fftw_complex * pri_cov_c,
                                                                 const fftw_complex * var_e_c,
@@ -215,6 +216,11 @@ private:
   void                          absoulteComplex(const fftw_complex  * z,
                                                 const int           & n,
                                                 std::vector<double> & abs_z) const;
+
+  void                          calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
+                                                            SeismicParametersHolder & seismic_parameters,
+                                                            FFTGrid                 * stationary_observations,
+                                                            FFTGrid                 * stationary_observation_covariance) const;
 
   int n_above_;
   int n_below_;
