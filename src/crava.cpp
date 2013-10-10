@@ -91,12 +91,12 @@ Crava::Crava(ModelSettings           * modelSettings,
   nSim_              = modelSettings_->getNumberOfSimulations();
   wells_             = modelGeneral_->getWells();
   simbox_            = modelGeneral_->getTimeSimbox();
-  meanAlpha_         = seismicParameters.GetMuAlpha();
-  meanBeta_          = seismicParameters.GetMuBeta();
-  meanRho_           = seismicParameters.GetMuRho();
   random_            = modelGeneral_->getRandomGen();
   seisWavelet_       = modelAVOdynamic_->getWavelets();
   A_                 = modelAVOdynamic_->getAMatrix();
+  meanAlpha_         = seismicParameters.GetMuAlpha();
+  meanBeta_          = seismicParameters.GetMuBeta();
+  meanRho_           = seismicParameters.GetMuRho();
   postAlpha_         = meanAlpha_;         // Write over the input to save memory
   postBeta_          = meanBeta_;          // Write over the input to save memory
   postRho_           = meanRho_;           // Write over the input to save memory
@@ -219,10 +219,10 @@ Crava::Crava(ModelSettings           * modelSettings,
     seismicParameters.updatePriorVar();
 
     if (!modelAVOdynamic->getUseLocalNoise()) {// Already done in crava.cpp if local noise
-      postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-      postCovAlpha00_       = seismicParameters.createPostCov00(seismicParameters.GetCovAlpha());
-      postCovBeta00_        = seismicParameters.createPostCov00(seismicParameters.GetCovBeta());
-      postCovRho00_         = seismicParameters.createPostCov00(seismicParameters.GetCovRho());
+      postVar0_       = seismicParameters.getPriorVar0(); //Updated variables
+      postCovAlpha00_ = seismicParameters.createPostCov00(seismicParameters.GetCovAlpha());
+      postCovBeta00_  = seismicParameters.createPostCov00(seismicParameters.GetCovBeta());
+      postCovRho00_   = seismicParameters.createPostCov00(seismicParameters.GetCovRho());
     }
     seismicParameters.printPostVariances(postVar0_);
 
@@ -270,7 +270,6 @@ Crava::Crava(ModelSettings           * modelSettings,
   postAlpha_->fftInPlace();
   postBeta_->fftInPlace();
   postRho_->fftInPlace();
-
 
   seismicParameters.setBackgroundParameters(postAlpha_, postBeta_, postRho_);
 
@@ -949,7 +948,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
   int cnxp  = nxp_/2+1;
 
-  for(l = 0; l < ntheta_ ; l++)
+  for (l = 0; l < ntheta_ ; l++)
   {
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     std::string fileName;
@@ -989,7 +988,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   FFTGrid * postCrCovAlphaRho  = seismicParameters.GetCrCovAlphaRho();
   FFTGrid * postCrCovBetaRho   = seismicParameters.GetCrCovBetaRho();
 
-  if(modelGeneral->getIs4DActive() == true) {
+  if (modelGeneral->getIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
     sigma[0] = postCovAlpha;
     sigma[1] = postCrCovAlphaBeta;
@@ -1204,16 +1203,18 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
       }
     }
   }
-  for(l=0;l<ntheta_;l++)
+  for (l=0;l<ntheta_;l++)
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if(modelGeneral_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
+  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
     postAlpha_->expTransf();
-    GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
-    const Simbox * timeSimbox = simbox_;
+    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
+    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
+    const Simbox      * timeSimbox = simbox_;
     if(dcMap != NULL)
       timeSimbox = dcMap->getSimbox();
 
@@ -1223,26 +1224,25 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if(modelAVOdynamic_->getUseLocalNoise()) {
+  if (modelAVOdynamic_->getUseLocalNoise()) {
     seismicParameters.invFFTCovGrids();
-
     seismicParameters.updatePriorVar();
 
-    postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-    postCovAlpha00_       = seismicParameters.createPostCov00(postCovAlpha);
-    postCovBeta00_        = seismicParameters.createPostCov00(postCovBeta);
-    postCovRho00_         = seismicParameters.createPostCov00(postCovRho);
+    postVar0_       = seismicParameters.getPriorVar0(); //Updated variables
+    postCovAlpha00_ = seismicParameters.createPostCov00(postCovAlpha);
+    postCovBeta00_  = seismicParameters.createPostCov00(postCovBeta);
+    postCovRho00_   = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
 
     correctAlphaBetaRho(modelSettings_);
   }
 
-  if(doing4DInversion_==false)
+  if (doing4DInversion_==false)
   {
     if(writePrediction_ == true )
       ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
-      outputGridsElastic_, fileGrid_, -1, false);
+                                       outputGridsElastic_, fileGrid_, -1, false);
 
     writeBWPredicted();
   }
