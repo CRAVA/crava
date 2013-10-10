@@ -160,7 +160,7 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_Low);
   LogKit::StartBuffering();
 
-  Program program( 2,                     // Major version
+  Program program( 4,                     // Major version
                    0,                     // Minor version
                    0,                     // Patch number for bug fixes
                    //"",                  // Use empty string "" for release versions

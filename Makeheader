@@ -18,14 +18,6 @@ GRAMMAR     = grammar
 OPT         = -O2
 DEBUG       =
 PURIFY      =
-
-#Marit/Alf: Dette virker ikke under Ubuntu
-#Da må vi prøve å fikse det for ubuntu med statisk linking. Tester denne på ubuntu når jeg får tid.
-ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
-
-# Dynamic linking of all libraries, does not work on standard RHEL5 due to missing cblas and atlas
-#ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
-
 mode        = all
 
 ifeq ($(GCCNEW),1)
@@ -50,6 +42,12 @@ DEBUG   = -g
 OPT     = -O0
 PROGRAM = cravarun.purify
 PURIFY  = purify -best-effort
+endif
+
+ifeq ($(at),nr)
+ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+else
+ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
 endif
 
 ifeq ($(lib),mkl)
