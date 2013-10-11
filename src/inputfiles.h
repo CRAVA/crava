@@ -52,6 +52,7 @@ public:
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
   const std::vector<std::string> & getMultizoneSurfaceFiles()    const { return multizoneSurfaceFiles_;}
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
+  const std::string              & getGravimetricData(int i)     const { return gravimetricData_[i]   ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
@@ -60,7 +61,6 @@ public:
   void addSeismicFile(const std::string & seismicFile)                    { seismicFiles_.push_back(seismicFile)      ;}
   void addRmsVelocity(const std::string & rmsVelocityFile)                { rmsVelocities_.push_back(rmsVelocityFile) ;}
   void addTravelTimeHorizon(const std::string & horizon)                  { travelTimeHorizons_.push_back(horizon)    ;}
-  void addGravimetricObservationLocations(const std::string & locations)  { gravimetricLocations_.push_back(locations);}
   void addGravimetricData(const std::string & dataFile)                   { gravimetricData_.push_back(dataFile)      ;}
   void addWaveletFile(const std::string & waveletFile)                    { waveletFiles_.push_back(waveletFile)      ;}
   void addShiftFile(const std::string & shiftFile)                        { waveletShiftFiles_.push_back(shiftFile)   ;}
@@ -122,7 +122,6 @@ private:
   std::vector<std::string>   seismicFiles_;          ///< File names: seismic data
   std::vector<std::string>   rmsVelocities_;         ///< File names: RMS velocities U^2, vector over time lapses
   std::vector<std::string>   travelTimeHorizons_;    ///< File names: Horizons used in travel time inversion
-  std::vector<std::string>   gravimetricLocations_;  ///< File names: Gravimetric locations
   std::vector<std::string>   gravimetricData_;       ///< File names: Gravimetric data
   std::vector<std::string>   waveletFiles_;          ///< File names: wavelets
   std::vector<std::string>   waveletShiftFiles_;     ///< File names: wavelets

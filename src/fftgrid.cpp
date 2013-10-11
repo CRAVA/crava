@@ -90,17 +90,30 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
-  istransformed_  = false;
+  istransformed_  = fftGrid->getIsTransformed();
 
-  createRealGrid(add_);
-  for(int k=0;k<nzp_;k++) {
-    for(int j=0;j<nyp_;j++) {
-      for(int i=0;i<rnxp_;i++) {
-        float value = fftGrid->getNextReal();
-        if (expTrans)
-          setNextReal(exp(value));
-        else
-          setNextReal(value);
+  if(istransformed_ == false) {
+    createRealGrid(add_);
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<rnxp_;i++) {
+          float value = fftGrid->getNextReal();
+          if (expTrans)
+            setNextReal(exp(value));
+          else
+            setNextReal(value);
+        }
+      }
+    }
+  }
+  else {
+    createComplexGrid();
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<cnxp_;i++) {
+          fftw_complex value = fftGrid->getNextComplex();
+          setNextComplex(value);
+        }
       }
     }
   }
@@ -121,7 +134,7 @@ FFTGrid::~FFTGrid()
 void
 FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
                                    const Simbox * timeSimbox,
-                                   const Simbox * timeCutSimbox,
+                                   const Simbox * /*timeCutSimbox*/,
                                    float         smooth_length,
                                    int         & missingTracesSimbox,
                                    int         & missingTracesPadding,
@@ -305,11 +318,11 @@ FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
 
 void
 FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                float                z0_data,
-                                float                zn_data,
+                                float                /*z0_data*/,
+                                float                /*zn_data*/,
                                 float                dz_data,
                                 float                smooth_length,
-                                std::string        & errTxt)
+                                std::string        & /*errTxt*/)
 {
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.
@@ -1579,6 +1592,14 @@ FFTGrid::getFirstComplexValue()
   return( value );
 }
 
+float
+FFTGrid::getFirstRealValue()
+{
+  assert(istransformed_==false);
+  float value = static_cast<float>(rvalue_[0]);
+  return( value );
+}
+
 int
 FFTGrid::setNextComplex(fftw_complex value)
 {
@@ -1876,6 +1897,18 @@ FFTGrid::add(FFTGrid* fftGrid)
   }
 }
 void
+FFTGrid::addScalar(float scalar)
+{
+  // Only addition of scalar in real domain
+  assert(istransformed_==false);
+  int i;
+  for(i=0;i < rsize_;i++)
+  {
+    rvalue_[i] += scalar;
+  }
+}
+
+void
 FFTGrid::subtract(FFTGrid* fftGrid)
 {
   assert(nxp_==fftGrid->getNxp());
@@ -1942,6 +1975,16 @@ FFTGrid::multiply(FFTGrid* fftGrid)
     {
       rvalue_[i] *= fftGrid->rvalue_[i];
     }
+  }
+}
+
+void
+FFTGrid::conjugate()
+{
+  assert(istransformed_==true);
+  for(int i=0;i<csize_;i++)
+  {
+    cvalue_[i].im = -cvalue_[i].im;
   }
 }
 
@@ -2020,13 +2063,13 @@ FFTGrid::writeFile(const std::string       & fName,
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
-  if(formatFlag_ > 0) //Output format specified.
+  if (formatFlag_ > 0) //Output format specified.
   {
-    if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
-      if(timeMap == NULL) { //No resampling of storm
-        if((formatFlag_ & IO::STORM) > 0)
+    if ((domainFlag_ & IO::TIMEDOMAIN) > 0) {
+      if (timeMap == NULL) { //No resampling of storm
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(fileName, simbox, false,padding);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(fileName, simbox, true,padding, false, scientific_format);
       }
       else {
@@ -2034,37 +2077,38 @@ FFTGrid::writeFile(const std::string       & fName,
       }
 
       //SEGY, SGRI CRAVA are never resampled in time.
-      if((formatFlag_ & IO::SEGY) >0)
+      if ((formatFlag_ & IO::SEGY) >0)
         FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
-      if((formatFlag_ & IO::SGRI) >0)
+      if ((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
-      if((formatFlag_ & IO::CRAVA) >0)
+      if ((formatFlag_ & IO::CRAVA) >0)
         FFTGrid::writeCravaFile(fileName, simbox);
     }
 
-    if(depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
+    if (depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
-      if(depthMap->getMapping() == NULL) {
-        if(depthMap->getSimbox() == NULL) {
+      if (depthMap->getMapping() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if((formatFlag_ & IO::STORM) > 0)
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
-        if((formatFlag_ & IO::SEGY) >0)
+        if ((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
       else
       {
-        if(depthMap->getSimbox() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
         // Writes also segy in depth if required
+        LogKit::LogFormatted(LogKit::Low,"Resample cube and write STORM binary file "+depthName+"...\n");
         FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
       }
     }

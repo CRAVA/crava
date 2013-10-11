@@ -52,6 +52,7 @@ public:
                                 GridMapping             * depthMapping,
                                 const GridMapping       * timeMapping,
                                 const bool                isFile,
+                                const bool                velocityFromInversion,
                                 const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
 
   void         releaseGrids(); //backModel grids are now taken care of by other classes.

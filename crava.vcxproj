@@ -315,6 +315,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp" />
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
     <ClCompile Include="src\io.cpp" />
@@ -330,6 +331,8 @@
     <ClCompile Include="src\modelavodynamic.cpp" />
     <ClCompile Include="src\modelavostatic.cpp" />
     <ClCompile Include="src\modelgeneral.cpp" />
+    <ClCompile Include="src\modelgravitydynamic.cpp" />
+    <ClCompile Include="src\modelgravitystatic.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
@@ -1368,6 +1371,9 @@
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\rmsinversion.h" />
     <ClInclude Include="src\rmstrace.h" />
+    <ClInclude Include="src\gravimetricinversion.h" />
+    <ClInclude Include="src\modelgravitydynamic.h" />
+    <ClInclude Include="src\modelgravitystatic.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />

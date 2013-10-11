@@ -40,12 +40,12 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
   FFTGrid * grid;
 
   if(modelSettings->getSeismicQualityGridValue() != RMISSING)
-    value_ = modelSettings->getSeismicQualityGridValue();
+    value_ = static_cast<float>(modelSettings->getSeismicQualityGridValue());
   else {
     double tmpsum = 0.0;
     for (int i=0; i< nWells; i++)
       tmpsum += wellValue_[i];
-    value_ = tmpsum / nWells;
+    value_ = static_cast<float>(tmpsum) / static_cast<float>(nWells);
 
     LogKit::LogFormatted(LogKit::Low, "The value used for weighting under <seismic-quality-grid> is " + NRLib::ToString(value_) + ", this is an average from all fit values from wells.\n");
  }
@@ -71,7 +71,7 @@ void QualityGrid::generateProbField(FFTGrid              *& grid,
   CovGrid2D & cov = makeCovGrid2D(simbox, vario);
 
   if(modelSettings->getSeismicQualityGridRange() != RMISSING) {
-    float range1 = modelSettings->getSeismicQualityGridRange();
+    float range1 = static_cast<float>(modelSettings->getSeismicQualityGridRange());
     float range2 = range1;
     float angle = vario->getAngle();
     std::string type = vario->getType();
