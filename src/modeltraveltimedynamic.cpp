@@ -50,7 +50,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
 
 ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
-  for(size_t i=0; i<rms_traces_.size(); i++)
+  for (size_t i = 0; i < rms_traces_.size(); i++)
     delete rms_traces_[i];
 
   delete simbox_above_;
@@ -68,8 +68,8 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 
   int n_horizons = static_cast<int>(travel_time_horizons.size());
 
-  if(n_horizons == 1) {
-    if(travel_time_horizons[0] != "") {
+  if (n_horizons == 1) {
+    if (travel_time_horizons[0] != "") {
       errTxt += "Only one surface is given for inversion of the horizons in the travel time data. At least two surfaces should be given\n";
       failed = true;
     }
@@ -77,7 +77,7 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
 
   else {
     horizons.resize(n_horizons);
-    for(int i=0; i<n_horizons; i++)
+    for (int i = 0; i < n_horizons; i++)
       horizons[i] = Surface(travel_time_horizons[i]);
   }
 
@@ -91,8 +91,10 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
                                        bool                     & failed)
 
 {
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
+  double wall = 0.0;
+  double cpu  = 0.0;
+
+  TimeKit::getTime(wall, cpu);
 
   LogKit::WriteHeader("Reading RMS travel time data");
 
@@ -103,17 +105,17 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 
   standard_deviation_ = modelSettings->getRMSStandardDeviation();
 
-  n_layers_above_   = modelSettings->getRMSnLayersAbove();
-  n_layers_below_   = modelSettings->getRMSnLayersBelow();
+  n_layers_above_     = modelSettings->getRMSnLayersAbove();
+  n_layers_below_     = modelSettings->getRMSnLayersBelow();
 
-  mean_vp_top_      = modelSettings->getRMSMeanVpTop();
-  mean_vp_base_     = modelSettings->getRMSMeanVpBase();
+  mean_vp_top_        = modelSettings->getRMSMeanVpTop();
+  mean_vp_base_       = modelSettings->getRMSMeanVpBase();
 
-  var_vp_above_     = modelSettings->getRMSVarianceVpAbove();
-  var_vp_below_     = modelSettings->getRMSVarianceVpBelow();
+  var_vp_above_       = modelSettings->getRMSVarianceVpAbove();
+  var_vp_below_       = modelSettings->getRMSVarianceVpBelow();
 
-  range_above_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
-  range_below_ = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
+  range_above_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
+  range_below_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
 
   setupSimboxAbove(timeSimbox,
                    modelSettings->getOutputGridFormat(),
@@ -149,7 +151,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
   std::ifstream file;
   NRLib::OpenRead(file, fileName);
 
-  if(file == 0) {
+  if (file == 0) {
     error = 1;
     errTxt += "Could not open RMS data file "+fileName+" for reading.\n";
   }
@@ -157,8 +159,8 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
   int line = 0;
 
-  while(line < 32) {
-    NRLib::DiscardRestOfLine(file,line,false);
+  while (line < 32) {
+    NRLib::DiscardRestOfLine(file, line, false);
   }
 
   std::string endWord = "::Goodbye::";
@@ -173,30 +175,30 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
   std::vector<double> time;
   std::vector<double> velocity;
 
-  while(NRLib::CheckEndOfFile(file) == false) {
+  while (NRLib::CheckEndOfFile(file) == false) {
 
     try {
 
-      NRLib::ReadNextToken(file,token,line);
+      NRLib::ReadNextToken(file, token, line);
 
-      if(token != endWord) {
+      if (token != endWord) {
         int    this_il       = NRLib::ParseType<int>(token);
-        int    this_xl       = NRLib::ReadNext<int>(file,line);
-        double this_utmx     = NRLib::ReadNext<double>(file,line);
-        double this_utmy     = NRLib::ReadNext<double>(file,line);
-        double this_time     = NRLib::ReadNext<double>(file,line);
-        double this_velocity = NRLib::ReadNext<double>(file,line);
+        int    this_xl       = NRLib::ReadNext<int>(file, line);
+        double this_utmx     = NRLib::ReadNext<double>(file, line);
+        double this_utmy     = NRLib::ReadNext<double>(file, line);
+        double this_time     = NRLib::ReadNext<double>(file, line);
+        double this_velocity = NRLib::ReadNext<double>(file, line);
 
 
-        if(time.size() > 1) {
+        if (time.size() > 1) {
 
-          if( (IL != this_il) || (XL != this_xl) ) {
+          if ((IL != this_il) || (XL != this_xl)) {
 
             int i_ind;
             int j_ind;
             timeSimbox->getIndexes(this_utmx, this_utmy, i_ind, j_ind);
 
-            if(i_ind != IMISSING && j_ind != IMISSING) {
+            if (i_ind != IMISSING && j_ind != IMISSING) {
               RMSTrace * trace = new RMSTrace(IL,
                                               XL,
                                               i_ind,
@@ -232,7 +234,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
         int j_ind;
         timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
 
-        if(i_ind != IMISSING && j_ind != IMISSING) {
+        if (i_ind != IMISSING && j_ind != IMISSING) {
           RMSTrace * trace = new RMSTrace(IL,
                                           XL,
                                           i_ind,
@@ -253,7 +255,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
       std::string text;
       text += std::string("\nERROR: Reading of RMS data \'") + fileName + "\' failed.\n";
       text += std::string("\nERROR message is \'") + e.what() + "\'";
-      LogKit::LogMessage(LogKit::Error,text);
+      LogKit::LogMessage(LogKit::Error, text);
       errTxt += text;
       exit(1);
     }
@@ -305,13 +307,13 @@ ModelTravelTimeDynamic::setupSimboxAbove(const Simbox  * timeSimbox,
 
   int status = simbox_above_->calculateDz(lz_limit, tmpErrTxt);
 
-  if(status == Simbox::INTERNALERROR) {
+  if (status == Simbox::INTERNALERROR) {
     errTxt += "A problem was encountered for the simbox above the reservoir in the RMS inversion\n";
     errTxt += tmpErrTxt;
   }
 
 
-  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+  if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Above_Reservoir";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Above_Reservoir";
     simbox_above_->writeTopBotGrids(topSurf,
@@ -336,11 +338,11 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
 
   double max_time = 0;
 
-  for(int i=0; i<n_rms_traces; i++) {
+  for (int i = 0; i < n_rms_traces; i++) {
     const std::vector<double> & rms_time = rms_traces_[i]->getTime();
-    double max = rms_time[rms_time.size()-1];
+    double max = rms_time[rms_time.size() - 1];
 
-    if(max > max_time)
+    if (max > max_time)
       max_time = max;
   }
 
@@ -354,12 +356,12 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
   //
   simbox_below_ = new Simbox(timeSimbox);
 
-  double dz      = static_cast<double>(lz/n_layers_below_);
+  double dz      = static_cast<double>(lz / n_layers_below_);
   double z_shift = 0;
 
   simbox_below_->setDepth(bot_simbox_surface, z_shift, lz, dz);
 
-  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+  if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Below_Reservoir";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Below_Reservoir";
     simbox_below_->writeTopBotGrids(topSurf,
@@ -370,7 +372,7 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
 
   }
 
-  if(lz < 0) {
+  if (lz < 0) {
     errTxt += "A problem was encountered for the simbox below the reservoir in the RMS inversion\n";
     errTxt += "There are no RMS data below the reservoir\n";
   }

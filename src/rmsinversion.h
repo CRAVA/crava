@@ -155,15 +155,11 @@ private:
   std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
                                                         const int                   & n_nopad) const;
 
-  void                          writeVector(std::string                 file_name,
-                                            const std::vector<double> & vec) const;
-
-  void                          writeMatrix(std::string                   file_name,
-                                            const NRLib::Grid2D<double> & grid2d) const;
-
- void                           krigeExpectation3D(const Simbox               * simbox,
-                                                   std::vector<KrigingData2D> & kriging_post,
-                                                   FFTGrid                    * mu_post) const;
+ void                           krigeExpectation3D(const Simbox                * simbox,
+                                                   std::vector<KrigingData2D>  & kriging_post,
+                                                   const int                   & nxp,
+                                                   const int                   & nyp,
+                                                   FFTGrid                    *& mu_post) const;
 
   void                          generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
                                                                const std::vector<double> & post_circulant_cov,
@@ -177,11 +173,11 @@ private:
                                                                FFTGrid                  *& stationary_covariance,
                                                                std::vector<int>          & observation_filter) const;
 
-  void                          calculateStationaryObservations(const fftw_complex * pri_cov_c,
-                                                                const fftw_complex * var_e_c,
-                                                                FFTGrid            * pri_mu,
-                                                                FFTGrid            * post_mu,
-                                                                FFTGrid            * stat_d) const;
+  void                          calculateStationaryObservations(const fftw_complex  * pri_cov_c,
+                                                                const fftw_complex  * var_e_c,
+                                                                FFTGrid             * pri_mu,
+                                                                FFTGrid             * post_mu,
+                                                                FFTGrid            *& stat_d) const;
 
   void                          calculateErrorVariance(const fftw_complex * pri_cov_c,
                                                        const fftw_complex * post_cov_c,
@@ -216,6 +212,10 @@ private:
   void                          absoulteComplex(const fftw_complex  * z,
                                                 const int           & n,
                                                 std::vector<double> & abs_z) const;
+
+  void                          complexConjugate(const fftw_complex  * z,
+                                                 const int           & n,
+                                                 fftw_complex        * conj_z) const;
 
   void                          calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
                                                             SeismicParametersHolder & seismic_parameters,
