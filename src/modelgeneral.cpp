@@ -2317,7 +2317,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                      bool              & failed)
 {
   FFTGrid * velocity = NULL;
-  if(timeCutSimbox != NULL)
+  if (timeCutSimbox != NULL)
     loadVelocity(velocity, timeCutSimbox, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
@@ -2326,11 +2326,11 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
 
-  if(!failed)
+  if (!failed)
   {
     timeDepthMapping_ = new GridMapping();
     timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
-    if(velocity != NULL)
+    if (velocity != NULL)
     {
       velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
@@ -2340,7 +2340,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       velocity->endAccess();
 
-      if((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+      if ((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
         float       offset    = modelSettings->getSegyOffset(0);//Only allow one segy offset for time lapse data
@@ -2360,9 +2360,9 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                         modelSettings->getOutputGridFormat(),
                                         failed,
                                         errText);
-
     }
   }
+
   if(velocity != NULL)
     delete velocity;
 }
@@ -2629,26 +2629,29 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
 }
 
 void
-ModelGeneral::loadVelocity(FFTGrid           *& velocity,
-                           const Simbox       * timeSimbox,
-                           const Simbox       * timeCutSimbox,
-                           const ModelSettings * modelSettings,
-                           const std::string  & velocityField,
-                           bool               & velocityFromInversion,
-                           std::string        & errText,
-                           bool               & failed)
+ModelGeneral::loadVelocity(FFTGrid             *& velocity,
+                           const Simbox         * timeSimbox,
+                           const Simbox         * timeCutSimbox,
+                           const ModelSettings  * modelSettings,
+                           const std::string    & velocityField,
+                           bool                 & velocityFromInversion,
+                           std::string          & errText,
+                           bool                 & failed)
 {
-  LogKit::WriteHeader("Setup time-to-depth relationship");
-
-  if(modelSettings->getVelocityFromInversion() == true)
+  if (modelSettings->getVelocityFromInversion())
   {
     velocityFromInversion = true;
     velocity = NULL;
   }
-  else if(velocityField == "")
+  else if (velocityField == "") {
     velocity = NULL;
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Using index mapping between time and depth grids.");
+  }
   else
   {
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Mapping between time and depth grids using velocity field \'"+velocityField+"\'");
     const SegyGeometry      * dummy1 = NULL;
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data

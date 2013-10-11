@@ -140,10 +140,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
       if (!failedWells && !failedDepthConv) {
         bool backgroundDone = false;
 
-        if(!(modelSettings->getOptimizeWellLocation() == true &&
+        if (!(modelSettings->getOptimizeWellLocation() == true &&
              modelSettings->getGenerateBackground() == true))
         {
-          if(estimationMode == false ||
+          if (estimationMode == false ||
              modelSettings->getEstimateBackground() == true ||
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getOptimizeWellLocation() == true)
@@ -163,36 +163,36 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
 
             backgroundDone = true;
           }
-          if(failedBackground == false && backgroundDone == true &&
-            (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
+          if (failedBackground == false && backgroundDone == true &&
+             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
             processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
           }
-          else if(estimationMode == true &&
-                  modelSettings->getEstimateWaveletNoise() == true &&
-                  modelSettings->getEstimateBackground() == false &&
-                  modelSettings->getEstimateCorrelations() == false)
-          {
+          else if (estimationMode == true &&
+                   modelSettings->getEstimateWaveletNoise() == true &&
+                   modelSettings->getEstimateBackground() == false &&
+                   modelSettings->getEstimateCorrelations() == false)
+            {
             processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
-          if(failedBackground == false && backgroundDone == true &&
+          if (failedBackground == false && backgroundDone == true &&
              failedReflMat == false && failedExtraSurf == false &&
              (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
               modelSettings->getOptimizeWellLocation() == true))
           {
             processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
                            modelSettings, inputFiles, errText, failedSeismic);
-            if(failedSeismic == false && modelSettings->getOptimizeWellLocation() == true)
+            if (failedSeismic == false && modelSettings->getOptimizeWellLocation() == true)
             {
-              for(int i=0;i<numberOfAngles_;i++)
+              for (int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
               modelGeneral->processWellLocation(seisCube_, reflectionMatrix_,
                                                 modelSettings, modelAVOstatic->getWellMoveInterval());
-              for(int i=0;i<numberOfAngles_;i++)
+              for (int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->endAccess();
             }
           }
@@ -282,7 +282,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
     }
   }
 
-  if(failedBackground == false) {
+  if(!failedBackground) {
     seismicParameters.setBackgroundParameters(background->getAlpha(), background->getBeta(), background->getRho());
     background->releaseGrids();
     delete background;
@@ -816,6 +816,7 @@ ModelAVODynamic::processBackground(Background                    *& background,
                                    timeDepthMapping,
                                    timeCutMapping,
                                    modelSettings->getFileGrid(),
+                                   modelSettings->getVelocityFromInversion(),
                                    *modelSettings->getTraceHeaderFormatOutput());
     }
   }
@@ -825,13 +826,13 @@ ModelAVODynamic::processBackground(Background                    *& background,
 
 
 void
-ModelAVODynamic::processReflectionMatrix(float               **& reflectionMatrix,
-                                         const Background      * background,
-                                         const std::vector<WellData *> & wells,
-                                         const ModelSettings   * modelSettings,
-                                         const InputFiles      * inputFiles,
-                                         std::string           & errText,
-                                         bool                  & failed)
+ModelAVODynamic::processReflectionMatrix(float                         **& reflectionMatrix,
+                                         const Background                * background,
+                                         const std::vector<WellData *>   & wells,
+                                         const ModelSettings             * modelSettings,
+                                         const InputFiles                * inputFiles,
+                                         std::string                     & errText,
+                                         bool                            & failed)
 {
   LogKit::WriteHeader("Reflection matrix");
   //

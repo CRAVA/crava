@@ -2020,13 +2020,13 @@ FFTGrid::writeFile(const std::string       & fName,
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
-  if(formatFlag_ > 0) //Output format specified.
+  if (formatFlag_ > 0) //Output format specified.
   {
-    if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
-      if(timeMap == NULL) { //No resampling of storm
-        if((formatFlag_ & IO::STORM) > 0)
+    if ((domainFlag_ & IO::TIMEDOMAIN) > 0) {
+      if (timeMap == NULL) { //No resampling of storm
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(fileName, simbox, false,padding);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(fileName, simbox, true,padding, false, scientific_format);
       }
       else {
@@ -2034,37 +2034,38 @@ FFTGrid::writeFile(const std::string       & fName,
       }
 
       //SEGY, SGRI CRAVA are never resampled in time.
-      if((formatFlag_ & IO::SEGY) >0)
+      if ((formatFlag_ & IO::SEGY) >0)
         FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
-      if((formatFlag_ & IO::SGRI) >0)
+      if ((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
-      if((formatFlag_ & IO::CRAVA) >0)
+      if ((formatFlag_ & IO::CRAVA) >0)
         FFTGrid::writeCravaFile(fileName, simbox);
     }
 
-    if(depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
+    if (depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
-      if(depthMap->getMapping() == NULL) {
-        if(depthMap->getSimbox() == NULL) {
+      if (depthMap->getMapping() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if((formatFlag_ & IO::STORM) > 0)
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
-        if((formatFlag_ & IO::SEGY) >0)
+        if ((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
       else
       {
-        if(depthMap->getSimbox() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
         // Writes also segy in depth if required
+        LogKit::LogFormatted(LogKit::Low,"Resample cube and write STORM binary file "+depthName+"...\n");
         FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
       }
     }
