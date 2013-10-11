@@ -641,18 +641,32 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
-    std::string tmpErrText;
+    std::string    tmpErrText;
     SegyGeometry * geometry;
+    int            fileType;
     getGeometryFromGridOnFile(gridFile,
                               modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                               geometry,
+                              fileType,
                               tmpErrText);
 
     modelSettings->setSeismicDataAreaParameters(geometry);
-    if(geometry != NULL) {
+    if (geometry != NULL) {
       geometry->WriteGeometry();
 
-      if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
+      if (fileType == IO::CRAVA) {
+        if (modelSettings->getAreaILXL().size() > 0) {
+          std::string text;
+          text += "\nWARNING: The inversion area has been specified in the XML model file using IL-XL";
+          text += "\n         values. This is not a legal option when the area is taken from a seismic";
+          text += "\n         data file given in CRAVA internal format. Specifications are ignored ...\n";
+          LogKit::LogFormatted(LogKit::Warning,text);
+          text  = "Check area specification: You cannot specify inversion area using IL-XL values\n";
+          text += "   when area is also taken from a seismic data file in CRAVA internal format.";
+          TaskList::addTask(text);
+        }
+      }
+      else if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
         SegyGeometry * fullGeometry = geometry;
 
         std::vector<int> areaILXL;
@@ -722,7 +736,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       else {
         geometry->WriteILXL();
       }
-      if(!failed) {
+      if (!failed) {
         modelSettings->setAreaParameters(geometry);
         ILXLGeometry = geometry;
       }
@@ -732,12 +746,12 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       failed = true;
     }
   }
-  if(!failed)
+  if (!failed)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters();
     failed = timeSimbox->setArea(areaParams, errText);
 
-    if(failed)
+    if (failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
@@ -763,7 +777,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
     }
 
-    if(!failed)
+    if (!failed)
     {
       //
       // Set IL/XL information in geometry
@@ -773,15 +787,17 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       //   a) For speed
       //   b) Grid data may not be available.
       if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
-        if(ILXLGeometry == NULL) {
+        if (ILXLGeometry == NULL) {
           int gridType = IO::findGridType(gridFile);
           bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
           if (ilxl_info_available) {
             LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
             std::string tmpErrText;
+            int         fileType;
             getGeometryFromGridOnFile(gridFile,
                                       modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                                       ILXLGeometry,
+                                      fileType,
                                       tmpErrText);
             if(ILXLGeometry == NULL) {
               errText += tmpErrText;
@@ -2785,19 +2801,20 @@ ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void
-ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
-                                        const TraceHeaderFormat * thf,
-                                        SegyGeometry           *& geometry,
-                                        std::string             & errText)
+ModelGeneral::getGeometryFromGridOnFile(const std::string          gridFile,
+                                        const TraceHeaderFormat  * thf,
+                                        SegyGeometry            *& geometry,
+                                        int                      & fileType,
+                                        std::string              & errText)
 {
   geometry = NULL;
 
-  if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
-    int fileType = IO::findGridType(gridFile);
-    if(fileType == IO::CRAVA) {
+  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+    fileType = IO::findGridType(gridFile);
+    if (fileType == IO::CRAVA) {
       geometry = geometryFromCravaFile(gridFile);
     }
-    else if(fileType == IO::SEGY) {
+    else if (fileType == IO::SEGY) {
       try
       {
         geometry = SegY::FindGridGeometry(gridFile, thf);
@@ -2807,9 +2824,9 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
         errText = e.what();
       }
     }
-    else if(fileType == IO::STORM)
+    else if (fileType == IO::STORM)
       geometry = geometryFromStormFile(gridFile, errText);
-    else if(fileType==IO::SGRI) {
+    else if (fileType==IO::SGRI) {
       bool scale = true;
       geometry = geometryFromStormFile(gridFile, errText, scale);
     }
