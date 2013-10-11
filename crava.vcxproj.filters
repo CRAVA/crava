@@ -999,6 +999,15 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1663,6 +1672,8 @@
     </ClInclude>
     <ClInclude Include="rplib\table_rho1.h">
       <Filter>Header Files\rplib\fluid</Filter>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="rplib\table_rho2.h">
       <Filter>Header Files\rplib\fluid</Filter>
@@ -1674,6 +1685,12 @@
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
     <ClInclude Include="src\rmstrace.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
