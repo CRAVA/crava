@@ -327,10 +327,11 @@ private:
                                                  double       & yMin,
                                                  double       & xMax,
                                                  double       & yMax);
-  void              getGeometryFromGridOnFile(const std::string         seismicFile,
-                                              const TraceHeaderFormat * thf,
-                                              SegyGeometry           *& geometry,
-                                              std::string             & errText);
+  void              getGeometryFromGridOnFile(const std::string          seismicFile,
+                                              const TraceHeaderFormat  * thf,
+                                              SegyGeometry            *& geometry,
+                                              int                      & fileType,
+                                              std::string              & errText);
   SegyGeometry    * geometryFromCravaFile(const std::string & fileName);
   SegyGeometry    * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
   //void            processStructureParameters();
