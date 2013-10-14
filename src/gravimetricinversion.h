@@ -24,8 +24,7 @@ public:
   GravimetricInversion(ModelGeneral            * modelGeneral,
                        ModelGravityStatic      * modelGravityStatic,
                        ModelGravityDynamic     *& modelGravityDynamic,
-                       SeismicParametersHolder & seismicParameters,
-                       ModelSettings           * modelSettings);  // NB: Using ModelSettings only for debug purposes.
+                       SeismicParametersHolder & seismicParameters);
 
   ~GravimetricInversion();
 

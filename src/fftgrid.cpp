@@ -134,7 +134,7 @@ FFTGrid::~FFTGrid()
 void
 FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
                                    const Simbox * timeSimbox,
-                                   const Simbox * /*timeCutSimbox*/,
+                                   const Simbox * timeCutSimbox,
                                    float         smooth_length,
                                    int         & missingTracesSimbox,
                                    int         & missingTracesPadding,
@@ -318,11 +318,11 @@ FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
 
 void
 FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                float                /*z0_data*/,
-                                float                /*zn_data*/,
+                                float                z0_data,
+                                float                zn_data,
                                 float                dz_data,
                                 float                smooth_length,
-                                std::string        & /*errTxt*/)
+                                std::string        & errTxt)
 {
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.

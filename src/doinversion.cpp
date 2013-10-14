@@ -176,8 +176,7 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
     GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
                                                                            modelGravityStatic,
                                                                            modelGravityDynamic,
-                                                                           seismicParameters,
-                                                                           modelSettings);
+                                                                           seismicParameters);
 
     delete gravimetricInversion;
   }

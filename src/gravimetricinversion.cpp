@@ -31,8 +31,7 @@
 GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGeneral,
                                            ModelGravityStatic      *  modelGravityStatic,
                                            ModelGravityDynamic     *& modelGravityDynamic,
-                                           SeismicParametersHolder &  seismicParameters,
-                                           ModelSettings           *  /*modelSettings*/)
+                                           SeismicParametersHolder &  seismicParameters)
 {
   LogKit::WriteHeader("Building Stochastic Model for Gravimetric Inversion");
 
