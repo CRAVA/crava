@@ -1,6 +1,7 @@
 #include <time.h>
 
 #include "src/crava.h"
+#include "src/rmsinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
@@ -127,16 +128,24 @@ doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
                                const ModelGeneral            * modelGeneral,
                                const InputFiles              * inputFiles,
                                const int                     & vintage,
-                               SeismicParametersHolder       & /*seismicParameters*/)
+                               SeismicParametersHolder       & seismicParameters)
 {
   ModelTravelTimeDynamic * modelTravelTimeDynamic = NULL;
 
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
-                                                      modelGeneral,
                                                       inputFiles,
+                                                      modelGeneral->getTimeSimbox(),
                                                       vintage);
 
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
+
+  if(failedLoadingModel == false) {
+    RMSInversion * rms_inversion = new RMSInversion(modelGeneral,
+                                                    modelTravelTimeDynamic,
+                                                    seismicParameters);
+
+    delete rms_inversion;
+  }
 
   delete modelTravelTimeDynamic;
 
@@ -167,8 +176,7 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
     GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
                                                                            modelGravityStatic,
                                                                            modelGravityDynamic,
-                                                                           seismicParameters,
-                                                                           modelSettings);
+                                                                           seismicParameters);
 
     delete gravimetricInversion;
   }

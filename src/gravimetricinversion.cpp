@@ -31,8 +31,7 @@
 GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGeneral,
                                            ModelGravityStatic      *  modelGravityStatic,
                                            ModelGravityDynamic     *& modelGravityDynamic,
-                                           SeismicParametersHolder &  seismicParameters,
-                                           ModelSettings           *  modelSettings)
+                                           SeismicParametersHolder &  seismicParameters)
 {
   LogKit::WriteHeader("Building Stochastic Model for Gravimetric Inversion");
 
@@ -685,7 +684,7 @@ void
   for(int i = 1; i <= nxp; i++){
     for(int j = 1; j <= nyp; j++){
       for(int k = 1; k <= nzp; k++){
-        I =  i + (j-1)*nxp + (k-1)*nxp*nyp; 
+        I =  i + (j-1)*nxp + (k-1)*nxp*nyp;
         grid->setNextReal(static_cast<float>(vec(I-1)));
       }
     }
@@ -709,7 +708,7 @@ void
   for(int k1 = 1; k1 <= nzp; k1++){
     for(int j1 = 1; j1 <= nyp; j1++){
       for(int i1 = 1; i1 <= nxp; i1++){
-        I =  i1 + (j1-1)*nxp + (k1-1)*nxp*nyp; 
+        I =  i1 + (j1-1)*nxp + (k1-1)*nxp*nyp;
 
         for(int k2 = 1; k2 <= nzp; k2++){
           for(int j2 = 1; j2 <= nyp; j2++){
@@ -767,7 +766,7 @@ void
   for(int k1 = 1; k1 <= nzp; k1++){
     for(int j1 = 1; j1 <= nyp; j1++){
       for(int i1 = 1; i1 <= nxp; i1++){
-        I =  i1 + (j1-1)*nxp + (k1-1)*nxp*nyp; 
+        I =  i1 + (j1-1)*nxp + (k1-1)*nxp*nyp;
         for(int k2 = 1; k2 <= nz; k2++){
           for(int j2 = 1; j2 <= ny; j2++){
             for(int i2 = 1; i2 <= nx; i2++){

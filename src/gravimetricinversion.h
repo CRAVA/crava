@@ -24,8 +24,7 @@ public:
   GravimetricInversion(ModelGeneral            * modelGeneral,
                        ModelGravityStatic      * modelGravityStatic,
                        ModelGravityDynamic     *& modelGravityDynamic,
-                       SeismicParametersHolder & seismicParameters,
-                       ModelSettings           * modelSettings);  // NB: Using ModelSettings only for debug purposes.
+                       SeismicParametersHolder & seismicParameters);
 
   ~GravimetricInversion();
 
@@ -46,7 +45,7 @@ private:
   void                   CovExpTransform         (FFTGrid * log_cov, float mean);                 // Updates FFTGrid
   void                   CrCovExpTransform       (FFTGrid * log_cov, float mean_a, float mean_b); // Updates FFTGrid
 
-  // Functions for transforming mean and covariance to log doamin 
+  // Functions for transforming mean and covariance to log doamin
   void                   MeanLogTransform (FFTGrid * mean,   float sigma);                // Updates FFTGrid
   void                   CovLogTransform  (FFTGrid * cov,    float mean);                 // Updates FFTGrid
 

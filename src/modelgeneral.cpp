@@ -4945,3 +4945,4 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
     for(int j =0;j<nyp;j++)
        (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 }
+
