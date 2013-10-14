@@ -57,6 +57,8 @@ public:
 
   void         releaseGrids(); //backModel grids are now taken care of by other classes.
 
+  static void  createPaddedParameter(FFTGrid *& pNew,
+                                     FFTGrid  * pOld);
 private:
   void         generateBackgroundModel(FFTGrid              *& bgAlpha,
                                        FFTGrid              *& bgBeta,
@@ -83,8 +85,6 @@ private:
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
-  void         createPaddedParameter(FFTGrid *& pNew,
-                                     FFTGrid  * pOld);
 
   void         calculateBackgroundTrend(float              * trend,
                                         float              * avgDev,

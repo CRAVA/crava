@@ -116,7 +116,6 @@ private:
                                          int nxp, int nyp, int nzp,
                                          bool fileGrid);
 
-
   void                     makeCircCorrTPosDef(fftw_real * circCorrT,
                                                const int & minIntFq,
                                                const int & nzp) const;

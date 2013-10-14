@@ -231,7 +231,7 @@ void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_u
   for(int k1 = 1; k1 <= nz_upscaled; k1++)
     for(int j1 = 1; j1 <= ny_upscaled; j1++)
       for(int i1 = 1; i1 <= nx_upscaled; i1++){
-        I =  i1 + (j1-1)*nx_upscaled + (k1-1)*nx_upscaled*ny_upscaled; 
+        I =  i1 + (j1-1)*nx_upscaled + (k1-1)*nx_upscaled*ny_upscaled;
 
         for(int k2 = 1; k2 <= nz_upscaled; k2++)
           for(int j2 = 1; j2 <= ny_upscaled; j2++)
