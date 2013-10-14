@@ -1049,6 +1049,9 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
 
   Utils::fft(pri_cov_r, pri_cov_c, nzp);
 
+  for (int i = 0; i < cnzp; i++)
+    pri_cov_c[i].im = 0;
+
   fftw_real    * post_cov_r = new fftw_real[rnzp];
   fftw_complex * post_cov_c = reinterpret_cast<fftw_complex*>(post_cov_r);
 
@@ -1056,6 +1059,9 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
     post_cov_r[i] = static_cast<float>(post_circulant_cov[i]);
 
   Utils::fft(post_cov_r, post_cov_c, nzp);
+
+  for (int i = 0; i < cnzp; i++)
+    post_cov_c[i].im = 0;
 
   fftw_real    * var_e_r = new fftw_real[rnzp];
   fftw_complex * var_e_c = reinterpret_cast<fftw_complex*>(var_e_r);
