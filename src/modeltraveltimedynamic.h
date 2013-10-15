@@ -36,7 +36,7 @@ public:
   const double                  getStandardDeviation()     const { return standard_deviation_     ;}
   const Simbox *                getSimboxAbove()           const { return simbox_above_           ;}
   const Simbox *                getSimboxBelow()           const { return simbox_below_           ;}
-
+  const int                     getThisTimeLapse()         const { return this_time_lapse_        ;}
 
 private:
 
@@ -88,7 +88,7 @@ private:
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
-  int                       thisTimeLapse_;         ///< Time lapse of the current travel time data set
+  int                       this_time_lapse_;       ///< Time lapse of the current travel time data set
 
   Simbox *                  simbox_above_;          ///< Simbox to be used above the reservoir
   Simbox *                  simbox_below_;          ///< Simbox to be used below the reservoir

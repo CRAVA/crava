@@ -138,21 +138,23 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
+
+  FFTGrid * post_log_vp = NULL;
+
+  calculateLogVpExpectation(observation_filter,
+                            seismicParameters.getPriorVar0(),
+                            mu_log_vp,
+                            cov_log_vp,
+                            stationary_d,
+                            stationary_covariance,
+                            post_log_vp);
+
+  delete post_log_vp;
+
   calculateFullPosteriorModel(observation_filter,
                               seismicParameters,
                               stationary_d,
                               stationary_covariance);
-
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_vp";
-  mu_log_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  FFTGrid * mu_log_vs = seismicParameters.GetMuBeta();
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_vs";
-  mu_log_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  FFTGrid * mu_log_rho = seismicParameters.GetMuRho();
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_rho";
-  mu_log_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
 
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
@@ -1397,7 +1399,7 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
 
         seismic_parameters.getNextParameterCovariance(Sigma_m);
 
-        if(filter == 0) {
+        if (filter == 0) {
           // Prior = posterior
           mu_vp ->setNextComplex(mu_m[0]);
           mu_vs ->setNextComplex(mu_m[1]);
@@ -1458,8 +1460,6 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
   cr_cov_vp_rho->endAccess();
   cr_cov_vs_rho->endAccess();
 
-  seismic_parameters.invFFTAllGrids();
-
   delete [] mu_m;
   delete [] mu_post;
 
@@ -1468,4 +1468,91 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
 
   for(int i=0; i<3; i++)
     delete [] Sigma_post[i];
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateLogVpExpectation(const std::vector<int>  & observation_filter,
+                                        const NRLib::Matrix     & prior_var_vp,
+                                        FFTGrid                 * mu_vp,
+                                        FFTGrid                 * cov_vp,
+                                        FFTGrid                 * stationary_observations,
+                                        FFTGrid                 * stationary_observation_covariance,
+                                        FFTGrid                *& post_mu_vp) const
+{
+  if (mu_vp->getIsTransformed() == false)
+    mu_vp->fftInPlace();
+  if (cov_vp->getIsTransformed() == false)
+    cov_vp->fftInPlace();
+
+  mu_vp ->setAccessMode(FFTGrid::READ);
+  cov_vp->setAccessMode(FFTGrid::READ);
+
+  if (stationary_observations->getIsTransformed() == false)
+    stationary_observations->fftInPlace();
+
+  if (stationary_observation_covariance->getIsTransformed() == false)
+    stationary_observation_covariance->fftInPlace();
+
+  int nx   = mu_vp->getNx();
+  int ny   = mu_vp->getNy();
+  int nz   = mu_vp->getNz();
+  int nxp  = mu_vp->getNxp();
+  int cnxp = mu_vp->getCNxp();
+  int nyp  = mu_vp->getNyp();
+  int nzp  = mu_vp->getNzp();
+
+  fftw_complex mu_m;
+  fftw_complex var_m;
+  fftw_complex Sigma_m;
+  fftw_complex mu_post;
+
+  fftw_complex data;
+  fftw_complex data_variance;
+  fftw_complex var_d;
+  fftw_complex diff;
+  fftw_complex divide;
+  fftw_complex mu_help;
+
+  post_mu_vp = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+  post_mu_vp->createComplexGrid();
+  post_mu_vp->setType(FFTGrid::PARAMETER);
+  post_mu_vp->setAccessMode(FFTGrid::WRITE);
+
+  for (int k = 0; k < nzp; k++) {
+
+    int filter = observation_filter[k];
+
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
+
+        data          = stationary_observations          ->getNextComplex();
+        data_variance = stationary_observation_covariance->getNextComplex();
+        mu_m          = mu_vp                            ->getNextComplex();
+        var_m         = cov_vp                           ->getNextComplex();
+
+        Sigma_m = SeismicParametersHolder::getParameterCovariance(prior_var_vp, 0, 0, var_m);
+
+        if (filter == 0)
+          post_mu_vp  ->setNextComplex(mu_m);
+        else {
+          addComplex(&Sigma_m, &data_variance, 1, &var_d);
+          subtractComplex(&data, &mu_m, 1, &diff);
+          divideComplex(&diff, &var_d, 1, &divide);
+
+          multiplyComplex(&Sigma_m, &divide, 1, &mu_help);
+          addComplex(&mu_m, &mu_help, 1, &mu_post);
+
+          post_mu_vp  ->setNextComplex(mu_post);
+
+        }
+      }
+    }
+  }
+
+  mu_vp     ->endAccess();
+  cov_vp    ->endAccess();
+  post_mu_vp->endAccess();
+
 }

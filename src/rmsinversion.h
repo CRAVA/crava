@@ -5,6 +5,7 @@
 #ifndef RMS_INVERSION_H
 #define RMS_INVERSION_H
 
+#include "nrlib/flens/nrlib_flens.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "src/definitions.h"
 #include "lib/utils.h"
@@ -221,6 +222,14 @@ private:
                                                             SeismicParametersHolder & seismic_parameters,
                                                             FFTGrid                 * stationary_observations,
                                                             FFTGrid                 * stationary_observation_covariance) const;
+
+  void                          calculateLogVpExpectation(const std::vector<int>  & observation_filter,
+                                                          const NRLib::Matrix     & prior_var_vp,
+                                                          FFTGrid                 * mu_vp,
+                                                          FFTGrid                 * cov_vp,
+                                                          FFTGrid                 * stationary_observations,
+                                                          FFTGrid                 * stationary_observation_covariance,
+                                                          FFTGrid                *& post_mu_vp) const;
 
   int n_above_;
   int n_below_;
