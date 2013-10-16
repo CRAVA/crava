@@ -231,6 +231,12 @@ private:
                                                           FFTGrid                 * stationary_observation_covariance,
                                                           FFTGrid                *& post_mu_vp) const;
 
+  void                          calculateDistanceGrid(const Simbox        * simbox,
+                                                      FFTGrid             * mu_vp,
+                                                      FFTGrid             * post_mu_vp,
+                                                      NRLib::Grid<double> & distance) const;
+
+
   int n_above_;
   int n_below_;
   int n_model_;

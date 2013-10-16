@@ -137,8 +137,7 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                                  stationary_d,
                                  stationary_covariance,
                                  observation_filter);
-
-
+  // From second time lapse
   FFTGrid * post_log_vp = NULL;
 
   calculateLogVpExpectation(observation_filter,
@@ -149,7 +148,15 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                             stationary_covariance,
                             post_log_vp);
 
+  NRLib::Grid<double> distance;
+
+  calculateDistanceGrid(timeSimbox,
+                        mu_log_vp,
+                        post_log_vp,
+                        distance);
+
   delete post_log_vp;
+  // To here
 
   calculateFullPosteriorModel(observation_filter,
                               seismicParameters,
@@ -1556,3 +1563,44 @@ RMSInversion::calculateLogVpExpectation(const std::vector<int>  & observation_fi
   post_mu_vp->endAccess();
 
 }
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
+                                    FFTGrid             * mu_vp,
+                                    FFTGrid             * post_mu_vp,
+                                    NRLib::Grid<double> & distance) const
+{
+
+  if (mu_vp->getIsTransformed() == true)
+    mu_vp->invFFTInPlace();
+
+  if (post_mu_vp->getIsTransformed() == true)
+    post_mu_vp->invFFTInPlace();
+
+  int nx  = mu_vp->getNx();
+  int ny  = mu_vp->getNy();
+  int nz  = mu_vp->getNz();
+
+  distance.Resize(nx, ny, nz);
+
+  mu_vp     ->setAccessMode(FFTGrid::READ);
+  post_mu_vp->setAccessMode(FFTGrid::READ);
+
+  for (int k = 0; k < nz; k++) {
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0; i < nx; i++) {
+        double d1 = simbox    ->getdz(i, j);           // d1 = time from top to base of a cell in old time grid
+        double v1 = mu_vp     ->getRealValue(i, j, k); // v1 = old velocity, being prior velocity
+        double v2 = post_mu_vp->getRealValue(i, j, k); // v2 = new velocity, being posterior velocity
+        double d2 = v1 * d1 / v2;
+        distance(i, j, k) = d2;
+      }
+    }
+  }
+
+  mu_vp     ->endAccess();
+  post_mu_vp->endAccess();
+}
+
