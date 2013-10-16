@@ -37,7 +37,7 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
   FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
   std::vector<double> cov_grid_log_vp      = getCovLogVp(cov_log_vp);
 
-  const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
+  Simbox * timeSimbox                      = modelGeneral->getTimeSimbox();
   const Simbox * simbox_above              = modelTravelTimeDynamic->getSimboxAbove();
   const Simbox * simbox_below              = modelTravelTimeDynamic->getSimboxBelow();
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
@@ -155,7 +155,17 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                         post_log_vp,
                         distance);
 
+  Simbox * new_simbox = NULL;
+  std::string errTxt  = "";
+
+  generateNewSimbox(distance,
+                    modelTravelTimeDynamic->getLzLimit(),
+                    timeSimbox,
+                    new_simbox,
+                    errTxt);
+
   delete post_log_vp;
+  delete new_simbox;
   // To here
 
   calculateFullPosteriorModel(observation_filter,
@@ -1602,5 +1612,50 @@ RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
 
   mu_vp     ->endAccess();
   post_mu_vp->endAccess();
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
+                                const double               & lz_limit,
+                                Simbox                     * simbox,
+                                Simbox                    *& new_simbox,
+                                std::string                & errTxt) const
+{
+  const int    nx   = simbox->getnx();
+  const int    ny   = simbox->getny();
+  const int    nz   = simbox->getnz();
+
+  double xmin, xmax, ymin, ymax;
+
+  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
+
+  double lx = xmax-xmin;
+  double ly = ymax-ymin;
+
+  Surface base_surface = Surface(xmin, ymin, lx, ly, nx, ny, 0);
+
+  Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
+
+  double x;
+  double y;
+  double z;
+
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+      for (int k = 0; k < nz; k++)
+        base_surface(i, j) += distance(i, j, k);
+
+      simbox->getXYCoord(i, j, x, y);
+      z = top_surface.GetZ(x, y);
+      base_surface(i, j) += z;
+    }
+  }
+
+  new_simbox = new Simbox(simbox);
+  new_simbox->setDepth(top_surface, base_surface, nz);
+  new_simbox->calculateDz(lz_limit, errTxt);
+
 }
 

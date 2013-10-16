@@ -117,11 +117,13 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
   range_above_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
   range_below_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
 
+  lz_limit_           = modelSettings->getLzLimit();
+
   setupSimboxAbove(timeSimbox,
                    modelSettings->getOutputGridFormat(),
                    modelSettings->getOutputGridDomain(),
                    modelSettings->getOtherOutputFlag(),
-                   modelSettings->getLzLimit(),
+                   lz_limit_,
                    tmpErrText);
 
   setupSimboxBelow(timeSimbox,

@@ -236,6 +236,11 @@ private:
                                                       FFTGrid             * post_mu_vp,
                                                       NRLib::Grid<double> & distance) const;
 
+  void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
+                                                  const double               & lz_limit,
+                                                  Simbox                     * simbox,
+                                                  Simbox                    *& new_simbox,
+                                                  std::string                & errTxt) const;
 
   int n_above_;
   int n_below_;
