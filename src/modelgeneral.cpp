@@ -2237,13 +2237,11 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
         LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
       }
-        std::vector<float> angle = modelSettings->getAngle(i);
-        std::vector<float> SNRatio = modelSettings->getSNRatio(i);
-        std::vector<bool>  estimateWavelet = modelSettings->getEstimateWavelet(i);
-        std::vector<bool>  matchEnergies = modelSettings->getMatchEnergies(i);
-
-
-
+        std::vector<float> angle            = modelSettings->getAngle(i);
+        std::vector<float> SNRatio          = modelSettings->getSNRatio(i);
+        std::vector<bool>  estimateWavelet  = modelSettings->getEstimateWavelet(i);
+        std::vector<bool>  useRickerWavelet = modelSettings->getUseRickerWavelet(i);
+        std::vector<bool>  matchEnergies    = modelSettings->getMatchEnergies(i);
 
         for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
         {
@@ -2268,8 +2266,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
             }
           }
           LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+inputFiles->getSeismicFile(i,j)+"\n");
+
           if (estimateWavelet[j])
             LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
+          else if (useRickerWavelet[j]) {
+            LogKit::LogFormatted(LogKit::Low,"  Ricker wavelet with peak frequency       : %10.1f\n",modelSettings->getRickerPeakFrequency(i,j));
+          }
           else
             LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i,j)+"\n");
           if (modelSettings->getEstimateLocalShift(i,j))
