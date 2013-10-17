@@ -822,7 +822,6 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-format");
   legalCommands.push_back("type");
 
-
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
     inputFiles_->addSeismicFile(value);
@@ -880,19 +879,20 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->addStretchFactor(1.0);
   std::string value;
-  bool estimate = false;
-  float peakFrequency;
-  if(parseFileName(root, "file-name", value, errTxt) == true) {
+  bool        estimate = false;
+  float       peakFrequency;
+
+  if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(false);
     modelSettings_->addRickerPeakFrequency(RMISSING);
   }
-  else if(parseValue(root, "ricker", peakFrequency, errTxt) == true){
+  else if (parseValue(root, "ricker", peakFrequency, errTxt) == true){
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
-    modelSettings_->addRickerPeakFrequency(peakFrequency);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
+    modelSettings_->addRickerPeakFrequency(peakFrequency);
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
