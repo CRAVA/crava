@@ -3459,6 +3459,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validWells[count] = i;
             count++;
           }
+          wells[i]->findILXLAtStartPosition();
         }
       }
       //
