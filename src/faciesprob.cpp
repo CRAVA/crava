@@ -2084,19 +2084,19 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
 }
 
 
-void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                                   * alphagrid,
-                                                            FFTGrid                                                   * betagrid,
-                                                            FFTGrid                                                   * rhogrid,
-                                                            const std::vector<std::vector<PosteriorElasticPDF *> >    & posteriorPdf,
-                                                            const std::vector<Simbox *>                               & volume,
-                                                            int                                                         nDimensions,
-                                                            float                                                       p_undefined,
-                                                            const std::vector<float>                                  & priorFacies,
-                                                            std::vector<FFTGrid *>                                    & priorFaciesCubes,
-                                                            const std::vector<Grid2D *>                               & noiseScale,
-                                                            FFTGrid                                                   * seismicLH,
-                                                            bool                                                        faciesProbFromRockPhysics,
-                                                            CravaTrend                                                & trend_cubes)
+void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                                * alphagrid,
+                                                            FFTGrid                                                * betagrid,
+                                                            FFTGrid                                                * rhogrid,
+                                                            const std::vector<std::vector<PosteriorElasticPDF *> > & posteriorPdf,
+                                                            const std::vector<Simbox *>                            & volume,
+                                                            int                                                      nDimensions,
+                                                            float                                                    p_undefined,
+                                                            const std::vector<float>                               & priorFacies,
+                                                            std::vector<FFTGrid *>                                 & priorFaciesCubes,
+                                                            const std::vector<Grid2D *>                            & noiseScale,
+                                                            FFTGrid                                                * seismicLH,
+                                                            bool                                                     faciesProbFromRockPhysics,
+                                                            CravaTrend                                             & trend_cubes)
 {
   assert (nDimensions == 3 || nDimensions == 4 || nDimensions == 5);
   float * value = new float[nFacies_];
@@ -2150,17 +2150,16 @@ void FaciesProb::CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid             
 
   smallrnxp = faciesProb_[0]->getRNxp();
 
-  int nAng = 0;
-  std::vector<float> t(nAng);
-  double maxS;
-  double minS;
-  std::vector<Grid2D *> tgrid(nAng);
+  int                  nAng = 0;
+  double               maxS;
+  double               minS;
+  std::vector<float>   t(noiseScale.size());
+  std::vector<Grid2D*> tgrid(noiseScale.size());
 
   if(!faciesProbFromRockPhysics){
     for(int i=0;i<int(noiseScale.size());i++)
       if(noiseScale[i]!=NULL)
         nAng++;
-
     for(int angle=0;angle<nAng;angle++) {
       minS = noiseScale[angle]->FindMin(RMISSING);
       maxS = noiseScale[angle]->FindMax(RMISSING);
