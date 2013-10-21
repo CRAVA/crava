@@ -1300,8 +1300,10 @@ void FFTGrid::createGrid()
       LogKit::LogFormatted(LogKit::Error, text);
       exit(1);
     }
-    else if(nGrids_ == maxAllowedGrids_+1)
-      TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
+    else if(nGrids_ == maxAllowedGrids_+1) {
+      //NBNB-PAL: Commented out until memory handling is fixed in 4.0 release
+      //TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
+    }
   }
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
