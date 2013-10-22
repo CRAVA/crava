@@ -2109,9 +2109,10 @@ FFTGrid::writeFile(const std::string       & fName,
             "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        // Writes also segy in depth if required
-        LogKit::LogFormatted(LogKit::Low,"Resample cube and write STORM binary file "+depthName+"...\n");
+        // Writes also cubes in depth if required
+        LogKit::LogFormatted(LogKit::Low,"Resample cube and write file "+depthName+".segy...");
         FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
+        LogKit::LogFormatted(LogKit::Low,"done\n");
       }
     }
   }
@@ -2319,7 +2320,7 @@ FFTGrid::writeResampledStormCube(const GridMapping * gridmapping,
   if((formatFlag_ & IO::SEGY) > 0)
   {
     gfName =  fileName + IO::SuffixSegy();
-    writeSegyFromStorm(outgrid,gfName);
+    writeSegyFromStorm(gridmapping->getSimbox(), outgrid,gfName);
   }
   delete outgrid;
 }
@@ -2764,15 +2765,23 @@ FFTGrid::checkNaN()
   */
 }
 
-void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
+void FFTGrid::writeSegyFromStorm(Simbox * simbox, StormContGrid *data, std::string fileName)
 {
-
   int i,k,j;
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(data->GetNI());
   int ny = static_cast<int>(data->GetNJ());
-  SegyGeometry geometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
-                        nx,ny,data->GetAngle());
+
+  SegyGeometry geometry (simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                         simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                         simbox->getILStepX(), simbox->getILStepY(),
+                         simbox->getXLStepX(), simbox->getXLStepY(),
+                         simbox->getAngle());
+
+  //  SegyGeometry geometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
+  //                      nx,ny,data->GetAngle());
+
+
   float dz = float(floor((data->GetLZ()/data->GetNK())));
   //int nz = int(data->GetZMax()/dz);
   //float z0 = float(data->GetZMin());
@@ -2834,7 +2843,7 @@ void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
         (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
 
   std::string fullFileName = fileName + IO::SuffixSegy();
-  FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
+  FFTGrid::writeSegyFromStorm(simbox, stormcube, fullFileName);
 }
 
 int FFTGrid::findClosestFactorableNumber(int leastint)
