@@ -3450,7 +3450,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validIndex[i] = true;
             wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
             wells[i]->filterLogs();
-            //wells[i]->findMeanVsVp(waveletEstimInterval_);
+            wells[i]->findMeanVsVp();
             wells[i]->lookForSyntheticVsLog(rankCorr[i]);
             wells[i]->calculateDeviation(devAngle[i], timeSimbox);
 

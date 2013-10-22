@@ -1805,32 +1805,19 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
 }
 
-void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
+void WellData::findMeanVsVp(void)
 {
-  std::vector<bool> active_cell(nd_, true);
-
-  bool useInterval = (waveletEstimInterval.size() == 2);
-  if (useInterval) {
-    for(int i=0; i < nd_; i++) {
-      const double zTop  = waveletEstimInterval[0]->GetZ(xpos_[i], ypos_[i]);
-      const double zBase = waveletEstimInterval[1]->GetZ(xpos_[i], ypos_[i]);
-      if ( (zpos_[i] < zTop) || (zpos_[i] > zBase) )
-        active_cell[i] = false;
-    }
-  }
-
   meanVsVp_ = 0.0f;
   nVsVp_    = 0;
 
-  for(int i=0; i < nd_; i++) {
+  for (int i=0 ; i < nd_ ; i++) {
     if (alpha_background_resolution_[i] != RMISSING &&
-        beta_background_resolution_[i]  != RMISSING &&
-        active_cell[i]) {
+        beta_background_resolution_[i]  != RMISSING) {
       meanVsVp_ += beta_background_resolution_[i]/alpha_background_resolution_[i];
       nVsVp_    += 1;
     }
   }
-
   meanVsVp_ /= nVsVp_;
 
+  LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio is %5.3f.\n",1.0f/meanVsVp_);
 }
