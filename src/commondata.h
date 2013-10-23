@@ -363,7 +363,7 @@ private:
                                    std::string        & tmp_err_text) const;
                                    //int                  i_interval) const;
 
-  void CommonData::SetFaciesNamesFromRockPhysics();
+  void SetFaciesNamesFromRockPhysics();
 
   void ReadPriorFaciesProbCubes(const InputFiles                                * input_files,
                                 ModelSettings                                   * model_settings,
