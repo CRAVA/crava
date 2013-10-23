@@ -52,10 +52,13 @@ public:
                                 GridMapping             * depthMapping,
                                 const GridMapping       * timeMapping,
                                 const bool                isFile,
+                                const bool                velocityFromInversion,
                                 const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
 
   void         releaseGrids(); //backModel grids are now taken care of by other classes.
 
+  static void  createPaddedParameter(FFTGrid *& pNew,
+                                     FFTGrid  * pOld);
 private:
   void         generateBackgroundModel(FFTGrid              *& bgAlpha,
                                        FFTGrid              *& bgBeta,
@@ -82,8 +85,6 @@ private:
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
-  void         createPaddedParameter(FFTGrid *& pNew,
-                                     FFTGrid  * pOld);
 
   void         calculateBackgroundTrend(float              * trend,
                                         float              * avgDev,
@@ -134,7 +135,8 @@ private:
                                  std::vector<float *>              & wellTrend,
                                  std::vector<float *>              & highCutWellTrend,
                                  const std::vector<WellData *>     & wells,
-                                 StormContGrid                     & eroded_zone,
+                                 StormContGrid                     & background_zone,
+                                 NRLib::Volume                     & eroded_zone,
                                  const std::vector<bool>           & hitZone,
                                  const int                         & nz,
                                  const std::string                 & name,
@@ -142,7 +144,7 @@ private:
 
   void        checkWellHitsZone(std::vector<bool>             & hitZone,
                                 const std::vector<WellData *> & wells,
-                                StormContGrid                 & eroded_zone,
+                                NRLib::Volume                 & eroded_zone,
                                 const int                     & nWells) const;
 
   void         writeTrendsToFile(float             * trend,
@@ -277,19 +279,20 @@ private:
                                      const std::vector<int>         & erosion_priority,
                                      std::vector<double>            & zone_probability) const;
 
+  void         RegularizeZoneSurfaces(const std::vector<Surface> & surface,
+                                      const Simbox * simbox,
+                                      std::vector<Surface>       & regular_surface);
+
   void         ErodeSurface(Surface       *& surface,
                             const Surface *  priority_surface,
-                            const Simbox  *  simbox,
                             const bool    &  compare_upward) const;
 
   void         ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
                                 const std::vector<int>     & erosion_priority,
-                                const std::vector<Surface> & surface,
-                                const Simbox               * simbox) const;
+                                const std::vector<Surface> & surface) const;
 
-  void         BuildErodedZones(StormContGrid                & eroded_zone,
+  void         BuildErodedZones(NRLib::Volume                & eroded_zone,
                                 const std::vector<Surface *> & eroded_surfaces,
-                                const int                    & nz,
                                 const Simbox                 * simbox,
                                 const int                    & i) const;
 

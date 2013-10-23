@@ -39,7 +39,7 @@ class TabulatedVelocityFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                 std::vector<DistributionWithTrendStorage *> density,
-                                std::vector<double>                         correlation_vp_density_);
+                                std::vector<DistributionWithTrendStorage *> correlation_vp_density_);
 
   virtual ~TabulatedVelocityFluidStorage();
 
@@ -53,7 +53,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> vp_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_vp_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_vp_density_;   /// Converted to double
 };
 
 //----------------------------------------------------------------------------------//
@@ -61,7 +61,7 @@ class TabulatedModulusFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                std::vector<DistributionWithTrendStorage *> density,
-                               std::vector<double>                         correlation_bulk_density_);
+                               std::vector<DistributionWithTrendStorage *> correlation_bulk_density);
 
   virtual ~TabulatedModulusFluidStorage();
 
@@ -75,7 +75,7 @@ public:
 private:
   std::vector<DistributionWithTrendStorage *> bulk_modulus_;
   std::vector<DistributionWithTrendStorage *> density_;
-  std::vector<double>                         correlation_bulk_density_;
+  std::vector<DistributionWithTrendStorage *> correlation_bulk_density_;   /// Converted to double
 };
 
 //----------------------------------------------------------------------------------//
@@ -158,6 +158,27 @@ private:
   std::vector<DistributionWithTrendStorage *> pore_pressure_;
   std::vector<DistributionWithTrendStorage *> temperature_;
   std::vector<DistributionWithTrendStorage *> salinity_;
+};
+
+//----------------------------------------------------------------------------------//
+class CO2FluidStorage : public DistributionsFluidStorage {
+public:
+  CO2FluidStorage(std::vector<DistributionWithTrendStorage *> pressure,
+                  std::vector<DistributionWithTrendStorage *> temperature);
+
+
+  virtual ~CO2FluidStorage();
+
+  virtual std::vector<DistributionsFluid *> GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                                                       const std::string                                              & path,
+                                                                       const std::vector<std::string>                                 & trend_cube_parameters,
+                                                                       const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                                                       const std::map<std::string, DistributionsFluidStorage *>       & model_fluid_storage,
+                                                                       std::string                                                    & errTxt) const;
+
+private:
+  std::vector<DistributionWithTrendStorage *> pressure_;
+  std::vector<DistributionWithTrendStorage *> temperature_;
 };
 
 #endif

@@ -74,6 +74,9 @@ private:
   bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt);
   bool    parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt);
+  bool parseAboveReservoir(TiXmlNode * node, std::string & errTxt);
+  bool parseBelowReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parseRock(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);
@@ -88,6 +91,7 @@ private:
   bool parseHill(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseConstituent(TiXmlNode * node, std::string & constituent_label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseSpanWagnerCO2(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseWalton(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEM(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEMHost(TiXmlNode * node, std::string & label, std::vector<DistributionWithTrendStorage *> & volume_fraction, std::string & errTxt, bool & missing_vol_frac);

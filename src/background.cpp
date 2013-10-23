@@ -331,11 +331,16 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
 
   int    nWells    = modelSettings->getNumberOfWells();
   int    nZones    = static_cast<int>(correlation_structure.size()) - 1;
-  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
+  float  dz_simbox = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
   std::vector<Surface> surface(nZones+1);
   for(int i=0; i<nZones+1; i++)
     surface[i] = Surface(surface_files[i]);
+
+  std::vector<Surface> regular_surface(nZones+1);
+  RegularizeZoneSurfaces(surface,
+                         simbox,
+                         regular_surface); //Subsequent code needs all surfaces to be equally sampled.
 
   std::vector<StormContGrid> alpha_zones(nZones);
   std::vector<StormContGrid> beta_zones(nZones);
@@ -344,10 +349,10 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   BuildSeismicPropertyZones(alpha_zones,
                             beta_zones,
                             rho_zones,
-                            surface,
+                            regular_surface,
                             correlation_structure,
                             simbox,
-                            dz);
+                            dz_simbox);
 
   std::vector<Surface *> eroded_surfaces(nZones+1);
   for(int i=0; i<nZones+1; i++)
@@ -355,8 +360,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
 
   ErodeAllSurfaces(eroded_surfaces,
                    erosion_priority,
-                   surface,
-                   simbox);
+                   regular_surface);
 
   const CovGrid2D & covGrid2D = Kriging2D::makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
 
@@ -371,7 +375,9 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   for(int i=0; i<nZones; i++) {
     LogKit::LogFormatted(LogKit::Low,"\nZone%2d:",i+1);
 
-    int nz = static_cast<int>(alpha_zones[i].GetNK());
+    int   nz = static_cast<int>(alpha_zones[i].GetNK());
+
+    float dz = static_cast<float>(alpha_zones[i].GetLZ() / nz * alpha_zones[i].GetAvgRelThick());
 
     std::vector<float *> wellTrendAlpha(nWells);
     std::vector<float *> wellTrendBeta(nWells);
@@ -381,11 +387,10 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     std::vector<float *> highCutWellTrendBeta(nWells);
     std::vector<float *> highCutWellTrendRho(nWells);
 
-    StormContGrid eroded_zone;
+    NRLib::Volume eroded_zone;
 
     BuildErodedZones(eroded_zone,
                      eroded_surfaces,
-                     nz,
                      simbox,
                      i);
 
@@ -394,9 +399,9 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
 
     std::vector<BlockedLogsForZone *> blocked_logs(nWells);
 
-    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, eroded_zone, hitZone, nz, name_vp,  i);
-    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, eroded_zone, hitZone, nz, name_vs,  i);
-    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zone, hitZone, nz, name_rho, i);
+    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, alpha_zones[i], eroded_zone, hitZone, nz, name_vp,  i);
+    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, alpha_zones[i], eroded_zone, hitZone, nz, name_vs,  i);
+    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, alpha_zones[i], eroded_zone, hitZone, nz, name_rho, i);
 
     trendAlphaZone[i] = new float[nz];
     trendBetaZone[i]  = new float[nz];
@@ -739,14 +744,11 @@ Background::ComputeZoneProbability(const std::vector<double>      & z,
 
 //---------------------------------------------------------------------------
 void
-Background::BuildErodedZones(StormContGrid                & eroded_zone,
+Background::BuildErodedZones(NRLib::Volume                & eroded_zone,
                              const std::vector<Surface *> & eroded_surfaces,
-                             const int                    & nz,
                              const Simbox                 * simbox,
                              const int                    & i) const
 {
-  int    nx        = simbox->getnx();
-  int    ny        = simbox->getny();
   double x_min     = simbox->GetXMin();
   double y_min     = simbox->GetYMin();
   double lx        = simbox->GetLX();
@@ -754,17 +756,50 @@ Background::BuildErodedZones(StormContGrid                & eroded_zone,
   double angle     = simbox->getAngle();
 
 
-  NRLib::Volume volume(x_min, y_min, lx, ly, *eroded_surfaces[i], *eroded_surfaces[i+1], angle);
-
-  eroded_zone = StormContGrid(volume, nx, ny, nz);
+  eroded_zone = NRLib::Volume(x_min, y_min, lx, ly, *eroded_surfaces[i], *eroded_surfaces[i+1], angle);
 
 }
 //---------------------------------------------------------------------------
 void
+Background::RegularizeZoneSurfaces(const std::vector<Surface> & surface,
+                                   const Simbox * simbox,
+                                   std::vector<Surface> & regular_surface)
+{
+  double xmin, xmax, ymin, ymax;
+  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
+  double lx = xmax-xmin;
+  double ly = ymax-ymin;
+
+  double d0 = simbox->getdx();
+  if(simbox->getdy()< d0)
+    d0 = simbox->getdy();
+
+  size_t nx = static_cast<size_t>(ceil(lx/d0));
+  double dx = lx/static_cast<double>(nx-1);
+  size_t ny = static_cast<size_t>(ceil(ly/d0));
+  double dy = ly/static_cast<double>(ny-1);
+  NRLib::Grid2D<double> z_grid(nx, ny, 0);
+
+  for(size_t s=0;s<surface.size();s++) {
+    double y = ymin;
+    for(size_t j=0;j<ny;j++) {
+      double x = xmin;
+      for(size_t i=0;i<nx;i++) {
+        double z = surface[s].GetZ(x,y);
+        z_grid(i,j) = z;
+        x += dx;
+      }
+      y += dy;
+    }
+    regular_surface[s] = Surface(xmin, ymin, lx, ly, z_grid);
+  }
+}
+
+//---------------------------------------------------------------------------
+void
 Background::ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
                              const std::vector<int>     & erosion_priority,
-                             const std::vector<Surface> & surface,
-                             const Simbox               * simbox) const
+                             const std::vector<Surface> & surface) const
 {
   int    nSurf     = static_cast<int>(eroded_surfaces.size());
 
@@ -778,14 +813,14 @@ Background::ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
     //Find closest eroded surface downward
     for(int k=l+1; k<nSurf; k++) {
       if(eroded_surfaces[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, false);
+        ErodeSurface(temp_surface, eroded_surfaces[k], false);
         break;
       }
     }
     //Find closest eroded surface upward
     for(int k=l-1; k>=0; k--) {
       if(eroded_surfaces[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, true);
+        ErodeSurface(temp_surface, eroded_surfaces[k], true);
         break;
       }
     }
@@ -1179,7 +1214,8 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                               std::vector<float *>              & wellTrend,
                               std::vector<float *>              & highCutWellTrend,
                               const std::vector<WellData *>     & wells,
-                              StormContGrid                     & eroded_zone,
+                              StormContGrid                     & background_zone,
+                              NRLib::Volume                     & eroded_zone,
                               const std::vector<bool>           & hitZone,
                               const int                         & nz,
                               const std::string                 & name,
@@ -1193,7 +1229,7 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
 
   for(int w=0; w<nWells; w++) {
     if(hitZone[w] == true) {
-      bl[w] = new BlockedLogsForZone(wells[w], eroded_zone);
+      bl[w] = new BlockedLogsForZone(wells[w], background_zone, eroded_zone);
       nValidWellsInZone++;
     }
     else
@@ -1264,11 +1300,11 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
 void
 Background::checkWellHitsZone(std::vector<bool>             & hitZone,
                               const std::vector<WellData *> & wells,
-                              StormContGrid                 & eroded_zone,
+                              NRLib::Volume                 & eroded_zone,
                               const int                     & nWells) const
 {
   for(int w=0; w<nWells; w++) {
-    if(wells[w]->checkStormgrid(eroded_zone) == 0) {
+    if(wells[w]->checkVolume(eroded_zone) == 0) {
       hitZone[w] = true;
     }
     else
@@ -2407,9 +2443,10 @@ Background::writeBackgrounds(const Simbox            * simbox,
                              GridMapping             * depthMapping,
                              const GridMapping       * timeMapping,
                              const bool                isFile,
+                             const bool                velocityFromInversion,
                              const TraceHeaderFormat & thf) const
 {
-  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
+  if (depthMapping != NULL && depthMapping->getSimbox() == NULL && !velocityFromInversion) {
     const Simbox * timeSimbox = simbox;
     if(timeMapping != NULL)
       timeSimbox = timeMapping->getSimbox();
@@ -2418,20 +2455,26 @@ Background::writeBackgrounds(const Simbox            * simbox,
     backModel_[0]->endAccess();
   }
 
+  GridMapping * tmpDepthMapping;
+  if (velocityFromInversion)
+    tmpDepthMapping = NULL; // Avoid output of BG in depth when time-to-depth mapping does not exist.
+  else
+    tmpDepthMapping = depthMapping;
+
   std::string fileName1 = IO::PrefixBackground() + "Vp" ;
   std::string fileName2 = IO::PrefixBackground() + "Vs" ;
   std::string fileName3 = IO::PrefixBackground() + "Rho";
 
   FFTGrid * expAlpha = copyFFTGrid(backModel_[0], true, isFile);
-  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expAlpha;
 
   FFTGrid * expBeta = copyFFTGrid(backModel_[1], true, isFile);
-  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expBeta;
 
   FFTGrid * expRho = copyFFTGrid(backModel_[2], true, isFile);
-  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expRho;
 
   //
@@ -2462,29 +2505,24 @@ Background::copyFFTGrid(FFTGrid   * origGrid,
 void
 Background::ErodeSurface(Surface       *& surface,
                          const Surface *  priority_surface,
-                         const Simbox  *  simbox,
                          const bool    &  compare_upward) const
 {
-  int nx    = simbox->getnx();
-  int ny    = simbox->getny();
-  double x0 = simbox->GetXMin();
-  double y0 = simbox->GetYMin();
-  double lx = simbox->GetLX();
-  double ly = simbox->GetLY();
+  int nx    = surface->GetNI();
+  int ny    = surface->GetNJ();
+  double x0 = surface->GetXMin();
+  double y0 = surface->GetYMin();
+  double lx = surface->GetLengthX();
+  double ly = surface->GetLengthY();
 
   NRLib::Grid2D<double> eroded_surface(nx,ny,0);
-  double x;
-  double y;
   double z;
   double z_priority;
 
   double missing = surface->GetMissingValue();
-  for(int i=0; i<nx; i++) {
-    for(int j=0; j<ny; j++) {
-      simbox->getXYCoord(i,j,x,y);
-
-      z_priority = priority_surface->GetZ(x,y);
-      z          = surface->GetZ(x,y);
+  for(int j=0; j<ny; j++) {
+    for(int i=0; i<nx; i++) {
+      z_priority = (*priority_surface)(i,j);
+      z          = (*surface)(i,j);
 
       if(compare_upward) {
         if(z < z_priority && z != missing)

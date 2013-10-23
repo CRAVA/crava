@@ -18,7 +18,8 @@ class BlockedLogsForZone
 {
 public:
   BlockedLogsForZone(WellData            * well,
-                     const StormContGrid & stormgrid);
+                     const StormContGrid & background_grid,
+                     const NRLib::Volume & eroded_grid);
 
   ~BlockedLogsForZone();
 
@@ -49,7 +50,8 @@ private:
                           const std::vector<int>   bInd);
 
   void       findSizeAndBlockPointers(WellData            * well,
-                                      const StormContGrid & stormgrid,
+                                      const StormContGrid & background_grid,
+                                      const NRLib::Volume & eroded_grid,
                                       std::vector<int>    & bInd);
 
   std::vector<float>        alpha_;                    ///<
@@ -66,6 +68,9 @@ private:
 
   int                       firstM_;                   ///< First well log entry contributing to blocked well
   int                       lastM_;                    ///< Last well log entry contributing to blocked well
+
+  int                       first_eroded_M_;           ///< First well log entry to be used from the eroded grid
+  int                       last_eroded_M_;            ///< Last well log entry to be used from the eroded grid
 
   int                       firstB_;                   ///< First block with contribution from well log
   int                       lastB_;                    ///< Last block with contribution from well log

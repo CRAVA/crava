@@ -5,33 +5,37 @@
 #ifndef MODELTRAVELTIMEDYNAMIC_H
 #define MODELTRAVELTIMEDYNAMIC_H
 
-#include <stdio.h>
-
-#include "nrlib/surface/regularsurface.hpp"
-
 #include "src/definitions.h"
-#include "src/modelsettings.h"
-#include "src/inputfiles.h"
 
-class Simbox;
-class WellData;
-class FFTGrid;
 class InputFiles;
-class ModelGeneral;
-class SeismicParametersHolder;
+class ModelSettings;
+class RMSTrace;
+class Simbox;
 
 class ModelTravelTimeDynamic
 {
 public:
   ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
-                         const ModelGeneral            * modelGeneral,
                          const InputFiles              * inputFiles,
+                         const Simbox                  * timeSimbox,
                          const int                     & vintage);
 
   ~ModelTravelTimeDynamic();
 
+
   bool                          getFailed()                const { return failed_                 ;}
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
+
+  const std::vector<RMSTrace *> getRMSTraces()             const { return rms_traces_             ;}
+  const double                  getMeanVpTop()             const { return mean_vp_top_            ;}
+  const double                  getMeanVpBase()            const { return mean_vp_base_           ;}
+  const double                  getVarVpAbove()            const { return var_vp_above_           ;}
+  const double                  getVarVpBelow()            const { return var_vp_below_           ;}
+  const double                  getRangeAbove()            const { return range_above_            ;}
+  const double                  getRangeBelow()            const { return range_below_            ;}
+  const double                  getStandardDeviation()     const { return standard_deviation_     ;}
+  const Simbox *                getSimboxAbove()           const { return simbox_above_           ;}
+  const Simbox *                getSimboxBelow()           const { return simbox_below_           ;}
 
 
 private:
@@ -41,22 +45,53 @@ private:
                                                 std::string            & errTxt,
                                                 bool                   & failed);
 
-  void                          processRMSData(FFTGrid                 *& rms_data,
-                                               const ModelSettings      * modelSettings,
+  void                          processRMSData(const ModelSettings      * modelSettings,
                                                const InputFiles         * inputFiles,
                                                const Simbox             * timeSimbox,
-                                               GridMapping              * timeDepthMapping,
-                                               const GridMapping        * timeCutMapping,
                                                std::string              & errTxt,
                                                bool                     & failed);
 
+  void                          readRMSData(const std::string & fileName,
+                                            const Simbox      * timeSimbox,
+                                            std::string       & errTxt);
+
+  void                          setupSimboxAbove(const Simbox  * timeSimbox,
+                                                 const int     & outputFormat,
+                                                 const int     & outputDomain,
+                                                 const int     & otherOutput,
+                                                 const double  & lz_limit,
+                                                 std::string   & errTxt);
+
+  void                          setupSimboxBelow(const Simbox  * timeSimbox,
+                                                 const int     & outputFormat,
+                                                 const int     & outputDomain,
+                                                 const int     & otherOutput,
+                                                 std::string   & errTxt);
+
   std::vector<Surface>      horizons_;              ///< Horizons used for horizon inversion
-  FFTGrid                 * rms_data_;              ///< RMS data U^2
+  std::vector<RMSTrace *>   rms_traces_;
+
+  double                    standard_deviation_;    ///< Observation error for the RMS data
+
+  int                       n_layers_above_;        ///< Number of layers to be used in the RMS inversion above the reservoir
+  int                       n_layers_below_;        ///< Number of layers to be used in the RMS inversion below the reservoir
+
+  double                    mean_vp_top_;           // E(Vp) at the top of the zone above the reservoir, that is, at sea level
+  double                    mean_vp_base_;          // E(Vp) at the base of the zone below the reservoir
+
+  double                    var_vp_above_;          ///< Var(Vp) above the reservoir
+  double                    var_vp_below_;          ///< Var(Vp) below the reservoir
+
+  double                    range_above_;           ///< Range of the temporal corralation function used above the reservoir
+  double                    range_below_;           ///< Range of the temporal corralation function used below the reservoir
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
   int                       thisTimeLapse_;         ///< Time lapse of the current travel time data set
+
+  Simbox *                  simbox_above_;          ///< Simbox to be used above the reservoir
+  Simbox *                  simbox_below_;          ///< Simbox to be used below the reservoir
 
 };
 

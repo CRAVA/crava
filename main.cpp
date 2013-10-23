@@ -47,6 +47,7 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 #include "src/timeline.h"
+#include "src/modelgravitystatic.h"
 
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
@@ -160,7 +161,7 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_Low);
   LogKit::StartBuffering();
 
-  Program program( 2,                     // Major version
+  Program program( 4,                     // Major version
                    0,                     // Minor version
                    0,                     // Patch number for bug fixes
                    //"",                  // Use empty string "" for release versions
@@ -180,7 +181,9 @@ int main(int argc, char** argv)
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
+    ModelGravityStatic * modelGravityStatic = NULL;
     NRLib::Random::Initialize();
+
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
@@ -203,6 +206,7 @@ int main(int argc, char** argv)
 
     setupStaticModels(modelGeneral,
                       modelAVOstatic,
+                      modelGravityStatic,
                       modelSettings,
                       inputFiles,
                       seismicParameters,
@@ -236,7 +240,6 @@ int main(int argc, char** argv)
         // In case of 4D inversion
         if(modelSettings->getDo4DInversion()){
           failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-
         }
         // In case of 3D inversion
         else{
@@ -259,7 +262,7 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::GRAVITY :
-        errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+        errTxt += "Error: Asked for 3D gravimetric inversion: Not available.\n";
         break;
       default :
         errTxt += "Error: Unknown inverstion type.\n";
@@ -289,7 +292,12 @@ int main(int argc, char** argv)
                                                   seismicParameters);
           break;
         case TimeLine::GRAVITY :
-          failed = true;
+          failed = doTimeLapseGravimetricInversion(modelSettings,
+                                                   modelGeneral,
+                                                   modelGravityStatic,
+                                                   inputFiles,
+                                                   eventIndex,
+                                                   seismicParameters);
           break;
         default :
           failed = true;

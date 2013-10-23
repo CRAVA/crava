@@ -119,7 +119,7 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
 //----------------------------------------------------------------------------------//
 TabulatedVelocityFluidStorage::TabulatedVelocityFluidStorage(std::vector<DistributionWithTrendStorage *> vp,
                                                              std::vector<DistributionWithTrendStorage *> density,
-                                                             std::vector<double>                         correlation_vp_density)
+                                                             std::vector<DistributionWithTrendStorage *> correlation_vp_density)
 : vp_(vp),
   density_(density),
   correlation_vp_density_(correlation_vp_density)
@@ -130,8 +130,12 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 {
   if(vp_[0]->GetIsShared() == false)
     delete vp_[0];
+
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_vp_density_[0]->GetIsShared() == false)
+    delete correlation_vp_density_[0];
 }
 
 std::vector<DistributionsFluid *>
@@ -161,13 +165,23 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
+  std::vector<double> corr_vp_density(n_vintages, 0);
+  for(int i=0; i<n_vintages_vp_density; i++) {
+    if(correlation_vp_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-vp-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
+
+    if(corr_vp_density[i] > 1 || corr_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
 
-  std::vector<double> corr_vp_density;
 
   if(tmpErrTxt == "") {
 
@@ -183,10 +197,8 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
 
-      if(i < n_vintages_vp_density)
-        corr_vp_density.push_back(correlation_vp_density_[i]);
-      else
-        corr_vp_density.push_back(corr_vp_density[i-1]);
+     if(i >= n_vintages_vp_density)
+        corr_vp_density[i] = corr_vp_density[i-1];
     }
   }
 
@@ -220,7 +232,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
 //----------------------------------------------------------------------------------//
 TabulatedModulusFluidStorage::TabulatedModulusFluidStorage(std::vector<DistributionWithTrendStorage *> bulk_modulus,
                                                            std::vector<DistributionWithTrendStorage *> density,
-                                                           std::vector<double>                         correlation_bulk_density)
+                                                           std::vector<DistributionWithTrendStorage *> correlation_bulk_density)
 : bulk_modulus_(bulk_modulus),
   density_(density),
   correlation_bulk_density_(correlation_bulk_density)
@@ -231,8 +243,13 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 {
   if(bulk_modulus_[0]->GetIsShared() == false)
     delete bulk_modulus_[0];
+
   if(density_[0]->GetIsShared() == false)
     delete density_[0];
+
+  if(correlation_bulk_density_[0]->GetIsShared() == false)
+    delete correlation_bulk_density_[0];
+
 }
 
 std::vector<DistributionsFluid *>
@@ -262,13 +279,22 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       tmpErrTxt += "Density can not be estimated from wells\n";
   }
 
+  std::vector<double> corr_bulk_density(n_vintages, 0);
+  for(int i=0; i<n_vintages_bulk_density; i++) {
+    if(correlation_bulk_density_[i]->GetEstimate() == true)
+      tmpErrTxt += "<correlation-bulk-density> can not be estimated from wells\n";
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_bulk_density_[i], "correlation", corr_bulk_density[i], errTxt);
+
+    if(corr_bulk_density[i] > 1 || corr_bulk_density[i] < -1)
+        errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
   const std::vector<std::vector<float> > dummy_blocked_logs;
 
   std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
   std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
-
-  std::vector<double> corr_bulk_density;
 
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
@@ -288,9 +314,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
       if(test_bulk < lower_mega_fluid || test_bulk > upper_mega_fluid)
         tmpErrTxt += "Bulk modulus need to be given in kPa\n";
 
-      if(i < n_vintages_bulk_density)
-        corr_bulk_density.push_back(correlation_bulk_density_[i]);
-      else
+      if(i >= n_vintages_bulk_density)
         corr_bulk_density.push_back(corr_bulk_density[i-1]);
     }
   }
@@ -582,22 +606,12 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
 
     }
   }
-  //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
-  bool is_co2 = false;
   DistributionsFluid * fluid = NULL;
 
   if(tmpErrTxt == "") {
 
     for(int i=0; i<n_vintages; i++) {
-      if (is_co2) {
-        std::vector<double> alpha2(2);
-        std::copy(alpha.begin() + 1, alpha.end(), alpha2.begin());
-        fluid       = new DistributionsFluidCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], alpha2);
-      }
-      else
-        fluid       = new DistributionsFluidBatzleWang(temperature_dist_with_trend[i], pressure_dist_with_trend[i], salinity_dist_with_trend[i], alpha);
-
-
+      fluid       = new DistributionsFluidBatzleWang(temperature_dist_with_trend[i], pressure_dist_with_trend[i], salinity_dist_with_trend[i], alpha);
       dist_fluid[i] = fluid;
     }
 
@@ -613,6 +627,95 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
 
   else {
     errTxt += "\nProblems with the Batzle-Wang rock physics model for <fluid>:\n";
+    errTxt += tmpErrTxt;
+  }
+
+  return(dist_fluid);
+}
+
+
+//----------------------------------------------------------------------------------//
+CO2FluidStorage::CO2FluidStorage(std::vector<DistributionWithTrendStorage *> pressure,
+                                 std::vector<DistributionWithTrendStorage *> temperature)
+: pressure_(pressure),
+  temperature_(temperature)
+{
+}
+
+CO2FluidStorage::~CO2FluidStorage()
+{
+  if(pressure_[0]->GetIsShared() == false)
+    delete pressure_[0];
+
+  if(temperature_[0]->GetIsShared() == false)
+    delete temperature_[0];
+}
+
+std::vector<DistributionsFluid *>
+CO2FluidStorage::GenerateDistributionsFluid(const int                                                      & n_vintages,
+                                            const std::string                                              & path,
+                                            const std::vector<std::string>                                 & trend_cube_parameters,
+                                            const std::vector<std::vector<double> >                        & trend_cube_sampling,
+                                            const std::map<std::string, DistributionsFluidStorage *>       & /*model_fluid_storage*/,
+                                            std::string                                                    & errTxt) const
+{
+  std::string tmpErrTxt = "";
+
+  std::vector<double> alpha(2);
+  alpha[0] = temperature_[0]  ->GetOneYearCorrelation();
+  alpha[1] = pressure_[0]->GetOneYearCorrelation();
+
+  for(size_t i=0; i<pressure_.size(); i++) {
+    if(pressure_[i]->GetEstimate() == true)
+      tmpErrTxt += "Pressure can not be estimated from wells for a <solid>\n";
+  }
+  for(size_t i=0; i<temperature_.size(); i++) {
+    if(temperature_[i]->GetEstimate() == true)
+      tmpErrTxt += "Temperature can not be estimated from wells for a <solid>\n";
+  }
+
+  int n_vintages_pressure    = static_cast<int>(pressure_.size());
+  int n_vintages_temperature = static_cast<int>(temperature_.size());
+
+  const std::vector<std::vector<float> > dummy_blocked_logs;
+
+  std::vector<DistributionsFluid *>    dist_fluid(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> pressure_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> temperature_dist_with_trend(n_vintages, NULL);
+
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_pressure)
+        pressure_dist_with_trend[i] = pressure_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        pressure_dist_with_trend[i] = pressure_dist_with_trend[i-1]->Clone();
+
+      if(i < n_vintages_temperature)
+        temperature_dist_with_trend[i] = temperature_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, tmpErrTxt);
+      else
+        temperature_dist_with_trend[i] = temperature_dist_with_trend[i-1]->Clone();
+
+    }
+  }
+
+  DistributionsFluid * fluid = NULL;
+
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      fluid         = new DistributionsFluidCO2(temperature_dist_with_trend[i], pressure_dist_with_trend[i], alpha);
+      dist_fluid[i] = fluid;
+    }
+
+    for(int i=0; i<n_vintages; i++) {
+      if(temperature_dist_with_trend[i]->GetIsShared() == false)
+        delete temperature_dist_with_trend[i];
+      if(pressure_dist_with_trend[i]->GetIsShared() == false)
+        delete pressure_dist_with_trend[i];
+    }
+  }
+
+  else {
+    errTxt += "\nProblems with the CO2 rock physics model for <fluid>:\n";
     errTxt += tmpErrTxt;
   }
 

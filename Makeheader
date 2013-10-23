@@ -18,9 +18,6 @@ GRAMMAR     = grammar
 OPT         = -O2
 DEBUG       =
 PURIFY      =
-#Marit/Alf: Dette virker ikke under Ubuntu
-#ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
-ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
 mode        = all
 
 ifeq ($(GCCNEW),1)
@@ -45,6 +42,12 @@ DEBUG   = -g
 OPT     = -O0
 PROGRAM = cravarun.purify
 PURIFY  = purify -best-effort
+endif
+
+ifeq ($(at),nr)
+ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+else
+ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
 endif
 
 ifeq ($(lib),mkl)

@@ -984,7 +984,33 @@
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
-  </ItemGroup>
+    <ClCompile Include="rplib\table_rho1.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp1.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rmstrace.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rmsinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
       <Filter>Source Files\libs\boost</Filter>
@@ -1646,10 +1672,33 @@
     <ClInclude Include="libs\nrlib\random\dSFMT.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
-    <ClInclude Include="libs\nrlib\random\dSFMT-common.h">
-      <Filter>Header Files\libs\nrlib</Filter>
+    <ClInclude Include="rplib\table_rho1.h">
+      <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
-  </ItemGroup>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho2.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp1.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp2.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rmstrace.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rmsinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\NORSAR\BIP2008-2010\NSM-Projects\CRAVA_Project\INVERSION\CRAVA_INPUT\initial-model.xml">
       <Filter>Source Files\libs\nrlib</Filter>

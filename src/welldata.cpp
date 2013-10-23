@@ -36,6 +36,7 @@ WellData::WellData(const std::string              & wellFileName,
                    int                              indicatorWavelet,
                    int                              indicatorBGTrend,
                    int                              indicatorRealVs,
+                   bool                             porosityLogGiven,
                    bool                             faciesLogGiven)
   : modelSettings_(modelSettings),
     wellname_(""),
@@ -65,9 +66,9 @@ WellData::WellData(const std::string              & wellFileName,
 {
   errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
-    readNorsarWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
+    readNorsarWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
   else
-    readRMSWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
+    readRMSWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
 }
 
 //----------------------------------------------------------------------------
@@ -81,6 +82,7 @@ WellData::~WellData()
   delete [] rho_;
   delete [] facies_;
   delete [] md_;
+  delete [] porosity_;
 
   if (nFacies_ > 0)
     delete [] faciesNr_;
@@ -109,6 +111,7 @@ void
 WellData::readRMSWell(const std::string              & wellFileName,
                       const std::vector<std::string> & logNames,
                       const std::vector<bool>        & inverseVelocity,
+                      bool                             porosityLogGiven,
                       bool                             faciesLogGiven)
 {
   error_ = 0;
@@ -119,7 +122,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
   std::vector<std::string> tokenLine;
   double xpos, ypos, zpos;
   double dummy = RMISSING;
-  float alpha, beta, rho;
+  float alpha, beta, rho, porosity;
   wellfilename_ = wellFileName;
   if(file == 0)
   {
@@ -140,9 +143,9 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   //Start searching for key words.
 
-  int nVar = 5;       // z,alpha,beta,rho, and facies
+  int nVar = 4;       // z,alpha,beta,rho
 
-  std::vector<std::string> parameterList(5);
+  std::vector<std::string> parameterList(logNames.size());
 
   bool vpLog = false;
   bool vsLog = false;
@@ -150,8 +153,10 @@ WellData::readRMSWell(const std::string              & wellFileName,
   if(logNames[0] != "") // Assume that all lognames are filled present if first is.
   {
     parameterList = logNames;
-    if (!faciesLogGiven)
-      nVar = 4;
+    if (faciesLogGiven)
+      nVar = 5; // add facies
+    if (porosityLogGiven)
+      nVar = 6; // add porosity
     vpLog = !inverseVelocity[0];
     vsLog = !inverseVelocity[1];
   }
@@ -162,6 +167,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
     parameterList[2] = "RHOB";
     parameterList[3] = "DTS";
     parameterList[4] = "FACIES";
+    nVar++; // add facies
   }
   int * pos = new int[nVar];
   for(i=0;i<nVar;i++)
@@ -176,7 +182,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
       if( NRLib::Uppercase(token)==parameterList[j])
       {
         pos[j] = i + 4;
-        if(j==4)
+        if(j==4 && faciesLogGiven)
         {
           faciesLogName_ = parameterList[4];
           // facies log - save names
@@ -323,11 +329,13 @@ WellData::readRMSWell(const std::string              & wellFileName,
   beta_     = new float[nd_];
   rho_      = new float[nd_];
   facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
+  porosity_ = new float[nd_];
   alpha     = RMISSING;
   beta      = RMISSING;
   rho       = RMISSING;
   zpos      = RMISSING;
   facies    = IMISSING;
+  porosity  = RMISSING;
   k         = -1;
   faciesok_ = 1;
   int legal = 0;
@@ -381,7 +389,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
         else
           rho = RMISSING;
       }
-      else if(nVar > 4 && j==pos[4])
+      else if(nVar > 4 && j==pos[4] && faciesLogGiven)
       {
         //Found facies variable
         if(dummy != WELLMISSING)
@@ -402,6 +410,13 @@ WellData::readRMSWell(const std::string              & wellFileName,
             faciesok_ = 0;
         }
       }
+      else if(nVar>5 && j == pos[5] && porosityLogGiven){
+        // Porosity variable
+        if(dummy != WELLMISSING)
+          porosity = static_cast<float>(dummy);
+        else
+          porosity  = RMISSING;
+      }
     }
     if(legal == 1)
     {
@@ -412,6 +427,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
       beta_[k]   = beta;
       rho_[k]    = rho;
       facies_[k] = facies;
+      porosity_[k] = porosity;
       if (alpha == OPENWORKS_MISSING)
         wrongMissingValues = true;
       if(beta == OPENWORKS_MISSING)
@@ -440,6 +456,7 @@ void
 WellData::readNorsarWell(const std::string              & wellFileName,
                          const std::vector<std::string> & logNames,
                          const std::vector<bool>        & inverseVelocity,
+                         bool                             porosityLogGiven,
                          bool                             faciesLogGiven)
 {
   error_ = 0;
@@ -452,7 +469,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
   {
     NRLib::NorsarWell well(wellFileName);
 
-    int nVar = 5;       // z,alpha,beta,rho, and facies
+    int nVar = 4;       // z,alpha,beta,rho
 
     std::vector<std::string> parameterList;
 
@@ -462,8 +479,10 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     if(logNames[0] != "") // Assume that all lognames are filled present if first is.
     {
       parameterList = logNames;
-      if (!faciesLogGiven)
-        nVar = 4;
+      if(faciesLogGiven)
+        nVar = 5;           // facies
+      if(porosityLogGiven)
+        nVar = 6;           // porosity (even if the facies log is not defined, nVar is set to 6)
       vpLog = !inverseVelocity[0];
       vsLog = !inverseVelocity[1];
     }
@@ -474,6 +493,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       parameterList[2] = "RHOB";
       parameterList[3] = "DTS";
       parameterList[4] = "FACIES";
+      nVar = 5;
     }
 
     int nLogs  = 2+nVar;
@@ -496,7 +516,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     for(int i=0;i<nVar;i++) {
       if(well.HasContLog(parameterList[i]) == false) {
         logs[2+i] = NULL;
-        if(i != 4 || logNames[0] != "") {
+        if(!(i == 4 || i ==5) || logNames[0] != "") { // i == 4, 5 corresponds to facies log and porosity log respectively
           error_ = 1;
           errTxt_ += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
         }
@@ -511,7 +531,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     int mdLog = nLogs;
     if(well.HasContLog("MD") == false) {
       error_ = 1;
-      errTxt_ += "Could not find log 'MD' in well file "+wellFileName+".\n";
+      errTxt_ += "Could not find log 'MD' in well file "+ wellFileName+ ".\n";
       logs[mdLog] = NULL;
     }
     logs[mdLog] = &(well.GetContLog("MD"));
@@ -521,7 +541,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     if(logs[2] == NULL)
       timemissing_ = 1;
     else
-      timemissing_ =0;
+      timemissing_ = 0;
 
     if(error_ == 0) {
       faciesok_ = 1;
@@ -539,24 +559,31 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       rho_      = new float[nd_];
       facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
       md_       = new double[nd_];
+      porosity_ = new float[nd_];
+
       int ind   = 0;
       for(size_t i=0;i<logs[0]->size();i++) {
+        // check that the time variable is ok
         if(well.IsMissing((*logs[2])[i]) == false) {
           xpos_[ind]  = (*logs[0])[i]*1000;
           ypos_[ind]  = (*logs[1])[i]*1000;
           zpos_[ind]  = (*logs[2])[i]*1000;
+          // vp
           if(!well.IsMissing((*logs[3])[i]))
             alpha_[ind] = static_cast<float>((*logs[3])[i]);
           else
             alpha_[ind] = RMISSING;
+          // vs
           if(!well.IsMissing((*logs[5])[i]))
             beta_[ind]  = static_cast<float>((*logs[5])[i]);
           else
             beta_[ind] = RMISSING;
+          // density
           if(!well.IsMissing((*logs[4])[i]))
             rho_[ind]   = static_cast<float>((*logs[4])[i]);
           else
             rho_[ind] = RMISSING;
+          // facies
           if(mdLog != 6 && nLogs > 6 && logs[6] != NULL &&
             !well.IsMissing((*logs[6])[i])) {
             facies_[ind]  = static_cast<int>((*logs[6])[i]);
@@ -565,6 +592,14 @@ WellData::readNorsarWell(const std::string              & wellFileName,
           }
           else
             facies_[ind] = IMISSING;
+          // porosity
+          if(porosityLogGiven && logs[7] !=NULL && mdLog!=7){
+            if(!well.IsMissing((*logs[7])[i]))
+              porosity_[ind] = static_cast<float>((*logs[7])[i]);
+            else
+              porosity_[ind] = RMISSING;
+          }
+
           if(!well.IsMissing((*logs[mdLog])[i]))
             md_[ind]   = static_cast<float>((*logs[mdLog])[i]);
           else
@@ -862,19 +897,19 @@ int WellData::checkSimbox(Simbox * simbox)
 
 //----------------------------------------------------------------------------
 
-int WellData::checkStormgrid(StormContGrid & stormgrid) const
+int WellData::checkVolume(NRLib::Volume & volume) const
 {
   bool insideArea = false;
   int  error      = 1;
 
   if(timemissing_ == 0) {
 
-    NRLib::Surface<double> & top  = stormgrid.GetTopSurface();
-    NRLib::Surface<double> & base = stormgrid.GetBotSurface();
+    NRLib::Surface<double> & top  = volume.GetTopSurface();
+    NRLib::Surface<double> & base = volume.GetBotSurface();
 
     for(int i=0;i<nd_;i++) {
 
-      if(stormgrid.IsInside(xpos_[i], ypos_[i])) {
+      if(volume.IsInside(xpos_[i], ypos_[i])) {
         insideArea = true;
         //
         // Correct handling of top and base checking.

@@ -1042,6 +1042,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 'no'
 \elist
 
+\paragraph{\hbracket{rock-physics-trends}}\newkw{rock-physics-trends}
+ \slist
+   \item \Description Writes rock physics trends estimated in \kw{trend-1d} and \kw{trend-2d} to file. Only available when the trends are estimated.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+\elist
+
 \subsubsection{\hbracket{file-output-prefix}}\newkw{file-output-prefix}
  \slist
    \item \Description Common prefix added to all files written in the run. Identifies the run.
@@ -1245,14 +1252,14 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsubsection{\hbracket{seismic-quality-grid}}\rnewkw{seismic-quality-grid}{seismic-quality-grid2}
  \slist
-   \item \Description Input parameters for seismic quality grid if it is set to yes under \ref{seismic-quality-grid}.
+   \item \Description Input parameters for seismic quality grid if it is set to yes under \kw{seismic-quality-grid} in \kw{grid-output}.
    \item \Argument 
    \item \Default 
  \elist 
  
 \paragraph{\hbracket{range}}\rnewkw{range}{range2}
  \slist
-   \item \Description Range from wells. Outside this range the facies probabilities are estimated from seismic data with a weighing given in \ref{value2}.
+   \item \Description Range from wells. Outside this range the facies probabilities are estimated from seismic data with a weighing given in \rkw{value}{value2}.
    \item \Argument Value
    \item \Default 2000
  \elist 
@@ -1622,7 +1629,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+\subsubsection{\hbracket{rms-data}}\newkw{rms-data}
  \slist
    \item \Description Elements controlling the RMS velocities $U^2$
    \item \Argument 
@@ -1636,66 +1643,10 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\paragraph{\hbracket{segy-start-time}}\rnewkw{segy-start-time}{rms-velocities-segy-start-time}
+\paragraph{\hbracket{standard-deviation}}\newkw{standard-deviation}
  \slist
-   \item \Description Start time for the rms velocities. If not given, the start time is taken from \kw{segy-start-time}.
-   \item \Argument Value
-   \item \Default
- \elist
-
-\paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{rms-velocities-segy-format}
- \slist
-   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma. See Table \ref{tab:segyformats}.
-   \item \Argument Elements containing information about the segy format
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{standard-format}}\rnewkw{standard-format}{rms-velocities-standard-format}
- \slist
-   \item \Description Giving the starting format for modifications.
-   \item \Argument 'seisworks', 'iesx', 'charisma' or 'SIP'
-   \item \Default 'seisworks'
- \elist
-
-\subparagraph{\hbracket{location-x}}\rnewkw{location-x}{rms-velocities-location-x}
- \slist
-   \item \Description The byte location for the x-coordinate in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-y}}\rnewkw{location-y}{rms-velocities-location-y}
- \slist
-   \item \Description The byte location for the y-coordinate in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-il}}\rnewkw{location-il}{rms-velocities-location-il}
- \slist
-   \item \Description The byte location for the inline in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-xl}}\rnewkw{location-xl}{rms-velocities-location-xl}
- \slist
-   \item \Description The byte location for the crossline in the trace header.
-   \item \Argument Integer
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{rms-velocities-bypass-coordinate-scaling}
- \slist
-   \item \Description Indicates whether coordinate scaling information should be used.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{location-scaling-coefficient}}\rnewkw{location-scaling-coefficient}{rms-velocities-location-scaling-coefficient}
- \slist
-   \item \Description
-   \item \Argument Integer
+   \item \Description Standard deviation of the RMS data
+   \item \Argument
    \item \Default
  \elist
 
@@ -1732,13 +1683,6 @@ the vertical sampling interval we find the the number of parameters that is esti
 \item \Description Elements controlling gravimetric data
    \item \Argument
    \item \Default
- \elist
-
-\subsubsection{\hbracket{locations-file}}\newkw{locations-file}
- \slist
-   \item \Description File name for the gravimetric observation locations
-   \item \Argument 
-   \item \Default 
  \elist
 
 \subsubsection{\hbracket{data-file}}\newkw{data-file}
@@ -1834,6 +1778,13 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description Name of the density log.
    \item \Argument String
    \item \Default %'RHOB'
+ \elist
+
+\subsubsection{\hbracket{porosity}}\rnewkw{porosity}{porosity2}
+ \slist
+   \item \Description Name of the porosity log. Leave empty if porosity is not included.
+   \item \Argument String
+   \item \Default
  \elist
 
 \subsubsection{\hbracket{facies}}\newkw{facies}
@@ -2333,7 +2284,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  
  \subsection{\hbracket{temporal-correlation-range}}\newkw{temporal-correlation-range}
   \slist
-    \item \Description Parameter for exponential variogram for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
+    \item \Description Range (ms) in exponential variogram used for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
     \item \Argument Value
     \item \Default
  \elist
@@ -2862,21 +2813,21 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
 
 \subparagraph{\hbracket{batzle-wang-brine}}\newkw{batzle-wang-brine}
  \slist
-   \item \Description The theoty of Batzle and Wang used for calculating the brine properties.
+   \item \Description The theory of Batzle and Wang used for calculating the brine properties.
    \item \Argument 
    \item \Default 
  \elist
 
 \subsubparagraph{\hbracket{pore-pressure}}\newkw{pore-pressure}
  \slist
-   \item \Description
+   \item \Description Pressure given in MPa. Needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
 
 \subsubparagraph{\hbracket{temperature}}\newkw{temperature}
  \slist
-   \item \Description
+   \item \Description Temperature given in C. Needs to be specified.
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
@@ -2887,6 +2838,28 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default
  \elist
+
+\subparagraph{\hbracket{span-wagner-co2}}\newkw{span-wagner-co2}
+ \slist
+   \item \Description Interpolation of the reported values from Span and Wagner used for calculating the CO2 properties.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{pressure}}\newkw{pressure}
+ \slist
+   \item \Description Pressure given in MPa. Needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{temperature}}\newkw{temperature}
+ \slist
+   \item \Description Temperature given in C. Needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
 
 \paragraph{\hbracket{solid}}\newkw{solid}
  \slist
@@ -2977,7 +2950,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-solid}
@@ -3224,7 +3197,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-dry-rock}
@@ -3526,7 +3499,7 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
  \slist
    \item \Description Correlation between vp and vs
    \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
-   \item \Default 0
+   \item \Default $1/\sqrt{2}$
  \elist
 
 \subparagraph{\hbracket{correlation-vp-density}}\newkw{correlation-vp-density}
@@ -3856,6 +3829,83 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Description Generates a trend cube following the two way travel time
    \item \Argument 'yes' or 'no
    \item \Default 'no'
+ \elist
+
+\subsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+ \slist
+   \item \Description Prior information for the RMS data
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{above-reservoir}}\newkw{above-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data above the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{mean-vp-top}}\newkw{mean-vp-top}
+ \slist
+   \item \Description Expected value of $V_p$ at the top of the zone above the reservoir, that is, at sea level. A linear trend will be made between this value and the background value at the top of the reservoir. 
+   \item \Argument Value (m/s)
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{variance-vp}}\newkw{variance-vp}
+ \slist
+   \item \Description Variance for $V_p$ in the zone above the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-above}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation above the reservoir. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\newkw{n-layers}
+ \slist
+   \item \Description Number of layers to be used from t=0 at the surface to the top of the reservoir
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{below-reservoir}}\newkw{below-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data below the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{mean-vp-base}}\newkw{mean-vp-base}
+ \slist
+   \item \Description Expected value of $V_p$ at the base of the zone below the reservoir. A linear trend will be made between this value and the background value at the base of the reservoir. 
+   \item \Argument Value (m/s)
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{variance-vp}}\rnewkw{variance-vp}{variance-vp-below}
+ \slist
+   \item \Description Variance for $V_p$ in the zone below the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-below}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation below the reservoir. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\rnewkw{n-layers}{n-layers-below}
+ \slist
+   \item \Description Number of layers to be used from the base of the reservoir to the deepest observed time for the RMS velocities in \kw{rms-data}
+   \item \Argument Integer
+   \item \Default
  \elist
 
 \section{Value assignments}\newkw{value-assignments}

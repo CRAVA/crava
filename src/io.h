@@ -64,6 +64,7 @@ public:
   inline static  std::string    PrefixOriginalSeismicData(void)    { return std::string("Original_Seismic_Data_")   ;}
   inline static  std::string    PrefixSyntheticSeismicData(void)   { return std::string("Synthetic_Seismic_Data_")  ;}
   inline static  std::string    PrefixTravelTimeData()             { return std::string("Travel_time_data_")        ;}
+  inline static  std::string    PrefixRMSData()                    { return std::string("RMS_")                ;}
   inline static  std::string    PrefixTrendCubes()                 { return std::string("Trend_cube_")              ;}
   inline static  std::string    PrefixFaciesProbability(void)      { return std::string("Facies_Probability_")      ;}
   inline static  std::string    PrefixLikelihood(void)             { return std::string("Seismic_Likelihood_")      ;}
@@ -171,7 +172,8 @@ public:
                              LOCAL_NOISE         =  8,
                              ROCK_PHYSICS        = 16,
                              ERROR_FILE          = 32,
-                             TASK_FILE           = 64};
+                             TASK_FILE           = 64,
+                             ROCK_PHYSICS_TRENDS = 128};
 
   enum           outputWavelets{WELL_WAVELETS    = 1,
                                 GLOBAL_WAVELETS  = 2,

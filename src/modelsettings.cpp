@@ -37,7 +37,7 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     indRockPhysics_(0),
-    logNames_(5),
+    logNames_(6),
     inverseVelocity_(2)
 {
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
@@ -163,6 +163,7 @@ ModelSettings::ModelSettings(void)
   noVsFaciesProb_          =    false;
   useFilterForProb_        =     true;
   faciesLogGiven_          =    false;
+  porosityLogGiven_        =    false;
   depthDataOk_             =    false;
   parallelTimeSurfaces_    =    false;
   useLocalWavelet_         =    false;
@@ -185,6 +186,8 @@ ModelSettings::ModelSettings(void)
 
   logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
+
+  RMSPriorGiven_           =    false;
 
   seed_                    =        0;
 }
@@ -219,9 +222,6 @@ ModelSettings::~ModelSettings(void)
     for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++)
       delete timeLapseLocalTHF_[i][j];
   }
-
-  for(size_t i=0; i<travelTimeTHF_.size(); i++)
-    delete travelTimeTHF_[i];
 
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
@@ -390,12 +390,6 @@ void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
   localTHF_.push_back(traceHeaderFormat);
-}
-
-void
-ModelSettings::addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
-{
-  travelTimeTHF_.push_back(traceHeaderFormat);
 }
 
 void
