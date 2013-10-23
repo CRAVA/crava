@@ -397,22 +397,32 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            modelSettings->getFileGrid());
     target->setType(gridType);
 
-    if (gridType == FFTGrid::DATA) {
-      target->fillInSeismicDataFromSegY(segy,
-                                        timeSimbox,
-                                        timeCutSimbox,
-                                        modelSettings->getSmoothLength(),
-                                        missingTracesSimbox,
-                                        missingTracesPadding,
-                                        deadTracesSimbox,
-                                        errText);
-    }
-    else {
-      missingTracesSimbox = target->fillInFromSegY(segy,
-                                                   timeSimbox,
-                                                   parName,
-                                                   nopadding);
-    }
+    //if (gridType == FFTGrid::DATA) {
+    //  target->fillInFromSegYNew(segy,
+    //                           timeSimbox,
+    //                           modelSettings->getSmoothLength(),
+    //                           missingTracesSimbox,
+    //                           missingTracesPadding,
+    //                           deadTracesSimbox,
+    //                           errText);
+    //}
+    //else {
+    //  missingTracesSimbox = target->fillInFromSegYOld(segy,
+    //                                                  timeSimbox,
+    //                                                  parName,
+    //                                                  nopadding);
+    //}
+    StormContGrid * stormgrid_tmp = NULL;
+    target->fillInData(timeSimbox,
+                       stormgrid_tmp,
+                       segy,
+                       modelSettings->getSmoothLength(),
+                       missingTracesSimbox,
+                       missingTracesPadding,
+                       deadTracesSimbox,
+                       errText);
+    if (stormgrid_tmp != NULL)
+     delete stormgrid_tmp;
 
     if (missingTracesSimbox > 0) {
       if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
@@ -537,7 +547,10 @@ ModelGeneral::readStormFile(const std::string   & fName,
     zpad = timeSimbox->getnz();
   }
 
-  int outsideTraces = 0;
+  //int outsideTraces = 0;
+  int missingTracesSimbox  = 0;
+  int missingTracesPadding = 0;
+  int deadTracesSimbox     = 0;
   if(failed == false)
   {
     target = createFFTGrid(timeSimbox->getnx(),
@@ -550,7 +563,28 @@ ModelGeneral::readStormFile(const std::string   & fName,
     target->setType(gridType);
 
     try {
-      outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+      //outsideTraces = target->fillInFromStormOld(timeSimbox,stormgrid, parName, scale, nopadding);
+      //target->fillInFromStormNew(timeSimbox,
+      //                           stormgrid,
+      //                           modelSettings->getSmoothLength(),
+      //                           missingTracesSimbox,
+      //                           missingTracesPadding,
+      //                           deadTracesSimbox,
+      //                           scale,
+      //                           errText);
+      SegY * segy_tmp = NULL;
+      target->fillInData(timeSimbox,
+                         stormgrid,
+                         segy_tmp,
+                         modelSettings->getSmoothLength(),
+                         missingTracesSimbox,
+                         missingTracesPadding,
+                         deadTracesSimbox, //Not used for storm-files
+                         errText,
+                         scale,
+                         false);
+      if (segy_tmp != NULL)
+       delete segy_tmp;
     }
     catch (NRLib::Exception & e) {
       errText += std::string(e.what());
@@ -560,22 +594,51 @@ ModelGeneral::readStormFile(const std::string   & fName,
   if (stormgrid != NULL)
     delete stormgrid;
 
-  if(outsideTraces > 0) {
-    if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
-      errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
+  if (missingTracesSimbox > 0) {
+    if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
+      errText += "Error: Data in file "+fName+" was completely outside the inversion area.\n";
       failed = true;
     }
     else {
       if(gridType == FFTGrid::PARAMETER) {
-        errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
+        errText += "Grid in file "+fName+" does not cover the inversion area.\n";
       }
       else {
-        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
-                           + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
-        TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
-     }
+        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(missingTracesSimbox)
+                           +" grid columns are outside the area defined by the seismic data.\n");
+        std::string text;
+        text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
+        text += "   the seismic data specified in file \'"+fName+"\'.";
+        TaskList::addTask(text);
+      }
     }
   }
+  if (missingTracesPadding > 0) {
+    int nx     = timeSimbox->getnx();
+    int ny     = timeSimbox->getny();
+    int nxpad  = xpad - nx;
+    int nypad  = ypad - ny;
+    int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+    LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
+                       +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
+  }
+
+  //if(outsideTraces > 0) {
+  //  if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
+  //    errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
+  //    failed = true;
+  //  }
+  //  else {
+  //    if(gridType == FFTGrid::PARAMETER) {
+  //      errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
+  //    }
+  //    else {
+  //      LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
+  //                         + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
+  //      TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
+  //   }
+  //  }
+  //}
 }
 
 int
