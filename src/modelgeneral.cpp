@@ -333,10 +333,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
     //                 errText, failedSimbox);
 
     MultiIntervalGrid * multiple_interval_grid = commonData->GetMultipleIntervalGrid();
-    Simbox & tmp = multiple_interval_grid->GetIntervalSimboxE(0);
-
-    timeSimbox_ = &tmp;
-    //timeSimbox_ = commonData->GetMultipleIntervalGrid()->GetIntervalSimboxE(0);
+    timeSimbox_ = multiple_interval_grid->GetIntervalSimboxN(i_interval);
 
     //if(!failedSimbox)
     //{

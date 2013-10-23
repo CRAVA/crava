@@ -1551,7 +1551,7 @@ Background::MakeMultiIntervalBackground(std::vector<NRLib::Grid<double> >       
             double vs  = 0;
             double rho = 0;
 
-            //for(int zone=0; zone<n_intervals; zone++) { //H For Multizone background this is used to create a a weighted vp from all zones (?). In Multiinterval we store vp per interval, remove this weightings?
+            //for(int zone=0; zone<n_intervals; zone++) { //H For Multizone background this is used to create a a weighted vp from all zones (?). In Multiinterval we store vp per interval, remove these weightings?
 
             //  if(zone_probability[zone] > 0) {
             //    size_t ind1;
