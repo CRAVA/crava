@@ -397,21 +397,6 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            modelSettings->getFileGrid());
     target->setType(gridType);
 
-    //if (gridType == FFTGrid::DATA) {
-    //  target->fillInFromSegYNew(segy,
-    //                           timeSimbox,
-    //                           modelSettings->getSmoothLength(),
-    //                           missingTracesSimbox,
-    //                           missingTracesPadding,
-    //                           deadTracesSimbox,
-    //                           errText);
-    //}
-    //else {
-    //  missingTracesSimbox = target->fillInFromSegYOld(segy,
-    //                                                  timeSimbox,
-    //                                                  parName,
-    //                                                  nopadding);
-    //}
     StormContGrid * stormgrid_tmp = NULL;
     target->fillInData(timeSimbox,
                        stormgrid_tmp,
@@ -547,7 +532,6 @@ ModelGeneral::readStormFile(const std::string   & fName,
     zpad = timeSimbox->getnz();
   }
 
-  //int outsideTraces = 0;
   int missingTracesSimbox  = 0;
   int missingTracesPadding = 0;
   int deadTracesSimbox     = 0;
@@ -563,15 +547,6 @@ ModelGeneral::readStormFile(const std::string   & fName,
     target->setType(gridType);
 
     try {
-      //outsideTraces = target->fillInFromStormOld(timeSimbox,stormgrid, parName, scale, nopadding);
-      //target->fillInFromStormNew(timeSimbox,
-      //                           stormgrid,
-      //                           modelSettings->getSmoothLength(),
-      //                           missingTracesSimbox,
-      //                           missingTracesPadding,
-      //                           deadTracesSimbox,
-      //                           scale,
-      //                           errText);
       SegY * segy_tmp = NULL;
       target->fillInData(timeSimbox,
                          stormgrid,
@@ -2728,7 +2703,6 @@ ModelGeneral::loadVelocity(FFTGrid           *& velocity,
         for (int j = 0; j < nyp; j++)
           for (int i = 0; i < rnxp; i++) {
             if(i < nx && j < ny && k < nz) {
-              //float value = velocity->getNextReal();
               float value = velocity->getRealValue(i, j, k);
               if (value < logMin && value != RMISSING) {
                 tooLow++;

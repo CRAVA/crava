@@ -31,17 +31,6 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  //int                  fillInFromSegYOld(const SegY              * segy,
-  //                                       const Simbox            * simbox,
-  //                                       const std::string       & parName,
-  //                                       bool                      nopadding = false ); // No mode
-  //void                 fillInFromSegYNew(const SegY   * segy,
-  //                                       const Simbox * timeSimbox,
-  //                                       float         smooth_length,
-  //                                       int          & missingTracesSimbox,
-  //                                       int          & missingTracesPadding,
-  //                                       int          & deadTracesSimbox,
-  //                                       std::string  & errTxt);
   void                 fillInData(const Simbox  * timeSimbox,
                                   StormContGrid * grid,
                                   const SegY   *  segy,
@@ -101,19 +90,7 @@ public:
                                                 int                        n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  //int                  fillInFromStormOld(const Simbox      * actSimBox,
-  //                                        StormContGrid     * grid,
-  //                                        const std::string & parName,
-  //                                        bool                scale = false,
-  //                                        bool                nopadding = false);    // No mode
-  //void                 fillInFromStormNew(const Simbox  * actSimbox,
-  //                                        StormContGrid * grid,
-  //                                        float           smooth_length,
-  //                                        int           & missingTracesSimbox,
-  //                                        int           & missingTracesPadding,
-  //                                        int           & deadTracesSimbox,
-  //                                        bool            scale,
-  //                                        std::string   & errTxt);
+
   void                 fillInConstant(float value, bool add = true);              // No mode
 
   void                 fillInErrCorr(const Surface * priorCorrXY,
