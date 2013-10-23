@@ -622,23 +622,6 @@ ModelGeneral::readStormFile(const std::string   & fName,
     LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
                        +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
   }
-
-  //if(outsideTraces > 0) {
-  //  if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
-  //    errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
-  //    failed = true;
-  //  }
-  //  else {
-  //    if(gridType == FFTGrid::PARAMETER) {
-  //      errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
-  //    }
-  //    else {
-  //      LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
-  //                         + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
-  //      TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
-  //   }
-  //  }
-  //}
 }
 
 int
@@ -2745,7 +2728,8 @@ ModelGeneral::loadVelocity(FFTGrid           *& velocity,
         for (int j = 0; j < nyp; j++)
           for (int i = 0; i < rnxp; i++) {
             if(i < nx && j < ny && k < nz) {
-              float value = velocity->getNextReal();
+              //float value = velocity->getNextReal();
+              float value = velocity->getRealValue(i, j, k);
               if (value < logMin && value != RMISSING) {
                 tooLow++;
               }
