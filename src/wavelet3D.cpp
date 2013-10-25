@@ -477,15 +477,16 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
                             bool                                       estimateSNRatio,
                             bool                                       estimateWavelet)
 {
-  std::string angle    = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
-  unsigned int nWells  = modelSettings->getNumberOfWells();
-  int          nhalfWl = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
-  int          nWl     = 2 * nhalfWl + 1;
-  float        v0      = modelSettings->getAverageVelocity();
-  float        dataVar = 0.0f;
-  float        errVar  = 0.0f;
-  int          nData   = 0;
-  std::vector<float> shiftWell  (nWells, 0.0f);
+  float        minSNRatio = 1.1f;
+  std::string  angle      = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
+  unsigned int nWells     = modelSettings->getNumberOfWells();
+  int          nhalfWl    = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
+  int          nWl        = 2 * nhalfWl + 1;
+  float        v0         = modelSettings->getAverageVelocity();
+  float        dataVar    = 0.0f;
+  float        errVar     = 0.0f;
+  int          nData      = 0;
+  std::vector<float> shiftWell(nWells, 0.0f);
   std::vector<float> dzWell(nWells, 0.0);
   std::vector<float> dataVarWell(nWells, 0.0f);
   std::vector<float> errVarWell (nWells, 0.0f);
@@ -727,10 +728,10 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
     }
   }
 
-  if (empSNRatio < 1.1f) {
+  if (empSNRatio < minSNRatio) {
     if (estimateSNRatio) {
       LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::Warning,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
+      LogKit::LogFormatted(LogKit::Warning,"\n       than %.1f are not acceptable. The signal-to-noise ratio was not reliably estimated",minSNRatio);
       LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
       LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
       LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
@@ -740,11 +741,11 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
     }
     else {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::Warning,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+      LogKit::LogFormatted(LogKit::Warning,"\n         than %.1f are not acceptable. If the low ratio is caused by one or more specific",minSNRatio);
       LogKit::LogFormatted(LogKit::Warning,"\n         wells, these wells should not have been included in the wavelet estimation. If");
       LogKit::LogFormatted(LogKit::Warning,"\n         they indeed were omitted, you can avoid this warning by specifying");
       LogKit::LogFormatted(LogKit::Warning,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");
-      TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
+      TaskList::addTask("\nCheck the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
     }
   }
 
