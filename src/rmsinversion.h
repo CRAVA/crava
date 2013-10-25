@@ -242,6 +242,19 @@ private:
                                                   Simbox                    *& new_simbox,
                                                   std::string                & errTxt) const;
 
+  void                          RegularizeSurface(const Surface & surface,
+                                                  const Simbox  * simbox,
+                                                  Surface       & regular_surface) const;
+
+  void                          generateResampleGrid(const NRLib::Grid<double> & distance,
+                                                     const Simbox              * old_simbox,
+                                                     const Simbox              * new_simbox,
+                                                     NRLib::Grid<double>       & resample_grid) const;
+
+  void                          calculateBaseSurface(const NRLib::Grid<double> & distance,
+                                                     const Simbox              * simbox,
+                                                     Surface                   & base_surface) const;
+
   int n_above_;
   int n_below_;
   int n_model_;

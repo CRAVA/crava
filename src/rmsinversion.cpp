@@ -164,6 +164,10 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                     new_simbox,
                     errTxt);
 
+  NRLib::Grid<double> resample_grid;
+
+  generateResampleGrid(distance, timeSimbox, new_simbox, resample_grid);
+
   delete post_log_vp;
   delete new_simbox;
   // To here
@@ -1589,22 +1593,29 @@ RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
   if (post_mu_vp->getIsTransformed() == true)
     post_mu_vp->invFFTInPlace();
 
-  int nx  = mu_vp->getNx();
-  int ny  = mu_vp->getNy();
-  int nz  = mu_vp->getNz();
+  int nx  = simbox->getnx();
+  int ny  = simbox->getny();
+  int nz  = simbox->getnz();
 
   distance.Resize(nx, ny, nz);
 
   mu_vp     ->setAccessMode(FFTGrid::READ);
   post_mu_vp->setAccessMode(FFTGrid::READ);
 
+  double d1; // time from top to base of a cell in the old time grid
+  double d2; // time from top to base of a cell in the new time grid
+  double v1; // old velocity, being prior velocity
+  double v2; // new velocity, being posterior velocity
+
   for (int k = 0; k < nz; k++) {
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
-        double d1 = simbox    ->getdz(i, j);           // d1 = time from top to base of a cell in old time grid
-        double v1 = mu_vp     ->getRealValue(i, j, k); // v1 = old velocity, being prior velocity
-        double v2 = post_mu_vp->getRealValue(i, j, k); // v2 = new velocity, being posterior velocity
-        double d2 = v1 * d1 / v2;
+        d1 = simbox    ->getdz(i, j);
+        v1 = mu_vp     ->getRealValue(i, j, k);
+        v2 = post_mu_vp->getRealValue(i, j, k);
+
+        d2 = v1 * d1 / v2;
+
         distance(i, j, k) = d2;
       }
     }
@@ -1623,35 +1634,52 @@ RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
                                 Simbox                    *& new_simbox,
                                 std::string                & errTxt) const
 {
-  const int    nx   = simbox->getnx();
-  const int    ny   = simbox->getny();
-  const int    nz   = simbox->getnz();
-
-  double xmin, xmax, ymin, ymax;
-
-  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
-
-  double lx = xmax-xmin;
-  double ly = ymax-ymin;
-
-  Surface base_surface = Surface(xmin, ymin, lx, ly, nx, ny, 0);
+  //const int nx = simbox->getnx();
+  //const int ny = simbox->getny();
+  const int nz = simbox->getnz();
 
   Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
+
+  Surface base_surface;
+  /*
+  Surface resampled_top;
+
+  RegularizeSurface(top_surface, simbox, base_surface);
+  RegularizeSurface(top_surface, simbox, resampled_top);
 
   double x;
   double y;
   double z;
+  double d = 0;
 
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
+      d = 0;
       for (int k = 0; k < nz; k++)
-        base_surface(i, j) += distance(i, j, k);
+        d += distance(i, j, k);
 
       simbox->getXYCoord(i, j, x, y);
-      z = top_surface.GetZ(x, y);
-      base_surface(i, j) += z;
+      z = resampled_top.GetZ(x, y);
+      base_surface(i + 1, j + 1)  = z + d;
     }
   }
+
+  int nx_surface = nx + 2;
+  int ny_surface = ny + 2;
+
+  for (int j = 0; j < ny_surface; ++j) {
+    base_surface(0,              j) = base_surface(1,              j);
+    base_surface(nx_surface - 1, j) = base_surface(nx_surface - 2, j);
+  }
+
+  for (int i = 0; i < nx_surface; ++i) {
+    base_surface(i, 0)              = base_surface(i, 1);
+    base_surface(i, ny_surface - 1) = base_surface(i, ny_surface - 2);
+  }
+  */
+
+
+  calculateBaseSurface(distance, simbox, base_surface);
 
   new_simbox = new Simbox(simbox);
   new_simbox->setDepth(top_surface, base_surface, nz);
@@ -1659,3 +1687,199 @@ RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
 
 }
 
+//---------------------------------------------------------------------------
+
+void
+RMSInversion::RegularizeSurface(const Surface & surface,
+                                const Simbox  * simbox,
+                                Surface       & regular_surface) const
+{
+  double xmin, xmax, ymin, ymax;
+  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
+
+  double lx = xmax - xmin;
+  double ly = ymax - ymin;
+
+  double d0 = simbox->getdx();
+
+  if (simbox->getdy() < d0)
+    d0 = simbox->getdy();
+
+  int    nx = static_cast<int>(ceil(lx / d0));
+  double dx = lx / static_cast<double>(nx - 1);
+
+  int    ny = static_cast<int>(ceil(ly / d0));
+  double dy = ly / static_cast<double>(ny - 1);
+
+  NRLib::Grid2D<double> z_grid(nx + 1, ny + 1, 0);
+
+  double x;
+  double y;
+  double z;
+
+  y = ymin + 0.5 * dy;
+  for (int j = 1; j < ny; ++j) {
+    x = xmin + 0.5 * dx;
+
+    for (int i = 1; i < nx; ++i) {
+      z = surface.GetZ(x, y);
+      z_grid(i, j) = z;
+
+      x += dx;
+    }
+    y += dy;
+  }
+
+  for (int j = 1; j < ny; ++j) {
+    z_grid(0,  j) = z_grid(1,      j);
+    z_grid(nx, j) = z_grid(nx - 1, j);
+  }
+
+  for (int i = 0; i <= nx; ++i) {
+    z_grid(i, 0)  = z_grid(i, 1);
+    z_grid(i, ny) = z_grid(i, ny - 1);
+  }
+
+  regular_surface = Surface(xmin - 0.5 * dx, ymin - 0.5 * dy, lx + dx, ly + dy, z_grid);
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::generateResampleGrid(const NRLib::Grid<double> & distance,
+                                   const Simbox              * old_simbox,
+                                   const Simbox              * new_simbox,
+                                   NRLib::Grid<double>       & resample_grid) const
+{
+  int nx  = new_simbox->getnx();
+  int ny  = new_simbox->getny();
+  int nz  = new_simbox->getnz();
+
+  resample_grid.Resize(nx, ny, nz, 0);
+
+  double tk; // k * dz
+  double d1; // time from top to base of a cell in the old time grid
+  double dz; // time from top to base of a cell in the new time grid
+  double r;  // Position of tk between t2(l), t2(l+1)
+  int    l;  // Largest integer satisfying t2(l) <= tk
+
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+
+      d1 = old_simbox->getdz(i, j);
+      dz = new_simbox->getdz(i, j);
+
+      std::vector<double> t2(nz + 1, 0);
+      for (int k = 1; k < nz + 1; ++k)
+        t2[k] = t2[k - 1] + distance(i, j, k - 1);
+
+      l = 0;
+      for (int k = 0; k < nz; k++) {
+        tk = k * dz;
+
+        while(tk >= t2[l])
+          l++;
+        l--;
+
+        r = (tk - t2[l]) / (t2[l+1] - t2[l]);
+
+        resample_grid(i, j, k) =  (l + r) * d1;
+      }
+
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateBaseSurface(const NRLib::Grid<double> & distance,
+                                   const Simbox              * simbox,
+                                   Surface                   & base_surface) const
+{
+
+  Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
+
+  base_surface = top_surface;
+
+  //
+  // If a constant time surface has been used, it may have only four grid
+  // nodes. To handle this situation we use the grid resolution whenever
+  // this is larger than the surface resolution.
+  //
+
+  int ni = static_cast<int>(top_surface.GetNI());
+  int nj = static_cast<int>(top_surface.GetNJ());
+
+  int maxNx = std::max(simbox->getnx(), ni);
+  int maxNy = std::max(simbox->getny(), nj);
+
+  base_surface.Resize(maxNx, maxNy);
+
+  double dx = 0.5 * top_surface.GetDX();
+  double dy = 0.5 * top_surface.GetDY();
+
+  int nz = simbox->getnz();
+
+  for (int j = 0; j < nj; ++j) {
+    for (int i = 0; i < ni; ++i) {
+
+      double x, y;
+      top_surface.GetXY(i, j, x, y);
+
+      int ii, jj;
+      simbox->getIndexes(x, y, ii, jj);
+
+      if (ii != IMISSING && jj != IMISSING) {
+        double sum = 0.0;
+
+        for (int k = 0; k < nz; ++k)
+          sum += distance(ii, jj, k);
+
+        base_surface(i, j) = sum;
+      }
+      else {
+        int i1, i2, i3, i4, j1, j2, j3, j4;
+        simbox->getIndexes(x + dx, y + dy, i1, j1);
+        simbox->getIndexes(x - dx, y - dy, i2, j2);
+        simbox->getIndexes(x + dx, y - dy, i3, j3);
+        simbox->getIndexes(x - dx, y + dy, i4, j4);
+
+        int n = 0;
+        if (i1 != IMISSING && j1 != IMISSING)
+          n++;
+        if (i2 != IMISSING && j2 != IMISSING)
+          n++;
+        if (i3 != IMISSING && j3 != IMISSING)
+          n++;
+        if (i4 != IMISSING && j4 != IMISSING)
+          n++;
+
+        if (n == 0)
+          base_surface.SetMissing(i, j);
+
+        else {
+          double sum = 0.0;
+
+          for (int k = 0; k < nz; ++k) {
+            if (i1 != IMISSING && j1 != IMISSING)
+              sum += distance(i1, j1, k);
+
+            if (i2 != IMISSING && j2 != IMISSING)
+              sum += distance(i2, j2, k);
+
+            if (i3 != IMISSING && j3 != IMISSING)
+              sum += distance(i3, j3, k);
+
+            if (i4 != IMISSING && j4 != IMISSING)
+              sum += distance(i4, j4, k);
+          }
+
+          base_surface(i, j) = sum / static_cast<double>(n);
+        }
+      }
+    }
+  }
+
+  base_surface.AddNonConform(&top_surface);
+}
