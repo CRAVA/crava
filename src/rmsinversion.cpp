@@ -1634,113 +1634,17 @@ RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
                                 Simbox                    *& new_simbox,
                                 std::string                & errTxt) const
 {
-  //const int nx = simbox->getnx();
-  //const int ny = simbox->getny();
+  Surface base_surface;
+  calculateBaseSurface(distance, simbox, base_surface);
+
   const int nz = simbox->getnz();
 
   Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
-
-  Surface base_surface;
-  /*
-  Surface resampled_top;
-
-  RegularizeSurface(top_surface, simbox, base_surface);
-  RegularizeSurface(top_surface, simbox, resampled_top);
-
-  double x;
-  double y;
-  double z;
-  double d = 0;
-
-  for (int i = 0; i < nx; i++) {
-    for (int j = 0; j < ny; j++) {
-      d = 0;
-      for (int k = 0; k < nz; k++)
-        d += distance(i, j, k);
-
-      simbox->getXYCoord(i, j, x, y);
-      z = resampled_top.GetZ(x, y);
-      base_surface(i + 1, j + 1)  = z + d;
-    }
-  }
-
-  int nx_surface = nx + 2;
-  int ny_surface = ny + 2;
-
-  for (int j = 0; j < ny_surface; ++j) {
-    base_surface(0,              j) = base_surface(1,              j);
-    base_surface(nx_surface - 1, j) = base_surface(nx_surface - 2, j);
-  }
-
-  for (int i = 0; i < nx_surface; ++i) {
-    base_surface(i, 0)              = base_surface(i, 1);
-    base_surface(i, ny_surface - 1) = base_surface(i, ny_surface - 2);
-  }
-  */
-
-
-  calculateBaseSurface(distance, simbox, base_surface);
 
   new_simbox = new Simbox(simbox);
   new_simbox->setDepth(top_surface, base_surface, nz);
   new_simbox->calculateDz(lz_limit, errTxt);
 
-}
-
-//---------------------------------------------------------------------------
-
-void
-RMSInversion::RegularizeSurface(const Surface & surface,
-                                const Simbox  * simbox,
-                                Surface       & regular_surface) const
-{
-  double xmin, xmax, ymin, ymax;
-  simbox->getMinAndMaxXY(xmin, xmax, ymin, ymax);
-
-  double lx = xmax - xmin;
-  double ly = ymax - ymin;
-
-  double d0 = simbox->getdx();
-
-  if (simbox->getdy() < d0)
-    d0 = simbox->getdy();
-
-  int    nx = static_cast<int>(ceil(lx / d0));
-  double dx = lx / static_cast<double>(nx - 1);
-
-  int    ny = static_cast<int>(ceil(ly / d0));
-  double dy = ly / static_cast<double>(ny - 1);
-
-  NRLib::Grid2D<double> z_grid(nx + 1, ny + 1, 0);
-
-  double x;
-  double y;
-  double z;
-
-  y = ymin + 0.5 * dy;
-  for (int j = 1; j < ny; ++j) {
-    x = xmin + 0.5 * dx;
-
-    for (int i = 1; i < nx; ++i) {
-      z = surface.GetZ(x, y);
-      z_grid(i, j) = z;
-
-      x += dx;
-    }
-    y += dy;
-  }
-
-  for (int j = 1; j < ny; ++j) {
-    z_grid(0,  j) = z_grid(1,      j);
-    z_grid(nx, j) = z_grid(nx - 1, j);
-  }
-
-  for (int i = 0; i <= nx; ++i) {
-    z_grid(i, 0)  = z_grid(i, 1);
-    z_grid(i, ny) = z_grid(i, ny - 1);
-  }
-
-  regular_surface = Surface(xmin - 0.5 * dx, ymin - 0.5 * dy, lx + dx, ly + dy, z_grid);
 }
 
 //-----------------------------------------------------------------------------------------//
