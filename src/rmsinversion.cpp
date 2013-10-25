@@ -22,16 +22,35 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                            ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                            SeismicParametersHolder & seismicParameters)
 {
-
   LogKit::WriteHeader("Building Stochastic RMS Inversion Model");
 
   time_t time_start;
   time_t time_end;
   time(&time_start);
 
-  double wall = 0.0;
-  double cpu  = 0.0;
-  TimeKit::getTime(wall,cpu);
+  int n_rms_inversions = 1;
+  if (modelTravelTimeDynamic->getThisTimeLapse() > 0)
+    n_rms_inversions = 2;
+
+  for (int i = 0; i < n_rms_inversions; ++i)
+    doRMSInversion(modelGeneral,
+                   modelTravelTimeDynamic,
+                   seismicParameters,
+                   i);
+
+  time(&time_end);
+  LogKit::LogFormatted(LogKit::DebugLow, "\nTime elapsed :  %d\n", time_end - time_start);
+
+
+}
+
+//-----------------------------------------------------------------------------------------//
+void
+RMSInversion::doRMSInversion(const ModelGeneral      * modelGeneral,
+                             ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                             SeismicParametersHolder & seismicParameters,
+                             const int               & inversion_number)
+{
 
   FFTGrid * mu_log_vp                      = seismicParameters.GetMuAlpha();
   FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
@@ -137,48 +156,48 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                                  stationary_d,
                                  stationary_covariance,
                                  observation_filter);
-  // From second time lapse
-  FFTGrid * post_log_vp = NULL;
 
-  calculateLogVpExpectation(observation_filter,
-                            seismicParameters.getPriorVar0(),
-                            mu_log_vp,
-                            cov_log_vp,
-                            stationary_d,
-                            stationary_covariance,
-                            post_log_vp);
+  if (inversion_number == 0 && modelTravelTimeDynamic->getThisTimeLapse() > 0) {
+    FFTGrid * post_log_vp = NULL;
 
-  NRLib::Grid<double> distance;
-
-  calculateDistanceGrid(timeSimbox,
-                        mu_log_vp,
-                        post_log_vp,
-                        distance);
-
-  Simbox * new_simbox = NULL;
-  std::string errTxt  = "";
-
-  generateNewSimbox(distance,
-                    modelTravelTimeDynamic->getLzLimit(),
-                    timeSimbox,
-                    new_simbox,
-                    errTxt);
-
-  NRLib::Grid<double> resample_grid;
-
-  generateResampleGrid(distance, timeSimbox, new_simbox, resample_grid);
-
-  delete post_log_vp;
-  delete new_simbox;
-  // To here
-
-  calculateFullPosteriorModel(observation_filter,
-                              seismicParameters,
+    calculateLogVpExpectation(observation_filter,
+                              seismicParameters.getPriorVar0(),
+                              mu_log_vp,
+                              cov_log_vp,
                               stationary_d,
-                              stationary_covariance);
+                              stationary_covariance,
+                              post_log_vp);
 
-  time(&time_end);
-  LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
+    NRLib::Grid<double> distance;
+
+    calculateDistanceGrid(timeSimbox,
+                          mu_log_vp,
+                          post_log_vp,
+                          distance);
+
+    Simbox * new_simbox = NULL;
+    std::string errTxt  = "";
+
+    generateNewSimbox(distance,
+                       modelTravelTimeDynamic->getLzLimit(),
+                       timeSimbox,
+                       new_simbox,
+                       errTxt);
+
+    NRLib::Grid<double> resample_grid;
+    generateResampleGrid(distance, timeSimbox, new_simbox, resample_grid);
+
+    delete post_log_vp;
+    delete new_simbox;
+
+  }
+  else {
+    calculateFullPosteriorModel(observation_filter,
+                                seismicParameters,
+                                stationary_d,
+                                stationary_covariance);
+  }
+
 
   delete variogram_above;
   delete variogram_below;

@@ -29,6 +29,11 @@ public:
   ~RMSInversion();
 
 private:
+  void                          doRMSInversion(const ModelGeneral      * modelGeneral,
+                                               ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                               SeismicParametersHolder & seismicParameters,
+                                               const int               & inversion_number);
+
   void                          do1DInversion(const double                & mu_vp_top,
                                               const double                & mu_vp_base,
                                               const NRLib::Grid2D<double> & Sigma_m_above,
