@@ -3962,61 +3962,6 @@ CommonData::SetFaciesNamesFromRockPhysics() //H
   }
 }
 
-//void
-//CommonData::ReadGridFromFile(const std::string       & file_name,
-//                             const std::string       & par_name,
-//                             const float               offset,
-//                             FFTGrid                *& grid,
-//                             const SegyGeometry     *& geometry,
-//                             const TraceHeaderFormat * format,
-//                             int                       grid_type,
-//                             const Simbox            * time_simbox, //timeSimBox
-//                             //const Simbox            * time_cut_simbox, //timeCutSimbox
-//                             const ModelSettings     * model_settings,
-//                             std::string             & err_text,
-//                             bool                      nopadding) const{
-//  int fileType = IO::findGridType(file_name);
-//
-//  if(fileType == IO::CRAVA)
-//  {
-//    int nx_pad, ny_pad, nz_pad;
-//    if(nopadding)
-//    {
-//      nx_pad = time_simbox->getnx();
-//      ny_pad = time_simbox->getny();
-//      nz_pad = time_simbox->getnz();
-//    }
-//    else
-//    {
-//      nx_pad = model_settings->getNXpad();
-//      ny_pad = model_settings->getNYpad();
-//      nz_pad = model_settings->getNZpad();
-//    }
-//    LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-//    grid = CreateFFTGrid(time_simbox->getnx(),
-//                         time_simbox->getny(),
-//                         time_simbox->getnz(),
-//                         nx_pad,
-//                         ny_pad,
-//                         nz_pad,
-//                         model_settings->getFileGrid());
-//
-//    grid->setType(grid_type);
-//    grid->readCravaFile(file_name, err_text, nopadding);
-//  }
-//  else if(fileType == IO::SEGY)
-//    ReadSegyFile(file_name, grid, time_simbox, model_settings, geometry,
-//                 grid_type, par_name, offset, format, err_text, nopadding);
-//  else if(fileType == IO::STORM)
-//    ReadStormFile(file_name, grid, grid_type, par_name, time_simbox, model_settings, err_text, false, nopadding);
-//  else if(fileType == IO::SGRI)
-//    ReadStormFile(file_name, grid, grid_type, par_name, time_simbox, model_settings, err_text, true, nopadding);
-//  else
-//  {
-//    err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
-//  }
-//}
-
 void
 CommonData::ReadGridFromFile(const std::string                 & file_name,
                              const std::string                 & par_name,
@@ -4242,164 +4187,6 @@ void CommonData::ReadCravaFile(NRLib::Grid<double> & grid,
   err_text += error;
 }
 
-//void
-//CommonData::ReadSegyFile(const std::string       & file_name,
-//                         FFTGrid                *& target,
-//                         const Simbox            * time_simbox,
-//                         const ModelSettings     * model_settings,
-//                         const SegyGeometry     *& geometry,
-//                         int                       grid_type,
-//                         const std::string       & par_name,
-//                         float                     offset,
-//                         const TraceHeaderFormat * format,
-//                         std::string             & err_text,
-//                         bool                      nopadding) const{
-//  SegY * segy = NULL;
-//  bool failed = false;
-//  target = NULL;
-//
-//  try
-//  {
-//    //
-//    // Currently we have only one optional TraceHeaderFormat, but this can
-//    // be augmented to a list with several formats ...
-//    //
-//    if(format == NULL) { //Unknown format
-//      std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
-//      if (model_settings->getTraceHeaderFormat() != NULL)
-//      {
-//        traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
-//      }
-//      segy = new SegY(file_name,
-//                      offset,
-//                      traceHeaderFormats,
-//                      true); // Add standard formats to format search
-//    }
-//    else //Known format, read directly.
-//      segy = new SegY(file_name, offset, *format);
-//
-//    float guard_zone = model_settings->getGuardZone();
-//
-//    std::string err_txt_tmp = "";
-//    if(CheckThatDataCoverGrid(segy,
-//                              offset,
-//                              time_simbox,
-//                              guard_zone,
-//                              err_txt_tmp) == true)
-//    {
-//
-//    //if (errTxt == "") {
-//      bool  onlyVolume      = true;
-//      // This is *not* the same as FFT-grid padding. If the padding
-//      // size is changed from 2*guard_zone, the smoothing done in
-//      // FFTGrid::smoothTraceInGuardZone() will become incorrect.
-//      float padding         = 2*guard_zone;
-//      bool  relativePadding = false;
-//
-//      segy->ReadAllTraces(time_simbox,
-//                          padding,
-//                          onlyVolume,
-//                          relativePadding);
-//      segy->CreateRegularGrid();
-//    }
-//    else {
-//      err_text += err_txt_tmp;
-//      failed = true;
-//    }
-//  }
-//  catch (NRLib::Exception & e)
-//  {
-//    err_text += e.what();
-//    failed = true;
-//  }
-//
-//  if (!failed)
-//  {
-//    int missingTracesSimbox  = 0;
-//    int missingTracesPadding = 0;
-//    int deadTracesSimbox     = 0;
-//
-//    const SegyGeometry * geo;
-//    geo = segy->GetGeometry();
-//    geo->WriteGeometry();
-//    if (grid_type == FFTGrid::DATA)
-//      geometry = new SegyGeometry(geo);
-//
-//    int xpad, ypad, zpad;
-//    if(nopadding)
-//    {
-//      xpad = time_simbox->getnx();
-//      ypad = time_simbox->getny();
-//      zpad = time_simbox->getnz();
-//    }
-//    else
-//    {
-//      xpad = model_settings->getNXpad();
-//      ypad = model_settings->getNYpad();
-//      zpad = model_settings->getNZpad();
-//    }
-//    target = CreateFFTGrid(time_simbox->getnx(),
-//                           time_simbox->getny(),
-//                           time_simbox->getnz(),
-//                           xpad,
-//                           ypad,
-//                           zpad,
-//                           model_settings->getFileGrid());
-//    target->setType(grid_type);
-//
-//    if (grid_type == FFTGrid::DATA) {
-//      target->fillInSeismicDataFromSegY(segy,
-//                                        time_simbox,
-//                                        model_settings->getSmoothLength(),
-//                                        missingTracesSimbox,
-//                                        missingTracesPadding,
-//                                        deadTracesSimbox,
-//                                        err_text);
-//    }
-//    else {  //Change to new resample algorithm for all grid types.
-//      missingTracesSimbox = target->fillInFromSegY(segy,
-//                                                   time_simbox,
-//                                                   par_name,
-//                                                   nopadding);
-//    }
-//
-//    if (missingTracesSimbox > 0) {
-//      if(missingTracesSimbox == time_simbox->getnx()*time_simbox->getny()) {
-//        err_text += "Error: Data in file "+file_name+" was completely outside the inversion area.\n";
-//        failed = true;
-//      }
-//      else {
-//        if(grid_type == FFTGrid::PARAMETER) {
-//          err_text += "Grid in file "+file_name+" does not cover the inversion area.\n";
-//        }
-//        else {
-//          LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(missingTracesSimbox)
-//                             +" grid columns are outside the area defined by the seismic data.\n");
-//          std::string text;
-//          text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
-//          text += "   the seismic data specified in file \'"+file_name+"\'.";
-//          TaskList::addTask(text);
-//        }
-//      }
-//    }
-//    if (missingTracesPadding > 0) {
-//      int nx     = time_simbox->getnx();
-//      int ny     = time_simbox->getny();
-//      int nxpad  = xpad - nx;
-//      int nypad  = ypad - ny;
-//      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
-//      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
-//                         +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
-//    }
-//    if (deadTracesSimbox > 0) {
-//      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-//                         +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(time_simbox->getnx()*time_simbox->getny())+"\n");
-//    }
-//  }
-//  if (segy != NULL)
-//    delete segy;
-//}
-
 void
 CommonData::ReadSegyFile(const std::string                 & file_name,
                          std::vector<NRLib::Grid<double> > & interval_grids,
@@ -4491,22 +4278,23 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
       interval_grids[i_interval].Resize(xpad, ypad, zpad);
 
-      //if (grid_type == DATA) {
-        FillInSeismicDataFromSegY(interval_grids[i_interval],
-                                  segy,
-                                  interval_simboxes[i_interval],
-                                  model_settings->getSmoothLength(),
-                                  missing_traces_simbox,
-                                  missing_traces_padding,
-                                  dead_traces_simbox,
-                                  err_text);
-      //}
-      //else {  //Change to new resample algorithm for all grid types.
-      //  missingTracesSimbox = target->fillInFromSegY(segy,
-      //                                               simbox,
-      //                                               par_name,
-      //                                               false);
-      //}
+      FillInData(interval_grids[i_interval],
+                 segy,
+                 interval_simboxes[i_interval],
+                 model_settings->getSmoothLength(),
+                 missing_traces_simbox,
+                 missing_traces_padding,
+                 dead_traces_simbox,
+                 err_text);
+
+        //FillInSeismicDataFromSegY(interval_grids[i_interval],
+        //                          segy,
+        //                          interval_simboxes[i_interval],
+        //                          model_settings->getSmoothLength(),
+        //                          missing_traces_simbox,
+        //                          missing_traces_padding,
+        //                          dead_traces_simbox,
+        //                          err_text);
 
       if (missing_traces_simbox > 0) {
         if(missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
@@ -4546,31 +4334,238 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     delete segy;
 }
 
-void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
-                                           const SegY          * segy,
-                                           const Simbox        & simbox,
-                                           float                 smooth_length,
-                                           int                 & missingTracesSimbox,
-                                           int                 & missingTracesPadding,
-                                           int                 & deadTracesSimbox,
-                                           std::string         & err_text)
+//void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
+//                                           const SegY          * segy,
+//                                           const Simbox        & simbox,
+//                                           float                 smooth_length,
+//                                           int                 & missingTracesSimbox,
+//                                           int                 & missingTracesPadding,
+//                                           int                 & deadTracesSimbox,
+//                                           std::string         & err_text)
+//{
+//  //assert(cubetype_ != CTMISSING);
+//
+//  //createRealGrid();
+//
+//  double wall=0.0, cpu=0.0;
+//  TimeKit::getTime(wall,cpu);
+//
+//  int ni = grid.GetNI();
+//  int nj = grid.GetNJ();
+//  int nk = grid.GetNK();
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:", ni, nj, nk);
+//
+//  //setAccessMode(READANDWRITE);
+//
+//  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f);
+//  float nextMonitor = monitorSize;
+//  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
+//  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
+//  printf("\n  ^");
+//
+//  //
+//  // Find proper length of time samples to get N*log(N) performance in FFT.
+//  //
+//  size_t n_samples = segy->FindNumberOfSamplesInLongestTrace();
+//  int    nt        = FindClosestFactorableNumber(static_cast<int>(n_samples));
+//  int    mt        = 4*nt;           // Use four times the sampling density for the fine-meshed data
+//  float  dz_data   = segy->GetDz();
+//  float  dz_min    = dz_data/4.0f;
+//
+//  //
+//  // Create FFT plans
+//  //
+//  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//
+//  //
+//  // Do resampling
+//  //
+//  missingTracesSimbox  = 0; // Part of simbox is outside seismic data
+//  missingTracesPadding = 0; // Part of padding is outside seismic data
+//  deadTracesSimbox     = 0; // Simbox is inside seismic data but trace is missing
+//
+//  for (int j = 0 ; j < nj ; j++) {
+//    for (int i = 0 ; i < ni ; i++) {
+//
+//      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding) //No padding?
+//      int refj  = j; //getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
+//      int refk  = 0;
+//
+//      double x, y, z0;
+//      simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
+//
+//      double dz = simbox.getdz(refi, refj);
+//      float  xf = static_cast<float>(x);
+//      float  yf = static_cast<float>(y);
+//
+//      if (segy->GetGeometry()->IsInside(xf, yf)) {
+//        bool  missing = false;
+//        float z0_data = RMISSING;
+//
+//        std::vector<float> data_trace;
+//
+//        segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+//
+//        if (!missing) {
+//          int         cnt      = nt/2 + 1;
+//          int         rnt      = 2*cnt;
+//          int         cmt      = mt/2 + 1;
+//          int         rmt      = 2*cmt;
+//
+//          fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+//          fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+//
+//          float       dz_grid  = static_cast<float>(dz);
+//          float       z0_grid  = static_cast<float>(z0);
+//
+//          float       zn_data  = z0_data + dz_data*static_cast<float>(data_trace.size());
+//
+//          std::vector<float> grid_trace(nk);
+//
+//          std::string err_text_tmp = "";
+//          SmoothTraceInGuardZone(data_trace,
+//                                 z0_data,
+//                                 zn_data,
+//                                 dz_data,
+//                                 smooth_length,
+//                                 err_text_tmp); //not used
+//
+//          ResampleTrace(data_trace,
+//                        fftplan1,
+//                        fftplan2,
+//                        rAmpData,
+//                        rAmpFine,
+//                        cnt,
+//                        rnt,
+//                        cmt,
+//                        rmt);
+//
+//          InterpolateGridValues(grid_trace,
+//                                z0_grid,     // Centre of first cell
+//                                dz_grid,
+//                                rAmpFine,
+//                                z0_data,     // Time of first data sample
+//                                dz_min,
+//                                rmt,
+//                                grid.GetNK());
+//          err_text += err_text_tmp;
+//
+//          if (err_text_tmp != "") {
+//            // Keep for a few weeks until new resampling has been tested extensively.
+//            //  if (true) {
+//            std::cout << "i j = " << i << " " << j << std::endl;
+//            std::cout << err_text_tmp << std::endl;
+//            std::ofstream fout;
+//
+//            NRLib::OpenWrite(fout,"data.txt");
+//            for (size_t k = 0 ; k < data_trace.size() ; k++) {
+//              fout << std::fixed
+//                   << std::setprecision(2)
+//                   << std::setw(6)  << k
+//                   << std::setw(10) << z0_data + k*dz_data
+//                   << std::setw(12) << data_trace[k] << "\n";
+//            }
+//            fout.close();
+//
+//            NRLib::OpenWrite(fout,"fine.txt");
+//            for (int k = 0 ; k < static_cast<int>(data_trace.size())*4 ; k++) {
+//              fout << std::fixed
+//                   << std::setprecision(2)
+//                   << std::setw(6)  << k
+//                   << std::setw(10) << z0_data + k*dz_min
+//                   << std::setw(12) << rAmpFine[k] << "\n";
+//            }
+//            fout.close();
+//
+//            NRLib::OpenWrite(fout,"grid.txt");
+//            for (size_t k = 0 ; k < grid_trace.size() ; k++) {
+//              fout << std::fixed
+//                   << std::setprecision(2)
+//                   << std::setw(6)  << k
+//                   << std::setw(10) << z0_grid + k*dz_grid
+//                   << std::setw(12) << grid_trace[k] << "\n";
+//            }
+//            fout.close();
+//
+//            err_text += err_text_tmp;
+//            //exit(1);
+//          }
+//
+//          fftw_free(rAmpData);
+//          fftw_free(rAmpFine);
+//
+//          SetTrace(grid_trace, grid, i, j);
+//        }
+//        else {
+//          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
+//          deadTracesSimbox++;
+//        }
+//      }
+//      else {
+//        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
+//        if (i < ni && j < nj)
+//          missingTracesSimbox++;
+//        else
+//          missingTracesPadding++;
+//      }
+//
+//      if (ni*j + i + 1 >= static_cast<int>(nextMonitor)) {
+//        nextMonitor += monitorSize;
+//        printf("^");
+//        fflush(stdout);
+//      }
+//    }
+//  }
+//  LogKit::LogFormatted(LogKit::Low,"\n");
+//  //endAccess();
+//
+//  fftwnd_destroy_plan(fftplan1);
+//  fftwnd_destroy_plan(fftplan2);
+//
+//  Timings::setTimeResamplingSeismic(wall,cpu);
+//}
+
+void CommonData::FillInData(NRLib::Grid<double> & grid,
+                            const Simbox        * simbox,
+                            StormContGrid       * storm_grid,
+                            const SegY          * segy,
+                            float                 smooth_length,
+                            int                 & missing_traces_simbox,
+                            int                 & missing_traces_padding,
+                            int                 & dead_traces_simbox,
+                            std::string         & err_text,
+                            bool                  scale,
+                            bool                  is_segy)
 {
   //assert(cubetype_ != CTMISSING);
 
-  //createRealGrid();
-
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
+
+  float scalevert, scalehor;
+  if(scale == false || is_segy == true)
+  {
+    scalevert = 1.0;
+    scalehor = 1.0;
+  }
+  else //from sgri file
+  {
+    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+    scalevert = 0.001f; //1000.0;
+    scalehor  = 0.001f; //1000.0;
+  }
 
   int ni = grid.GetNI();
   int nj = grid.GetNJ();
   int nk = grid.GetNK();
 
-  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:", ni, nj, nk);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",ni,nj,nk);
 
   //setAccessMode(READANDWRITE);
 
-  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f); //nyp_*rnxp_
   float nextMonitor = monitorSize;
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |");
@@ -4579,11 +4574,19 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
   //
   // Find proper length of time samples to get N*log(N) performance in FFT.
   //
-  size_t n_samples = segy->FindNumberOfSamplesInLongestTrace();
+  size_t n_samples = 0;
+  float dz_data = 0.0;
+  float dz_min = 0.0;
+  if(is_segy) {
+    n_samples = segy->FindNumberOfSamplesInLongestTrace();
+    dz_data   = segy->GetDz();
+    dz_min    = dz_data/4.0f;
+  }
+  else
+    n_samples = grid.GetNK();
+
   int    nt        = FindClosestFactorableNumber(static_cast<int>(n_samples));
   int    mt        = 4*nt;           // Use four times the sampling density for the fine-meshed data
-  float  dz_data   = segy->GetDz();
-  float  dz_min    = dz_data/4.0f;
 
   //
   // Create FFT plans
@@ -4594,33 +4597,105 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
   //
   // Do resampling
   //
-  missingTracesSimbox  = 0; // Part of simbox is outside seismic data
-  missingTracesPadding = 0; // Part of padding is outside seismic data
-  deadTracesSimbox     = 0; // Simbox is inside seismic data but trace is missing
+  missing_traces_simbox  = 0; // Part of simbox is outside seismic data
+  missing_traces_padding = 0; // Part of padding is outside seismic data
+  dead_traces_simbox     = 0; // Simbox is inside seismic data but trace is missing
 
   for (int j = 0 ; j < nj ; j++) {
     for (int i = 0 ; i < ni ; i++) {
 
-      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding) //No padding?
+      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
       int refj  = j; //getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
       int refk  = 0;
 
       double x, y, z0;
-      simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
+      simbox->getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
+      x*= scalehor;
+      y*= scalehor;
+      z0*= scalevert;
 
-      double dz = simbox.getdz(refi, refj);
+      double dz = simbox->getdz(refi, refj)*scalevert;
       float  xf = static_cast<float>(x);
       float  yf = static_cast<float>(y);
 
-      if (segy->GetGeometry()->IsInside(xf, yf)) {
-        bool  missing = false;
+      bool is_inside = false;
+      if(is_segy)
+        is_inside = segy->GetGeometry()->IsInside(xf, yf);
+      else {
+        if(grid.IsInside(xf, yf) == 1)
+          is_inside = true;
+      }
+
+      if(is_inside == true) {
+        bool  missing = true;
         float z0_data = RMISSING;
 
         std::vector<float> data_trace;
+        size_t grid_i = 0;
+        size_t grid_j = 0;
+        double grid_x = 0.0;
+        double grid_y = 0.0;
+        double grid_z = 0.0;;
+        float value = 0.0;
 
-        segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+        float z_min = 0.0;
+        float z_max = 0.0;
 
-        if (!missing) {
+        //Get data_trace for this i and j.
+        if(is_segy) {
+          segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+        }
+        else {
+          grid->FindXYIndex(xf, yf, grid_i, grid_j);
+          for(size_t k = 0; k < grid.GetNK(); k++) {
+            grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
+            value = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+            data_trace.push_back(value);
+
+            if(k == 0)
+              z_min = static_cast<float>(grid_z);
+            if(k == grid.GetNK()-1)
+              z_max = static_cast<float>(grid_z);
+          }
+
+          dz_data = (z_max- z_min) / grid.GetNK();
+          dz_min = dz_data/4.0f;
+          z0_data = z_min;
+        }
+
+        size_t n_trace = data_trace.size();
+        float trend_first = 0.0;
+        float trend_last = 0.0;
+
+        if(cubetype_ != DATA) {
+          //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
+          if(data_trace[0] == 0) {
+            std::vector<float> data_trace_new;
+            for(size_t k_trace = 0; k_trace < n_trace; k_trace++) {
+              if(data_trace[k_trace] != 0)
+                data_trace_new.push_back(data_trace[k_trace]);
+            }
+            data_trace = data_trace_new;
+            n_trace = data_trace.size();
+          }
+
+          n_samples = data_trace.size();
+          nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
+          mt = 4*nt;
+
+          fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+          fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+
+          //Remove trend from trace
+          trend_first = data_trace[0];
+          trend_last = data_trace[n_trace - 1];
+          float trend_inc = (trend_last - trend_first) / (n_trace - 1);
+          for(size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
+            data_trace[k_trace] -= trend_first + k_trace * trend_inc;
+          }
+        }
+
+        if(is_segy == false || (is_segy == true && !missing)) {
           int         cnt      = nt/2 + 1;
           int         rnt      = 2*cnt;
           int         cmt      = mt/2 + 1;
@@ -4632,17 +4707,20 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
 
-          float       zn_data  = z0_data + dz_data*static_cast<float>(data_trace.size());
+          //float       zn_data  = z0_data + dz_data*static_cast<float>(data_trace.size());
 
           std::vector<float> grid_trace(nk);
 
           std::string err_text_tmp = "";
-          SmoothTraceInGuardZone(data_trace,
-                                 z0_data,
-                                 zn_data,
-                                 dz_data,
-                                 smooth_length,
-                                 err_text_tmp); //not used
+          smooth_length*=scalevert;
+          if(cubetype_ == DATA) {
+            SmoothTraceInGuardZone(data_trace,
+                                   //z0_data,
+                                   //zn_data,
+                                   dz_data,
+                                   smooth_length);
+                                   //errText);
+          }
 
           ResampleTrace(data_trace,
                         fftplan1,
@@ -4654,6 +4732,17 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
                         cmt,
                         rmt);
 
+          std::vector<float> data_trace_trend_long;
+          if(cubetype_ != DATA) {
+            float trend_inc = (trend_last - trend_first) / (rmt - 1);
+
+            data_trace_trend_long.resize(rmt);
+            for(int k_trace = 0; k_trace < rmt; k_trace++) {
+              data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
+            }
+          }
+
+          //Includes a shift
           InterpolateGridValues(grid_trace,
                                 z0_grid,     // Centre of first cell
                                 dz_grid,
@@ -4662,72 +4751,54 @@ void CommonData::FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
                                 dz_min,
                                 rmt,
                                 grid.GetNK());
-          err_text += err_text_tmp;
 
-          if (err_text_tmp != "") {
-            // Keep for a few weeks until new resampling has been tested extensively.
-            //  if (true) {
-            std::cout << "i j = " << i << " " << j << std::endl;
-            std::cout << err_text_tmp << std::endl;
-            std::ofstream fout;
+          //Interpolate and shift trend before adding to grid_trace.
+          //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
+          if(cubetype_ != DATA) {
+            std::vector<float> trend_interpolated(nk);
+            interpolateAndShiftTrend(trend_interpolated,
+                                     z0_grid,     // Centre of first cell
+                                     dz_grid,
+                                     data_trace_trend_long,
+                                     z0_data,     // Time of first data sample
+                                     dz_min,
+                                     rmt);
 
-            NRLib::OpenWrite(fout,"data.txt");
-            for (size_t k = 0 ; k < data_trace.size() ; k++) {
-              fout << std::fixed
-                   << std::setprecision(2)
-                   << std::setw(6)  << k
-                   << std::setw(10) << z0_data + k*dz_data
-                   << std::setw(12) << data_trace[k] << "\n";
-            }
-            fout.close();
-
-            NRLib::OpenWrite(fout,"fine.txt");
-            for (int k = 0 ; k < static_cast<int>(data_trace.size())*4 ; k++) {
-              fout << std::fixed
-                   << std::setprecision(2)
-                   << std::setw(6)  << k
-                   << std::setw(10) << z0_data + k*dz_min
-                   << std::setw(12) << rAmpFine[k] << "\n";
-            }
-            fout.close();
-
-            NRLib::OpenWrite(fout,"grid.txt");
-            for (size_t k = 0 ; k < grid_trace.size() ; k++) {
-              fout << std::fixed
-                   << std::setprecision(2)
-                   << std::setw(6)  << k
-                   << std::setw(10) << z0_grid + k*dz_grid
-                   << std::setw(12) << grid_trace[k] << "\n";
-            }
-            fout.close();
-
-            err_text += err_text_tmp;
-            //exit(1);
+            //Add trend
+            for(size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
+              grid_trace[k_trace] += trend_interpolated[k_trace];
           }
+
+          err_text += err_text_tmp;
 
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
-          SetTrace(grid_trace, grid, i, j);
+          SetTrace(grid_trace, i, j);
+
         }
         else {
-          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
-          deadTracesSimbox++;
+          SetTrace(0.0f, i, j); // Dead traces (in case we allow them)
+          dead_traces_simbox++;
         }
+
       }
       else {
-        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
-        if (i < ni && j < nj)
-          missingTracesSimbox++;
+
+
+        setTrace(0.0f, i, j);   // Outside seismic data grid
+        if (i < nx_ && j < ny_ )
+          missing_traces_simbox++;
         else
-          missingTracesPadding++;
+          missing_traces_padding++;
       }
 
-      if (ni*j + i + 1 >= static_cast<int>(nextMonitor)) {
+      if (rnxp_*j + i + 1 >= static_cast<int>(nextMonitor)) {
         nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
       }
+
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
@@ -4771,11 +4842,11 @@ int CommonData::FindClosestFactorableNumber(int leastint)
 }
 
 void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
-                                        float                z0_data,
-                                        float                zn_data,
+                                        //float                z0_data,
+                                        //float                zn_data,
                                         float                dz_data,
-                                        float                smooth_length,
-                                        std::string        & err_text)
+                                        float                smooth_length)
+                                        //std::string        & err_text)
 {
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.
@@ -4954,84 +5025,6 @@ void CommonData::SetTrace(float                 value,
   }
 }
 
-//void
-//CommonData::ReadStormFile(const std::string   & f_name,
-//                          FFTGrid            *& target,
-//                          const int             grid_type,
-//                          const std::string   & par_name,
-//                          const Simbox        * time_simbox,
-//                          const ModelSettings * model_settings,
-//                          std::string         & err_text,
-//                          bool                  scale,
-//                          bool                  nopadding) const{
-//  StormContGrid * stormgrid = NULL;
-//  bool failed = false;
-//
-//  try
-//  {
-//    stormgrid = new StormContGrid(0,0,0);
-//    stormgrid->ReadFromFile(f_name);
-//  }
-//  catch (NRLib::Exception & e)
-//  {
-//    err_text += e.what();
-//    failed = true;
-//  }
-//  int xpad, ypad, zpad;
-//  if(nopadding==false)
-//  {
-//    xpad = model_settings->getNXpad();
-//    ypad = model_settings->getNYpad();
-//    zpad = model_settings->getNZpad();
-//  }
-//  else
-//  {
-//    xpad = time_simbox->getnx();
-//    ypad = time_simbox->getny();
-//    zpad = time_simbox->getnz();
-//  }
-//
-//  int outsideTraces = 0;
-//  if(failed == false)
-//  {
-//    target = CreateFFTGrid(time_simbox->getnx(),
-//                           time_simbox->getny(),
-//                           time_simbox->getnz(),
-//                           xpad,
-//                           ypad,
-//                           zpad,
-//                           model_settings->getFileGrid());
-//    target->setType(grid_type);
-//
-//    try {
-//      outsideTraces = target->fillInFromStorm(time_simbox, stormgrid, par_name, scale, nopadding);  //Change to new resample algorithm
-//    }
-//    catch (NRLib::Exception & e) {
-//      err_text += std::string(e.what());
-//    }
-//  }
-//
-//  if (stormgrid != NULL)
-//    delete stormgrid;
-//
-//  if(outsideTraces > 0) {
-//    if(outsideTraces == time_simbox->getnx()*time_simbox->getny()) {
-//      err_text += "Error: Data in file \'"+f_name+"\' was completely outside the inversion area.\n";
-//      failed = true;
-//    }
-//    else {
-//      if(grid_type == FFTGrid::PARAMETER) {
-//        err_text += "Error: Data read from file \'"+f_name+"\' does not cover the inversion area.\n";
-//      }
-//      else {
-//        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
-//                           + " grid columns were outside the seismic data in file \'"+f_name+"\'.\n");
-//        TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
-//      }
-//    }
-//  }
-//}
-
 void
 CommonData::ReadStormFile(const std::string                 & file_name,
                           std::vector<NRLib::Grid<double> > & interval_grids,
@@ -5040,8 +5033,8 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                           const std::vector<Simbox>         & interval_simboxes,
                           const ModelSettings               * model_settings,
                           std::string                       & err_text,
-                          bool                                scale) {
-                          //bool                  nopadding) const{
+                          bool                                scale,
+                          bool                                nopadding) {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
 
@@ -5055,8 +5048,6 @@ CommonData::ReadStormFile(const std::string                 & file_name,
     err_text += e.what();
     failed = true;
   }
-
-
 
   int outsideTraces = 0;
   if(failed == false)
