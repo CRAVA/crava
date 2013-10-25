@@ -4722,18 +4722,43 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
 }
 
 void
-ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings)
+ModelGeneral::advanceTime(const int               & previous_vintage,
+                          const double            & time_change,
+                          SeismicParametersHolder & seismicParameters,
+                          ModelSettings           * modelSettings)
 {
-  bool debug=false;
-  if(debug) dump4Dparameters(modelSettings, "_prior", time_step);  // note this prior should be equal to
-                                                                    // next_prior in previous step
-  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
-  state4d_.split(seismicParameters);
-  if(debug) dump4Dparameters(modelSettings, "_posterior", time_step);
-  state4d_.evolve(time_step, timeEvolution_); //NBNB grad I grad J
-  //if(debug) dump4Dparameters(modelSettings, "_next_prior", time_step+1);
-  state4d_.merge(seismicParameters);
-  if(debug) dumpSeismicParameters(modelSettings,"_next_prior", time_step+1,seismicParameters);
+  if(time_change > 0) { // Only split, evolve and merge at positive time change
+
+    bool debug = false;
+    if (debug == true) {
+      dump4Dparameters(modelSettings,
+        "_prior",
+        previous_vintage);  // note this prior should be equal to
+      // next_prior in previous step
+      dumpSeismicParameters(modelSettings,
+        "_posterior",
+        previous_vintage,
+        seismicParameters);
+    }
+
+    state4d_.split(seismicParameters);
+
+    if (debug == true)
+      dump4Dparameters(modelSettings,
+      "_posterior",
+      previous_vintage);
+
+    state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
+    state4d_.merge(seismicParameters);
+
+
+    if (debug == true)
+      dumpSeismicParameters(modelSettings,
+      "_next_prior",
+      previous_vintage + 1,
+      seismicParameters);
+  }
+
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
 
