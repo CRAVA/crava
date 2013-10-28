@@ -82,7 +82,7 @@ namespace NRLib {
                                           const std::vector<std::vector<double> > & trend_cube_sampling,
                                           const std::vector<std::vector<double> > & s1,
                                           const std::vector<std::vector<double> > & s2,
-                                          const double                              scale,
+                                          const double                            & scale,
                                           std::vector<double>                     & x,
                                           std::vector<double>                     & y,
                                           std::vector<double>                     & z,
@@ -96,12 +96,15 @@ namespace NRLib {
   bool                   CheckIfVectorIsSorted(const std::vector<double> & x);
 
   double                 CalculateBandwidth(const std::vector<double> & x,
-                                            const double                scale,
-                                            const double                power);
+                                            const double              & scale,
+                                            const double              & power);
+
+  double                 CalculateEffectiveSampleSize(const std::vector<double> & x,
+                                                      const double              & bandwidth);
 
   double                 CalculateVariance(const std::vector<double> & x);
 
-  void                   MakeNewGridResolution(const double                bandwidth_x,
+  void                   MakeNewGridResolution(const double              & bandwidth_x,
                                                const std::vector<double> & x0,
                                                std::vector<double>       & x0_regridded);
 
@@ -125,8 +128,8 @@ namespace NRLib {
                                                         const std::vector<double>         & y,
                                                         const std::vector<double>         & z,
                                                         const std::vector<double>         & w,
-                                                        const double                        bandwidth_x,
-                                                        const double                        bandwidth_y,
+                                                        const double                      & bandwidth_x,
+                                                        const double                      & bandwidth_y,
                                                         const std::vector<double>         & x0,
                                                         const std::vector<double>         & y0,
                                                         std::vector<std::vector<double> > & z0,
@@ -134,10 +137,10 @@ namespace NRLib {
                                                         bool                              & complete_surface);
 
   size_t                 FindLowerBoundInSortedVector(const std::vector<double> & x,
-                                                      const double                x_0);
+                                                      const double              & x_0);
 
   size_t                 FindUpperBoundInSortedVector(const std::vector<double> & x,
-                                                      const double                x_0);
+                                                      const double              & x_0);
 
   void                   SortOrderAndRank(const std::vector<double> & x,
                                           std::vector<double>       & x_sort,
@@ -154,8 +157,8 @@ namespace NRLib {
   double                 Interpolate(const std::vector<double>               & x,
                                      const std::vector<double>               & y,
                                      const std::vector<std::vector<double> > & z,
-                                     const double                              x0,
-                                     const double                              y0);
+                                     const double                            & x0,
+                                     const double                            & y0);
 
   void                   Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
                                             const std::vector<std::vector<double> > & trend_cube_sampling,
@@ -169,8 +172,8 @@ namespace NRLib {
                                                  const std::vector<double>         & y,
                                                  const std::vector<double>         & z,
                                                  const std::vector<double>         & w,
-                                                 const double                        bandwidth_x,
-                                                 const double                        bandwidth_y,
+                                                 const double                      & bandwidth_x,
+                                                 const double                      & bandwidth_y,
                                                  const std::vector<double>         & x0,
                                                  const std::vector<double>         & y0,
                                                  std::vector<std::vector<double> > & z0,

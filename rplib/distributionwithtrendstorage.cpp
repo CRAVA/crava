@@ -593,7 +593,7 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
       for (size_t i = 0; i < s_tmp.size(); i++) {
         trend_vector[i] = trend->GetTrendElement(i, j_dummy, k_dummy);
       }
-      NRLib::WriteTrend1D(filename + ".1DTrend", s_tmp, trend_vector);
+      NRLib::WriteTrend1D("background/ " + filename + ".1DTrend", s_tmp, trend_vector);
     } else {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : Invalid direction specified in 1D trend. Can not write to file. \n");
     }
@@ -612,7 +612,7 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
     }
 
     NRLib::RegularSurface<double> trend_surface(s1_tmp.front(), s2_tmp.front(), s1_tmp.back() - s1_tmp.front(), s2_tmp.back() - s2_tmp.front(), trend_grid2D);
-    trend_surface.WriteToFile(filename + ".storm");
+    trend_surface.WriteToFile("background/" + filename + ".storm");
   } else {
     LogKit::LogFormatted(LogKit::Low,"\nWARNING : Invalid specification of trend. Can not write to file. \n");
   }

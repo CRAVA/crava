@@ -140,10 +140,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
       if (!failedWells && !failedDepthConv) {
         bool backgroundDone = false;
 
-        if(!(modelSettings->getOptimizeWellLocation() == true &&
+        if (!(modelSettings->getOptimizeWellLocation() == true &&
              modelSettings->getGenerateBackground() == true))
         {
-          if(estimationMode == false ||
+          if (estimationMode == false ||
              modelSettings->getEstimateBackground() == true ||
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getOptimizeWellLocation() == true)
@@ -163,36 +163,36 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
 
             backgroundDone = true;
           }
-          if(failedBackground == false && backgroundDone == true &&
-            (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
+          if (failedBackground == false && backgroundDone == true &&
+             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
             processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
           }
-          else if(estimationMode == true &&
-                  modelSettings->getEstimateWaveletNoise() == true &&
-                  modelSettings->getEstimateBackground() == false &&
-                  modelSettings->getEstimateCorrelations() == false)
-          {
+          else if (estimationMode == true &&
+                   modelSettings->getEstimateWaveletNoise() == true &&
+                   modelSettings->getEstimateBackground() == false &&
+                   modelSettings->getEstimateCorrelations() == false)
+            {
             processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
-          if(failedBackground == false && backgroundDone == true &&
+          if (failedBackground == false && backgroundDone == true &&
              failedReflMat == false && failedExtraSurf == false &&
              (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
               modelSettings->getOptimizeWellLocation() == true))
           {
             processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
                            modelSettings, inputFiles, errText, failedSeismic);
-            if(failedSeismic == false && modelSettings->getOptimizeWellLocation() == true)
+            if (failedSeismic == false && modelSettings->getOptimizeWellLocation() == true)
             {
-              for(int i=0;i<numberOfAngles_;i++)
+              for (int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
               modelGeneral->processWellLocation(seisCube_, reflectionMatrix_,
                                                 modelSettings, modelAVOstatic->getWellMoveInterval());
-              for(int i=0;i<numberOfAngles_;i++)
+              for (int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->endAccess();
             }
           }
@@ -282,7 +282,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
     }
   }
 
-  if(failedBackground == false) {
+  if(!failedBackground) {
     seismicParameters.setBackgroundParameters(background->getAlpha(), background->getBeta(), background->getRho());
     background->releaseGrids();
     delete background;
@@ -816,6 +816,7 @@ ModelAVODynamic::processBackground(Background                    *& background,
                                    timeDepthMapping,
                                    timeCutMapping,
                                    modelSettings->getFileGrid(),
+                                   modelSettings->getVelocityFromInversion(),
                                    *modelSettings->getTraceHeaderFormatOutput());
     }
   }
@@ -825,13 +826,13 @@ ModelAVODynamic::processBackground(Background                    *& background,
 
 
 void
-ModelAVODynamic::processReflectionMatrix(float               **& reflectionMatrix,
-                                         const Background      * background,
-                                         const std::vector<WellData *> & wells,
-                                         const ModelSettings   * modelSettings,
-                                         const InputFiles      * inputFiles,
-                                         std::string           & errText,
-                                         bool                  & failed)
+ModelAVODynamic::processReflectionMatrix(float                         **& reflectionMatrix,
+                                         const Background                * background,
+                                         const std::vector<WellData *>   & wells,
+                                         const ModelSettings             * modelSettings,
+                                         const InputFiles                * inputFiles,
+                                         std::string                     & errText,
+                                         bool                            & failed)
 {
   LogKit::WriteHeader("Reflection matrix");
   //
@@ -1052,11 +1053,12 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
   // check if local noise is set for some angles.
   bool localNoiseSet = false;
   std::vector<bool> useRickerWavelet = modelSettings->getUseRickerWavelet(thisTimeLapse_);
-  for(int i=0 ; i < numberOfAngles_ ; i++) {
+  for (int i=0 ; i < numberOfAngles_ ; i++) {
     float angle = float(angle_[i]*180.0/M_PI);
     LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-    if(modelSettings->getForwardModeling()==false)
+    if (modelSettings->getForwardModeling()==false)
       seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+
     if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D)
       error += process1DWavelet(modelSettings,
                                 inputFiles,
@@ -1147,7 +1149,7 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
                             errText);
 
   else { //Not estimation modus
-    if(useRickerWavelet)
+    if (useRickerWavelet)
         wavelet = new Wavelet1D(modelSettings,
                                 reflectionMatrix,
                                 angle_[i],
@@ -1156,7 +1158,7 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
     else {
       const std::string & waveletFile = inputFiles->getWaveletFile(thisTimeLapse_,i);
       int fileFormat = getWaveletFileFormat(waveletFile,errText);
-      if(fileFormat < 0) {
+      if (fileFormat < 0) {
         errText += "Unknown file format of file '"+waveletFile+"'.\n";
         error++;
       }
@@ -1169,32 +1171,33 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
                                 error,
                                 errText);
     }
-      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-        const float limHigh  = 3.0f;
-        const float limLow   = 0.33f;
-
-        if(modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) // prescale, then we have correct size order, and later scale estimation will be ok.
-           wavelet->multiplyRAmpByConstant(prescale);
-        else {
-          if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
-             std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-            if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
-              errText += text;
-              error++;
-            }
-            else {
-              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-            }
+    // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+    if (seisCube != NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
+      float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+      const float limHigh  = 3.0f;
+      const float limLow   = 0.33f;
+      if (modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+        wavelet->multiplyRAmpByConstant(prescale);
+        LogKit::LogFormatted(LogKit::Warning,"\n  Wavelet prescaled with factor %7.2f\n",prescale);
+      }
+      else {
+        if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+          std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+          if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
+            errText += text;
+            error++;
+          }
+          else {
+            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+            TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
           }
         }
       }
-      if (error == 0)
-        wavelet->resample(static_cast<float>(timeSimbox->getdz()),
-                          timeSimbox->getnz(),
-                          modelSettings->getNZpad());
+    }
+    if (error == 0)
+      wavelet->resample(static_cast<float>(timeSimbox->getdz()),
+                        timeSimbox->getnz(),
+                        modelSettings->getNZpad());
   }
 
   if (error == 0) {

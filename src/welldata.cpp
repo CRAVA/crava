@@ -229,25 +229,34 @@ WellData::readRMSWell(const std::string              & wellFileName,
   while (NRLib::CheckEndOfFile(file)==false)
   {
     nData++;
-    try {
-      dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
-      dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
-      dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
+    std::getline(file,dummyStr);
+    tokenLine = NRLib::GetTokens(dummyStr);
 
-      for(j=4;j<=nlog+3;j++) {
-        dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
-        if(j==pos[0] && dummy != WELLMISSING) {
-          legalData++;   // Found legal TIME variable
-        }
-      }
+    int nrec = tokenLine.size();
+    if (nrec != 3 + nlog) {
+      std::string text;
+      text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
+      text += NRLib::ToString(nData) + " (not counting header lines).\n";
+      text += std::string("Incorrect number of logs found ("+NRLib::ToString(nrec-3)+"). Correct number is "+NRLib::ToString(nlog)+". The record is\n");
+      text += dummyStr+"\n";
+      LogKit::LogMessage(LogKit::Error,text);
+      exit(1);
     }
-    catch (NRLib::IOError e) {
+
+    double timeValue;
+    try {
+      timeValue = NRLib::ParseType<double>(tokenLine[3]);
+    }
+    catch (NRLib::Exception & e) {
       std::string text;
       text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
       text += NRLib::ToString(nData) + " (not counting header lines).\n";
       text += std::string("\nERROR message is \'") + e.what() + "\'";
       LogKit::LogMessage(LogKit::Error,text);
       exit(1);
+    }
+    if(timeValue != WELLMISSING) {
+      legalData++;   // Found legal TIME variable
     }
   }
   file.close();
@@ -1796,32 +1805,19 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
 }
 
-void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
+void WellData::findMeanVsVp(void)
 {
-  std::vector<bool> active_cell(nd_, true);
-
-  bool useInterval = (waveletEstimInterval.size() == 2);
-  if (useInterval) {
-    for(int i=0; i < nd_; i++) {
-      const double zTop  = waveletEstimInterval[0]->GetZ(xpos_[i], ypos_[i]);
-      const double zBase = waveletEstimInterval[1]->GetZ(xpos_[i], ypos_[i]);
-      if ( (zpos_[i] < zTop) || (zpos_[i] > zBase) )
-        active_cell[i] = false;
-    }
-  }
-
   meanVsVp_ = 0.0f;
   nVsVp_    = 0;
 
-  for(int i=0; i < nd_; i++) {
+  for (int i=0 ; i < nd_ ; i++) {
     if (alpha_background_resolution_[i] != RMISSING &&
-        beta_background_resolution_[i]  != RMISSING &&
-        active_cell[i]) {
+        beta_background_resolution_[i]  != RMISSING) {
       meanVsVp_ += beta_background_resolution_[i]/alpha_background_resolution_[i];
       nVsVp_    += 1;
     }
   }
-
   meanVsVp_ /= nVsVp_;
 
+  LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio is %5.3f.\n",1.0f/meanVsVp_);
 }

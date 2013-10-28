@@ -5,9 +5,6 @@
 #include "../surface/regularsurface.hpp"
 #include <fstream>
 
-#include "../flens/nrlib_flens.hpp" // gud: to use Matrix and Vecotr...
-
-
 namespace NRLib {
 
 void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_logs,
@@ -242,9 +239,8 @@ void ResampleTrend1D(const std::vector<double> & x,
   }
 }
 //-------------------------------------------------------------------------------
-void
-Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                std::vector<double>                     & trend)
+void Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                     std::vector<double>                     & trend)
 {
   int nWells  = static_cast<int>(blocked_logs.size());
 
@@ -278,13 +274,12 @@ Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
   }
 }
 //-------------------------------------------------------------------------------
-void
-Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                const std::vector<std::vector<double> > & trend_cube_sampling,
-                const std::vector<std::vector<double> > & s1,
-                const std::vector<std::vector<double> > & s2,
-                std::vector<std::vector<double> >       & trend,
-                std::string                             & errTxt)
+void Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                     const std::vector<std::vector<double> > & trend_cube_sampling,
+                     const std::vector<std::vector<double> > & s1,
+                     const std::vector<std::vector<double> > & s2,
+                     std::vector<std::vector<double> >       & trend,
+                     std::string                             & errTxt)
 {
   double              scale = 1.0;
 
@@ -356,21 +351,20 @@ Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
   }
 }
 //-------------------------------------------------------------------------------
-bool
-PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
-                 const std::vector<std::vector<double> > & trend_cube_sampling,
-                 const std::vector<std::vector<double> > & s1,
-                 const std::vector<std::vector<double> > & s2,
-                 const double                              scale,
-                 std::vector<double>                     & x,
-                 std::vector<double>                     & y,
-                 std::vector<double>                     & z,
-                 std::vector<double>                     & w,
-                 std::vector<double>                     & x0_regridded,
-                 std::vector<double>                     & y0_regridded,
-                 double                                  & bandwidth_x,
-                 double                                  & bandwidth_y,
-                 std::string                             & errTxt)
+bool PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
+                      const std::vector<std::vector<double> > & trend_cube_sampling,
+                      const std::vector<std::vector<double> > & s1,
+                      const std::vector<std::vector<double> > & s2,
+                      const double                            & scale,
+                      std::vector<double>                     & x,
+                      std::vector<double>                     & y,
+                      std::vector<double>                     & z,
+                      std::vector<double>                     & w,
+                      std::vector<double>                     & x0_regridded,
+                      std::vector<double>                     & y0_regridded,
+                      double                                  & bandwidth_x,
+                      double                                  & bandwidth_y,
+                      std::string                             & errTxt)
 {
   size_t n_wells   = blocked_logs.size();
   size_t n_samples = 0;
@@ -487,54 +481,60 @@ bool CheckIfVectorIsSorted(const std::vector<double> & x) {
   return(is_sorted);
 }
 //-------------------------------------------------------------------------------
-double
-CalculateBandwidth(const std::vector<double> & x,
-                   const double                scale,
-                   const double                power)
+double CalculateBandwidth(const std::vector<double> & x,
+                          const double              & scale,
+                          const double              & power)
 {
-  size_t n      = x.size();
+  size_t n               = x.size();
 
-  double sd_x  = std::pow(CalculateVariance(x), 0.5);
+  double one_over_root_2 = 0.7071068;
+  double sd_x            = std::pow(CalculateVariance(x), 0.5);
 
-  return(scale*sd_x*std::pow(n, -power));
+  return(scale*one_over_root_2*sd_x*std::pow(n, -power));
 }
 //-------------------------------------------------------------------------------
-double
-CalculateVariance(const std::vector<double> & x)
+double CalculateEffectiveSampleSize(const std::vector<double> & x,
+                                    const double              & bandwidth)
 {
-  size_t n      = x.size();
+  size_t n     = x.size();
+  double x_min = *std::min_element(x.begin(), x.end());
+  double x_max = *std::max_element(x.begin(), x.end());
+
+  return(2.506628*bandwidth*n/(x_max - x_min));
+}
+//-------------------------------------------------------------------------------
+double CalculateVariance(const std::vector<double> & x)
+{
+  int n         = 0;
 
   double sum_x  = 0.0;
   double sum_x2 = 0.0;
 
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i < x.size(); i++) {
     if (x[i] != RMISSING) {
       sum_x  = sum_x  + x[i];
       sum_x2 = sum_x2 + x[i]*x[i];
+      n      = n + 1;
     } else {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : TRemoved missing values in variance estimation.\n");
     }
   }
-  double mean_x = sum_x/n;
-  double var_x  = sum_x2/n - mean_x*mean_x;
+  double var_x  = sum_x2/(n - 1) - sum_x*sum_x/(n*(n - 1));
 
   return(var_x);
 }
 //-------------------------------------------------------------------------------
-void
-MakeNewGridResolution(const double                bandwidth_x,
-                      const std::vector<double> & x0,
-                      std::vector<double>       & x0_regridded)
+void MakeNewGridResolution(const double              & bandwidth_x,
+                           const std::vector<double> & x0,
+                           std::vector<double>       & x0_regridded)
 {
-  double              x0_min           = x0.front();
-  double              x0_max           = x0.back();
+  double              x0_min           = *std::min_element(x0.begin(), x0.end());
+  double              x0_max           = *std::max_element(x0.begin(), x0.end());
 
   size_t              n_max            = 128;
   size_t              x0_n_regridded   = std::min(static_cast<size_t>(std::ceil(7*(x0_max - x0_min)/(2*bandwidth_x))), n_max);
 
   double              x0_regridded_inc = (x0_max - x0_min)/(x0_n_regridded - 1);
-
-
   x0_regridded.resize(x0_n_regridded);
 
   for (size_t i = 0; i < x0_n_regridded; i++) {
@@ -542,13 +542,12 @@ MakeNewGridResolution(const double                bandwidth_x,
   }
 }
 //-------------------------------------------------------------------------------
-void
-MakeBinnedDataset(const std::vector<double>         & x0,
-                  const std::vector<double>         & y0,
-                  std::vector<double>               & x,
-                  std::vector<double>               & y,
-                  std::vector<double>               & z,
-                  std::vector<double>               & w)
+void MakeBinnedDataset(const std::vector<double>         & x0,
+                       const std::vector<double>         & y0,
+                       std::vector<double>               & x,
+                       std::vector<double>               & y,
+                       std::vector<double>               & z,
+                       std::vector<double>               & w)
 {
   double delta = 1e-5;
 
@@ -595,14 +594,13 @@ MakeBinnedDataset(const std::vector<double>         & x0,
   w = w_new;
 }
 //-------------------------------------------------------------------------------
-void
-BilinearBinning(const std::vector<double>               & x,
-                const std::vector<double>               & y,
-                const std::vector<double>               & z,
-                const std::vector<double>               & x0,
-                const std::vector<double>               & y0,
-                std::vector<std::vector<double> >       & z0,
-                std::vector<std::vector<double> >       & w0)
+void BilinearBinning(const std::vector<double>               & x,
+                     const std::vector<double>               & y,
+                     const std::vector<double>               & z,
+                     const std::vector<double>               & x0,
+                     const std::vector<double>               & y0,
+                     std::vector<std::vector<double> >       & z0,
+                     std::vector<std::vector<double> >       & w0)
 {
   double delta    = 1e-5;
 
@@ -665,18 +663,17 @@ BilinearBinning(const std::vector<double>               & x,
   }
 }
 //-------------------------------------------------------------------------------
-void
-LocalLinearRegression2DSurface(const std::vector<double>         & x,
-                               const std::vector<double>         & y,
-                               const std::vector<double>         & z,
-                               const std::vector<double>         & w,
-                               const double                        bandwidth_x,
-                               const double                        bandwidth_y,
-                               const std::vector<double>         & x0,
-                               const std::vector<double>         & y0,
-                               std::vector<std::vector<double> > & z0,
-                               std::vector<std::vector<double> > & w0,
-                               bool                              & complete_surface)
+void LocalLinearRegression2DSurface(const std::vector<double>         & x,
+                                    const std::vector<double>         & y,
+                                    const std::vector<double>         & z,
+                                    const std::vector<double>         & w,
+                                    const double                      & bandwidth_x,
+                                    const double                      & bandwidth_y,
+                                    const std::vector<double>         & x0,
+                                    const std::vector<double>         & y0,
+                                    std::vector<std::vector<double> > & z0,
+                                    std::vector<std::vector<double> > & w0,
+                                    bool                              & complete_surface)
 {
   double               epsilon               =  1e-4;
   double               threshold             =  std::pow(std::log(1e5), 0.5);
@@ -815,12 +812,65 @@ LocalLinearRegression2DSurface(const std::vector<double>         & x,
     }
   }
 }
+//--------------------------------------------------------------------------------------------------------------
+size_t FindLowerBoundInSortedVector(const std::vector<double> & x,
+                                    const double              & x_0)
+{
+  size_t n   = x.size();
+  size_t low = 0;
+  size_t upp = n - 1;
+
+  if (x_0 <= x[0]) {
+    return(0);
+  } else if (x_0 >= x[n - 1]) {
+    return(n - 1);
+  } else {
+    size_t j = std::floor((upp - low)*0.5);
+    while (upp - low > 1) {
+      while (x[j] <= x_0 && upp - low > 1) {
+        low = j;
+        j   = low + std::floor((upp - low)*0.5);
+      }
+      while (x_0 < x[j] && upp - low > 1) {
+        upp = j;
+        j   = low + std::floor((upp - low)*0.5);
+      }
+    }
+    return(j);
+  }
+}
+//--------------------------------------------------------------------------------------------------------------
+size_t FindUpperBoundInSortedVector(const std::vector<double> & x,
+                                    const double              & x_0)
+{
+  size_t n   = x.size();
+  size_t low = 0;
+  size_t upp = n - 1;
+
+  if (x_0 <= x[0]) {
+    return(0);
+  } else if (x_0 >= x[n - 1]) {
+    return(n - 1);
+  } else {
+    size_t j = std::floor((upp - low)*0.5);
+    while (upp - low > 1) {
+      while (x[j] < x_0 && upp - low > 1) {
+        low = j;
+        j   = low + std::floor((upp - low)*0.5);
+      }
+      while (x_0 <= x[j] && upp - low > 1) {
+        upp = j;
+        j   = low + std::floor((upp - low)*0.5);
+      }
+    }
+    return(std::min(j + 1, n - 1));
+  }
+}
 //-------------------------------------------------------------------------------
-void
-SortOrderAndRank(const std::vector<double> & x,
-                 std::vector<double>       & x_sort,
-                 std::vector<size_t>       & x_order,
-                 std::vector<size_t>       & x_rank)
+void SortOrderAndRank(const std::vector<double> & x,
+                      std::vector<double>       & x_sort,
+                      std::vector<size_t>       & x_order,
+                      std::vector<size_t>       & x_rank)
 {
   size_t n = x.size();
 
@@ -849,42 +899,12 @@ SortOrderAndRank(const std::vector<double> & x,
   }
 }
 //-------------------------------------------------------------------------------
-size_t
-FindLowerBoundInSortedVector(const std::vector<double> & x,
-                             const double                x_0)
-{
-  size_t n   = x.size();
-  size_t low = 0;
-  size_t upp = n - 1;
-
-  if (x_0 < x[0]) {
-    return(0);
-  } else if (x_0 > x[n - 1]) {
-    return(n - 1);
-  } else {
-    size_t j = std::floor((upp - low)*0.5);
-
-    while (upp - low > 1) {
-      while (x[j] < x_0 && upp - low > 1) {
-        low = j;
-        j   = low + std::floor((upp - low)*0.5);
-      }
-      while (x_0 < x[j] && upp - low > 1) {
-        upp = j;
-        j   = low + std::floor((upp - low)*0.5);
-      }
-    }
-    return(j);
-  }
-}
-//-------------------------------------------------------------------------------
-void
-BilinearInterpolation(const std::vector<double>               & x,
-                      const std::vector<double>               & y,
-                      const std::vector<std::vector<double> > & z,
-                      const std::vector<double>               & x0,
-                      const std::vector<double>               & y0,
-                      std::vector<std::vector<double> >       & z0)
+void BilinearInterpolation(const std::vector<double>               & x,
+                           const std::vector<double>               & y,
+                           const std::vector<std::vector<double> > & z,
+                           const std::vector<double>               & x0,
+                           const std::vector<double>               & y0,
+                           std::vector<std::vector<double> >       & z0)
 {
   for (size_t i = 0; i < x0.size(); i++) {
     for (size_t j = 0; j < y0.size(); j++) {
@@ -893,12 +913,11 @@ BilinearInterpolation(const std::vector<double>               & x,
   }
 }
 //-------------------------------------------------------------------------------
-double
-Interpolate(const std::vector<double>               & x,
-            const std::vector<double>               & y,
-            const std::vector<std::vector<double> > & z,
-            const double                              x0,
-            const double                              y0)
+double Interpolate(const std::vector<double>               & x,
+                   const std::vector<double>               & y,
+                   const std::vector<std::vector<double> > & z,
+                   const double                            & x0,
+                   const double                            & y0)
 {
   double delta   = 1e-5;
 
@@ -956,29 +975,13 @@ Interpolate(const std::vector<double>               & x,
   }
 }
 //-------------------------------------------------------------------------------
-size_t
-FindUpperBoundInSortedVector(const std::vector<double> & x,
-                             const double                x_0)
-{
-  size_t n = x.size();
-
-  if (x_0 < x[0]) {
-    return(0);
-  } else if (x_0 > x[n - 1]) {
-    return(n - 1);
-  } else {
-    return(std::min(FindLowerBoundInSortedVector(x, x_0) + 1, n - 1));
-  }
-}
-//-------------------------------------------------------------------------------
-void
-Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
-                   const std::vector<std::vector<double> > & trend_cube_sampling,
-                   const std::vector<std::vector<double> > & s1,
-                   const std::vector<std::vector<double> > & s2,
-                   const std::vector<std::vector<double> > & trend,
-                   std::vector<std::vector<double> >       & var,
-                   std::string                             & errTxt)
+void Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
+                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                        const std::vector<std::vector<double> > & s1,
+                        const std::vector<std::vector<double> > & s2,
+                        const std::vector<std::vector<double> > & trend,
+                        std::vector<std::vector<double> >       & var,
+                        std::string                             & errTxt)
 {
   double              scale = 1.0;
 
@@ -1014,10 +1017,10 @@ Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
     double              z_var_weight  = 10.0;
     size_t              nSamples      = z.size();
 
-    /* -- estiamte global weighted variance --*/
+    /* -- estiamte global variance --*/
     std::vector<double> z_z_mean_squared(nSamples, RMISSING);
     double              z_var = 0.0;
-    size_t              z_n   = 0;
+    int                 z_n   = 0;
     for (size_t i = 0; i < nSamples; i++) {
       double z_mean_i = Interpolate(x0, y0, trend, x[i], y[i]);
       if (z_mean_i != RMISSING && z[i] != RMISSING) {
@@ -1027,7 +1030,7 @@ Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
       }
     }
     z_var = z_var/(z_n - 1);
-    /* ---------------------------------------*/
+    /* ------------------------------*/
 
     size_t                            x0_regridded_n = x0_regridded.size();
     size_t                            y0_regridded_n = y0_regridded.size();
@@ -1065,18 +1068,17 @@ Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
   }
 }
 //-------------------------------------------------------------------------------
-void
-KernelSmoother2DSurface(const std::vector<double>         & x,
-                        const std::vector<double>         & y,
-                        const std::vector<double>         & z,
-                        const std::vector<double>         & w,
-                        const double                        bandwidth_x,
-                        const double                        bandwidth_y,
-                        const std::vector<double>         & x0,
-                        const std::vector<double>         & y0,
-                        std::vector<std::vector<double> > & z0,
-                        std::vector<std::vector<double> > & w0,
-                        bool                              & complete_surface)
+void KernelSmoother2DSurface(const std::vector<double>         & x,
+                             const std::vector<double>         & y,
+                             const std::vector<double>         & z,
+                             const std::vector<double>         & w,
+                             const double                      & bandwidth_x,
+                             const double                      & bandwidth_y,
+                             const std::vector<double>         & x0,
+                             const std::vector<double>         & y0,
+                             std::vector<std::vector<double> > & z0,
+                             std::vector<std::vector<double> > & w0,
+                             bool                              & complete_surface)
 {
   double               threshold             =  std::pow(std::log(1e5), 0.5);
   double               one_over_bandwidth_x  =  1.0/bandwidth_x;

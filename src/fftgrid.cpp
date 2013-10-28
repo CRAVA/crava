@@ -90,17 +90,30 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
-  istransformed_  = false;
+  istransformed_  = fftGrid->getIsTransformed();
 
-  createRealGrid(add_);
-  for(int k=0;k<nzp_;k++) {
-    for(int j=0;j<nyp_;j++) {
-      for(int i=0;i<rnxp_;i++) {
-        float value = fftGrid->getNextReal();
-        if (expTrans)
-          setNextReal(exp(value));
-        else
-          setNextReal(value);
+  if(istransformed_ == false) {
+    createRealGrid(add_);
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<rnxp_;i++) {
+          float value = fftGrid->getNextReal();
+          if (expTrans)
+            setNextReal(exp(value));
+          else
+            setNextReal(value);
+        }
+      }
+    }
+  }
+  else {
+    createComplexGrid();
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<cnxp_;i++) {
+          fftw_complex value = fftGrid->getNextComplex();
+          setNextComplex(value);
+        }
       }
     }
   }
@@ -1287,8 +1300,10 @@ void FFTGrid::createGrid()
       LogKit::LogFormatted(LogKit::Error, text);
       exit(1);
     }
-    else if(nGrids_ == maxAllowedGrids_+1)
-      TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
+    else if(nGrids_ == maxAllowedGrids_+1) {
+      //NBNB-PAL: Commented out until memory handling is fixed in 4.0 release
+      //TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
+    }
   }
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
@@ -1576,6 +1591,14 @@ FFTGrid::getFirstComplexValue()
   counterForGet_=0;
   endAccess();
 
+  return( value );
+}
+
+float
+FFTGrid::getFirstRealValue()
+{
+  assert(istransformed_==false);
+  float value = static_cast<float>(rvalue_[0]);
   return( value );
 }
 
@@ -1876,6 +1899,18 @@ FFTGrid::add(FFTGrid* fftGrid)
   }
 }
 void
+FFTGrid::addScalar(float scalar)
+{
+  // Only addition of scalar in real domain
+  assert(istransformed_==false);
+  int i;
+  for(i=0;i < rsize_;i++)
+  {
+    rvalue_[i] += scalar;
+  }
+}
+
+void
 FFTGrid::subtract(FFTGrid* fftGrid)
 {
   assert(nxp_==fftGrid->getNxp());
@@ -1942,6 +1977,16 @@ FFTGrid::multiply(FFTGrid* fftGrid)
     {
       rvalue_[i] *= fftGrid->rvalue_[i];
     }
+  }
+}
+
+void
+FFTGrid::conjugate()
+{
+  assert(istransformed_==true);
+  for(int i=0;i<csize_;i++)
+  {
+    cvalue_[i].im = -cvalue_[i].im;
   }
 }
 
@@ -2020,13 +2065,13 @@ FFTGrid::writeFile(const std::string       & fName,
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
-  if(formatFlag_ > 0) //Output format specified.
+  if (formatFlag_ > 0) //Output format specified.
   {
-    if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
-      if(timeMap == NULL) { //No resampling of storm
-        if((formatFlag_ & IO::STORM) > 0)
+    if ((domainFlag_ & IO::TIMEDOMAIN) > 0) {
+      if (timeMap == NULL) { //No resampling of storm
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(fileName, simbox, false,padding);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(fileName, simbox, true,padding, false, scientific_format);
       }
       else {
@@ -2034,38 +2079,40 @@ FFTGrid::writeFile(const std::string       & fName,
       }
 
       //SEGY, SGRI CRAVA are never resampled in time.
-      if((formatFlag_ & IO::SEGY) >0)
+      if ((formatFlag_ & IO::SEGY) >0)
         FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
-      if((formatFlag_ & IO::SGRI) >0)
+      if ((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
-      if((formatFlag_ & IO::CRAVA) >0)
+      if ((formatFlag_ & IO::CRAVA) >0)
         FFTGrid::writeCravaFile(fileName, simbox);
     }
 
-    if(depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
+    if (depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
-      if(depthMap->getMapping() == NULL) {
-        if(depthMap->getSimbox() == NULL) {
+      if (depthMap->getMapping() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if((formatFlag_ & IO::STORM) > 0)
+        if ((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false);
-        if((formatFlag_ & IO::ASCII) > 0)
+        if ((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
-        if((formatFlag_ & IO::SEGY) >0)
+        if ((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
       else
       {
-        if(depthMap->getSimbox() == NULL) {
+        if (depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        // Writes also segy in depth if required
+        // Writes also cubes in depth if required
+        LogKit::LogFormatted(LogKit::Low,"Resample cube and write file "+depthName+".segy...");
         FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
+        LogKit::LogFormatted(LogKit::Low,"done\n");
       }
     }
   }
@@ -2273,7 +2320,7 @@ FFTGrid::writeResampledStormCube(const GridMapping * gridmapping,
   if((formatFlag_ & IO::SEGY) > 0)
   {
     gfName =  fileName + IO::SuffixSegy();
-    writeSegyFromStorm(outgrid,gfName);
+    writeSegyFromStorm(gridmapping->getSimbox(), outgrid,gfName);
   }
   delete outgrid;
 }
@@ -2718,15 +2765,23 @@ FFTGrid::checkNaN()
   */
 }
 
-void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
+void FFTGrid::writeSegyFromStorm(Simbox * simbox, StormContGrid *data, std::string fileName)
 {
-
   int i,k,j;
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(data->GetNI());
   int ny = static_cast<int>(data->GetNJ());
-  SegyGeometry geometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
-                        nx,ny,data->GetAngle());
+
+  SegyGeometry geometry (simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                         simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                         simbox->getILStepX(), simbox->getILStepY(),
+                         simbox->getXLStepX(), simbox->getXLStepY(),
+                         simbox->getAngle());
+
+  //  SegyGeometry geometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
+  //                      nx,ny,data->GetAngle());
+
+
   float dz = float(floor((data->GetLZ()/data->GetNK())));
   //int nz = int(data->GetZMax()/dz);
   //float z0 = float(data->GetZMin());
@@ -2788,7 +2843,7 @@ void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
         (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
 
   std::string fullFileName = fileName + IO::SuffixSegy();
-  FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
+  FFTGrid::writeSegyFromStorm(simbox, stormcube, fullFileName);
 }
 
 int FFTGrid::findClosestFactorableNumber(int leastint)

@@ -223,8 +223,6 @@ Trend2DStorage::GenerateTrend(const std::string                       & path,
   Trend * trend = NULL;
 
   if(estimate_ == true) {
-    // gud: errTxt += "Estimation of 1D trend in rock physics models has not been implemented yet\n";
-
     size_t                            ns1        = trend_cube_sampling[0].size();
     size_t                            ns2        = trend_cube_sampling[1].size();
 

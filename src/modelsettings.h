@@ -220,6 +220,17 @@ public:
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
+  double                           getRMSStandardDeviation()            const { return RMSStandardDeviation_                      ;}
+  bool                             getRMSPriorGiven()                   const { return RMSPriorGiven_                             ;}
+  int                              getRMSnLayersAbove()                 const { return RMSnLayersAbove_                           ;}
+  int                              getRMSnLayersBelow()                 const { return RMSnLayersBelow_                           ;}
+  double                           getRMSMeanVpTop()                    const { return RMSMeanVpTop_                              ;}
+  double                           getRMSMeanVpBase()                   const { return RMSMeanVpBase_                             ;}
+  double                           getRMSVarianceVpAbove()              const { return RMSVarianceVpAbove_                        ;}
+  double                           getRMSVarianceVpBelow()              const { return RMSVarianceVpBelow_                        ;}
+  double                           getRMSTemporalCorrelationRangeAbove()const { return RMSTemporalCorrRangeAbove_                 ;}
+  double                           getRMSTemporalCorrelationRangeBelow()const { return RMSTemporalCorrRangeBelow_                 ;}
+
   std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
   std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
   std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval() const { return volumefractionInterval_   ;}
@@ -442,6 +453,17 @@ public:
   void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
   void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
+  void setRMSStandardDeviation(double value)              { RMSStandardDeviation_ = value                        ;}
+  void setRMSPriorGiven(bool given)                       { RMSPriorGiven_   = given                             ;}
+  void setRMSnLayersAbove(int n_layers)                   { RMSnLayersAbove_ = n_layers                          ;}
+  void setRMSnLayersBelow(int n_layers)                   { RMSnLayersBelow_ = n_layers                          ;}
+  void setRMSMeanVpTop(double mean)                       { RMSMeanVpTop_ = mean                                 ;}
+  void setRMSMeanVpBase(double mean)                      { RMSMeanVpBase_ = mean                                ;}
+  void setRMSVarianceVpAbove(double var)                  { RMSVarianceVpAbove_ = var                            ;}
+  void setRMSVarianceVpBelow(double var)                  { RMSVarianceVpBelow_ = var                            ;}
+  void setRMSTemporalCorrelationRangeAbove(double range)  { RMSTemporalCorrRangeAbove_ = range                   ;}
+  void setRMSTemporalCorrelationRangeBelow(double range)  { RMSTemporalCorrRangeBelow_ = range                   ;}
+
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
                                                             localSegyOffset_.clear();
@@ -527,6 +549,17 @@ private:
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
+
+  double                            RMSStandardDeviation_;       // Standard deviation for the RMS data
+  bool                              RMSPriorGiven_;              // True if prior information is given for RMS inversion
+  int                               RMSnLayersAbove_;            // n layers above the reservoir in inversion of RMS velocities
+  int                               RMSnLayersBelow_;            // n layers below the reservoir in inversion of RMS velocities
+  double                            RMSMeanVpTop_;               // E(Vp) at the top of the zone above the reservoir, that is, at sea level
+  double                            RMSMeanVpBase_;              // E(Vp) at the base of the zone below the reservoir
+  double                            RMSVarianceVpAbove_;         // Var(Vp) above the reservoir in inversion of RMS velocities
+  double                            RMSVarianceVpBelow_;         // Var(Vp) below the reservoir in inversion of RMS velocities
+  double                            RMSTemporalCorrRangeAbove_;  // Temporal corralation range (ms) for exponential variogram above the reservoir in inversion of RMS velocities
+  double                            RMSTemporalCorrRangeBelow_;  // Temporal corralation range (ms) for exponential variogram below the reservoir in inversion of RMS velocities
 
   std::vector<int>                  seismicType_;                ///< PP- or PS- seismic
   std::vector<float>                angle_;                      ///< Angles

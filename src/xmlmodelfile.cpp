@@ -692,7 +692,6 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addDefaultTimeGradientSettings();
 
   if(parseGravimetry(root, errTxt) == false) {
-    inputFiles_->addGravimetricObservationLocations("");
     inputFiles_->addGravimetricData("");
     modelSettings_->addTimeLapseGravimetry(false);
   }
@@ -823,7 +822,6 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-format");
   legalCommands.push_back("type");
 
-
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
     inputFiles_->addSeismicFile(value);
@@ -881,19 +879,20 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->addStretchFactor(1.0);
   std::string value;
-  bool estimate = false;
-  float peakFrequency;
-  if(parseFileName(root, "file-name", value, errTxt) == true) {
+  bool        estimate = false;
+  float       peakFrequency;
+
+  if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(false);
     modelSettings_->addRickerPeakFrequency(RMISSING);
   }
-  else if(parseValue(root, "ricker", peakFrequency, errTxt) == true){
+  else if (parseValue(root, "ricker", peakFrequency, errTxt) == true){
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
-    modelSettings_->addRickerPeakFrequency(peakFrequency);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
+    modelSettings_->addRickerPeakFrequency(peakFrequency);
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
@@ -1132,11 +1131,11 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("rms-velocities");
+  legalCommands.push_back("rms-data");
   legalCommands.push_back("horizon-file");
 
   if(parseRMSVelocities(root, errTxt) == false)
-    errTxt += "<travel-time><rms-velocities> needs to be given\n";
+    errTxt += "<travel-time><rms-data> needs to be given in <survey>\n";
 
   std::string horizon;
   int n_horizons = 0;
@@ -1156,18 +1155,25 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  TiXmlNode * root = node->FirstChildElement("rms-data");
   if(root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
+  legalCommands.push_back("standard-deviation");
 
   std::string rms_file;
   if(parseFileName(root, "file-name", rms_file, errTxt) == true)
     inputFiles_->addRmsVelocity(rms_file);
   else
-    errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
+    errTxt += "<travel-time><rms-data><file-name> needs to be given\n";
+
+  double value;
+  if(parseValue(root, "standard-deviation", value, errTxt) == true)
+    modelSettings_->setRMSStandardDeviation(value);
+  else
+    errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1208,14 +1214,7 @@ XmlModelFile::parseGravimetry(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("locations-file");
   legalCommands.push_back("data-file");
-
-  std::string locations_file;
-  if(parseFileName(root, "locations-file", locations_file, errTxt) == true)
-    inputFiles_->addGravimetricObservationLocations(locations_file);
-  else
-    errTxt += "<gravimetry><locations-file> needs to be given\n";
 
   std::string data_file;
   if(parseFileName(root, "data-file", data_file, errTxt) == true)
@@ -1287,6 +1286,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("earth-model");
   legalCommands.push_back("local-wavelet");
   legalCommands.push_back("rock-physics");
+  legalCommands.push_back("rms-velocities");
 
   parseBackground(root, errTxt);
   parseEarthModel(root,errTxt);
@@ -1321,6 +1321,8 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
+
+  parsePriorRMSVelocities(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1872,6 +1874,113 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("above-reservoir");
+  legalCommands.push_back("below-reservoir");
+
+  modelSettings_->setRMSPriorGiven(true);
+
+  if(parseAboveReservoir(root, errTxt) == false)
+    errTxt += "<above-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  if(parseBelowReservoir(root, errTxt) == false)
+    errTxt += "<below-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseAboveReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("above-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-top");
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
+  legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-top", mean, errTxt) == false)
+    errTxt += "<mean-vp-top> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpTop(mean);
+
+
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpAbove(variance);
+
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeAbove(range);
+
+
+  int n_layers;
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersAbove(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBelowReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("below-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-base");
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
+  legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-base", mean, errTxt) == false)
+    errTxt += "<mean-vp-base> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpBase(mean);
+
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpBelow(variance);
+
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeBelow(range);
+
+  int n_layers;
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersBelow(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -5910,8 +6019,16 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
+  int numberGravityFiles = 0;
+  for(int i = 0; i<modelSettings_->getNumberOfVintages(); i++){
+    if(modelSettings_->getGravityTimeLapse(i))
+      numberGravityFiles++;
+  }
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)   // Not necessarily on first vintage
     errTxt += "Seismic data are needed for inversion.\n";
+
+  if(numberGravityFiles == 1)
+    errTxt += "Need at least two gravity data files for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
     bool okWithoutWells = true;
@@ -5988,6 +6105,12 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       !(modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
                         "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
+
+  /// RMS velocity consistency
+  if(modelSettings_->getTravelTimeTimeLapse(0) == true) {
+    if(modelSettings_->getRMSPriorGiven() == false)
+      errTxt += "<rms-velocities> need to be given in <prior-model> when RMS data are given in <survey><travel-time>\n";
+  }
 
   }
 
@@ -6237,8 +6360,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
   }
   for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
-    if(modelSettings_->getNumberOfAngles(i) == 0)
-      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getNumberOfAngles(i) == 0 && (modelSettings_->getGravityTimeLapse(i) == false))
+      errTxt += "Need at least one <angle-gather> or <gravity> in <survey>.\n";
     if(modelSettings_->getVintageYear(i) == RMISSING)
       errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
   }

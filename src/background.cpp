@@ -2443,9 +2443,10 @@ Background::writeBackgrounds(const Simbox            * simbox,
                              GridMapping             * depthMapping,
                              const GridMapping       * timeMapping,
                              const bool                isFile,
+                             const bool                velocityFromInversion,
                              const TraceHeaderFormat & thf) const
 {
-  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
+  if (depthMapping != NULL && depthMapping->getSimbox() == NULL && !velocityFromInversion) {
     const Simbox * timeSimbox = simbox;
     if(timeMapping != NULL)
       timeSimbox = timeMapping->getSimbox();
@@ -2454,20 +2455,26 @@ Background::writeBackgrounds(const Simbox            * simbox,
     backModel_[0]->endAccess();
   }
 
+  GridMapping * tmpDepthMapping;
+  if (velocityFromInversion)
+    tmpDepthMapping = NULL; // Avoid output of BG in depth when time-to-depth mapping does not exist.
+  else
+    tmpDepthMapping = depthMapping;
+
   std::string fileName1 = IO::PrefixBackground() + "Vp" ;
   std::string fileName2 = IO::PrefixBackground() + "Vs" ;
   std::string fileName3 = IO::PrefixBackground() + "Rho";
 
   FFTGrid * expAlpha = copyFFTGrid(backModel_[0], true, isFile);
-  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expAlpha;
 
   FFTGrid * expBeta = copyFFTGrid(backModel_[1], true, isFile);
-  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expBeta;
 
   FFTGrid * expRho = copyFFTGrid(backModel_[2], true, isFile);
-  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, tmpDepthMapping, timeMapping, thf);
   delete expRho;
 
   //

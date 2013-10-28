@@ -641,18 +641,32 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
-    std::string tmpErrText;
+    std::string    tmpErrText;
     SegyGeometry * geometry;
+    int            fileType;
     getGeometryFromGridOnFile(gridFile,
                               modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                               geometry,
+                              fileType,
                               tmpErrText);
 
     modelSettings->setSeismicDataAreaParameters(geometry);
-    if(geometry != NULL) {
+    if (geometry != NULL) {
       geometry->WriteGeometry();
 
-      if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
+      if (fileType == IO::CRAVA) {
+        if (modelSettings->getAreaILXL().size() > 0) {
+          std::string text;
+          text += "\nWARNING: The inversion area has been specified in the XML model file using IL-XL";
+          text += "\n         values. This is not a legal option when the area is taken from a seismic";
+          text += "\n         data file given in CRAVA internal format. Specifications are ignored ...\n";
+          LogKit::LogFormatted(LogKit::Warning,text);
+          text  = "Check area specification: You cannot specify inversion area using IL-XL values\n";
+          text += "   when area is also taken from a seismic data file in CRAVA internal format.";
+          TaskList::addTask(text);
+        }
+      }
+      else if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
         SegyGeometry * fullGeometry = geometry;
 
         std::vector<int> areaILXL;
@@ -722,7 +736,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       else {
         geometry->WriteILXL();
       }
-      if(!failed) {
+      if (!failed) {
         modelSettings->setAreaParameters(geometry);
         ILXLGeometry = geometry;
       }
@@ -732,12 +746,12 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       failed = true;
     }
   }
-  if(!failed)
+  if (!failed)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters();
     failed = timeSimbox->setArea(areaParams, errText);
 
-    if(failed)
+    if (failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
@@ -763,7 +777,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
     }
 
-    if(!failed)
+    if (!failed)
     {
       //
       // Set IL/XL information in geometry
@@ -773,15 +787,17 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       //   a) For speed
       //   b) Grid data may not be available.
       if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
-        if(ILXLGeometry == NULL) {
+        if (ILXLGeometry == NULL) {
           int gridType = IO::findGridType(gridFile);
           bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
           if (ilxl_info_available) {
             LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
             std::string tmpErrText;
+            int         fileType;
             getGeometryFromGridOnFile(gridFile,
                                       modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                                       ILXLGeometry,
+                                      fileType,
                                       tmpErrText);
             if(ILXLGeometry == NULL) {
               errText += tmpErrText;
@@ -2221,13 +2237,11 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
         LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
       }
-        std::vector<float> angle = modelSettings->getAngle(i);
-        std::vector<float> SNRatio = modelSettings->getSNRatio(i);
-        std::vector<bool>  estimateWavelet = modelSettings->getEstimateWavelet(i);
-        std::vector<bool>  matchEnergies = modelSettings->getMatchEnergies(i);
-
-
-
+        std::vector<float> angle            = modelSettings->getAngle(i);
+        std::vector<float> SNRatio          = modelSettings->getSNRatio(i);
+        std::vector<bool>  estimateWavelet  = modelSettings->getEstimateWavelet(i);
+        std::vector<bool>  useRickerWavelet = modelSettings->getUseRickerWavelet(i);
+        std::vector<bool>  matchEnergies    = modelSettings->getMatchEnergies(i);
 
         for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
         {
@@ -2252,8 +2266,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
             }
           }
           LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+inputFiles->getSeismicFile(i,j)+"\n");
+
           if (estimateWavelet[j])
             LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
+          else if (useRickerWavelet[j]) {
+            LogKit::LogFormatted(LogKit::Low,"  Ricker wavelet with peak frequency       : %10.1f\n",modelSettings->getRickerPeakFrequency(i,j));
+          }
           else
             LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i,j)+"\n");
           if (modelSettings->getEstimateLocalShift(i,j))
@@ -2317,7 +2335,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                      bool              & failed)
 {
   FFTGrid * velocity = NULL;
-  if(timeCutSimbox != NULL)
+  if (timeCutSimbox != NULL)
     loadVelocity(velocity, timeCutSimbox, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
@@ -2326,11 +2344,11 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
 
-  if(!failed)
+  if (!failed)
   {
     timeDepthMapping_ = new GridMapping();
     timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
-    if(velocity != NULL)
+    if (velocity != NULL)
     {
       velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
@@ -2340,7 +2358,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       velocity->endAccess();
 
-      if((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+      if ((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
         float       offset    = modelSettings->getSegyOffset(0);//Only allow one segy offset for time lapse data
@@ -2360,9 +2378,9 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                         modelSettings->getOutputGridFormat(),
                                         failed,
                                         errText);
-
     }
   }
+
   if(velocity != NULL)
     delete velocity;
 }
@@ -2641,26 +2659,29 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
 }
 
 void
-ModelGeneral::loadVelocity(FFTGrid           *& velocity,
-                           const Simbox       * timeSimbox,
-                           const Simbox       * timeCutSimbox,
-                           const ModelSettings * modelSettings,
-                           const std::string  & velocityField,
-                           bool               & velocityFromInversion,
-                           std::string        & errText,
-                           bool               & failed)
+ModelGeneral::loadVelocity(FFTGrid             *& velocity,
+                           const Simbox         * timeSimbox,
+                           const Simbox         * timeCutSimbox,
+                           const ModelSettings  * modelSettings,
+                           const std::string    & velocityField,
+                           bool                 & velocityFromInversion,
+                           std::string          & errText,
+                           bool                 & failed)
 {
-  LogKit::WriteHeader("Setup time-to-depth relationship");
-
-  if(modelSettings->getVelocityFromInversion() == true)
+  if (modelSettings->getVelocityFromInversion())
   {
     velocityFromInversion = true;
     velocity = NULL;
   }
-  else if(velocityField == "")
+  else if (velocityField == "") {
     velocity = NULL;
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Using index mapping between time and depth grids.");
+  }
   else
   {
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Mapping between time and depth grids using velocity field \'"+velocityField+"\'");
     const SegyGeometry      * dummy1 = NULL;
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
@@ -2794,19 +2815,20 @@ ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void
-ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
-                                        const TraceHeaderFormat * thf,
-                                        SegyGeometry           *& geometry,
-                                        std::string             & errText)
+ModelGeneral::getGeometryFromGridOnFile(const std::string          gridFile,
+                                        const TraceHeaderFormat  * thf,
+                                        SegyGeometry            *& geometry,
+                                        int                      & fileType,
+                                        std::string              & errText)
 {
   geometry = NULL;
 
-  if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
-    int fileType = IO::findGridType(gridFile);
-    if(fileType == IO::CRAVA) {
+  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+    fileType = IO::findGridType(gridFile);
+    if (fileType == IO::CRAVA) {
       geometry = geometryFromCravaFile(gridFile);
     }
-    else if(fileType == IO::SEGY) {
+    else if (fileType == IO::SEGY) {
       try
       {
         geometry = SegY::FindGridGeometry(gridFile, thf);
@@ -2816,9 +2838,9 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
         errText = e.what();
       }
     }
-    else if(fileType == IO::STORM)
+    else if (fileType == IO::STORM)
       geometry = geometryFromStormFile(gridFile, errText);
-    else if(fileType==IO::SGRI) {
+    else if (fileType==IO::SGRI) {
       bool scale = true;
       geometry = geometryFromStormFile(gridFile, errText, scale);
     }
@@ -3440,7 +3462,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validIndex[i] = true;
             wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
             wells[i]->filterLogs();
-            //wells[i]->findMeanVsVp(waveletEstimInterval_);
+            wells[i]->findMeanVsVp();
             wells[i]->lookForSyntheticVsLog(rankCorr[i]);
             wells[i]->calculateDeviation(devAngle[i], timeSimbox);
 
@@ -3449,6 +3471,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validWells[count] = i;
             count++;
           }
+          wells[i]->findILXLAtStartPosition();
         }
       }
       //
@@ -4954,3 +4977,4 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
     for(int j =0;j<nyp;j++)
        (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 }
+

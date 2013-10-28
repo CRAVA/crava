@@ -187,6 +187,8 @@ ModelSettings::ModelSettings(void)
   logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
 
+  RMSPriorGiven_           =    false;
+
   seed_                    =        0;
 }
 
