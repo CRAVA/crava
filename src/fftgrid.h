@@ -250,7 +250,7 @@ protected:
   void                 extrapolateSeismic(int imin, int imax, int jmin, int jmax);
 
   /// Called from writeResampledStormCube
-  void                 writeSegyFromStorm(StormContGrid *data, std::string fileName);
+  void                 writeSegyFromStorm(Simbox * simbox, StormContGrid *data, std::string fileName);
   void                 makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName);
 
   int                  cubetype_;          // see enum gridtypes above
