@@ -4752,21 +4752,21 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
     bool debug = false;
     if (debug == true) {
       dump4Dparameters(modelSettings,
-        "_prior",
-        previous_vintage);  // note this prior should be equal to
-      // next_prior in previous step
+                       "_prior",
+                       previous_vintage);  // note this prior should be equal to
+                                           // next_prior in previous step
       dumpSeismicParameters(modelSettings,
-        "_posterior",
-        previous_vintage,
-        seismicParameters);
+                            "_posterior",
+                            previous_vintage,
+                            seismicParameters);
     }
 
     state4d_.split(seismicParameters);
 
     if (debug == true)
       dump4Dparameters(modelSettings,
-      "_posterior",
-      previous_vintage);
+                       "_posterior",
+                       previous_vintage);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
     state4d_.merge(seismicParameters);
@@ -4774,9 +4774,9 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
 
     if (debug == true)
       dumpSeismicParameters(modelSettings,
-      "_next_prior",
-      previous_vintage + 1,
-      seismicParameters);
+                            "_next_prior",
+                            previous_vintage + 1,
+                            seismicParameters);
   }
 
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.

@@ -280,7 +280,7 @@ int main(int argc, char** argv)
 
       delete timeBGSimbox;
 
-      double     time;
+      double time;
 
       // Time lapse inversions
       while (time_line->GetNextEvent(eventType, vintage, time) == true) {
