@@ -751,8 +751,12 @@ ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string >              
 
 ReussDryRockStorage::~ReussDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
-    delete constituent_volume_fraction_[0][i];
+  for (int i = 0; i < static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
+    if (constituent_volume_fraction_[0][i] != NULL) {
+      if (constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
+  }
 
 }
 
@@ -810,9 +814,12 @@ VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>               
 
 VoigtDryRockStorage::~VoigtDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
-    delete constituent_volume_fraction_[0][i];
-
+  for (int i = 0; i < static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
+    if (constituent_volume_fraction_[0][i] != NULL) {
+      if (constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
+  }
 }
 
 std::vector<DistributionsDryRock *>
@@ -869,9 +876,12 @@ HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                 
 
 HillDryRockStorage::~HillDryRockStorage()
 {
-  for(int i=0; i<static_cast<int>(constituent_volume_fraction_[0].size()); i++)
-    delete constituent_volume_fraction_[0][i];
-
+  for (int i = 0; i < static_cast<int>(constituent_volume_fraction_[0].size()); i++) {
+    if (constituent_volume_fraction_[0][i] != NULL) {
+      if (constituent_volume_fraction_[0][i]->GetIsShared() == false)
+        delete constituent_volume_fraction_[0][i];
+    }
+  }
 }
 
 std::vector<DistributionsDryRock *>
@@ -935,12 +945,16 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
 
 DEMDryRockStorage::~DEMDryRockStorage()
 {
-  if(host_volume_fraction_[0]->GetIsShared() == false)
-    delete host_volume_fraction_[0];
+  if(host_volume_fraction_[0] != NULL) {
+    if(host_volume_fraction_[0]->GetIsShared() == false)
+      delete host_volume_fraction_[0];
+  }
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_[0].size()); i++) {
-    if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
-      delete inclusion_volume_fraction_[0][i];
+    if(inclusion_volume_fraction_[0][i] != NULL) {
+      if(inclusion_volume_fraction_[0][i]->GetIsShared() == false)
+        delete inclusion_volume_fraction_[0][i];
+    }
   }
 
   for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_[0].size()); i++) {
