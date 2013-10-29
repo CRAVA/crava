@@ -22,14 +22,14 @@ class KrigingData2D;
 class RMSInversion
 {
 public:
-  RMSInversion(const ModelGeneral      * modelGeneral,
+  RMSInversion(ModelGeneral            * modelGeneral,
                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                SeismicParametersHolder & seismicParameters);
 
   ~RMSInversion();
 
 private:
-  void                          doRMSInversion(const ModelGeneral      * modelGeneral,
+  void                          doRMSInversion(ModelGeneral            * modelGeneral,
                                                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                SeismicParametersHolder & seismicParameters,
                                                const int               & inversion_number);
@@ -219,9 +219,9 @@ private:
                                                 const int           & n,
                                                 std::vector<double> & abs_z) const;
 
-  void                          complexConjugate(const fftw_complex  * z,
-                                                 const int           & n,
-                                                 fftw_complex        * conj_z) const;
+  void                          complexConjugate(const fftw_complex * z,
+                                                 const int          & n,
+                                                 fftw_complex       * conj_z) const;
 
   void                          calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
                                                             SeismicParametersHolder & seismic_parameters,
@@ -255,6 +255,10 @@ private:
   void                          calculateBaseSurface(const NRLib::Grid<double> & distance,
                                                      const Simbox              * simbox,
                                                      Surface                   & base_surface) const;
+
+  void                          resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
+                                                          const Simbox              * new_simbox,
+                                                          SeismicParametersHolder   & seismic_parameters) const;
 
   int n_above_;
   int n_below_;

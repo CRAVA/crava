@@ -36,11 +36,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              SeismicParametersHolder & seismicParameters,
                              int                       sortedVintage);
 
-bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
-                                    const ModelGeneral            * modelGeneral,
-                                    const InputFiles              * inputFiles,
-                                    const int                     & vintage,
-                                    SeismicParametersHolder       & seismicParameters);
+bool doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
+                                    ModelGeneral            * modelGeneral,
+                                    const InputFiles        * inputFiles,
+                                    const int               & vintage,
+                                    SeismicParametersHolder & seismicParameters);
 
 bool doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                      ModelGeneral            * modelGeneral,

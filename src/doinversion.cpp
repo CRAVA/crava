@@ -124,11 +124,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 }
 
 bool
-doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
-                               const ModelGeneral            * modelGeneral,
-                               const InputFiles              * inputFiles,
-                               const int                     & vintage,
-                               SeismicParametersHolder       & seismicParameters)
+doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
+                               ModelGeneral            * modelGeneral,
+                               const InputFiles        * inputFiles,
+                               const int               & vintage,
+                               SeismicParametersHolder & seismicParameters)
 {
   ModelTravelTimeDynamic * modelTravelTimeDynamic = NULL;
 
