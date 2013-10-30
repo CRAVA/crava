@@ -56,7 +56,7 @@ RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
   std::vector<double> cov_grid_log_vp      = getCovLogVp(cov_log_vp);
 
-  Simbox * timeSimbox                      = modelGeneral->getTimeSimbox();
+  const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
   const Simbox * simbox_above              = modelTravelTimeDynamic->getSimboxAbove();
   const Simbox * simbox_below              = modelTravelTimeDynamic->getSimboxBelow();
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
@@ -191,8 +191,7 @@ RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                               timeSimbox,
                               seismicParameters);
 
-    delete timeSimbox;
-    timeSimbox = new Simbox(new_simbox);
+    modelGeneral->setTimeSimbox(new_simbox);
 
   }
   else
@@ -1647,7 +1646,7 @@ RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
 void
 RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
                                 const double               & lz_limit,
-                                Simbox                     * simbox,
+                                const Simbox               * simbox,
                                 Simbox                    *& new_simbox,
                                 std::string                & errTxt) const
 {

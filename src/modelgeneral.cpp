@@ -4782,6 +4782,15 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
 
+void
+ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
+{
+  if (timeSimbox_ != NULL)
+    delete timeSimbox_;
+
+  timeSimbox_ = new Simbox(new_timeSimbox);
+}
+
 
 void
 ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)

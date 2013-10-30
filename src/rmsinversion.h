@@ -243,7 +243,7 @@ private:
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,
-                                                  Simbox                     * simbox,
+                                                  const Simbox               * simbox,
                                                   Simbox                    *& new_simbox,
                                                   std::string                & errTxt) const;
 
