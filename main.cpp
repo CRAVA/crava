@@ -216,7 +216,7 @@ int main(int argc, char** argv)
        modelAVOstatic == NULL || modelAVOstatic->getFailed())
       return(1);
 
-    if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+    if(modelGeneral->getTimeLine() == NULL) { //Forward modelling.
       bool failed = doFirstAVOInversion(modelSettings,
                                         modelGeneral,
                                         modelAVOstatic,
@@ -228,42 +228,48 @@ int main(int argc, char** argv)
         return(1);
     }
     else {
-      int  eventType;
-      int  eventIndex;
-      double  oldTime;
-      bool failedFirst = false;
-      modelGeneral->getTimeLine()->ReSet();
-      modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-      switch(eventType) {
+      int        eventType;
+      int        vintage;
+      double     oldTime;
+      bool       failedFirst = false;
+      TimeLine * time_line   = modelGeneral->getTimeLine();
+
+      time_line->ReSet();
+      time_line->GetNextEvent(eventType, vintage, oldTime);
+
+      // First inversion
+      switch (eventType) {
 
       case TimeLine::AVO :
-        // In case of 4D inversion
-        if(modelSettings->getDo4DInversion()){
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-        }
-        // In case of 3D inversion
-        else{
+        if (modelSettings->getDo4DInversion()) // In case of 4D inversion
+          failedFirst = doTimeLapseAVOInversion(modelSettings,
+                                                modelGeneral,
+                                                modelAVOstatic,
+                                                inputFiles,
+                                                seismicParameters,
+                                                vintage);
+        else  // In case of 3D inversion
           failedFirst = doFirstAVOInversion(modelSettings,
                                             modelGeneral,
                                             modelAVOstatic,
                                             seismicParameters,
                                             inputFiles,
-                                            eventIndex,
+                                            vintage,
                                             timeBGSimbox);
-        }
         break;
 
       case TimeLine::TRAVEL_TIME :
         failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
                                                      modelGeneral,
                                                      inputFiles,
-                                                     eventIndex,
+                                                     vintage,
                                                      seismicParameters);
         break;
 
       case TimeLine::GRAVITY :
         errTxt += "Error: Asked for 3D gravimetric inversion: Not available.\n";
         break;
+
       default :
         errTxt += "Error: Unknown inverstion type.\n";
         break;
@@ -275,48 +281,63 @@ int main(int argc, char** argv)
       delete timeBGSimbox;
 
       double time;
-      int time_index = 0;
-      while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-        modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
-        time_index++;
+
+      // Time lapse inversions
+      while (time_line->GetNextEvent(eventType, vintage, time) == true) {
+
+        modelGeneral->advanceTime(vintage - 1,
+                                  time,
+                                  seismicParameters,
+                                  modelSettings);
+
         bool failed;
+
         switch(eventType) {
+
         case TimeLine::AVO :
-          failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failed = doTimeLapseAVOInversion(modelSettings,
+                                           modelGeneral,
+                                           modelAVOstatic,
+                                           inputFiles,
+                                           seismicParameters,
+                                           vintage);
           break;
+
         case TimeLine::TRAVEL_TIME :
           failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                   modelGeneral,
                                                   inputFiles,
-                                                  eventIndex,
+                                                  vintage,
                                                   seismicParameters);
           break;
+
         case TimeLine::GRAVITY :
           failed = doTimeLapseGravimetricInversion(modelSettings,
                                                    modelGeneral,
                                                    modelGravityStatic,
                                                    inputFiles,
-                                                   eventIndex,
+                                                   vintage,
                                                    seismicParameters);
           break;
+
         default :
           failed = true;
           break;
         }
-        if(failed)
+
+        if (failed)
           return(1);
       }
     }
 
-    if(modelSettings->getDo4DInversion())
-    {
+    if (modelSettings->getDo4DInversion()) {
+
       bool failed;
-      if(modelSettings->getDo4DRockPhysicsInversion())
-      {
+      if (modelSettings->getDo4DRockPhysicsInversion()) {
 
         failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
 
-        if(failed)
+        if (failed)
           return(1);
       }
     }
@@ -343,8 +364,7 @@ int main(int argc, char** argv)
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
   }
-  catch (std::bad_alloc& ba)
-  {
+  catch (std::bad_alloc& ba) {
     std::cerr << "Out of memory: " << ba.what() << std::endl;
     std::string error_message = std::string("Out of memory: ") + ba.what() + "\n";
     LogKit::LogMessage(LogKit::Error, error_message);

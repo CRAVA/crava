@@ -84,6 +84,11 @@ public:
 
   void                     getNextParameterCovariance(fftw_complex **& parVar) const;
 
+  static fftw_complex      getParameterCovariance(const NRLib::Matrix & prior_var,
+                                                  const int           & i,
+                                                  const int           & j,
+                                                  fftw_complex          complex_variable);
+
   void                     writeFilePriorCorrT(fftw_real   * priorCorrT,
                                                const int   & nzp,
                                                const float & dt) const;

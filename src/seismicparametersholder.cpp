@@ -328,7 +328,7 @@ SeismicParametersHolder::invFFTCovGrids()
 void
 SeismicParametersHolder::FFTCovGrids()
 {
-  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids from time domain to FFT domain...");
+  LogKit::LogFormatted(LogKit::High,"\nTransforming correlation grids from time domain to FFT domain...");
 
   if (!covAlpha_->getIsTransformed())
     covAlpha_->fftInPlace();
@@ -356,13 +356,6 @@ void
 SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) const
 {
 
-  fftw_complex ii;
-  fftw_complex jj;
-  fftw_complex kk;
-  fftw_complex ij;
-  fftw_complex ik;
-  fftw_complex jk;
-
   fftw_complex iiTmp = covAlpha_      ->getNextComplex();
   fftw_complex jjTmp = covBeta_       ->getNextComplex();
   fftw_complex kkTmp = covRho_        ->getNextComplex();
@@ -370,60 +363,59 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
   fftw_complex ikTmp = crCovAlphaRho_ ->getNextComplex();
   fftw_complex jkTmp = crCovBetaRho_  ->getNextComplex();
 
-  if(priorVar0_(0,0) != 0)
-    iiTmp.re = iiTmp.re / static_cast<float>(priorVar0_(0,0));
+  fftw_complex ii;
+  fftw_complex jj;
+  fftw_complex kk;
+  fftw_complex ij;
+  fftw_complex ik;
+  fftw_complex jk;
 
-  if(priorVar0_(1,1) != 0)
-    jjTmp.re = jjTmp.re / static_cast<float>(priorVar0_(1,1));
+  ii = getParameterCovariance(priorVar0_, 0, 0, iiTmp);
+  jj = getParameterCovariance(priorVar0_, 1, 1, jjTmp);
+  kk = getParameterCovariance(priorVar0_, 2, 2, kkTmp);
+  ij = getParameterCovariance(priorVar0_, 0, 1, ijTmp);
+  ik = getParameterCovariance(priorVar0_, 0, 2, ikTmp);
+  jk = getParameterCovariance(priorVar0_, 1, 2, jkTmp);
 
-  if(priorVar0_(2,2) != 0)
-    kkTmp.re = kkTmp.re / static_cast<float>(priorVar0_(2,2));
+  parVar[0][0] = ii;
+  parVar[1][1] = jj;
+  parVar[2][2] = kk;
 
-  if(priorVar0_(0,1) != 0)
-    ijTmp.re = ijTmp.re / static_cast<float>(priorVar0_(0,1));
-
-  if(priorVar0_(0,2) != 0)
-    ikTmp.re = ikTmp.re / static_cast<float>(priorVar0_(0,2));
-
-  if(priorVar0_(1,2) != 0)
-    jkTmp.re = jkTmp.re / static_cast<float>(priorVar0_(1,2));
-
-  ii.re = float( sqrt(iiTmp.re * iiTmp.re));
-  ii.im = 0.0;
-  jj.re = float( sqrt(jjTmp.re * jjTmp.re));
-  jj.im = 0.0;
-  kk.re = float( sqrt(kkTmp.re * kkTmp.re));
-  kk.im = 0.0;
-  ij.re = float( sqrt(ijTmp.re * ijTmp.re));
-  ij.im = 0.0;
-  ik.re = float( sqrt(ikTmp.re * ikTmp.re));
-  ik.im = 0.0;
-  jk.re = float( sqrt(jkTmp.re * jkTmp.re));
-  jk.im = 0.0;
-
-  parVar[0][0].re = ii.re * static_cast<float>(priorVar0_(0,0));
-  parVar[0][0].im = ii.im;
-
-  parVar[1][1].re = jj.re * static_cast<float>(priorVar0_(1,1));
-  parVar[1][1].im = jj.im;
-
-  parVar[2][2].re = kk.re * static_cast<float>(priorVar0_(2,2));
-  parVar[2][2].im = kk.im;
-
-  parVar[0][1].re = ij.re * static_cast<float>(priorVar0_(0,1));
-  parVar[0][1].im = ij.im;
-  parVar[1][0].re = ij.re * static_cast<float>(priorVar0_(0,1));
+  parVar[0][1].re =  ij.re;
+  parVar[0][1].im =  ij.im;
+  parVar[1][0].re =  ij.re;
   parVar[1][0].im = -ij.im;
 
-  parVar[0][2].re = ik.re * static_cast<float>(priorVar0_(0,2));
-  parVar[0][2].im = ik.im;
-  parVar[2][0].re = ik.re * static_cast<float>(priorVar0_(0,2));
+  parVar[0][2].re =  ik.re;
+  parVar[0][2].im =  ik.im;
+  parVar[2][0].re =  ik.re;
   parVar[2][0].im = -ik.im;
 
-  parVar[1][2].re = jk.re * static_cast<float>(priorVar0_(1,2));
-  parVar[1][2].im = jk.im;
-  parVar[2][1].re = jk.re * static_cast<float>(priorVar0_(1,2));
+  parVar[1][2].re =  jk.re;
+  parVar[1][2].im =  jk.im;
+  parVar[2][1].re =  jk.re;
   parVar[2][1].im = -jk.im;
+}
+
+//--------------------------------------------------------------------
+fftw_complex
+SeismicParametersHolder::getParameterCovariance(const NRLib::Matrix & prior_var,
+                                                const int           & i,
+                                                const int           & j,
+                                                fftw_complex        complex_variable)
+{
+  if (prior_var(i, j) != 0)
+    complex_variable.re = complex_variable.re / static_cast<float>(prior_var(i, j));
+
+  fftw_complex ii;
+  ii.re = float( sqrt(complex_variable.re * complex_variable.re) );
+  ii.im = 0.0;
+
+  fftw_complex var;
+  var.re = ii.re * static_cast<float>(prior_var(i, j));
+  var.im = ii.im;
+
+  return var;
 }
 
 //--------------------------------------------------------------------
