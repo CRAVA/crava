@@ -414,6 +414,7 @@ private:
                   int                 & missing_traces_padding,
                   int                 & dead_traces_simbox,
                   std::string         & err_text,
+                  int                   grid_type,
                   bool                  scale,
                   bool                  is_segy);
 
@@ -445,6 +446,15 @@ private:
                              int                  n_fine,
                              int                  grid_nk);
 
+  void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+                                float                      z0_grid,
+                                float                      dz_grid,
+                                const std::vector<float> & trend_long,
+                                float                      z0_data,
+                                float                      dz_fine,
+                                int                        n_fine,
+                                int                        grid_nk);
+
   int GetZSimboxIndex(int k,
                       int grid_nk);
 
@@ -465,8 +475,8 @@ private:
                      const std::vector<Simbox>         & interval_simboxes,
                      const ModelSettings               * model_settings,
                      std::string                       & err_text,
-                     bool                                scale,
-                     bool                                nopadding);
+                     bool                                is_storm = true,
+                     bool                                nopadding = true);
 
   bool SetupBackgroundModel(ModelSettings  * model_settings,
                             InputFiles     * input_files,

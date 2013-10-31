@@ -4006,7 +4006,7 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
                    format,
                    err_text);
     else if(fileType == IO::STORM)
-      ReadStormFile(file_name,  //H Not active until new resample algorithm is added.
+      ReadStormFile(file_name,
                     interval_grids,
                     grid_type,
                     par_name,
@@ -4285,6 +4285,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
+                 grid_type,
                  err_text);
 
         //FillInSeismicDataFromSegY(interval_grids[i_interval],
@@ -4536,6 +4537,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
                             int                 & missing_traces_padding,
                             int                 & dead_traces_simbox,
                             std::string         & err_text,
+                            int                   grid_type,
                             bool                  scale,
                             bool                  is_segy)
 {
@@ -4583,7 +4585,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
     dz_min    = dz_data/4.0f;
   }
   else
-    n_samples = grid.GetNK();
+    n_samples = storm_grid->GetNK();
 
   int    nt        = FindClosestFactorableNumber(static_cast<int>(n_samples));
   int    mt        = 4*nt;           // Use four times the sampling density for the fine-meshed data
@@ -4622,7 +4624,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
       if(is_segy)
         is_inside = segy->GetGeometry()->IsInside(xf, yf);
       else {
-        if(grid.IsInside(xf, yf) == 1)
+        if(storm_grid->IsInside(xf, yf) == 1)
           is_inside = true;
       }
 
@@ -4646,10 +4648,10 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
         }
         else {
-          grid->FindXYIndex(xf, yf, grid_i, grid_j);
+          storm_grid->FindXYIndex(xf, yf, grid_i, grid_j);
           for(size_t k = 0; k < grid.GetNK(); k++) {
-            grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
-            value = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+            storm_grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
+            value = storm_grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
             data_trace.push_back(value);
 
             if(k == 0)
@@ -4667,7 +4669,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
         float trend_first = 0.0;
         float trend_last = 0.0;
 
-        if(cubetype_ != DATA) {
+        if(grid_type != DATA) {
           //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
           if(data_trace[0] == 0) {
             std::vector<float> data_trace_new;
@@ -4713,7 +4715,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
 
           std::string err_text_tmp = "";
           smooth_length*=scalevert;
-          if(cubetype_ == DATA) {
+          if(grid_type == DATA) {
             SmoothTraceInGuardZone(data_trace,
                                    //z0_data,
                                    //zn_data,
@@ -4733,7 +4735,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
                         rmt);
 
           std::vector<float> data_trace_trend_long;
-          if(cubetype_ != DATA) {
+          if(grid_type != DATA) {
             float trend_inc = (trend_last - trend_first) / (rmt - 1);
 
             data_trace_trend_long.resize(rmt);
@@ -4754,15 +4756,16 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
 
           //Interpolate and shift trend before adding to grid_trace.
           //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
-          if(cubetype_ != DATA) {
+          if(grid_type != DATA) {
             std::vector<float> trend_interpolated(nk);
-            interpolateAndShiftTrend(trend_interpolated,
+            InterpolateAndShiftTrend(trend_interpolated,
                                      z0_grid,     // Centre of first cell
                                      dz_grid,
                                      data_trace_trend_long,
                                      z0_data,     // Time of first data sample
                                      dz_min,
-                                     rmt);
+                                     rmt,
+                                     grid.GetNK());
 
             //Add trend
             for(size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
@@ -4774,19 +4777,18 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
-          SetTrace(grid_trace, i, j);
+          SetTrace(grid_trace, grid, i, j);
 
         }
         else {
-          SetTrace(0.0f, i, j); // Dead traces (in case we allow them)
+          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
           dead_traces_simbox++;
         }
 
       }
       else {
 
-
-        setTrace(0.0f, i, j);   // Outside seismic data grid
+        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
         if (i < nx_ && j < ny_ )
           missing_traces_simbox++;
         else
@@ -4985,6 +4987,58 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
         float w1 = ceil(dl) - dl;
         float w2 = dl - floor(dl);
         grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
+      }
+    }
+  }
+}
+
+void CommonData::InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+                                          float                      z0_grid,
+                                          float                      dz_grid,
+                                          const std::vector<float> & trend_long,
+                                          float                      z0_data,
+                                          float                      dz_fine,
+                                          int                        n_fine,
+                                          int                        grid_nk)
+{
+  //
+  // Bilinear interpolation
+  //
+  // refk establishes link between traces order and grid order
+  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
+  // In grid :    B B B B B B C C C A A A
+
+  float z0_shift    = z0_grid - z0_data;
+  float inv_dz_fine = 1.0f/dz_fine;
+
+  int n_grid = static_cast<int>(interpolated_trend.size());
+
+  for (int k = 0 ; k < n_grid ; k++) {
+    int refk = GetZSimboxIndex(k, grid_nk);
+    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
+    int   l1 = static_cast<int>(floor(dl));
+    int   l2 = static_cast<int>(ceil(dl));
+
+    if (l2 < 0 || l1 > n_fine - 1) {
+      if(l2 < 0)
+        interpolated_trend[k] = trend_long[0];
+      if(l1 > n_fine -1)
+        interpolated_trend[k] = trend_long[n_fine - 1];
+    }
+    else {
+      if (l1 < 0) {
+        interpolated_trend[k] = trend_long[l2];
+      }
+      else if (l2 > n_fine - 1) {
+        interpolated_trend[k] = trend_long[l1];
+      }
+      else if (l1 == l2) {
+        interpolated_trend[k] = trend_long[l1];
+      }
+      else {
+        float w1 = ceil(dl) - dl;
+        float w2 = dl - floor(dl);
+        interpolated_trend[k] = w1*trend_long[l1] + w2*trend_long[l2];
       }
     }
   }
