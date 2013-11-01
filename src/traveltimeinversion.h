@@ -2,8 +2,8 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#ifndef RMS_INVERSION_H
-#define RMS_INVERSION_H
+#ifndef TRAVEL_TIME_INVERSION_H
+#define TRAVEL_TIME_INVERSION_H
 
 #include "nrlib/flens/nrlib_flens.hpp"
 #include "nrlib/grid/grid2d.hpp"
@@ -19,14 +19,14 @@ class Vario;
 class FFTGrid;
 class KrigingData2D;
 
-class RMSInversion
+class TravelTimeInversion
 {
 public:
-  RMSInversion(ModelGeneral            * modelGeneral,
+  TravelTimeInversion(ModelGeneral            * modelGeneral,
                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                SeismicParametersHolder & seismicParameters);
 
-  ~RMSInversion();
+  ~TravelTimeInversion();
 
 private:
   void                          doRMSInversion(ModelGeneral            * modelGeneral,
