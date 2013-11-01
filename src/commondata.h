@@ -396,17 +396,8 @@ private:
                     std::string                       & err_text,
                     bool                                nopadding = true);
 
-  //void FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
-  //                               const SegY          * segy,
-  //                               const Simbox        & simbox,
-  //                               float                 smooth_length,
-  //                               int                 & missingTracesSimbox,
-  //                               int                 & missingTracesPadding,
-  //                               int                 & deadTracesSimbox,
-  //                               std::string         & err_text);
-
   void FillInData(NRLib::Grid<double> & grid,
-                  const Simbox        * simbox,
+                  const Simbox        & simbox,
                   StormContGrid       * storm_grid,
                   const SegY          * segy,
                   float                 smooth_length,
@@ -415,17 +406,14 @@ private:
                   int                 & dead_traces_simbox,
                   std::string         & err_text,
                   int                   grid_type,
-                  bool                  scale,
-                  bool                  is_segy);
+                  bool                  scale = false,
+                  bool                  is_segy = true);
 
   int FindClosestFactorableNumber(int leastint);
 
   void SmoothTraceInGuardZone(std::vector<float> & data_trace,
-                              //float                z0_data,
-                              //float                zn_data,
                               float                dz_data,
                               float                smooth_length);
-                              //std::string        & err_text);
 
   void ResampleTrace(const std::vector<float> & data_trace,
                      const rfftwnd_plan       & fftplan1,
