@@ -240,10 +240,8 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       gridMem = nGrids*gridSizePad;
     }
     else {
-      //baseP and baseU are the padded and unpadde grids allocated at each peak.
-      int baseP = nGridParameters + nGridCovariances;
-      if(modelSettings->getUseLocalNoise(0) == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
-        baseP += nGridBackground;
+      //baseP and baseU are the padded and unpadded grids allocated at each peak.
+      int baseP = nGridBackground + nGridParameters + nGridCovariances;
       int baseU = 0;
       if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
         baseU += static_cast<int>(facies_prob.size());
@@ -253,7 +251,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       int peak1U = baseU;
 
       long long int peakGridMem = peak1P*gridSizePad + peak1U*gridSizeBase; //First peak must be currently largest.
-      int peakNGrid   = peak1P;                                             //Also in number of padded grids
+      int peakNGrid = peak1P;                                               //Also in number of padded grids
 
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
@@ -289,6 +287,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       gridMem = peakGridMem;
     }
   }
+
   FFTGrid::setMaxAllowedGrids(nGrids);
   if(modelSettings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
