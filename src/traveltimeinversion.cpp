@@ -2,7 +2,7 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#include "src/rmsinversion.h"
+#include "src/traveltimeinversion.h"
 #include "src/modeltraveltimedynamic.h"
 #include "src/seismicparametersholder.h"
 #include "src/simbox.h"
@@ -18,9 +18,9 @@
 #include "lib/timekit.hpp"
 
 
-RMSInversion::RMSInversion(ModelGeneral            * modelGeneral,
-                           ModelTravelTimeDynamic  * modelTravelTimeDynamic,
-                           SeismicParametersHolder & seismicParameters)
+TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
+                                         ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                         SeismicParametersHolder & seismicParameters)
 {
   LogKit::WriteHeader("Building Stochastic RMS Inversion Model");
 
@@ -32,11 +32,13 @@ RMSInversion::RMSInversion(ModelGeneral            * modelGeneral,
   if (modelTravelTimeDynamic->getThisTimeLapse() > 0)
     n_rms_inversions = 2;
 
-  for (int i = 0; i < n_rms_inversions; ++i)
-    doRMSInversion(modelGeneral,
-                   modelTravelTimeDynamic,
-                   seismicParameters,
-                   i);
+  for (int i = 0; i < n_rms_inversions; ++i) {
+    if (modelTravelTimeDynamic->getRMSDataGiven() == true)
+      doRMSInversion(modelGeneral,
+                     modelTravelTimeDynamic,
+                     seismicParameters,
+                     i);
+  }
 
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow, "\nTime elapsed :  %d\n", time_end - time_start);
@@ -46,10 +48,10 @@ RMSInversion::RMSInversion(ModelGeneral            * modelGeneral,
 
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
-                             ModelTravelTimeDynamic  * modelTravelTimeDynamic,
-                             SeismicParametersHolder & seismicParameters,
-                             const int               & inversion_number)
+TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
+                                    ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                    SeismicParametersHolder & seismicParameters,
+                                    const int               & inversion_number)
 {
 
   FFTGrid * mu_log_vp                      = seismicParameters.GetMuAlpha();
@@ -66,7 +68,7 @@ RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   const double var_vp_below                = modelTravelTimeDynamic->getVarVpBelow();
   const double range_above                 = modelTravelTimeDynamic->getRangeAbove();
   const double range_below                 = modelTravelTimeDynamic->getRangeBelow();
-  const double standard_deviation          = modelTravelTimeDynamic->getStandardDeviation();
+  const double standard_deviation          = modelTravelTimeDynamic->getRMSStandardDeviation();
 
   Vario * variogram_above                  = new GenExpVario(1, static_cast<float>(range_above));
   Vario * variogram_below                  = new GenExpVario(1, static_cast<float>(range_below));
@@ -212,25 +214,25 @@ RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
 
 //-----------------------------------------------------------------------------------------//
 
-RMSInversion::~RMSInversion()
+TravelTimeInversion::~TravelTimeInversion()
 {
 }
 
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::do1DInversion(const double                & mu_vp_top,
-                            const double                & mu_vp_base,
-                            const NRLib::Grid2D<double> & Sigma_m_above,
-                            const NRLib::Grid2D<double> & Sigma_m_below,
-                            const double                & standard_deviation,
-                            const RMSTrace              * rms_trace,
-                            const FFTGrid               * mu_log_vp,
-                            const std::vector<double>   & cov_grid_log_vp,
-                            const Simbox                * simbox_above,
-                            const Simbox                * simbox_below,
-                            const Simbox                * timeSimbox,
-                            std::vector<double>         & mu_post_log_vp,
-                            NRLib::Grid2D<double>       & Sigma_post_log_vp) const
+TravelTimeInversion::do1DInversion(const double                & mu_vp_top,
+                                   const double                & mu_vp_base,
+                                   const NRLib::Grid2D<double> & Sigma_m_above,
+                                   const NRLib::Grid2D<double> & Sigma_m_below,
+                                   const double                & standard_deviation,
+                                   const RMSTrace              * rms_trace,
+                                   const FFTGrid               * mu_log_vp,
+                                   const std::vector<double>   & cov_grid_log_vp,
+                                   const Simbox                * simbox_above,
+                                   const Simbox                * simbox_below,
+                                   const Simbox                * timeSimbox,
+                                   std::vector<double>         & mu_post_log_vp,
+                                   NRLib::Grid2D<double>       & Sigma_post_log_vp) const
 {
 
   int i_ind = rms_trace->getIIndex();
@@ -288,13 +290,13 @@ RMSInversion::do1DInversion(const double                & mu_vp_top,
 }
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::calculatePosteriorModel(const std::vector<double>   & d,
-                                      const NRLib::Grid2D<double> & Sigma_d,
-                                      const std::vector<double>   & mu_m,
-                                      const NRLib::Grid2D<double> & Sigma_m,
-                                      const NRLib::Grid2D<double> & G,
-                                      std::vector<double>         & mu_post,
-                                      NRLib::Grid2D<double>       & Sigma_post) const
+TravelTimeInversion::calculatePosteriorModel(const std::vector<double>   & d,
+                                             const NRLib::Grid2D<double> & Sigma_d,
+                                             const std::vector<double>   & mu_m,
+                                             const NRLib::Grid2D<double> & Sigma_m,
+                                             const NRLib::Grid2D<double> & G,
+                                             std::vector<double>         & mu_post,
+                                             NRLib::Grid2D<double>       & Sigma_post) const
 {
   int n_layers = static_cast<int>(mu_m.size());
   int n_data   = static_cast<int>(d.size());
@@ -375,7 +377,7 @@ RMSInversion::calculatePosteriorModel(const std::vector<double>   & d,
 
 //-----------------------------------------------------------------------------------------//
 std::vector<double>
-RMSInversion::calculateDSquare(const std::vector<double> & d) const
+TravelTimeInversion::calculateDSquare(const std::vector<double> & d) const
 {
   int n = static_cast<int>(d.size());
 
@@ -389,12 +391,12 @@ RMSInversion::calculateDSquare(const std::vector<double> & d) const
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::calculateG(const std::vector<double> & rms_time,
-                         const double              & t_top,
-                         const double              & t_bot,
-                         const double              & dt_above,
-                         const double              & dt_below,
-                         const double              & dt_simbox) const
+TravelTimeInversion::calculateG(const std::vector<double> & rms_time,
+                                const double              & t_top,
+                                const double              & t_bot,
+                                const double              & dt_above,
+                                const double              & dt_below,
+                                const double              & dt_simbox) const
 {
   int n_layers = n_pad_above_ + n_pad_model_ + n_pad_below_;
 
@@ -443,8 +445,8 @@ RMSInversion::calculateG(const std::vector<double> & rms_time,
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::calculateSigmaDSquare(const std::vector<double> & rms_velocity,
-                                    const double              & standard_deviation) const
+TravelTimeInversion::calculateSigmaDSquare(const std::vector<double> & rms_velocity,
+                                           const double              & standard_deviation) const
 {
   int n                 = static_cast<int>(rms_velocity.size());
   const double variance = std::pow(standard_deviation,2);
@@ -465,14 +467,14 @@ RMSInversion::calculateSigmaDSquare(const std::vector<double> & rms_velocity,
 
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_model,
-                                       const std::vector<double>   & cov_grid_log_vp,
-                                       const double                & mu_vp_top,
-                                       const double                & mu_vp_base,
-                                       const NRLib::Grid2D<double> & Sigma_vp_above,
-                                       const NRLib::Grid2D<double> & Sigma_vp_below,
-                                       std::vector<double>         & mu_vp_square,
-                                       NRLib::Grid2D<double>       & Sigma_vp_square) const
+TravelTimeInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_model,
+                                              const std::vector<double>   & cov_grid_log_vp,
+                                              const double                & mu_vp_top,
+                                              const double                & mu_vp_base,
+                                              const NRLib::Grid2D<double> & Sigma_vp_above,
+                                              const NRLib::Grid2D<double> & Sigma_vp_below,
+                                              std::vector<double>         & mu_vp_square,
+                                              NRLib::Grid2D<double>       & Sigma_vp_square) const
 {
 
   int n_layers_simbox = static_cast<int>(mu_log_vp_model.size());
@@ -503,10 +505,10 @@ RMSInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_m
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::generateSigmaVp(const double & dt,
-                              const int    & n_layers,
-                              const double & var_vp,
-                              const Vario  * variogram) const
+TravelTimeInversion::generateSigmaVp(const double & dt,
+                                     const int    & n_layers,
+                                     const double & var_vp,
+                                     const Vario  * variogram) const
 {
 
   // Circulant corrT
@@ -525,7 +527,7 @@ RMSInversion::generateSigmaVp(const double & dt,
 
 //-----------------------------------------------------------------------------------------//
 std::vector<double>
-RMSInversion::getCovLogVp(const FFTGrid * cov_log_vp) const
+TravelTimeInversion::getCovLogVp(const FFTGrid * cov_log_vp) const
 {
   int n_layers_padding = cov_log_vp->getNzp();
 
@@ -540,9 +542,9 @@ RMSInversion::getCovLogVp(const FFTGrid * cov_log_vp) const
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::generateMuLogVpModel(const FFTGrid * mu_log_vp,
-                                   const int     & i_ind,
-                                   const int     & j_ind) const
+TravelTimeInversion::generateMuLogVpModel(const FFTGrid * mu_log_vp,
+                                          const int     & i_ind,
+                                          const int     & j_ind) const
 {
 
   int n_layers_padding = mu_log_vp->getNzp();
@@ -558,8 +560,8 @@ RMSInversion::generateMuLogVpModel(const FFTGrid * mu_log_vp,
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::generateMuVpAbove(const double & top_value,
-                                const double & base_value) const
+TravelTimeInversion::generateMuVpAbove(const double & top_value,
+                                       const double & base_value) const
 {
   std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_above_);
 
@@ -574,8 +576,8 @@ RMSInversion::generateMuVpAbove(const double & top_value,
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::generateMuVpBelow(const double & top_value,
-                                const double & base_value) const
+TravelTimeInversion::generateMuVpBelow(const double & top_value,
+                                       const double & base_value) const
 {
   std::vector<double> mu_vp = generateMuVp(top_value, base_value, n_below_);
 
@@ -596,9 +598,9 @@ RMSInversion::generateMuVpBelow(const double & top_value,
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::generateMuVp(const double & top_value,
-                           const double & base_value,
-                           const int    & n_layers) const
+TravelTimeInversion::generateMuVp(const double & top_value,
+                                  const double & base_value,
+                                  const int    & n_layers) const
 {
   std::vector<double> mu_vp(n_layers+1);
 
@@ -611,9 +613,9 @@ RMSInversion::generateMuVp(const double & top_value,
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::generateMuCombined(const std::vector<double> & mu_above,
-                                 const std::vector<double> & mu_model,
-                                 const std::vector<double> & mu_below) const
+TravelTimeInversion::generateMuCombined(const std::vector<double> & mu_above,
+                                        const std::vector<double> & mu_model,
+                                        const std::vector<double> & mu_below) const
 {
   int n_layers_above        = static_cast<int>(mu_above.size());
   int n_layers_below        = static_cast<int>(mu_below.size());
@@ -637,9 +639,9 @@ RMSInversion::generateMuCombined(const std::vector<double> & mu_above,
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::generateSigmaCombined(const NRLib::Grid2D<double> & Sigma_above,
-                                    const NRLib::Grid2D<double> & Sigma_model,
-                                    const NRLib::Grid2D<double> & Sigma_below) const
+TravelTimeInversion::generateSigmaCombined(const NRLib::Grid2D<double> & Sigma_above,
+                                           const NRLib::Grid2D<double> & Sigma_model,
+                                           const NRLib::Grid2D<double> & Sigma_below) const
 {
   int n_layers_above = static_cast<int>(Sigma_above.GetNI());
   int n_layers_below = static_cast<int>(Sigma_below.GetNI());
@@ -675,8 +677,8 @@ RMSInversion::generateSigmaCombined(const NRLib::Grid2D<double> & Sigma_above,
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
-RMSInversion::generateSigma(const double              & var,
-                            const std::vector<double> & corrT) const
+TravelTimeInversion::generateSigma(const double              & var,
+                                   const std::vector<double> & corrT) const
 {
 
   int n_layers = static_cast<int>(corrT.size());
@@ -697,7 +699,7 @@ RMSInversion::generateSigma(const double              & var,
 
 //-----------------------------------------------------------------------------------------//
 NRLib::Grid2D<double>
-RMSInversion::generateSigmaModel(const std::vector<double> & cov_grid) const
+TravelTimeInversion::generateSigmaModel(const std::vector<double> & cov_grid) const
 {
   int n = static_cast<int>(cov_grid.size());
 
@@ -718,10 +720,10 @@ RMSInversion::generateSigmaModel(const std::vector<double> & cov_grid) const
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::transformVpToVpSquare(const std::vector<double>   & mu_vp,
-                                    const NRLib::Grid2D<double> & Sigma_vp,
-                                    std::vector<double>         & mu_vp_square,
-                                    NRLib::Grid2D<double>       & Sigma_vp_square) const
+TravelTimeInversion::transformVpToVpSquare(const std::vector<double>   & mu_vp,
+                                           const NRLib::Grid2D<double> & Sigma_vp,
+                                           std::vector<double>         & mu_vp_square,
+                                           NRLib::Grid2D<double>       & Sigma_vp_square) const
 {
   std::vector<double>   mu_log_vp;
   NRLib::Grid2D<double> Sigma_log_vp;
@@ -734,10 +736,10 @@ RMSInversion::transformVpToVpSquare(const std::vector<double>   & mu_vp,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
-                                    const NRLib::Grid2D<double> & Sigma_vp_square,
-                                    std::vector<double>         & mu_vp,
-                                    NRLib::Grid2D<double>       & Sigma_vp) const
+TravelTimeInversion::transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
+                                           const NRLib::Grid2D<double> & Sigma_vp_square,
+                                           std::vector<double>         & mu_vp,
+                                           NRLib::Grid2D<double>       & Sigma_vp) const
 {
   std::vector<double>   mu_log_vp;
   NRLib::Grid2D<double> Sigma_log_vp;
@@ -750,10 +752,10 @@ RMSInversion::transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
-                                       const NRLib::Grid2D<double> & Sigma_vp_square,
-                                       std::vector<double>         & mu_log_vp,
-                                       NRLib::Grid2D<double>       & Sigma_log_vp) const
+TravelTimeInversion::transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
+                                              const NRLib::Grid2D<double> & Sigma_vp_square,
+                                              std::vector<double>         & mu_log_vp,
+                                              NRLib::Grid2D<double>       & Sigma_log_vp) const
 {
   int n_layers = static_cast<int>(mu_vp_square.size());
 
@@ -771,10 +773,10 @@ RMSInversion::transformVpSquareToLogVp(const std::vector<double>   & mu_vp_squar
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                              const NRLib::Grid2D<double> & variance_log_vp,
-                                              std::vector<double>         & mu_vp_trans,
-                                              NRLib::Grid2D<double>       & variance_vp_trans) const
+TravelTimeInversion::calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                     const NRLib::Grid2D<double> & variance_log_vp,
+                                                     std::vector<double>         & mu_vp_trans,
+                                                     NRLib::Grid2D<double>       & variance_vp_trans) const
 {
   int n = static_cast<int>(mu_log_vp.size());
 
@@ -793,10 +795,10 @@ RMSInversion::calculateCentralMomentLogNormal(const std::vector<double>   & mu_l
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateCentralMomentLogNormalInverse(const std::vector<double>   & mu_vp_trans,
-                                                     const NRLib::Grid2D<double> & variance_vp_trans,
-                                                     std::vector<double>         & mu_log_vp,
-                                                     NRLib::Grid2D<double>       & variance_log_vp) const
+TravelTimeInversion::calculateCentralMomentLogNormalInverse(const std::vector<double>   & mu_vp_trans,
+                                                            const NRLib::Grid2D<double> & variance_vp_trans,
+                                                            std::vector<double>         & mu_log_vp,
+                                                            NRLib::Grid2D<double>       & variance_log_vp) const
 {
   int n = static_cast<int>(mu_vp_trans.size());
 
@@ -814,10 +816,10 @@ RMSInversion::calculateCentralMomentLogNormalInverse(const std::vector<double>  
 
 //-----------------------------------------------------------------------------------------//
 void
-RMSInversion::calculateSecondCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                    const NRLib::Grid2D<double> & variance_log_vp,
-                                                    std::vector<double>         & mu_vp_square,
-                                                    NRLib::Grid2D<double>       & variance_vp_square) const
+TravelTimeInversion::calculateSecondCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                           const NRLib::Grid2D<double> & variance_log_vp,
+                                                           std::vector<double>         & mu_vp_square,
+                                                           NRLib::Grid2D<double>       & variance_vp_square) const
 {
   int n_layers = static_cast<int>(mu_log_vp.size());
 
@@ -840,10 +842,10 @@ RMSInversion::calculateSecondCentralMomentLogNormal(const std::vector<double>   
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                  const NRLib::Grid2D<double> & variance_log_vp,
-                                                  std::vector<double>         & mu_vp,
-                                                  NRLib::Grid2D<double>       & variance_vp) const
+TravelTimeInversion::calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                         const NRLib::Grid2D<double> & variance_log_vp,
+                                                         std::vector<double>         & mu_vp,
+                                                         NRLib::Grid2D<double>       & variance_vp) const
 {
   int n_layers = static_cast<int>(mu_log_vp.size());
 
@@ -865,11 +867,11 @@ RMSInversion::calculateHalfCentralMomentLogNormal(const std::vector<double>   & 
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::addCovariance(const int                   & n_rms_traces,
-                            const NRLib::Grid2D<double> & Sigma_post,
-                            std::vector<double>         & cov_stationary_above,
-                            std::vector<double>         & cov_stationary_model,
-                            std::vector<double>         & cov_stationary_below) const
+TravelTimeInversion::addCovariance(const int                   & n_rms_traces,
+                                   const NRLib::Grid2D<double> & Sigma_post,
+                                   std::vector<double>         & cov_stationary_above,
+                                   std::vector<double>         & cov_stationary_model,
+                                   std::vector<double>         & cov_stationary_below) const
 {
   NRLib::Grid2D<double> cov_above(n_pad_above_, n_pad_above_);
   for (int i = 0; i < n_pad_above_; i++) {
@@ -906,8 +908,8 @@ RMSInversion::addCovariance(const int                   & n_rms_traces,
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-RMSInversion::makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
-                                      const int                   & n_nopad) const
+TravelTimeInversion::makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
+                                             const int                   & n_nopad) const
 {
   int n = static_cast<int>(cov.GetNI());
 
@@ -943,11 +945,11 @@ RMSInversion::makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::setExpectation(const RMSTrace             * rms_trace,
-                             const std::vector<double>  & post_vp,
-                             std::vector<KrigingData2D> & mu_log_vp_post_above,
-                             std::vector<KrigingData2D> & mu_log_vp_post_model,
-                             std::vector<KrigingData2D> & mu_log_vp_post_below) const
+TravelTimeInversion::setExpectation(const RMSTrace             * rms_trace,
+                                    const std::vector<double>  & post_vp,
+                                    std::vector<KrigingData2D> & mu_log_vp_post_above,
+                                    std::vector<KrigingData2D> & mu_log_vp_post_model,
+                                    std::vector<KrigingData2D> & mu_log_vp_post_below) const
 {
 
   int i_ind = rms_trace->getIIndex();
@@ -967,11 +969,11 @@ RMSInversion::setExpectation(const RMSTrace             * rms_trace,
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::krigeExpectation3D(const Simbox                * simbox,
-                                 std::vector<KrigingData2D>  & kriging_post,
-                                 const int                   & nxp,
-                                 const int                   & nyp,
-                                 FFTGrid                    *& mu_post) const
+TravelTimeInversion::krigeExpectation3D(const Simbox                * simbox,
+                                        std::vector<KrigingData2D>  & kriging_post,
+                                        const int                   & nxp,
+                                        const int                   & nyp,
+                                        FFTGrid                    *& mu_post) const
 {
   const int    nx   = simbox->getnx();
   const int    ny   = simbox->getny();
@@ -1044,17 +1046,17 @@ RMSInversion::krigeExpectation3D(const Simbox                * simbox,
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
-                                             const std::vector<double> & post_circulant_cov,
-                                             const int                 & n_rms_traces,
-                                             const Surface             * priorCorrXY,
-                                             const float               & corrGradI,
-                                             const float               & corrGradJ,
-                                             FFTGrid                   * pri_mu,
-                                             FFTGrid                   * post_mu,
-                                             FFTGrid                  *& stationary_observations,
-                                             FFTGrid                  *& stationary_covariance,
-                                             std::vector<int>          & observation_filter) const
+TravelTimeInversion::generateStationaryDistribution(const std::vector<double> & pri_circulant_cov,
+                                                    const std::vector<double> & post_circulant_cov,
+                                                    const int                 & n_rms_traces,
+                                                    const Surface             * priorCorrXY,
+                                                    const float               & corrGradI,
+                                                    const float               & corrGradJ,
+                                                    FFTGrid                   * pri_mu,
+                                                    FFTGrid                   * post_mu,
+                                                    FFTGrid                  *& stationary_observations,
+                                                    FFTGrid                  *& stationary_covariance,
+                                                    std::vector<int>          & observation_filter) const
 {
   int nx   = pri_mu->getNx();
   int ny   = pri_mu->getNy();
@@ -1124,11 +1126,11 @@ RMSInversion::generateStationaryDistribution(const std::vector<double> & pri_cir
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::calculateStationaryObservations(const fftw_complex  * pri_cov_c,
-                                              const fftw_complex  * var_e_c,
-                                              FFTGrid             * pri_mu,
-                                              FFTGrid             * post_mu,
-                                              FFTGrid            *& stat_d) const
+TravelTimeInversion::calculateStationaryObservations(const fftw_complex  * pri_cov_c,
+                                                     const fftw_complex  * var_e_c,
+                                                     FFTGrid             * pri_mu,
+                                                     FFTGrid             * post_mu,
+                                                     FFTGrid            *& stat_d) const
 {
   // Calculate d = mu_pri + (var_pri+var_e)/conj_var_pri * (mu_post-mu_pri)
 
@@ -1197,10 +1199,10 @@ RMSInversion::calculateStationaryObservations(const fftw_complex  * pri_cov_c,
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
-                                     const fftw_complex * post_cov_c,
-                                     const int          & nzp,
-                                     fftw_complex       * var_e_c) const
+TravelTimeInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
+                                            const fftw_complex * post_cov_c,
+                                            const int          & nzp,
+                                            fftw_complex       * var_e_c) const
 {
   // Calculate var_e = var_pri *(conj_var_pri - var_pri + var_post) / (var_pri-var_post)
 
@@ -1229,10 +1231,10 @@ RMSInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
 //-------------------------------------------------------------------------------
 
 void
-RMSInversion::calculateFilter(const fftw_complex * pri_cov_c,
-                              const fftw_complex * post_cov_c,
-                              const int          & nzp,
-                              std::vector<int>   & filter) const
+TravelTimeInversion::calculateFilter(const fftw_complex * pri_cov_c,
+                                     const fftw_complex * post_cov_c,
+                                     const int          & nzp,
+                                     std::vector<int>   & filter) const
 {
   // Fudge factor 1.04:
   // Rules out cases where the error standard deviation is
@@ -1261,10 +1263,10 @@ RMSInversion::calculateFilter(const fftw_complex * pri_cov_c,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::multiplyComplex(const fftw_complex * z1,
-                              const fftw_complex * z2,
-                              const int          & n,
-                              fftw_complex       * z) const
+TravelTimeInversion::multiplyComplex(const fftw_complex * z1,
+                                     const fftw_complex * z2,
+                                     const int          & n,
+                                     fftw_complex       * z) const
 {
   for (int i = 0; i < n; i++) {
     z[i].re = z1[i].re * z2[i].re - z1[i].im * z2[i].im;
@@ -1275,10 +1277,10 @@ RMSInversion::multiplyComplex(const fftw_complex * z1,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::divideComplex(const fftw_complex * z1,
-                            const fftw_complex * z2,
-                            const int          & n,
-                            fftw_complex       * z) const
+TravelTimeInversion::divideComplex(const fftw_complex * z1,
+                                   const fftw_complex * z2,
+                                   const int          & n,
+                                   fftw_complex       * z) const
 {
   for (int i = 0; i < n; i++) {
     z[i].re = (z1[i].re * z2[i].re + z1[i].im * z2[i].im) / (std::pow(z2[i].re, 2) + std::pow(z2[i].im, 2));
@@ -1289,10 +1291,10 @@ RMSInversion::divideComplex(const fftw_complex * z1,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::addComplex(const fftw_complex * z1,
-                         const fftw_complex * z2,
-                         const int          & n,
-                         fftw_complex       * z) const
+TravelTimeInversion::addComplex(const fftw_complex * z1,
+                                const fftw_complex * z2,
+                                const int          & n,
+                                fftw_complex       * z) const
 {
   for (int i = 0; i < n; i++) {
     z[i].re = z1[i].re + z2[i].re;
@@ -1303,10 +1305,10 @@ RMSInversion::addComplex(const fftw_complex * z1,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::subtractComplex(const fftw_complex * z1,
-                              const fftw_complex * z2,
-                              const int          & n,
-                              fftw_complex       * z) const
+TravelTimeInversion::subtractComplex(const fftw_complex * z1,
+                                     const fftw_complex * z2,
+                                     const int          & n,
+                                     fftw_complex       * z) const
 {
   for (int i = 0; i < n; i++) {
     z[i].re = z1[i].re - z2[i].re;
@@ -1317,9 +1319,9 @@ RMSInversion::subtractComplex(const fftw_complex * z1,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::absoulteComplex(const fftw_complex  * z,
-                              const int           & n,
-                              std::vector<double> & abs_z) const
+TravelTimeInversion::absoulteComplex(const fftw_complex  * z,
+                                     const int           & n,
+                                     std::vector<double> & abs_z) const
 {
   abs_z.resize(n);
 
@@ -1330,9 +1332,9 @@ RMSInversion::absoulteComplex(const fftw_complex  * z,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::complexConjugate(const fftw_complex * z,
-                               const int          & n,
-                               fftw_complex       * conj_z) const
+TravelTimeInversion::complexConjugate(const fftw_complex * z,
+                                      const int          & n,
+                                      fftw_complex       * conj_z) const
 {
 
   for (int i = 0; i < n; i++) {
@@ -1344,10 +1346,10 @@ RMSInversion::complexConjugate(const fftw_complex * z,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
-                                          SeismicParametersHolder & seismic_parameters,
-                                          FFTGrid                 * stationary_observations,
-                                          FFTGrid                 * stationary_observation_covariance) const
+TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
+                                                 SeismicParametersHolder & seismic_parameters,
+                                                 FFTGrid                 * stationary_observations,
+                                                 FFTGrid                 * stationary_observation_covariance) const
 {
   seismic_parameters.FFTAllGrids();
 
@@ -1510,13 +1512,13 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateLogVpExpectation(const std::vector<int>  & observation_filter,
-                                        const NRLib::Matrix     & prior_var_vp,
-                                        FFTGrid                 * mu_vp,
-                                        FFTGrid                 * cov_vp,
-                                        FFTGrid                 * stationary_observations,
-                                        FFTGrid                 * stationary_observation_covariance,
-                                        FFTGrid                *& post_mu_vp) const
+TravelTimeInversion::calculateLogVpExpectation(const std::vector<int>  & observation_filter,
+                                               const NRLib::Matrix     & prior_var_vp,
+                                               FFTGrid                 * mu_vp,
+                                               FFTGrid                 * cov_vp,
+                                               FFTGrid                 * stationary_observations,
+                                               FFTGrid                 * stationary_observation_covariance,
+                                               FFTGrid                *& post_mu_vp) const
 {
   if (mu_vp->getIsTransformed() == false)
     mu_vp->fftInPlace();
@@ -1597,10 +1599,10 @@ RMSInversion::calculateLogVpExpectation(const std::vector<int>  & observation_fi
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
-                                    FFTGrid             * mu_vp,
-                                    FFTGrid             * post_mu_vp,
-                                    NRLib::Grid<double> & distance) const
+TravelTimeInversion::calculateDistanceGrid(const Simbox        * simbox,
+                                           FFTGrid             * mu_vp,
+                                           FFTGrid             * post_mu_vp,
+                                           NRLib::Grid<double> & distance) const
 {
 
   if (mu_vp->getIsTransformed() == true)
@@ -1644,11 +1646,11 @@ RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
-                                const double               & lz_limit,
-                                const Simbox               * simbox,
-                                Simbox                    *& new_simbox,
-                                std::string                & errTxt) const
+TravelTimeInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
+                                       const double               & lz_limit,
+                                       const Simbox               * simbox,
+                                       Simbox                    *& new_simbox,
+                                       std::string                & errTxt) const
 {
   Surface base_surface;
   calculateBaseSurface(distance, simbox, base_surface);
@@ -1666,10 +1668,10 @@ RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::generateResampleGrid(const NRLib::Grid<double> & distance,
-                                   const Simbox              * old_simbox,
-                                   const Simbox              * new_simbox,
-                                   NRLib::Grid<double>       & resample_grid) const
+TravelTimeInversion::generateResampleGrid(const NRLib::Grid<double> & distance,
+                                          const Simbox              * old_simbox,
+                                          const Simbox              * new_simbox,
+                                          NRLib::Grid<double>       & resample_grid) const
 {
   int nx  = new_simbox->getnx();
   int ny  = new_simbox->getny();
@@ -1713,9 +1715,9 @@ RMSInversion::generateResampleGrid(const NRLib::Grid<double> & distance,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
-                                        const Simbox              * old_simbox,
-                                        SeismicParametersHolder   & seismic_parameters) const
+TravelTimeInversion::resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
+                                               const Simbox              * old_simbox,
+                                               SeismicParametersHolder   & seismic_parameters) const
 {
   std::string text = "\nResampling background:";
   LogKit::LogFormatted(LogKit::Low, text);
@@ -1791,9 +1793,9 @@ RMSInversion::resampleSeismicParameters(const NRLib::Grid<double> & resample_gri
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::calculateBaseSurface(const NRLib::Grid<double> & distance,
-                                   const Simbox              * simbox,
-                                   Surface                   & base_surface) const
+TravelTimeInversion::calculateBaseSurface(const NRLib::Grid<double> & distance,
+                                          const Simbox              * simbox,
+                                          Surface                   & base_surface) const
 {
 
   Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
