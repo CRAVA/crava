@@ -43,43 +43,17 @@ public:
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
   MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
 
-  //void ReadGridFromFile(const std::string       & file_name,
-  //                      const std::string       & par_name,
-  //                      const float               offset,
-  //                      FFTGrid                *& grid,
-  //                      const SegyGeometry     *& geometry,
-  //                      const TraceHeaderFormat * format,
-  //                      int                       grid_type,
-  //                      const Simbox            * time_simbox,
-  //                      //const Simbox            * time_cut_simbox,
-  //                      const ModelSettings     * model_settings,
-  //                      std::string             & err_text,
-  //                      bool                      nopadding = false) const;
+  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()               const { return rock_distributions_ ;}
+  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariablesInterval(int i) const { return reservoir_variables_[i] ;}
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        std::vector<NRLib::Grid<double> > & grid,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const std::vector<Simbox>         & interval_simboxes,
-                        const Simbox                      & estimation_simbox,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  TimeLine                               * GetTimeLine()                        { return time_line_       ;}
+  const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
+  const std::vector<int>                 & GetFaciesLabels()              const { return facies_labels_   ;}
+  const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
+  const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        NRLib::Grid<double>               & interval_grids,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const Simbox                      & simboxes,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()       const { return mapped_blocked_logs_ ;}
+
 
 private:
 
@@ -379,6 +353,31 @@ private:
   //                                int nzp,
   //                                bool fileGrid);
 
+  void ReadGridFromFile(const std::string                 & file_name,
+                        const std::string                 & par_name,
+                        const float                         offset,
+                        std::vector<NRLib::Grid<double> > & grid,
+                        const SegyGeometry               *& geometry,
+                        const TraceHeaderFormat           * format,
+                        int                                 grid_type,
+                        const std::vector<Simbox>         & interval_simboxes,
+                        const Simbox                      & estimation_simbox,
+                        const ModelSettings               * model_settings,
+                        std::string                       & err_text,
+                        bool                                nopadding = true);
+
+  void ReadGridFromFile(const std::string                 & file_name,
+                        const std::string                 & par_name,
+                        const float                         offset,
+                        NRLib::Grid<double>               & interval_grids,
+                        const SegyGeometry               *& geometry,
+                        const TraceHeaderFormat           * format,
+                        int                                 grid_type,
+                        const Simbox                      & simboxes,
+                        const ModelSettings               * model_settings,
+                        std::string                       & err_text,
+                        bool                                nopadding = true);
+
   void ReadCravaFile(NRLib::Grid<double> & grid,
                      const std::string   & file_name,
                      std::string         & err_text);
@@ -653,6 +652,7 @@ private:
 
   std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
+  //H: Remove intervals for reservoir_variables_ too?
 
   // prior facies
   std::vector<std::vector<float> >                prior_facies_;                  ///< Prior facies probabilities
@@ -661,6 +661,8 @@ private:
 
   // Timeline
   TimeLine                                    * time_line_;
+
+  bool                                          forward_modeling_;
 
   std::map<int, float **>                       reflection_matrix_;
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
@@ -677,6 +679,7 @@ private:
   std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
   std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells. (Intervals?)
+  std::vector<int>                              facies_labels_;
 
   // Prior correlation
   std::vector<Surface *>                          prior_corr_XY_;

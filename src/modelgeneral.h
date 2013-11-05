@@ -23,6 +23,9 @@
 #include "rplib/distributionsfluid.h"
 #include "rplib/distributionssolid.h"
 
+#include "nrlib/grid/grid.hpp"
+#include "src/blockedlogscommon.h"
+
 struct irapgrid;
 class Corr;
 class Wavelet;
@@ -106,7 +109,7 @@ public:
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_          ;}
-  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_ ;}
+  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubesFFT_ ;}
   const std::vector<std::string> & getFaciesNames(void)           const { return faciesNames_          ;}
   std::vector<int>                 getFaciesLabel()               const { return faciesLabels_         ;}
 
@@ -396,11 +399,15 @@ private:
   TimeLine                * timeLine_;
   std::vector<WellData *>   wells_;                      ///< Well data
 
+  //Replaces WellData wells_
+  std::map<std::string, BlockedLogsCommon *> blocked_logs_;
+
   bool                      forwardModeling_;
   int                       numberOfWells_;
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
-  std::vector<FFTGrid *>    priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
+  std::vector<FFTGrid *>    priorFaciesProbCubesFFT_;       ///< Cubes for prior facies probabilities
+  std::vector<NRLib::Grid<double> > priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
 
   std::vector<int>          faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
   std::vector<std::string>  faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies

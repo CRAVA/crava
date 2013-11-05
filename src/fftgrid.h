@@ -25,30 +25,27 @@ public:
 
   FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
   FFTGrid(FFTGrid * fftGrid, bool expTrans = false);
+  FFTGrid(const NRLib::Grid<double> & grid, int nxp, int nyp, int nzp);
   FFTGrid() {} //Dummy constructor needed for FFTFileGrid
   virtual ~FFTGrid();
 
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(const SegY              * segy,
-                                      const Simbox            * simbox,
-                                      const std::string       & parName,
-                                      bool                      nopadding = false ); // No mode
-  void                 fillInSeismicDataFromSegY(const SegY   * segy,
-                                                 const Simbox * timeSimbox,
-                                                 float         smooth_length,
-                                                 int          & missingTracesSimbox,
-                                                 int          & missingTracesPadding,
-                                                 int          & deadTracesSimbox,
-                                                 std::string  & errTxt);
-  void                 fillInSeismicDataFromStorm(const StormContGrid * grid,
-                                                  const Simbox        * timeSimbox,
-                                                  float                 smooth_length,
-                                                  int                 & missingTracesSimbox,
-                                                  int                 & missingTracesPadding,
-                                                  int                 & deadTracesSimbox,
-                                                  std::string         & errTxt);
+  //int                  fillInFromSegY(const SegY              * segy,
+  //                                    const Simbox            * simbox,
+  //                                    const std::string       & parName,
+  //                                    bool                      nopadding = false ); // No mode
+  //void                 fillInSeismicDataFromSegY(const SegY   * segy,
+  //                                               const Simbox * timeSimbox,
+  //                                               float         smooth_length,
+  //                                               int          & missingTracesSimbox,
+  //                                               int          & missingTracesPadding,
+  //                                               int          & deadTracesSimbox,
+  //                                               std::string  & errTxt);
+
+  //void                 fillFromGridFillPadding(const NRLib::Grid<double> & grid);
+
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
                                               float                z0_data,
                                               float                zn_data,
@@ -91,11 +88,11 @@ public:
                                              int                  n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  int                  fillInFromStorm(const Simbox      * actSimBox,
-                                       StormContGrid     * grid,
-                                       const std::string & parName,
-                                       bool                scale = false,
-                                       bool                nopadding = false);    // No mode
+  //int                  fillInFromStorm(const Simbox      * actSimBox,
+  //                                     StormContGrid     * grid,
+  //                                     const std::string & parName,
+  //                                     bool                scale = false,
+  //                                     bool                nopadding = false);    // No mode
   void                 fillInConstant(float value, bool add = true);              // No mode
 
   void                 fillInErrCorr(const Surface * priorCorrXY,

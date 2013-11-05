@@ -13,7 +13,7 @@
 #include "src/waveletfilter.h"
 #include "src/wavelet1D.h"
 
-class BlockedLogs;
+//class BlockedLogs;
 class Wavelet1D;
 
 class Wavelet3D : public Wavelet {

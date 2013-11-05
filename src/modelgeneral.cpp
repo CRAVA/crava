@@ -265,26 +265,25 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
   gradX_                  = 0.0;
   gradY_                  = 0.0;
 
-  timeDepthMapping_       = NULL;
-  timeCutMapping_         = NULL;
-  velocityFromInversion_  = false;
+  //timeDepthMapping_       = NULL;
+  //timeCutMapping_         = NULL;
+  //velocityFromInversion_  = false;
 
   //bool failedSimbox       = false;
-  bool failedDepthConv    = false;
-  bool failedRockPhysics  = false;
+  //bool failedDepthConv    = false;
+  //bool failedRockPhysics  = false;
 
   bool failedLoadingModel = false;
 
-  bool failedWells        = false;
+  //bool failedWells        = false;
 
   bool failedBackground   = false;
 
-  Simbox * timeCutSimbox  = NULL;
+  //Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
 
-  forwardModeling_        = modelSettings->getForwardModeling();
+  //forwardModeling_        = modelSettings->getForwardModeling(); Move to ModelAVOStatic
   numberOfWells_          = modelSettings->getNumberOfWells();
-
 
   {
     int debugLevel = modelSettings->getLogLevel();
@@ -335,8 +334,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
     MultiIntervalGrid * multiple_interval_grid = commonData->GetMultipleIntervalGrid();
     timeSimbox_ = multiple_interval_grid->GetIntervalSimboxN(i_interval);
 
-    //if(!failedSimbox)
-    //{
     //
     // FORWARD MODELLING
     //
@@ -348,67 +345,53 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       //
       // INVERSION/ESTIMATION
       //
-      if(timeCutSimbox!=NULL)  {
-        timeCutMapping_ = new GridMapping();
-        timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
-      }
+      //if(timeCutSimbox!=NULL)  {
+      //  timeCutMapping_ = new GridMapping();
+      //  timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
+      //}
 
       //checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
 
-      bool estimationMode = modelSettings->getEstimationMode();
 
-      if(estimationMode == false && modelSettings->getDoDepthConversion() == true)
-      {
-        processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
-                                inputFiles, errText, failedDepthConv);
-      }
+      //Facies-names
+      faciesNames_ = commonData->GetFaciesNames();
+      faciesLabels_ = commonData->GetFaciesLabels();
 
-      processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
+      //Priorfacies
+      priorFacies_ = commonData->GetPriorFaciesInterval(i_interval);
+      priorFaciesProbCubes_ = multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval);
 
-      if(failedDepthConv == false)
-        processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
+      //bool estimationMode = modelSettings->getEstimationMode();
+
+      //if(estimationMode == false && modelSettings->getDoDepthConversion() == true)
+      //{
+      //  processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
+      //                          inputFiles, errText, failedDepthConv);
+      //}
+
+      //processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
+      //Replace wells with blocked_logs
+      blocked_logs_ = commonData->GetBlockedLogs();
+
+      //if(failedDepthConv == false) {
+        trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
+
+        rock_distributions_  = commonData->GetDistributionsRock();
+        reservoir_variables_ = commonData->GetReservoirVariablesInterval(i_interval); //H Not per interval?
+        //processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
+      //}
 
       //Set up timeline.
-      timeLine_ = new TimeLine();
-      //Activate below when gravity data are ready.
-      //Do gravity first.
-      //for(int i=0;i<modelSettings->getNumberOfGravityData();i++) {
-      //  int time = computeTime(modelSettings->getGravityYear[i],
-      //                         modelSettings->getGravityMonth[i],
-      //                         modelSettings->getGravityDay[i]);
-      //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
+      timeLine_ = commonData->GetTimeLine();
 
-      bool firstGravimetricEvent = true;
-      for(int i=0;i<modelSettings->getNumberOfVintages();i++) {
-        //Vintages may have both travel time and AVO
-        int time = computeTime(modelSettings->getVintageYear(i),
-                                modelSettings->getVintageMonth(i),
-                                modelSettings->getVintageDay(i));
-          // Do gravity first
-          if(modelSettings->getGravityTimeLapse(i)){
-            if(firstGravimetricEvent){
-              // Do not save first gravity event in timeline
-              firstGravimetricEvent = false;
-            }
-            else{
-              timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
-            }
-        }
-        //Activate below when travel time is ready.
-        //Travel time ebefore AVO for same vintage.
-        //if(travel time for this vintage)
-        //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
-        if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
-          timeLine_->AddEvent(time, TimeLine::AVO, i);
-      }
+      //if(modelSettings->getDo4DInversion() && failedRockPhysics == false) {
+      if(modelSettings->getDo4DInversion()) {
 
-      if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
-
-        setFaciesNamesFromRockPhysics();
+        //setFaciesNamesFromRockPhysics();
 
         NRLib::Vector initialMean(6);
         NRLib::Matrix initialCov(6,6);
-        process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
+        process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground, initialMean, initialCov);
 
         timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
         timeEvolution_.SetInitialMean(initialMean);
@@ -416,7 +399,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       }
     }
 
-    failedLoadingModel = failedDepthConv || failedWells || failedBackground || failedRockPhysics;
+    //failedLoadingModel = failedDepthConv || failedWells || failedBackground || failedRockPhysics;
+    failedLoadingModel = failedBackground;
 
     if (failedLoadingModel) {
       LogKit::WriteHeader("Error(s) while loading data");
@@ -427,13 +411,13 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
 
   failed_ = failedLoadingModel;
   //failed_details_.push_back(failedSimbox);
-  failed_details_.push_back(failedDepthConv);
-  failed_details_.push_back(failedWells);
+  //failed_details_.push_back(failedDepthConv);
+  //failed_details_.push_back(failedWells);
   failed_details_.push_back(failedBackground);
-  failed_details_.push_back(failedRockPhysics);
+  //failed_details_.push_back(failedRockPhysics);
 
-  if(timeCutSimbox != NULL)
-    delete timeCutSimbox;
+  //if(timeCutSimbox != NULL)
+  //  delete timeCutSimbox;
 }
 
 
@@ -584,21 +568,21 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            modelSettings->getFileGrid());
     target->setType(gridType);
 
-    if (gridType == FFTGrid::DATA) {
-      target->fillInSeismicDataFromSegY(segy,
-                                        timeSimbox,
-                                        modelSettings->getSmoothLength(),
-                                        missingTracesSimbox,
-                                        missingTracesPadding,
-                                        deadTracesSimbox,
-                                        errText);
-    }
-    else {
-      missingTracesSimbox = target->fillInFromSegY(segy,
-                                                   timeSimbox,
-                                                   parName,
-                                                   nopadding);
-    }
+    //if (gridType == FFTGrid::DATA) {
+    //  target->fillInSeismicDataFromSegY(segy,
+    //                                    timeSimbox,
+    //                                    modelSettings->getSmoothLength(),
+    //                                    missingTracesSimbox,
+    //                                    missingTracesPadding,
+    //                                    deadTracesSimbox,
+    //                                    errText);
+    //}
+    //else {
+    //  missingTracesSimbox = target->fillInFromSegY(segy,
+    //                                               timeSimbox,
+    //                                               parName,
+    //                                               nopadding);
+    //}
 
     if (missingTracesSimbox > 0) {
       if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
@@ -735,12 +719,12 @@ ModelGeneral::readStormFile(const std::string   & fName,
                            modelSettings->getFileGrid());
     target->setType(gridType);
 
-    try {
-      outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
-    }
-    catch (NRLib::Exception & e) {
-      errText += std::string(e.what());
-    }
+    //try {
+    //  outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+    //}
+    //catch (NRLib::Exception & e) {
+    //  errText += std::string(e.what());
+    //}
   }
 
   if (stormgrid != NULL)
@@ -773,15 +757,15 @@ ModelGeneral::setPaddingSize(int nx, double px)
 }
 
 void
-ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
-                        Simbox          *& timeCutSimbox,
-                        Simbox          *& timeBGSimbox,
-                        Simbox          *& timeSimboxConstThick,
-                        Surface         *& correlationDirection,
-                        ModelSettings   *& modelSettings,
-                        const InputFiles * inputFiles,
-                        std::string      & errText,
-                        bool             & failed)
+ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
+                               Simbox          *& timeCutSimbox,
+                               Simbox          *& timeBGSimbox,
+                               Simbox          *& timeSimboxConstThick,
+                               Surface         *& correlationDirection,
+                               ModelSettings   *& modelSettings,
+                               const InputFiles * inputFiles,
+                               std::string      & errText,
+                               bool             & failed)
 {
   std::string gridFile("");
 
@@ -4625,7 +4609,7 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
     {
       readPriorFaciesProbCubes(inputFiles,
                                modelSettings,
-                               priorFaciesProbCubes_,
+                               priorFaciesProbCubesFFT_,
                                timeSimbox,
                                timeCutSimbox,
                                errTxt,

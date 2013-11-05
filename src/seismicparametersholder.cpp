@@ -67,42 +67,39 @@ SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muAlpha,
   muRho_     = muRho;
 }
 
-//--------------------------------------------------------------------
-
 void
-SeismicParametersHolder::setBackgroundParametersIntervals(const std::vector<std::vector<NRLib::Grid<double> > > & mu_parameters)
+SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters,
+                                                         int                                       nx_pad,
+                                                         int                                       ny_pad,
+                                                         int                                       nz_pad)
 {
-  for(size_t i = 0; i < mu_parameters.size(); i++) {
-    mu_vp_intervals_.push_back(mu_parameters[i][0]);
-    mu_vs_intervals_.push_back(mu_parameters[i][1]);
-    mu_rho_intervals_.push_back(mu_parameters[i][2]);
-  }
+  muAlpha_ = new FFTGrid(mu_parameters[0], nx_pad, ny_pad, nz_pad);
+  muBeta_  = new FFTGrid(mu_parameters[1], nx_pad, ny_pad, nz_pad);
+  muRho_   = new FFTGrid(mu_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
 void
-SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters)
+SeismicParametersHolder::setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters,
+                                          int                                       nx_pad,
+                                          int                                       ny_pad,
+                                          int                                       nz_pad)
 {
-  mu_vp_ = mu_parameters[0];
-  mu_vs_ = mu_parameters[1];
-  mu_rho_ = mu_parameters[2];
-}
-
-void
-SeismicParametersHolder::setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters)
-{
-  cov_vp_ = cov_parameters[0];
-  cov_vs_ = cov_parameters[1];
-  cov_rho_ = cov_parameters[2];
+  covAlpha_ = new FFTGrid(cov_parameters[0], nx_pad, ny_pad, nz_pad);
+  covBeta_  = new FFTGrid(cov_parameters[1], nx_pad, ny_pad, nz_pad);
+  covRho_   = new FFTGrid(cov_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
 void
 SeismicParametersHolder::setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
                                             const NRLib::Grid<double> & cr_cov_vp_rho,
-                                            const NRLib::Grid<double> & cr_cov_vs_rho)
+                                            const NRLib::Grid<double> & cr_cov_vs_rho,
+                                            int                         nx_pad,
+                                            int                         ny_pad,
+                                            int                         nz_pad)
 {
-  cr_cov_vp_vs_ = cr_cov_vp_vs;
-  cr_cov_vp_rho_ = cr_cov_vp_rho;
-  cr_cov_vs_rho_ = cr_cov_vs_rho;
+  crCovAlphaBeta_ = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
+  crCovAlphaRho_  = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
+  crCovBetaRho_   = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
 }
 
 

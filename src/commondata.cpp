@@ -56,6 +56,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
   LogKit::WriteHeader("Common Data");
   std::string err_text = "";
 
+  forward_modeling_ = model_settings->getForwardModeling();
+
   // 1. set up outer simbox
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 
@@ -177,7 +179,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                 (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
                                 (model_settings->getOutputGridFormat() & IO::SEGY) > 0);
 
-  if(model_settings->getForwardModeling())
+  if(forward_modeling_)
     grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
     if (model_settings->getEstimationMode() == false || estimation_mode_need_ILXL)
@@ -1078,6 +1080,7 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
 
   for(int i=0 ; i < n_names ; i++) {
     if(names[i] != "") {
+      facies_labels_.push_back(globalmin + i);
       facies_names_.push_back(names[i]);
     }
   }
@@ -1531,7 +1534,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
       float angle = float(angles[i]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-      //if(model_settings->getForwardModeling()==false)
+      //if(forward_modeling_==false)
       // seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
         error += Process1DWavelet(model_settings,
@@ -1571,7 +1574,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
       if(local_noise_scale[j] != NULL)
         local_noise_set = true;
-      //if(modelSettings->getForwardModeling()==false) // else, no seismic data
+      //if(forward_modeling_==false) // else, no seismic data
       // seisCube[i]->endAccess();
 
     } //angle
@@ -1761,7 +1764,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
   if (error == 0) {
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
 
-    if (model_settings->getForwardModeling() == false && model_settings->getNumberOfWells() > 0) {
+    if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
       float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
                                                                    seismic_data,
                                                                    mapped_blocked_logs,
@@ -1806,7 +1809,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       }
       const float SNLow  = 1.0;
       const float SNHigh = 10.0;
-      if ((sn_ratio <=SNLow  || sn_ratio > SNHigh) && model_settings->getForwardModeling()==false) {
+      if ((sn_ratio <=SNLow  || sn_ratio > SNHigh) && forward_modeling_==false) {
         err_text += "Illegal signal-to-noise ratio of "+NRLib::ToString(sn_ratio)+" for cube "+NRLib::ToString(j_angle+1)+".\n";
         err_text += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
         error++;
@@ -1918,7 +1921,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                      model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle) ||
                      model_settings->getEstimateSNRatio(i_timelapse,j_angle));
 
-    if (localEst && model_settings->getForwardModeling() == false) {
+    if (localEst && forward_modeling_ == false) {
       float sn_ratio_tmp = wavelet->calculateSNRatio(&estimation_simbox_,
                                                      seismic_data,
                                                      mapped_blocked_logs,
@@ -1960,7 +1963,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
 
       const float SNLow = 1.0;
       const float SNHigh = 10.0;
-      if ((sn_ratio <=SNLow || sn_ratio > SNHigh) && model_settings->getForwardModeling()==false) {
+      if ((sn_ratio <=SNLow || sn_ratio > SNHigh) && forward_modeling_==false) {
         err_text += "Illegal signal-to-noise ratio of "+NRLib::ToString(sn_ratio)+" for cube "+NRLib::ToString(j_angle+1)+".\n";
         err_text += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
         error++;
@@ -2519,7 +2522,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
 
   const std::string & top_surface_file_name = surf_file[0];
 
-  //bool   generate_seismic    = model_settings->getForwardModeling();
+  //bool   generate_seismic    = forward_modeling_
   //bool   estimation_mode     = model_settings->getEstimationMode();
   //bool   generate_background = model_settings->getGenerateBackground();
   bool   parallel_surfaces   = model_settings->getParallelTimeSurfaces();
@@ -3957,7 +3960,7 @@ CommonData::SetFaciesNamesFromRockPhysics() //H
   //for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i_interval].begin(); it != rock_distributions_[i_interval].end(); it++) {
   for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     facies_names_.push_back(it->first);
-    //faciesLabels_.push_back(i);
+    facies_labels_.push_back(i);
     i++;
   }
 }
@@ -4377,8 +4380,8 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
   // Find proper length of time samples to get N*log(N) performance in FFT.
   //
   size_t n_samples = 0;
-  float  dz_data   = 0.0;
-  float  dz_min    = 0.0;
+  float  dz_data   = 0.0f;
+  float  dz_min    = 0.0f;
   if(is_segy) {
     n_samples = segy->FindNumberOfSamplesInLongestTrace();
     dz_data   = segy->GetDz();
@@ -4387,8 +4390,8 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
   else
     n_samples = storm_grid->GetNK();
 
-  int    nt        = FindClosestFactorableNumber(static_cast<int>(n_samples));
-  int    mt        = 4*nt;           // Use four times the sampling density for the fine-meshed data
+  int nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
+  int mt = 4*nt;           // Use four times the sampling density for the fine-meshed data
 
   //
   // Create FFT plans
@@ -4412,8 +4415,8 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
 
       double x, y, z0;
       simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
-      x*= scalehor;
-      y*= scalehor;
+      x*=  scalehor;
+      y*=  scalehor;
       z0*= scalevert;
 
       double dz = simbox.getdz(refi, refj)*scalevert;
@@ -4437,11 +4440,11 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
         size_t grid_j = 0;
         double grid_x = 0.0;
         double grid_y = 0.0;
-        double grid_z = 0.0;;
-        float value = 0.0;
+        double grid_z = 0.0;
+        float value =   0.0f;
 
-        float z_min = 0.0;
-        float z_max = 0.0;
+        float z_min = 0.0f;
+        float z_max = 0.0f;
 
         //Get data_trace for this i and j.
         if(is_segy) {
@@ -4466,8 +4469,8 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
         }
 
         size_t n_trace = data_trace.size();
-        float trend_first = 0.0;
-        float trend_last = 0.0;
+        float trend_first = 0.0f;
+        float trend_last  = 0.0f;
 
         if(grid_type != DATA) {
           //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
@@ -4573,16 +4576,13 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
           fftw_free(rAmpFine);
 
           SetTrace(grid_trace, grid, i, j);
-
         }
         else {
           SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
           dead_traces_simbox++;
         }
-
       }
       else {
-
         SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
         if (i < ni && j < nj )
           missing_traces_simbox++;
@@ -4599,7 +4599,6 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
-  //endAccess();
 
   fftwnd_destroy_plan(fftplan1);
   fftwnd_destroy_plan(fftplan2);
@@ -4995,7 +4994,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
   std::string err_text = "";
 
-  if (model_settings->getForwardModeling())
+  if (forward_modeling_)
     LogKit::WriteHeader("Earth Model");
   else
     LogKit::WriteHeader("Prior Expectations / Background Model");
@@ -5189,16 +5188,16 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           //std::vector<NRLib::Grid<double> > back_model_intervals;
 
           ReadGridFromFile(back_file,
-                            par_name[i],
-                            offset,
-                            parameters[i],
-                            dummy1,
-                            dummy2,
-                            PARAMETER,
-                            multiple_interval_grid_->GetIntervalSimboxes(),
-                            &estimation_simbox_,
-                            model_settings,
-                            err_text_tmp);
+                           par_name[i],
+                           offset,
+                           parameters[i],
+                           dummy1,
+                           dummy2,
+                           PARAMETER,
+                           multiple_interval_grid_->GetIntervalSimboxes(),
+                           &estimation_simbox_,
+                           model_settings,
+                           err_text_tmp);
 
           if(err_text_tmp != "") {
             err_text += err_text_tmp;
