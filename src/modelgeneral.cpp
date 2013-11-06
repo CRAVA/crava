@@ -273,11 +273,11 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
   //bool failedDepthConv    = false;
   //bool failedRockPhysics  = false;
 
-  bool failedLoadingModel = false;
+  //bool failedLoadingModel = false;
 
   //bool failedWells        = false;
 
-  bool failedBackground   = false;
+  //bool failedBackground   = false;
 
   //Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
@@ -359,7 +359,11 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
 
       //Priorfacies
       priorFacies_ = commonData->GetPriorFaciesInterval(i_interval);
-      priorFaciesProbCubes_ = multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval);
+
+      priorFaciesProbCubes_.resize(3);
+      priorFaciesProbCubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
+      priorFaciesProbCubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
+      priorFaciesProbCubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
 
       //bool estimationMode = modelSettings->getEstimationMode();
 
@@ -391,7 +395,10 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
 
         NRLib::Vector initialMean(6);
         NRLib::Matrix initialCov(6,6);
-        process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground, initialMean, initialCov);
+
+        setupState4D(modelSettings, seismicParameters, initialMean, initialCov);  //H Copy function content here instead?
+
+        //process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground, initialMean, initialCov);
 
         timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
         timeEvolution_.SetInitialMean(initialMean);
@@ -400,20 +407,20 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
     }
 
     //failedLoadingModel = failedDepthConv || failedWells || failedBackground || failedRockPhysics;
-    failedLoadingModel = failedBackground;
+    //failedLoadingModel = failedBackground;
 
-    if (failedLoadingModel) {
-      LogKit::WriteHeader("Error(s) while loading data");
-      LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-      LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-    }
+    //if (failedLoadingModel) {
+    //  LogKit::WriteHeader("Error(s) while loading data");
+    //  LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+    //  LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+    //}
   }
 
-  failed_ = failedLoadingModel;
+  //failed_ = failedLoadingModel;
   //failed_details_.push_back(failedSimbox);
   //failed_details_.push_back(failedDepthConv);
   //failed_details_.push_back(failedWells);
-  failed_details_.push_back(failedBackground);
+  //failed_details_.push_back(failedBackground);
   //failed_details_.push_back(failedRockPhysics);
 
   //if(timeCutSimbox != NULL)
@@ -4609,7 +4616,7 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
     {
       readPriorFaciesProbCubes(inputFiles,
                                modelSettings,
-                               priorFaciesProbCubesFFT_,
+                               priorFaciesProbCubes_,
                                timeSimbox,
                                timeCutSimbox,
                                errTxt,
@@ -4655,17 +4662,17 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
       const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
       std::string errorText("");
       ModelGeneral::readGridFromFile(faciesProbFile,
-                       "priorfaciesprob",
-                       offset,
-                       priorFaciesProbCubes[i],
-                       dummy1,
-                       dummy2,
-                       FFTGrid::PARAMETER,
-                       timeSimbox,
-                       timeCutSimbox,
-                       modelSettings,
-                       errorText,
-                       true);
+                                     "priorfaciesprob",
+                                     offset,
+                                     priorFaciesProbCubes[i],
+                                     dummy1,
+                                     dummy2,
+                                     FFTGrid::PARAMETER,
+                                     timeSimbox,
+                                     timeCutSimbox,
+                                     modelSettings,
+                                     errorText,
+                                     true);
       if(errorText != "")
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
@@ -4764,6 +4771,28 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
 
   return failed;
 
+}
+
+void
+ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
+                           SeismicParametersHolder  & seismicParameters,
+                           NRLib::Vector            & initialMean,
+                           NRLib::Matrix            & initialCov)
+{
+  //H Difference: Earlier a background was made from rockphysics3d, which was copied to seismicParameters and state4d.
+  //Now, use background created in CommonData
+  state4d_.setStaticMu(seismicParameters.GetMuAlpha(), seismicParameters.GetMuBeta(), seismicParameters.GetMuRho());
+
+  copyCorrelationsTo4DState(seismicParameters, state4d_);
+
+  const int nx    = timeSimbox_->getnx();
+  const int ny    = timeSimbox_->getny();
+  const int nz    = timeSimbox_->getnz();
+  const int nxPad = modelSettings->getNXpad();
+  const int nyPad = modelSettings->getNYpad();
+  const int nzPad = modelSettings->getNZpad();
+
+  complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
 }
 
 void

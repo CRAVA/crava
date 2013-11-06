@@ -109,7 +109,7 @@ public:
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_          ;}
-  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubesFFT_ ;}
+  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_ ;}
   const std::vector<std::string> & getFaciesNames(void)           const { return faciesNames_          ;}
   std::vector<int>                 getFaciesLabel()               const { return faciesLabels_         ;}
 
@@ -259,6 +259,11 @@ private:
                                         NRLib::Vector            & initialMean,
                                         NRLib::Matrix            & initialCov);
 
+  void              setupState4D(ModelSettings           *& modelSettings,
+                                 SeismicParametersHolder  & seismicParameters,
+                                 NRLib::Vector            & initialMean,
+                                 NRLib::Matrix            & initialCov);
+
   void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<float>               & probability,
                                                        const std::vector<double>              & trend_position,
@@ -406,8 +411,7 @@ private:
   int                       numberOfWells_;
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
-  std::vector<FFTGrid *>    priorFaciesProbCubesFFT_;       ///< Cubes for prior facies probabilities
-  std::vector<NRLib::Grid<double> > priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
+  std::vector<FFTGrid *>    priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
 
   std::vector<int>          faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
   std::vector<std::string>  faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
