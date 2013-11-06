@@ -122,17 +122,25 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
   failed_details_.push_back(failedReadingFile);
 }
 
-ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings, //To be run with CommonData
-                                       Simbox              * simbox)
+ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
+                                       CommonData          * commonData,
+                                       Simbox              * simbox,
+                                       int                   i_interval)
 {
-
-  //modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
 
   failed_                 = false;
   before_injection_start_ = false; // When do we know what this should be??
 
   // Set up gravimetric baseline
   LogKit::WriteHeader("Setting up gravimetric baseline");
+
+
+  observation_location_utmx_ = commonData->GetGravityObservationUtmxInterval(i_interval);
+  observation_location_utmy_ = commonData->GetGravityObservationUtmyInterval(i_interval);
+  observation_location_depth_ = commonData->GetGravityObservationDepthInterval(i_interval);
+  gravity_response_ = commonData->GetGravityResponseInterval(i_interval);
+  gravity_std_dev_ = commonData->GetGravityStdDevInterval(i_interval);
+
 
   x_upscaling_factor_ = 10;   // user input...
   y_upscaling_factor_ = 10;

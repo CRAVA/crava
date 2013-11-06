@@ -3455,7 +3455,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                                       InputFiles     * input_files,
                                       std::string    & err_text_common) {
 
-  std::vector<Surface *> outer_facies_estim_interval; // Whole facies interval for all zones/intervals
+  //std::vector<Surface *> outer_facies_estim_interval; // Whole facies interval for all zones/intervals
   std::string err_text = "";
 
   if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion())
@@ -3476,43 +3476,11 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
 
     int n_facies = static_cast<int>(facies_names_.size());
 
-    //
-    // Get facies estimation interval (from modelavistatic.cpp)
-    //
-    const std::string & topFEI  = input_files->getFaciesEstIntFile(0);
-    const std::string & baseFEI = input_files->getFaciesEstIntFile(1);
-    const double x0 = estimation_simbox_.getx0();
-    const double y0 = estimation_simbox_.gety0();
-    const double lx = estimation_simbox_.getlx();
-    const double ly = estimation_simbox_.getly();
-    const int    nx = estimation_simbox_.getnx();
-    const int    ny = estimation_simbox_.getny();
+    tmp_err_text = "";
+    FindFaciesEstimationInterval(input_files, facies_estim_interval_, tmp_err_text);
 
-    if (topFEI != "" && baseFEI != "") {
-      outer_facies_estim_interval.resize(2);
-      try {
-        if (NRLib::IsNumber(topFEI))
-          outer_facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
-        else {
-          Surface tmpSurf(topFEI);
-          outer_facies_estim_interval[0] = new Surface(tmpSurf);
-        }
-      }
-      catch (NRLib::Exception & e) {
-        err_text += e.what();
-      }
-
-      try {
-        if (NRLib::IsNumber(baseFEI))
-          outer_facies_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
-        else {
-          Surface tmpSurf(baseFEI);
-          outer_facies_estim_interval[1] = new Surface(tmpSurf);
-        }
-      }
-      catch (NRLib::Exception & e) {
-        err_text += e.what();
-      }
+    if (tmp_err_text != "") {
+      err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
     }
 
     //prior_facies_prob_cubes_.resize(multiple_interval_grid_->GetNIntervals());
@@ -3599,14 +3567,14 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
                 }
               }
 
-              if (outer_facies_estim_interval.size() > 0) {
+              if (facies_estim_interval_.size() > 0) {
                 const std::vector<double> x_pos = blocked_log->GetXpos();
                 const std::vector<double> y_pos = blocked_log->GetYpos();
                 const std::vector<double> z_pos = blocked_log->GetZpos();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
-                  const double z_top  = outer_facies_estim_interval[0]->GetZ(x_pos[i], y_pos[i]);
-                  const double z_base = outer_facies_estim_interval[1]->GetZ(x_pos[i], y_pos[i]);
+                  const double z_top  = facies_estim_interval_[0]->GetZ(x_pos[i], y_pos[i]);
+                  const double z_base = facies_estim_interval_[1]->GetZ(x_pos[i], y_pos[i]);
                   if ( (z_pos[i] - 0.5*dz) < z_top || (z_pos[i] + 0.5*dz) > z_base)
                     bl_facies_log[i] = IMISSING;
                 }
@@ -3826,12 +3794,13 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
     }
   }
 
-  if(outer_facies_estim_interval.size() == 2) {
-    if (outer_facies_estim_interval[0] != NULL)
-      delete outer_facies_estim_interval[0];
-    if (outer_facies_estim_interval[1] != NULL)
-      delete outer_facies_estim_interval[1];
-  }
+  // facies_estim_interval to be read in ModelAVOStatic
+  //if(outer_facies_estim_interval.size() == 2) {
+  //  if (outer_facies_estim_interval[0] != NULL)
+  //    delete outer_facies_estim_interval[0];
+  //  if (outer_facies_estim_interval[1] != NULL)
+  //    delete outer_facies_estim_interval[1];
+  //}
 
   if(err_text != "") {
     err_text_common += err_text;
@@ -3839,6 +3808,50 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
   }
 
   return true;
+}
+
+void CommonData::FindFaciesEstimationInterval(InputFiles             * input_files,
+                                              std::vector<Surface *> & facies_estim_interval,
+                                              std::string            & err_text)
+{
+  //
+  // Get facies estimation interval
+  //
+  const std::string & topFEI  = input_files->getFaciesEstIntFile(0);
+  const std::string & baseFEI = input_files->getFaciesEstIntFile(1);
+  const double x0 = estimation_simbox_.getx0();
+  const double y0 = estimation_simbox_.gety0();
+  const double lx = estimation_simbox_.getlx();
+  const double ly = estimation_simbox_.getly();
+  const int    nx = estimation_simbox_.getnx();
+  const int    ny = estimation_simbox_.getny();
+
+  if (topFEI != "" && baseFEI != "") {
+    facies_estim_interval.resize(2);
+    try {
+      if (NRLib::IsNumber(topFEI))
+        facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
+      else {
+        Surface tmpSurf(topFEI);
+        facies_estim_interval[0] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+    }
+
+    try {
+      if (NRLib::IsNumber(baseFEI))
+        facies_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
+      else {
+        Surface tmpSurf(baseFEI);
+        facies_estim_interval[1] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      err_text += e.what();
+    }
+  }
 }
 
 void
@@ -6200,7 +6213,10 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
 
 
       //H
-      Need to save correlation parameters (prior_cov_ and prior_corr_) to be extracet in main.cpp (Store in multiintervalgrid?). Use CommonData::SetCorrelationParameters(?)
+      Need to save correlation parameters (prior_cov_ and prior_corr_) to be extracet in main.cpp
+      Currently assumed they will be stored in multiintervalgrid as NRLib::Grid without padding.
+      Transformation to FFTGrid with padding is done in main.cpp->seismicparametersholder.cpp
+
       +priorVar0_
       Fra punkt 3a) "Merk paddinga av griddet, pass på å få med eventuelle brukersette verdiar"
 

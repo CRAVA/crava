@@ -811,7 +811,6 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
   int i0 = i_pos_[0];
   int j0 = j_pos_[0];
 
-
   //Check if well needs to change position in order for the whole
   //shift region to be contained in the seismic cube
   //NBNB marita M� testes om det fungerer for forskjellige br�nner
@@ -845,15 +844,10 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
   std::ofstream out(buffer);
   delete [] buffer;
 
-  //Temp
-  //SegY * segy = seismic_data[0].GetSegY();
-  //segy->GetAllValues
-
   double dz, ztop, dzW, ztopW;
   for(l = 0; l < n_angles; l++){
     for(j = -yEx; j <= yEx; j++){
       for(i = -xEx; i <= xEx; i++){
-
 
         seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0); ///H Correct values returned?
         //seis_trace = seisCube[l]->getRealTrace2(i0, j0);

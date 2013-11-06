@@ -54,6 +54,13 @@ public:
 
   const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()       const { return mapped_blocked_logs_ ;}
 
+  std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
+
+  std::vector<float>       & GetGravityObservationUtmxInterval(int i)          { return observation_location_utmx_[i]  ;}
+  std::vector<float>       & GetGravityObservationUtmyInterval(int i)          { return observation_location_utmy_[i]  ;}
+  std::vector<float>       & GetGravityObservationDepthInterval(int i)         { return observation_location_depth_[i] ;}
+  std::vector<float>       & GetGravityResponseInterval(int i)                 { return gravity_response_[i]           ;}
+  std::vector<float>       & GetGravityStdDevInterval(int i)                   { return gravity_std_dev_[i]            ;}
 
 private:
 
@@ -331,6 +338,10 @@ private:
   bool SetupPriorFaciesProb(ModelSettings  * model_settings,
                             InputFiles     * input_files,
                             std::string    & err_text);
+
+  void FindFaciesEstimationInterval(InputFiles             * input_files,
+                                    std::vector<Surface *> & facies_estim_interval,
+                                    std::string            & err_text);
 
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                    const InputFiles   * input_files,
@@ -656,6 +667,8 @@ private:
 
   // prior facies
   std::vector<std::vector<float> >                prior_facies_;                  ///< Prior facies probabilities
+  std::vector<Surface *>                          facies_estim_interval_;
+
   //std::vector<std::vector<FFTGrid *> >          prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
   //std::vector<std::vector<NRLib::Grid<double> > > prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities. Vector(facies) vector(intervals).
 

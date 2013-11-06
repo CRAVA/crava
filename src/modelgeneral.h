@@ -378,13 +378,13 @@ private:
 
 
   Simbox                  * timeSimbox_;                 ///< Information about simulation area.
-  Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness
+  Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness  //Fjernes
 
-  Surface                 * correlationDirection_;       ///< Grid giving the correlation direction.
+  Surface                 * correlationDirection_;       ///< Grid giving the correlation direction. //Fjernes
   RandomGen               * randomGen_;                  ///< Random generator.
 
-  double                    gradX_;                      ///< X-gradient of correlation rotation.
-  double                    gradY_;                      ///< Y-gradient of correlation rotation.
+  double                    gradX_;                      ///< X-gradient of correlation rotation. //Fjernes
+  double                    gradY_;                      ///< Y-gradient of correlation rotation. //Fjernes
                                                          ///< These are only used with correlation surfaces.
 
   CravaTrend                                                    trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
@@ -393,21 +393,21 @@ private:
 
   TimeEvolution             timeEvolution_;
 
-  GridMapping             * timeDepthMapping_;           ///< Contains both simbox and mapping used for depth conversion
-  GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut
+  GridMapping             * timeDepthMapping_;           ///< Contains both simbox and mapping used for depth conversion //Beholdes hvis det er ett interval?
+  GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut  //Fjernes
 
   bool                      velocityFromInversion_;
 
-  bool                      failed_;                     ///< Indicates whether errors occured during construction.
-  std::vector<bool>         failed_details_;             ///< Detailed failed information.
+  bool                      failed_;                     ///< Indicates whether errors occured during construction. //Fjernes
+  std::vector<bool>         failed_details_;             ///< Detailed failed information. //Fjernes
 
   TimeLine                * timeLine_;
-  std::vector<WellData *>   wells_;                      ///< Well data
+  std::vector<WellData *>   wells_;                      ///< Well data //Fjernes
 
   //Replaces WellData wells_
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
 
-  bool                      forwardModeling_;
+  bool                      forwardModeling_; //Flyttes til ModelAvoStatic
   int                       numberOfWells_;
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
@@ -420,7 +420,7 @@ private:
   bool                      do4DRockPhysicsInversion_;
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
-  Surface                 * priorCorrXY_;                ///< Lateral correlation
+  Surface                 * priorCorrXY_;                ///< Lateral correlation //Fjernes
 
 };
 

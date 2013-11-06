@@ -32,6 +32,14 @@ public:
                  Simbox               *& timeBGSimbox,
                  Simbox                * timeSimboxConstThick,
                  std::vector<WellData *> wells);
+
+  ModelAVOStatic(ModelSettings        *& modelSettings,
+                 ModelGeneral         *& modelGeneral,
+                 const InputFiles      * inputFiles,
+                 CommonData            * commonData,
+                 Simbox                * timeSimbox,
+                 int                     i_intervals);
+
   ~ModelAVOStatic();
 
   const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}

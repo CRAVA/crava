@@ -15,7 +15,9 @@ public:
                      const InputFiles      * inputFiles);
 
   ModelGravityStatic(ModelSettings      *& modelSettings,
-                     Simbox              * simbox);
+                     CommonData          * common_data,
+                     Simbox              * simbox,
+                     int                   i_interval);
 
   ~ModelGravityStatic();
 

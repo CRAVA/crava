@@ -257,13 +257,13 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
                             do4DRockPhysicsInversion_(modelSettings->getDo4DRockPhysicsInversion())
 {
   timeSimbox_             = new Simbox();
-  timeSimboxConstThick_   = NULL;
+  //timeSimboxConstThick_   = NULL;
 
-  correlationDirection_   = NULL;
+  //correlationDirection_   = NULL;
   randomGen_              = NULL;
-  failed_                 = false;
-  gradX_                  = 0.0;
-  gradY_                  = 0.0;
+  //failed_                 = false;
+  //gradX_                  = 0.0;
+  //gradY_                  = 0.0;
 
   //timeDepthMapping_       = NULL;
   //timeCutMapping_         = NULL;
@@ -365,13 +365,16 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       priorFaciesProbCubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
       priorFaciesProbCubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
 
-      //bool estimationMode = modelSettings->getEstimationMode();
+      bool estimationMode = modelSettings->getEstimationMode();
 
-      //if(estimationMode == false && modelSettings->getDoDepthConversion() == true)
-      //{
-      //  processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
-      //                          inputFiles, errText, failedDepthConv);
-      //}
+      //H Dybdekonverting skal kjøres hvis det ikke er multiinterval? Evt. flytte loadVelocity (eller alt) til CommonData først ettersom det er en innlesning.
+      bool failedDepthConv = false;
+
+      if(estimationMode == false && modelSettings->getDoDepthConversion() == true && commonData->GetMultipleIntervalGrid()->GetNIntervals() == 1)
+      {
+        processDepthConversion(timeSimbox_, timeSimbox_, modelSettings, //First was timeCutSimbox_
+                               inputFiles, errText, failedDepthConv);
+      }
 
       //processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
       //Replace wells with blocked_logs
