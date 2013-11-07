@@ -26,6 +26,8 @@ public:
   bool                          getFailed()                         const { return failed_                          ;}
   std::vector<bool>             getFailedDetails()                  const { return failed_details_                  ;}
 
+  const std::vector<Surface>    getInitialHorizons()                const { return initial_horizons_                ;}
+  const std::vector<Surface>    getPushDownHorizons()               const { return push_down_horizons_              ;}
   const std::vector<double>     getHorizonStandardDeviation()       const { return horizon_standard_deviation_      ;}
   const bool                    getHorizonDataGiven()               const { return horizon_data_given_              ;}
 
@@ -73,7 +75,8 @@ private:
                                                  const int     & otherOutput,
                                                  std::string   & errTxt);
 
-  std::vector<Surface>      horizons_;                              ///< Horizons used for horizon inversion
+  std::vector<Surface>      push_down_horizons_;                    ///< Push down horizons used for horizon inversion
+  std::vector<Surface>      initial_horizons_;                      ///< TP0 being the initial horizon before push down
   std::vector<std::string>  horizon_names_;                         ///< Names corresponding to the horizons
 
   std::vector<double>       horizon_standard_deviation_;            ///< Observation error for the horizon data

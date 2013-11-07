@@ -22,7 +22,7 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
                                          ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                          SeismicParametersHolder & seismicParameters)
 {
-  LogKit::WriteHeader("Building Stochastic RMS Inversion Model");
+  LogKit::WriteHeader("Building Stochastic Travel Iime Inversion Model");
 
   time_t time_start;
   time_t time_end;
@@ -33,6 +33,11 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
     n_rms_inversions = 2;
 
   for (int i = 0; i < n_rms_inversions; ++i) {
+    if (modelTravelTimeDynamic->getHorizonDataGiven() == true)
+      doHorizonInversion(modelGeneral,
+                         modelTravelTimeDynamic,
+                         seismicParameters,
+                         i);
     if (modelTravelTimeDynamic->getRMSDataGiven() == true)
       doRMSInversion(modelGeneral,
                      modelTravelTimeDynamic,
@@ -45,6 +50,72 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
 
 
 }
+//-----------------------------------------------------------------------------------------//
+
+TravelTimeInversion::~TravelTimeInversion()
+{
+}
+
+
+//-----------------------------------------------------------------------------------------//
+
+void
+TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
+                                        ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                        SeismicParametersHolder & /*seismicParameters*/,
+                                        const int               & inversion_number) const
+{
+  if (inversion_number == 0) {
+    std::string text = "\nInverting push down data:";
+    LogKit::LogFormatted(LogKit::Low, text);
+
+    State4D state_4D = modelGeneral->getState4D();
+
+    FFTGrid * mu_log_vp_dynamic  = state_4D.getMuVpDynamic();
+    FFTGrid * cov_log_vp_dynamic = state_4D.getCovVpVpDynamicDynamic();
+
+    if (mu_log_vp_dynamic->getIsTransformed() == true)
+      mu_log_vp_dynamic->invFFTInPlace();
+
+    if (cov_log_vp_dynamic->getIsTransformed() == true)
+      cov_log_vp_dynamic->invFFTInPlace();
+
+    std::vector<double>   cov_log_vp   = getCovLogVp(cov_log_vp_dynamic);
+    NRLib::Grid2D<double> Sigma_log_vp = generateSigmaModel(cov_log_vp);
+
+    const std::vector<Surface> initial_horizons   = modelTravelTimeDynamic->getInitialHorizons();
+    const std::vector<Surface> push_down_horizons = modelTravelTimeDynamic->getPushDownHorizons();
+    const std::vector<double>  standard_deviation = modelTravelTimeDynamic->getHorizonStandardDeviation();
+
+    const Simbox * timeSimbox  = modelGeneral->getTimeSimbox();
+
+    int nx = timeSimbox->getnx();
+    int ny = timeSimbox->getny();
+
+    for (int i = 0; i < nx; ++i) {
+      for (int j = 0; j < ny; ++j) {
+
+        std::vector<double>   mu_post;
+        NRLib::Grid2D<double> Sigma_post;
+
+        do1DHorizonInversion(mu_log_vp_dynamic,
+                             Sigma_log_vp,
+                             timeSimbox,
+                             initial_horizons,
+                             push_down_horizons,
+                             standard_deviation,
+                             i,
+                             j,
+                             mu_post,
+                             Sigma_post);
+
+
+      }
+    }
+    mu_log_vp_dynamic->fftInPlace();
+    cov_log_vp_dynamic->fftInPlace();
+  }
+}
 
 //-----------------------------------------------------------------------------------------//
 void
@@ -53,6 +124,8 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                     SeismicParametersHolder & seismicParameters,
                                     const int               & inversion_number)
 {
+  std::string text = "\nInverting RMS data:";
+  LogKit::LogFormatted(LogKit::Low, text);
 
   FFTGrid * mu_log_vp                      = seismicParameters.GetMuAlpha();
   FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
@@ -108,23 +181,23 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
     std::vector<double>   mu_post;
     NRLib::Grid2D<double> Sigma_post;
 
-    do1DInversion(mu_vp_top,
-                  mu_vp_base,
-                  Sigma_vp_above,
-                  Sigma_vp_below,
-                  standard_deviation,
-                  rms_traces[i],
-                  mu_log_vp,
-                  cov_grid_log_vp,
-                  simbox_above,
-                  simbox_below,
-                  timeSimbox,
-                  mu_post,
-                  Sigma_post);
+    do1DRMSInversion(mu_vp_top,
+                     mu_vp_base,
+                     Sigma_vp_above,
+                     Sigma_vp_below,
+                     standard_deviation,
+                     rms_traces[i],
+                     mu_log_vp,
+                     cov_grid_log_vp,
+                     simbox_above,
+                     simbox_below,
+                     timeSimbox,
+                     mu_post,
+                     Sigma_post);
 
     setExpectation(rms_traces[i],
                    mu_post,
-                   mu_log_vp_post_above,
+                   mu_log_vp_post_above,//bruker ikke above/below, fjern disse slik at rutinene blir felles
                    mu_log_vp_post_model,
                    mu_log_vp_post_below);
 
@@ -214,25 +287,117 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
 
 //-----------------------------------------------------------------------------------------//
 
-TravelTimeInversion::~TravelTimeInversion()
+void
+TravelTimeInversion::do1DHorizonInversion(const FFTGrid               * mu_log_vp_dynamic,
+                                          const NRLib::Grid2D<double> & Sigma_log_vp_dynamic,
+                                          const Simbox                * timeSimbox,
+                                          const std::vector<Surface>  & initial_horizons,
+                                          const std::vector<Surface>  & push_down_horizons,
+                                          const std::vector<double>   & standard_deviation,
+                                          int                           i_ind,
+                                          int                           j_ind,
+                                          std::vector<double>         & mu_post_log_vp,
+                                          NRLib::Grid2D<double>       & Sigma_post_log_vp) const
 {
+  double x, y;
+  timeSimbox->getXYCoord(i_ind, j_ind, x, y);
+
+  // Get data in current position
+  const Surface       top_simbox  = dynamic_cast<const Surface &> (timeSimbox->GetTopSurface());
+  const Surface       base_simbox = dynamic_cast<const Surface &> (timeSimbox->GetBotSurface());
+  int                 n_horizons    = static_cast<int>(initial_horizons.size());
+  std::vector<double> time_P0(n_horizons);
+  std::vector<double> push_down(n_horizons);
+  double              top  = 0;
+  double              base = 0;
+
+  for (int k = 0; k < n_horizons; ++k) {
+    time_P0[k]   = initial_horizons[k].GetZ(x, y);
+    push_down[k] = push_down_horizons[k].GetZ(x, y);
+
+    top  = top_simbox.GetZ(x, y);
+    base = base_simbox.GetZ(x, y);
+    if (base < time_P0[k])
+      time_P0[k] = base;
+  }
+
+  double missing_value = initial_horizons[0].GetMissingValue();
+  int    n_nonmissing  = 0;
+
+  for (int k = 0; k < n_horizons; k++) {
+    if (time_P0[k] != missing_value && push_down[k] != missing_value)
+      n_nonmissing++;
+  }
+
+  if (n_nonmissing > 0) {
+    std::vector<double>   d(n_nonmissing);
+    NRLib::Grid2D<double> Sigma_d(n_nonmissing, n_nonmissing, 0);
+
+    for (int k = 0; k < n_horizons; ++k) {
+      if (time_P0[k] != missing_value && push_down[k] != missing_value) {
+        d[k]          = time_P0[k] + push_down[k];
+        Sigma_d(k, k) = std::pow(standard_deviation[k], 2);
+      }
+    }
+
+    double dt  = timeSimbox->getdz(i_ind, j_ind);
+    int    nz  = timeSimbox->getnz();
+    int    nzp = mu_log_vp_dynamic->getNzp();
+
+    NRLib::Grid2D<double> G = calculateGHorizon(dt,
+                                                top,
+                                                missing_value,
+                                                n_nonmissing,
+                                                nz,
+                                                nzp,
+                                                time_P0,
+                                                push_down);
+
+    std::vector<double> mu_log_vp = generateMuLogVpModel(mu_log_vp_dynamic, i_ind, j_ind);
+
+    // Transform to Vp^(-1)
+    std::vector<double>   mu_vp_minus;
+    NRLib::Grid2D<double> Sigma_vp_minus;
+    calculateMinusFirstCentralMomentLogNormal(mu_log_vp,
+                                              Sigma_log_vp_dynamic,
+                                              mu_vp_minus,
+                                              Sigma_vp_minus);
+
+    std::vector<double>   mu_post;
+    NRLib::Grid2D<double> Sigma_post;
+
+    calculatePosteriorModel(d,
+                            Sigma_d,
+                            mu_vp_minus,
+                            Sigma_vp_minus,
+                            G,
+                            mu_post,
+                            Sigma_post);
+
+    // Transform to log(Vp)
+    transformVpMinusToLogVp(mu_post,
+                            Sigma_post,
+                            mu_post_log_vp,
+                            Sigma_post_log_vp);
+  }
 }
 
 //-----------------------------------------------------------------------------------------//
+
 void
-TravelTimeInversion::do1DInversion(const double                & mu_vp_top,
-                                   const double                & mu_vp_base,
-                                   const NRLib::Grid2D<double> & Sigma_m_above,
-                                   const NRLib::Grid2D<double> & Sigma_m_below,
-                                   const double                & standard_deviation,
-                                   const RMSTrace              * rms_trace,
-                                   const FFTGrid               * mu_log_vp,
-                                   const std::vector<double>   & cov_grid_log_vp,
-                                   const Simbox                * simbox_above,
-                                   const Simbox                * simbox_below,
-                                   const Simbox                * timeSimbox,
-                                   std::vector<double>         & mu_post_log_vp,
-                                   NRLib::Grid2D<double>       & Sigma_post_log_vp) const
+TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_top,
+                                      const double                & mu_vp_base,
+                                      const NRLib::Grid2D<double> & Sigma_m_above,
+                                      const NRLib::Grid2D<double> & Sigma_m_below,
+                                      const double                & standard_deviation,
+                                      const RMSTrace              * rms_trace,
+                                      const FFTGrid               * mu_log_vp,
+                                      const std::vector<double>   & cov_grid_log_vp,
+                                      const Simbox                * simbox_above,
+                                      const Simbox                * simbox_below,
+                                      const Simbox                * timeSimbox,
+                                      std::vector<double>         & mu_post_log_vp,
+                                      NRLib::Grid2D<double>       & Sigma_post_log_vp) const
 {
 
   int i_ind = rms_trace->getIIndex();
@@ -388,6 +553,39 @@ TravelTimeInversion::calculateDSquare(const std::vector<double> & d) const
 
   return d_square;
 }
+//-----------------------------------------------------------------------------------------//
+
+NRLib::Grid2D<double>
+TravelTimeInversion::calculateGHorizon(double                      dt,
+                                       double                      top,
+                                       double                      missing_value,
+                                       int                         n_nonmissing,
+                                       int                         nz,
+                                       int                         nzp,
+                                       const std::vector<double> & time_P0,
+                                       const std::vector<double> & push_down) const
+{
+  int n_horizons = static_cast<int>(push_down.size());
+  int K;
+
+  NRLib::Grid2D<double> G(n_nonmissing, nzp, 0);
+
+  for (int l = 0; l < n_horizons; ++l) {
+
+    if (time_P0[l] != missing_value && push_down[l] != missing_value) {
+      K = static_cast<int>(std::floor((time_P0[l] - top) / dt));
+
+      for (int k = 0; k < K; ++k)
+        G(l, k) = dt;
+
+      if (K < nz)
+        G(l, K) = time_P0[l] - top - dt * K;
+    }
+  }
+
+  return G;
+}
+
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid2D<double>
@@ -773,6 +971,27 @@ TravelTimeInversion::transformVpSquareToLogVp(const std::vector<double>   & mu_v
 //-----------------------------------------------------------------------------------------//
 
 void
+TravelTimeInversion::transformVpMinusToLogVp(const std::vector<double>   & mu_vp_minus,
+                                             const NRLib::Grid2D<double> & Sigma_vp_minus,
+                                             std::vector<double>         & mu_log_vp,
+                                             NRLib::Grid2D<double>       & Sigma_log_vp) const
+{
+  int n_layers = static_cast<int>(mu_vp_minus.size());
+
+  calculateCentralMomentLogNormalInverse(mu_vp_minus, Sigma_vp_minus, mu_log_vp, Sigma_log_vp);
+
+  for (int i = 0; i < n_layers; i++)
+    mu_log_vp[i] = mu_log_vp[i] / (-1);
+
+  for (int i = 0; i < n_layers; i++) {
+    for (int j = 0; j < n_layers; j++)
+      Sigma_log_vp(i, j) = Sigma_log_vp(i, j) / 1;
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
 TravelTimeInversion::calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                      const NRLib::Grid2D<double> & variance_log_vp,
                                                      std::vector<double>         & mu_vp_trans,
@@ -864,6 +1083,34 @@ TravelTimeInversion::calculateHalfCentralMomentLogNormal(const std::vector<doubl
 
   calculateCentralMomentLogNormal(mu, variance, mu_vp, variance_vp);
 }
+//-----------------------------------------------------------------------------------------//
+void
+TravelTimeInversion::calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                               const NRLib::Grid2D<double> & variance_log_vp,
+                                                               std::vector<double>         & mu_vp_minus,
+                                                               NRLib::Grid2D<double>       & variance_vp_minus) const
+{
+  // log(Vp) \sim N(\mu,Sigma)
+  // Vp^(-1) \sim N(\mu*, Sigma*)
+
+  int n_layers = static_cast<int>(mu_log_vp.size());
+
+  std::vector<double> mu(n_layers);
+  for (int i = 0; i < n_layers; i++)
+    mu[i] = mu_log_vp[i] * (-1);
+
+  NRLib::Grid2D<double> variance(n_layers, n_layers);
+  for (int i = 0; i < n_layers; i++) {
+    for (int j = 0; j < n_layers; j++)
+      variance(i, j) = variance_log_vp(i, j) * 1;
+  }
+
+  mu_vp_minus.resize(n_layers);
+  variance_vp_minus.Resize(n_layers, n_layers);
+
+  calculateCentralMomentLogNormal(mu, variance, mu_vp_minus, variance_vp_minus);
+}
+
 //-----------------------------------------------------------------------------------------//
 
 void

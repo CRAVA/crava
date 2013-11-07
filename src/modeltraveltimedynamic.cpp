@@ -15,7 +15,8 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
                                                const InputFiles    * inputFiles,
                                                const Simbox        * timeSimbox,
                                                const int           & vintage)
-: horizons_(0),
+: push_down_horizons_(0),
+  initial_horizons_(0),
   horizon_names_(0, ""),
   horizon_standard_deviation_(0),
   rms_traces_(0, NULL),
@@ -40,10 +41,11 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
   std::string errTxt = "";
 
   bool failed_surfaces = false;
-  processHorizons(modelSettings,
-                  inputFiles,
-                  errTxt,
-                  failed_surfaces);
+  if (vintage > 0)
+    processHorizons(modelSettings,
+                    inputFiles,
+                    errTxt,
+                    failed_surfaces);
 
   bool failed_rms_data = false;
   processRMSData(modelSettings,
@@ -86,9 +88,10 @@ ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
 {
   std::string tmpErrText = "";
 
-  const std::vector<std::string> & travel_time_horizons = inputFiles->getTravelTimeHorizons(this_time_lapse_);
+  const std::vector<std::string> & push_down_horizons = inputFiles->getTravelTimeHorizons(this_time_lapse_);
+  const std::vector<std::string> & initial_horizons   = inputFiles->getTravelTimeHorizons(0);
 
-  int n_horizons = static_cast<int>(travel_time_horizons.size());
+  int n_horizons = static_cast<int>(push_down_horizons.size());
 
   if (n_horizons > 0) {
     LogKit::WriteHeader("Reading horizon travel time data");
@@ -98,11 +101,17 @@ ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
     horizon_names_              = modelSettings->getTimeLapseTravelTimeHorizons(this_time_lapse_);
     horizon_standard_deviation_ = modelSettings->getTimeLapseTravelTimeHorizonSD(this_time_lapse_);
 
-    horizons_.resize(n_horizons);
+    initial_horizons_.resize(n_horizons);
+    push_down_horizons_.resize(n_horizons);
+
     for (int i = 0; i < n_horizons; i++) {
       LogKit::LogFormatted(LogKit::Low, "\nHorizon \""+horizon_names_[i]+"\":\n");
-      LogKit::LogFormatted(LogKit::Low, "  Reading horizon file "+travel_time_horizons[i]+"\n");
-      horizons_[i] = Surface(travel_time_horizons[i]);
+
+      LogKit::LogFormatted(LogKit::Low, "  Reading horizon file file "+initial_horizons[i]+"\n");
+      initial_horizons_[i] = Surface(initial_horizons[i]); //Finn riktig fil, trenger ikke være gitt i samme rekkefølge
+
+      LogKit::LogFormatted(LogKit::Low, "  Reading push down file "+push_down_horizons[i]+"\n");
+      push_down_horizons_[i] = Surface(push_down_horizons[i]);
     }
   }
 

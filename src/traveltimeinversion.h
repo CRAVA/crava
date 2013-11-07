@@ -29,24 +29,40 @@ public:
   ~TravelTimeInversion();
 
 private:
+  void                          doHorizonInversion(ModelGeneral            * modelGeneral,
+                                                   ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                                   SeismicParametersHolder & seismicParameters,
+                                                   const int               & inversion_number) const;
+
+  void                          do1DHorizonInversion(const FFTGrid               * mu_log_vp_dynamic,
+                                                     const NRLib::Grid2D<double> & Sigma_log_vp_dynamic,
+                                                     const Simbox                * timeSimbox,
+                                                     const std::vector<Surface>  & initial_horizons,
+                                                     const std::vector<Surface>  & push_down_horizons,
+                                                     const std::vector<double>   & standard_deviation,
+                                                     int                           i_ind,
+                                                     int                           j_ind,
+                                                     std::vector<double>         & mu_post_log_vp,
+                                                     NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
+
   void                          doRMSInversion(ModelGeneral            * modelGeneral,
                                                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                SeismicParametersHolder & seismicParameters,
                                                const int               & inversion_number);
 
-  void                          do1DInversion(const double                & mu_vp_top,
-                                              const double                & mu_vp_base,
-                                              const NRLib::Grid2D<double> & Sigma_m_above,
-                                              const NRLib::Grid2D<double> & Sigma_m_below,
-                                              const double                & standard_deviation,
-                                              const RMSTrace              * rms_trace,
-                                              const FFTGrid               * mu_log_vp,
-                                              const std::vector<double>   & cov_grid_log_vp,
-                                              const Simbox                * simbox_above,
-                                              const Simbox                * simbox_below,
-                                              const Simbox                * timeSimbox,
-                                              std::vector<double>         & mu_post_log_vp,
-                                              NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
+  void                          do1DRMSInversion(const double                & mu_vp_top,
+                                                 const double                & mu_vp_base,
+                                                 const NRLib::Grid2D<double> & Sigma_m_above,
+                                                 const NRLib::Grid2D<double> & Sigma_m_below,
+                                                 const double                & standard_deviation,
+                                                 const RMSTrace              * rms_trace,
+                                                 const FFTGrid               * mu_log_vp,
+                                                 const std::vector<double>   & cov_grid_log_vp,
+                                                 const Simbox                * simbox_above,
+                                                 const Simbox                * simbox_below,
+                                                 const Simbox                * timeSimbox,
+                                                 std::vector<double>         & mu_post_log_vp,
+                                                 NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
 
   void                          calculatePosteriorModel(const std::vector<double>   & d,
                                                         const NRLib::Grid2D<double> & Sigma_d,
@@ -55,6 +71,15 @@ private:
                                                         const NRLib::Grid2D<double> & G,
                                                         std::vector<double>         & mu_post,
                                                         NRLib::Grid2D<double>       & Sigma_post) const;
+
+  NRLib::Grid2D<double>         calculateGHorizon(double                      dt,
+                                                  double                      top,
+                                                  double                      missing_value,
+                                                  int                         n_nonmissing,
+                                                  int                         nz,
+                                                  int                         nzp,
+                                                  const std::vector<double> & time_P0,
+                                                  const std::vector<double> & push_down) const;
 
   NRLib::Grid2D<double>         calculateG(const std::vector<double> & rms_time,
                                            const double              & t_top,
@@ -126,6 +151,11 @@ private:
                                                          std::vector<double>         & mu_log_vp,
                                                          NRLib::Grid2D<double>       & Sigma_log_vp) const;
 
+  void                          transformVpMinusToLogVp(const std::vector<double>   & mu_vp_minus,
+                                                        const NRLib::Grid2D<double> & Sigma_vp_minus,
+                                                        std::vector<double>         & mu_log_vp,
+                                                        NRLib::Grid2D<double>       & Sigma_log_vp) const;
+
   void                          calculateCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                 const NRLib::Grid2D<double> & variance_log_vp,
                                                                 std::vector<double>         & mu_vp_trans,
@@ -140,6 +170,11 @@ private:
                                                                     const NRLib::Grid2D<double> & variance_log_vp,
                                                                     std::vector<double>         & mu_vp,
                                                                     NRLib::Grid2D<double>       & variance_vp) const;
+
+  void                          calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
+                                                                          const NRLib::Grid2D<double> & variance_log_vp,
+                                                                          std::vector<double>         & mu_vp_minus,
+                                                                          NRLib::Grid2D<double>       & variance_vp_minus) const;
 
   void                          calculateCentralMomentLogNormalInverse(const std::vector<double>   & mu_vp_trans,
                                                                        const NRLib::Grid2D<double> & variance_vp_trans,
