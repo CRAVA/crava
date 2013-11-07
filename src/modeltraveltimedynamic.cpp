@@ -16,7 +16,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
                                                const Simbox                  * timeSimbox,
                                                const int                     & vintage)
 : rms_traces_(0),
-  thisTimeLapse_(vintage),
+  this_time_lapse_(vintage),
   simbox_above_(NULL),
   simbox_below_(NULL)
 {
@@ -64,7 +64,7 @@ ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
                                         bool                   & failed)
 {
 
-  const std::vector<std::string> & travel_time_horizons = inputFiles->getTravelTimeHorizons(thisTimeLapse_);
+  const std::vector<std::string> & travel_time_horizons = inputFiles->getTravelTimeHorizons(this_time_lapse_);
 
   int n_horizons = static_cast<int>(travel_time_horizons.size());
 
@@ -98,7 +98,7 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
 
   LogKit::WriteHeader("Reading RMS travel time data");
 
-  const std::string & file_name  = inputFiles->getRmsVelocities(thisTimeLapse_);
+  const std::string & file_name  = inputFiles->getRmsVelocities(this_time_lapse_);
   std::string         tmpErrText = "";
 
   readRMSData(file_name, timeSimbox, tmpErrText);
@@ -117,11 +117,13 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
   range_above_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
   range_below_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
 
+  lz_limit_           = modelSettings->getLzLimit();
+
   setupSimboxAbove(timeSimbox,
                    modelSettings->getOutputGridFormat(),
                    modelSettings->getOutputGridDomain(),
                    modelSettings->getOtherOutputFlag(),
-                   modelSettings->getLzLimit(),
+                   lz_limit_,
                    tmpErrText);
 
   setupSimboxBelow(timeSimbox,

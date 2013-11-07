@@ -5,6 +5,7 @@
 #ifndef RMS_INVERSION_H
 #define RMS_INVERSION_H
 
+#include "nrlib/flens/nrlib_flens.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "src/definitions.h"
 #include "lib/utils.h"
@@ -21,13 +22,18 @@ class KrigingData2D;
 class RMSInversion
 {
 public:
-  RMSInversion(const ModelGeneral      * modelGeneral,
+  RMSInversion(ModelGeneral            * modelGeneral,
                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                SeismicParametersHolder & seismicParameters);
 
   ~RMSInversion();
 
 private:
+  void                          doRMSInversion(ModelGeneral            * modelGeneral,
+                                               ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                               SeismicParametersHolder & seismicParameters,
+                                               const int               & inversion_number);
+
   void                          do1DInversion(const double                & mu_vp_top,
                                               const double                & mu_vp_base,
                                               const NRLib::Grid2D<double> & Sigma_m_above,
@@ -213,14 +219,46 @@ private:
                                                 const int           & n,
                                                 std::vector<double> & abs_z) const;
 
-  void                          complexConjugate(const fftw_complex  * z,
-                                                 const int           & n,
-                                                 fftw_complex        * conj_z) const;
+  void                          complexConjugate(const fftw_complex * z,
+                                                 const int          & n,
+                                                 fftw_complex       * conj_z) const;
 
   void                          calculateFullPosteriorModel(const std::vector<int>  & observation_filter,
                                                             SeismicParametersHolder & seismic_parameters,
                                                             FFTGrid                 * stationary_observations,
                                                             FFTGrid                 * stationary_observation_covariance) const;
+
+  void                          calculateLogVpExpectation(const std::vector<int>  & observation_filter,
+                                                          const NRLib::Matrix     & prior_var_vp,
+                                                          FFTGrid                 * mu_vp,
+                                                          FFTGrid                 * cov_vp,
+                                                          FFTGrid                 * stationary_observations,
+                                                          FFTGrid                 * stationary_observation_covariance,
+                                                          FFTGrid                *& post_mu_vp) const;
+
+  void                          calculateDistanceGrid(const Simbox        * simbox,
+                                                      FFTGrid             * mu_vp,
+                                                      FFTGrid             * post_mu_vp,
+                                                      NRLib::Grid<double> & distance) const;
+
+  void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
+                                                  const double               & lz_limit,
+                                                  const Simbox               * simbox,
+                                                  Simbox                    *& new_simbox,
+                                                  std::string                & errTxt) const;
+
+  void                          generateResampleGrid(const NRLib::Grid<double> & distance,
+                                                     const Simbox              * old_simbox,
+                                                     const Simbox              * new_simbox,
+                                                     NRLib::Grid<double>       & resample_grid) const;
+
+  void                          calculateBaseSurface(const NRLib::Grid<double> & distance,
+                                                     const Simbox              * simbox,
+                                                     Surface                   & base_surface) const;
+
+  void                          resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
+                                                          const Simbox              * new_simbox,
+                                                          SeismicParametersHolder   & seismic_parameters) const;
 
   int n_above_;
   int n_below_;

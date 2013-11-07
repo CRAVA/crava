@@ -206,7 +206,13 @@ public:
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
 
-  void              advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings);
+  void              advanceTime(const int               & previous_vintage,
+                                const double            & time_change,
+                                SeismicParametersHolder & seismicParameters,
+                                ModelSettings           * modelSettings);
+
+  void              setTimeSimbox(Simbox * new_timeSimbox);
+
   void              lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
   void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);

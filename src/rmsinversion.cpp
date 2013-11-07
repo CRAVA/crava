@@ -18,20 +18,39 @@
 #include "lib/timekit.hpp"
 
 
-RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
+RMSInversion::RMSInversion(ModelGeneral            * modelGeneral,
                            ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                            SeismicParametersHolder & seismicParameters)
 {
-
   LogKit::WriteHeader("Building Stochastic RMS Inversion Model");
 
   time_t time_start;
   time_t time_end;
   time(&time_start);
 
-  double wall = 0.0;
-  double cpu  = 0.0;
-  TimeKit::getTime(wall,cpu);
+  int n_rms_inversions = 1;
+  if (modelTravelTimeDynamic->getThisTimeLapse() > 0)
+    n_rms_inversions = 2;
+
+  for (int i = 0; i < n_rms_inversions; ++i)
+    doRMSInversion(modelGeneral,
+                   modelTravelTimeDynamic,
+                   seismicParameters,
+                   i);
+
+  time(&time_end);
+  LogKit::LogFormatted(LogKit::DebugLow, "\nTime elapsed :  %d\n", time_end - time_start);
+
+
+}
+
+//-----------------------------------------------------------------------------------------//
+void
+RMSInversion::doRMSInversion(ModelGeneral            * modelGeneral,
+                             ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                             SeismicParametersHolder & seismicParameters,
+                             const int               & inversion_number)
+{
 
   FFTGrid * mu_log_vp                      = seismicParameters.GetMuAlpha();
   FFTGrid * cov_log_vp                     = seismicParameters.GetCovBeta();
@@ -115,8 +134,6 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
 
   }
 
-  LogKit::LogFormatted(LogKit::Low, "\nIn reservoir zone:");
-
   FFTGrid * post_mu_log_vp_model = NULL;
 
   krigeExpectation3D(timeSimbox, mu_log_vp_post_model, nxp, nyp, post_mu_log_vp_model);
@@ -138,24 +155,50 @@ RMSInversion::RMSInversion(const ModelGeneral      * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
-  calculateFullPosteriorModel(observation_filter,
-                              seismicParameters,
+  if (inversion_number == 0 && modelTravelTimeDynamic->getThisTimeLapse() > 0) {
+    FFTGrid * post_log_vp = NULL;
+    calculateLogVpExpectation(observation_filter,
+                              seismicParameters.getPriorVar0(),
+                              mu_log_vp,
+                              cov_log_vp,
                               stationary_d,
-                              stationary_covariance);
+                              stationary_covariance,
+                              post_log_vp);
 
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_vp";
-  mu_log_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+    NRLib::Grid<double> distance;
+    calculateDistanceGrid(timeSimbox,
+                          mu_log_vp,
+                          post_log_vp,
+                          distance);
 
-  FFTGrid * mu_log_vs = seismicParameters.GetMuBeta();
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_vs";
-  mu_log_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+    delete post_log_vp;
 
-  FFTGrid * mu_log_rho = seismicParameters.GetMuRho();
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "posterior_rho";
-  mu_log_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
+    Simbox * new_simbox = NULL;
+    std::string errTxt  = "";
+    generateNewSimbox(distance,
+                      modelTravelTimeDynamic->getLzLimit(),
+                      timeSimbox,
+                      new_simbox,
+                      errTxt);
 
-  time(&time_end);
-  LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",time_end-time_start);
+    NRLib::Grid<double> resample_grid;
+    generateResampleGrid(distance,
+                         timeSimbox,
+                         new_simbox,
+                         resample_grid);
+
+    resampleSeismicParameters(resample_grid,
+                              timeSimbox,
+                              seismicParameters);
+
+    modelGeneral->setTimeSimbox(new_simbox);
+
+  }
+  else
+    calculateFullPosteriorModel(observation_filter,
+                                seismicParameters,
+                                stationary_d,
+                                stationary_covariance);
 
   delete variogram_above;
   delete variogram_below;
@@ -930,11 +973,6 @@ RMSInversion::krigeExpectation3D(const Simbox                * simbox,
                                  const int                   & nyp,
                                  FFTGrid                    *& mu_post) const
 {
-
-  std::string text = "\nKriging 1D posterior RMS velocities to 3D:";
-
-  LogKit::LogFormatted(LogKit::Low, text);
-
   const int    nx   = simbox->getnx();
   const int    ny   = simbox->getny();
   const int    nz   = simbox->getnz();
@@ -958,13 +996,6 @@ RMSInversion::krigeExpectation3D(const Simbox                * simbox,
   // Template surface to be kriged
   //
   Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
-
-  float monitorSize = std::max(1.0f, static_cast<float>(nz) * 0.02f);
-  float nextMonitor = monitorSize;
-  std::cout
-    << "\n  0%       20%       40%       60%       80%      100%"
-    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
-    << "\n  ^";
 
   bgGrid->setAccessMode(FFTGrid::WRITE);
 
@@ -991,13 +1022,6 @@ RMSInversion::krigeExpectation3D(const Simbox                * simbox,
         else
           bgGrid->setNextReal(0);
       }
-    }
-
-    // Log progress
-    if (k + 1 >= static_cast<int>(nextMonitor)) {
-      nextMonitor += monitorSize;
-      std::cout << "^";
-      fflush(stdout);
     }
   }
 
@@ -1180,7 +1204,7 @@ RMSInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
 {
   // Calculate var_e = var_pri *(conj_var_pri - var_pri + var_post) / (var_pri-var_post)
 
-  int cnzp = nzp/2 + 1;
+  int cnzp = nzp / 2 + 1;
 
   fftw_complex * conj_pri_cov  = new fftw_complex[cnzp];
   fftw_complex * diff_prior    = new fftw_complex[cnzp];
@@ -1306,9 +1330,9 @@ RMSInversion::absoulteComplex(const fftw_complex  * z,
 //-----------------------------------------------------------------------------------------//
 
 void
-RMSInversion::complexConjugate(const fftw_complex  * z,
-                               const int           & n,
-                               fftw_complex        * conj_z) const
+RMSInversion::complexConjugate(const fftw_complex * z,
+                               const int          & n,
+                               fftw_complex       * conj_z) const
 {
 
   for (int i = 0; i < n; i++) {
@@ -1381,6 +1405,16 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
   for (int i = 0; i < 3; i++)
     Sigma_post[i] = new fftw_complex[3];
 
+  std::string text = "\nBuilding posterior RMS distribution:";
+  LogKit::LogFormatted(LogKit::Low, text);
+
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp) * 0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
   for (int k = 0; k < nzp; k++) {
 
     int filter = observation_filter[k];
@@ -1397,7 +1431,7 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
 
         seismic_parameters.getNextParameterCovariance(Sigma_m);
 
-        if(filter == 0) {
+        if (filter == 0) {
           // Prior = posterior
           mu_vp ->setNextComplex(mu_m[0]);
           mu_vs ->setNextComplex(mu_m[1]);
@@ -1444,6 +1478,11 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
         }
       }
     }
+    if (k + 1 >= static_cast<int>(nextMonitor)) {
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
   }
 
   mu_vp ->endAccess();
@@ -1458,14 +1497,387 @@ RMSInversion::calculateFullPosteriorModel(const std::vector<int>  & observation_
   cr_cov_vp_rho->endAccess();
   cr_cov_vs_rho->endAccess();
 
-  seismic_parameters.invFFTAllGrids();
-
   delete [] mu_m;
   delete [] mu_post;
 
-  for(int i=0; i<3; i++)
+  for (int i = 0; i < 3; ++i)
     delete [] Sigma_m[i];
 
-  for(int i=0; i<3; i++)
+  for (int i = 0; i < 3; ++i)
     delete [] Sigma_post[i];
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateLogVpExpectation(const std::vector<int>  & observation_filter,
+                                        const NRLib::Matrix     & prior_var_vp,
+                                        FFTGrid                 * mu_vp,
+                                        FFTGrid                 * cov_vp,
+                                        FFTGrid                 * stationary_observations,
+                                        FFTGrid                 * stationary_observation_covariance,
+                                        FFTGrid                *& post_mu_vp) const
+{
+  if (mu_vp->getIsTransformed() == false)
+    mu_vp->fftInPlace();
+  if (cov_vp->getIsTransformed() == false)
+    cov_vp->fftInPlace();
+
+  mu_vp ->setAccessMode(FFTGrid::READ);
+  cov_vp->setAccessMode(FFTGrid::READ);
+
+  if (stationary_observations->getIsTransformed() == false)
+    stationary_observations->fftInPlace();
+
+  if (stationary_observation_covariance->getIsTransformed() == false)
+    stationary_observation_covariance->fftInPlace();
+
+  int nx   = mu_vp->getNx();
+  int ny   = mu_vp->getNy();
+  int nz   = mu_vp->getNz();
+  int nxp  = mu_vp->getNxp();
+  int cnxp = mu_vp->getCNxp();
+  int nyp  = mu_vp->getNyp();
+  int nzp  = mu_vp->getNzp();
+
+  fftw_complex mu_m;
+  fftw_complex var_m;
+  fftw_complex Sigma_m;
+  fftw_complex mu_post;
+
+  fftw_complex data;
+  fftw_complex data_variance;
+  fftw_complex var_d;
+  fftw_complex diff;
+  fftw_complex divide;
+  fftw_complex mu_help;
+
+  post_mu_vp = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+  post_mu_vp->createComplexGrid();
+  post_mu_vp->setType(FFTGrid::PARAMETER);
+  post_mu_vp->setAccessMode(FFTGrid::WRITE);
+
+  for (int k = 0; k < nzp; k++) {
+
+    int filter = observation_filter[k];
+
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
+
+        data          = stationary_observations          ->getNextComplex();
+        data_variance = stationary_observation_covariance->getNextComplex();
+        mu_m          = mu_vp                            ->getNextComplex();
+        var_m         = cov_vp                           ->getNextComplex();
+
+        Sigma_m = SeismicParametersHolder::getParameterCovariance(prior_var_vp, 0, 0, var_m);
+
+        if (filter == 0)
+          post_mu_vp  ->setNextComplex(mu_m);
+        else {
+          addComplex(&Sigma_m, &data_variance, 1, &var_d);
+          subtractComplex(&data, &mu_m, 1, &diff);
+          divideComplex(&diff, &var_d, 1, &divide);
+
+          multiplyComplex(&Sigma_m, &divide, 1, &mu_help);
+          addComplex(&mu_m, &mu_help, 1, &mu_post);
+
+          post_mu_vp  ->setNextComplex(mu_post);
+
+        }
+      }
+    }
+  }
+
+  mu_vp     ->endAccess();
+  cov_vp    ->endAccess();
+  post_mu_vp->endAccess();
+
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateDistanceGrid(const Simbox        * simbox,
+                                    FFTGrid             * mu_vp,
+                                    FFTGrid             * post_mu_vp,
+                                    NRLib::Grid<double> & distance) const
+{
+
+  if (mu_vp->getIsTransformed() == true)
+    mu_vp->invFFTInPlace();
+
+  if (post_mu_vp->getIsTransformed() == true)
+    post_mu_vp->invFFTInPlace();
+
+  int nx  = simbox->getnx();
+  int ny  = simbox->getny();
+  int nz  = simbox->getnz();
+
+  distance.Resize(nx, ny, nz);
+
+  mu_vp     ->setAccessMode(FFTGrid::READ);
+  post_mu_vp->setAccessMode(FFTGrid::READ);
+
+  double d1; // time from top to base of a cell in the old time grid
+  double d2; // time from top to base of a cell in the new time grid
+  double v1; // old velocity, being prior velocity
+  double v2; // new velocity, being posterior velocity
+
+  for (int k = 0; k < nz; k++) {
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0; i < nx; i++) {
+        d1 = simbox    ->getdz(i, j);
+        v1 = mu_vp     ->getRealValue(i, j, k);
+        v2 = post_mu_vp->getRealValue(i, j, k);
+
+        d2 = v1 * d1 / v2;
+
+        distance(i, j, k) = d2;
+      }
+    }
+  }
+
+  mu_vp     ->endAccess();
+  post_mu_vp->endAccess();
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::generateNewSimbox(const NRLib::Grid<double>  & distance,
+                                const double               & lz_limit,
+                                const Simbox               * simbox,
+                                Simbox                    *& new_simbox,
+                                std::string                & errTxt) const
+{
+  Surface base_surface;
+  calculateBaseSurface(distance, simbox, base_surface);
+
+  const int nz = simbox->getnz();
+
+  Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
+
+  new_simbox = new Simbox(simbox);
+  new_simbox->setDepth(top_surface, base_surface, nz);
+  new_simbox->calculateDz(lz_limit, errTxt);
+
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::generateResampleGrid(const NRLib::Grid<double> & distance,
+                                   const Simbox              * old_simbox,
+                                   const Simbox              * new_simbox,
+                                   NRLib::Grid<double>       & resample_grid) const
+{
+  int nx  = new_simbox->getnx();
+  int ny  = new_simbox->getny();
+  int nz  = new_simbox->getnz();
+
+  resample_grid.Resize(nx, ny, nz, 0);
+
+  double tk; // k * dz
+  double d1; // time from top to base of a cell in the old time grid
+  double dz; // time from top to base of a cell in the new time grid
+  double r;  // Position of tk between t2(l), t2(l+1)
+  int    l;  // Largest integer satisfying t2(l) <= tk
+
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+
+      d1 = old_simbox->getdz(i, j);
+      dz = new_simbox->getdz(i, j);
+
+      std::vector<double> t2(nz + 1, 0);
+      for (int k = 1; k < nz + 1; ++k)
+        t2[k] = t2[k - 1] + distance(i, j, k - 1);
+
+      l = 0;
+      for (int k = 0; k < nz; k++) {
+        tk = k * dz;
+
+        while(tk >= t2[l])
+          l++;
+        l--;
+
+        r = (tk - t2[l]) / (t2[l+1] - t2[l]);
+
+        resample_grid(i, j, k) =  (l + r) * d1;
+      }
+
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
+                                        const Simbox              * old_simbox,
+                                        SeismicParametersHolder   & seismic_parameters) const
+{
+  std::string text = "\nResampling background:";
+  LogKit::LogFormatted(LogKit::Low, text);
+
+  FFTGrid * mu_alpha = seismic_parameters.GetMuAlpha();
+  FFTGrid * mu_beta  = seismic_parameters.GetMuBeta();
+  FFTGrid * mu_rho   = seismic_parameters.GetMuRho();
+
+  mu_alpha->setAccessMode(FFTGrid::READANDWRITE);
+  mu_beta ->setAccessMode(FFTGrid::READANDWRITE);
+  mu_rho  ->setAccessMode(FFTGrid::READANDWRITE);
+
+  int nx = old_simbox->getnx();
+  int ny = old_simbox->getny();
+  int nz = old_simbox->getnz();
+
+  // Resample grid tells where in the old simbox we should look for a value for the given cell in the new simbox;
+  // the location is given as a time value, so any useful interpolation may be applied
+  double alpha;
+  double beta;
+  double rho;
+  double prev_alpha;
+  double prev_beta;
+  double prev_rho;
+  double new_alpha;
+  double new_beta;
+  double new_rho;
+  double dz;
+  double t;
+
+  for (int i = 0; i < nx; ++i) {
+    for (int j = 0; j < ny; ++j) {
+
+      dz = old_simbox->getdz(i, j);
+
+      prev_alpha = mu_alpha->getRealValue(i, j, 0);
+      prev_beta  = mu_beta ->getRealValue(i, j, 0);
+      prev_rho   = mu_rho  ->getRealValue(i, j, 0);
+
+      for (int k = 0; k < nz; ++k) {
+
+        t = resample_grid(i, j, k) - dz * k;
+
+        alpha = mu_alpha->getRealValue(i, j, k);
+        beta  = mu_beta ->getRealValue(i, j, k);
+        rho   = mu_rho  ->getRealValue(i, j, k);
+
+        new_alpha = prev_alpha * (1 - t) + alpha * t;
+        new_beta  = prev_beta  * (1 - t) + beta  * t;
+        new_rho   = prev_rho   * (1 - t) + rho   * t;
+
+        mu_alpha->setRealValue(i, j, k, static_cast<float>(new_alpha));
+        mu_beta ->setRealValue(i, j, k, static_cast<float>(new_beta));
+        mu_rho  ->setRealValue(i, j, k, static_cast<float>(new_rho));
+
+        prev_alpha = alpha;
+        prev_beta  = beta;
+        prev_rho   = rho;
+
+      }
+    }
+  }
+
+  mu_alpha->endAccess();
+  mu_beta->endAccess();
+  mu_rho->endAccess();
+
+  seismic_parameters.setBackgroundParameters(mu_alpha,
+                                             mu_beta,
+                                             mu_rho);
+}
+
+//-----------------------------------------------------------------------------------------//
+
+void
+RMSInversion::calculateBaseSurface(const NRLib::Grid<double> & distance,
+                                   const Simbox              * simbox,
+                                   Surface                   & base_surface) const
+{
+
+  Surface top_surface(dynamic_cast<const Surface &> (simbox->GetTopSurface()));
+
+  base_surface = top_surface;
+
+  //
+  // If a constant time surface has been used, it may have only four grid
+  // nodes. To handle this situation we use the grid resolution whenever
+  // this is larger than the surface resolution.
+  //
+
+  int ni = static_cast<int>(top_surface.GetNI());
+  int nj = static_cast<int>(top_surface.GetNJ());
+
+  int maxNx = std::max(simbox->getnx(), ni);
+  int maxNy = std::max(simbox->getny(), nj);
+
+  base_surface.Resize(maxNx, maxNy);
+
+  double dx = 0.5 * top_surface.GetDX();
+  double dy = 0.5 * top_surface.GetDY();
+
+  int nz = simbox->getnz();
+
+  for (int j = 0; j < nj; ++j) {
+    for (int i = 0; i < ni; ++i) {
+
+      double x, y;
+      top_surface.GetXY(i, j, x, y);
+
+      int ii, jj;
+      simbox->getIndexes(x, y, ii, jj);
+
+      if (ii != IMISSING && jj != IMISSING) {
+        double sum = 0.0;
+
+        for (int k = 0; k < nz; ++k)
+          sum += distance(ii, jj, k);
+
+        base_surface(i, j) = sum;
+      }
+      else {
+        int i1, i2, i3, i4, j1, j2, j3, j4;
+        simbox->getIndexes(x + dx, y + dy, i1, j1);
+        simbox->getIndexes(x - dx, y - dy, i2, j2);
+        simbox->getIndexes(x + dx, y - dy, i3, j3);
+        simbox->getIndexes(x - dx, y + dy, i4, j4);
+
+        int n = 0;
+        if (i1 != IMISSING && j1 != IMISSING)
+          n++;
+        if (i2 != IMISSING && j2 != IMISSING)
+          n++;
+        if (i3 != IMISSING && j3 != IMISSING)
+          n++;
+        if (i4 != IMISSING && j4 != IMISSING)
+          n++;
+
+        if (n == 0)
+          base_surface.SetMissing(i, j);
+
+        else {
+          double sum = 0.0;
+
+          for (int k = 0; k < nz; ++k) {
+            if (i1 != IMISSING && j1 != IMISSING)
+              sum += distance(i1, j1, k);
+
+            if (i2 != IMISSING && j2 != IMISSING)
+              sum += distance(i2, j2, k);
+
+            if (i3 != IMISSING && j3 != IMISSING)
+              sum += distance(i3, j3, k);
+
+            if (i4 != IMISSING && j4 != IMISSING)
+              sum += distance(i4, j4, k);
+          }
+
+          base_surface(i, j) = sum / static_cast<double>(n);
+        }
+      }
+    }
+  }
+
+  base_surface.AddNonConform(&top_surface);
 }

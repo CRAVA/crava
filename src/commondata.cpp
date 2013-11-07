@@ -30,4 +30,3 @@ bool CommonData::readSeismicData() {
 
   return true;
 }
-
