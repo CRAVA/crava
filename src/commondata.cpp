@@ -42,6 +42,8 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_trend_cubes_(false),
   setup_estimation_rock_physics_(false),
   setup_prior_facies_probabilities_(false),
+  setup_depth_conversion_(false),
+  setup_background_model_(false),
   setup_prior_correlation_(false),
   setup_timeline_(false),
   //prior_corr_estimation_(false),
@@ -148,6 +150,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
   // 16. Data for Travel time Inversion
   setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
+  // 17. Depth Conversion
+  if(multiple_interval_grid_->GetNIntervals() == 1)
+    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
 }
 
@@ -5000,10 +5005,76 @@ CommonData::ReadStormFile(const std::string                 & file_name,
   }
 }
 
-bool
-CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
-                                 InputFiles     * input_files,
-                                 std::string    & err_text_common) {
+bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
+                                      InputFiles     * input_files,
+                                      std::string    & err_text_common) {
+
+
+  //From ModelGeneral::ProcessDepthConversion
+  std::string err_text = "";
+
+  NRLib::Grid<double> velocity;
+  std::string velocity_field = input_files->getVelocityField();
+  velocity_from_inversion_ = false;
+
+  LoadVelocity(velocity,
+               &estimation_simbox_,
+               model_settings,
+               velocity_field,
+               velocity_from_inversion_,
+               err_text);
+
+  if(err_text == "") {
+    bool failed_dummy = false;
+
+    time_depth_mapping_ = new GridMapping();
+    time_depth_mapping_->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
+    if(velocity.GetN() != 0) {
+
+      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &estimation_simbox_);
+      time_depth_mapping_->setDepthSimbox(&estimation_simbox_, estimation_simbox_.getnz(),
+                                        model_settings->getOutputGridFormat(),
+                                        failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
+      time_depth_mapping_->makeTimeDepthMapping(velocity, &estimation_simbox_);
+
+      if((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp. Add writing-functions to NRLib::Grid?
+        std::string base_name  = IO::FileTimeToDepthVelocity();
+        std::string sgri_label = std::string("Time-to-depth velocity");
+        float       offset    = model_settings->getSegyOffset(0);//Only allow one segy offset for time lapse data
+
+        FFTGrid * velocity_fft = new FFTGrid(velocity, velocity.GetNI(), velocity.GetNJ(), velocity.GetNK());
+        velocity_fft->writeFile(base_name,
+                                IO::PathToVelocity(),
+                                &estimation_simbox_,
+                                sgri_label,
+                                offset,
+                                time_depth_mapping_);
+        if(velocity_fft != NULL)
+          delete velocity_fft;
+      }
+    }
+    else if (velocity.GetN() == 0 && velocity_from_inversion_ ==false) {
+      time_depth_mapping_->setDepthSimbox(&estimation_simbox_,
+                                          estimation_simbox_.getnz(),
+                                          model_settings->getOutputGridFormat(),
+                                          failed_dummy,
+                                          err_text);
+    }
+  }
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+}
+
+
+
+bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
+                                      InputFiles     * input_files,
+                                      std::string    & err_text_common) {
 
   std::string err_text = "";
 
@@ -5028,7 +5099,7 @@ CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       NRLib::Grid<double> velocity;
       std::string back_vel_file = input_files->getBackVelFile();
-      if (back_vel_file != ""){
+      if (back_vel_file != "") {
         bool dummy;
         LoadVelocity(velocity,
                      &estimation_simbox_,
@@ -6707,11 +6778,6 @@ bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
 
     }
   }
-
-  //ModelGravityStatic is set up in 3 c.
-  //if(err_text == "") {
-  //  model_gravity_static_ = new ModelGravityStatic(model_settings, &estimation_simbox_);
-  //}
 
   if(err_text != "") {
     err_text_common += "Error(s) with gravimetric surveys";

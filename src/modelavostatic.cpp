@@ -122,7 +122,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
                                const InputFiles      * inputFiles,
                                CommonData            * commonData,
                                Simbox                * timeSimbox,
-                               int                     i_intervals)
+                               int                     i_interval)
 {
   forwardModeling_        = modelSettings->getForwardModeling();
 

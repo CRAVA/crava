@@ -368,23 +368,26 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       bool estimationMode = modelSettings->getEstimationMode();
 
       //H Dybdekonverting skal kjøres hvis det ikke er multiinterval? Evt. flytte loadVelocity (eller alt) til CommonData først ettersom det er en innlesning.
-      bool failedDepthConv = false;
+      timeDepthMapping_ = commonData->GetTimeDepthMapping();
+      velocityFromInversion_ = commonData->GetVelocityFromInversion(); //Needed?
 
-      if(estimationMode == false && modelSettings->getDoDepthConversion() == true && commonData->GetMultipleIntervalGrid()->GetNIntervals() == 1)
-      {
-        processDepthConversion(timeSimbox_, timeSimbox_, modelSettings, //First was timeCutSimbox_
-                               inputFiles, errText, failedDepthConv);
-      }
+      //bool failedDepthConv = false;
+
+      //if(estimationMode == false && modelSettings->getDoDepthConversion() == true && commonData->GetMultipleIntervalGrid()->GetNIntervals() == 1)
+      //{
+      //  processDepthConversion(timeSimbox_, timeSimbox_, modelSettings, //First was timeCutSimbox_
+      //                         inputFiles, errText, failedDepthConv);
+      //}
 
       //processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
       //Replace wells with blocked_logs
       blocked_logs_ = commonData->GetBlockedLogs();
 
       //if(failedDepthConv == false) {
-        trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
+      trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
 
-        rock_distributions_  = commonData->GetDistributionsRock();
-        reservoir_variables_ = commonData->GetReservoirVariablesInterval(i_interval); //H Not per interval?
+      rock_distributions_  = commonData->GetDistributionsRock();
+      reservoir_variables_ = commonData->GetReservoirVariablesInterval(i_interval); //H Not per interval?
         //processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
       //}
 

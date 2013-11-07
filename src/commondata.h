@@ -17,6 +17,7 @@
 #include "src/multiintervalgrid.h"
 #include "src/background.h"
 //#include "src/timeevolution.h"
+#include "src/gridmapping.h"
 
 class CravaTrend;
 class InputFiles;
@@ -25,6 +26,7 @@ class ModelSettings;
 class TimeLine;
 //class ModelGravityStatic;
 class MultiIntervalGrid;
+class GridMapping;
 
 class CommonData{
 public:
@@ -61,6 +63,9 @@ public:
   std::vector<float>       & GetGravityObservationDepthInterval(int i)         { return observation_location_depth_[i] ;}
   std::vector<float>       & GetGravityResponseInterval(int i)                 { return gravity_response_[i]           ;}
   std::vector<float>       & GetGravityStdDevInterval(int i)                   { return gravity_std_dev_[i]            ;}
+
+  GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
+  bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
 
 private:
 
@@ -476,6 +481,10 @@ private:
                      bool                                is_storm = true,
                      bool                                nopadding = true);
 
+  bool SetupDepthConversion(ModelSettings  * model_settings,
+                            InputFiles     * input_files,
+                            std::string    & err_text);
+
   bool SetupBackgroundModel(ModelSettings  * model_settings,
                             InputFiles     * input_files,
                             std::string    & err_text);
@@ -635,6 +644,7 @@ private:
   bool setup_trend_cubes_;
   bool setup_estimation_rock_physics_;
   bool setup_prior_facies_probabilities_;
+  bool setup_depth_conversion_;
   bool setup_background_model_;
   bool setup_prior_correlation_;
   bool setup_timeline_;
@@ -712,6 +722,11 @@ private:
   //Traveltime parameters per timelapse
   std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
   std::vector<NRLib::Grid<double> >             rms_data_;                      ///< RMS data U^2
+
+  //Depth conversion
+  GridMapping                                 * time_depth_mapping_;
+  bool                                          velocity_from_inversion_;
+
 
 };
 #endif
