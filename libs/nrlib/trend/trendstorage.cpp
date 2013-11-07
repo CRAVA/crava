@@ -45,21 +45,183 @@ TrendConstantStorage::~TrendConstantStorage()
 Trend *
 TrendConstantStorage::GenerateTrend(const std::string                       & /*path*/,
                                     const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                    const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                    const std::vector<std::vector<double> > & trend_cube_sampling,
                                     const std::vector<std::vector<float> >  & blocked_logs,
-                                    const std::vector<std::vector<double> > & /*s1*/,
-                                    const std::vector<std::vector<double> > & /*s2*/,
-                                    const int                               & /*type*/,
-                                    const NRLib::Trend                      * /*mean_trend*/,
-                                    std::string                             & /*errTxt*/) const
+                                    const std::vector<std::vector<double> > & s1,
+                                    const std::vector<std::vector<double> > & s2,
+                                    const int                               & type,
+                                    const NRLib::Trend                      * mean_trend,
+                                    std::string                             & errTxt) const
 {
-  double mean = 0;
-  if(estimate_ == true)
-    EstimateConstantTrend(blocked_logs, mean);
-  else
-    mean = mean_value_;
+  Trend * trend = NULL;
 
-  Trend * trend = new TrendConstant(mean);
+  if (type == TrendStorage::MEAN) {
+    double mean = 0.0;
+
+    if(estimate_ == true) {
+      EstimateConstantTrend(blocked_logs, mean);
+    } else {
+      mean = mean_value_;
+    }
+
+    trend = new TrendConstant(mean);
+  }
+
+  if (type == TrendStorage::VAR) {
+    double var = 0.0;
+
+    if(estimate_ == true) {
+      if (typeid(*mean_trend) == typeid(NRLib::TrendConstant)) {
+
+        /* --- trend --- */
+        std::vector<double> z;
+        PreprocessData0D(blocked_logs, z);
+
+        int    i_dummy = 0;
+        int    j_dummy = 0;
+        int    k_dummy = 0;
+        double z_mean  = mean_trend->GetTrendElement(i_dummy, j_dummy, k_dummy);
+
+        /* --- variance --- */
+        int z_n = 0;
+        for (size_t i = 0; i < z.size(); i++) {
+          if (z_mean != RMISSING && z[i] != RMISSING) {
+            var = var + (z[i] - z_mean)*(z[i] - z_mean);
+            z_n++;
+          }
+        }
+        if (z_n > 0) {
+          var = var/(z_n - 1);
+        }
+        else {
+          var = RMISSING;
+          errTxt +=  "Error: Unable to compute global variance.\n";
+        }
+      }
+      else if (typeid(*mean_trend) == typeid(NRLib::Trend1D)) {
+        if (mean_trend->GetReference() == 1) {
+          std::vector<double> x;
+          std::vector<double> z;
+
+          PreprocessData1D(s1,
+                           blocked_logs,
+                           trend_cube_sampling[0],
+                           x,
+                           z);
+
+          /* --- trend --- */
+          std::vector<double> trend_cube_trend(trend_cube_sampling[0].size(), 0.0);
+          int j_dummy = 0;
+          int k_dummy = 0;
+
+          for (size_t i = 0; i < trend_cube_trend.size(); i++) {
+            trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
+          }
+
+          std::vector<double> z_mean;
+          LinearInterpolation(trend_cube_sampling[0], trend_cube_trend, x, z_mean);
+
+          /* --- variance --- */
+          int                 z_n   = 0;
+          for (size_t i = 0; i < z.size(); i++) {
+            if (z_mean[i] != RMISSING && z[i] != RMISSING) {
+              var = var + (z[i] - z_mean[i])*(z[i] - z_mean[i]);
+              z_n++;
+            }
+          }
+          if (z_n > 0) {
+            var = var/(z_n - 1);
+          }
+          else {
+            var = RMISSING;
+            errTxt +=  "Error: Unable to compute global variance.\n";
+          }
+        } else if (mean_trend->GetReference() == 2) {
+          std::vector<double> y;
+          std::vector<double> z;
+
+          PreprocessData1D(s2,
+                           blocked_logs,
+                           trend_cube_sampling[1],
+                           y,
+                           z);
+
+          /* --- trend --- */
+          std::vector<double> trend_cube_trend(trend_cube_sampling[1].size(), 0.0);
+          int i_dummy = 0;
+          int k_dummy = 0;
+
+          for (size_t j = 0; j < trend_cube_trend.size(); j++) {
+            trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
+          }
+
+          std::vector<double> z_mean;
+          LinearInterpolation(trend_cube_sampling[1], trend_cube_trend, y, z_mean);
+
+          /* --- variance --- */
+          int                 z_n   = 0;
+          for (size_t i = 0; i < z.size(); i++) {
+            if (z_mean[i] != RMISSING && z[i] != RMISSING) {
+              var = var + (z[i] - z_mean[i])*(z[i] - z_mean[i]);
+              z_n++;
+            }
+          }
+          if (z_n > 0) {
+            var = var/(z_n - 1);
+          }
+          else {
+            var = RMISSING;
+            errTxt +=  "Error: Unable to compute global variance.\n";
+          }
+        }
+      }
+      else if (typeid(*mean_trend) == typeid(NRLib::Trend2D)) {
+        size_t trend_cube_n1 = trend_cube_sampling[0].size();
+        size_t trend_cube_n2 = trend_cube_sampling[1].size();
+
+        /* -- obtain trend surface -- */
+        std::vector<std::vector<double> > trend_cube_trend_2D(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
+        int k_dummy = 0;
+        for (size_t i = 0; i < trend_cube_n1; i++) {
+          for (size_t j = 0; j < trend_cube_n2; j++) {
+            trend_cube_trend_2D[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
+          }
+        }
+
+        /* preprocess and variance */
+        std::vector<double> x;
+        std::vector<double> y;
+        std::vector<double> z;
+
+        PreprocessData2D(s1,
+                         s2,
+                         blocked_logs,
+                         trend_cube_sampling,
+                         x,
+                         y,
+                         z);
+
+        int z_n   = 0;
+        for (size_t i = 0; i < z.size(); i++) {
+          double z_mean_i = Interpolate(trend_cube_sampling[0], trend_cube_sampling[1], trend_cube_trend_2D, x[i], y[i]);
+          if (z_mean_i != RMISSING && z[i] != RMISSING) {
+            var = var + (z[i] - z_mean_i)*(z[i] - z_mean_i);
+            z_n++;
+          }
+        }
+        if (z_n > 0) {
+          var = var/(z_n - 1);
+        }
+        else {
+          var = RMISSING;
+          errTxt +=  "Error: Unable to compute global variance.\n";
+        }
+      }
+    } else {
+      var = mean_value_;
+    }
+    trend = new TrendConstant(var);
+  }
   return trend;
 }
 
@@ -94,10 +256,10 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
                               const std::vector<std::string>          & trend_cube_parameters,
                               const std::vector<std::vector<double> > & trend_cube_sampling,
                               const std::vector<std::vector<float> >  & blocked_logs,
-                              const std::vector<std::vector<double> > & /*s1*/,
-                              const std::vector<std::vector<double> > & /*s2*/,
-                              const int                               & /*type*/,
-                              const NRLib::Trend                      * /*mean_trend*/,
+                              const std::vector<std::vector<double> > & s1,
+                              const std::vector<std::vector<double> > & s2,
+                              const int                               & type,
+                              const NRLib::Trend                      * mean_trend,
                               std::string                             & errTxt) const
 {
   Trend * trend = NULL;
@@ -114,8 +276,8 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
     return(0);
   }
 
-  int n_cube_samples = static_cast<int>(trend_cube_sampling[reference-1].size());
-  double increment   = trend_cube_sampling[reference-1][1]-trend_cube_sampling[reference-1][0];
+  int                 n_cube_samples = static_cast<int>(trend_cube_sampling[reference-1].size());
+  double              increment      = trend_cube_sampling[reference-1][1]-trend_cube_sampling[reference-1][0];
 
   std::vector<double> resampled_trend(static_cast<int>(n_cube_samples));;
   std::vector<double> trend_values;
@@ -123,19 +285,196 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
   double              s_min;
   double              dz;
 
+
   if(estimate_ == true) {
 
-    Estimate1DTrend(blocked_logs, trend_values);
+    double scale = 1.414214;
 
-    s_min = trend_cube_sampling[reference-1][0];
-    double s_max = trend_cube_sampling[reference-1][n_cube_samples-1];
-    dz = (s_max - s_min + 1)/(static_cast<int>(trend_values.size()));
+    if (type == TrendStorage::MEAN) {
+      std::vector<double> trend_estimate;
+      if (reference == 1) {
+        std::vector<double> x;
+        std::vector<double> z;
 
-    trend_sampling.resize(trend_values.size());
+        PreprocessData1D(s1,
+                         blocked_logs,
+                         trend_cube_sampling[0],
+                         x,
+                         z);
 
-    for(int i=0; i<static_cast<int>(trend_values.size()); i++)
-      trend_sampling[i] = s_min + i*dz;
+        double bandwidth = CalculateBandwidth(x, scale, 0.2);
 
+        if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
+          EstimateTrend1D(x,
+                          z,
+                          trend_cube_sampling[0],
+                          trend_estimate,
+                          bandwidth,
+                          errTxt);
+        }
+      }
+      else if (reference == 2) {
+        std::vector<double> y;
+        std::vector<double> z;
+
+        PreprocessData1D(s2,
+                         blocked_logs,
+                         trend_cube_sampling[1],
+                         y,
+                         z);
+
+        double bandwidth = CalculateBandwidth(y, scale, 0.2);
+        if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth,errTxt)) {
+          EstimateTrend1D(y,
+                          z,
+                          trend_cube_sampling[1],
+                          trend_estimate,
+                          bandwidth,
+                          errTxt);
+        }
+      }
+      trend = new Trend1D(trend_estimate, reference, increment);
+    }
+
+    if (type == TrendStorage::VAR) {
+      std::vector<double> variance_estimate;
+      if (typeid(*mean_trend) == typeid(NRLib::TrendConstant) || typeid(*mean_trend) == typeid(NRLib::Trend1D)) {
+        if (reference == 1) {
+
+          /* -- obtain trend -- */
+          std::vector<double> trend_cube_trend(trend_cube_sampling[0].size(), 0.0);
+          int j_dummy = 0;
+          int k_dummy = 0;
+
+          for (size_t i = 0; i < trend_cube_trend.size(); i++) {
+            trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
+          }
+          /* ------------------ */
+
+          std::vector<double> x;
+          std::vector<double> z;
+
+          PreprocessData1D(s1,
+                           blocked_logs,
+                           trend_cube_sampling[reference - 1],
+                           x,
+                           z);
+
+          double bandwidth = CalculateBandwidth(x, scale, 0.2);
+
+          if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
+            EstimateVariance1D(x,
+                               z,
+                               trend_cube_sampling[0],
+                               trend_cube_trend,
+                               variance_estimate,
+                               bandwidth,
+                               errTxt);
+          }
+        }
+        else if (reference == 2) {
+
+          /* -- obtain trend -- */
+          std::vector<double> trend_cube_trend(trend_cube_sampling[1].size(), 0.0);
+          int i_dummy = 0;
+          int k_dummy = 0;
+
+          for (size_t j = 0; j < trend_cube_trend.size(); j++) {
+            trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
+          }
+          /* ------------------ */
+
+          std::vector<double> y;
+          std::vector<double> z;
+
+          PreprocessData1D(s2,
+                           blocked_logs,
+                           trend_cube_sampling[reference - 1],
+                           y,
+                           z);
+
+          double bandwidth = CalculateBandwidth(y, scale, 0.2);
+
+          if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth,errTxt)) {
+            EstimateVariance1D(y,
+                               z,
+                               trend_cube_sampling[1],
+                               trend_cube_trend,
+                               variance_estimate,
+                               bandwidth,
+                               errTxt);
+          }
+        }
+      }
+      else if (typeid(*mean_trend) == typeid(NRLib::Trend2D)) {
+        size_t trend_cube_n1 = trend_cube_sampling[0].size();
+        size_t trend_cube_n2 = trend_cube_sampling[1].size();
+
+        /* -- obtain trend surface -- */
+        std::vector<std::vector<double> > trend_cube_trend_2D(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
+        int k_dummy = 0;
+        for (size_t i = 0; i < trend_cube_n1; i++) {
+          for (size_t j = 0; j < trend_cube_n2; j++) {
+            trend_cube_trend_2D[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
+          }
+        }
+        /* -------------------------- */
+
+        /* preprocess and mean-correct observations */
+        std::vector<double> x;
+        std::vector<double> y;
+        std::vector<double> z;
+
+        PreprocessData2D(s1,
+                         s2,
+                         blocked_logs,
+                         trend_cube_sampling,
+                         x,
+                         y,
+                         z);
+
+        for (size_t i = 0; i < z.size(); i++) {
+          double z_trend_i = Interpolate(trend_cube_sampling[0], trend_cube_sampling[1], trend_cube_trend_2D, x[i], y[i]);
+          if (z_trend_i != RMISSING && z[i] != RMISSING) {
+            z[i] = (z[i] - z_trend_i);
+          } else {
+            z[i] = RMISSING;
+          }
+        }
+        /* ---------------------------------------- */
+
+        // the observations are already mean-corrected.
+        std::vector<double> trend_cube_trend_dummy(trend_cube_sampling[reference - 1].size(), 0.0);
+
+        if (reference == 1) {
+          double bandwidth = CalculateBandwidth(x, scale, 0.2);
+
+          if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
+            EstimateVariance1D(x,
+                               z,
+                               trend_cube_sampling[0],
+                               trend_cube_trend_dummy,
+                               variance_estimate,
+                               bandwidth,
+                               errTxt);
+          }
+        }
+        else if (reference == 2) {
+          double bandwidth = CalculateBandwidth(y, scale, 0.2);
+
+          if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth, errTxt)) {
+            EstimateVariance1D(y,
+                               z,
+                               trend_cube_sampling[1],
+                               trend_cube_trend_dummy,
+                               variance_estimate,
+                               bandwidth,
+                               errTxt);
+          }
+        }
+      }
+      trend = new Trend1D(variance_estimate, reference, increment);
+    }
   }
   else {
 
@@ -169,18 +508,17 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
 
       }
     }
+
+    if(errTxt == "") {
+      ResampleTrend1D(trend_sampling,
+                      trend_values,
+                      trend_cube_sampling[reference-1],
+                      resampled_trend);
+
+      trend = new Trend1D(resampled_trend, reference, increment);
+
+    }
   }
-
-  if(errTxt == "") {
-    ResampleTrend1D(trend_sampling,
-                    trend_values,
-                    trend_cube_sampling[reference-1],
-                    resampled_trend);
-
-    trend = new Trend1D(resampled_trend, reference, increment);
-
-  }
-
   return trend;
 }
 
@@ -223,54 +561,120 @@ Trend2DStorage::GenerateTrend(const std::string                       & path,
   Trend * trend = NULL;
 
   if(estimate_ == true) {
-    size_t                            ns1        = trend_cube_sampling[0].size();
-    size_t                            ns2        = trend_cube_sampling[1].size();
+    size_t                            trend_cube_n1 = trend_cube_sampling[0].size();
+    size_t                            trend_cube_n2 = trend_cube_sampling[1].size();
+    double                            increment1    = trend_cube_sampling[0][1] - trend_cube_sampling[0][0];
+    double                            increment2    = trend_cube_sampling[1][1] - trend_cube_sampling[1][0];
+    Grid2D<double>                    trend_grid(trend_cube_n1, trend_cube_n2, RMISSING);
 
-    int                               reference1 = 1;
-    int                               reference2 = 2;
-
-    double                            increment1 = trend_cube_sampling[0][1] - trend_cube_sampling[0][0];
-    double                            increment2 = trend_cube_sampling[1][1] - trend_cube_sampling[1][0];
-
-    Grid2D<double>                    trend_grid(ns1, ns2, RMISSING);
+    double                            scale        = 1.0;
+    double                            bandwidth_x;
+    double                            bandwidth_y;
+    std::vector<double>               x;
+    std::vector<double>               y;
+    std::vector<double>               z;
 
     if (type == TrendStorage::MEAN) {
+      PreprocessData2D(s1,
+                       s2,
+                       blocked_logs,
+                       trend_cube_sampling,
+                       x,
+                       y,
+                       z);
 
-      std::vector<std::vector<double> > mean_surface(ns1, std::vector<double>(ns2, RMISSING));
+      /* -- estimate mean surface -- */
+      std::vector<std::vector<double> > trend_surface(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
 
-      Estimate2DTrend(blocked_logs, trend_cube_sampling, s1, s2, mean_surface, errTxt);
+      bool valid_dataset = CheckConfigurations2D(x,
+                                                 y,
+                                                 z,
+                                                 trend_cube_sampling[0],
+                                                 trend_cube_sampling[1],
+                                                 bandwidth_x,
+                                                 bandwidth_y,
+                                                 errTxt);
 
-      for (size_t i = 0; i < ns1; i++) {
-        for (size_t j = 0; j < ns2; j++) {
-          trend_grid(i, j) = mean_surface[i][j];
+      if (valid_dataset) {
+
+        // Note that: n^{-0.167} \approx n^{-1/6}
+        bandwidth_x = CalculateBandwidth(x, scale, 0.167);
+        bandwidth_y = CalculateBandwidth(y, scale, 0.167);
+
+        EstimateTrend2D(x,
+                        y,
+                        z,
+                        trend_cube_sampling[0],
+                        trend_cube_sampling[1],
+                        trend_surface,
+                        bandwidth_x,
+                        bandwidth_y,
+                        errTxt);
+      }
+
+      for (size_t i = 0; i < trend_cube_n1; i++) {
+        for (size_t j = 0; j < trend_cube_n2; j++) {
+          trend_grid(i, j) = trend_surface[i][j];
         }
       }
-      trend = new Trend2D(trend_grid, reference1, reference2, increment1, increment2);
+      trend = new Trend2D(trend_grid, 1, 2, increment1, increment2);
     }
 
     if (type == TrendStorage::VAR) {
       if (mean_trend != NULL) {
 
-        std::vector<std::vector<double> > mean_surface(ns1, std::vector<double>(ns2, RMISSING));
-
-        int k_dummy = -999;
-        for (size_t i = 0; i < ns1; i++) {
-          for (size_t j = 0; j < ns2; j++) {
-            mean_surface[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
+        /* -- obtain trend surface -- */
+        std::vector<std::vector<double> > trend_cube_trend(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
+        int k_dummy = 0;
+        for (size_t i = 0; i < trend_cube_n1; i++) {
+          for (size_t j = 0; j < trend_cube_n2; j++) {
+            trend_cube_trend[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
           }
         }
+        /* -------------------------- */
 
-        std::vector<std::vector<double> > var_surface(ns1, std::vector<double>(ns2, RMISSING));
+        PreprocessData2D(s1,
+                         s2,
+                         blocked_logs,
+                         trend_cube_sampling,
+                         x,
+                         y,
+                         z);
 
-        Estimate2DVariance(blocked_logs, trend_cube_sampling, s1, s2, mean_surface, var_surface, errTxt);
+        std::vector<std::vector<double> > trend_cube_variance(trend_cube_n1, std::vector<double>(trend_cube_n1, RMISSING));
 
-        for (size_t i = 0; i < ns1; i++) {
-          for (size_t j = 0; j < ns2; j++) {
-            trend_grid(i, j) = var_surface[i][j];
+        bool valid_dataset = CheckConfigurations2D(x,
+                                                   y,
+                                                   z,
+                                                   trend_cube_sampling[0],
+                                                   trend_cube_sampling[1],
+                                                   bandwidth_x,
+                                                   bandwidth_y,
+                                                   errTxt);
+        if (valid_dataset) {
+          bandwidth_x = CalculateBandwidth(x, scale, 0.167);
+          bandwidth_y = CalculateBandwidth(y, scale, 0.167);
+
+          EstimateVariance2D(x,
+                             y,
+                             z,
+                             trend_cube_sampling[0],
+                             trend_cube_sampling[1],
+                             trend_cube_trend,
+                             trend_cube_variance,
+                             bandwidth_x,
+                             bandwidth_y,
+                             errTxt);
+        }
+
+        for (size_t i = 0; i < trend_cube_n1; i++) {
+          for (size_t j = 0; j < trend_cube_n2; j++) {
+            trend_grid(i, j) = trend_cube_variance[i][j];
           }
         }
-        trend = new Trend2D(trend_grid, reference1, reference2, increment1, increment2);
-      } else {
+        trend = new Trend2D(trend_grid, 1, 2, increment1, increment2);
+      }
+      else {
         errTxt += "Error: Invalid trend surface for variance estimation.\n";
       }
     }

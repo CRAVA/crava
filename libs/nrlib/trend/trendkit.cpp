@@ -35,9 +35,26 @@ void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_log
       trend = trend/count;
   }
 }
-
 //-------------------------------------------------------------------------------
+void PreprocessData0D(const std::vector<std::vector<float> > & blocked_logs,
+                      std::vector<double>                    & y)
+{
+  y.clear();
 
+  if (blocked_logs.size() > 0) {
+    for (size_t i = 0; i < blocked_logs.size(); i++) {
+      if (blocked_logs[i].size() > 0) {
+        for (size_t j = 0; j < blocked_logs[i].size(); j++) {
+          double y_j_log = blocked_logs[i][j];
+          if (y_j_log != RMISSING) {
+            y.push_back(std::exp(y_j_log));
+          }
+        }
+      }
+    }
+  }
+}
+//-------------------------------------------------------------------------------
 void ReadTrend1D(const std::string        & file_name,
                       std::string         & errText,
                       std::vector<double> & trend1d,
@@ -239,166 +256,648 @@ void ResampleTrend1D(const std::vector<double> & x,
   }
 }
 //-------------------------------------------------------------------------------
-void Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                     std::vector<double>                     & trend)
+void EstimateTrend1D(const std::vector<double> & x,
+                     const std::vector<double> & y,
+                     const std::vector<double> & x0,
+                     std::vector<double>       & y0,
+                     double                      bandwidth,
+                     std::string               & errTxt)
 {
-  int nWells  = static_cast<int>(blocked_logs.size());
+  std::vector<double> x_binned     = x;
+  std::vector<double> y_binned     = y;
+  std::vector<double> w_binned(x_binned.size(), 1.0);
+  std::vector<double> x0_regridded = x0;
+  std::vector<double> y0_regridded = y0;
 
-  if(nWells > 0) {
-    int nBlocks = static_cast<int>(blocked_logs[0].size());
+  // if the number of sample points is too large, we regrid to save computation time.
+  if (x0.size() > 128) {
+    MakeNewGridResolution(bandwidth, x0, x0_regridded);
+  }
+  y0_regridded.resize(x0_regridded.size(), RMISSING);
 
-    trend.resize(nBlocks, 0);
+  // if the sample size is large (> 128^2 = 16384), linear binning is used to save computation time.
+  if (x.size() > 16384) {
+    MakeBinnedDataset1D(x,
+                        y,
+                        x0_regridded,
+                        y_binned,
+                        w_binned);
+    x_binned = x0_regridded;
+  }
 
-    std::vector<int> count(nBlocks, 0);
+  // finds the effective sample size (in ''the best of all worlds'') and use this to
+  // make an adaptive bandwidth for the Kernel estimator.
+  double effective_sample_size = CalculateEffectiveSampleSize1D(x_binned, bandwidth);
 
-    int iWells = 0;
-    for (int w = 0 ; w < nWells ; w++) {
-      if(blocked_logs[w].size() > 0) {
-        for (int k = 0 ; k < nBlocks ; k++) {
-          if(blocked_logs[w][k] != RMISSING) {
-            trend[k] += exp(blocked_logs[w][k]);
-            count[k]++;
-          }
-        }
-        iWells++;
-      }
+  // the effective sample size has to be less than the actual sample size.
+  if (x_binned.size() < effective_sample_size) {
+    effective_sample_size = x_binned.size();
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
+    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+  }
+
+  // local linear regression with varying bandwidth
+  bool   complete_line = false;
+  size_t nr_iterations = 0;
+  while (!complete_line) {
+    LocalLinearRegression1D(x_binned,
+                            y_binned,
+                            w_binned,
+                            bandwidth,
+                            effective_sample_size,
+                            x0_regridded,
+                            y0_regridded,
+                            complete_line);
+
+    bandwidth     = (1.00 + 0.005)*bandwidth;
+    nr_iterations = nr_iterations + 1;
+
+    if (nr_iterations > 1e4) {
+      errTxt +=  "Error: Unable to compute complete trend (type 2).\n";
+      errTxt +=  "       The interpolated region is too large compared to the support of the data.\n";
+      errTxt +=  "       Reduce the size of the estiamted region or use a low dimensional method.\n";
+      break;
     }
+  }
 
-    for (int k = 0 ; k < nBlocks ; k++) {
-      if (count[k] > 0) {
-        trend[k] = trend[k]/count[k];
-      }
-    }
-
-    SmoothTrendWithLocalLinearRegression(trend, count, iWells);
+  // linear interpolation back to the original scale
+  if (x0.size() != x0_regridded.size()) {
+    LinearInterpolation(x0_regridded, y0_regridded, x0, y0);
+  } else {
+    y0 = y0_regridded;
   }
 }
 //-------------------------------------------------------------------------------
-void Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                     const std::vector<std::vector<double> > & trend_cube_sampling,
-                     const std::vector<std::vector<double> > & s1,
-                     const std::vector<std::vector<double> > & s2,
-                     std::vector<std::vector<double> >       & trend,
-                     std::string                             & errTxt)
-{
-  double              scale = 1.0;
-
-  std::vector<double> x;
-  std::vector<double> y;
-  std::vector<double> z;
-  std::vector<double> w;
-  std::vector<double> x0 = trend_cube_sampling[0];
-  std::vector<double> y0 = trend_cube_sampling[1];
-  std::vector<double> x0_regridded;
-  std::vector<double> y0_regridded;
-
-  double              bandwidth_x;
-  double              bandwidth_y;
-
-  bool valid_dataset = PreprocessData2D(blocked_logs,
-                                        trend_cube_sampling,
-                                        s1,
-                                        s2,
-                                        scale,
-                                        x,
-                                        y,
-                                        z,
-                                        w,
-                                        x0_regridded,
-                                        y0_regridded,
-                                        bandwidth_x,
-                                        bandwidth_y,
-                                        errTxt);
-
-  if (valid_dataset) {
-
-    size_t                            x0_regridded_n = x0_regridded.size();
-    size_t                            y0_regridded_n = y0_regridded.size();
-
-    std::vector<std::vector<double> > z0_regridded(x0_regridded_n, std::vector<double>(y0_regridded_n, RMISSING));
-    std::vector<std::vector<double> > w0_regridded_dummy(x0_regridded_n, std::vector<double>(y0_regridded_n, RMISSING));
-
-    bool complete_surface = false;
-    bool stop             = false;
-
-    size_t l = 0;
-    while (!stop) {
-      LocalLinearRegression2DSurface(x,
-                                     y,
-                                     z,
-                                     w,
-                                     bandwidth_x,
-                                     bandwidth_y,
-                                     x0_regridded,
-                                     y0_regridded,
-                                     z0_regridded,
-                                     w0_regridded_dummy,
-                                     complete_surface);
-
-      bandwidth_x = (1 + 0.02)*bandwidth_x;
-      bandwidth_y = (1 + 0.02)*bandwidth_y;
-
-      if (complete_surface) {
-        stop = true;
-      } else if (l > 1e4) {
-        errTxt +=  "Error: Unable to compute complete trend surface (type 3). \n";
-        errTxt +=  "       The interpolated region is too large compared to the support of the data. \n";
-        errTxt +=  "       Reduce the size of the estiamted region or use a low dimensional method. \n";
-      }
-      l = l + 1;
-    }
-    BilinearInterpolation(x0_regridded, y0_regridded, z0_regridded, x0, y0, trend);
-  }
-}
-//-------------------------------------------------------------------------------
-bool PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
-                      const std::vector<std::vector<double> > & trend_cube_sampling,
-                      const std::vector<std::vector<double> > & s1,
-                      const std::vector<std::vector<double> > & s2,
-                      const double                            & scale,
+void PreprocessData1D(const std::vector<std::vector<double> > & s,
+                      const std::vector<std::vector<float> >  & blocked_logs,
+                      const std::vector<double>               & trend_cube_sampling,
                       std::vector<double>                     & x,
-                      std::vector<double>                     & y,
-                      std::vector<double>                     & z,
-                      std::vector<double>                     & w,
-                      std::vector<double>                     & x0_regridded,
-                      std::vector<double>                     & y0_regridded,
-                      double                                  & bandwidth_x,
-                      double                                  & bandwidth_y,
-                      std::string                             & errTxt)
+                      std::vector<double>                     & y)
 {
   size_t n_wells   = blocked_logs.size();
-  size_t n_samples = 0;
+
+  x.clear();
+  y.clear();
 
   if (n_wells > 0) {
     for (size_t i = 0; i < n_wells; i++) {
       size_t n_samples_i = blocked_logs[i].size();
 
       if (n_samples_i > 0) {
-        n_samples = n_samples + n_samples_i;
-
         for (size_t j = 0; j < n_samples_i; j++) {
-          double x_j     = s1[i][j];
-          double y_j     = s2[i][j];
-          double z_j_log = blocked_logs[i][j];
+          double x_j     = s[i][j];
+          double y_j_log = blocked_logs[i][j];
 
-          if (x_j != RMISSING && x_j != RMISSING && z_j_log != RMISSING) {
+          if (x_j != RMISSING && y_j_log != RMISSING) {
             x.push_back(x_j);
-            y.push_back(y_j);
-            z.push_back(std::exp(z_j_log));
-            w.push_back(1.0);
+            y.push_back(std::exp(y_j_log));
           }
         }
       }
     }
   }
+}
+//-------------------------------------------------------------------------------
+bool CheckConfigurations1D(const std::vector<double> & x,
+                           const std::vector<double> & y,
+                           const std::vector<double> & x0,
+                           const double              & bandwidth,
+                           std::string               & errTxt)
+{
+  double delta     = 1e-5;
+  double upp       = 3.0;
+  double large     = 1.0;
 
+  size_t n_samples = y.size();
+  size_t n_low     = 10;
+  size_t n_small   = 32;
+
+  double x_min     = *std::min_element(x.begin(), x.end());
+  double x_max     = *std::max_element(x.begin(), x.end());
+  double x_delta   = std::abs(x_max - x_min);
+  double x_upp     = upp*x_delta;
+  double x_large   = large*x_delta;
+  double x0_min    = *std::min_element(x0.begin(), x0.end());
+  double x0_max    = *std::max_element(x0.begin(), x0.end());
+
+  if (!CheckIfVectorIsSorted(x0)) {
+    errTxt += "Error: The inputs vector is not sorted. \n";
+    return(false);
+  }
+  else {
+    if (x0_min < x_min - x_upp && x_max + x_upp < x0_max) {
+      errTxt += "Error: Unable to compute complete trend (type 1).\n";
+      errTxt += "       The interpolated region is too large compared to the support of the data.\n";
+      errTxt += "       Reduce the size of the estiamted region or use a low dimensional method.\n";
+      return(false);
+    }
+    else {
+      if (x0_min < x_min - x_large || x_max + x_large < x0_max) {
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING : The defined region is large compared to the support of the data. This can result in unstable estimates.\n");
+        LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method.\n");
+      }
+
+      else {
+        if (n_samples < n_low) {
+          errTxt += "Error: Too few observations. \n";
+          errTxt += "       The algorithm requires at least 11 observations. \n";
+          return(false);
+        }
+        else {
+          if (bandwidth < delta) {
+            errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
+            return(false);
+          }
+          else {
+            if (n_samples < n_small) {
+              LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
+              LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+            }
+          }
+        }
+      }
+    }
+  }
+  return(true);
+}
+//-------------------------------------------------------------------------------
+void MakeBinnedDataset1D(const std::vector<double>         & x,
+                         const std::vector<double>         & y,
+                         const std::vector<double>         & x_new,
+                         std::vector<double>               & y_new,
+                         std::vector<double>               & w_new)
+{
+  double epsilon            = 1e-5;
+
+  size_t x_new_n            = x_new.size();
+
+  double x_new_low          = x_new.front();
+  double x_new_upp          = x_new.back();
+  double x_new_inc          = x_new[1] - x_new[0];
+  double x_new_one_over_inc = 1/x_new_inc;
+
+  y_new.clear();
+  w_new.clear();
+
+  y_new.resize(x_new_n, 0.0);
+  w_new.resize(x_new_n, 0.0);
+
+  size_t j;
+  double weight;
+  for (size_t i = 0; i < y.size(); i++) {
+    if (x[i] < x_new_low + epsilon) {
+      j        = 0;
+      weight   = std::max(1.0 - std::abs(x[i] - x_new[j])*x_new_one_over_inc, 0.0);
+
+      w_new[j] = w_new[j] + weight;
+      y_new[j] = y_new[j] + weight*y[i];
+    }
+    else if (x[i] > x_new_upp - epsilon) {
+      j        = x_new_n - 1;
+      weight   = std::max(1.0 - std::abs(x[i] - x_new[j])*x_new_one_over_inc, 0.0);
+
+      w_new[j] = w_new[j] + weight;
+      y_new[j] = y_new[j] + weight*y[i];
+    }
+    else {
+      j            = static_cast<size_t>(std::floor((x[i] - x_new_low)*x_new_one_over_inc));
+      weight       = std::max(1.0 - std::abs(x[i] - x_new[j])*x_new_one_over_inc, 0.0);
+
+      w_new[j]     = w_new[j] + weight;
+      y_new[j]     = y_new[j] + weight*y[i];
+      w_new[j + 1] = w_new[j + 1] + (1 - weight);
+      y_new[j + 1] = y_new[j + 1] + (1 - weight)*y[i];
+    }
+  }
+  for (size_t i = 0; i < y_new.size(); i++) {
+    if (y_new[i] != 0.0) {
+      y_new[i] = y_new[i]/w_new[i];
+    }
+    else {
+      y_new[i] = RMISSING;
+    }
+  }
+}
+//-------------------------------------------------------------------------------
+void LocalLinearRegression1D(const std::vector<double> & x,
+                             const std::vector<double> & y,
+                             const std::vector<double> & w,
+                             const double              & bandwidth,
+                             const double              & effective_sample_size,
+                             const std::vector<double> & x0,
+                             std::vector<double>       & y0,
+                             bool                      & complete_line)
+{
+  size_t              n_y                       = y.size();
+
+  double              threshold_times_bandwidth = (std::pow(std::log(1e5), 0.5))*bandwidth;
+  double              one_over_bandwidth_sq     = 1.0/(bandwidth*bandwidth);
+  double              delta_limit               = 2*std::log(1e5);
+
+  std::vector<double> x_order(n_y);
+  std::vector<size_t> x_backward(n_y);
+  std::vector<size_t> x_forward(n_y);
+  SortOrderAndRank(x, x_order, x_backward, x_forward);
+
+  std::vector<double> weights;
+  weights.reserve(n_y);
+
+  std::vector<size_t> index;
+  index.reserve(n_y);
+
+  complete_line = true;
+  for (size_t i = 0; i < x0.size(); i++) {
+    if (y0[i] == RMISSING) {
+      double weight_i = 0.0;
+      double x_low    = x0[i] - threshold_times_bandwidth;
+      double x_upp    = x0[i] + threshold_times_bandwidth;
+
+      size_t x_low_j  = FindLowerBoundInSortedVector(x_order, x_low);
+      size_t x_upp_j  = FindUpperBoundInSortedVector(x_order, x_upp);
+
+      for (size_t j = x_low_j; j < x_upp_j + 1; j++) {
+        size_t k       = x_backward[j];
+        double delta_j = (x0[i] - x[k])*(x0[i] - x[k])*one_over_bandwidth_sq;
+
+        if (delta_j < delta_limit && y[k] != RMISSING) {
+          double weight_j = w[k]*std::exp(-0.5*delta_j);
+          weight_i        = weight_i + weight_j;
+
+          weights.push_back(weight_j);
+          index.push_back(k);
+        }
+      }
+
+      if (weight_i > effective_sample_size) {
+        // calcualte (X^{t}WX) = A and X^{t}Wy = c
+        double a00 = 0.0;
+        double a01 = 0.0;
+        double a11 = 0.0;
+        double c0  = 0.0;
+        double c1  = 0.0;
+
+        for (size_t j = 0; j < index.size(); j++) {
+          size_t k      = index[j];
+          double weight = weights[j];
+
+          a00 = a00 +                weight;
+          a01 = a01 + x[k]          *weight;
+          a11 = a11 + x[k]*x[k]     *weight;
+          c0  = c0  +           y[k]*weight;
+          c1  = c1  + x[k]     *y[k]*weight;
+        }
+
+        // add a small constant epsilon = 1e-4 to make sure that A is invertible
+        //a00                   = a00*(1 + 1e-4);
+        a11                   = a11*(1 + 1e-4);
+
+        // calcualte B = A^{-1}
+        double b00            =  a11;
+        double b01            = -a01;
+        double b11            =  a00;
+        double det_A          =  a00*a11 - a01*a01;
+
+        // if det_A is to small, the esitamted curve becomes unstable
+        if (det_A > 1e-6) {
+          // calculate x_{0}A^{-1}c = x0(X^{t}WX)^{-1}X^{t}y = \hat{y}_{0}
+          double tmp = 0.0;
+          tmp        = tmp +       (b00*c0 + b01*c1)/det_A;
+          tmp        = tmp + x0[i]*(b01*c0 + b11*c1)/det_A;
+          y0[i]      = tmp;
+        } else {
+          y0[i]         = RMISSING;
+          complete_line = false;
+        }
+      } else {
+        y0[i]         = RMISSING;
+        complete_line = false;
+      }
+      index.clear();
+      weights.clear();
+    }
+  }
+}
+//-------------------------------------------------------------------------------
+void LinearInterpolation(const std::vector<double> & x,
+                         const std::vector<double> & y,
+                         const std::vector<double> & x0,
+                         std::vector<double>       & y0)
+{
+  // Note: x is assumed to be a sorted vector
+  double delta          = 1e-5;
+  double x_low          = x.front();
+  double x_upp          = x.back();
+  double x_inc          = x[1] - x[0];
+  double x_one_over_inc = 1/x_inc;
+
+  y0.resize(x0.size(), RMISSING);
+
+  for (size_t i = 0; i < x0.size(); i++) {
+
+    if (x_low - delta < x0[i] && x0[i] < x_upp + delta) {
+      if (x0[i] < x_low + delta) {
+        y0[i] = y.front();
+      }
+      else if (x0[i] > x_upp - delta) {
+        y0[i] = y.back();
+      }
+      else {
+        size_t j      = static_cast<size_t>(std::floor((x0[i] - x_low)*x_one_over_inc));
+        double weight = std::max(1.0 - std::abs(x0[i] - x[j])*x_one_over_inc, 0.0);
+        y0[i]         = weight*y[j] + (1 - weight)*y[j + 1];
+      }
+    } else {
+      y0[i] = RMISSING;
+    }
+  }
+}
+//-------------------------------------------------------------------------------
+void EstimateVariance1D(const std::vector<double> & x,
+                        const std::vector<double> & y,
+                        const std::vector<double> & x0,
+                        const std::vector<double> & trend,
+                        std::vector<double>       & variance,
+                        double                      bandwidth,
+                        std::string               & errTxt)
+{
+  double              delta        = 1e-6;
+
+  std::vector<double> x_binned;
+  std::vector<double> w_binned;
+  std::vector<double> x0_regridded = x0;
+  std::vector<double> w0_regridded(x.size(), RMISSING);
+  std::vector<double> variance_regridded(x.size(), RMISSING);
+
+  /* -- estiamte global variance -- */
+  double              x0_min = *std::min_element(x0.begin(), x0.end());
+  double              x0_max = *std::max_element(x0.begin(), x0.end());
+
+  std::vector<double> y_y_mean_squared_binned;
+  std::vector<double> y_y_mean_squared;
+  std::vector<double> y_mean;
+
+  LinearInterpolation(x0, trend, x, y_mean);
+
+  double              y_var = 0.0;
+  for (size_t i = 0; i < y.size(); i++) {
+    if (y_mean[i] != RMISSING && y[i] != RMISSING && x0_min - delta < x[i] && x[i] < x0_max + delta) {
+      double y_y_mean_squared_i = (y[i] - y_mean[i])*(y[i] - y_mean[i]);
+      y_y_mean_squared.push_back(y_y_mean_squared_i);
+      x_binned.push_back(x[i]);
+      w_binned.push_back(1.0);
+
+      y_var = y_var + y_y_mean_squared_i;
+    }
+  }
+
+  if (y_y_mean_squared.size() > 0) {
+    y_var = y_var/(y_y_mean_squared.size() - 1);
+  }
+  else {
+    y_var = RMISSING;
+  }
+  /* -------------------------------*/
+
+  if (y_var == RMISSING) {
+    errTxt +=  "Error: Unable to compute global variance.\n";
+  }
+  else {
+
+    // resampling
+    if (x0.size() > 128) {
+      MakeNewGridResolution(bandwidth, x0, x0_regridded);
+    }
+
+    // linear binning
+    y_y_mean_squared_binned = y_y_mean_squared;
+    if (x.size() > 16384) {
+      MakeBinnedDataset1D(x,
+                          y_y_mean_squared,
+                          x0_regridded,
+                          y_y_mean_squared_binned,
+                          w_binned);
+     x_binned = x0_regridded;
+    }
+
+    variance_regridded.resize(x0_regridded.size(), RMISSING);
+    w0_regridded.resize(x0_regridded.size(), RMISSING);
+
+    double y_var_weight = CalculateEffectiveSampleSize1D(x_binned, bandwidth);
+
+    if (x_binned.size() < y_var_weight) {
+      y_var_weight = x_binned.size();
+      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
+      LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+    }
+
+    /* -- estiamte weighted variance -- */
+    bool complete_line_dummy = false;
+    KernelSmoother1DLine(x_binned,
+                         y_y_mean_squared_binned,
+                         w_binned,
+                         bandwidth,
+                         0.0,
+                         x0_regridded,
+                         variance_regridded,
+                         w0_regridded,
+                         complete_line_dummy);
+    for (size_t i = 0; i < variance_regridded.size(); i++) {
+      if (variance_regridded[i] != RMISSING) {
+        double weight_i     = w0_regridded[i]/(w0_regridded[i] + y_var_weight);
+        variance_regridded[i] = weight_i*variance_regridded[i] + (1 - weight_i)*y_var;
+      }
+      else {
+        variance_regridded[i] = y_var;
+      }
+    }
+    /* ---------------------------------*/
+
+    /* -- linear interpolation -- */
+    if (x0.size() != x0_regridded.size()) {
+      LinearInterpolation(x0_regridded, variance_regridded, x0, variance);
+    }
+    else {
+      variance = variance_regridded;
+    }
+    /* ---------------------------*/
+  }
+}
+//-------------------------------------------------------------------------------
+void KernelSmoother1DLine(const std::vector<double> & x,
+                          const std::vector<double> & y,
+                          const std::vector<double> & w,
+                          const double              & bandwidth,
+                          const double              & effective_sample_size,
+                          const std::vector<double> & x0,
+                          std::vector<double>       & y0,
+                          std::vector<double>       & w0,
+                          bool                      & complete_line)
+{
+  size_t               n_y                       = y.size();
+
+  double               threshold_times_bandwidth = (std::pow(std::log(1e5), 0.5))*bandwidth;
+  double               one_over_bandwidth_sq     = 1.0/(bandwidth*bandwidth);
+  double               delta_limit               = 2*std::log(1e5);
+
+  std::vector<double> x_order(n_y);
+  std::vector<size_t> x_backward(n_y);
+  std::vector<size_t> x_forward(n_y);
+  SortOrderAndRank(x, x_order, x_backward, x_forward);
+
+  complete_line = true;
+  for (size_t i = 0; i < x0.size(); i++) {
+    if (y0[i] == RMISSING) {
+      double y0_hat   = 0.0;
+      double weight_i = 0.0;
+      double x_low    = x0[i] - threshold_times_bandwidth;
+      double x_upp    = x0[i] + threshold_times_bandwidth;
+
+      size_t x_low_j  = FindLowerBoundInSortedVector(x_order, x_low);
+      size_t x_upp_j  = FindUpperBoundInSortedVector(x_order, x_upp);
+
+      for (size_t j = x_low_j; j < x_upp_j + 1; j++) {
+        size_t k       = x_backward[j];
+        double delta_j = (x0[i] - x[k])*(x0[i] - x[k])*one_over_bandwidth_sq;
+
+        if (delta_j < delta_limit && y[k] != RMISSING) {
+          double weight = w[k]*std::exp(-0.5*delta_j);
+          y0_hat        = y0_hat + weight*y[k];
+          weight_i      = weight_i + weight;
+        }
+      }
+
+      if (weight_i > effective_sample_size) {
+        y0[i] = y0_hat/weight_i;
+        w0[i] = weight_i;
+      } else {
+        y0[i]         = RMISSING;
+        w0[i]         = 0.0;
+        complete_line = false;
+      }
+    }
+  }
+}
+//-------------------------------------------------------------------------------
+void EstimateTrend2D(const std::vector<double>         & x,
+                     const std::vector<double>         & y,
+                     const std::vector<double>         & z,
+                     const std::vector<double>         & x0,
+                     const std::vector<double>         & y0,
+                     std::vector<std::vector<double> > & z0,
+                     double                              bandwidth_x,
+                     double                              bandwidth_y,
+                     std::string                       & errTxt)
+{
+  std::vector<double> x_binned     = x;
+  std::vector<double> y_binned     = y;
+  std::vector<double> z_binned     = z;
+  std::vector<double> w_binned(x_binned.size(), 1.0);
+  std::vector<double> x0_regridded = x0;
+  std::vector<double> y0_regridded = y0;
+
+  MakeNewGridResolution(bandwidth_x, x0, x0_regridded);
+  MakeNewGridResolution(bandwidth_y, y0, y0_regridded);
+
+  std::vector<std::vector<double> > z0_regridded(x0_regridded.size(), std::vector<double>(y0_regridded.size(), RMISSING));
+  std::vector<std::vector<double> > w0_regridded_dummy(x0_regridded.size(), std::vector<double>(y0_regridded.size(), RMISSING));
+
+  if (z_binned.size() > 16384) {
+    MakeBinnedDataset2D(x0_regridded, y0_regridded, x_binned, y_binned, z_binned, w_binned);
+  }
+
+  double effective_sample_size = CalculateEffectiveSampleSize2D(x_binned, y_binned, bandwidth_x, bandwidth_y);
+
+  if (z_binned.size() < effective_sample_size) {
+    effective_sample_size = z_binned.size();
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
+    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+  }
+
+  bool   complete_surface = false;
+
+  size_t l = 0;
+
+  while (l < 1e4) {
+    LocalLinearRegression2DSurface(x_binned,
+                                   y_binned,
+                                   z_binned,
+                                   w_binned,
+                                   bandwidth_x,
+                                   bandwidth_y,
+                                   effective_sample_size,
+                                   x0_regridded,
+                                   y0_regridded,
+                                   z0_regridded,
+                                   w0_regridded_dummy,
+                                   complete_surface);
+
+    bandwidth_x = (1 + 0.02)*bandwidth_x;
+    bandwidth_y = (1 + 0.02)*bandwidth_y;
+
+    if (complete_surface || l > 1e4) {
+      break;
+    }
+    l = l + 1;
+  }
+  if (l > 1e4) {
+    errTxt +=  "Error: Unable to compute complete trend surface (type 3). \n";
+    errTxt +=  "       The interpolated region is too large compared to the support of the data. \n";
+    errTxt +=  "       Reduce the size of the estiamted region or use a low dimensional method. \n";
+  }
+  BilinearInterpolation(x0_regridded, y0_regridded, z0_regridded, x0, y0, z0);
+}
+//-------------------------------------------------------------------------------
+void PreprocessData2D(const std::vector<std::vector<double> > & s1,
+                      const std::vector<std::vector<double> > & s2,
+                      const std::vector<std::vector<float> >  & blocked_logs,
+                      const std::vector<std::vector<double> > & trend_cube_sampling,
+                      std::vector<double>                     & x,
+                      std::vector<double>                     & y,
+                      std::vector<double>                     & z)
+{
+  size_t n_wells   = blocked_logs.size();
+
+  x.clear();
+  y.clear();
+  z.clear();
+
+  if (n_wells > 0) {
+    for (size_t i = 0; i < n_wells; i++) {
+      size_t n_samples_i = blocked_logs[i].size();
+
+      if (n_samples_i > 0) {
+        for (size_t j = 0; j < n_samples_i; j++) {
+          double x_j     = s1[i][j];
+          double y_j     = s2[i][j];
+          double z_j_log = blocked_logs[i][j];
+
+          if (x_j != RMISSING && y_j != RMISSING && z_j_log != RMISSING) {
+            x.push_back(x_j);
+            y.push_back(y_j);
+            z.push_back(std::exp(z_j_log));
+          }
+        }
+      }
+    }
+  }
+}
+//-------------------------------------------------------------------------------
+bool CheckConfigurations2D(const std::vector<double> & x,
+                           const std::vector<double> & y,
+                           const std::vector<double> & z,
+                           const std::vector<double> & x0,
+                           const std::vector<double> & y0,
+                           const double              & bandwidth_x,
+                           const double              & bandwidth_y,
+                           std::string               & errTxt)
+{
   double              delta     = 1e-5;
   double              upp       = 3.0;
   double              large     = 1.0;
 
-  size_t              n_low     = 10;      // see 'weight_total_limit' in KernelSmoother2DSurface() and LocalLinearRegression2DSurface()
-  size_t              n_small   = 48;      //const std::string         & filename,
-  size_t              n_upp     = 128*128; // see 'n_max' in MakeNewGridResolution()
+  size_t              n_samples = z.size();
+  size_t              n_small   = 48;
+  size_t              n_low     = 10;
 
   double              x_min     = *std::min_element(x.begin(), x.end());
   double              x_max     = *std::max_element(x.begin(), x.end());
@@ -412,62 +911,47 @@ bool PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
   double              y_upp     = upp*y_delta;
   double              y_large   = large*y_delta;
 
-  std::vector<double> x0        = trend_cube_sampling[0];
-  std::vector<double> y0        = trend_cube_sampling[1];
-
   if (!CheckIfVectorIsSorted(x0) || !CheckIfVectorIsSorted(y0)) {
     errTxt += "Error: At least one of the inputs are not sorted. \n";
     return(false);
   }
-
-  if (x0.front() > x_min - x_upp && x0.back() < x_max + x_upp && y0.front() > y_min - y_upp && y0.back() < y_max + y_upp) {
-    if (x0.front() < x_min - x_large || x0.back() > x_max + x_large || y0.front() < y_min - y_large || y0.back() > y_max + y_large) {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The defined region is large compared to the support of the data. This can result in unstable estimates. \n");
-      LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
-    }
-
-    bandwidth_x = CalculateBandwidth(x, scale*std::pow(2, -0.5), 0.2);
-    bandwidth_y = CalculateBandwidth(y, scale*std::pow(2, -0.5), 0.2);
-
-    if (bandwidth_x > delta && bandwidth_y > delta) {
-      if (n_samples > n_low) {
-        if (n_samples < n_small) {
-          LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
-          LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
-        }
-
-        MakeNewGridResolution(bandwidth_x, x0, x0_regridded);
-        MakeNewGridResolution(bandwidth_y, y0, y0_regridded);
-
-        if (n_samples > n_upp) {
-
-          MakeBinnedDataset(x0_regridded, y0_regridded, x, y, z, w);
-
-          if (z.size() < n_low) {
-            errTxt += "Error: Unable to compute complete trend surface (type 2). \n";
-            errTxt += "       The interpolated region is too large compared to the support of the data. \n";
-            errTxt += "       Reduce the size of the estiamted region or use a low dimensional method. \n";
-            return(false);
-          }
-        }
-      } else {
-        errTxt += "Error: Too few observations. \n";
-        errTxt += "       The algorithm requires at least 11 observations. \n";
-        return(false);
-      }
-    } else {
-      errTxt += "Error: The spread in the data is too low to provide stable estimates. \n ";
-      errTxt += "       Use a low dimensional method. \n";
+  else {
+    if (x0.front() < x_min - x_upp &&  x_max + x_upp < x0.back() && y0.front() < y_min - y_upp &&  y_max + y_upp < y0.back()) {
+      errTxt += "Error: Unable to compute complete trend surface (type 1). \n";
+      errTxt += "       The interpolated region is too large compared to the support of the data.\n";
+      errTxt += "       Reduce the size of the estiamted region or use a low dimensional method.\n";
       return(false);
     }
-  } else {
-     errTxt += "Error: Unable to compute complete trend surface (type 1). \n";
-     errTxt += "       The interpolated region is too large compared to the support of the data. \n";
-     errTxt += "       Reduce the size of the estiamted region or use a low dimensional method. \n";
-    return(false);
+    else {
+      if (x0.front() < x_min - x_large || x0.back() > x_max + x_large || y0.front() < y_min - y_large || y0.back() > y_max + y_large) {
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING : The defined region is large compared to the support of the data. This can result in unstable estimates. \n");
+        LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+      }
+
+      else {
+        if (n_samples < n_low) {
+          errTxt += "Error: Too few observations. \n";
+          errTxt += "       The algorithm requires at least 11 observations. \n";
+          return(false);
+        } else {
+          if (bandwidth_x < delta || bandwidth_y < delta ) {
+            errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
+            errTxt += "       Consider using a low-dimensional method. \n";
+            return(false);
+          }
+          else {
+            if (n_samples < n_small) {
+              LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
+              LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+            }
+          }
+        }
+      }
+    }
   }
   return(true);
 }
+
 //-------------------------------------------------------------------------------
 bool CheckIfVectorIsSorted(const std::vector<double> & x) {
 
@@ -493,7 +977,7 @@ double CalculateBandwidth(const std::vector<double> & x,
   return(scale*one_over_root_2*sd_x*std::pow(n, -power));
 }
 //-------------------------------------------------------------------------------
-double CalculateEffectiveSampleSize(const std::vector<double> & x,
+double CalculateEffectiveSampleSize1D(const std::vector<double> & x,
                                     const double              & bandwidth)
 {
   size_t n     = x.size();
@@ -501,6 +985,21 @@ double CalculateEffectiveSampleSize(const std::vector<double> & x,
   double x_max = *std::max_element(x.begin(), x.end());
 
   return(2.506628*bandwidth*n/(x_max - x_min));
+}
+double CalculateEffectiveSampleSize2D(const std::vector<double> & x,
+                                      const std::vector<double> & y,
+                                      const double              & bandwidth_x,
+                                      const double              & bandwidth_y)
+{
+  size_t n     = x.size();
+
+  double x_min = *std::min_element(x.begin(), x.end());
+  double x_max = *std::max_element(x.begin(), x.end());
+
+  double y_min = *std::min_element(y.begin(), y.end());
+  double y_max = *std::max_element(y.begin(), y.end());
+
+  return(6.283185*bandwidth_x*bandwidth_y*n/((x_max - x_min)*(y_max - y_min)));
 }
 //-------------------------------------------------------------------------------
 double CalculateVariance(const std::vector<double> & x)
@@ -515,7 +1014,8 @@ double CalculateVariance(const std::vector<double> & x)
       sum_x  = sum_x  + x[i];
       sum_x2 = sum_x2 + x[i]*x[i];
       n      = n + 1;
-    } else {
+    }
+    else {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : TRemoved missing values in variance estimation.\n");
     }
   }
@@ -542,12 +1042,12 @@ void MakeNewGridResolution(const double              & bandwidth_x,
   }
 }
 //-------------------------------------------------------------------------------
-void MakeBinnedDataset(const std::vector<double>         & x0,
-                       const std::vector<double>         & y0,
-                       std::vector<double>               & x,
-                       std::vector<double>               & y,
-                       std::vector<double>               & z,
-                       std::vector<double>               & w)
+void MakeBinnedDataset2D(const std::vector<double>         & x0,
+                         const std::vector<double>         & y0,
+                         std::vector<double>               & x,
+                         std::vector<double>               & y,
+                         std::vector<double>               & z,
+                         std::vector<double>               & w)
 {
   double delta = 1e-5;
 
@@ -583,10 +1083,10 @@ void MakeBinnedDataset(const std::vector<double>         & x0,
     z_new.resize(k);
     w_new.resize(k);
   } else {
-    x_new.resize(1);
-    y_new.resize(1);
-    z_new.resize(1);
-    w_new.resize(1);
+    x_new.resize(1, RMISSING);
+    y_new.resize(1, RMISSING);
+    z_new.resize(1, RMISSING);
+    w_new.resize(1, RMISSING);
   }
   x = x_new;
   y = y_new;
@@ -669,18 +1169,19 @@ void LocalLinearRegression2DSurface(const std::vector<double>         & x,
                                     const std::vector<double>         & w,
                                     const double                      & bandwidth_x,
                                     const double                      & bandwidth_y,
+                                    const double                      & effective_sample_size,
                                     const std::vector<double>         & x0,
                                     const std::vector<double>         & y0,
                                     std::vector<std::vector<double> > & z0,
                                     std::vector<std::vector<double> > & w0,
                                     bool                              & complete_surface)
 {
-  double               epsilon               =  1e-4;
-  double               threshold             =  std::pow(std::log(1e5), 0.5);
-  double               one_over_bandwidth_x  =  1.0/bandwidth_x;
-  double               one_over_bandwidth_y  =  1.0/bandwidth_y;
-  double               weight_total_limit    = 10.0;
-  double               delta_limit           =  2*std::log(1e5);
+  double               epsilon               = 1e-4;
+  double               threshold             = std::pow(std::log(1e5), 0.5);
+  double               one_over_bandwidth_x  = 1.0/bandwidth_x;
+  double               one_over_bandwidth_y  = 1.0/bandwidth_y;
+  double               weight_total_limit    = effective_sample_size;
+  double               delta_limit           = 2*std::log(1e5);
 
   size_t               nSamples              = z.size();
 
@@ -800,11 +1301,13 @@ void LocalLinearRegression2DSurface(const std::vector<double>         & x,
 
             z0[i][j]   = tmp;
 
-          } else {
+          }
+          else {
             z0[i][j]         = RMISSING;
             complete_surface = false;
           }
-        } else {
+        }
+        else {
           z0[i][j]         = RMISSING;
           complete_surface = false;
         }
@@ -822,9 +1325,11 @@ size_t FindLowerBoundInSortedVector(const std::vector<double> & x,
 
   if (x_0 <= x[0]) {
     return(0);
-  } else if (x_0 >= x[n - 1]) {
+  }
+  else if (x_0 >= x[n - 1]) {
     return(n - 1);
-  } else {
+  }
+  else {
     size_t j = std::floor((upp - low)*0.5);
     while (upp - low > 1) {
       while (x[j] <= x_0 && upp - low > 1) {
@@ -849,9 +1354,11 @@ size_t FindUpperBoundInSortedVector(const std::vector<double> & x,
 
   if (x_0 <= x[0]) {
     return(0);
-  } else if (x_0 >= x[n - 1]) {
+  }
+  else if (x_0 >= x[n - 1]) {
     return(n - 1);
-  } else {
+  }
+  else {
     size_t j = std::floor((upp - low)*0.5);
     while (upp - low > 1) {
       while (x[j] < x_0 && upp - low > 1) {
@@ -941,10 +1448,12 @@ double Interpolate(const std::vector<double>               & x,
     if (x0 < x_first + delta) {
       k   = 0;
       w_x = 0.0;
-    } else if (x0 > x_last - delta) {
+    }
+    else if (x0 > x_last - delta) {
       k   = x.size() - 2;
       w_x = 1.0;
-    } else {
+    }
+    else {
       k   = static_cast<size_t>(std::floor((x0 - x_first)*x_scale));
       w_x = (x0 - x_first - k*x_inc)*x_scale;
     }
@@ -952,10 +1461,12 @@ double Interpolate(const std::vector<double>               & x,
     if (y0 < y_first + delta) {
       l   = 0;
       w_y = 0.0;
-    } else if (y0 > y_last - delta) {
+    }
+    else if (y0 > y_last - delta) {
       l   = y.size() - 2;
       w_y = 1.0;
-    } else {
+    }
+    else {
       l   = static_cast<size_t>(std::floor((y0 - y_first)*y_scale));
       w_y = (y0 - y_first - l*y_inc)*y_scale;
     }
@@ -967,70 +1478,74 @@ double Interpolate(const std::vector<double>               & x,
 
     if (v00 != RMISSING && v10 != RMISSING && v01 != RMISSING && v11 != RMISSING) {
       return(v00*(1 - w_x)*(1 - w_y) + v10*w_x*(1 - w_y) + v01*(1 - w_x)*w_y + v11*w_x*w_y);
-    } else {
+    }
+    else {
       return(RMISSING);
     }
-  } else {
+  }
+  else {
     return(RMISSING);
   }
 }
 //-------------------------------------------------------------------------------
-void Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
-                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                        const std::vector<std::vector<double> > & s1,
-                        const std::vector<std::vector<double> > & s2,
+void EstimateVariance2D(const std::vector<double>               & x,
+                        const std::vector<double>               & y,
+                        const std::vector<double>               & z,
+                        const std::vector<double>               & x0,
+                        const std::vector<double>               & y0,
                         const std::vector<std::vector<double> > & trend,
-                        std::vector<std::vector<double> >       & var,
+                        std::vector<std::vector<double> >       & variance,
+                        double                                    bandwidth_x,
+                        double                                    bandwidth_y,
                         std::string                             & errTxt)
 {
-  double              scale = 1.0;
 
-  std::vector<double> x;
-  std::vector<double> y;
-  std::vector<double> z;
-  std::vector<double> w;
-  std::vector<double> x0 = trend_cube_sampling[0];
-  std::vector<double> y0 = trend_cube_sampling[1];
-  std::vector<double> x0_regridded;
-  std::vector<double> y0_regridded;
+  std::vector<double> x0_regridded = x0;
+  std::vector<double> y0_regridded = y0;
 
-  double              bandwidth_x;
-  double              bandwidth_y;
+  /* -- estiamte global variance --*/
+  size_t              nSamples     = z.size();
 
-  bool valid_dataset = PreprocessData2D(blocked_logs,
-                                        trend_cube_sampling,
-                                        s1,
-                                        s2,
-                                        scale,
-                                        x,
-                                        y,
-                                        z,
-                                        w,
-                                        x0_regridded,
-                                        y0_regridded,
-                                        bandwidth_x,
-                                        bandwidth_y,
-                                        errTxt);
 
-  if (valid_dataset) {
+  std::vector<double> x_binned;
+  std::vector<double> y_binned;
+  std::vector<double> w_binned;
+  std::vector<double> z_z_mean_squared;
 
-    double              z_var_weight  = 10.0;
-    size_t              nSamples      = z.size();
+  x_binned.reserve(nSamples);
+  y_binned.reserve(nSamples);
+  w_binned.reserve(nSamples);
+  z_z_mean_squared.reserve(nSamples);
 
-    /* -- estiamte global variance --*/
-    std::vector<double> z_z_mean_squared(nSamples, RMISSING);
-    double              z_var = 0.0;
-    int                 z_n   = 0;
-    for (size_t i = 0; i < nSamples; i++) {
-      double z_mean_i = Interpolate(x0, y0, trend, x[i], y[i]);
-      if (z_mean_i != RMISSING && z[i] != RMISSING) {
-        z_z_mean_squared[i]  = (z[i] - z_mean_i)*(z[i] - z_mean_i);
-        z_var                = z_var + z_z_mean_squared[i];
-        z_n                  = z_n + 1;
-      }
+  double              z_var       = 0.0;
+  for (size_t i = 0; i < nSamples; i++) {
+    double z_mean_i = Interpolate(x0, y0, trend, x[i], y[i]);
+    if (z_mean_i != RMISSING && z[i] != RMISSING) {
+
+      double z_z_mean_squared_i = (z[i] - z_mean_i)*(z[i] - z_mean_i);
+      z_var                     = z_var + z_z_mean_squared_i;
+
+      z_z_mean_squared.push_back(z_z_mean_squared_i);
+      x_binned.push_back(x[i]);
+      y_binned.push_back(y[i]);
+      w_binned.push_back(1.0);
     }
-    z_var = z_var/(z_n - 1);
-    /* ------------------------------*/
+  }
+
+  nSamples = z_z_mean_squared.size();
+  if (nSamples > 1) {
+    z_var = z_var/(nSamples - 1);
+  } else {
+    z_var = RMISSING;
+  }
+  /* ------------------------------*/
+
+
+  if (z_var == RMISSING) {
+    errTxt +=  "Error: Unable to compute global variance.\n";
+  } else {
+    MakeNewGridResolution(bandwidth_x, x0, x0_regridded);
+    MakeNewGridResolution(bandwidth_y, y0, y0_regridded);
 
     size_t                            x0_regridded_n = x0_regridded.size();
     size_t                            y0_regridded_n = y0_regridded.size();
@@ -1039,13 +1554,30 @@ void Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
     std::vector<std::vector<double> > z0_var_regridded(x0_regridded_n, std::vector<double>(y0_regridded_n, RMISSING));
     std::vector<std::vector<double> > w0_regridded(x0_regridded_n, std::vector<double>(y0_regridded_n, RMISSING));
 
+    std::vector<double> z_z_mean_squared_binned = z_z_mean_squared;
+    if (z_z_mean_squared.size() > 16384) {
+      MakeBinnedDataset2D(x0_regridded, y0_regridded, x_binned, y_binned, z_z_mean_squared_binned, w_binned);
+    }
+
+    double effective_sample_size = CalculateEffectiveSampleSize2D(x_binned, y_binned, bandwidth_x, bandwidth_y);
+
+    if (x_binned.size() < effective_sample_size) {
+      effective_sample_size = x_binned.size();
+      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
+      LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+    }
+
+    double z_var_weight = effective_sample_size;
+
+
     bool complete_surface_dummy = false;
-    KernelSmoother2DSurface(x,
-                            y,
-                            z_z_mean_squared,
-                            w,
+    KernelSmoother2DSurface(x_binned,
+                            y_binned,
+                            z_z_mean_squared_binned,
+                            w_binned,
                             bandwidth_x,
                             bandwidth_y,
+                            0.0,
                             x0_regridded,
                             y0_regridded,
                             z0_var_regridded,
@@ -1064,7 +1596,7 @@ void Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
         z0_weighted_var_regridded[i][j] = numerator/denominator;
       }
     }
-    BilinearInterpolation(x0_regridded, y0_regridded, z0_weighted_var_regridded, x0, y0, var);
+    BilinearInterpolation(x0_regridded, y0_regridded, z0_weighted_var_regridded, x0, y0, variance);
   }
 }
 //-------------------------------------------------------------------------------
@@ -1074,17 +1606,18 @@ void KernelSmoother2DSurface(const std::vector<double>         & x,
                              const std::vector<double>         & w,
                              const double                      & bandwidth_x,
                              const double                      & bandwidth_y,
+                             const double                      & effective_sample_size,
                              const std::vector<double>         & x0,
                              const std::vector<double>         & y0,
                              std::vector<std::vector<double> > & z0,
                              std::vector<std::vector<double> > & w0,
                              bool                              & complete_surface)
 {
-  double               threshold             =  std::pow(std::log(1e5), 0.5);
-  double               one_over_bandwidth_x  =  1.0/bandwidth_x;
-  double               one_over_bandwidth_y  =  1.0/bandwidth_y;
-  double               weight_total_limit    = 10.0;
-  double               delta_limit           =  2*std::log(1e5);
+  double               threshold             = std::pow(std::log(1e5), 0.5);
+  double               one_over_bandwidth_x  = 1.0/bandwidth_x;
+  double               one_over_bandwidth_y  = 1.0/bandwidth_y;
+  double               weight_total_limit    = effective_sample_size;
+  double               delta_limit           = 2*std::log(1e5);
 
   size_t               nSamples              = z.size();
 
@@ -1146,7 +1679,8 @@ void KernelSmoother2DSurface(const std::vector<double>         & x,
 
         if (weight_total > weight_total_limit) {
           z0[i][j] = z0_hat/weight_total;
-        } else {
+        }
+        else {
           z0[i][j]         = RMISSING;
           complete_surface = false;
         }

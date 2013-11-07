@@ -36,62 +36,125 @@ namespace NRLib {
 #define RMISSING -99999.000
 #define IMISSING -99999
 
-  void                    EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                                                double                                  & trend);
+  void                   EstimateConstantTrend(const std::vector<std::vector<float> > & blocked_logs,
+                                               double                                 & trend);
 
-  int                     GetTrend1DFileFormat(const std::string & file_name,
-                                               std::string       & errText);
+  void                   PreprocessData0D(const std::vector<std::vector<float> > & blocked_logs,
+                                          std::vector<double>                    & y);
 
-  void                    ReadTrend1D(const std::string   & file_name,
-                                      std::string         & errText,
-                                      std::vector<double> & trend1d,
-                                      double              & s_min,
-                                      double              & dz);
+  int                    GetTrend1DFileFormat(const std::string & file_name,
+                                              std::string       & errText);
 
-  void                    WriteTrend1D(const std::string         & file_name,
-                                       const std::vector<double> & s1,
-                                       const std::vector<double> & trend);
+  void                   ReadTrend1D(const std::string   & file_name,
+                                     std::string         & errText,
+                                     std::vector<double> & trend1d,
+                                     double              & s_min,
+                                     double              & dz);
 
-  void                    ReadTrend1DPlainAscii(const std::string   & file_name,
-                                                std::string         & /*errText*/,
-                                                std::vector<double> & trend1d);
+  void                   WriteTrend1D(const std::string         & file_name,
+                                      const std::vector<double> & s1,
+                                      const std::vector<double> & trend);
 
-  void                    InterpolateTrend1DValues(const double & xi,
-                                                   const double & xi1,
-                                                   const double & fxi,
-                                                   const double & fxi1,
-                                                   const double & yj,
-                                                   double       & fyj);
+  void                   ReadTrend1DPlainAscii(const std::string   & file_name,
+                                               std::string         & /*errText*/,
+                                               std::vector<double> & trend1d);
+
+  void                   InterpolateTrend1DValues(const double & xi,
+                                                  const double & xi1,
+                                                  const double & fxi,
+                                                  const double & fxi1,
+                                                  const double & yj,
+                                                  double       & fyj);
 
   void                   ResampleTrend1D(const std::vector<double> & x,
                                          const std::vector<double> & fx,
                                          const std::vector<double> & y,
                                          std::vector<double>       & fy);
 
-  void                   Estimate1DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                                         std::vector<double>                     & trend);
+  void                   EstimateTrend1D(const std::vector<double> & x,
+                                         const std::vector<double> & y,
+                                         const std::vector<double> & x0,
+                                         std::vector<double>       & y0,
+                                         double                      bandwidth,
+                                         std::string               & errTxt);
 
-  void                   Estimate2DTrend(const std::vector<std::vector<float> >  & blocked_logs,
-                                         const std::vector<std::vector<double> > & trend_cube_sampling,
-                                         const std::vector<std::vector<double> > & s1,
-                                         const std::vector<std::vector<double> > & s2,
-                                         std::vector<std::vector<double> >       & trend,
-                                         std::string                             & errTxt);
+  void                   PreprocessData1D(const std::vector<std::vector<double> > & s,
+                                          const std::vector<std::vector<float> >  & blocked_logs,
+                                          const std::vector<double>               & trend_cube_sampling,
+                                          std::vector<double>                     & x,
+                                          std::vector<double>                     & y);
 
-  bool                   PreprocessData2D(const std::vector<std::vector<float> >  & blocked_logs,
-                                          const std::vector<std::vector<double> > & trend_cube_sampling,
-                                          const std::vector<std::vector<double> > & s1,
+  bool                   CheckConfigurations1D(const std::vector<double> & x,
+                                               const std::vector<double> & y,
+                                               const std::vector<double> & x0,
+                                               const double              & bandwidth,
+                                               std::string               & errTxt);
+
+  void                   MakeBinnedDataset1D(const std::vector<double>         & x,
+                                             const std::vector<double>         & y,
+                                             const std::vector<double>         & x_new,
+                                             std::vector<double>               & y_new,
+                                             std::vector<double>               & w_new);
+
+  void                   LocalLinearRegression1D(const std::vector<double> & x,
+                                                 const std::vector<double> & y,
+                                                 const std::vector<double> & w,
+                                                 const double              & bandwidth,
+                                                 const double              & effective_sample_size,
+                                                 const std::vector<double> & x0,
+                                                 std::vector<double>       & y0,
+                                                 bool                      & complete_line);
+
+  void                   LinearInterpolation(const std::vector<double> & x,
+                                             const std::vector<double> & y,
+                                             const std::vector<double> & x0,
+                                             std::vector<double>       & y0);
+
+  void                   EstimateVariance1D(const std::vector<double> & x,
+                                            const std::vector<double> & y,
+                                            const std::vector<double> & x0,
+                                            const std::vector<double> & trend,
+                                            std::vector<double> &       variance,
+                                            double                      bandwidth,
+                                            std::string               & errTxt);
+
+  void                   KernelSmoother1DLine(const std::vector<double> & x,
+                                              const std::vector<double> & y,
+                                              const std::vector<double> & w,
+                                              const double              & bandwidth,
+                                              const double              & effective_sample_size,
+                                              const std::vector<double> & x0,
+                                              std::vector<double>       & y0,
+                                              std::vector<double>       & w0,
+                                              bool                      & complete_line);
+
+  void                   EstimateTrend2D(const std::vector<double>         & x,
+                                         const std::vector<double>         & y,
+                                         const std::vector<double>         & z,
+                                         const std::vector<double>         & x0,
+                                         const std::vector<double>         & y0,
+                                         std::vector<std::vector<double> > & z0,
+                                         double                              bandwidth_x,
+                                         double                              bandwidth_y,
+                                         std::string                       & errTxt);
+
+
+  void                   PreprocessData2D(const std::vector<std::vector<double> > & s1,
                                           const std::vector<std::vector<double> > & s2,
-                                          const double                            & scale,
+                                          const std::vector<std::vector<float> >  & blocked_logs,
+                                          const std::vector<std::vector<double> > & trend_cube_sampling,
                                           std::vector<double>                     & x,
                                           std::vector<double>                     & y,
-                                          std::vector<double>                     & z,
-                                          std::vector<double>                     & w,
-                                          std::vector<double>                     & x0,
-                                          std::vector<double>                     & y0,
-                                          double                                  & bandwidth_x,
-                                          double                                  & bandwidth_y,
-                                          std::string                             & errTxt);
+                                          std::vector<double>                     & z);
+
+  bool                   CheckConfigurations2D(const std::vector<double> & x,
+                                               const std::vector<double> & y,
+                                               const std::vector<double> & z,
+                                               const std::vector<double> & x0,
+                                               const std::vector<double> & y0,
+                                               const double              & bandwidth_x,
+                                               const double              & bandwidth_y,
+                                               std::string               & errTxt);
 
   bool                   CheckIfVectorIsSorted(const std::vector<double> & x);
 
@@ -99,8 +162,14 @@ namespace NRLib {
                                             const double              & scale,
                                             const double              & power);
 
-  double                 CalculateEffectiveSampleSize(const std::vector<double> & x,
-                                                      const double              & bandwidth);
+
+  double                 CalculateEffectiveSampleSize1D(const std::vector<double> & x,
+                                                        const double              & bandwidth);
+
+  double                 CalculateEffectiveSampleSize2D(const std::vector<double> & x,
+                                                        const std::vector<double> & y,
+                                                        const double              & bandwidth_x,
+                                                        const double              & bandwidth_y);
 
   double                 CalculateVariance(const std::vector<double> & x);
 
@@ -109,12 +178,12 @@ namespace NRLib {
                                                std::vector<double>       & x0_regridded);
 
 
-  void                   MakeBinnedDataset(const std::vector<double>         & x0,
-                                           const std::vector<double>         & y0,
-                                           std::vector<double>               & x,
-                                           std::vector<double>               & y,
-                                           std::vector<double>               & z,
-                                           std::vector<double>               & w);
+  void                   MakeBinnedDataset2D(const std::vector<double>         & x0,
+                                             const std::vector<double>         & y0,
+                                             std::vector<double>               & x,
+                                             std::vector<double>               & y,
+                                             std::vector<double>               & z,
+                                             std::vector<double>               & w);
 
   void                   BilinearBinning(const std::vector<double>               & x,
                                          const std::vector<double>               & y,
@@ -130,6 +199,7 @@ namespace NRLib {
                                                         const std::vector<double>         & w,
                                                         const double                      & bandwidth_x,
                                                         const double                      & bandwidth_y,
+                                                        const double                      & effective_sample_size,
                                                         const std::vector<double>         & x0,
                                                         const std::vector<double>         & y0,
                                                         std::vector<std::vector<double> > & z0,
@@ -160,13 +230,17 @@ namespace NRLib {
                                      const double                            & x0,
                                      const double                            & y0);
 
-  void                   Estimate2DVariance(const std::vector<std::vector<float> >  & blocked_logs,
-                                            const std::vector<std::vector<double> > & trend_cube_sampling,
-                                            const std::vector<std::vector<double> > & s1,
-                                            const std::vector<std::vector<double> > & s2,
+  void                   EstimateVariance2D(const std::vector<double>               & x,
+                                            const std::vector<double>               & y,
+                                            const std::vector<double>               & z,
+                                            const std::vector<double>               & x0,
+                                            const std::vector<double>               & y0,
                                             const std::vector<std::vector<double> > & trend,
-                                            std::vector<std::vector<double> >       & var,
+                                            std::vector<std::vector<double> >       & variance,
+                                            double                                    bandwidth_x,
+                                            double                                    bandwidth_y,
                                             std::string                             & errTxt);
+
 
   void                   KernelSmoother2DSurface(const std::vector<double>         & x,
                                                  const std::vector<double>         & y,
@@ -174,6 +248,7 @@ namespace NRLib {
                                                  const std::vector<double>         & w,
                                                  const double                      & bandwidth_x,
                                                  const double                      & bandwidth_y,
+                                                 const double                      & effective_sample_size,
                                                  const std::vector<double>         & x0,
                                                  const std::vector<double>         & y0,
                                                  std::vector<std::vector<double> > & z0,

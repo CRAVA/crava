@@ -613,7 +613,5 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
 
     NRLib::RegularSurface<double> trend_surface(s1_tmp.front(), s2_tmp.front(), s1_tmp.back() - s1_tmp.front(), s2_tmp.back() - s2_tmp.front(), trend_grid2D);
     trend_surface.WriteToFile("background/" + filename + ".storm");
-  } else {
-    LogKit::LogFormatted(LogKit::Low,"\nWARNING : Invalid specification of trend. Can not write to file. \n");
   }
 }
