@@ -686,7 +686,6 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addDefaultTimeGradientSettings();
 
   if(parseGravimetry(root, errTxt) == false) {
-    inputFiles_->addGravimetricObservationLocations("");
     inputFiles_->addGravimetricData("");
     modelSettings_->addTimeLapseGravimetry(false);
   }
@@ -1212,14 +1211,7 @@ XmlModelFile::parseGravimetry(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("locations-file");
   legalCommands.push_back("data-file");
-
-  std::string locations_file;
-  if(parseFileName(root, "locations-file", locations_file, errTxt) == true)
-    inputFiles_->addGravimetricObservationLocations(locations_file);
-  else
-    errTxt += "<gravimetry><locations-file> needs to be given\n";
 
   std::string data_file;
   if(parseFileName(root, "data-file", data_file, errTxt) == true)
@@ -6007,7 +5999,12 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
+  int numberGravityFiles = 0;
+  for(int i = 0; i<modelSettings_->getNumberOfVintages(); i++){
+    if(modelSettings_->getGravityTimeLapse(i))
+      numberGravityFiles++;
+    }
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)   // Not necessarily on first vintage
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
@@ -6325,8 +6322,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
   }
   for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
-    if(modelSettings_->getNumberOfAngles(i) == 0)
-      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getNumberOfAngles(i) == 0 && (modelSettings_->getGravityTimeLapse(i) == false))
+      errTxt += "Need at least one <angle-gather> or <gravity> in <survey>.\n";
     if(modelSettings_->getVintageYear(i) == RMISSING)
       errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
   }

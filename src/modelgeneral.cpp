@@ -61,6 +61,8 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsrock.h"
 
+//#include "src/multiintervalgrid.h"
+
 
 ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                            const InputFiles         * inputFiles,
@@ -237,6 +239,197 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 
   failed_ = failedLoadingModel;
   failed_details_.push_back(failedSimbox);
+  failed_details_.push_back(failedDepthConv);
+  failed_details_.push_back(failedWells);
+  failed_details_.push_back(failedBackground);
+  failed_details_.push_back(failedRockPhysics);
+
+  if(timeCutSimbox != NULL)
+    delete timeCutSimbox;
+}
+
+ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple intervals
+                           const InputFiles         * inputFiles,
+                           SeismicParametersHolder  & seismicParameters,
+                           CommonData               * commonData,
+                           int                        i_interval)
+                           :do4DInversion_(modelSettings->getDo4DInversion()),
+                            do4DRockPhysicsInversion_(modelSettings->getDo4DRockPhysicsInversion())
+{
+  timeSimbox_             = new Simbox();
+  timeSimboxConstThick_   = NULL;
+
+  correlationDirection_   = NULL;
+  randomGen_              = NULL;
+  failed_                 = false;
+  gradX_                  = 0.0;
+  gradY_                  = 0.0;
+
+  timeDepthMapping_       = NULL;
+  timeCutMapping_         = NULL;
+  velocityFromInversion_  = false;
+
+  //bool failedSimbox       = false;
+  bool failedDepthConv    = false;
+  bool failedRockPhysics  = false;
+
+  bool failedLoadingModel = false;
+
+  bool failedWells        = false;
+
+  bool failedBackground   = false;
+
+  Simbox * timeCutSimbox  = NULL;
+  timeLine_               = NULL;
+
+  forwardModeling_        = modelSettings->getForwardModeling();
+  numberOfWells_          = modelSettings->getNumberOfWells();
+
+
+  {
+    int debugLevel = modelSettings->getLogLevel();
+    if(modelSettings->getDebugLevel() == 1)
+      debugLevel = LogKit::L_DebugLow;
+    else if(modelSettings->getDebugLevel() == 2)
+      debugLevel = LogKit::L_DebugHigh;
+
+    LogKit::SetScreenLog(debugLevel);
+
+    std::string logFileName = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
+    LogKit::SetFileLog(logFileName,modelSettings->getLogLevel());
+
+    if(modelSettings->getDebugFlag() > 0)
+    {
+      std::string fName = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
+      LogKit::SetFileLog(fName, debugLevel);
+    }
+
+    if(modelSettings->getErrorFileFlag() == true)
+    {
+      std::string fName = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
+      LogKit::SetFileLog(fName, LogKit::Error);
+    }
+    LogKit::EndBuffering();
+
+    if(inputFiles->getSeedFile() == "")
+      randomGen_ = new RandomGen(modelSettings->getSeed());
+    else
+      randomGen_ = new RandomGen(inputFiles->getSeedFile().c_str());
+
+    if(modelSettings->getNumberOfSimulations() == 0)
+      modelSettings->setWritePrediction(true); //write predicted grids.
+
+    printSettings(modelSettings, inputFiles);
+
+    //Set output for all FFTGrids.
+    FFTGrid::setOutputFlags(modelSettings->getOutputGridFormat(),
+                            modelSettings->getOutputGridDomain());
+
+    std::string errText("");
+
+    LogKit::WriteHeader("Defining modelling grid");
+    //makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
+    //                 correlationDirection_, modelSettings, inputFiles,
+    //                 errText, failedSimbox);
+
+    MultiIntervalGrid * multiple_interval_grid = commonData->GetMultipleIntervalGrid();
+    Simbox & tmp = multiple_interval_grid->GetIntervalSimboxE(0);
+
+    timeSimbox_ = &tmp;
+    //timeSimbox_ = commonData->GetMultipleIntervalGrid()->GetIntervalSimboxE(0);
+
+    //if(!failedSimbox)
+    //{
+    //
+    // FORWARD MODELLING
+    //
+    if (modelSettings->getForwardModeling() == true)
+    {
+//      checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
+    }
+    else {
+      //
+      // INVERSION/ESTIMATION
+      //
+      if(timeCutSimbox!=NULL)  {
+        timeCutMapping_ = new GridMapping();
+        timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
+      }
+
+      //checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
+
+      bool estimationMode = modelSettings->getEstimationMode();
+
+      if(estimationMode == false && modelSettings->getDoDepthConversion() == true)
+      {
+        processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
+                                inputFiles, errText, failedDepthConv);
+      }
+
+      processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
+
+      if(failedDepthConv == false)
+        processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
+
+      //Set up timeline.
+      timeLine_ = new TimeLine();
+      //Activate below when gravity data are ready.
+      //Do gravity first.
+      //for(int i=0;i<modelSettings->getNumberOfGravityData();i++) {
+      //  int time = computeTime(modelSettings->getGravityYear[i],
+      //                         modelSettings->getGravityMonth[i],
+      //                         modelSettings->getGravityDay[i]);
+      //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
+
+      bool firstGravimetricEvent = true;
+      for(int i=0;i<modelSettings->getNumberOfVintages();i++) {
+        //Vintages may have both travel time and AVO
+        int time = computeTime(modelSettings->getVintageYear(i),
+                                modelSettings->getVintageMonth(i),
+                                modelSettings->getVintageDay(i));
+          // Do gravity first
+          if(modelSettings->getGravityTimeLapse(i)){
+            if(firstGravimetricEvent){
+              // Do not save first gravity event in timeline
+              firstGravimetricEvent = false;
+            }
+            else{
+              timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
+            }
+        }
+        //Activate below when travel time is ready.
+        //Travel time ebefore AVO for same vintage.
+        //if(travel time for this vintage)
+        //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+        if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
+          timeLine_->AddEvent(time, TimeLine::AVO, i);
+      }
+
+      if(modelSettings->getDo4DInversion() && failedRockPhysics == false){
+
+        setFaciesNamesFromRockPhysics();
+
+        NRLib::Vector initialMean(6);
+        NRLib::Matrix initialCov(6,6);
+        process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
+
+        timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+        timeEvolution_.SetInitialMean(initialMean);
+        timeEvolution_.SetInitialCov(initialCov);
+      }
+    }
+
+    failedLoadingModel = failedDepthConv || failedWells || failedBackground || failedRockPhysics;
+
+    if (failedLoadingModel) {
+      LogKit::WriteHeader("Error(s) while loading data");
+      LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+      LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+    }
+  }
+
+  failed_ = failedLoadingModel;
+  //failed_details_.push_back(failedSimbox);
   failed_details_.push_back(failedDepthConv);
   failed_details_.push_back(failedWells);
   failed_details_.push_back(failedBackground);

@@ -28,6 +28,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   std::string             base_surface_file_name_temp("");
   std::vector<Surface>    surfaces;
   //std::vector<int>        erosion_priorities_;
+  trend_cubes_.resize(n_intervals_);
 
   // if there are multiple intervals (there can potentially be 1 interval as well)
   if(interval_names_.size() > 0){

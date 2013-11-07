@@ -168,7 +168,8 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
                        const std::string                & interval_name,
                        const std::vector<int>           & trend_cube_type,
                        const std::vector<std::string>   & trend_cube_parameters,
-                       FFTGrid                          * trend_cube,
+                       std::vector<NRLib::Grid<double> > & trend_cubes,
+                       //FFTGrid                          * trend_cube,
                        std::string                      & err_txt) {
   // Class variables
   n_samples_      = 1000;
@@ -181,16 +182,19 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
     const int nx   = interval_simbox->getnx();
     const int ny   = interval_simbox->getny();
     const int nz   = interval_simbox->getnz();
-    const int nxp  = nx;
-    const int nyp  = ny;
-    const int nzp  = nz;
-    const int rnxp = 2*(nxp/2 + 1);
+    //const int nxp  = nx;
+    //const int nyp  = ny;
+    //const int nzp  = nz;
+    //const int rnxp = 2*(nxp/2 + 1);
 
     for(int grid_number=0; grid_number<n_trend_cubes_; grid_number++) {
+
+      NRLib::Grid<double> trend_cube(nx, ny, nz, 0.0);
 
       // 1 Trend cube from file ------------------------------------------------
       if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {
         // Do nothing
+        trend_cube = trend_cubes[grid_number];
       }
 
       // 2 Trend cube from stratigraphic depth  -------------------------------
@@ -198,23 +202,23 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
-        trend_cube->createRealGrid();
-        trend_cube->setAccessMode(FFTGrid::WRITE);
+        //trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        //trend_cube->createRealGrid();
+        //trend_cube->setAccessMode(FFTGrid::WRITE);
 
-        for(int k=0; k<nzp; k++) {
-          for(int j=0; j<nyp; j++) {
-            for(int i=0; i<rnxp; i++) {
-              if(i < nx)
-                // value is set to k index
-                trend_cube->setRealValue(i, j, k, static_cast<float>(k));
-              else
-                trend_cube->setRealValue(i, j, k, 0);
+        for(int k=0; k<nz; k++) {
+          for(int j=0; j<ny; j++) {
+            for(int i=0; i<nx; i++) {
+              trend_cube(i, j, k) = k;
+              //if(i < nx)
+              //  // value is set to k index
+              //  trend_cube->setRealValue(i, j, k, static_cast<float>(k));
+              //else
+              //  trend_cube->setRealValue(i, j, k, 0);
             }
           }
         }
-
-        trend_cube->endAccess();
+        //trend_cube->endAccess();
       }
 
       // 3 Trend cube from depth  ------------------------------------------------
@@ -222,47 +226,52 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
-        trend_cube->createRealGrid();
-        trend_cube->setAccessMode(FFTGrid::WRITE);
+        //trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        //trend_cube->createRealGrid();
+        //trend_cube->setAccessMode(FFTGrid::WRITE);
 
-        for(int k=0; k<nzp; k++) {
-          for(int j=0; j<nyp; j++) {
-            for(int i=0; i<rnxp; i++) {
-              if(i < nx) {
+        for(int k=0; k<nz; k++) { //nzp
+          for(int j=0; j<ny; j++) { //nyp
+            for(int i=0; i<nx; i++) { //rnxp
+              //if(i < nx) {
                 // value is set to depth from simbox
                 float value = static_cast<float>(interval_simbox->getTop(i,j) + interval_simbox->getdz(i,j)*k);
-                trend_cube->setRealValue(i, j, k, value);
-              }
-              else
-                trend_cube->setRealValue(i, j, k, 0);
+                //trend_cube->setRealValue(i, j, k, value);
+                trend_cube(i, j, k) = value;
+              //}
+              //else
+                //trend_cube->setRealValue(i, j, k, 0);
             }
           }
         }
-        trend_cube->endAccess();
+        //trend_cube->endAccess();
       }
 
-      NRLib::Grid<double> grid_cube(nx, ny, nz);
+      //NRLib::Grid<double> grid_cube(nx, ny, nz);
 
-      for(int k=0; k<nzp; k++) {
-        for(int j=0; j<nyp; j++) {
-          for(int i=0; i<rnxp; i++) {
-            if (i < nx && j < ny && k < nz)
-              grid_cube(i,j,k) = trend_cube->getRealValue(i,j,k);
-          }
-        }
-      }
+      //for(int k=0; k<nzp; k++) {
+      //  for(int j=0; j<nyp; j++) {
+      //    for(int i=0; i<rnxp; i++) {
+      //      if (i < nx && j < ny && k < nz)
+      //        grid_cube(i,j,k) = trend_cube->getRealValue(i,j,k);
+      //    }
+      //  }
+      //}
 
-      trend_cubes_.push_back(grid_cube);
+      //trend_cubes_.push_back(grid_cube);
+      trend_cubes_.push_back(trend_cube);
 
 
       // Calculate trend_cube_sampling_
       // Sample all trends from min to max of the trend cube, using increment_ in the sampling
 
-      trend_cube->calculateStatistics();
-
-      const float  max       = trend_cube->getMaxReal();
-      const float  min       = trend_cube->getMinReal();
+      //trend_cube->calculateStatistics();
+      //const float  max       = trend_cube->getMaxReal();
+      //const float  min       = trend_cube->getMinReal();
+      double avg = 0.0;
+      double min = 0.0;
+      double max = 0.0;
+      trend_cube.GetAvgMinMax(avg, min, max);
       const double increment = (max-min)/(n_samples_-1);
 
       std::vector<double> sampling(n_samples_);
@@ -274,11 +283,11 @@ CravaTrend::CravaTrend(const Simbox                     * interval_simbox,
 
       trend_cube_sampling_.push_back(sampling);
 
-
-      if(model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
-        std::string fileName = IO::PrefixTrendCubes() + "_" + interval_name + trend_cube_parameters[grid_number];
-        writeToFile(interval_simbox, trend_cube, fileName, "trend cube");
-      }
+      //H
+      //if(model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+      //  std::string fileName = IO::PrefixTrendCubes() + "_" + interval_name + trend_cube_parameters[grid_number];
+      //  writeToFile(interval_simbox, trend_cube, fileName, "trend cube");
+      //}
 
       //delete trend_cube;
     }

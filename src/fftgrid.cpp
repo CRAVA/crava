@@ -90,17 +90,30 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
-  istransformed_  = false;
+  istransformed_  = fftGrid->getIsTransformed();
 
-  createRealGrid(add_);
-  for(int k=0;k<nzp_;k++) {
-    for(int j=0;j<nyp_;j++) {
-      for(int i=0;i<rnxp_;i++) {
-        float value = fftGrid->getNextReal();
-        if (expTrans)
-          setNextReal(exp(value));
-        else
-          setNextReal(value);
+  if(istransformed_ == false) {
+    createRealGrid(add_);
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<rnxp_;i++) {
+          float value = fftGrid->getNextReal();
+          if (expTrans)
+            setNextReal(exp(value));
+          else
+            setNextReal(value);
+        }
+      }
+    }
+  }
+  else {
+    createComplexGrid();
+    for(int k=0;k<nzp_;k++) {
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<cnxp_;i++) {
+          fftw_complex value = fftGrid->getNextComplex();
+          setNextComplex(value);
+        }
       }
     }
   }
@@ -589,7 +602,6 @@ FFTGrid::resampleTrace(const std::vector<float> & data_trace,
     rAmpFine[i] = scale*rAmpFine[i];
   }
 }
-
 
 // Trilinear interpolation
 double FFTGrid::InterpolateTrilinear(double x_min,

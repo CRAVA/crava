@@ -39,9 +39,21 @@ public:
   void                          FFTAllGrids();
   void                          updatePriorVar();
 
+  void                          setPriorVar0(NRLib::Matrix priorVar0)   { priorVar0_ = priorVar0 ;}
+
   void                          setBackgroundParameters(FFTGrid  * muAlpha,
                                                         FFTGrid  * muBeta,
                                                         FFTGrid  * muRho);
+
+  void                          setBackgroundParametersIntervals(const std::vector<std::vector<NRLib::Grid<double> > > & mu_parameters);
+
+  void                          setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters);
+
+  void                          setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters);
+
+  void                          setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
+                                                   const NRLib::Grid<double> & cr_cov_vp_rho,
+                                                   const NRLib::Grid<double> & cr_cov_vs_rho);
 
   void                          copyBackgroundParameters(FFTGrid  * muAlpha,
                                                          FFTGrid  * muBeta,
@@ -138,6 +150,22 @@ private:
   FFTGrid * crCovAlphaBeta_;
   FFTGrid * crCovAlphaRho_ ;
   FFTGrid * crCovBetaRho_  ;
+
+  NRLib::Grid<double> mu_vp_;
+  NRLib::Grid<double> mu_vs_;
+  NRLib::Grid<double> mu_rho_;
+
+  NRLib::Grid<double> cov_vp_;
+  NRLib::Grid<double> cov_vs_;
+  NRLib::Grid<double> cov_rho_;
+
+  NRLib::Grid<double> cr_cov_vp_vs_;
+  NRLib::Grid<double> cr_cov_vp_rho_;
+  NRLib::Grid<double> cr_cov_vs_rho_;
+
+  std::vector<NRLib::Grid<double> > mu_vp_intervals_; //Vector over intervals.
+  std::vector<NRLib::Grid<double> > mu_vs_intervals_;
+  std::vector<NRLib::Grid<double> > mu_rho_intervals_;
 
   NRLib::Matrix priorVar0_;
 

@@ -79,9 +79,9 @@
 
 //-------------------------------------------------------------------------------
 
-Background::Background(std::vector<NRLib::Grid<double> >          & parameters, //FFTGrid                                   ** grids, //std::vector<NRLib::Grid<double> > & grids,
+Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
                        const std::vector<NRLib::Well>             & wells,
-                       FFTGrid                                   *& velocity,
+                       NRLib::Grid<double>                        & velocity,
                        const Simbox                               * time_simbox,
                        const Simbox                               * time_bg_simbox,
                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -90,40 +90,16 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters, 
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
-  //for(int i=0 ; i<3 ; i++)
-  //  back_model_.push_back(grids[i]);
-
-  //FFTGrid ** grids;
   const int nx    = time_simbox->getnx();
   const int ny    = time_simbox->getny();
   const int nz    = time_simbox->getnz();
-  const int nx_pad = model_settings->getNXpad();
-  const int ny_pad = model_settings->getNYpad();
-  const int nz_pad = model_settings->getNZpad();
 
-  for(int i=0 ; i<3 ; i++) {
+  for(int i=0 ; i<3 ; i++)
+    parameters[i].Resize(nx, ny, nz);
 
-    bool file_grid = model_settings->getFileGrid();
-    if(file_grid)
-      back_model_[i] = new FFTFileGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-      //grids[i] = new FFTFileGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-    else
-      back_model_[i] = new FFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-      //grids[i] = new FFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-
-    back_model_[i]->setType(FFTGrid::PARAMETER);
-    //grids[i]->setType(FFTGrid::PARAMETER);
-
-    //back_model_[i] = grids[i];
-  }
-
-  FFTGrid * bg_vp;
-  FFTGrid * bg_vs;
-  FFTGrid * bg_rho;
-
-  //NRLib::Grid<double> & bg_vp = grids[0];
-  //NRLib::Grid<double> & bg_vs = grids[1];
-  //NRLib::Grid<double> & bg_rho = grids[2];
+  NRLib::Grid<double> & bg_vp = parameters[0];
+  NRLib::Grid<double> & bg_vs = parameters[1];
+  NRLib::Grid<double> & bg_rho = parameters[2];
 
   if (time_bg_simbox == NULL)
   {
@@ -149,18 +125,10 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters, 
                             model_settings);
   }
 
-  padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
+  //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  for(int i = 0; i < 3; i++) {
-    parameters.push_back(FFTGridRealToGrid(back_model_[i]));
-  }
-
-  delete bg_vp;
-  delete bg_vs;
-  delete bg_rho;
-
-  findMeanVsVp(back_model_[0],  //Vp_vs from background not used in CommonData
-               back_model_[1]);
+  //findMeanVsVp(back_model_[0],  //Vp_vs from background not used in CommonData
+  //             back_model_[1]);
 }
 
 //-------------------------------------------------------------------------------
@@ -198,123 +166,68 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters, 
 
 
 //-------------------------------------------------------------------------------
-Background::Background(std::vector<NRLib::Grid<double> > & parameters, //FFTGrid                       ** grids, //std::vector<NRLib::Grid<double> > & grids,
+Background::Background(std::vector<NRLib::Grid<double> > & parameters,
                        const std::vector<NRLib::Well>    & wells,
-                       const Simbox                      * interval_simbox, //timeSimbox,
+                       const Simbox                      * interval_simbox,
                        const ModelSettings               * model_settings,
-                       const std::vector<std::string>    & surface_files)
+                       const std::vector<std::string>    & surface_files,
+                       std::string                       & err_text)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
-  //for(int i=0 ; i<3 ; i++)
-  //  back_model_[i] = grids[i];
 
   const int nx    = interval_simbox->getnx();
   const int ny    = interval_simbox->getny();
   const int nz    = interval_simbox->getnz();
-  const int nx_pad = model_settings->getNXpad();
-  const int ny_pad = model_settings->getNYpad();
-  const int nz_pad = model_settings->getNZpad();
 
-  for(int i=0 ; i<3 ; i++) {
+  for(int i=0 ; i<3 ; i++)
+    parameters[i].Resize(nx, ny, nz);
 
-    bool file_grid = model_settings->getFileGrid();
-    if(file_grid)
-      back_model_[i] = new FFTFileGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-    else
-      back_model_[i] = new FFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad);
-
-    back_model_[i]->setType(FFTGrid::PARAMETER);
-
-  }
-
-
-  FFTGrid * bg_vp;
-  FFTGrid * bg_vs;
-  FFTGrid * bg_rho;
-
-  //NRLib::Grid<double> & bg_vp = grids[0];
-  //NRLib::Grid<double> & bg_vs = grids[1];
-  //NRLib::Grid<double> & bg_rho = grids[2];
+  NRLib::Grid<double> & bg_vp = parameters[0];
+  NRLib::Grid<double> & bg_vs = parameters[1];
+  NRLib::Grid<double> & bg_rho = parameters[2];
 
   GenerateMultizoneBackgroundModel(bg_vp, bg_vs, bg_rho,
                                    wells,
-                                   interval_simbox,//timeSimbox,
+                                   interval_simbox,
                                    model_settings,
-                                   surface_files);
+                                   surface_files,
+                                   err_text);
 
-  padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
+  //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  for(int i = 0; i < 3; i++) {
-    parameters.push_back(FFTGridRealToGrid(back_model_[i]));
-  }
-
-  delete bg_vp;
-  delete bg_vs;
-  delete bg_rho;
-
-  findMeanVsVp(back_model_[0],
-               back_model_[1]);
+  //findMeanVsVp(back_model_[0],
+  //             back_model_[1]);
 }
 
 //-------------------------------------------------------------------------------
 Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
                        const std::vector<NRLib::Well>                  & wells,
                        MultiIntervalGrid                               * multiple_interval_grid,
-                       const ModelSettings                             * model_settings)
-                       //const std::vector<std::string> & surface_files)
+                       const ModelSettings                             * model_settings,
+                       std::string                                     & err_text)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
 
   //Background for multiple intervals
-  //Create temporary FFT-grids ->
-
-  //for(int i=0 ; i<3 ; i++)
-  //  back_model_[i] = grids[i];
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
-  std::vector<FFTGrid *> bg_vp(n_intervals);
-  std::vector<FFTGrid *> bg_vs(n_intervals);
-  std::vector<FFTGrid *> bg_rho(n_intervals);
-
-  //for(int i = 0; i < n_intervals; i++) {
-  //  bg_vp[i]->setType(FFTGrid::PARAMETER);
-  //  bg_vs[i]->setType(FFTGrid::PARAMETER);
-  //  bg_rho[i]->setType(FFTGrid::PARAMETER);
-  //}
-
-  //NRLib::Grid<double> & bg_vp = grids[0];
-  //NRLib::Grid<double> & bg_vs = grids[1];
-  //NRLib::Grid<double> & bg_rho = grids[2];
+  std::vector<NRLib::Grid<double> > bg_vp(n_intervals);
+  std::vector<NRLib::Grid<double> > bg_vs(n_intervals);
+  std::vector<NRLib::Grid<double> > bg_rho(n_intervals);
 
   GenerateMultiIntervalBackgroundModel(bg_vp, bg_vs, bg_rho,
                                        wells,
                                        multiple_interval_grid,
-                                       model_settings);
+                                       model_settings,
+                                       err_text);
 
-  padAndSetBackgroundModelInterval(bg_vp, bg_vs, bg_rho);
+  parameters.push_back(bg_vp);
+  parameters.push_back(bg_vs);
+  parameters.push_back(bg_rho);
 
-  for(int i = 0; i < n_intervals; i++) {
-    std::vector<NRLib::Grid<double> > parameters_tmp(3);
-
-    //parameters_tmp[0] = FFTGridRealToGrid(bg_vp[i]);
-    //parameters_tmp[1] = FFTGridRealToGrid(bg_vs[i]);
-    //parameters_tmp[2] = FFTGridRealToGrid(bg_rho[i]);
-
-    parameters_tmp[0] = FFTGridRealToGrid(back_model_interval_[i][0]);
-    parameters_tmp[1] = FFTGridRealToGrid(back_model_interval_[i][1]);
-    parameters_tmp[2] = FFTGridRealToGrid(back_model_interval_[i][2]);
-
-    parameters.push_back(parameters_tmp);
-
-  }
-
-  for(int i = 0; i < n_intervals; i++) {
-    delete bg_vp[i];
-    delete bg_vs[i];
-    delete bg_rho[i];
-  }
+  //padAndSetBackgroundModelInterval(bg_vp, bg_vs, bg_rho);
 
   //findMeanVsVp(back_model_[0], //Vp_vs from background not used in CommonData
                //back_model_[1]);
@@ -344,36 +257,6 @@ Background::releaseGrids()
 {
   for (int i=0 ; i<3 ; i++)
     back_model_[i] = NULL;
-}
-
-NRLib::Grid<double>
-Background::FFTGridRealToGrid(const FFTGrid * fft_grid) {
-
-  NRLib::Grid<double> grid(0,0,0);
-
-  if(fft_grid != NULL) {
-    int nx = fft_grid->getNx();
-    int ny = fft_grid->getNy();
-    int nz = fft_grid->getNz();
-    //int nxp = fft_grid->getNxp();
-    int nyp = fft_grid->getNyp();
-    int nzp = fft_grid->getNzp();
-
-    int rnxp = fft_grid->getRNxp();
-
-    NRLib::Grid<double> grid(nx,ny,nz);
-
-    for(int k=0; k<nzp; k++) {
-      for(int j=0; j<nyp; j++) {
-        for(int i=0; i<rnxp; i++) {
-          if (i < nx && j < ny && k < nz)
-            grid(i,j,k) = fft_grid->getRealValue(i,j,k);
-        }
-      }
-    }
-  }
-
-  return grid;
 }
 
 //-------------------------------------------------------------------------------
@@ -558,10 +441,10 @@ Background::FFTGridRealToGrid(const FFTGrid * fft_grid) {
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(FFTGrid                                   *& bg_vp,
-                                    FFTGrid                                   *& bg_vs,
-                                    FFTGrid                                   *& bg_rho,
-                                    FFTGrid                                   *& velocity,
+Background::generateBackgroundModel(NRLib::Grid<double>                        & bg_vp,
+                                    NRLib::Grid<double>                        & bg_vs,
+                                    NRLib::Grid<double>                        & bg_rho,
+                                    NRLib::Grid<double>                        & velocity,
                                     const std::vector<NRLib::Well>             & wells,
                                     const Simbox                               * simbox,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -628,7 +511,7 @@ Background::generateBackgroundModel(FFTGrid                                   *&
                            high_cut_well_trend_rho,
                            name_rho);
 
-  bool has_velocity_trend = velocity != NULL;
+  bool has_velocity_trend = velocity.GetN() != 0; // != NULL;
   bool write1D          = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
   bool write3D          = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
@@ -636,7 +519,7 @@ Background::generateBackgroundModel(FFTGrid                                   *&
   writeTrendsToFile(trend_vs, simbox, write1D, write3D, has_velocity_trend, name_vs, model_settings->getFileGrid());
   writeTrendsToFile(trend_rho, simbox, write1D, write3D, has_velocity_trend, name_rho, model_settings->getFileGrid());
 
-  if (velocity != NULL) {
+  if (velocity.GetN() != 0) { //!= NULL) {
     //
     // We still want calculateBackgroundTrend() for alpha above. By calculating
     // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
@@ -647,12 +530,12 @@ Background::generateBackgroundModel(FFTGrid                                   *&
                                 model_settings->getOutputGridsElastic(),
                                 n_wells);
 
-    velocity->logTransf();
+    velocity.LogTransform(RMISSING);
+    //velocity->logTransf();
 
-
-    delete bg_vp;
+    //delete bg_vp;
     bg_vp = velocity;
-    velocity = NULL;
+    velocity.Resize(0, 0, 0, 0.0); // = NULL;
     writeDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
                                      trend_vel, trend_vs, trend_rho,
                                      wells, n_wells, nz);
@@ -674,24 +557,14 @@ Background::generateBackgroundModel(FFTGrid                                   *&
   std::vector<std::vector<double > > vt_vs(n_wells);
   std::vector<std::vector<double > > vt_rho(n_wells);
 
-  //std::vector<float *>     bl_vp(n_wells);   // bl = blocked logs
-  //std::vector<float *>     bl_vs(n_wells);
-  //std::vector<float *>     bl_rho(n_wells);
-  //std::vector<float *>     vt_vp(n_wells);   // vt = vertical trend
-  //std::vector<float *>     vt_vs(n_wells);
-  //std::vector<float *>     vt_rho(n_wells);
   std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
   std::vector<const std::vector<int> > jpos(n_wells);
   std::vector<const std::vector<int> > kpos(n_wells);
 
   for(int i=0; i<n_wells; i++) {
-    vt_vp[i] = std::vector<double>(nz); //new float[nz];
-    vt_vs[i] = std::vector<double>(nz); //new float[nz];
-    vt_rho[i] = std::vector<double>(nz); //new float[nz];
-
-    //vt_vp[i] = new float[nz];
-    //vt_vs[i]  = new float[nz];
-    //vt_rho[i]   = new float[nz];
+    vt_vp[i] = std::vector<double>(nz);
+    vt_vs[i] = std::vector<double>(nz);
+    vt_rho[i] = std::vector<double>(nz);
   }
 
   std::vector<int> n_blocks(n_wells);
@@ -716,9 +589,9 @@ Background::generateBackgroundModel(FFTGrid                                   *&
                                               model_settings->getBackgroundVario(),
                                               model_settings->getDebugFlag());
 
-  makeKrigedBackground(kriging_data_vp, bg_vp, trend_vp, simbox, covGrid2D, "Vp" , model_settings->getFileGrid());
-  makeKrigedBackground(kriging_data_vs , bg_vs , trend_vs , simbox, covGrid2D, "Vs" , model_settings->getFileGrid());
-  makeKrigedBackground(kriging_data_rho  , bg_rho  , trend_rho  , simbox, covGrid2D, "Rho", model_settings->getFileGrid());
+  makeKrigedBackground(kriging_data_vp, bg_vp, trend_vp, simbox, covGrid2D, "Vp");
+  makeKrigedBackground(kriging_data_vs , bg_vs , trend_vs , simbox, covGrid2D, "Vs");
+  makeKrigedBackground(kriging_data_rho  , bg_rho  , trend_rho  , simbox, covGrid2D, "Rho");
 
   delete &covGrid2D;
 
@@ -741,14 +614,6 @@ Background::generateBackgroundModel(FFTGrid                                   *&
     delete [] high_cut_well_trend_vp[i];
     delete [] high_cut_well_trend_vs[i];
     delete [] high_cut_well_trend_rho[i];
-
-    //delete [] bl_vp[i];
-    //delete [] bl_vs[i];
-    //delete [] bl_rho[i];
-
-    //delete [] vt_vp[i];
-    //delete [] vt_vs[i];
-    //delete [] vt_rho[i];
 
   }
 }
@@ -986,13 +851,14 @@ Background::generateBackgroundModel(FFTGrid                                   *&
 
 //-------------------------------------------------------------------------------
 void
-Background::GenerateMultizoneBackgroundModel(FFTGrid                       *& bg_vp,
-                                             FFTGrid                       *& bg_vs,
-                                             FFTGrid                       *& bg_rho,
+Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp, //FFTGrid                       *& bg_vp,
+                                             NRLib::Grid<double>            & bg_vs,
+                                             NRLib::Grid<double>            & bg_rho,
                                              const std::vector<NRLib::Well> & wells,
                                              const Simbox                   * simbox,
                                              const ModelSettings            * model_settings,
-                                             const std::vector<std::string> & surface_files)
+                                             const std::vector<std::string> & surface_files,
+                                             std::string                    & err_text)
 {
   LogKit::LogFormatted(LogKit::Low,"Multizone background model:\n");
 
@@ -1001,7 +867,7 @@ Background::GenerateMultizoneBackgroundModel(FFTGrid                       *& bg
 
   int    n_wells    = model_settings->getNumberOfWells();
   int    n_zones    = static_cast<int>(correlation_structure.size()) - 1;
-  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
+  float  dz         = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
   std::vector<Surface> surface(n_zones+1);
   for(int i=0; i<n_zones+1; i++)
@@ -1011,224 +877,204 @@ Background::GenerateMultizoneBackgroundModel(FFTGrid                       *& bg
   std::vector<StormContGrid> vs_zones(n_zones);
   std::vector<StormContGrid> rho_zones(n_zones);
 
+  std::string err_text_tmp = "";
   BuildSeismicPropertyZones(vp_zones,
                             vs_zones,
                             rho_zones,
                             surface,
                             correlation_structure,
                             simbox,
-                            dz);
+                            dz,
+                            err_text_tmp);
 
-  std::vector<Surface *> eroded_surfaces(n_zones+1);
-  for(int i=0; i<n_zones+1; i++)
-    eroded_surfaces[i] = NULL;
+  if(err_text_tmp != "") {
+    err_text += err_text_tmp;
+  }
+  else {
 
-  ErodeAllSurfaces(eroded_surfaces,
-                   erosion_priority,
-                   surface,
-                   simbox);
+    std::vector<Surface *> eroded_surfaces(n_zones+1);
+    for(int i=0; i<n_zones+1; i++)
+      eroded_surfaces[i] = NULL;
 
-  const CovGrid2D & covGrid2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
+    ErodeAllSurfaces(eroded_surfaces,
+                     erosion_priority,
+                     surface,
+                     simbox);
 
-  std::string name_vp  = "Vp";
-  std::string name_vs  = "Vs";
-  std::string name_rho = "Rho";
+    const CovGrid2D & covGrid2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
 
-  std::vector<float *> trend_vp_zone(n_zones);
-  std::vector<float *> trend_vs_zone(n_zones);
-  std::vector<float *> trend_rho_zone(n_zones);
+    std::string name_vp  = "Vp";
+    std::string name_vs  = "Vs";
+    std::string name_rho = "Rho";
 
-  for(int i=0; i<n_zones; i++) {
-    LogKit::LogFormatted(LogKit::Low,"\nZone%2d:",i+1);
+    std::vector<float *> trend_vp_zone(n_zones);
+    std::vector<float *> trend_vs_zone(n_zones);
+    std::vector<float *> trend_rho_zone(n_zones);
 
-    int nz = static_cast<int>(vp_zones[i].GetNK());
+    for(int i=0; i<n_zones; i++) {
+      LogKit::LogFormatted(LogKit::Low,"\nZone%2d:",i+1);
 
-    std::vector<float *> well_trend_vp(n_wells);
-    std::vector<float *> well_trend_vs(n_wells);
-    std::vector<float *> well_trend_rho(n_wells);
+      int nz = static_cast<int>(vp_zones[i].GetNK());
 
-    std::vector<float *> high_cut_well_trend_vp(n_wells);
-    std::vector<float *> high_cut_well_trend_vs(n_wells);
-    std::vector<float *> high_cut_well_trend_rho(n_wells);
+      std::vector<float *> well_trend_vp(n_wells);
+      std::vector<float *> well_trend_vs(n_wells);
+      std::vector<float *> well_trend_rho(n_wells);
 
-    //std::vector<std::vector<double> > wellTrendAlpha(nWells);
-    //std::vector<std::vector<double> > wellTrendBeta(nWells);
-    //std::vector<std::vector<double> > wellTrendRho(nWells);
+      std::vector<float *> high_cut_well_trend_vp(n_wells);
+      std::vector<float *> high_cut_well_trend_vs(n_wells);
+      std::vector<float *> high_cut_well_trend_rho(n_wells);
 
-    //std::vector<std::vector<double> > highCutWellTrendAlpha(nWells);
-    //std::vector<std::vector<double> > highCutWellTrendBeta(nWells);
-    //std::vector<std::vector<double> > highCutWellTrendRho(nWells);
+      StormContGrid eroded_zone;
 
-    StormContGrid eroded_zone;
+      BuildErodedZones(eroded_zone,
+                       eroded_surfaces,
+                       nz,
+                       simbox,
+                       i);
 
-    BuildErodedZones(eroded_zone,
-                     eroded_surfaces,
-                     nz,
-                     simbox,
-                     i);
+      std::vector<bool> hit_zone(n_wells);
+      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
 
-    std::vector<bool> hit_zone(n_wells);
-    checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
+      std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
 
-    //std::vector<BlockedLogsForZone *> blocked_logs(nWells);
-    std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
 
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
+      trend_vp_zone[i] = new float[nz];
+      trend_vs_zone[i]  = new float[nz];
+      trend_rho_zone[i]   = new float[nz];
 
-    trend_vp_zone[i] = new float[nz];
-    trend_vs_zone[i]  = new float[nz];
-    trend_rho_zone[i]   = new float[nz];
+      float * avg_dev_vp_zone = new float[n_wells];
+      float * avg_dev_vs_zone = new float[n_wells];
+      float * avg_dev_rho_zone = new float[n_wells];
 
-    float * avg_dev_vp_zone = new float[n_wells];
-    float * avg_dev_vs_zone  = new float[n_wells];
-    float * avg_dev_rho_zone   = new float[n_wells];
+      calculateBackgroundTrend(trend_vp_zone[i],
+                               avg_dev_vp_zone,
+                               nz,
+                               dz,
+                               model_settings->getAlphaMin(),
+                               model_settings->getAlphaMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_vp,
+                               high_cut_well_trend_vp,
+                               name_vp);
+      calculateBackgroundTrend(trend_vs_zone[i],
+                               avg_dev_vs_zone,
+                               nz,
+                               dz,
+                               model_settings->getBetaMin(),
+                               model_settings->getBetaMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_vs,
+                               high_cut_well_trend_vs,
+                               name_vs);
+      calculateBackgroundTrend(trend_rho_zone[i],
+                               avg_dev_rho_zone,
+                               nz,
+                               dz,
+                               model_settings->getRhoMin(),
+                               model_settings->getRhoMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_rho,
+                               high_cut_well_trend_rho,
+                               name_rho);
 
-    calculateBackgroundTrend(trend_vp_zone[i],
-                             avg_dev_vp_zone,
-                             nz,
-                             dz,
-                             model_settings->getAlphaMin(),
-                             model_settings->getAlphaMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_vp,
-                             high_cut_well_trend_vp,
-                             name_vp);
-    calculateBackgroundTrend(trend_vs_zone[i],
-                             avg_dev_vs_zone,
-                             nz,
-                             dz,
-                             model_settings->getBetaMin(),
-                             model_settings->getBetaMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_vs,
-                             high_cut_well_trend_vs,
-                             name_vs);
-    calculateBackgroundTrend(trend_rho_zone[i],
-                             avg_dev_rho_zone,
-                             nz,
-                             dz,
-                             model_settings->getRhoMin(),
-                             model_settings->getRhoMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_rho,
-                             high_cut_well_trend_rho,
-                             name_rho);
+      writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
+                                       avg_dev_vs_zone,
+                                       avg_dev_rho_zone,
+                                       trend_vp_zone[i],
+                                       trend_vs_zone[i],
+                                       trend_rho_zone[i],
+                                       wells,
+                                       n_wells,
+                                       nz);
 
-    writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
-                                     avg_dev_vs_zone,
-                                     avg_dev_rho_zone,
-                                     trend_vp_zone[i],
-                                     trend_vs_zone[i],
-                                     trend_rho_zone[i],
-                                     wells,
-                                     n_wells,
-                                     nz);
+      std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
+      std::vector<std::vector<double > > bl_vs(n_wells);
+      std::vector<std::vector<double > > bl_rho(n_wells);
+      std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
+      std::vector<std::vector<double > > vt_vs(n_wells);
+      std::vector<std::vector<double > > vt_rho(n_wells);
 
-    std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
-    std::vector<std::vector<double > > bl_vs(n_wells);
-    std::vector<std::vector<double > > bl_rho(n_wells);
-    std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
-    std::vector<std::vector<double > > vt_vs(n_wells);
-    std::vector<std::vector<double > > vt_rho(n_wells);
-    //std::vector<float *>     bl_vp(n_wells);   // bl = blocked logs
-    //std::vector<float *>     bl_vs(n_wells);
-    //std::vector<float *>     bl_rho(n_wells);
+      std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
+      std::vector<const std::vector<int> > jpos(n_wells);
+      std::vector<const std::vector<int> > kpos(n_wells);
 
-    //std::vector<float *>     vt_vp(n_wells);   // vt = vertical trend
-    //std::vector<float *>     vt_vs(n_wells);
-    //std::vector<float *>     vt_rho(n_wells);
+      int              totBlocks;
+      std::vector<int> nBlocks(n_wells);
 
-    std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
-    std::vector<const std::vector<int> > jpos(n_wells);
-    std::vector<const std::vector<int> > kpos(n_wells);
+      getKrigingWellTrendsZone(blocked_logs,
+                               bl_vp,bl_vs,bl_rho,
+                               vt_vp,vt_vs,vt_rho,
+                               ipos,jpos,kpos,
+                               nBlocks,totBlocks,nz);
 
-    //std::vector<const int *> ipos(n_wells);
-    //std::vector<const int *> jpos(n_wells);
-    //std::vector<const int *> kpos(n_wells);
+      std::vector<KrigingData2D> kriging_data_vp(nz);
+      std::vector<KrigingData2D> kriging_data_vs(nz);
+      std::vector<KrigingData2D> kriging_data_rho(nz);
 
-    int              totBlocks;
-    std::vector<int> nBlocks(n_wells);
+      setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
+                         trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
+                         model_settings->getOutputGridsElastic(),
+                         nz,dz,totBlocks,nBlocks,
+                         bl_vp,bl_vs,bl_rho,
+                         vt_vp,vt_vs,vt_rho,
+                         ipos,jpos,kpos);
 
-    getKrigingWellTrendsZone(blocked_logs,
-                             bl_vp,bl_vs,bl_rho,
-                             vt_vp,vt_vs,vt_rho,
-                             ipos,jpos,kpos,
-                             nBlocks,totBlocks,nz);
+      makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], covGrid2D);
+      makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], covGrid2D);
+      makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], covGrid2D);
 
-    std::vector<KrigingData2D> kriging_data_vp(nz);
-    std::vector<KrigingData2D> kriging_data_vs(nz);
-    std::vector<KrigingData2D> kriging_data_rho(nz);
+      delete [] avg_dev_vp_zone;
+      delete [] avg_dev_vs_zone;
+      delete [] avg_dev_rho_zone;
 
-    setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
-                       trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
-                       model_settings->getOutputGridsElastic(),
-                       nz,dz,totBlocks,nBlocks,
-                       bl_vp,bl_vs,bl_rho,
-                       vt_vp,vt_vs,vt_rho,
-                       ipos,jpos,kpos);
+      for(int j=0; j<n_wells; j++) {
+        delete [] well_trend_vp[j];
+        delete [] well_trend_vs[j];
+        delete [] well_trend_rho[j];
 
-    makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], covGrid2D);
-    makeKrigedZone(kriging_data_vs , trend_vs_zone[i], vs_zones[i],  covGrid2D);
-    makeKrigedZone(kriging_data_rho  , trend_rho_zone[i], rho_zones[i],   covGrid2D);
+        delete [] high_cut_well_trend_vp[j];
+        delete [] high_cut_well_trend_vs[j];
+        delete [] high_cut_well_trend_rho[j];
 
-    delete [] avg_dev_vp_zone;
-    delete [] avg_dev_vs_zone;
-    delete [] avg_dev_rho_zone;
-
-    for(int j=0; j<n_wells; j++) {
-      delete [] well_trend_vp[j];
-      delete [] well_trend_vs[j];
-      delete [] well_trend_rho[j];
-
-      delete [] high_cut_well_trend_vp[j];
-      delete [] high_cut_well_trend_vs[j];
-      delete [] high_cut_well_trend_rho[j];
-
-      //delete [] bl_vp[j];
-      //delete [] bl_vs[j];
-      //delete [] bl_rho[j];
-
-      //delete [] vt_vp[j];
-      //delete [] vt_vs[j];
-      //delete [] vt_rho[j];
-
-      delete blocked_logs[j];
+        delete blocked_logs[j];
+      }
     }
-  }
 
-  MakeMultizoneBackground(bg_vp, bg_vs, bg_rho,
-                          vp_zones, vs_zones, rho_zones,
-                          simbox,
-                          erosion_priority,
-                          surface,
-                          model_settings->getSurfaceUncertainty(),
-                          model_settings->getFileGrid(),
-                          "multizone");
+    MakeMultizoneBackground(bg_vp, bg_vs, bg_rho,
+                            vp_zones, vs_zones, rho_zones,
+                            simbox,
+                            erosion_priority,
+                            surface,
+                            model_settings->getSurfaceUncertainty(),
+                            model_settings->getFileGrid(),
+                            "multizone");
 
 
-  bool write3D = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
+    bool write3D = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
-  if(write3D) {
-    writeMultizoneTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone,
-                               vp_zones, vs_zones, rho_zones,
-                               simbox,
-                               erosion_priority,
-                               surface,
-                               model_settings->getSurfaceUncertainty(),
-                               model_settings->getFileGrid());
+    if(write3D) {
+      writeMultizoneTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone, //H Not working
+                                 vp_zones, vs_zones, rho_zones,
+                                 simbox,
+                                 erosion_priority,
+                                 surface,
+                                 model_settings->getSurfaceUncertainty(),
+                                 model_settings->getFileGrid());
 
-  }
+    }
 
-  delete &covGrid2D;
+    delete &covGrid2D;
 
-  for(int i=0; i<n_zones; i++) {
-    delete [] trend_vp_zone[i];
-    delete [] trend_vs_zone[i];
-    delete [] trend_rho_zone[i];
+    for(int i=0; i<n_zones; i++) {
+      delete [] trend_vp_zone[i];
+      delete [] trend_vs_zone[i];
+      delete [] trend_rho_zone[i];
 
-    delete eroded_surfaces[i];
+      delete eroded_surfaces[i];
+    }
   }
 
 }
@@ -1236,12 +1082,13 @@ Background::GenerateMultizoneBackgroundModel(FFTGrid                       *& bg
 
 //-------------------------------------------------------------------------------
 void
-Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         & bg_vp,
-                                                 std::vector<FFTGrid *>         & bg_vs,
-                                                 std::vector<FFTGrid *>         & bg_rho,
-                                                 const std::vector<NRLib::Well> & wells,
-                                                 MultiIntervalGrid              * multiple_interval_grid,
-                                                 const ModelSettings            * model_settings)
+Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double> > & bg_vp,
+                                                 std::vector<NRLib::Grid<double> > & bg_vs,
+                                                 std::vector<NRLib::Grid<double> > & bg_rho,
+                                                 const std::vector<NRLib::Well>    & wells,
+                                                 MultiIntervalGrid                 * multiple_interval_grid,
+                                                 const ModelSettings               * model_settings,
+                                                 std::string                       & err_text)
 {
   LogKit::LogFormatted(LogKit::Low,"MultiInterval background models:\n");
 
@@ -1249,7 +1096,6 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
   //std::vector<int> erosion_priority      = model_settings->getErosionPriority();
 
   int    n_wells    = wells.size(); //model_settings->getNumberOfWells();
-  //int    n_zones    = static_cast<int>(correlation_structure.size()) - 1;
   int    n_intervals = multiple_interval_grid->GetNIntervals();
   //float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
@@ -1261,239 +1107,215 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<FFTGrid *>         
   std::vector<StormContGrid> vs_zones(n_intervals);
   std::vector<StormContGrid> rho_zones(n_intervals);
 
+  std::string err_text_tmp = "";
   BuildSeismicPropertyIntervals(vp_zones,
                                 vs_zones,
                                 rho_zones,
-                                multiple_interval_grid);
+                                multiple_interval_grid,
+                                err_text_tmp);
 
-                            //surface,
-                            //correlation_structure,
-                            //simbox,
-                            //dz);
+  if(err_text_tmp != "") {
+    err_text += err_text_tmp;
+  }
+  else {
 
-  //std::vector<Surface *> eroded_surfaces(n_intervals+1);
-  //for(int i=0; i<n_intervals+1; i++)
-  //  eroded_surfaces[i] = NULL;
+    std::string name_vp  = "Vp";
+    std::string name_vs  = "Vs";
+    std::string name_rho = "Rho";
 
-  //ErodeAllSurfaces(eroded_surfaces, // Surfaces are eroded in multiintervalgrid ?
-  //                 erosion_priority,
-  //                 surface,
-  //                 simbox);
+    std::vector<float *> trend_vp_zone(n_intervals);
+    std::vector<float *> trend_vs_zone(n_intervals);
+    std::vector<float *> trend_rho_zone(n_intervals);
 
-  //const CovGrid2D & cov_grid_2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
+    std::vector<const NRLib::Surface<double> *> surfaces; //(n_intervals+1);
 
-  std::string name_vp  = "Vp";
-  std::string name_vs  = "Vs";
-  std::string name_rho = "Rho";
+    const NRLib::Surface<double> & top_surface = multiple_interval_grid->GetIntervalSimbox(0)->GetTopSurface();
+    surfaces.push_back(&top_surface);
 
-  std::vector<float *> trend_vp_zone(n_intervals);
-  std::vector<float *> trend_vs_zone(n_intervals);
-  std::vector<float *> trend_rho_zone(n_intervals);
+    //std::vector<const NRLib::Surface<double>& > surfaces;
+    //surfaces.push_back(tmp);
 
-  //const std::vector<Surface> & eroded_surfaces = multiple_interval_grid->GetErodedSurfaces(); ///H Get eroded surfaces from simboxes instead?
+    //surfaces[0] = tmp; //multiple_interval_grid->GetSimbox(0)->GetTopSurface();
+    //surfaces.push_back(&multiple_interval_grid->GetSimbox(0)->GetTopSurface());
+
+    for(int i=0; i<n_intervals; i++) {
+
+      const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
+      surfaces.push_back(&simbox->GetBotSurface());
+
+      const CovGrid2D & cov_grid_2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
+      float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
+
+      LogKit::LogFormatted(LogKit::Low,"\nInterval%2d:",i+1);
+
+      int nz = static_cast<int>(vp_zones[i].GetNK());
+
+      std::vector<float *> well_trend_vp(n_wells);
+      std::vector<float *> well_trend_vs(n_wells);
+      std::vector<float *> well_trend_rho(n_wells);
+
+      std::vector<float *> high_cut_well_trend_vp(n_wells);
+      std::vector<float *> high_cut_well_trend_vs(n_wells);
+      std::vector<float *> high_cut_well_trend_rho(n_wells);
+
+      StormContGrid eroded_zone;
+
+      BuildErodedIntervals(eroded_zone,
+                           nz,
+                           simbox);
+
+      std::vector<bool> hit_zone(n_wells);
+      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
+
+      std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
+
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
+
+      trend_vp_zone[i] = new float[nz];
+      trend_vs_zone[i] = new float[nz];
+      trend_rho_zone[i] = new float[nz];
+
+      float * avg_dev_vp_zone = new float[n_wells];
+      float * avg_dev_vs_zone = new float[n_wells];
+      float * avg_dev_rho_zone = new float[n_wells];
+
+      calculateBackgroundTrend(trend_vp_zone[i],
+                               avg_dev_vp_zone,
+                               nz,
+                               dz,
+                               model_settings->getAlphaMin(),
+                               model_settings->getAlphaMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_vp,
+                               high_cut_well_trend_vp,
+                               name_vp);
+      calculateBackgroundTrend(trend_vs_zone[i],
+                               avg_dev_vs_zone,
+                               nz,
+                               dz,
+                               model_settings->getBetaMin(),
+                               model_settings->getBetaMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_vs,
+                               high_cut_well_trend_vs,
+                               name_vs);
+      calculateBackgroundTrend(trend_rho_zone[i],
+                               avg_dev_rho_zone,
+                               nz,
+                               dz,
+                               model_settings->getRhoMin(),
+                               model_settings->getRhoMax(),
+                               model_settings->getMaxHzBackground(),
+                               well_trend_rho,
+                               high_cut_well_trend_rho,
+                               name_rho);
+
+      writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
+                                       avg_dev_vs_zone,
+                                       avg_dev_rho_zone,
+                                       trend_vp_zone[i],
+                                       trend_vs_zone[i],
+                                       trend_rho_zone[i],
+                                       wells,
+                                       n_wells,
+                                       nz);
+
+      std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
+      std::vector<std::vector<double > > bl_vs(n_wells);
+      std::vector<std::vector<double > > bl_rho(n_wells);
+      std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
+      std::vector<std::vector<double > > vt_vs(n_wells);
+      std::vector<std::vector<double > > vt_rho(n_wells);
+
+      std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
+      std::vector<const std::vector<int> > jpos(n_wells);
+      std::vector<const std::vector<int> > kpos(n_wells);
+
+      int              tot_blocks;
+      std::vector<int> n_blocks(n_wells);
+
+      getKrigingWellTrendsZone(blocked_logs,
+                               bl_vp,bl_vs,bl_rho,
+                               vt_vp,vt_vs,vt_rho,
+                               ipos,jpos,kpos,
+                               n_blocks,tot_blocks,nz);
+
+      std::vector<KrigingData2D> kriging_data_vp(nz);
+      std::vector<KrigingData2D> kriging_data_vs(nz);
+      std::vector<KrigingData2D> kriging_data_rho(nz);
+
+      setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
+                         trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
+                         model_settings->getOutputGridsElastic(),
+                         nz,dz,tot_blocks,n_blocks,
+                         bl_vp,bl_vs,bl_rho,
+                         vt_vp,vt_vs,vt_rho,
+                         ipos,jpos,kpos);
+
+      makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], cov_grid_2D);
+      makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], cov_grid_2D);
+      makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], cov_grid_2D);
+
+      delete [] avg_dev_vp_zone;
+      delete [] avg_dev_vs_zone;
+      delete [] avg_dev_rho_zone;
+
+      for(int j=0; j<n_wells; j++) {
+        delete [] well_trend_vp[j];
+        delete [] well_trend_vs[j];
+        delete [] well_trend_rho[j];
+
+        delete [] high_cut_well_trend_vp[j];
+        delete [] high_cut_well_trend_vs[j];
+        delete [] high_cut_well_trend_rho[j];
+
+        delete blocked_logs[j];
+      }
+
+    delete &cov_grid_2D;
+
+    } //Intervals
+
+    MakeMultiIntervalBackground(bg_vp, bg_vs, bg_rho,
+                                vp_zones, vs_zones, rho_zones,
+                                multiple_interval_grid,
+                                surfaces,
+                                model_settings->getSurfaceUncertainty(),
+                                model_settings->getFileGrid(),
+                                "multiinterval");
 
 
+    bool write3D = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
-  std::vector<const NRLib::Surface<double> *> surfaces; //(n_intervals+1);
+    if(write3D) {
+      writeMultiIntervalTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone,
+                                     vp_zones, vs_zones, rho_zones,
+                                     multiple_interval_grid,
+                                     surfaces,
+                                     model_settings->getSurfaceUncertainty(),
+                                     model_settings->getFileGrid());
 
-  const NRLib::Surface<double> & tmp = multiple_interval_grid->GetIntervalSimbox(0)->GetTopSurface();
-  surfaces.push_back(&tmp);
-
-  //std::vector<const NRLib::Surface<double>& > surfaces;
-  //surfaces.push_back(tmp);
-
-  //surfaces[0] = tmp; //multiple_interval_grid->GetSimbox(0)->GetTopSurface();
-  //surfaces.push_back(&multiple_interval_grid->GetSimbox(0)->GetTopSurface());
-
-  for(int i=0; i<n_intervals; i++) {
-
-    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
-
-    //const NRLib::Surface<double> & tmp_surface = simbox->GetBotSurface();
-    surfaces.push_back(&simbox->GetBotSurface());
-    //surfaces.push_back(simbox->GetBotSurface());
-
-    const CovGrid2D & cov_grid_2D = makeCovGrid2D(simbox, model_settings->getBackgroundVario(), model_settings->getDebugFlag());
-    float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
-
-    LogKit::LogFormatted(LogKit::Low,"\nInterval%2d:",i+1);
-
-    int nz = static_cast<int>(vp_zones[i].GetNK());
-
-    std::vector<float *> well_trend_vp(n_wells);
-    std::vector<float *> well_trend_vs(n_wells);
-    std::vector<float *> well_trend_rho(n_wells);
-
-    std::vector<float *> high_cut_well_trend_vp(n_wells);
-    std::vector<float *> high_cut_well_trend_vs(n_wells);
-    std::vector<float *> high_cut_well_trend_rho(n_wells);
-
-    StormContGrid eroded_zone;
-
-    BuildErodedIntervals(eroded_zone,
-                         //eroded_surfaces,
-                         nz,
-                         simbox);
-
-    std::vector<bool> hit_zone(n_wells);
-    checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
-
-    //std::vector<BlockedLogsForZone *> blocked_logs(nWells);
-    std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
-
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
-    getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
-
-    trend_vp_zone[i] = new float[nz];
-    trend_vs_zone[i] = new float[nz];
-    trend_rho_zone[i] = new float[nz];
-
-    float * avg_dev_vp_zone = new float[n_wells];
-    float * avg_dev_vs_zone = new float[n_wells];
-    float * avg_dev_rho_zone = new float[n_wells];
-
-    calculateBackgroundTrend(trend_vp_zone[i],
-                             avg_dev_vp_zone,
-                             nz,
-                             dz,
-                             model_settings->getAlphaMin(),
-                             model_settings->getAlphaMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_vp,
-                             high_cut_well_trend_vp,
-                             name_vp);
-    calculateBackgroundTrend(trend_vs_zone[i],
-                             avg_dev_vs_zone,
-                             nz,
-                             dz,
-                             model_settings->getBetaMin(),
-                             model_settings->getBetaMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_vs,
-                             high_cut_well_trend_vs,
-                             name_vs);
-    calculateBackgroundTrend(trend_rho_zone[i],
-                             avg_dev_rho_zone,
-                             nz,
-                             dz,
-                             model_settings->getRhoMin(),
-                             model_settings->getRhoMax(),
-                             model_settings->getMaxHzBackground(),
-                             well_trend_rho,
-                             high_cut_well_trend_rho,
-                             name_rho);
-
-    writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
-                                     avg_dev_vs_zone,
-                                     avg_dev_rho_zone,
-                                     trend_vp_zone[i],
-                                     trend_vs_zone[i],
-                                     trend_rho_zone[i],
-                                     wells,
-                                     n_wells,
-                                     nz);
-
-    std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
-    std::vector<std::vector<double > > bl_vs(n_wells);
-    std::vector<std::vector<double > > bl_rho(n_wells);
-    std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
-    std::vector<std::vector<double > > vt_vs(n_wells);
-    std::vector<std::vector<double > > vt_rho(n_wells);
-
-    std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
-    std::vector<const std::vector<int> > jpos(n_wells);
-    std::vector<const std::vector<int> > kpos(n_wells);
-
-    int              tot_blocks;
-    std::vector<int> n_blocks(n_wells);
-
-    getKrigingWellTrendsZone(blocked_logs,
-                             bl_vp,bl_vs,bl_rho,
-                             vt_vp,vt_vs,vt_rho,
-                             ipos,jpos,kpos,
-                             n_blocks,tot_blocks,nz);
-
-    std::vector<KrigingData2D> kriging_data_vp(nz);
-    std::vector<KrigingData2D> kriging_data_vs(nz);
-    std::vector<KrigingData2D> kriging_data_rho(nz);
-
-    setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
-                       trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
-                       model_settings->getOutputGridsElastic(),
-                       nz,dz,tot_blocks,n_blocks,
-                       bl_vp,bl_vs,bl_rho,
-                       vt_vp,vt_vs,vt_rho,
-                       ipos,jpos,kpos);
-
-    makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], cov_grid_2D);
-    makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], cov_grid_2D);
-    makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], cov_grid_2D);
-
-    delete [] avg_dev_vp_zone;
-    delete [] avg_dev_vs_zone;
-    delete [] avg_dev_rho_zone;
-
-    for(int j=0; j<n_wells; j++) {
-      delete [] well_trend_vp[j];
-      delete [] well_trend_vs[j];
-      delete [] well_trend_rho[j];
-
-      delete [] high_cut_well_trend_vp[j];
-      delete [] high_cut_well_trend_vs[j];
-      delete [] high_cut_well_trend_rho[j];
-
-      delete blocked_logs[j];
     }
 
-  delete &cov_grid_2D;
+    //delete &cov_grid_2D;
 
-  } //Intervals
+    for(int i=0; i<n_intervals; i++) {
+      delete [] trend_vp_zone[i];
+      delete [] trend_vs_zone[i];
+      delete [] trend_rho_zone[i];
 
-
-
-
-  MakeMultiIntervalBackground(bg_vp, bg_vs, bg_rho,
-                              vp_zones, vs_zones, rho_zones,
-                              //simbox,
-                              multiple_interval_grid,
-                              //erosion_priority,
-                              surfaces,
-                              model_settings->getSurfaceUncertainty(),
-                              model_settings->getFileGrid(),
-                              "multiinterval");
-
-
-  bool write3D = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
-
-  if(write3D) {
-    writeMultiIntervalTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone,
-                                   vp_zones, vs_zones, rho_zones,
-                                   //simbox,
-                                   multiple_interval_grid,
-                                   //erosion_priority,
-                                   surfaces,
-                                   model_settings->getSurfaceUncertainty(),
-                                   model_settings->getFileGrid());
-
-  }
-
-  //delete &cov_grid_2D;
-
-  for(int i=0; i<n_intervals; i++) {
-    delete [] trend_vp_zone[i];
-    delete [] trend_vs_zone[i];
-    delete [] trend_rho_zone[i];
-
-    //delete eroded_surfaces[i];
+      //delete eroded_surfaces[i];
+    }
   }
 
 }
 
 void
-Background::MakeMultizoneBackground(FFTGrid                         *& bg_vp,
-                                    FFTGrid                         *& bg_vs,
-                                    FFTGrid                         *& bg_rho,
+Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
+                                    NRLib::Grid<double>              & bg_vs,
+                                    NRLib::Grid<double>              & bg_rho,
                                     const std::vector<StormContGrid> & vp_zones,
                                     const std::vector<StormContGrid> & vs_zones,
                                     const std::vector<StormContGrid> & rho_zones,
@@ -1526,25 +1348,25 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bg_vp,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  //bg_vp.Resize(nx, ny, nz);
-  //bg_vs.Resize(nx, ny, nz);
-  //bg_rho.Resize(nx, ny, nz);
+  bg_vp.Resize(nx, ny, nz);
+  bg_vs.Resize(nx, ny, nz);
+  bg_rho.Resize(nx, ny, nz);
 
-  bg_vp   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-  bg_vs   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-  bg_rho  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+  //bg_vp   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+  //bg_vs   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
+  //bg_rho  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
 
-  bg_vp->createRealGrid();
-  bg_vs->createRealGrid();
-  bg_rho->createRealGrid();
+  //bg_vp->createRealGrid();
+  //bg_vs->createRealGrid();
+  //bg_rho->createRealGrid();
 
-  bg_vp->setType(FFTGrid::PARAMETER);
-  bg_vs->setType(FFTGrid::PARAMETER);
-  bg_rho->setType(FFTGrid::PARAMETER);
+  //bg_vp->setType(FFTGrid::PARAMETER);
+  //bg_vs->setType(FFTGrid::PARAMETER);
+  //bg_rho->setType(FFTGrid::PARAMETER);
 
-  bg_vp->setAccessMode(FFTGrid::RANDOMACCESS);
-  bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
-  bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
+  //bg_vp->setAccessMode(FFTGrid::RANDOMACCESS);
+  //bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
+  //bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
 
   // Beta distributed uncertainty on each surface
   // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
@@ -1612,23 +1434,15 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bg_vp,
             }
           }
 
-          //bg_vp(i,j,k) = vp;
-          //bg_vs(i,j,k) = vs;
-          //bg_rho(i,j,k) = rho;
-
-          bg_vp->setRealValue(i, j, k, float(vp));
-          bg_vs->setRealValue(i, j, k, float(vs));
-          bg_rho->setRealValue(i, j, k, float(rho));
+          bg_vp(i,j,k) = vp;
+          bg_vs(i,j,k) = vs;
+          bg_rho(i,j,k) = rho;
         }
 
         else {
-          //bg_vp(i,j,k) = 0;
-          //bg_vs(i,j,k) = 0;
-          //bg_rho(i,j,k) = 0;
-
-          bg_vp->setRealValue(i, j, k, 0);
-          bg_vs->setRealValue(i, j, k, 0);
-          bg_rho->setRealValue(i, j, k, 0);
+          bg_vp(i,j,k) = 0;
+          bg_vs(i,j,k) = 0;
+          bg_rho(i,j,k) = 0;
         }
       }
     }
@@ -1641,24 +1455,20 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bg_vp,
     }
   }
 
-  bg_vp->endAccess();
-  bg_vs->endAccess();
-  bg_rho->endAccess();
+  //bg_vp->endAccess();
+  //bg_vs->endAccess();
+  //bg_rho->endAccess();
 }
 
 void
-Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                     & bg_vp,
-                                        std::vector<FFTGrid *>                     & bg_vs,
-                                        std::vector<FFTGrid *>                     & bg_rho,
+Background::MakeMultiIntervalBackground(std::vector<NRLib::Grid<double> >          & bg_vp,
+                                        std::vector<NRLib::Grid<double> >          & bg_vs,
+                                        std::vector<NRLib::Grid<double> >          & bg_rho,
                                         const std::vector<StormContGrid>           & vp_zones,
                                         const std::vector<StormContGrid>           & vs_zones,
                                         const std::vector<StormContGrid>           & rho_zones,
                                         MultiIntervalGrid                          * multiple_interval_grid,
-                                        //const Simbox                     * simbox,
-                                        //const std::vector<int>           & erosion_priority,
-                                        //const std::vector<NRLib::Surface<double> > & surface,
-                                        //std::vector<const NRLib::Surface<double>& > surface,
-                                        std::vector<const NRLib::Surface<double> *> surfaces,
+                                        std::vector<const NRLib::Surface<double> *>  surfaces,
                                         const std::vector<double>                  & surface_uncertainty,
                                         const bool                                   is_file,
                                         const std::string                          & type) const
@@ -1690,21 +1500,9 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
       << "\n  |    |    |    |    |    |    |    |    |    |    |  "
       << "\n  ^";
 
-    bg_vp[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-    bg_vs[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-    bg_rho[i_interval] = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-
-    bg_vp[i_interval]->createRealGrid();
-    bg_vs[i_interval]->createRealGrid();
-    bg_rho[i_interval]->createRealGrid();
-
-    bg_vp[i_interval]->setType(FFTGrid::PARAMETER);
-    bg_vs[i_interval]->setType(FFTGrid::PARAMETER);
-    bg_rho[i_interval]->setType(FFTGrid::PARAMETER);
-
-    bg_vp[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
-    bg_vs[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
-    bg_vs[i_interval]->setAccessMode(FFTGrid::RANDOMACCESS);
+    bg_vp[i_interval].Resize(nx, ny, nz);
+    bg_vs[i_interval].Resize(nx, ny, nz);
+    bg_rho[i_interval].Resize(nx, ny, nz);
 
     // Beta distributed uncertainty on each surface
     // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
@@ -1753,42 +1551,43 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
             double vs  = 0;
             double rho = 0;
 
-            for(int zone=0; zone<n_intervals; zone++) {
+            //for(int zone=0; zone<n_intervals; zone++) { //H For Multizone background this is used to create a a weighted vp from all zones (?). In Multiinterval we store vp per interval, remove this weightings?
 
-              if(zone_probability[zone] > 0) {
-                size_t ind1;
-                size_t ind2;
-                double t;
+            //  if(zone_probability[zone] > 0) {
+            //    size_t ind1;
+            //    size_t ind2;
+            //    double t;
 
-                vp_zones[zone].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
+            //    vp_zones[zone].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
 
-                double vp_zone_new  = vp_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
-                double vs_zone_new  = vs_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
-                double rho_zone_new = rho_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            //    double vp_zone_new  = vp_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            //    double vs_zone_new  = vs_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            //    double rho_zone_new = rho_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
 
-                vp  +=  vp_zone_new  * zone_probability[zone];
-                vs  +=  vs_zone_new  * zone_probability[zone];
-                rho +=  rho_zone_new * zone_probability[zone];
-              }
-            }
+            //    vp  +=  vp_zone_new  * zone_probability[zone];
+            //    vs  +=  vs_zone_new  * zone_probability[zone];
+            //    rho +=  rho_zone_new * zone_probability[zone];
+            //  }
+            //}
 
-            //bg_vp(i,j,k) = vp;
-            //bg_vs(i,j,k) = vs;
-            //bg_rho(i,j,k) = rho;
+            //H For multinterval. No weightings between intervals, no zone_probability. Correct?
+            size_t ind1;
+            size_t ind2;
+            double t;
 
-            bg_vp[i_interval]->setRealValue(i, j, k, float(vp));
-            bg_vs[i_interval]->setRealValue(i, j, k, float(vs));
-            bg_rho[i_interval]->setRealValue(i, j, k, float(rho));
+            vp_zones[i_interval].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
+            vp = vp_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            vs = vs_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            rho = rho_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+
+            bg_vp[i_interval](i, j, k) = vp;
+            bg_vs[i_interval](i, j, k) = vs;
+            bg_rho[i_interval](i, j, k) = rho;
           }
-
           else {
-            //bg_vp(i,j,k) = 0;
-            //bg_vs(i,j,k) = 0;
-            //bg_rho(i,j,k) = 0;
-
-            bg_vp[i_interval]->setRealValue(i, j, k, 0);
-            bg_vs[i_interval]->setRealValue(i, j, k, 0);
-            bg_rho[i_interval]->setRealValue(i, j, k, 0);
+            bg_vp[i_interval](i, j, k) = 0;
+            bg_vs[i_interval](i, j, k) = 0;
+            bg_rho[i_interval](i, j, k) = 0;
           }
         }
       }
@@ -1800,10 +1599,6 @@ Background::MakeMultiIntervalBackground(std::vector<FFTGrid *>                  
         fflush(stdout);
       }
     }
-
-    bg_vp[i_interval]->endAccess();
-    bg_vs[i_interval]->endAccess();
-    bg_rho[i_interval]->endAccess();
   }
 }
 
@@ -1946,7 +1741,8 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
                                       const std::vector<Surface> & surface,
                                       const std::vector<int>     & correlation_structure,
                                       const Simbox               * simbox,
-                                      const float                & dz) const
+                                      const float                & dz,
+                                      std::string                & err_text) const
 {
   int    n_zones    = static_cast<int>(vp_zones.size());
   int    nx        = simbox->getnx();
@@ -1983,15 +1779,15 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
 
         if(z_top == top_missing) {
           const std::string name = top.GetName();
-
-          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
+          err_text += "ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n";
+          //LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
+          //exit(1);
         }
         else if(z_base == base_missing) {
           const std::string name = base.GetName();
-
-          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
+          err_text += "ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n";
+          //LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
+          //exit(1);
         }
 
         if(z_base-z_top > max_distance) {
@@ -2002,8 +1798,9 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
     }
 
     if(max_distance == 0) {
-      LogKit::LogFormatted(LogKit::Low,"ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n");
-      exit(1);
+      err_text += "ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n";
+      //LogKit::LogFormatted(LogKit::Low,"ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n");
+      //exit(1);
     }
 
     //Make new top and base surfaces
@@ -2039,7 +1836,8 @@ void
 Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
                                           std::vector<StormContGrid> & vs_zones,
                                           std::vector<StormContGrid> & rho_zones,
-                                          MultiIntervalGrid          * multiple_interval_grid) const
+                                          MultiIntervalGrid          * multiple_interval_grid,
+                                          std::string                & err_text) const
 {
 
   int    n_intervals = multiple_interval_grid->GetNIntervals();
@@ -2207,7 +2005,7 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
 //}
 
 void
-Background::calculateVelocityDeviations(FFTGrid                                    * velocity,
+Background::calculateVelocityDeviations(NRLib::Grid<double>                        & velocity, //FFTGrid                                    * velocity,
                                         const std::vector<NRLib::Well>             & wells,
                                         const Simbox                               * simbox,
                                         std::map<std::string, BlockedLogsCommon *> & bl,
@@ -2218,10 +2016,11 @@ Background::calculateVelocityDeviations(FFTGrid                                 
                                         int                                          output_flag,
                                         int                                          n_wells)
 {
-  if((output_flag & IO::BACKGROUND_TREND) > 0) {
-    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + "VpFromFile";
-    velocity->writeFile(fileName, IO::PathToBackground(), simbox, "NO_LABEL");
-  }
+  //H Writing of NRLib::Grid missing.
+  //if((output_flag & IO::BACKGROUND_TREND) > 0) {
+  //  std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + "VpFromFile";
+  //  velocity->writeFile(fileName, IO::PathToBackground(), simbox, "NO_LABEL");
+  //}
 
   //
   // Calculate deviation between well data and trend
@@ -2998,9 +2797,12 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
 
-  FFTGrid * trend_vp;
-  FFTGrid * trend_vs;
-  FFTGrid * trend_rho;
+  //FFTGrid * trend_vp;
+  //FFTGrid * trend_vs;
+  //FFTGrid * trend_rho;
+  NRLib::Grid<double> trend_vp;
+  NRLib::Grid<double> trend_vs;
+  NRLib::Grid<double> trend_rho;
 
   MakeMultizoneBackground(trend_vp,
                           trend_vs,
@@ -3015,27 +2817,25 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
                           isFile,
                           "trend in multizone");
 
+  //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp, true, isFile);
+  //FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs, true, isFile);
+  //FFTGrid * exp_trend_rho = copyFFTGrid(trend_rho, true, isFile);
 
+  //std::string file_name_vp = IO::PrefixBackground() + IO::PrefixTrend() + "Vp";
+  //std::string file_name_vs = IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
+  //std::string file_name_rho = IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
 
-  FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp, true, isFile);
-  FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs, true, isFile);
-  FFTGrid * exp_trend_rho = copyFFTGrid(trend_rho, true, isFile);
+  //exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
+  //exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
+  //exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);
 
-  std::string file_name_vp = IO::PrefixBackground() + IO::PrefixTrend() + "Vp";
-  std::string file_name_vs = IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
-  std::string file_name_rho = IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
+  //delete exp_trend_vp;
+  //delete exp_trend_vs;
+  //delete exp_trend_rho;
 
-  exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
-  exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
-  exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);
-
-  delete exp_trend_vp;
-  delete exp_trend_vs;
-  delete exp_trend_rho;
-
-  delete trend_vp;
-  delete trend_vs;
-  delete trend_rho;
+  //delete trend_vp;
+  //delete trend_vs;
+  //delete trend_rho;
 }
 
 //---------------------------------------------------------------------------
@@ -3064,9 +2864,13 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
 
-  std::vector<FFTGrid *> trend_vp(n_intervals);
-  std::vector<FFTGrid *> trend_vs(n_intervals);
-  std::vector<FFTGrid *> trend_rho(n_intervals);
+  //std::vector<FFTGrid *> trend_vp(n_intervals);
+  //std::vector<FFTGrid *> trend_vs(n_intervals);
+  //std::vector<FFTGrid *> trend_rho(n_intervals);
+
+  std::vector<NRLib::Grid<double> > trend_vp(n_intervals);
+  std::vector<NRLib::Grid<double> > trend_vs(n_intervals);
+  std::vector<NRLib::Grid<double> > trend_rho(n_intervals);
 
   MakeMultiIntervalBackground(trend_vp,
                               trend_vs,
@@ -3087,25 +2891,25 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
     std::string interval_name = multiple_interval_grid->GetIntervalName(i);
     const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
 
-    FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp[i], true, is_file);
-    FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs[i], true, is_file);
-    FFTGrid * exp_trend_rho = copyFFTGrid(trend_rho[i], true, is_file);
+    //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp[i], true, is_file);
+    //FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs[i], true, is_file);
+    //FFTGrid * exp_trend_rho = copyFFTGrid(trend_rho[i], true, is_file);
 
-    std::string file_name_vp = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Vp";
-    std::string file_name_vs = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
-    std::string file_name_rho = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
+    //std::string file_name_vp = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Vp";
+    //std::string file_name_vs = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
+    //std::string file_name_rho = "Interval_" + interval_name + "_" + IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
 
-    exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
-    exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
-    exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);
+    //exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
+    //exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
+    //exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);
 
-    delete exp_trend_vp;
-    delete exp_trend_vs;
-    delete exp_trend_rho;
+    //delete exp_trend_vp;
+    //delete exp_trend_vs;
+    //delete exp_trend_rho;
 
-    delete trend_vp[i];
-    delete trend_vs[i];
-    delete trend_rho[i];
+    //delete trend_vp[i];
+    //delete trend_vs[i];
+    //delete trend_rho[i];
 
   }
 }
@@ -3314,13 +3118,13 @@ Background::makeCovGrid2D(const Simbox * simbox,
 //}
 
 void
-Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
-                                 FFTGrid                         *& bgGrid,
+Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
+                                 NRLib::Grid<double>              & bg_grid, //FFTGrid                         *& bgGrid,
                                  const float                      * trend,
                                  const Simbox                     * simbox,
-                                 const CovGrid2D                  & covGrid2D,
-                                 const std::string                & type,
-                                 bool                               isFile) const
+                                 const CovGrid2D                  & cov_grid_2D,
+                                 const std::string                & type) const
+                                 //bool                               is_file) const
 {
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::Low,text);
@@ -3329,10 +3133,10 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   const int    ny   = simbox->getny();
   const int    nz   = simbox->getnz();
 
-  const int    nxp  = nx;
-  const int    nyp  = ny;
-  const int    nzp  = nz;
-  const int    rnxp = 2*(nxp/2 + 1);
+  //const int    nxp  = nx;
+  //const int    nyp  = ny;
+  //const int    nzp  = nz;
+  //const int    rnxp = 2*(nxp/2 + 1);
 
   const double x0   = simbox->getx0();
   const double y0   = simbox->gety0();
@@ -3351,26 +3155,28 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  bgGrid->createRealGrid();
-  bgGrid->setType(FFTGrid::PARAMETER);
-  bgGrid->setAccessMode(FFTGrid::WRITE);
+  //bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  //bgGrid->createRealGrid();
+  //bgGrid->setType(FFTGrid::PARAMETER);
+  //bgGrid->setAccessMode(FFTGrid::WRITE);
 
-  for (int k=0 ; k<nzp ; k++)
+  for (int k=0; k < nz; k++)
   {
     // Set trend for layer
     surface.Assign(trend[k]);
 
     // Kriging of layer
-    Kriging2D::krigSurface(surface, krigingData[k], covGrid2D);
+    Kriging2D::krigSurface(surface, kriging_data[k], cov_grid_2D);
 
     // Set layer in background model from surface
-    for(int j=0 ; j<nyp ; j++) {
-      for(int i=0 ; i<rnxp ; i++) {
-        if(i<nxp)
-          bgGrid->setNextReal(float(surface(i,j)));
-        else
-          bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
+    for(int j=0; j < ny; j++) {
+      for(int i=0 ; i < nx ; i++) {
+        bg_grid(i, j, k) = surface(i, j);
+
+        //if(i<nxp)
+        //  bgGrid->setNextReal(float(surface(i,j)));
+        //else
+        //  bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
       }
     }
 
@@ -3382,7 +3188,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
       fflush(stdout);
     }
   }
-  bgGrid->endAccess();
+  //bgGrid->endAccess();
 }
 
 //---------------------------------------------------------------------------
@@ -4070,63 +3876,67 @@ Background::setClassicVsVp()
 
 //-------------------------------------------------------------------------------
 void
-Background::resampleBackgroundModel(FFTGrid            *& bg_vp,
-                                    FFTGrid            *& bg_vs,
-                                    FFTGrid            *& bg_rho,
+Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp, //FFTGrid            *& bg_vp,
+                                    NRLib::Grid<double> & bg_vs,
+                                    NRLib::Grid<double> & bg_rho,
                                     const Simbox        * time_bg_simbox,
                                     const Simbox        * time_simbox,
                                     const ModelSettings * model_settings)
 {
   bool is_file = model_settings->getFileGrid();
 
-  if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-    std::string file_name_1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
-    std::string file_name_2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
-    std::string file_name_3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
+  //H Writing of grids missing
+  //if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
+  //  std::string file_name_1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
+  //  std::string file_name_2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
+  //  std::string file_name_3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
 
-    FFTGrid * exp_vp = copyFFTGrid(bg_vp, true, is_file);
-    exp_vp->writeFile(file_name_1, IO::PathToBackground(), time_bg_simbox);
-    delete exp_vp;
+  //  FFTGrid * exp_vp = copyFFTGrid(bg_vp, true, is_file);
+  //  exp_vp->writeFile(file_name_1, IO::PathToBackground(), time_bg_simbox);
+  //  delete exp_vp;
 
-    FFTGrid * exp_vs = copyFFTGrid(bg_vs, true, is_file);
-    exp_vs->writeFile(file_name_2, IO::PathToBackground(), time_bg_simbox);
-    delete exp_vs;
+  //  FFTGrid * exp_vs = copyFFTGrid(bg_vs, true, is_file);
+  //  exp_vs->writeFile(file_name_2, IO::PathToBackground(), time_bg_simbox);
+  //  delete exp_vs;
 
-    FFTGrid * exp_rho = copyFFTGrid(bg_rho, true, is_file);
-    exp_rho->writeFile(file_name_3, IO::PathToBackground(), time_bg_simbox);
-    delete exp_rho;
-  }
+  //  FFTGrid * exp_rho = copyFFTGrid(bg_rho, true, is_file);
+  //  exp_rho->writeFile(file_name_3, IO::PathToBackground(), time_bg_simbox);
+  //  delete exp_rho;
+  //}
 
-  FFTGrid * res_bg_vp = NULL;
-  FFTGrid * res_bg_vs = NULL;
-  FFTGrid * res_bg_rho = NULL;
+  //FFTGrid * res_bg_vp = NULL;
+  //FFTGrid * res_bg_vs = NULL;
+  //FFTGrid * res_bg_rho = NULL;
+  NRLib::Grid<double> res_bg_vp;
+  NRLib::Grid<double> res_bg_vs;
+  NRLib::Grid<double> res_bg_rho;
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
-  resampleParameter(res_bg_vp, bg_vp, time_simbox, time_bg_simbox, model_settings->getFileGrid());
-  resampleParameter(res_bg_vs, bg_vs, time_simbox, time_bg_simbox, model_settings->getFileGrid());
-  resampleParameter(res_bg_rho, bg_rho, time_simbox, time_bg_simbox, model_settings->getFileGrid());
+  resampleParameter(res_bg_vp, bg_vp, time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_vs, bg_vs, time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_rho, bg_rho, time_simbox, time_bg_simbox);
 
-  if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-    std::string file_name_1 = IO::PrefixBackground() + "Vp_InversionGrid";
-    std::string file_name_2 = IO::PrefixBackground() + "Vs_InversionGrid";
-    std::string file_name_3 = IO::PrefixBackground() + "Rho_InversionGrid";
+  //if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
+  //  std::string file_name_1 = IO::PrefixBackground() + "Vp_InversionGrid";
+  //  std::string file_name_2 = IO::PrefixBackground() + "Vs_InversionGrid";
+  //  std::string file_name_3 = IO::PrefixBackground() + "Rho_InversionGrid";
 
-    FFTGrid * exp_res_vp = copyFFTGrid(res_bg_vp, true, is_file);
-    exp_res_vp->writeFile(file_name_1, IO::PathToBackground(), time_simbox);
-    delete exp_res_vp;
+  //  FFTGrid * exp_res_vp = copyFFTGrid(res_bg_vp, true, is_file);
+  //  exp_res_vp->writeFile(file_name_1, IO::PathToBackground(), time_simbox);
+  //  delete exp_res_vp;
 
-    FFTGrid * exp_res_vs = copyFFTGrid(res_bg_vs, true, is_file);
-    exp_res_vs->writeFile(file_name_2, IO::PathToBackground(), time_simbox);
-    delete exp_res_vs;
+  //  FFTGrid * exp_res_vs = copyFFTGrid(res_bg_vs, true, is_file);
+  //  exp_res_vs->writeFile(file_name_2, IO::PathToBackground(), time_simbox);
+  //  delete exp_res_vs;
 
-    FFTGrid * exp_res_rho = copyFFTGrid(res_bg_rho, true, is_file);
-    exp_res_rho->writeFile(file_name_3, IO::PathToBackground(), time_simbox);
-    delete exp_res_rho;
-  }
+  //  FFTGrid * exp_res_rho = copyFFTGrid(res_bg_rho, true, is_file);
+  //  exp_res_rho->writeFile(file_name_3, IO::PathToBackground(), time_simbox);
+  //  delete exp_res_rho;
+  //}
 
-  delete bg_vp;
-  delete bg_vs;
-  delete bg_rho;
+  //delete bg_vp;
+  //delete bg_vs;
+  //delete bg_rho;
 
   bg_vp = res_bg_vp;
   bg_vs = res_bg_vs;
@@ -4134,25 +3944,144 @@ Background::resampleBackgroundModel(FFTGrid            *& bg_vp,
  }
 
 //-------------------------------------------------------------------------------
+//void
+//Background::resampleParameter(FFTGrid *& pNew,        // Resample to
+//                              FFTGrid  * pOld,        // Resample from
+//                              const Simbox   * simboxNew,
+//                              const Simbox   * simboxOld,
+//                              bool       isFile)
+//{
+//  int nx  = simboxNew->getnx();
+//  int ny  = simboxNew->getny();
+//  int nz  = simboxNew->getnz();
+//  //
+//  // Use same padding as for nonresampled cubes
+//  //
+//  // NBNB-PAL: These grids are unpadded, so all nxp, nyp, ... would probably
+//  //           better be replaced by nx, ny, ... to avoid confusion...
+//  //
+//  int nxp = nx + (pOld->getNxp() - pOld->getNxp());
+//  int nyp = ny + (pOld->getNyp() - pOld->getNyp());
+//  int nzp = nz + (pOld->getNzp() - pOld->getNzp());
+//
+//  //
+//  // Set up relation between old layer index and new layer index using
+//  //
+//  // k2 = dz1/dz2 * k1 + (z02 - z01)/dz2    (from dz2*k2 + z02 = dz1*k1 + z01)
+//  //
+//  double * a = new double[nx*ny];
+//  double * b = new double[nx*ny];
+//
+//  int ij = 0;
+//  for(int j=0;j<ny;j++) {
+//    for(int i=0;i<nx;i++) {
+//      double dzNew = simboxNew->getdz(i,j);
+//      double dzOld = simboxOld->getdz(i,j);
+//      double z0New = simboxNew->getTop(i,j);
+//      double z0Old = simboxOld->getTop(i,j);
+//        a[ij] = dzNew/dzOld;
+//      b[ij] = (z0New - z0Old)/dzOld;
+//      ij++;
+//    }
+//  }
+//
+//  //
+//  // Resample parameter
+//  //
+//  pNew = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+//  pNew->createRealGrid();
+//  pNew->setType(FFTGrid::PARAMETER);
+//  pNew->setAccessMode(FFTGrid::WRITE);
+//
+//  pOld->setAccessMode(FFTGrid::RANDOMACCESS);
+//
+//  int rnxp = 2*(nxp/2 + 1);
+//
+//  double * layer = new double[nx*ny];
+//
+//  for(int k=0 ; k<nzp ; k++) {
+//    //
+//    // Map a layer
+//    //
+//    int ij=0;
+//    for (int j=0 ; j<nyp ; j++) {
+//      for (int i=0 ; i<rnxp ; i++) {
+//        if (i < nx && j < ny && k < nz) {
+//          int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
+//          layer[ij] = pOld->getRealValue(i, j, kOld);
+//          ij++;
+//        }
+//      }
+//    }
+//    //
+//    // Smooth the layer (equal weighting of all neighbouring cells)
+//    //
+//    float value;
+//    for (int j=0 ; j<nyp ; j++) {
+//      for (int i=0 ; i<rnxp ; i++) {
+//        if (i < nx && j < ny && k < nz) {
+//          int n = 1;
+//          double sum = layer[j*nx + i];
+//          if (i>1) {
+//            sum += layer[j*nx + i - 1];
+//            n++;
+//          }
+//          if (j>1) {
+//            sum += layer[(j - 1)*nx + i];
+//            n++;
+//          }
+//          if (i>1 && j>1) {
+//            sum += layer[(j - 1)*nx + i - 1];
+//            n++;
+//          }
+//          if (i<nx-1) {
+//            sum += layer[j*nx + i + 1];
+//            n++;
+//          }
+//          if (j<ny-1) {
+//            sum += layer[(j + 1)*nx + i];
+//            n++;
+//          }
+//          if (i<nx-1 && j<ny-1) {
+//            sum += layer[(j + 1)*nx + i + 1];
+//            n++;
+//          }
+//          value = static_cast<float>(sum)/static_cast<float>(n);
+//        }
+//        else {
+//          value = RMISSING;
+//        }
+//        pNew->setNextReal(value);
+//      }
+//    }
+//  }
+//  pOld->endAccess();
+//  pNew->endAccess();
+//
+//  delete [] layer;
+//  delete [] a;
+//  delete [] b;
+//}
+
 void
-Background::resampleParameter(FFTGrid *& pNew,        // Resample to
-                              FFTGrid  * pOld,        // Resample from
-                              const Simbox   * simboxNew,
-                              const Simbox   * simboxOld,
-                              bool       isFile)
+Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,        // Resample to
+                              NRLib::Grid<double> & p_old, //FFTGrid  * pOld,        // Resample from
+                              const Simbox        * simbox_new,
+                              const Simbox        * simbox_old)
+                              //bool          isFile)
 {
-  int nx  = simboxNew->getnx();
-  int ny  = simboxNew->getny();
-  int nz  = simboxNew->getnz();
+  int nx  = simbox_new->getnx();
+  int ny  = simbox_new->getny();
+  int nz  = simbox_new->getnz();
   //
   // Use same padding as for nonresampled cubes
   //
   // NBNB-PAL: These grids are unpadded, so all nxp, nyp, ... would probably
   //           better be replaced by nx, ny, ... to avoid confusion...
   //
-  int nxp = nx + (pOld->getNxp() - pOld->getNxp());
-  int nyp = ny + (pOld->getNyp() - pOld->getNyp());
-  int nzp = nz + (pOld->getNzp() - pOld->getNzp());
+  //int nxp = nx + (pOld->getNxp() - pOld->getNxp());
+  //int nyp = ny + (pOld->getNyp() - pOld->getNyp());
+  //int nzp = nz + (pOld->getNzp() - pOld->getNzp());
 
   //
   // Set up relation between old layer index and new layer index using
@@ -4165,10 +4094,10 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   int ij = 0;
   for(int j=0;j<ny;j++) {
     for(int i=0;i<nx;i++) {
-      double dzNew = simboxNew->getdz(i,j);
-      double dzOld = simboxOld->getdz(i,j);
-      double z0New = simboxNew->getTop(i,j);
-      double z0Old = simboxOld->getTop(i,j);
+      double dzNew = simbox_new->getdz(i,j);
+      double dzOld = simbox_old->getdz(i,j);
+      double z0New = simbox_new->getTop(i,j);
+      double z0Old = simbox_old->getTop(i,j);
         a[ij] = dzNew/dzOld;
       b[ij] = (z0New - z0Old)/dzOld;
       ij++;
@@ -4178,27 +4107,28 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   //
   // Resample parameter
   //
-  pNew = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  pNew->createRealGrid();
-  pNew->setType(FFTGrid::PARAMETER);
-  pNew->setAccessMode(FFTGrid::WRITE);
+  p_new.Resize(nx, ny, nz);
+  //pNew = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  //pNew->createRealGrid();
+  //pNew->setType(FFTGrid::PARAMETER);
+  //pNew->setAccessMode(FFTGrid::WRITE);
 
-  pOld->setAccessMode(FFTGrid::RANDOMACCESS);
+  //pOld->setAccessMode(FFTGrid::RANDOMACCESS);
 
-  int rnxp = 2*(nxp/2 + 1);
+  //int rnxp = 2*(nxp/2 + 1);
 
   double * layer = new double[nx*ny];
 
-  for(int k=0 ; k<nzp ; k++) {
+  for(int k=0 ; k<nz; k++) {
     //
     // Map a layer
     //
     int ij=0;
-    for (int j=0 ; j<nyp ; j++) {
-      for (int i=0 ; i<rnxp ; i++) {
+    for (int j=0 ; j<ny; j++) {
+      for (int i=0 ; i<nx; i++) {
         if (i < nx && j < ny && k < nz) {
-          int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
-          layer[ij] = pOld->getRealValue(i, j, kOld);
+          int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
+          layer[ij] = p_old(i, j, k_old);//pOld->getRealValue(i, j, kOld);
           ij++;
         }
       }
@@ -4207,8 +4137,8 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
     // Smooth the layer (equal weighting of all neighbouring cells)
     //
     float value;
-    for (int j=0 ; j<nyp ; j++) {
-      for (int i=0 ; i<rnxp ; i++) {
+    for (int j=0 ; j<ny; j++) {
+      for (int i=0 ; i<nx; i++) {
         if (i < nx && j < ny && k < nz) {
           int n = 1;
           double sum = layer[j*nx + i];
@@ -4241,12 +4171,13 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
         else {
           value = RMISSING;
         }
-        pNew->setNextReal(value);
+        p_new(i, j, k) = value;
+        //pNew->setNextReal(value);
       }
     }
   }
-  pOld->endAccess();
-  pNew->endAccess();
+  //pOld->endAccess();
+  //pNew->endAccess();
 
   delete [] layer;
   delete [] a;
@@ -4266,20 +4197,20 @@ Background::padAndSetBackgroundModel(FFTGrid * bg_vp,
 }
 
 //-------------------------------------------------------------------------------
-void
-Background::padAndSetBackgroundModelInterval(std::vector<FFTGrid *> bg_vp,
-                                             std::vector<FFTGrid *> bg_vs,
-                                             std::vector<FFTGrid *> bg_rho)
-{
-  //LogKit::LogFormatted(LogKit::Low,"\nPadding background model...\n");
-  int n_intervals = bg_vp.size();
-
-  for(int i = 0; i < n_intervals; i++) {
-    createPaddedParameter(back_model_interval_[i][0], bg_vp[i]);
-    createPaddedParameter(back_model_interval_[i][1], bg_vs[i]);
-    createPaddedParameter(back_model_interval_[i][2], bg_rho[i]);
-  }
-}
+//void
+//Background::padAndSetBackgroundModelInterval(std::vector<FFTGrid *> bg_vp,
+//                                             std::vector<FFTGrid *> bg_vs,
+//                                             std::vector<FFTGrid *> bg_rho)
+//{
+//  //LogKit::LogFormatted(LogKit::Low,"\nPadding background model...\n");
+//  int n_intervals = bg_vp.size();
+//
+//  for(int i = 0; i < n_intervals; i++) {
+//    createPaddedParameter(back_model_interval_[i][0], bg_vp[i]);
+//    createPaddedParameter(back_model_interval_[i][1], bg_vs[i]);
+//    createPaddedParameter(back_model_interval_[i][2], bg_rho[i]);
+//  }
+//}
 
 //-------------------------------------------------------------------------------
 void

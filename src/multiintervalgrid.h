@@ -8,7 +8,10 @@
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "nrlib/flens/nrlib_flens.hpp"
+#include "src/cravatrend.h"
 
+class CravaTrend;
 class MultiIntervalGrid
 {
 public:
@@ -26,18 +29,38 @@ public:
   int                                                      GetNIntervals()       const           { return n_intervals_            ;}
   //const std::vector<Simbox>                              & GetSimboxes() const                   { return simboxes_               ;}
   const std::vector<Simbox>                              & GetIntervalSimboxes() const           { return interval_simboxes_      ;}
+  std::vector<Simbox>                                    & GetIntervalSimboxes()                 { return interval_simboxes_      ;}
   //const Simbox                                           * GetSimbox(int i) const                { return &simboxes_[i]           ;}
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]  ;}
+  Simbox                                                 & GetIntervalSimboxE(int i)              { return interval_simboxes_[i]   ;}
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_             ;}
-  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const;
-  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]     ;}
+  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return parameters_[i]          ;}
+  const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]      ;}
   //const std::vector<Surface>                             & GetErodedSurfaces() const             { return eroded_surfaces_       ;}
-  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_    ;}
-  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_         ;}
+  const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_     ;}
+  const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_          ;}
+
+  const std::vector<std::vector<NRLib::Grid<double> > > & GetCovParametersIntervals() const      { return prior_cov_              ;}
+  const std::vector<NRLib::Grid<double> >               & GetCovParametersInterval(int i) const  { return prior_cov_[i]           ;}
+  const std::vector<std::vector<NRLib::Grid<double> > > & GetCorrParametersIntervals() const     { return prior_corr_             ;}
+  const std::vector<NRLib::Grid<double> >               & GetCorrParametersInterval(int i) const { return prior_corr_[i]          ;}
+
+  const NRLib::Matrix                                   & GetPriorVar0(int i) const              { return prior_var_0_[i]         ;}
+
+  const std::vector<CravaTrend>                         & GetTrendCubes() const                  { return trend_cubes_            ;}
+  const CravaTrend                                      & GetTrendCube(int i) const              { return trend_cubes_[i]         ;}
+
 
   //SET FUNCTIONS
+  void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]    = parameters  ;}
+  void AddParameterForInterval(int i, int j, NRLib::Grid<double> parameter)                      { parameters_[i][j] = parameter   ;}
+  void AddParametersCovForInterval(int i, std::vector<NRLib::Grid<double> > cov)                 { prior_cov_[i]     = cov         ;}
+  void AddParametersCorrForInterval(int i, std::vector<NRLib::Grid<double> > corr)               { prior_corr_[i]    = corr        ;}
+  void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]   = prior_var_0 ;}
+  void AddTrendCubes(std::vector<CravaTrend> trend_cubes)                                        { trend_cubes_      = trend_cubes ;}
 
-  void  AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)      { parameters_[i] = parameters;}
+
+  void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
 
 
 private:
@@ -124,21 +147,7 @@ private:
   void  EstimateXYPaddingSizes(Simbox          * interval_simbox,
                                ModelSettings   * model_settings) const;
 
-  //void  BuildSeismicPropertyZones(InputFiles                               * input_files,
-  //                                std::vector<NRLib::Grid<float>>          & alpha_zones,
-  //                                std::vector<NRLib::Grid<float>>          & beta_zones,
-  //                                std::vector<NRLib::Grid<float>>          & rho_zones,
-  //                                const std::vector<Surface>               & surfaces,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_files,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_top_files,
-  //                                const std::map<std::string, std::string> & interval_corr_dir_base_files,
-  //                                const std::map<std::string, bool>        & top_conforms,
-  //                                const std::map<std::string, bool>        & base_conforms,
-  //                                const std::vector<std::string>           & interval_names,
-  //                                const std::vector<float>                 & dz) const;
-
   // CLASS VARIABLES
-
   size_t                                               n_intervals_;
   bool                                                 multiple_interval_setting_;
   std::vector<std::string> interval_names_;
@@ -149,9 +158,18 @@ private:
   //std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
   std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector
   std::vector<std::vector<NRLib::Grid<double> > >      parameters_;               // must have same size as the simbox vector
+  //H Change parameters_ to map?
+
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_facies_prob_cubes_;   //Vector over facies, then intervals.
+
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_cov_; //Vp, vs, rho //From CommonData -> SetupPriorCorrelation
+  std::vector<std::vector<NRLib::Grid<double> > >      prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
+  std::vector<NRLib::Matrix>                           prior_var_0_;
 
   std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.
+
+  std::vector<CravaTrend>                              trend_cubes_;  //Trend cubes per interval.
 
 };
 
