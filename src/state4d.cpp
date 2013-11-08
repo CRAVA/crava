@@ -524,6 +524,214 @@ void State4D::split(SeismicParametersHolder & current_state )
   delete [] sigmaCurrentPosterior;
 }
 
+void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
+{
+  // parameterNumber: 0 = VpStatic, 1=VsStatic 2 = RhoStatic, 3 = VpDynamic, 4=VsDynamic 5 = RhoDynamic
+
+  LogKit::WriteHeader("Updating full State 4D with  inversion of single parameter");
+  // initializing
+  assert(allGridsAreTransformed());
+  for(int i = 0; i<3; i++){
+    mu_static_[i]->setAccessMode(FFTGrid::READANDWRITE);
+    mu_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+  }
+  
+  assert(Epost->getIsTransformed());
+  Epost->setAccessMode(FFTGrid::READ);
+
+  for(int i = 0; i<6; i++)
+  {
+    sigma_static_static_[i]->setAccessMode(FFTGrid::READANDWRITE);
+    sigma_dynamic_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+  }
+
+  assert(CovPost->getIsTransformed());
+  CovPost->setAccessMode(FFTGrid::READ);
+
+
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+
+  int nzp = Epost->getNzp();
+  int nyp = Epost->getNyp();
+  int cnxp = Epost->getCNxp();
+
+  fftw_complex*  muFullPrior=new fftw_complex[6];
+  fftw_complex*  muFullPosterior=new fftw_complex[6];
+  fftw_complex   muCurrentPrior;
+  fftw_complex   muCurrentPosterior;
+  double   sigmaCurrentPrior ; 
+  double   sigmaCurrentPosterior ; 
+
+  fftw_complex** sigmaFullPrior          = new fftw_complex*[6];
+  fftw_complex** sigmaFullPosterior      = new fftw_complex*[6];
+  fftw_complex*  sigmaFullVsCurrentPrior = new fftw_complex[6];
+
+  for(int i=0;i<6;i++)
+  {
+    sigmaFullPrior[i]          = new fftw_complex[6];
+    sigmaFullPosterior[i]      = new fftw_complex[6];
+  }
+
+ 
+
+ 
+  int counter =0;
+  for (int k = 0; k < nzp; k++) {
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
+         // reading from grids
+         muFullPrior[0] = mu_static_[0]->getNextComplex();
+         muFullPrior[1] = mu_static_[1]->getNextComplex();
+         muFullPrior[2] = mu_static_[2]->getNextComplex();
+         muFullPrior[3] = mu_dynamic_[0]->getNextComplex();
+         muFullPrior[4] = mu_dynamic_[1]->getNextComplex();
+         muFullPrior[5] = mu_dynamic_[2]->getNextComplex();
+
+
+         sigmaFullPrior[0][0] = sigma_static_static_[0]->getNextComplex();
+         sigmaFullPrior[0][1] = sigma_static_static_[1]->getNextComplex();
+         sigmaFullPrior[0][2] = sigma_static_static_[2]->getNextComplex();
+         sigmaFullPrior[0][3] = sigma_static_dynamic_[0]->getNextComplex();
+         sigmaFullPrior[0][4] = sigma_static_dynamic_[1]->getNextComplex();
+         sigmaFullPrior[0][5] = sigma_static_dynamic_[2]->getNextComplex();
+         sigmaFullPrior[1][1] = sigma_static_static_[3]->getNextComplex();
+         sigmaFullPrior[1][2] = sigma_static_static_[4]->getNextComplex();
+         sigmaFullPrior[1][3] = sigma_static_dynamic_[3]->getNextComplex();
+         sigmaFullPrior[1][4] = sigma_static_dynamic_[4]->getNextComplex();
+         sigmaFullPrior[1][5] = sigma_static_dynamic_[5]->getNextComplex();
+         sigmaFullPrior[2][2] = sigma_static_static_[5]->getNextComplex();
+         sigmaFullPrior[2][3] = sigma_static_dynamic_[6]->getNextComplex();
+         sigmaFullPrior[2][4] = sigma_static_dynamic_[7]->getNextComplex();
+         sigmaFullPrior[2][5] = sigma_static_dynamic_[8]->getNextComplex();
+         sigmaFullPrior[3][3] = sigma_dynamic_dynamic_[0]->getNextComplex();
+         sigmaFullPrior[3][4] = sigma_dynamic_dynamic_[1]->getNextComplex();
+         sigmaFullPrior[3][5] = sigma_dynamic_dynamic_[2]->getNextComplex();
+         sigmaFullPrior[4][4] = sigma_dynamic_dynamic_[3]->getNextComplex();
+         sigmaFullPrior[4][5] = sigma_dynamic_dynamic_[4]->getNextComplex();
+         sigmaFullPrior[5][5] = sigma_dynamic_dynamic_[5]->getNextComplex();        
+         
+         // compleating matrixes
+         for(int l=0;l<6;l++)
+           for(int m=l+1;m<6;m++)
+           {
+             sigmaFullPrior[m][l].re = sigmaFullPrior[l][m].re;
+             sigmaFullPrior[m][l].im = -sigmaFullPrior[l][m].im;
+           }
+
+         // getting Prior for Parameter
+          muCurrentPrior=muFullPrior[parameterNumber];
+          sigmaCurrentPrior = sigmaFullPrior[parameterNumber][parameterNumber].re; 
+         // getting posterior for Parameter
+         muCurrentPosterior = Epost->getNextComplex();
+         sigmaCurrentPosterior=CovPost->getNextComplex().re;
+
+         // getting correlation between Parameter and others
+         for(int l=0;l<6;l++){
+             sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
+         }
+   
+         if( sigmaCurrentPosterior >0.0 & sigmaCurrentPrior*0.999 > sigmaCurrentPosterior ){ // compute only when the posteriorvariance has been reduced
+           // This is the computations
+           double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
+
+           fftw_complex d;
+           d.re =  muCurrentPrior.re + (sigmaD/sigmaCurrentPrior)*(muCurrentPosterior.re -  muCurrentPrior.re);
+           d.im =  muCurrentPrior.im + (sigmaD/sigmaCurrentPrior)*(muCurrentPosterior.im -  muCurrentPrior.im);
+
+           for(int l=0;l<6;l++)
+           {
+              muFullPosterior[l].re =  muFullPrior[l].re + sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re)/sigmaD;
+              muFullPosterior[l].re+=                    - sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im)/sigmaD;
+              
+              muFullPosterior[l].im = muFullPrior[l].im + sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im)/sigmaD;
+              muFullPosterior[l].im +=                    sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re)/sigmaD;
+           }
+
+           for(int l=0;l<6;l++)
+             for(int m=l+1;m<6;m++)
+             {
+                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - ( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im)/sigmaD;
+                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - (-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re)/sigmaD;
+             }        
+         }else
+         {
+           lib_matrCopyCpx(sigmaFullPrior, 6, 6, sigmaFullPosterior);
+
+           for(int l=0;l<6;l++)
+              muFullPosterior[l]= muFullPrior[l];
+         }
+
+        // writing to grids
+         sigma_static_static_[0]->setNextComplex(  sigmaFullPosterior[0][0]);
+         sigma_static_static_[1]->setNextComplex(  sigmaFullPosterior[0][1]);
+         sigma_static_static_[2]->setNextComplex(  sigmaFullPosterior[0][2]);
+         sigma_static_dynamic_[0]->setNextComplex( sigmaFullPosterior[0][3]);
+         sigma_static_dynamic_[1]->setNextComplex( sigmaFullPosterior[0][4]);
+         sigma_static_dynamic_[2]->setNextComplex( sigmaFullPosterior[0][5]);
+         sigma_static_static_[3]->setNextComplex(  sigmaFullPosterior[1][1]);
+         sigma_static_static_[4]->setNextComplex(  sigmaFullPosterior[1][2]);
+         sigma_static_dynamic_[3]->setNextComplex( sigmaFullPosterior[1][3]);
+         sigma_static_dynamic_[4]->setNextComplex( sigmaFullPosterior[1][4]);
+         sigma_static_dynamic_[5]->setNextComplex( sigmaFullPosterior[1][5]);
+         sigma_static_static_[5]->setNextComplex(  sigmaFullPosterior[2][2]);
+         sigma_static_dynamic_[6]->setNextComplex( sigmaFullPosterior[2][3]);
+         sigma_static_dynamic_[7]->setNextComplex( sigmaFullPosterior[2][4]);
+         sigma_static_dynamic_[8]->setNextComplex( sigmaFullPosterior[2][5]);
+         sigma_dynamic_dynamic_[0]->setNextComplex(sigmaFullPosterior[3][3]);
+         sigma_dynamic_dynamic_[1]->setNextComplex(sigmaFullPosterior[3][4]);
+         sigma_dynamic_dynamic_[2]->setNextComplex(sigmaFullPosterior[3][5]);
+         sigma_dynamic_dynamic_[3]->setNextComplex(sigmaFullPosterior[4][4]);
+         sigma_dynamic_dynamic_[4]->setNextComplex(sigmaFullPosterior[4][5]);
+         sigma_dynamic_dynamic_[5]->setNextComplex(sigmaFullPosterior[5][5]);
+
+         mu_static_[0]->setNextComplex( muFullPosterior[0]);
+         mu_static_[1]->setNextComplex( muFullPosterior[1]);
+         mu_static_[2]->setNextComplex( muFullPosterior[2]);
+         mu_dynamic_[0]->setNextComplex(muFullPosterior[3]);
+         mu_dynamic_[1]->setNextComplex(muFullPosterior[4]);
+         mu_dynamic_[2]->setNextComplex(muFullPosterior[5]);
+      }
+    }
+  }
+
+  printf("\n\n #of Shortcuts in split = %d, this is  %f of 100 percent \n",counter, double(counter*100.0)/double(cnxp*nyp*nzp));
+
+  Epost->endAccess();
+  CovPost->endAccess();
+  
+  for(int i = 0; i<3; i++)
+  {
+    mu_static_[i]->endAccess();
+    mu_dynamic_[i]->endAccess();
+  }
+  for(int i = 0; i<6; i++)
+  {
+    sigma_static_static_[i]->endAccess();
+    sigma_dynamic_dynamic_[i]->endAccess();
+  }
+
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->endAccess();
+
+
+  for(int i=0;i<6;i++)
+  {
+    delete [] sigmaFullPrior[i];
+    delete [] sigmaFullPosterior[i];
+  }   
+
+  delete [] muFullPrior;
+  delete [] muFullPosterior;
+
+  delete [] sigmaFullPrior;
+  delete [] sigmaFullPosterior;
+  delete [] sigmaFullVsCurrentPrior;
+
+}
+
+
+
 void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
 {
   LogKit::WriteHeader("Evolving distribution of dynamic part");
