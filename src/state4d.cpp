@@ -535,7 +535,7 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
     mu_static_[i]->setAccessMode(FFTGrid::READANDWRITE);
     mu_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
   }
-  
+
   assert(Epost->getIsTransformed());
   Epost->setAccessMode(FFTGrid::READ);
 
@@ -560,8 +560,8 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
   fftw_complex*  muFullPosterior=new fftw_complex[6];
   fftw_complex   muCurrentPrior;
   fftw_complex   muCurrentPosterior;
-  double   sigmaCurrentPrior ; 
-  double   sigmaCurrentPosterior ; 
+  double   sigmaCurrentPrior ;
+  double   sigmaCurrentPosterior ;
 
   fftw_complex** sigmaFullPrior          = new fftw_complex*[6];
   fftw_complex** sigmaFullPosterior      = new fftw_complex*[6];
@@ -573,10 +573,6 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
     sigmaFullPosterior[i]      = new fftw_complex[6];
   }
 
- 
-
- 
-  int counter =0;
   for (int k = 0; k < nzp; k++) {
     for (int j = 0; j < nyp; j++) {
       for (int i = 0; i < cnxp; i++) {
@@ -587,7 +583,6 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
          muFullPrior[3] = mu_dynamic_[0]->getNextComplex();
          muFullPrior[4] = mu_dynamic_[1]->getNextComplex();
          muFullPrior[5] = mu_dynamic_[2]->getNextComplex();
-
 
          sigmaFullPrior[0][0] = sigma_static_static_[0]->getNextComplex();
          sigmaFullPrior[0][1] = sigma_static_static_[1]->getNextComplex();
@@ -609,8 +604,8 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
          sigmaFullPrior[3][5] = sigma_dynamic_dynamic_[2]->getNextComplex();
          sigmaFullPrior[4][4] = sigma_dynamic_dynamic_[3]->getNextComplex();
          sigmaFullPrior[4][5] = sigma_dynamic_dynamic_[4]->getNextComplex();
-         sigmaFullPrior[5][5] = sigma_dynamic_dynamic_[5]->getNextComplex();        
-         
+         sigmaFullPrior[5][5] = sigma_dynamic_dynamic_[5]->getNextComplex();
+
          // compleating matrixes
          for(int l=0;l<6;l++)
            for(int m=l+1;m<6;m++)
@@ -621,7 +616,7 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
          // getting Prior for Parameter
           muCurrentPrior=muFullPrior[parameterNumber];
-          sigmaCurrentPrior = sigmaFullPrior[parameterNumber][parameterNumber].re; 
+          sigmaCurrentPrior = sigmaFullPrior[parameterNumber][parameterNumber].re;
          // getting posterior for Parameter
          muCurrentPosterior = Epost->getNextComplex();
          sigmaCurrentPosterior=CovPost->getNextComplex().re;
@@ -630,8 +625,8 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
          for(int l=0;l<6;l++){
              sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
          }
-   
-         if( sigmaCurrentPosterior >0.0 & sigmaCurrentPrior*0.999 > sigmaCurrentPosterior ){ // compute only when the posteriorvariance has been reduced
+
+         if( (sigmaCurrentPosterior >0.0) & (sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
            // This is the computations
            double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
 
@@ -643,17 +638,17 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
            {
               muFullPosterior[l].re =  muFullPrior[l].re + sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re)/sigmaD;
               muFullPosterior[l].re+=                    - sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im)/sigmaD;
-              
+
               muFullPosterior[l].im = muFullPrior[l].im + sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im)/sigmaD;
               muFullPosterior[l].im +=                    sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re)/sigmaD;
            }
 
            for(int l=0;l<6;l++)
-             for(int m=l+1;m<6;m++)
+             for(int m=0;m<6;m++)
              {
                 sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - ( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im)/sigmaD;
                 sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - (-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re)/sigmaD;
-             }        
+             }
          }else
          {
            lib_matrCopyCpx(sigmaFullPrior, 6, 6, sigmaFullPosterior);
@@ -695,11 +690,9 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
     }
   }
 
-  printf("\n\n #of Shortcuts in split = %d, this is  %f of 100 percent \n",counter, double(counter*100.0)/double(cnxp*nyp*nzp));
-
   Epost->endAccess();
   CovPost->endAccess();
-  
+
   for(int i = 0; i<3; i++)
   {
     mu_static_[i]->endAccess();
@@ -719,7 +712,7 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
   {
     delete [] sigmaFullPrior[i];
     delete [] sigmaFullPosterior[i];
-  }   
+  }
 
   delete [] muFullPrior;
   delete [] muFullPosterior;
