@@ -593,7 +593,6 @@ void LinearInterpolation(const std::vector<double> & x,
   y0.resize(x0.size(), RMISSING);
 
   for (size_t i = 0; i < x0.size(); i++) {
-
     if (x_low - delta < x0[i] && x0[i] < x_upp + delta) {
       if (x0[i] < x_low + delta) {
         y0[i] = y.front();
@@ -620,8 +619,6 @@ void EstimateVariance1D(const std::vector<double> & x,
                         double                      bandwidth,
                         std::string               & errTxt)
 {
-  double              delta        = 1e-6;
-
   std::vector<double> x_binned;
   std::vector<double> w_binned;
   std::vector<double> x0_regridded = x0;
@@ -629,9 +626,6 @@ void EstimateVariance1D(const std::vector<double> & x,
   std::vector<double> variance_regridded(x.size(), RMISSING);
 
   /* -- estiamte global variance -- */
-  double              x0_min = *std::min_element(x0.begin(), x0.end());
-  double              x0_max = *std::max_element(x0.begin(), x0.end());
-
   std::vector<double> y_y_mean_squared_binned;
   std::vector<double> y_y_mean_squared;
   std::vector<double> y_mean;
@@ -640,7 +634,7 @@ void EstimateVariance1D(const std::vector<double> & x,
 
   double              y_var = 0.0;
   for (size_t i = 0; i < y.size(); i++) {
-    if (y_mean[i] != RMISSING && y[i] != RMISSING && x0_min - delta < x[i] && x[i] < x0_max + delta) {
+    if (y_mean[i] != RMISSING && y[i] != RMISSING) {
       double y_y_mean_squared_i = (y[i] - y_mean[i])*(y[i] - y_mean[i]);
       y_y_mean_squared.push_back(y_y_mean_squared_i);
       x_binned.push_back(x[i]);
@@ -986,6 +980,7 @@ double CalculateEffectiveSampleSize1D(const std::vector<double> & x,
 
   return(2.506628*bandwidth*n/(x_max - x_min));
 }
+//-------------------------------------------------------------------------------
 double CalculateEffectiveSampleSize2D(const std::vector<double> & x,
                                       const std::vector<double> & y,
                                       const double              & bandwidth_x,
@@ -1278,7 +1273,7 @@ void LocalLinearRegression2DSurface(const std::vector<double>         & x,
             c3     = c3  +           y[m]     *z[m]*weight;
           }
 
-          // add a smll number to the diagonal to make the matrix nonsingular.
+          // add a smll number to the diagonal in case the matrix is singular.
           //a11        = a11*(1 + epsilon);
           a22          = a22*(1 + epsilon);
           a33          = a33*(1 + epsilon);
