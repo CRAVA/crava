@@ -42,6 +42,8 @@ public:
   NRLib::Vector GetFullMean000();
 
   void   merge(SeismicParametersHolder & current_state );
+  void   updateWithSingleParameter(FFTGrid * Epost, FFTGrid * CovPost, int parameterNumber);
+
   void   mergeCov(std::vector<FFTGrid * > & sigma);
   void   split(SeismicParametersHolder & current_state );
   void   evolve(int time_step, const TimeEvolution timeEvolution );
