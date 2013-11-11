@@ -46,10 +46,10 @@ class CravaTrend;
 class ModelGeneral
 {
 public:
-  ModelGeneral(ModelSettings           *& modelSettings,
-               const InputFiles         * inputFiles,
-               SeismicParametersHolder  & seismicParameters,
-               Simbox                  *& timeBGSimbox);
+  //ModelGeneral(ModelSettings           *& modelSettings,
+  //             const InputFiles         * inputFiles,
+  //             SeismicParametersHolder  & seismicParameters,
+  //             Simbox                  *& timeBGSimbox);
 
   ModelGeneral(ModelSettings           *& modelSettings, //Multiple intervals
                const InputFiles         * inputFiles,
@@ -60,24 +60,25 @@ public:
   ~ModelGeneral();
 
   Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
-  Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
+  //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   RandomGen                * getRandomGen()             const { return randomGen_              ;}
   GridMapping              * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
-  GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
+  //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
   CravaTrend               & getTrendCubes()                  { return trend_cubes_            ;}
   CravaTrend                 getTrendCubes()            const { return trend_cubes_            ;}
-  Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
+  //Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
 
   bool                       getVelocityFromInversion() const { return velocityFromInversion_  ;}
-  bool                       getFailed()                const { return failed_                 ;}
-  std::vector<bool>          getFailedDetails()         const { return failed_details_         ;}
+  //bool                       getFailed()                const { return failed_                 ;}
+  //std::vector<bool>          getFailedDetails()         const { return failed_details_         ;}
 
-  void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
+  //void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  //Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
   State4D                    getState4D()               const { return state4d_                ;}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
-  std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
+  //std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
+  std::map<std::string, BlockedLogsCommon *> getWellLogs()    { return blocked_logs_           ;}
 
   static void                readSegyFile(const std::string       & fileName,
                                           FFTGrid                *& target,
@@ -175,31 +176,30 @@ public:
                                  std::string        & errText,
                                  bool               & failed);
 
+  //void              processWellLocation(FFTGrid                     ** seisCube,
+  //                                      float                       ** reflectionMatrix,
+  //                                      ModelSettings                * modelSettings,
+  //                                      const std::vector<Surface *> & interval);              // Changes wells
 
-  void              processWellLocation(FFTGrid                     ** seisCube,
-                                        float                       ** reflectionMatrix,
-                                        ModelSettings                * modelSettings,
-                                        const std::vector<Surface *> & interval);              // Changes wells
+  //void              processPriorCorrelations(Background                     * background,
+  //                                           std::vector<WellData *>          wells,
+  //                                           const Simbox                   * timeSimbox,
+  //                                           const ModelSettings            * modelSettings,
+  //                                           const std::vector<float>       & priorFacies,
+  //                                           FFTGrid                       ** seisCube,
+  //                                           const InputFiles               * inputFiles,
+  //                                           SeismicParametersHolder        & seismicParameters,
+  //                                           std::string                    & errText,
+  //                                           bool                           & failed);
 
-  void              processPriorCorrelations(Background                     * background,
-                                             std::vector<WellData *>          wells,
-                                             const Simbox                   * timeSimbox,
-                                             const ModelSettings            * modelSettings,
-                                             const std::vector<float>       & priorFacies,
-                                             FFTGrid                       ** seisCube,
-                                             const InputFiles               * inputFiles,
-                                             SeismicParametersHolder        & seismicParameters,
-                                             std::string                    & errText,
-                                             bool                           & failed);
-
-   void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
-                                          std::vector<WellData *>        wells,
-                                          Simbox                       * timeSimbox,
-                                          Simbox                       * timeCutSimbox,
-                                          ModelSettings                * modelSettings,
-                                          bool                         & failed,
-                                          std::string                  & errTxt,
-                                          const InputFiles             * inputFiles);
+   //void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
+   //                                       std::vector<WellData *>        wells,
+   //                                       Simbox                       * timeSimbox,
+   //                                       Simbox                       * timeCutSimbox,
+   //                                       ModelSettings                * modelSettings,
+   //                                       bool                         & failed,
+   //                                       std::string                  & errTxt,
+   //                                       const InputFiles             * inputFiles);
 
   void              generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
                                                     const std::vector<float>                         & probability,
@@ -225,20 +225,19 @@ public:
   void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:
-  void              processWells(std::vector<WellData *> & wells,
-                                 Simbox                  * timeSimbox,
-                                 ModelSettings          *& modelSettings,
-                                 const InputFiles        * inputFiles,
-                                 std::string             & errText,
-                                 bool                    & failed);
+  //void              processWells(std::vector<WellData *> & wells,
+  //                               Simbox                  * timeSimbox,
+  //                               ModelSettings          *& modelSettings,
+  //                               const InputFiles        * inputFiles,
+  //                               std::string             & errText,
+  //                               bool                    & failed);
 
-  void              setFaciesNamesFromWells(std::vector<WellData *>        wells,
-                                            ModelSettings               *& modelSettings,
-                                            std::string                  & tmpErrText,
-                                            int                          & error);
+  //void              setFaciesNamesFromWells(std::vector<WellData *>        wells,
+  //                                          ModelSettings               *& modelSettings,
+  //                                          std::string                  & tmpErrText,
+  //                                          int                          & error);
 
-
-  void              setFaciesNamesFromRockPhysics();
+  //void              setFaciesNamesFromRockPhysics();
 
   void              setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
                                               const std::vector<float>                         & probability,
@@ -251,13 +250,13 @@ private:
   void              copyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,
                                               State4D                                    & state4d);
 
-  bool              process4DBackground(ModelSettings           *& modelSettings,
-                                        const InputFiles         * inputFiles,
-                                        SeismicParametersHolder  & seismicParameters,
-                                        std::string              & errText,
-                                        bool                     & failed,
-                                        NRLib::Vector            & initialMean,
-                                        NRLib::Matrix            & initialCov);
+  //bool              process4DBackground(ModelSettings           *& modelSettings,
+  //                                      const InputFiles         * inputFiles,
+  //                                      SeismicParametersHolder  & seismicParameters,
+  //                                      std::string              & errText,
+  //                                      bool                     & failed,
+  //                                      NRLib::Vector            & initialMean,
+  //                                      NRLib::Matrix            & initialCov);
 
   void              setupState4D(ModelSettings           *& modelSettings,
                                  SeismicParametersHolder  & seismicParameters,
@@ -269,45 +268,43 @@ private:
                                                        const std::vector<double>              & trend_position,
                                                        NRLib::Grid2D<double>                  & sigma_sum) const;
 
-  void              makeTimeSimboxes(Simbox          *& timeSimbox,
-                                     Simbox          *& timeCutSimbox,
-                                     Simbox          *& timeBGSimbox,
-                                     Simbox          *& timeSimboxConstThick,
-                                     Surface         *& correlationDirection,
-                                     ModelSettings   *& modelSettings,
-                                     const InputFiles * inputFiles,
-                                     std::string      & errText,
-                                     bool             & failed);
+  //void              makeTimeSimboxes(Simbox          *& timeSimbox,
+  //                                   Simbox          *& timeCutSimbox,
+  //                                   Simbox          *& timeBGSimbox,
+  //                                   Simbox          *& timeSimboxConstThick,
+  //                                   Surface         *& correlationDirection,
+  //                                   ModelSettings   *& modelSettings,
+  //                                   const InputFiles * inputFiles,
+  //                                   std::string      & errText,
+  //                                   bool             & failed);
   void              logIntervalInformation(const Simbox      * simbox,
                                            const std::string & header_text1,
                                            const std::string & header_text2);
-  void              setupExtendedTimeSimbox(Simbox  * timeSimbox,
-                                            Surface * corrSurf,
-                                            Simbox *& timeCutSimbox,
-                                            int       outputFormat,
-                                            int       outputDomain,
-                                            int       otherOutput);
-  void              setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
-                                                  Surface  * corrSurf,
-                                                  Simbox  *& timeBGSimbox,
-                                                  int        outputFormat,
-                                                  int        outputDomain,
-                                                  int        otherOutput);
-  void              processDepthConversion(Simbox           * timeCutSimbox,
-                                           Simbox           * timeSimbox,
-                                           ModelSettings    * modelSettings,
-                                           const InputFiles * inputFiles,
-                                           std::string      & errText,
-                                           bool             & failedVelocity);
+  //void              setupExtendedTimeSimbox(Simbox  * timeSimbox,
+  //                                          Surface * corrSurf,
+  //                                          Simbox *& timeCutSimbox,
+  //                                          int       outputFormat,
+  //                                          int       outputDomain,
+  //                                          int       otherOutput);
+  //void              setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
+  //                                                Surface  * corrSurf,
+  //                                                Simbox  *& timeBGSimbox,
+  //                                                int        outputFormat,
+  //                                                int        outputDomain,
+  //                                                int        otherOutput);
+  //void              processDepthConversion(Simbox           * timeCutSimbox,
+  //                                         Simbox           * timeSimbox,
+  //                                         ModelSettings    * modelSettings,
+  //                                         const InputFiles * inputFiles,
+  //                                         std::string      & errText,
+  //                                         bool             & failedVelocity);
 
-  void              processRockPhysics(Simbox                       * timeSimbox,
-                                       Simbox                       * timeCutSimbox,
-                                       ModelSettings                * modelSettings,
-                                       bool                         & failed,
-                                       std::string                  & errTxt,
-                                       const InputFiles             * inputFiles);
-
-
+  //void              processRockPhysics(Simbox                       * timeSimbox,
+  //                                     Simbox                       * timeCutSimbox,
+  //                                     ModelSettings                * modelSettings,
+  //                                     bool                         & failed,
+  //                                     std::string                  & errTxt,
+  //                                     const InputFiles             * inputFiles);
 
   void              printExpectationAndCovariance(const std::vector<double>   & expectation,
                                                   const NRLib::Grid2D<double> & covariance,
@@ -363,13 +360,13 @@ private:
                                                 const InputFiles   * inputFiles,
                                                 std::string        & tmpErrText) const;
 
-  void              readPriorFaciesProbCubes(const InputFiles        * inputFiles,
-                                             ModelSettings           * modelSettings,
-                                             std::vector<FFTGrid *>  & priorFaciesProbCubes,
-                                             Simbox                  * timeSimbox,
-                                             Simbox                  * timeCutSimbox,
-                                             std::string             & errTxt,
-                                             bool                    & failed);
+  //void              readPriorFaciesProbCubes(const InputFiles        * inputFiles,
+  //                                           ModelSettings           * modelSettings,
+  //                                           std::vector<FFTGrid *>  & priorFaciesProbCubes,
+  //                                           Simbox                  * timeSimbox,
+  //                                           Simbox                  * timeCutSimbox,
+  //                                           std::string             & errTxt,
+  //                                           bool                    & failed);
 
   void              validateCorrelationMatrix(float              ** C,
                                               const ModelSettings *  modelSettings,
@@ -397,7 +394,7 @@ private:
   //Replaces WellData wells_
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
 
-  int                       numberOfWells_;
+  //int                       numberOfWells_;
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
   std::vector<FFTGrid *>    priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
@@ -413,24 +410,24 @@ private:
 
 
   //Fjernes:
-  Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness  //Fjernes
+  //Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness  //Fjernes
 
-  Surface                 * correlationDirection_;       ///< Grid giving the correlation direction. //Fjernes
+  //Surface                 * correlationDirection_;       ///< Grid giving the correlation direction. //Fjernes
 
-  double                    gradX_;                      ///< X-gradient of correlation rotation. //Fjernes
-  double                    gradY_;                      ///< Y-gradient of correlation rotation. //Fjernes
-                                                         ///< These are only used with correlation surfaces.
+  //double                    gradX_;                      ///< X-gradient of correlation rotation. //Fjernes
+  //double                    gradY_;                      ///< Y-gradient of correlation rotation. //Fjernes
+  //                                                       ///< These are only used with correlation surfaces.
 
-  GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut  //Fjernes
+  //GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut  //Fjernes
 
-  bool                      failed_;                     ///< Indicates whether errors occured during construction. //Fjernes
-  std::vector<bool>         failed_details_;             ///< Detailed failed information. //Fjernes
+  //bool                      failed_;                     ///< Indicates whether errors occured during construction. //Fjernes
+  //std::vector<bool>         failed_details_;             ///< Detailed failed information. //Fjernes
 
-  std::vector<WellData *>   wells_;                      ///< Well data //Fjernes
+  //std::vector<WellData *>   wells_;                      ///< Well data //Fjernes
 
-  bool                      forwardModeling_; //Flyttes til ModelAvoStatic
+  //bool                      forwardModeling_; //Flyttes til ModelAvoStatic
 
-  Surface                 * priorCorrXY_;                ///< Lateral correlation //Fjernes
+  //Surface                 * priorCorrXY_;                ///< Lateral correlation //Fjernes
 
 };
 

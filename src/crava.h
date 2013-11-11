@@ -28,6 +28,8 @@ class ModelSettings;
 class SpatialWellFilter;
 class SeismicParametersHolder;
 
+class BlockedLogsCommon;
+
 
 class Crava
 {
@@ -194,6 +196,7 @@ private:
 
   int                     krigingParameter_;
   std::vector<WellData *> wells_;
+  std::map<std::string, BlockedLogsCommon *> blocked_wells_;
   int                     nWells_;
 
   int                scaleWarning_;

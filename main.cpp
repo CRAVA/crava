@@ -234,7 +234,7 @@ int main(int argc, char** argv)
 
       seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
 
-      //ModelGeneral
+      //ModelGeneral, modelAVOstatic, modelGravityStatic
       setupStaticModels(modelGeneral,
                         modelAVOstatic,
                         modelGravityStatic,
@@ -243,6 +243,23 @@ int main(int argc, char** argv)
                         seismicParametersInterval,
                         common_data,
                         i_interval);
+
+      //Loop over dataset
+
+      //i.   ModelAVODynamic
+      if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+        bool failed = doFirstAVOInversion(modelSettings,
+                                          modelGeneral,
+                                          modelAVOstatic,
+                                          seismicParametersInterval,
+                                          inputFiles,
+                                          0);
+        if(failed)
+          return(1);
+      }
+      //ii.  Inversion
+
+      //iii. Move model one time-step ahead
 
 
 
@@ -259,28 +276,28 @@ int main(int argc, char** argv)
     Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;
 
-    setupStaticModels(modelGeneral,
-                      modelAVOstatic,
-                      modelGravityStatic,
-                      modelSettings,
-                      inputFiles,
-                      seismicParameters,
-                      timeBGSimbox);
+    //setupStaticModels(modelGeneral,
+    //                  modelAVOstatic,
+    //                  modelGravityStatic,
+    //                  modelSettings,
+    //                  inputFiles,
+    //                  seismicParameters,
+    //                  timeBGSimbox);
 
-    if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
-       modelAVOstatic == NULL || modelAVOstatic->getFailed())
-      return(1);
+    //if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
+    //   modelAVOstatic == NULL || modelAVOstatic->getFailed())
+    //  return(1);
 
     if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
-      bool failed = doFirstAVOInversion(modelSettings,
-                                        modelGeneral,
-                                        modelAVOstatic,
-                                        seismicParameters,
-                                        inputFiles,
-                                        0,
-                                        timeBGSimbox);
-      if(failed)
-        return(1);
+      //bool failed = doFirstAVOInversion(modelSettings,
+                                        //modelGeneral,
+                                        //modelAVOstatic,
+                                        //seismicParameters,
+                                        //inputFiles,
+                                        //0,
+                                        //timeBGSimbox);
+      //if(failed)
+      //  return(1);
     }
     else {
       int  eventType;
@@ -299,13 +316,13 @@ int main(int argc, char** argv)
         }
         // In case of 3D inversion
         else{
-          failedFirst = doFirstAVOInversion(modelSettings,
-                                            modelGeneral,
-                                            modelAVOstatic,
-                                            seismicParameters,
-                                            inputFiles,
-                                            eventIndex,
-                                            timeBGSimbox);
+          //failedFirst = doFirstAVOInversion(modelSettings,
+          //                                  modelGeneral,
+          //                                  modelAVOstatic,
+          //                                  seismicParameters,
+          //                                  inputFiles,
+          //                                  eventIndex,
+          //                                  timeBGSimbox);
         }
         break;
 

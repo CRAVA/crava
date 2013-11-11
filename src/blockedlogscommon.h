@@ -76,6 +76,7 @@ public:
   const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
   const std::vector<int>               & GetFaciesBlocked(void) const  { return facies_blocked_                                                       ;}
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
+  const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
   const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vp")->second                         ;}
   const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vs")->second                         ;}
   const std::vector<double>            & GetRhoUnblocked(void) const   { return continuous_logs_unblocked_.find("Rho")->second                        ;}
@@ -91,6 +92,20 @@ public:
   const std::vector<double>            & GetVpHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoHighCutBackground(void) const { return cont_logs_highcut_background_.find("Rho")->second               ;}
+
+  const std::vector<double>            & GetVpHighCutSeismic(void)  const { return cont_logs_highcut_seismic_.find("Vp")->second                      ;}
+  const std::vector<double>            & GetVsHighCutSeismic(void)  const { return cont_logs_highcut_seismic_.find("Vs")->second                      ;}
+  const std::vector<double>            & GetRhoHighCutSeismic(void) const { return cont_logs_highcut_seismic_.find("Rho")->second                     ;}
+
+  const std::vector<double>            & GetVpPredicted(void)  const { return continuous_logs_predicted_.find("Vp")->second                           ;}
+  const std::vector<double>            & GetVsPredicted(void)  const { return continuous_logs_predicted_.find("Vs")->second                           ;}
+  const std::vector<double>            & GetRhoPredicted(void) const { return continuous_logs_predicted_.find("Rho")->second                          ;}
+
+  const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
+  const std::vector<double>            & GetFaciesProb(int angle)      const { return facies_prob_.find(angle)->second                                ;}
+  const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
+  //const std::vector<double>            & GetActualSyntSeismicData(int angle) const { return actual_synt_seismic_data_.find(angle)->second ;}
+  //const std::vector<double>            & GetWellSyntSeismicData(int angle) const { return well_synt_seismic_data_.find(angle)->second ;}
 
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
@@ -181,6 +196,8 @@ public:
                                                     float max_hz_seismic);
 
   void                                   CreateHighCutBackground(std::vector<int> b_ind);
+
+  void                                   CreateHighCutSeismic(std::vector<int> b_ind);
 
 private:
 
@@ -333,6 +350,30 @@ private:
                       double                dt_milliseconds,
                       float                 max_hz);
 
+  void    SetLogFromGrid(FFTGrid    * grid,
+                         int          i_angle,
+                         int          n_angles,
+                         std::string  type);
+
+  void    WriteWell(int                      formats,
+                    float                    max_hz_background,
+                    float                    max_hz_seismic,
+                    std::vector<std::string> facies_name,
+                    std::vector<int>         facies_label);
+
+  void    WriteRMSWell(float                    max_hz_background,
+                       float                    max_hz_seismic,
+                       std::vector<std::string> facies_name,
+                       std::vector<int>         facies_label);
+
+  void    WriteNorsarWell(float max_hz_background,
+                          float max_hz_seismic);
+
+  void    SetSpatialFilteredLogs(float * filteredlog,
+                                 int n_data,
+                                 std::string type,
+                                 const float *bg);
+
   // CLASS VARIABLES -----------------------------
 
   unsigned int       n_blocks_;         // number of blocks
@@ -340,11 +381,11 @@ private:
   std::string        well_name_;
 
   std::map<int, std::string>  facies_map_;
-  bool               facies_log_defined_;
+  bool                        facies_log_defined_;
   //std::vector<int>   facies_numbers_;
   //std::vector<int>   facies_;
-  // Blocked values
 
+  // Blocked values
   std::vector<double> x_pos_blocked_;  // Blocked x position
   std::vector<double> y_pos_blocked_;  // Blocked y position
   std::vector<double> z_pos_blocked_;  // Blocked z position
@@ -370,6 +411,9 @@ private:
   std::map<std::string, std::vector<double> > cont_logs_highcut_background_;    // Continuous logs high-cut filtered to background resolution (log-domain)
   std::map<std::string, std::vector<int> >    disc_logs_highcut_background_;    // Discrete logs high-cut filtered to background resolution (log-domain)
 
+  std::map<std::string, std::vector<double> > cont_logs_highcut_seismic_;    // Continuous logs high-cut filtered to background resolution (log-domain)
+  std::map<std::string, std::vector<int> >    disc_logs_highcut_seismic_;    // Discrete logs high-cut filtered to background resolution (log-domain)
+
   std::vector<std::vector<double> >           actual_synt_seismic_data_;        ///< Forward modelled seismic data using local wavelet
   std::vector<std::vector<double> >           well_synt_seismic_data_;          ///< Forward modelled seismic data using wavelet estimated in well
 
@@ -377,7 +421,6 @@ private:
   float sigma_m_; //Smoothing factor for the gradients
 
   // Unblocked values
-
   std::vector<double> x_pos_unblocked_;
   std::vector<double> y_pos_unblocked_;
   std::vector<double> z_pos_unblocked_;
@@ -385,19 +428,22 @@ private:
   std::vector<int>    facies_unblocked_;
 
   std::map<std::string, std::vector<double> > continuous_logs_unblocked_;  // Map between variable name and unblocked continuous log
-  std::map<std::string, std::vector<int> > discrete_logs_unblocked_;       // Map between variable name and unblocked discrete log
+  std::map<std::string, std::vector<int> >    discrete_logs_unblocked_;    // Map between variable name and unblocked discrete log
 
-  ///H Copied from blockedlogs.h, they are only set in SetLogFromVerticalTrend. Are they needed later? Incorporated into cont_logs_seismic_resolution_
-  //float        * alpha_seismic_resolution_; ///<
-  //float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
-  //float        * rho_seismic_resolution_;   ///<
-  //float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
-  //float       ** well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
-  int            n_angles_;                  ///< Number of AVA stacks
+  //Variables needed in SetLogFromGrid and later used in WriteWell
+  std::map<int, std::vector<double> >         cpp_;                        ///< Mapped reflection coefficients for angles
+  std::map<std::string, std::vector<double> > continuous_logs_predicted_;  ///< Map between variable name and predicted continuous log
+  std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
+  std::map<int, std::vector<double> >         facies_prob_;                ///< Map between angle and facies prob
+
+  //H These are set in SetSpatialFilteredLogs (copied from blockedlogs.cpp). Currently it is only called from doFiltering in spatialwellfilter.cpp, but doFilterting is never called? Remove these?
+  std::vector<double> vp_for_facies_;
+  std::vector<double> rho_for_facies_;
+
+  int                       n_angles_;                  ///< Number of AVA stacks
 
   bool                      interpolate_;              ///<
 
-  //int                       n_angles_;                 ///< Number of angles
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
 

@@ -38,6 +38,8 @@
 #include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsrock.h"
 
+//#include "src/blockedlogscommon.h"
+
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #define _USE_MATH_DEFINES
@@ -89,7 +91,8 @@ Crava::Crava(ModelSettings           * modelSettings,
   krigingParameter_  = modelSettings_->getKrigingParameter();
   nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
-  wells_             = modelGeneral_->getWells();
+  //wells_             = modelGeneral_->getWells(); //H Fix
+  blocked_wells_     = modelGeneral_->getWellLogs();
   simbox_            = modelGeneral_->getTimeSimbox();
   meanAlpha_         = seismicParameters.GetMuAlpha();
   meanBeta_          = seismicParameters.GetMuBeta();
@@ -141,7 +144,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     }
 
     float corrGradI, corrGradJ;
-    modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+    //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ); //H Fix
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovAlpha(nzp_);
 
@@ -152,7 +155,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     errCorr_ = createFFTGrid();
     errCorr_ ->setType(FFTGrid::COVARIANCE);
     errCorr_ ->createRealGrid();
-    errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
+    //errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace(); //H Fix
 
     for(int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -233,13 +236,13 @@ Crava::Crava(ModelSettings           * modelSettings,
     if(modelAVOdynamic->getUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      spatwellfilter->doFiltering(modelGeneral->getWells(),
-                                  modelSettings->getNumberOfWells(),
-                                  modelSettings->getNoVsFaciesProb(),
-                                  activeAngles,
-                                  this,
-                                  modelAVOdynamic->getLocalNoiseScales(),
-                                  seismicParameters);
+      //spatwellfilter->doFiltering(modelGeneral->getWells(), //H Fix
+      //                            modelSettings->getNumberOfWells(),
+      //                            modelSettings->getNoVsFaciesProb(),
+      //                            activeAngles,
+      //                            this,
+      //                            modelAVOdynamic->getLocalNoiseScales(),
+      //                            seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
       computeFaciesProb(spatwellfilter, useFilter, seismicParameters);
@@ -252,7 +255,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     //
     // Temporary placement.
     //
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) { //H Fix
       modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
@@ -1207,10 +1210,10 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
     postAlpha_->expTransf();
     GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
+    //const GridMapping * dcMap = modelGeneral_->getTimeCutMapping(); //H Fix
     const Simbox * timeSimbox = simbox_;
-    if(dcMap != NULL)
-      timeSimbox = dcMap->getSimbox();
+    //if(dcMap != NULL)
+    //  timeSimbox = dcMap->getSimbox(); //H Fix
 
     tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
     postAlpha_->logTransf();
@@ -1956,7 +1959,7 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       std::vector<double> trend_min;
       std::vector<double> trend_max;
       float corrGradI, corrGradJ;
-      modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+      //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ); //H Fix
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(meanAlpha2_,

@@ -5029,8 +5029,8 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
 
     time_depth_mapping_ = new GridMapping();
     time_depth_mapping_->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
-    if(velocity.GetN() != 0) {
 
+    if(velocity.GetN() != 0) {
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &estimation_simbox_);
       time_depth_mapping_->setDepthSimbox(&estimation_simbox_, estimation_simbox_.getnz(),
                                         model_settings->getOutputGridFormat(),
