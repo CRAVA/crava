@@ -41,6 +41,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
 bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
                          ModelGeneral            * modelGeneral,
                          ModelAVOStatic          * modelAVOstatic,
+                         CommonData              * commonData,
                          SeismicParametersHolder & seismicParameters,
                          InputFiles              * inputFiles,
                          int                       vintage,

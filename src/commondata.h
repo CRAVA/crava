@@ -95,8 +95,7 @@ private:
   void  CalculateDeviation(NRLib::Well            & new_well,
                            const ModelSettings    * const model_settings,
                            float                  & dev_angle,
-                           Simbox                 * simbox,
-                           int                      use_for_wavelet_estimation);
+                           Simbox                 * simbox);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -169,6 +168,10 @@ private:
   //                                  float                   offset,
   //                                  const Simbox          * timeCutSimbox,
   //                                  float                   guard_zone) const;
+
+  void CutWell(std::string           well_file_name,
+               NRLib::Well         & well,
+               const NRLib::Volume & full_inversion_volume);
 
   void ProcessLogsNorsarWell(NRLib::Well                      & new_well,
                              std::vector<std::string>         & log_names_from_user,

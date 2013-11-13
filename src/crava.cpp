@@ -91,8 +91,8 @@ Crava::Crava(ModelSettings           * modelSettings,
   krigingParameter_  = modelSettings_->getKrigingParameter();
   nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
-  //wells_             = modelGeneral_->getWells(); //H Fix
-  blocked_wells_     = modelGeneral_->getWellLogs();
+  //wells_             = modelGeneral_->getWells();
+  blocked_wells_     = modelGeneral_->getBlockedWells();
   simbox_            = modelGeneral_->getTimeSimbox();
   meanAlpha_         = seismicParameters.GetMuAlpha();
   meanBeta_          = seismicParameters.GetMuBeta();
@@ -137,14 +137,22 @@ Crava::Crava(ModelSettings           * modelSettings,
       FFTGrid * alphaCov = seismicParameters.GetCovAlpha();
       alphaCov->setAccessMode(FFTGrid::RANDOMACCESS);
 
-      for(int i=0; i<nWells_; i++)
-        spatwellfilter->setPriorSpatialCorr(alphaCov, wells_[i], i);
+      //for(int i=0; i<nWells_; i++)
+      //  spatwellfilter->setPriorSpatialCorr(alphaCov, wells_[i], i);
+      int i = 0;
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        spatwellfilter->setPriorSpatialCorr(alphaCov, blocked_log, i); //H Correct use of i?
+        i++;
+      }
 
       alphaCov->endAccess();
     }
 
     float corrGradI, corrGradJ;
-    //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ); //H Fix
+    modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovAlpha(nzp_);
 
@@ -155,7 +163,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     errCorr_ = createFFTGrid();
     errCorr_ ->setType(FFTGrid::COVARIANCE);
     errCorr_ ->createRealGrid();
-    //errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace(); //H Fix
+    errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
 
     for(int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -236,7 +244,14 @@ Crava::Crava(ModelSettings           * modelSettings,
     if(modelAVOdynamic->getUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      //spatwellfilter->doFiltering(modelGeneral->getWells(), //H Fix
+      spatwellfilter->doFiltering(modelGeneral->getBlockedWells(),
+                                  modelSettings->getNumberOfWells(),
+                                  modelSettings->getNoVsFaciesProb(),
+                                  activeAngles,
+                                  this,
+                                  modelAVOdynamic->getLocalNoiseScales(),
+                                  seismicParameters);
+      //spatwellfilter->doFiltering(modelGeneral->getWells(),
       //                            modelSettings->getNumberOfWells(),
       //                            modelSettings->getNoVsFaciesProb(),
       //                            activeAngles,
@@ -255,8 +270,9 @@ Crava::Crava(ModelSettings           * modelSettings,
     //
     // Temporary placement.
     //
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) { //H Fix
-      modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
+    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+      modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
+      //modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
@@ -1210,10 +1226,10 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
     postAlpha_->expTransf();
     GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
-    //const GridMapping * dcMap = modelGeneral_->getTimeCutMapping(); //H Fix
+    const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
     const Simbox * timeSimbox = simbox_;
-    //if(dcMap != NULL)
-    //  timeSimbox = dcMap->getSimbox(); //H Fix
+    if(dcMap != NULL)
+      timeSimbox = dcMap->getSimbox();
 
     tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
     postAlpha_->logTransf();
@@ -1922,13 +1938,23 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       LogKit::LogFormatted(LogKit::Low,"\n");
       LogKit::LogFormatted(LogKit::Low,"Well                    Use    SyntheticVs    Deviated\n");
       LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------\n");
-      for(int i=0 ; i<nWells_ ; i++) {
+      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
         LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
-          wells_[i]->getWellname().c_str(),
-          ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
-          ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
-          ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
+          blocked_log->GetWellName().c_str(),
+          ( blocked_log->GetUseForFaciesProbabilities() ? "yes" : " no" ),
+          ( blocked_log->HasSyntheticVsLog()            ? "yes" : " no" ),
+          ( blocked_log->GetIsDeviated()                ? "yes" : " no" ));
       }
+      //for(int i=0 ; i<nWells_ ; i++) {
+      //  LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
+      //    wells_[i]->getWellname().c_str(),
+      //    ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
+      //    ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
+      //    ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
+      //}
     }
 
     std::string baseName = IO::PrefixFaciesProbability();
@@ -1959,7 +1985,7 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       std::vector<double> trend_min;
       std::vector<double> trend_max;
       float corrGradI, corrGradJ;
-      //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ); //H Fix
+      modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(meanAlpha2_,
@@ -2500,23 +2526,43 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
 
 }
 
+//void Crava::writeBWPredicted(void)
+//{
+//  int i;
+//  for (i=0; i<nWells_; i++)
+//  {
+//    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
+//
+//    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+//    bw->setLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
+//    postAlpha_->endAccess();
+//
+//    postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+//    bw->setLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
+//    postBeta_->endAccess();
+//
+//    postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
+//    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
+//    postRho_->endAccess();
+//   }
+//}
+
 void Crava::writeBWPredicted(void)
 {
-  int i;
-  for (i=0; i<nWells_; i++)
-  {
-    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
 
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-    bw->setLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
+    blocked_log->SetLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
     postAlpha_->endAccess();
 
     postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
-    bw->setLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
+    blocked_log->SetLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
     postBeta_->endAccess();
 
     postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
+    blocked_log->SetLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
     postRho_->endAccess();
-   }
+  }
 }

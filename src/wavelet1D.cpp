@@ -140,7 +140,8 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
     BlockedLogsCommon * blocked_log = iter->second;
 
     //if (wells[w]->getUseForWaveletEstimation()) {
-    if(modelSettings->getIndicatorWavelet(w) > 0) {
+    //if(modelSettings->getIndicatorWavelet(w) > 0) {
+    if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
 
       //BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
@@ -347,8 +348,10 @@ Wavelet1D::Wavelet1D(const Simbox                     * simbox,
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;
       //if (wells[w]->getUseForWaveletEstimation() &&
-        if(modelSettings->getIndicatorWavelet(w) > 0 &&
-          ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+        //if(modelSettings->getIndicatorWavelet(w) > 0 &&
+      if(blocked_log->GetUseForWaveletEstimation() &&
+        ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+
         dz_ = dzWell[w];
         for(int i = 0 ; i < nzp_ ; i++)
           rAmp_[i] = wellWavelets[w][i];
@@ -684,8 +687,7 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSet
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if (wells[w]->getUseForWaveletEstimation()) {
-    if(modelSettings->getIndicatorWavelet(w) > 0) {
+    if(blocked_log->GetUseForWaveletEstimation()) {
       //
       // Block seismic data for this well
       //
@@ -811,8 +813,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    if(modelSettings->getIndicatorWavelet(w) > 0) {
-    //if (wells[w]->getUseForWaveletEstimation()) {
+    if(blocked_log->GetUseForWaveletEstimation()) {
       //
       // Block seismic data for this well
       //

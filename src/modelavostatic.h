@@ -52,7 +52,7 @@ public:
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
-  void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
+  //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
   void             writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                      ModelSettings                            * modelSettings,
                                      std::vector<std::string>                   facies_name,
@@ -63,15 +63,22 @@ public:
                                   const ModelSettings       * modelSettings,
                                   int                         nAngles);                              // Changes wells
 
-  void             generateSyntheticSeismic(Wavelet              ** wavelet,
-                                            std::vector<WellData *> wells,
-                                            const float   * const * reflectionMatrix,
-                                            const Simbox          * timeSimbox,
-                                            const ModelSettings   * modelSettings,
-                                            int                     nAngles);                    // Changes wells
+  //void             generateSyntheticSeismic(Wavelet              ** wavelet,
+  //                                          std::vector<WellData *> wells,
+  //                                          const float   * const * reflectionMatrix,
+  //                                          const Simbox          * timeSimbox,
+  //                                          const ModelSettings   * modelSettings,
+  //                                          int                     nAngles);                    // Changes wells
 
-  void             deleteDynamicWells(std::vector<WellData *> wells,
-                                      int         nWells);
+  void             generateSyntheticSeismic(Wavelet                                 ** wavelet,
+                                            std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                            const float *                      const * reflectionMatrix,
+                                            const Simbox                             * timeSimbox,
+                                            const ModelSettings                      * modelSettings,
+                                            int                                        nAngles);
+
+  //void             deleteDynamicWells(std::vector<WellData *> wells,
+  //                                    int         nWells);
 
 private:
   //void             blockLogs(std::vector<WellData *> & wells,

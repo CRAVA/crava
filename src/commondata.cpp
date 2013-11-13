@@ -628,6 +628,10 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       else if(well_file_name.find(".rms",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
+      //Cut wells against full_inversion_volume
+      if(err_text == "")
+        CutWell(well_file_name, new_well, full_inversion_volume_);
+
       //Store facies names.
       if(model_settings->getFaciesLogGiven()) {
         ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names);
@@ -645,7 +649,17 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         err_text += "Well format of file " + well_file_name + " not recognized.\n";
       }
 
-      CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox, model_settings->getIndicatorWavelet(i));
+      new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(i));
+      new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
+      new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
+      new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
+
+      new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
+      CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox);
+
+      //H
+      //Add in WellData::lookForSyntheticVsLog? (Updates useForFaciesProbabilities)
+
     }
   }catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
@@ -661,6 +675,86 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
 
   return true;
 }
+
+void CommonData::CutWell(std::string           well_file_name,
+                         NRLib::Well         & well,
+                         const NRLib::Volume & full_inversion_volume) {
+
+  //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
+  //Possible Logs: TVT, X_pos, Y_pos, TVD, Dt, Vp, Rho, Dts, Facies
+  const std::vector<double> & tvd_old = well.GetContLog("TVD");
+  const std::vector<double> & x_old   = well.GetContLog("X_pos");
+  const std::vector<double> & y_old   = well.GetContLog("Y_pos");
+
+  std::vector<double> tvd_new;
+  std::vector<double> x_new;
+  std::vector<double> y_new;
+  std::vector<double> dt_new;
+  std::vector<double> vp_new;
+  std::vector<double> dts_new;
+  std::vector<double> vs_new;
+  std::vector<double> rho_new;
+  std::vector<int> facies_new;
+
+  const NRLib::Surface<double> & top_surf = full_inversion_volume.GetTopSurface();
+  const NRLib::Surface<double> & bot_surf = full_inversion_volume.GetBotSurface();
+
+  for(size_t i = 0; i < tvd_old.size(); i++) {
+
+    if(tvd_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || tvd_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) {
+
+      tvd_new.push_back(tvd_old[i]);
+      x_new.push_back(x_old[i]);
+      y_new.push_back(y_old[i]);
+
+      if(well.HasContLog("Dt"))
+        dt_new.push_back(well.GetContLog("Dt")[i]);
+      if(well.HasContLog("Vp"))
+        vp_new.push_back(well.GetContLog("Vp")[i]);
+      if(well.HasContLog("Dts"))
+        dts_new.push_back(well.GetContLog("Dts")[i]);
+      if(well.HasContLog("Vs"))
+        vs_new.push_back(well.GetContLog("Vs")[i]);
+      if(well.HasContLog("Rho"))
+        rho_new.push_back(well.GetContLog("Rho")[i]);
+      if(well.HasDiscLog("Facies"))
+        facies_new.push_back(well.GetDiscLog("Facies")[i]);
+    }
+  }
+
+  //Replace logs
+  well.RemoveContLog("TVD");
+  well.AddContLog("TVD", tvd_new);
+  well.RemoveContLog("X_pos");
+  well.AddContLog("X_pos", x_new);
+  well.RemoveContLog("Y_pos");
+  well.AddContLog("Y_pos", y_new);
+  if(well.HasContLog("Dt")) {
+    well.RemoveContLog("Dt");
+    well.AddContLog("Dt", dt_new);
+  }
+  if(well.HasContLog("Vp")) {
+    well.RemoveContLog("Vp");
+    well.AddContLog("Vp", vp_new);
+  }
+  if(well.HasContLog("Dts")) {
+    well.RemoveContLog("Dts");
+    well.AddContLog("Dts", dts_new);
+  }
+  if(well.HasContLog("Vs")) {
+    well.RemoveContLog("Vs");
+    well.AddContLog("Vs", vs_new);
+  }
+  if(well.HasContLog("Rho")) {
+    well.RemoveContLog("Rho");
+    well.AddContLog("Rho", rho_new);
+  }
+  if(well.HasDiscLog("Facies")) {
+    well.RemoveDiscLog("Facies");
+    well.AddDiscLog("Facies", facies_new);
+  }
+}
+
 
 void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_well,
                                        std::vector<std::string>        & log_names_from_user,
@@ -758,7 +852,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well                     & new_wel
       new_well.RemoveContLog(log_names_from_user[3]);
     }
     else{
-      new_well.AddContLog("Vp", new_well.GetContLog(log_names_from_user[3]));
+      new_well.AddContLog("Vs", new_well.GetContLog(log_names_from_user[3])); //H Changed from Vp
       new_well.RemoveContLog(log_names_from_user[3]);
     }
   }
@@ -822,7 +916,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
   const std::vector<double> & z_tmp = new_well.GetContLog("TVD");
-  for(int i = 0; i < z_tmp.size(); i++) {
+  for(size_t i = 0; i < z_tmp.size(); i++) {
     if(z_tmp[i] != WELLMISSING)
       nonmissing_data++;
   }
@@ -1008,7 +1102,7 @@ CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
   facies_nr.resize(n_facies);
   facies_names.resize(n_facies);
 
-  for(int i = 0; i < facies_map.size(); i++) {
+  for(size_t i = 0; i < facies_map.size(); i++) {
     facies_nr[i] = i;
     facies_names[i] = facies_map.find(i)->second;
   }
@@ -2809,10 +2903,11 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 
 
   try{
-    for (unsigned int i=0; i<wells.size(); i++){
+    for (unsigned int i=0; i<wells.size(); i++) {
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
+
 
       //blocked_log->FilterLogs(model_settings->getMaxHzBackground(),
       //                        model_settings->getMaxHzSeismic());
@@ -2978,8 +3073,7 @@ void CommonData::MoveWell(const NRLib::Well & well,
 void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
                                      const ModelSettings    * const model_settings,
                                      float                  & dev_angle,
-                                     Simbox                 * simbox,
-                                     int                      use_for_wavelet_estimation)
+                                     Simbox                 * simbox)
 {
   float maxDevAngle   = model_settings->getMaxDevAngle();
   float thr_deviation = float(tan(maxDevAngle*NRLib::Pi/180.0));  // Largest allowed deviation
@@ -3049,9 +3143,12 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
 
     if (max_deviation > thr_deviation)
     {
-      if(use_for_wavelet_estimation == ModelSettings::NOTSET) {
-        use_for_wavelet_estimation = ModelSettings::NO;
+      if(new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
+        new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
+      //if(use_for_wavelet_estimation == ModelSettings::NOTSET) {
+      //  use_for_wavelet_estimation = ModelSettings::NO;
+      //}
       new_well.SetDeviated(true);
       LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
@@ -3170,7 +3267,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
     for(int i = 0; i<multiple_interval_grid->GetNIntervals(); i++) {
 
       std::vector<NRLib::Grid<double> > trend_cubes_interval;
-      for(int j = 0; j < trend_cube_parameters.size(); j++) {
+      for(size_t j = 0; j < trend_cube_parameters.size(); j++) {
         trend_cubes_interval.push_back(trend_cubes_tmp[j][i]);
       }
 
@@ -3999,7 +4096,7 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
 
   int fileType = IO::findGridType(file_name);
 
-  for(int i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+  for(size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
 
     if(fileType == IO::CRAVA)
     {
@@ -4187,9 +4284,9 @@ void CommonData::ReadCravaFile(NRLib::Grid<double> & grid,
 
     int size = ni*nj*nk;
 
-    for(size_t i = 0; i < ni; i++) {
-      for(size_t j = 0; j < nj; j++) {
-        for(size_t k = 0; k < nk; k++) {
+    for(int i = 0; i < ni; i++) {
+      for(int j = 0; j < nj; j++) {
+        for(int k = 0; k < nk; k++) {
           index = grid.GetIndex(i,j,k);
           grid(index) = NRLib::ReadBinaryFloat(bin_file);
         }
@@ -4281,7 +4378,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
   if (!failed)
   {
 
-    for(int i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+    for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
 
       int missing_traces_simbox  = 0;
       int missing_traces_padding = 0;
@@ -4871,7 +4968,7 @@ void CommonData::SetTrace(const std::vector<float> & trace,
                           size_t                     i,
                           size_t                     j)
 {
-  for (int k = 0; k < grid.GetNK(); k++) {
+  for (size_t k = 0; k < grid.GetNK(); k++) {
     grid(i, j, k) = static_cast<double>(trace[k]);
     //setRealValue(i, j, k, trace[k], true);
   }
@@ -4882,7 +4979,7 @@ void CommonData::SetTrace(float                 value,
                           size_t                i,
                           size_t                j)
 {
-  for (int k = 0; k < grid.GetNK(); k++) {
+  for (size_t k = 0; k < grid.GetNK(); k++) {
     grid(i, j, k) = static_cast<double>(value);
     //setRealValue(i, j, k, value, true);
   }
@@ -4918,7 +5015,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
   if(failed == false)
   {
 
-    for(int i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+    for(size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
 
       int xpad = interval_simboxes[i_interval].getnx();
       int ypad = interval_simboxes[i_interval].getny();
@@ -5085,11 +5182,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-
-  //Add in if wells are used for background model
-  for(size_t i = 0; i < wells_.size(); i++) {
-    wells_[i].SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
-  }
 
   Background * background = NULL;
 
@@ -5289,7 +5381,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           }
           else {
 
-            for(int j = 0; j < parameters[i].size(); j++) {
+            for(size_t j = 0; j < parameters[i].size(); j++) {
               double min = 0.0;
               double max = 0.0;
               double avg = 0.0;
@@ -5438,9 +5530,9 @@ void CommonData::SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid
   long long count = 0;
 
   //setAccessMode(RANDOMACCESS);
-  for (int k = 0 ; k < grid.GetNK(); k++) {
-    for (int j = 0 ; j < grid.GetNJ(); j++) {
-      for (int i = 0 ; i < grid.GetNI(); i++) {
+  for (size_t k = 0 ; k < grid.GetNK(); k++) {
+    for (size_t j = 0 ; j < grid.GetNJ(); j++) {
+      for (size_t i = 0 ; i < grid.GetNI(); i++) {
         double value = grid(i, j, k);
         if (value == RMISSING) {
           grid(i, j, k) = avg;
@@ -6130,7 +6222,7 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
       }
 
       // cast to float
-      for(int w = 0; w<n_intervals; w++){
+      for(size_t w = 0; w<n_intervals; w++){
         for(int i=0; i<3; i++) {
           for(int j=0; j<3; j++)
             param_corr_array[w][i][j] = static_cast<float>(param_corr[w](i,j));
@@ -6991,3 +7083,4 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
   }
 
 }
+

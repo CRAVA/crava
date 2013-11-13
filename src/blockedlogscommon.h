@@ -40,22 +40,8 @@ public:
 
   ~BlockedLogsCommon();
 
-  void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
-                              const Simbox                  * time_simbox,
-                              float                        ** refl_coef,
-                              int                             n_angles,
-                              const std::vector<float>      & angle_weight,
-                              float                           max_shift,
-                              int                             i_max_offset,
-                              int                             j_max_offset,
-                              const std::vector<Surface *>    limits,
-                              int                           & i_move,
-                              int                           & j_move,
-                              float                         & k_move);
-
 
   //GET FUNCTIONS --------------------------------
-
 
   std::string                            GetWellName()         const   { return well_name_                                                            ;}
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
@@ -107,6 +93,14 @@ public:
   //const std::vector<double>            & GetActualSyntSeismicData(int angle) const { return actual_synt_seismic_data_.find(angle)->second ;}
   //const std::vector<double>            & GetWellSyntSeismicData(int angle) const { return well_synt_seismic_data_.find(angle)->second ;}
 
+  bool                                   GetIsDeviated(void)                const { return is_deviated_                                               ;}
+
+  bool                                   GetUseForFaciesProbabilities(void) const { return (use_for_facies_probabilities_ > 0)                        ;}
+  bool                                   GetUseForWaveletEstimation(void)   const { return (use_for_wavelet_estimation_ > 0)                          ;}
+  bool                                   GetUseForFiltering(void)           const { return (use_for_filtering_ > 0)                                   ;}
+  bool                                   GetUseForBackgroundTrend(void)     const { return (use_for_background_trend_ > 0)                            ;}
+
+  bool                                   HasSyntheticVsLog(void)            const { return (real_vs_log_ == 0)                                        ;}
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
 
@@ -140,7 +134,30 @@ public:
                                                         int                         j_offset = 0);
 
 
+  //SET FUNCTIONS --------------------------------
+
+  void                                   SetDeviated(bool deviated)                                     { is_deviated_ = deviated                                      ;}
+  void                                   SetRealVsLog(int real_vs_log)                                  { real_vs_log_ = real_vs_log                                   ;}
+  void                                   SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
+  void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_ = use_for_background_trend         ;}
+  void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_ = use_for_filtering                       ;}
+  void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_ = use_for_wavelet_estimation     ;}
+
+
   // FUNCTIONS -----------------------------------
+
+  void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+                                const Simbox                  * time_simbox,
+                                float                        ** refl_coef,
+                                int                             n_angles,
+                                const std::vector<float>      & angle_weight,
+                                float                           max_shift,
+                                int                             i_max_offset,
+                                int                             j_max_offset,
+                                const std::vector<Surface *>    limits,
+                                int                           & i_move,
+                                int                           & j_move,
+                                float                         & k_move);
 
   void                                   EstimateCor(fftw_complex * var1_c,
                                                      fftw_complex * var2_c,
@@ -198,6 +215,29 @@ public:
   void                                   CreateHighCutBackground(std::vector<int> b_ind);
 
   void                                   CreateHighCutSeismic(std::vector<int> b_ind);
+
+  void                                   WriteWell(int                      formats,
+                                                   float                    max_hz_background,
+                                                   float                    max_hz_seismic,
+                                                   std::vector<std::string> facies_name,
+                                                   std::vector<int>         facies_label);
+
+  void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
+                                                                  int                     n_angles,
+                                                                  Wavelet **              wavelet,
+                                                                  int                     nz,
+                                                                  int                     nzp,
+                                                                  const Simbox          * timeSimbox);
+
+  void                                   SetLogFromGrid(FFTGrid    * grid,
+                                                        int          i_angle,
+                                                        int          n_angles,
+                                                        std::string  type);
+
+  void                                   SetSpatialFilteredLogs(std::vector<double>       & filtered_log,
+                                                                int                         n_data,
+                                                                std::string                 type,
+                                                                const std::vector<double> & bg);
 
 private:
 
@@ -350,17 +390,6 @@ private:
                       double                dt_milliseconds,
                       float                 max_hz);
 
-  void    SetLogFromGrid(FFTGrid    * grid,
-                         int          i_angle,
-                         int          n_angles,
-                         std::string  type);
-
-  void    WriteWell(int                      formats,
-                    float                    max_hz_background,
-                    float                    max_hz_seismic,
-                    std::vector<std::string> facies_name,
-                    std::vector<int>         facies_label);
-
   void    WriteRMSWell(float                    max_hz_background,
                        float                    max_hz_seismic,
                        std::vector<std::string> facies_name,
@@ -368,11 +397,6 @@ private:
 
   void    WriteNorsarWell(float max_hz_background,
                           float max_hz_seismic);
-
-  void    SetSpatialFilteredLogs(float * filteredlog,
-                                 int n_data,
-                                 std::string type,
-                                 const float *bg);
 
   // CLASS VARIABLES -----------------------------
 
@@ -411,8 +435,8 @@ private:
   std::map<std::string, std::vector<double> > cont_logs_highcut_background_;    // Continuous logs high-cut filtered to background resolution (log-domain)
   std::map<std::string, std::vector<int> >    disc_logs_highcut_background_;    // Discrete logs high-cut filtered to background resolution (log-domain)
 
-  std::map<std::string, std::vector<double> > cont_logs_highcut_seismic_;    // Continuous logs high-cut filtered to background resolution (log-domain)
-  std::map<std::string, std::vector<int> >    disc_logs_highcut_seismic_;    // Discrete logs high-cut filtered to background resolution (log-domain)
+  std::map<std::string, std::vector<double> > cont_logs_highcut_seismic_;       // Continuous logs high-cut filtered to background resolution (log-domain)
+  std::map<std::string, std::vector<int> >    disc_logs_highcut_seismic_;       // Discrete logs high-cut filtered to background resolution (log-domain)
 
   std::vector<std::vector<double> >           actual_synt_seismic_data_;        ///< Forward modelled seismic data using local wavelet
   std::vector<std::vector<double> >           well_synt_seismic_data_;          ///< Forward modelled seismic data using wavelet estimated in well
@@ -436,7 +460,6 @@ private:
   std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
   std::map<int, std::vector<double> >         facies_prob_;                ///< Map between angle and facies prob
 
-  //H These are set in SetSpatialFilteredLogs (copied from blockedlogs.cpp). Currently it is only called from doFiltering in spatialwellfilter.cpp, but doFilterting is never called? Remove these?
   std::vector<double> vp_for_facies_;
   std::vector<double> rho_for_facies_;
 
@@ -453,7 +476,15 @@ private:
   int                       first_B_;                   ///< First block with contribution from well log
   int                       last_B_;                    ///< Last block with contribution from well log
 
+  bool                      is_deviated_;
 
+  //Used in logging in crava.cpp. Copied from well
+  int                       real_vs_log_;                    //Uses the indicator enum from Modelsettings
+  int                       use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
+
+  int                       use_for_background_trend_;       //Uses the indicator enum from Modelsettings
+  int                       use_for_filtering_;              //Uses the indicator enum from Modelsettings
+  int                       use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
 
 };
 #endif

@@ -78,7 +78,7 @@ public:
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
   //std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
-  std::map<std::string, BlockedLogsCommon *> getWellLogs()    { return blocked_logs_           ;}
+  std::map<std::string, BlockedLogsCommon *> getBlockedWells()    { return blocked_logs_           ;}
 
   static void                readSegyFile(const std::string       & fileName,
                                           FFTGrid                *& target,

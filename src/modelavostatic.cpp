@@ -487,12 +487,12 @@ void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * m
     wells[i]->writeWell(modelSettings->getWellFormatFlag());
 }
 
-void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
-{
-  int nWells  = modelSettings->getNumberOfWells();
-  for(int i=0;i<nWells;i++)
-    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
-}
+//void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  for(int i=0;i<nWells;i++)
+//    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
+//}
 
 void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                        ModelSettings                            * modelSettings,
@@ -532,34 +532,53 @@ void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
   }
 }
 
-void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
-                                              std::vector<WellData *> wells,
-                                              const float * const * reflectionMatrix,
-                                              const Simbox        * timeSimbox,
-                                              const ModelSettings * modelSettings,
-                                              int             nAngles)
+//void ModelAVOStatic::generateSyntheticSeismic(Wavelet              ** wavelet,
+//                                              std::vector<WellData *> wells,
+//                                              const float *   const * reflectionMatrix,
+//                                              const Simbox          * timeSimbox,
+//                                              const ModelSettings   * modelSettings,
+//                                              int                     nAngles)
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  int nzp     = modelSettings->getNZpad();
+//  int nz      = timeSimbox->getnz();
+//
+//  int i;
+//
+//  for( i=0; i<nWells; i++ )
+//  {
+//    if( wells[i]->isDeviated() == false )
+//      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
+//  }
+//}
+
+void ModelAVOStatic::generateSyntheticSeismic(Wavelet                                 ** wavelet,
+                                              std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                              const float *                      const * reflectionMatrix,
+                                              const Simbox                             * timeSimbox,
+                                              const ModelSettings                      * modelSettings,
+                                              int                                        nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
   int nzp     = modelSettings->getNZpad();
   int nz      = timeSimbox->getnz();
 
-  int i;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
 
-  for( i=0; i<nWells; i++ )
-  {
-    if( wells[i]->isDeviated() == false )
-      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
+    if(blocked_log->GetIsDeviated() == true)
+      blocked_log->GenerateSyntheticSeismic(reflectionMatrix, nAngles, wavelet, nz, nzp, timeSimbox);
   }
 }
 
 
-
-void ModelAVOStatic::deleteDynamicWells(std::vector<WellData *> wells,
-                                        int                     nWells)
-{
-  for(int i=0; i<nWells; i++){
-    wells[i]->getBlockedLogsConstThick()->deleteDynamicBlockedLogs();
-    wells[i]->getBlockedLogsExtendedBG()->deleteDynamicBlockedLogs();
-    wells[i]->getBlockedLogsOrigThick()->deleteDynamicBlockedLogs();
-  }
-}
+//void ModelAVOStatic::deleteDynamicWells(std::vector<WellData *> wells,
+//                                        int                     nWells)
+//{
+//  for(int i=0; i<nWells; i++){
+//    wells[i]->getBlockedLogsConstThick()->deleteDynamicBlockedLogs();
+//    wells[i]->getBlockedLogsExtendedBG()->deleteDynamicBlockedLogs();
+//    wells[i]->getBlockedLogsOrigThick()->deleteDynamicBlockedLogs();
+//  }
+//}

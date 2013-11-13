@@ -933,7 +933,7 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
                        i);
 
       std::vector<bool> hit_zone(n_wells);
-      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
+      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells); //Check blocked logs?
 
       std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
 
@@ -2479,9 +2479,13 @@ Background::getWellTrends(std::vector<float *>                       & well_tren
   int i_wells = 0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    if (wells[w].getUseForBackgroundTrend()) {
+    BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+
+    if(blocked_log->GetUseForBackgroundTrend()) {
+    //if (wells[w].getUseForBackgroundTrend()) {
       //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
-      BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+      //BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+
       if(blocked_log != NULL) {
         well_trend[w] = new float[nz];
         if (name == "Vp")
@@ -2652,7 +2656,7 @@ Background::getWellTrendsZone(const ModelSettings                              *
     else
       bl[w] = NULL;
 
-    if (wells[w].getUseForBackgroundTrend())
+    if (bl[w]->GetUseForBackgroundTrend())
       use_for_background[w] = true;
     else
       use_for_background[w] = false;

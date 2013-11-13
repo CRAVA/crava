@@ -251,9 +251,11 @@ int main(int argc, char** argv)
         bool failed = doFirstAVOInversion(modelSettings,
                                           modelGeneral,
                                           modelAVOstatic,
+                                          common_data,
                                           seismicParametersInterval,
                                           inputFiles,
-                                          0);
+                                          0,
+                                          i_interval);
         if(failed)
           return(1);
       }

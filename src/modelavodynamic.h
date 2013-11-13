@@ -68,16 +68,29 @@ public:
                   SeismicParametersHolder      & seismicParameters,
                   int                            i_interval);
 
+  //ModelAVODynamic(ModelSettings          *& modelSettings,
+  //                const InputFiles        * inputFiles,
+  //                ModelAVOStatic          * modelAVOstatic,
+  //                ModelGeneral            * modelGeneral,
+  //                SeismicParametersHolder & seismicParameters,
+  //                const Simbox            * timeSimbox,
+  //                const Surface           * correlationDirection,
+  //                const GridMapping       * timeDepthMapping,
+  //                const GridMapping       * timeCutMapping,
+  //                int                       t);
+
   ModelAVODynamic(ModelSettings          *& modelSettings,
                   const InputFiles        * inputFiles,
                   ModelAVOStatic          * modelAVOstatic,
                   ModelGeneral            * modelGeneral,
+                  CommonData              * commoData,
                   SeismicParametersHolder & seismicParameters,
                   const Simbox            * timeSimbox,
-                  const Surface           * correlationDirection,
+                  //const Surface           * correlationDirection,
                   const GridMapping       * timeDepthMapping,
-                  const GridMapping       * timeCutMapping,
-                  int                       t);
+                  //const GridMapping       * timeCutMapping,
+                  int                       t,
+                  int                       i_interval);
 
   ~ModelAVODynamic();
 
@@ -88,14 +101,14 @@ public:
   const std::vector<Grid2D *> & getLocalNoiseScales()      const { return localNoiseScale_        ;}
 
   bool                          getFailed()                const { return failed_                 ;}
-  std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
+  //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   Vario                       * getAngularCorr()           const { return angularCorr_                    ;}
   float                         getSNRatio(int i)          const { return SNRatio_[i]                     ;}
   bool                          getUseLocalNoise()         const { return useLocalNoise_                  ;}
   float                         getAngle(int i)            const { return angle_[i]                       ;}
-  bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
-  bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
+  //bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
+  //bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
   int                           getNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
 
 
@@ -224,13 +237,13 @@ private:
   std::vector<Grid2D *>     localNoiseScale_;       ///< Scale factors for local noise
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
-  std::vector<bool>         failed_details_;        ///< Detailed failed information.
+  //std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
   Vario                   * angularCorr_;
   std::vector<float>        SNRatio_;
   std::vector<float>        angle_;
-  std::vector<bool>         matchEnergies_;
-  std::vector<bool>         estimateWavelet_;
+  //std::vector<bool>         matchEnergies_;
+  //std::vector<bool>         estimateWavelet_;
   bool                      useLocalNoise_;
   int                       thisTimeLapse_;
 

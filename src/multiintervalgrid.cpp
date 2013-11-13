@@ -203,7 +203,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   surface_files_.push_back(input_files->getTimeSurfFile(0));
 
   const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getIntervalBaseTimeSurfaces();
-  for(int i = 0; i > n_intervals_; i++) {
+  for(size_t i = 0; i > n_intervals_; i++) {
     surface_files_.push_back(interval_base_time_surfaces.find(interval_names_[i])->second);
   }
 

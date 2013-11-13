@@ -95,8 +95,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if (wells[w]->getUseForWaveletEstimation()) {
-    if(modelSettings->getIndicatorWavelet(w) > 0) {
+    if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 
       //BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
@@ -302,7 +301,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     BlockedLogsCommon * blocked_log = iter->second;
 
     //if (wells[w]->getUseForWaveletEstimation() &&
-    if(modelSettings->getIndicatorWavelet(w) > 0 &&
+    //if(modelSettings->getIndicatorWavelet(w) > 0 &&
+    if(blocked_log->GetUseForWaveletEstimation() &&
        ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
     {
       for(int i=0; i<nzp_; i++)
@@ -537,7 +537,8 @@ Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
     BlockedLogsCommon * blocked_log = iter->second;
 
     //if (wells[w]->getUseForWaveletEstimation()) {
-    if(modelSettings->getIndicatorWavelet(w) > 0) {
+    //if(modelSettings->getIndicatorWavelet(w) > 0) {
+    if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 
       const std::vector<int> iPos = blocked_log->GetIposVector();

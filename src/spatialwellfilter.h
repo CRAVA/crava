@@ -8,10 +8,13 @@
 #include "src/definitions.h"
 #include "rplib/syntwelldata.h"
 
+#include "src/blockedlogscommon.h"
+
 class FFTGrid;
 class Crava;
 class WellData;
 class BlockedLogs;
+class BlockedLogsCommon;
 class SeismicParametersHolder;
 
 class SpatialWellFilter
@@ -25,17 +28,29 @@ public:
                                                        SyntWellData        * well,
                                                        int                   wellnr);
 
-  void                     setPriorSpatialCorr(FFTGrid    * parSpatialCorr,
-                                               WellData   * well,
-                                               int          wellnr);
+  //void                     setPriorSpatialCorr(FFTGrid    * parSpatialCorr,
+  //                                             WellData   * well,
+  //                                             int          wellnr);
 
-  void                     doFiltering(std::vector<WellData *>         wells,
-                                       int                             nWells,
-                                       bool                            useVpRhoFilter,
-                                       int                             nAngles,
-                                       const Crava                   * cravaResult,
-                                       const std::vector<Grid2D *>   & noiseScale,
-                                       SeismicParametersHolder       & seismicParameters);
+  void                     setPriorSpatialCorr(FFTGrid           * parSpatialCorr,
+                                               BlockedLogsCommon * blocked_log,
+                                               int                 wellnr);
+
+  //void                     doFiltering(std::vector<WellData *>         wells,
+  //                                     int                             nWells,
+  //                                     bool                            useVpRhoFilter,
+  //                                     int                             nAngles,
+  //                                     const Crava                   * cravaResult,
+  //                                     const std::vector<Grid2D *>   & noiseScale,
+  //                                     SeismicParametersHolder       & seismicParameters);
+
+  void                    doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
+                                      int                                        nWells,
+                                      bool                                       useVpRhoFilter,
+                                      int                                        nAngles,
+                                      const Crava                              * cravaResult,
+                                      const std::vector<Grid2D *>              & noiseScale,
+                                      SeismicParametersHolder                  & seismicParameters);
 
   void                     doFilteringSyntWells(std::vector<SyntWellData *>              & syntWellData,
                                                 const std::vector<std::vector<double> >  & v,
@@ -56,11 +71,17 @@ public:
 
 private:
 
+  //void doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
+  //                      double                     ** sigmapri,
+  //                      double                     ** sigmapost,
+  //                      const int                     n,
+  //                      BlockedLogs                 * blockedLogs);
+
   void doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
                         double                     ** sigmapri,
                         double                     ** sigmapost,
                         const int                     n,
-                        BlockedLogs                 * blockedLogs);
+                        BlockedLogsCommon           * blockedLogs);
 
   void updateSigmaE(NRLib::Matrix       & sigmae,
                     const NRLib::Matrix & filter,
@@ -101,16 +122,27 @@ private:
 
   void adjustDiagSigma(NRLib::Matrix & sigmae);
 
+  //void calculateFilteredLogs(const NRLib::Matrix & Aw,
+  //                           BlockedLogs         * blockedlogs,
+  //                           int                   n,
+  //                           bool                  useVs);
+
   void calculateFilteredLogs(const NRLib::Matrix & Aw,
-                             BlockedLogs         * blockedlogs,
+                             BlockedLogsCommon   * blockedlogs,
                              int                   n,
                              bool                  useVs);
 
-  void MakeInterpolatedResiduals(const float   * bwLog,
-                                 const float   * bwLogBG,
-                                 const int       n,
-                                 const int       offset,
-                                 NRLib::Vector & residuals);
+  //void MakeInterpolatedResiduals(const float   * bwLog,
+  //                               const float   * bwLogBG,
+  //                               const int       n,
+  //                               const int       offset,
+  //                               NRLib::Vector & residuals);
+
+  void MakeInterpolatedResiduals(const std::vector<double> & bwLog,
+                                 const std::vector<double> & bwLogBG,
+                                 const int                   n,
+                                 const int                   offset,
+                                 NRLib::Vector &             residuals);
 
   void fillValuesInSigmapost(double    ** sigmapost,
                              const int *  ipos,

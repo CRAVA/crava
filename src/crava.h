@@ -195,7 +195,7 @@ private:
   FFTGrid          * errCorr_;
 
   int                     krigingParameter_;
-  std::vector<WellData *> wells_;
+  //std::vector<WellData *> wells_;
   std::map<std::string, BlockedLogsCommon *> blocked_wells_;
   int                     nWells_;
 

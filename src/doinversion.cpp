@@ -74,6 +74,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
 bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
                          ModelGeneral            * modelGeneral,
                          ModelAVOStatic          * modelAVOstatic,
+                         CommonData              * commonData,
                          SeismicParametersHolder & seismicParameters,
                          InputFiles              * inputFiles,
                          int                       vintage,
@@ -115,7 +116,8 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
     delete crava;
   }
 
-  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
+  //H Changed from float * to map i BlockedLogsCommon
+  //modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
 
