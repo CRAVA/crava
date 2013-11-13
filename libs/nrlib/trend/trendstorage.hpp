@@ -20,7 +20,14 @@ public:
                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                 const std::vector<std::vector<float> >  & /*blocked_logs*/,
+                                const std::vector<std::vector<double> > & /*s1*/,
+                                const std::vector<std::vector<double> > & /*s2*/,
+                                const int                               & /*type, mean or var */,
+                                const NRLib::Trend                      * /*mean_trend*/,
                                 std::string                             & /*errTxt*/) const = 0;
+  enum type{MEAN,
+            VAR,
+            SD};
 
 };
 
@@ -45,6 +52,10 @@ public:
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt) const;
 
 private:
@@ -73,6 +84,10 @@ public:
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt) const;
 
 private:
@@ -101,6 +116,10 @@ public:
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt)   const;
 
 private:

@@ -117,6 +117,7 @@ ReadRock(const int                                                   & n_vintage
          const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
          const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
          const std::map<std::string, DistributionsFluidStorage *>    & model_fluid_storage,
+         const int                                                     output_other,
          std::string                                                 & errTxt)
 {
   std::vector<DistributionsRock *> rock;
@@ -136,6 +137,7 @@ ReadRock(const int                                                   & n_vintage
                                                                                     model_solid_storage,
                                                                                     model_dry_rock_storage,
                                                                                     model_fluid_storage,
+                                                                                    output_other,
                                                                                     errTxt);
   }
 
@@ -301,6 +303,11 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
                           const std::vector<std::vector<float> >            & blocked_logs,
                           std::string                                       & errTxt)
 {
+  std::vector<std::vector<double> > dummy_s1;
+  std::vector<std::vector<double> > dummy_s2;
+
+  NRLib::Trend * mean_trend_dummy = NULL;
+
   for(size_t i=0; i<test_objects.size(); i++) {
 
     if(test_objects[i] != NULL) {
@@ -308,7 +315,15 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
         const DeltaDistributionWithTrendStorage * delta = dynamic_cast<const DeltaDistributionWithTrendStorage *>(test_objects[i]);
 
         NRLib::TrendStorage * mean_storage = delta->CloneMean();
-        NRLib::Trend        * mean         = mean_storage->GenerateTrend(path, trend_cube_parameters, trend_cube_sampling, blocked_logs, errTxt);
+        NRLib::Trend        * mean         = mean_storage->GenerateTrend(path,
+                                                                         trend_cube_parameters,
+                                                                         trend_cube_sampling,
+                                                                         blocked_logs,
+                                                                         dummy_s1,
+                                                                         dummy_s2,
+                                                                         NRLib::TrendStorage::MEAN,
+                                                                         mean_trend_dummy,
+                                                                         errTxt);
 
         double min = mean->GetMinValue();
         double max = mean->GetMaxValue();
@@ -362,4 +377,178 @@ FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage * di
   else {
     errTxt += "All "+type+" variables need to be double values, not trends or distributions\n";
   }
+}
+// ----------------------------------------------------------------------------------------- //
+void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> > & s1,
+                                          const std::vector<std::vector<double> > & s2,
+                                          const std::vector<std::vector<float> >  & blocked_logs_x,
+                                          const std::vector<std::vector<float> >  & blocked_logs_y,
+                                          DistributionWithTrend                   * distribution_with_trend_x,
+                                          DistributionWithTrend                   * distribution_with_trend_y,
+                                          std::vector<double>                     & x,
+                                          std::vector<double>                     & x_mean,
+                                          std::vector<double>                     & x_variance,
+                                          std::vector<double>                     & y,
+                                          std::vector<double>                     & y_mean,
+                                          std::vector<double>                     & y_variance,
+                                          std::string                             & errTxt)
+{
+  x.clear();
+  x_mean.clear();
+  x_variance.clear();
+
+  y.clear();
+  y_mean.clear();
+  y_variance.clear();
+
+  size_t nx            = blocked_logs_x.size();
+  size_t ny            = blocked_logs_y.size();
+
+  bool removed_missing  = false;
+
+  // retriev observations from wells
+  if (nx != ny || nx == 0) {
+    errTxt += "Error: Incompatible dimensions in EstimateSpearmanCorrelation(...).\n";
+  } else {
+    for (size_t i = 0; i < nx; i++) {
+
+      size_t nx_i = blocked_logs_x[i].size();
+      size_t ny_i = blocked_logs_y[i].size();
+
+      if (nx_i != ny_i) {
+        errTxt += "Error: Incompatible dimensions in EstimateSpearmanCorrelation(...).\n";
+      } else {
+        for (size_t j = 0; j < nx_i; j++) {
+
+          double s1_j         = s1[i][j];
+          double s2_j         = s2[i][j];
+
+          double x_log_j      = blocked_logs_x[i][j];
+          double x_mean_j     = distribution_with_trend_x->GetMeanValue(s1_j, s2_j);
+          double x_variance_j = distribution_with_trend_x->GetVarianceValue(s1_j, s2_j);
+
+          double y_log_j      = blocked_logs_y[i][j];
+          double y_mean_j     = distribution_with_trend_y->GetMeanValue(s1_j, s2_j);
+          double y_variance_j = distribution_with_trend_y->GetVarianceValue(s1_j, s2_j);
+
+          if (x_log_j == RMISSING || x_mean_j == RMISSING || x_variance_j == RMISSING || y_log_j == RMISSING || y_mean_j == RMISSING || y_variance_j == RMISSING) {
+            removed_missing = true;
+          } else {
+            x.push_back(std::exp(x_log_j));
+            x_mean.push_back(x_mean_j);
+            x_variance.push_back(x_variance_j);
+
+            y.push_back(std::exp(y_log_j));
+            y_mean.push_back(y_mean_j);
+            y_variance.push_back(y_variance_j);
+          }
+        }
+      }
+    }
+  }
+  if (removed_missing) {
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : Removed missing values in correlation estimation.\n");
+  }
+}
+// ----------------------------------------------------------------------------------------- //
+double EstimateSpearmanCorrelation(const std::vector<double> & x,
+                                   const std::vector<double> & x_mean,
+                                   const std::vector<double> & x_variance,
+                                   const std::vector<double> & y,
+                                   const std::vector<double> & y_mean,
+                                   const std::vector<double> & y_variance,
+                                   std::string               & errTxt)
+
+{
+  size_t nx = x.size();
+  size_t ny = y.size();
+
+  std::vector<std::pair<float, size_t> > x_order_tmp;
+  std::vector<std::pair<float, size_t> > y_order_tmp;
+
+  bool removed_missing = false;
+
+  // retriev observations from wells
+  size_t l = 0;
+  if (nx != ny || nx == 0) {
+    errTxt += "Error: Incompatible dimensions in EstimateSpearmanCorrelation(...).\n";
+    return(RMISSING);
+  } else {
+    for (size_t i = 0; i < nx; i++) {
+      double x_i          = x[i];
+      double x_mean_i     = x_mean[i];
+      double x_variance_i = x_variance[i];
+
+      double y_i          = y[i];
+      double y_mean_i     = y_mean[i];
+      double y_variance_i = y_variance[i];
+
+      if (x_i == RMISSING || x_mean_i == RMISSING || x_variance_i == RMISSING || y_i == RMISSING || y_mean_i == RMISSING || y_variance_i == RMISSING) {
+        removed_missing = true;
+      } else {
+        if (x_variance_i == 0.0) {
+          x_variance_i = 1.0;
+        }
+        if (x_variance_i == 0.0) {
+          y_variance_i = 1.0;
+        }
+        x_order_tmp.push_back(std::make_pair((x_i - x_mean_i)/std::pow(x_variance_i, 0.5), l));
+        y_order_tmp.push_back(std::make_pair((y_i - y_mean_i)/std::pow(y_variance_i, 0.5), l));
+        l++;
+      }
+    }
+  }
+
+  if (removed_missing) {
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : Removed missing values in correlation estimation.\n");
+  }
+
+  // rank observations needed to calcualte Spearman correlation
+  std::sort(x_order_tmp.begin(), x_order_tmp.end());
+  std::sort(y_order_tmp.begin(), y_order_tmp.end());
+
+  std::vector<std::pair<size_t, size_t> > x_rank_tmp(l);
+  std::vector<std::pair<size_t, size_t> > y_rank_tmp(l);
+
+  for (size_t i = 0; i < l; i++) {
+    x_rank_tmp[i].first  = x_order_tmp[i].second;
+    x_rank_tmp[i].second = i;
+
+    y_rank_tmp[i].first  = y_order_tmp[i].second;
+    y_rank_tmp[i].second = i;
+  }
+
+  std::sort(x_rank_tmp.begin(), x_rank_tmp.end());
+  std::sort(y_rank_tmp.begin(), y_rank_tmp.end());
+
+  std::vector<size_t> x_rank(l);
+  std::vector<size_t> y_rank(l);
+
+  for (size_t i = 0; i < l; i++) {
+    x_rank[i] = x_rank_tmp[i].second + 1;
+    y_rank[i] = y_rank_tmp[i].second + 1;
+  }
+
+  // calcualte Spearman correlation
+  double sum_x  = 0.0;
+  double sum_y  = 0.0;
+  double sum_xx = 0.0;
+  double sum_yy = 0.0;
+  double sum_xy = 0.0;
+
+  for (size_t i = 0; i < l; i++) {
+    double x_rank_i = static_cast<double>(x_rank[i]);
+    double y_rank_i = static_cast<double>(y_rank[i]);
+
+    sum_x           = sum_x  + x_rank_i;
+    sum_y           = sum_y  + y_rank_i;
+    sum_xx          = sum_xx + x_rank_i*x_rank_i;
+    sum_yy          = sum_yy + y_rank_i*y_rank_i;
+    sum_xy          = sum_xy + x_rank_i*y_rank_i;
+  }
+
+  double rho_numerator           =  l*sum_xy - sum_x*sum_y;
+  double rho_denominator_squared = (l*sum_xx - sum_x*sum_x)*(l*sum_yy - sum_y*sum_y);
+
+  return(rho_numerator/std::pow(rho_denominator_squared, 0.5));
 }
