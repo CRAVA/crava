@@ -210,6 +210,18 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
   return(y);
 }
 
+double
+BetaDistributionWithTrend::GetMeanValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(mean_->GetValue(s1, s2, dummy));
+}
+double
+BetaDistributionWithTrend::GetVarianceValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(var_->GetValue(s1, s2, dummy));
+}
+
+
 void
 BetaDistributionWithTrend::CalculateAlpha(const double & mean,
                                           const double & var,

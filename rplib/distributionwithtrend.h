@@ -24,6 +24,8 @@ class DistributionWithTrend {
 
    virtual double                     ReSample(double s1, double s2)                            = 0;
    virtual double                     GetQuantileValue(double u, double s1, double s2)          = 0;
+   virtual double                     GetMeanValue(double s1, double s2)                        = 0;
+   virtual double                     GetVarianceValue(double s1, double s2)                    = 0;
 
 
 

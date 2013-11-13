@@ -112,4 +112,27 @@ void FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage
                                               std::string                          type,
                                               double                             & value,
                                               std::string                        & errTxt);
+
+
+void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> > & s1,
+                                          const std::vector<std::vector<double> > & s2,
+                                          const std::vector<std::vector<float> >  & blocked_logs_x,
+                                          const std::vector<std::vector<float> >  & blocked_logs_y,
+                                          DistributionWithTrend                   * distribution_with_trend_x,
+                                          DistributionWithTrend                   * distribution_with_trend_y,
+                                          std::vector<double>                     & x,
+                                          std::vector<double>                     & x_mean,
+                                          std::vector<double>                     & x_variance,
+                                          std::vector<double>                     & y,
+                                          std::vector<double>                     & y_mean,
+                                          std::vector<double>                     & y_variance,
+                                          std::string                             & errTxt);
+
+double EstimateSpearmanCorrelation(const std::vector<double> & x,
+                                      const std::vector<double> & x_mean,
+                                      const std::vector<double> & x_variance,
+                                      const std::vector<double> & y,
+                                      const std::vector<double> & y_mean,
+                                      const std::vector<double> & y_variance,
+                                      std::string               & errTxt);
 #endif

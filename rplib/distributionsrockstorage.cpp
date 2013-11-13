@@ -439,64 +439,6 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
     }
   }
 
-  std::vector<double> corr_vp_vs(n_vintages, 0);
-  std::vector<double> corr_vp_density(n_vintages, 0);
-  std::vector<double> corr_vs_density(n_vintages, 0);
-
-  for(int i=0; i<n_vintages_vp_vs; i++) {
-    if(correlation_vp_vs_[i]->GetEstimate() == true) {
-      if(i == 0) {
-        if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0)
-          tmpErrTxt += "<correlation-vp-vs> can not be estimated as both Vp and Vs logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
-      }
-      else
-        tmpErrTxt += "<correlation-vp-vs> can not be estimatedfor time lapse data\n";
-    }
-    else
-      FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_[i], "correlation", corr_vp_vs[i], errTxt);
-
-    if(corr_vp_vs[i] > 1 || corr_vp_vs[i] < -1)
-        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
-  }
-
-  for(int i=0; i<n_vintages_vp_density; i++) {
-    if(correlation_vp_density_[i]->GetEstimate() == true) {
-      if(i == 0) {
-        if(vp_given_facies.size() == 0 || density_given_facies.size() == 0)
-          tmpErrTxt += "<correlation-vp-density> can not be estimated as both Vp and density logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
-      }
-      else
-        tmpErrTxt += "<correlation-vp-density> can not be estimatedfor time lapse data\n";
-    }
-    else
-      FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
-
-    if(corr_vp_density[i] > 1 || corr_vp_density[i] < -1)
-        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
-  }
-
-  for(int i=0; i<n_vintages_vs_density; i++) {
-    if(correlation_vs_density_[i]->GetEstimate() == true) {
-      if(i == 0) {
-        if(vs_given_facies.size() == 0 || density_given_facies.size() == 0)
-          tmpErrTxt += "<correlation-vs-density> can not be estimated as both Vs and density logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
-      }
-      else
-        tmpErrTxt += "<correlation-vs-density> can not be estimatedfor time lapse data\n";
-    }
-    else
-      FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
-
-    if(corr_vs_density[i] > 1 || corr_vs_density[i] < -1)
-        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
-  }
-
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vp_dist_with_trend(n_vintages, NULL);
   std::vector<DistributionWithTrend *> vs_dist_with_trend(n_vintages, NULL);
@@ -505,7 +447,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
 
-      if(i < n_vintages_vp)
+      if (i < n_vintages_vp)
         vp_dist_with_trend[i] = vp_[i]->GenerateDistributionWithTrend(path,
                                                                       trend_cube_parameters,
                                                                       trend_cube_sampling,
@@ -543,7 +485,122 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                                                 tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+    }
+  }
 
+  std::vector<double> corr_vp_vs(n_vintages, 0);
+  std::vector<double> corr_vp_density(n_vintages, 0);
+  std::vector<double> corr_vs_density(n_vintages, 0);
+
+  std::vector<double> x;
+  std::vector<double> x_mean;
+  std::vector<double> x_variance;
+
+  std::vector<double> y;
+  std::vector<double> y_mean;
+  std::vector<double> y_variance;
+
+  for(int i=0; i<n_vintages_vp_vs; i++) {
+    if(correlation_vp_vs_[i]->GetEstimate() == true) {
+      if(i == 0) {
+        if(vp_given_facies.size() == 0 || vs_given_facies.size() == 0) {
+          tmpErrTxt += "<correlation-vp-vs> can not be estimated as both Vp and Vs logs are not given in the wells\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               vp_given_facies,
+                                               vs_given_facies,
+                                               vp_dist_with_trend[i],
+                                               vs_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_vp_vs[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
+      }
+      else
+        tmpErrTxt += "<correlation-vp-vs> can not be estimatedfor time lapse data\n";
+    }
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_vs_[i], "correlation", corr_vp_vs[i], errTxt);
+
+    if(corr_vp_vs[i] > 1 || corr_vp_vs[i] < -1)
+        errTxt += "<correlation-vp-vs> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_vp_density; i++) {
+    if(correlation_vp_density_[i]->GetEstimate() == true) {
+      if(i == 0) {
+        if(vp_given_facies.size() == 0 || density_given_facies.size() == 0) {
+          tmpErrTxt += "<correlation-vp-density> can not be estimated as both Vp and density logs are not given in the wells\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               vp_given_facies,
+                                               density_given_facies,
+                                               vp_dist_with_trend[i],
+                                               density_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_vp_density[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
+      }
+      else
+        tmpErrTxt += "<correlation-vp-density> can not be estimatedfor time lapse data\n";
+    }
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vp_density_[i], "correlation", corr_vp_density[i], errTxt);
+
+    if(corr_vp_density[i] > 1 || corr_vp_density[i] < -1)
+        errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  for(int i=0; i<n_vintages_vs_density; i++) {
+    if(correlation_vs_density_[i]->GetEstimate() == true) {
+      if(i == 0) {
+        if(vs_given_facies.size() == 0 || density_given_facies.size() == 0) {
+          tmpErrTxt += "<correlation-vs-density> can not be estimated as both Vs and density logs are not given in the wells\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               vs_given_facies,
+                                               density_given_facies,
+                                               vs_dist_with_trend[i],
+                                               density_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_vs_density[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
+      }
+      else
+        tmpErrTxt += "<correlation-vs-density> can not be estimatedfor time lapse data\n";
+    }
+    else
+      FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
+
+    if(corr_vs_density[i] > 1 || corr_vs_density[i] < -1)
+        errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
+  }
+
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
       if(i >= n_vintages_vp_vs)
         corr_vp_vs[i] = corr_vp_vs[i-1];
 
@@ -649,7 +706,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
                                                        const std::map<std::string, DistributionsFluidStorage *>    & /*model_fluid_storage*/,
-                                                       const int                                                     /*output_other*/,
+                                                       const int                                                     output_other,
                                                        std::string                                                 & errTxt) const
 {
   LogKit::LogFormatted(LogKit::Low," Generating Tabulated rock physics model\n");
@@ -691,6 +748,16 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
   }
 
+  std::vector<std::vector<double> > s1(nWells);
+  for (int i=0; i<nWells; i++) {
+    s1[i] = blockedLogs[i]->getS1();
+  }
+
+  std::vector<std::vector<double> > s2(nWells);
+  for (int i=0; i<nWells; i++) {
+    s2[i] = blockedLogs[i]->getS2();
+  }
+
   for(int i=0; i<n_vintages_bulk; i++) {
     if(i == 0) {
       if(bulk_modulus_[i]->GetEstimate() == true && bulk_given_facies.size() == 0)
@@ -722,17 +789,99 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
     }
   }
 
+  std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
+  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
+
+  if(tmpErrTxt == "") {
+    for(int i=0; i<n_vintages; i++) {
+      if(i < n_vintages_bulk)
+        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path,
+                                                                                  trend_cube_parameters,
+                                                                                  trend_cube_sampling,
+                                                                                  bulk_given_facies,
+                                                                                  s1,
+                                                                                  s2,
+                                                                                  output_other,
+                                                                                  rock_name_ + "_bulk_modulus",
+                                                                                  tmpErrTxt);
+      else
+        bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
+
+      if(i < n_vintages_shear)
+        shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path,
+                                                                                    trend_cube_parameters,
+                                                                                    trend_cube_sampling,
+                                                                                    shear_given_facies,
+                                                                                    s1,
+                                                                                    s2,
+                                                                                    output_other,
+                                                                                    rock_name_ + "_shear_modulus",
+                                                                                    tmpErrTxt);
+      else
+        shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
+
+      if(i < n_vintages_density)
+        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path,
+                                                                                trend_cube_parameters,
+                                                                                trend_cube_sampling,
+                                                                                density_given_facies,
+                                                                                s1,
+                                                                                s2,
+                                                                                output_other,
+                                                                                rock_name_ + "density",
+                                                                                tmpErrTxt);
+      else
+        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
+
+      double lower_mega = 1.0e+6;
+      double upper_mega = 1.6e+8;
+      double test_bulk  = bulk_dist_with_trend[i]->ReSample(0,0);
+      double test_shear = shear_dist_with_trend[i]->ReSample(0,0);
+
+      if(test_bulk < lower_mega || test_bulk > upper_mega)
+        tmpErrTxt += "Bulk modulus need to be given in kPa\n";
+      if(test_shear < lower_mega || test_shear > upper_mega)
+        tmpErrTxt += "Shear modulus need to be given in kPa\n";
+    }
+  }
+
   std::vector<double> corr_bulk_shear(n_vintages, 0);
   std::vector<double> corr_bulk_density(n_vintages, 0);
   std::vector<double> corr_shear_density(n_vintages, 0);
 
+  std::vector<double> x;
+  std::vector<double> x_mean;
+  std::vector<double> x_variance;
+
+  std::vector<double> y;
+  std::vector<double> y_mean;
+  std::vector<double> y_variance;
+
+
   for(int i=0; i<n_vintages_bulk_shear; i++) {
     if(correlation_bulk_shear_[i]->GetEstimate() == true) {
       if(i == 0) {
-        if(bulk_given_facies.size() == 0 && shear_given_facies.size() == 0)
+        if(bulk_given_facies.size() == 0 && shear_given_facies.size() == 0) {
           tmpErrTxt += "<correlation-bulk-shear> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               bulk_given_facies,
+                                               shear_given_facies,
+                                               bulk_dist_with_trend[i],
+                                               shear_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_bulk_shear[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
       }
       else
         tmpErrTxt += "<correlation-bulk-shear> can not be estimatedfor time lapse data\n";
@@ -747,10 +896,25 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   for(int i=0; i<n_vintages_bulk_density; i++) {
     if(correlation_bulk_density_[i]->GetEstimate() == true) {
       if(i == 0) {
-        if(bulk_given_facies.size() == 0 && density_given_facies.size() == 0)
+        if(bulk_given_facies.size() == 0 && density_given_facies.size() == 0) {
           tmpErrTxt += "<correlation-bulk-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               bulk_given_facies,
+                                               density_given_facies,
+                                               bulk_dist_with_trend[i],
+                                               density_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_bulk_density[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
       }
       else
         tmpErrTxt += "<correlation-bulk-density> can not be estimatedfor time lapse data\n";
@@ -765,10 +929,25 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   for(int i=0; i<n_vintages_shear_density; i++) {
     if(correlation_shear_density_[i]->GetEstimate() == true) {
       if(i == 0) {
-        if(shear_given_facies.size() == 0 && density_given_facies.size() == 0)
+        if(shear_given_facies.size() == 0 && density_given_facies.size() == 0) {
           tmpErrTxt += "<correlation-shear-density> can not be estimated as all of Vp, Vs and density logs are not given in the wells\n";
-        else
-          tmpErrTxt += "Estimation of correlations has not been implemented yet\n";
+        } else {
+          PreprocessDataForSpearmanCorrelation(s1,
+                                               s2,
+                                               shear_given_facies,
+                                               density_given_facies,
+                                               shear_dist_with_trend[i],
+                                               density_dist_with_trend[i],
+                                               x,
+                                               x_mean,
+                                               x_variance,
+                                               y,
+                                               y_mean,
+                                               y_variance,
+                                               errTxt);
+
+          corr_shear_density[0] = EstimateSpearmanCorrelation(x, x_mean, x_variance, y, y_mean, y_variance, errTxt);
+        }
       }
       else
         tmpErrTxt += "<correlation-shear-density> can not be estimatedfor time lapse data\n";
@@ -780,67 +959,8 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
         errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
-  const std::vector<std::vector<double> > dummy_s1;
-  const std::vector<std::vector<double> > dummy_s2;
-  const int                               dummy_output_other = -999;
-
-  std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
-  std::vector<DistributionWithTrend *> bulk_dist_with_trend(n_vintages, NULL);
-  std::vector<DistributionWithTrend *> shear_dist_with_trend(n_vintages, NULL);
-  std::vector<DistributionWithTrend *> density_dist_with_trend(n_vintages, NULL);
-
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
-      if(i < n_vintages_bulk)
-        bulk_dist_with_trend[i] = bulk_modulus_[i]->GenerateDistributionWithTrend(path,
-                                                                                  trend_cube_parameters,
-                                                                                  trend_cube_sampling,
-                                                                                  dummy_blocked_logs,
-                                                                                  dummy_s1,
-                                                                                  dummy_s2,
-                                                                                  dummy_output_other,
-                                                                                  "dummy",
-                                                                                  tmpErrTxt);
-      else
-        bulk_dist_with_trend[i] = bulk_dist_with_trend[i-1]->Clone();
-
-      if(i < n_vintages_shear)
-        shear_dist_with_trend[i] = shear_modulus_[i]->GenerateDistributionWithTrend(path,
-                                                                                    trend_cube_parameters,
-                                                                                    trend_cube_sampling,
-                                                                                    dummy_blocked_logs,
-                                                                                    dummy_s1,
-                                                                                    dummy_s2,
-                                                                                    dummy_output_other,
-                                                                                    "dummy",
-                                                                                    tmpErrTxt);
-      else
-        shear_dist_with_trend[i] = shear_dist_with_trend[i-1]->Clone();
-
-      if(i < n_vintages_density)
-        density_dist_with_trend[i] = density_[i]->GenerateDistributionWithTrend(path,
-                                                                                trend_cube_parameters,
-                                                                                trend_cube_sampling,
-                                                                                density_given_facies,
-                                                                                dummy_s1,
-                                                                                dummy_s2,
-                                                                                dummy_output_other,
-                                                                                "dummy",
-                                                                                tmpErrTxt);
-      else
-        density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
-
-      double lower_mega = 1.0e+6;
-      double upper_mega = 1.6e+8;
-      double test_bulk  = bulk_dist_with_trend[i]->ReSample(0,0);
-      double test_shear = shear_dist_with_trend[i]->ReSample(0,0);
-
-      if(test_bulk < lower_mega || test_bulk > upper_mega)
-        tmpErrTxt += "Bulk modulus need to be given in kPa\n";
-      if(test_shear < lower_mega || test_shear > upper_mega)
-        tmpErrTxt += "Shear modulus need to be given in kPa\n";
-
       if(i >= n_vintages_bulk_shear)
         corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
 

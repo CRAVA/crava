@@ -339,6 +339,10 @@ void PreprocessData1D(const std::vector<std::vector<double> > & s,
   x.clear();
   y.clear();
 
+  // Note that s1 and s2 are corrected/centered according to trend_cube_sampling,
+  // we have to add x_min or y_min to obtain the original s1 and s2 scale.
+  double x_min = trend_cube_sampling[0];
+
   if (n_wells > 0) {
     for (size_t i = 0; i < n_wells; i++) {
       size_t n_samples_i = blocked_logs[i].size();
@@ -349,7 +353,7 @@ void PreprocessData1D(const std::vector<std::vector<double> > & s,
           double y_j_log = blocked_logs[i][j];
 
           if (x_j != RMISSING && y_j_log != RMISSING) {
-            x.push_back(x_j);
+            x.push_back(x_j + x_min);
             y.push_back(std::exp(y_j_log));
           }
         }
@@ -855,6 +859,11 @@ void PreprocessData2D(const std::vector<std::vector<double> > & s1,
   y.clear();
   z.clear();
 
+  // Note that s1 and s2 are corrected/centered according to trend_cube_sampling,
+  // we have to add x_min and y_min to obtain the original s1 and s2 scale
+  double x_min = trend_cube_sampling[0][0];
+  double y_min = trend_cube_sampling[1][0];
+
   if (n_wells > 0) {
     for (size_t i = 0; i < n_wells; i++) {
       size_t n_samples_i = blocked_logs[i].size();
@@ -866,8 +875,8 @@ void PreprocessData2D(const std::vector<std::vector<double> > & s1,
           double z_j_log = blocked_logs[i][j];
 
           if (x_j != RMISSING && y_j != RMISSING && z_j_log != RMISSING) {
-            x.push_back(x_j);
-            y.push_back(y_j);
+            x.push_back(x_j + x_min);
+            y.push_back(y_j + y_min);
             z.push_back(std::exp(z_j_log));
           }
         }
@@ -1011,7 +1020,7 @@ double CalculateVariance(const std::vector<double> & x)
       n      = n + 1;
     }
     else {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : TRemoved missing values in variance estimation.\n");
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING : Removed missing values in variance estimation.\n");
     }
   }
   double var_x  = sum_x2/(n - 1) - sum_x*sum_x/(n*(n - 1));

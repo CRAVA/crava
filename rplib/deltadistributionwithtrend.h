@@ -33,6 +33,8 @@ class DeltaDistributionWithTrend : public DistributionWithTrend {
 
    virtual double                     ReSample(double s1, double s2);
    virtual double                     GetQuantileValue(double u, double s1, double s2);
+   virtual double                     GetMeanValue(double s1, double s2);
+   virtual double                     GetVarianceValue(double s1, double s2);
 
  private:
 
