@@ -59,9 +59,12 @@ public:
   const std::vector<int>               & GetKposVector()       const   { return k_pos_                                                                ;}
 
   const std::vector<double>            & GetVpBlocked(void)    const   { return continuous_logs_blocked_.find("Vp")->second                           ;}
+        std::vector<double>            & GetVpBlocked(void)            { return continuous_logs_blocked_.find("Vp")->second                           ;}
   const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
+        std::vector<double>            & GetVsBlocked(void)            { return continuous_logs_blocked_.find("Vs")->second                           ;}
   const std::vector<int>               & GetFaciesBlocked(void) const  { return facies_blocked_                                                       ;}
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
+        std::vector<double>            & GetRhoBlocked(void)           { return continuous_logs_blocked_.find("Rho")->second                          ;}
   const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
   const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vp")->second                         ;}
   const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vs")->second                         ;}
@@ -87,6 +90,9 @@ public:
   const std::vector<double>            & GetVsPredicted(void)  const { return continuous_logs_predicted_.find("Vs")->second                           ;}
   const std::vector<double>            & GetRhoPredicted(void) const { return continuous_logs_predicted_.find("Rho")->second                          ;}
 
+  const std::vector<double>            & GetVpForFacies(void)  const { return vp_for_facies_                                                          ;}
+  const std::vector<double>            & GetRhoForFacies(void) const { return rho_for_facies_                                                         ;}
+
   const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
   const std::vector<double>            & GetFaciesProb(int angle)      const { return facies_prob_.find(angle)->second                                ;}
   const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
@@ -99,6 +105,8 @@ public:
   bool                                   GetUseForWaveletEstimation(void)   const { return (use_for_wavelet_estimation_ > 0)                          ;}
   bool                                   GetUseForFiltering(void)           const { return (use_for_filtering_ > 0)                                   ;}
   bool                                   GetUseForBackgroundTrend(void)     const { return (use_for_background_trend_ > 0)                            ;}
+
+  float                                  GetDz(void)                        const { return dz_                                                        ;}
 
   bool                                   HasSyntheticVsLog(void)            const { return (real_vs_log_ == 0)                                        ;}
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}

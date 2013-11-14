@@ -23,7 +23,7 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
@@ -480,12 +480,12 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
 //  }
 //}
 
-void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const
-{
-  int nWells  = modelSettings->getNumberOfWells();
-  for(int i=0;i<nWells;i++)
-    wells[i]->writeWell(modelSettings->getWellFormatFlag());
-}
+//void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  for(int i=0;i<nWells;i++)
+//    wells[i]->writeWell(modelSettings->getWellFormatFlag());
+//}
 
 //void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
 //{
@@ -516,18 +516,41 @@ void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *
   }
 }
 
-void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
-                                    FFTGrid              ** seisCube,
-                                    const ModelSettings   * modelSettings,
-                                    int                     nAngles)
+//void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
+//                                    FFTGrid              ** seisCube,
+//                                    const ModelSettings   * modelSettings,
+//                                    int                     nAngles)
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//
+//    for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
+//    {
+//      seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
+//      for(int i=0;i<nWells;i++)
+//        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+//      seisCube[iAngle]->endAccess();
+//  }
+//}
+
+void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                    FFTGrid                                 ** seisCube,
+                                    const ModelSettings                      * modelSettings,
+                                    int                                        nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
 
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
     {
       seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(int i=0;i<nWells;i++)
-        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+
+      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        blocked_log->SetLogFromGrid(seisCube[iAngle], iAngle, nAngles, "SEISMIC_DATA");
+      }
+      //for(int i=0;i<nWells;i++)
+      //  wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
       seisCube[iAngle]->endAccess();
   }
 }

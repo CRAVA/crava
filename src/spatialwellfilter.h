@@ -8,8 +8,6 @@
 #include "src/definitions.h"
 #include "rplib/syntwelldata.h"
 
-#include "src/blockedlogscommon.h"
-
 class FFTGrid;
 class Crava;
 class WellData;

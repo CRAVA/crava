@@ -51,17 +51,22 @@ public:
   //bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
-  void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
+  //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
   //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
   void             writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                      ModelSettings                            * modelSettings,
                                      std::vector<std::string>                   facies_name,
                                      std::vector<int>                           facies_label) const;
 
-  void             addSeismicLogs(std::vector<WellData *>     wells,
-                                  FFTGrid                  ** seisCube,
-                                  const ModelSettings       * modelSettings,
-                                  int                         nAngles);                              // Changes wells
+  //void             addSeismicLogs(std::vector<WellData *>     wells,
+  //                                FFTGrid                  ** seisCube,
+  //                                const ModelSettings       * modelSettings,
+  //                                int                         nAngles);                              // Changes wells
+
+  void             addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                  FFTGrid                                 ** seisCube,
+                                  const ModelSettings                      * modelSettings,
+                                  int                                        nAngles);                              // Changes wells
 
   //void             generateSyntheticSeismic(Wavelet              ** wavelet,
   //                                          std::vector<WellData *> wells,

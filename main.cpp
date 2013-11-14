@@ -245,8 +245,15 @@ int main(int argc, char** argv)
                         i_interval);
 
       //Loop over dataset
+      //Ikke sete opp FirstAVOInversion?
 
       //i.   ModelAVODynamic
+
+      //ii.  Inversion
+
+      //iii. Move model one time-step ahead
+
+
       if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
         bool failed = doFirstAVOInversion(modelSettings,
                                           modelGeneral,
@@ -259,9 +266,6 @@ int main(int argc, char** argv)
         if(failed)
           return(1);
       }
-      //ii.  Inversion
-
-      //iii. Move model one time-step ahead
 
 
 

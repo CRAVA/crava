@@ -1628,7 +1628,8 @@ Crava::doPostKriging(SeismicParametersHolder & seismicParameters,
   CovGridSeparated covGridCrAlphaRho (*seismicParameters.GetCrCovAlphaRho() );
   CovGridSeparated covGridCrBetaRho  (*seismicParameters.GetCrCovBetaRho()  );
 
-  KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
+  //KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
+  KrigingData3D kd(blocked_wells_, nWells_, 1); // 1 = full resolution logs
 
   std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
   std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
@@ -1989,31 +1990,32 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(meanAlpha2_,
-                                meanBeta2_,
-                                meanRho2_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                modelGeneral_->getPriorFacies(),
-                                modelGeneral_->getPriorFaciesCubes(),
-                                likelihood,
-                                modelGeneral_->getRockDistributionTime0(),
-                                modelGeneral_->getFaciesNames(),
-                                modelAVOstatic_->getFaciesEstimInterval(),
-                                this,
-                                seismicParameters,
-                                modelAVOdynamic_->getLocalNoiseScales(),
-                                modelSettings_,
-                                filteredlogs,
-                                wells_,
-                                modelGeneral_->getTrendCubes(),
-                                nWells_,
-                                simbox_->getdz(),
-                                useFilter,
-                                true,
-                                trend_min[0],
-                                trend_max[0],
-                                trend_min[1],
-                                trend_max[1]);
+                              meanBeta2_,
+                              meanRho2_,
+                              nfac,
+                              modelSettings->getPundef(),
+                              modelGeneral_->getPriorFacies(),
+                              modelGeneral_->getPriorFaciesCubes(),
+                              likelihood,
+                              modelGeneral_->getRockDistributionTime0(),
+                              modelGeneral_->getFaciesNames(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
+                              this,
+                              seismicParameters,
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
+                              filteredlogs,
+                              //wells_,
+                              blocked_wells_,
+                              modelGeneral_->getTrendCubes(),
+                              nWells_,
+                              simbox_->getdz(),
+                              useFilter,
+                              true,
+                              trend_min[0],
+                              trend_max[0],
+                              trend_min[1],
+                              trend_max[1]);
 
       delete meanAlpha2_;
       delete meanBeta2_;
@@ -2045,7 +2047,8 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                                 modelAVOdynamic_->getLocalNoiseScales(),
                                 modelSettings_,
                                 filteredlogs,
-                                wells_,
+                                //wells_,
+                                blocked_wells_,
                                 modelGeneral_->getTrendCubes(),
                                 nWells_,
                                 simbox_->getdz(),
@@ -2058,11 +2061,16 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
     }
     if(!modelSettings->getFaciesProbFromRockPhysics()){
-      fprob_->calculateConditionalFaciesProb(wells_,
+      fprob_->calculateConditionalFaciesProb(blocked_wells_,
                                              nWells_,
                                              modelAVOstatic_->getFaciesEstimInterval(),
                                              facies_names,
                                              simbox_->getdz());
+      //fprob_->calculateConditionalFaciesProb(wells_,
+      //                                       nWells_,
+      //                                       modelAVOstatic_->getFaciesEstimInterval(),
+      //                                       facies_names,
+      //                                       simbox_->getdz());
     }
     LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
 
@@ -2091,11 +2099,14 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       }
     }
     if(modelSettings->getFaciesProbFromRockPhysics() == false) {
-      fprob_->writeBWFaciesProb(wells_, nWells_);
-      std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
+      //fprob_->writeBWFaciesProb(wells_, nWells_);
+      fprob_->writeBWFaciesProb(blocked_wells_, nWells_);
+      //std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
+      std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
 
       if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
-        QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
+        QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, modelGeneral_);
+        //QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
     }
 
     if(likelihood != NULL) {

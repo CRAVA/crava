@@ -531,8 +531,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings               *& modelSettings,
       }
 
       if (!failedWells) {
-        if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
-          modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
+        //if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0) //Skip writing of unblocked wells
+        //  modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
         if(estimationMode)
           modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
           //modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());

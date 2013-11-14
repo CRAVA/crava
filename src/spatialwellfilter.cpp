@@ -23,6 +23,7 @@
 #include "src/modelsettings.h"
 #include "src/crava.h"
 #include "src/seismicparametersholder.h"
+#include "src/blockedlogscommon.h"
 
 
 SpatialWellFilter::SpatialWellFilter(int nwells)
