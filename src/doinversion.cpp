@@ -1,7 +1,7 @@
 #include <time.h>
 
 #include "src/crava.h"
-#include "src/rmsinversion.h"
+#include "src/traveltimeinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
@@ -140,11 +140,11 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
 
   if(failedLoadingModel == false) {
-    RMSInversion * rms_inversion = new RMSInversion(modelGeneral,
-                                                    modelTravelTimeDynamic,
-                                                    seismicParameters);
+    TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
+                                                                          modelTravelTimeDynamic,
+                                                                          seismicParameters);
 
-    delete rms_inversion;
+    delete travel_time_inversion;
   }
 
   delete modelTravelTimeDynamic;

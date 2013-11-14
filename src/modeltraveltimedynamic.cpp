@@ -11,22 +11,43 @@
 #include "src/simbox.h"
 #include "src/definitions.h"
 
-ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * modelSettings,
-                                               const InputFiles              * inputFiles,
-                                               const Simbox                  * timeSimbox,
-                                               const int                     & vintage)
-: rms_traces_(0),
+ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettings,
+                                               const InputFiles    * inputFiles,
+                                               const Simbox        * timeSimbox,
+                                               const int           & vintage)
+: push_down_horizons_(0),
+  initial_horizons_(0),
+  horizon_names_(0, ""),
+  horizon_standard_deviation_(0),
+  rms_traces_(0, NULL),
+  rms_standard_deviation_(RMISSING),
+  n_layers_above_(0),
+  n_layers_below_(0),
+  mean_vp_top_(RMISSING),
+  mean_vp_base_(RMISSING),
+  var_vp_above_(RMISSING),
+  var_vp_below_(RMISSING),
+  range_above_(RMISSING),
+  range_below_(RMISSING),
+  failed_(false),
+  failed_details_(0),
   this_time_lapse_(vintage),
+  lz_limit_(RMISSING),
   simbox_above_(NULL),
-  simbox_below_(NULL)
+  simbox_below_(NULL),
+  rms_data_given_(false),
+  horizon_data_given_(false)
 {
+  LogKit::WriteHeader("Reading Travel Time Data");
+
   std::string errTxt = "";
 
   bool failed_surfaces = false;
-  processHorizons(horizons_,
-                  inputFiles,
-                  errTxt,
-                  failed_surfaces);
+  if (vintage > 0)
+    processHorizons(modelSettings,
+                    inputFiles,
+                    errTxt,
+                    failed_surfaces);
 
   bool failed_rms_data = false;
   processRMSData(modelSettings,
@@ -48,6 +69,8 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
   failed_details_.push_back(failed_rms_data);
 }
 
+ //-------------------------------------------------------------------------------------------//
+
 ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
   for (size_t i = 0; i < rms_traces_.size(); i++)
@@ -57,88 +80,114 @@ ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
   delete simbox_below_;
 }
 
+//-------------------------------------------------------------------------------------------//
+
 void
-ModelTravelTimeDynamic::processHorizons(std::vector<Surface>   & horizons,
-                                        const InputFiles       * inputFiles,
-                                        std::string            & errTxt,
-                                        bool                   & failed)
+ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
+                                        const InputFiles     * inputFiles,
+                                        std::string          & errTxt,
+                                        bool                 & failed)
 {
+  std::string tmpErrText = "";
 
-  const std::vector<std::string> & travel_time_horizons = inputFiles->getTravelTimeHorizons(this_time_lapse_);
+  const std::vector<std::string> & push_down_horizons = inputFiles->getTravelTimeHorizons(this_time_lapse_);
+  const std::vector<std::string> & initial_horizons   = inputFiles->getTravelTimeHorizons(0);
 
-  int n_horizons = static_cast<int>(travel_time_horizons.size());
+  int n_horizons = static_cast<int>(push_down_horizons.size());
 
-  if (n_horizons == 1) {
-    if (travel_time_horizons[0] != "") {
-      errTxt += "Only one surface is given for inversion of the horizons in the travel time data. At least two surfaces should be given\n";
-      failed = true;
+  if (n_horizons > 0) {
+    LogKit::LogFormatted(LogKit::Low, "\nReading horizon travel time data:\n");
+
+    const std::vector<std::string> & initial_names = modelSettings->getTimeLapseTravelTimeHorizons(0);
+
+    int n_initial_horizones = static_cast<int>(initial_names.size());
+
+    horizon_data_given_ = true;
+
+    horizon_names_              = modelSettings->getTimeLapseTravelTimeHorizons(this_time_lapse_);
+    horizon_standard_deviation_ = modelSettings->getTimeLapseTravelTimeHorizonSD(this_time_lapse_);
+
+    initial_horizons_.resize(n_horizons);
+    push_down_horizons_.resize(n_horizons);
+
+    for (int i = 0; i < n_horizons; i++) {
+      LogKit::LogFormatted(LogKit::Low, "\nHorizon \""+horizon_names_[i]+"\":\n");
+
+      LogKit::LogFormatted(LogKit::Low, "  Reading push down file "+push_down_horizons[i]+"\n");
+      push_down_horizons_[i] = Surface(push_down_horizons[i]);
+
+      for (int j = 0; j < n_initial_horizones; ++j) {
+        if (horizon_names_[i] == initial_names[j]) {
+          LogKit::LogFormatted(LogKit::Low, "  Reading horizon file file "+initial_horizons[j]+"\n");
+          initial_horizons_[i] = Surface(initial_horizons[j]);
+          break;
+        }
+      }
     }
   }
 
-  else {
-    horizons.resize(n_horizons);
-    for (int i = 0; i < n_horizons; i++)
-      horizons[i] = Surface(travel_time_horizons[i]);
-  }
-
-}
-
-void
-ModelTravelTimeDynamic::processRMSData(const ModelSettings      * modelSettings,
-                                       const InputFiles         * inputFiles,
-                                       const Simbox             * timeSimbox,
-                                       std::string              & errTxt,
-                                       bool                     & failed)
-
-{
-  double wall = 0.0;
-  double cpu  = 0.0;
-
-  TimeKit::getTime(wall, cpu);
-
-  LogKit::WriteHeader("Reading RMS travel time data");
-
-  const std::string & file_name  = inputFiles->getRmsVelocities(this_time_lapse_);
-  std::string         tmpErrText = "";
-
-  readRMSData(file_name, timeSimbox, tmpErrText);
-
-  standard_deviation_ = modelSettings->getRMSStandardDeviation();
-
-  n_layers_above_     = modelSettings->getRMSnLayersAbove();
-  n_layers_below_     = modelSettings->getRMSnLayersBelow();
-
-  mean_vp_top_        = modelSettings->getRMSMeanVpTop();
-  mean_vp_base_       = modelSettings->getRMSMeanVpBase();
-
-  var_vp_above_       = modelSettings->getRMSVarianceVpAbove();
-  var_vp_below_       = modelSettings->getRMSVarianceVpBelow();
-
-  range_above_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
-  range_below_        = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
-
-  lz_limit_           = modelSettings->getLzLimit();
-
-  setupSimboxAbove(timeSimbox,
-                   modelSettings->getOutputGridFormat(),
-                   modelSettings->getOutputGridDomain(),
-                   modelSettings->getOtherOutputFlag(),
-                   lz_limit_,
-                   tmpErrText);
-
-  setupSimboxBelow(timeSimbox,
-                   modelSettings->getOutputGridFormat(),
-                   modelSettings->getOutputGridDomain(),
-                   modelSettings->getOtherOutputFlag(),
-                   tmpErrText);
-
-  if(tmpErrText != "") {
+  if (tmpErrText != "") {
     errTxt += tmpErrText;
     failed = true;
   }
+}
 
+//-------------------------------------------------------------------------------------------//
 
-  Timings::setTimeSeismic(wall,cpu);
+void
+ModelTravelTimeDynamic::processRMSData(const ModelSettings * modelSettings,
+                                       const InputFiles    * inputFiles,
+                                       const Simbox        * timeSimbox,
+                                       std::string         & errTxt,
+                                       bool                & failed)
+
+{
+  std::string tmpErrText = "";
+
+  const std::string & file_name  = inputFiles->getRmsVelocities(this_time_lapse_);
+
+  if (file_name != "") {
+    LogKit::LogFormatted(LogKit::Low, "\nReading RMS travel time data:\n");
+
+    rms_data_given_ = true;
+
+    readRMSData(file_name, timeSimbox, tmpErrText);
+
+    rms_standard_deviation_ = modelSettings->getRMSStandardDeviation();
+
+    n_layers_above_         = modelSettings->getRMSnLayersAbove();
+    n_layers_below_         = modelSettings->getRMSnLayersBelow();
+
+    mean_vp_top_            = modelSettings->getRMSMeanVpTop();
+    mean_vp_base_           = modelSettings->getRMSMeanVpBase();
+
+    var_vp_above_           = modelSettings->getRMSVarianceVpAbove();
+    var_vp_below_           = modelSettings->getRMSVarianceVpBelow();
+
+    range_above_            = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeAbove());
+    range_below_            = static_cast<float>(modelSettings->getRMSTemporalCorrelationRangeBelow());
+
+    lz_limit_               = modelSettings->getLzLimit();
+
+    setupSimboxAbove(timeSimbox,
+                     modelSettings->getOutputGridFormat(),
+                     modelSettings->getOutputGridDomain(),
+                     modelSettings->getOtherOutputFlag(),
+                     lz_limit_,
+                     tmpErrText);
+
+    setupSimboxBelow(timeSimbox,
+                     modelSettings->getOutputGridFormat(),
+                     modelSettings->getOutputGridDomain(),
+                     modelSettings->getOtherOutputFlag(),
+                     tmpErrText);
+
+  }
+
+  if (tmpErrText != "") {
+    errTxt += tmpErrText;
+    failed = true;
+  }
 }
 
 //----------------------------------------------------------------------------

@@ -999,9 +999,6 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\rmsinversion.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\gravimetricinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1010,7 +1007,11 @@
     </ClCompile>
     <ClCompile Include="src\modelgravitystatic.cpp">
       <Filter>Source Files\src</Filter>
-    </ClCompile>  </ItemGroup>
+    </ClCompile>
+    <ClCompile Include="src\traveltimeinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
       <Filter>Source Files\libs\boost</Filter>
@@ -1690,15 +1691,16 @@
     <ClInclude Include="src\rmstrace.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\rmsinversion.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\modelgravitydynamic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\modelgravitystatic.h">
       <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>  </ItemGroup>
+    </ClInclude>
+    <ClInclude Include="src\traveltimeinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\NORSAR\BIP2008-2010\NSM-Projects\CRAVA_Project\INVERSION\CRAVA_INPUT\initial-model.xml">
       <Filter>Source Files\libs\nrlib</Filter>

@@ -89,7 +89,7 @@ void State4D::deleteCovariances()
 
 void State4D::merge(SeismicParametersHolder & current_state )
 {
-  LogKit::WriteHeader("Merging  static and dynamic part into the distribution of the current state");
+  LogKit::LogFormatted(LogKit::Low, "\nMerging static and dynamic part into the distribution of the current state...\n");
   // We assume FFT transformed grids
   assert(allGridsAreTransformed());
 
@@ -251,7 +251,7 @@ void State4D::mergeCov(std::vector<FFTGrid * > & sigma)
 void State4D::split(SeismicParametersHolder & current_state )
 {
 
-  LogKit::WriteHeader("Splitting inversion result into static and dynamic part");
+  LogKit::LogFormatted(LogKit::Low, "\nSplitting inversion result into static and dynamic part...\n");
   // initializing
   assert(allGridsAreTransformed());
 
@@ -527,8 +527,7 @@ void State4D::split(SeismicParametersHolder & current_state )
 void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
 {
   // parameterNumber: 0 = VpStatic, 1=VsStatic 2 = RhoStatic, 3 = VpDynamic, 4=VsDynamic 5 = RhoDynamic
-
-  LogKit::WriteHeader("Updating full State 4D with  inversion of single parameter");
+  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...\n");
   // initializing
   assert(allGridsAreTransformed());
   for(int i = 0; i<3; i++){
@@ -727,7 +726,7 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
 void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
 {
-  LogKit::WriteHeader("Evolving distribution of dynamic part");
+  LogKit::LogFormatted(LogKit::Low, "\nEvolving distribution of dynamic part...\n");
   // Evolution matrix and correction terms from TimeEvolution class
   const NRLib::Matrix evolution_matrix     = timeEvolution.getEvolutionMatrix(time_step);
   const NRLib::Vector mean_correction_term = timeEvolution.getMeanCorrectionTerm(time_step);
@@ -1017,7 +1016,7 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   // Note rockSample contains rock sample for all time steps.
   int nSim=10000; // NBNB OK 10000->1000 for speed during debug
 
-  LogKit::LogFormatted(LogKit::Low,"\nSampling rockphysics distribution...");
+  LogKit::LogFormatted(LogKit::Low,"\nSampling rockp hysics distribution...");
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
 
