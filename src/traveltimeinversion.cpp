@@ -72,23 +72,6 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
   std::string text = "\nInverting push down data:";
   LogKit::LogFormatted(LogKit::Low, text);
 
-  const Simbox * timeSimbox  = modelGeneral->getTimeSimbox();
-
-  //
-  FFTGrid * pre_vp = seismicParameters.GetMuAlpha();
-  FFTGrid * pre_vs = seismicParameters.GetMuBeta();
-  FFTGrid * pre_rho = seismicParameters.GetMuRho();
-
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_vp";
-  pre_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_vs";
-  pre_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_rho";
-  pre_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  //
-
   State4D state_4D = modelGeneral->getState4D();
 
   FFTGrid * mu_log_vp_dynamic  = new FFTGrid(state_4D.getMuVpDynamic());
@@ -103,6 +86,8 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
   const std::vector<Surface> initial_horizons   = modelTravelTimeDynamic->getInitialHorizons();
   const std::vector<Surface> push_down_horizons = modelTravelTimeDynamic->getPushDownHorizons();
   const std::vector<double>  standard_deviation = modelTravelTimeDynamic->getHorizonStandardDeviation();
+
+  const Simbox * timeSimbox  = modelGeneral->getTimeSimbox();
 
   const Surface top_simbox  = dynamic_cast<const Surface &> (timeSimbox->GetTopSurface());
   const Surface base_simbox = dynamic_cast<const Surface &> (timeSimbox->GetBotSurface());
@@ -190,9 +175,6 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
-  //fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "stationary_d";
-  //stationary_d->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
   stationary_covariance->fftInPlace();
 
   FFTGrid * post_log_vp = NULL;
@@ -260,27 +242,6 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
 
   seismicParameters.invFFTAllGrids();
 
-
-  FFTGrid * post_vp = seismicParameters.GetMuAlpha();
-  FFTGrid * post_vs = seismicParameters.GetMuBeta();
-  FFTGrid * post_rho = seismicParameters.GetMuRho();
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_post_vp";
-  post_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_post_vs";
-  post_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixPushDownData() + "presampled_post_rho";
-  post_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  if (post_log_vp->getIsTransformed() == true)
-    post_log_vp->invFFTInPlace();
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "post_log_vp";
-  post_log_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  post_log_vp->fftInPlace();
-
-
   delete post_log_vp;
   delete post_cov_log_vp;
   delete mu_log_vp_dynamic;
@@ -297,8 +258,9 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   std::string text = "\nInverting RMS data:";
   LogKit::LogFormatted(LogKit::Low, text);
 
-  FFTGrid * mu_log_vp_grid                 = seismicParameters.GetMuAlpha(); // Real domain
-  FFTGrid * cov_log_vp_grid                = seismicParameters.GetCovBeta(); // Real domain
+  FFTGrid * mu_log_vp_grid                 = seismicParameters.GetMuAlpha();
+  FFTGrid * cov_log_vp_grid                = seismicParameters.GetCovBeta();
+
   std::vector<double> cov_log_vp           = getCovLogVp(cov_log_vp_grid);
 
   const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
@@ -451,59 +413,14 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                          new_simbox,
                          resample_grid);
 
-    /*
-      FFTGrid * pre_vp = seismicParameters.GetMuAlpha();
-  FFTGrid * pre_vs = seismicParameters.GetMuBeta();
-  FFTGrid * pre_rho = seismicParameters.GetMuRho();
-
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "presampled_vp";
-  pre_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "presampled_vs";
-  pre_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "presampled_rho";
-  pre_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  */
-
     resampleSeismicParameters(resample_grid,
                               timeSimbox,
                               seismicParameters);
-
-    /*
-      FFTGrid * re_vp = seismicParameters.GetMuAlpha();
-  FFTGrid * re_vs = seismicParameters.GetMuBeta();
-  FFTGrid * re_rho = seismicParameters.GetMuRho();
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vp";
-  re_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vs";
-  re_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_rho";
-  re_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  */
-
 
     modelGeneral->setTimeSimbox(new_simbox);
 
   }
   else {
-    /*
-    FFTGrid * re_vp = seismicParameters.GetMuAlpha();
-  FFTGrid * re_vs = seismicParameters.GetMuBeta();
-  FFTGrid * re_rho = seismicParameters.GetMuRho();
-
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vp_pri";
-  re_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vs_pri";
-  re_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_rho_pri";
-  re_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  */
 
     seismicParameters.FFTAllGrids();
 
@@ -511,20 +428,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                 seismicParameters,
                                 stationary_d,
                                 stationary_covariance);
-
-    /*
-    seismicParameters.invFFTAllGrids();
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vp_post";
-  re_vp->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_vs_post";
-  re_vs->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-
-  fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "resampled_rho_post";
-  re_rho->writeFile(fileName, IO::PathToBackground(), timeSimbox, "NO_LABEL");
-  seismicParameters.FFTAllGrids();
-  */
   }
 
   delete stationary_d;
