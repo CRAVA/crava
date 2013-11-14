@@ -1,4 +1,4 @@
-// $Id: trendstorage.cpp 1166 2013-05-03 11:34:58Z ulvmoen $
+// $Id: trendstorage.cpp 1183 2013-05-31 08:45:27Z ulvmoen $
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"

@@ -1,4 +1,4 @@
-// $Id: trendkit.hpp 1075 2012-09-19 13:42:16Z georgsen $
+// $Id: trendkit.hpp 1185 2013-06-06 12:21:12Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -29,6 +29,8 @@
 #include <stdlib.h>
 
 #include "../surface/regularsurface.hpp"
+#include "../grid/grid.hpp"
+#include "../iotools/fileio.hpp"
 #include "trend.hpp"
 
 namespace NRLib {
@@ -36,8 +38,8 @@ namespace NRLib {
 #define RMISSING -99999.000
 #define IMISSING -99999
 
-  void                   EstimateConstantTrend(const std::vector<std::vector<float> > & blocked_logs,
-                                               double                                 & trend);
+  void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_logs,
+                             double                                  & trend);
 
   void                   PreprocessData0D(const std::vector<std::vector<float> > & blocked_logs,
                                           std::vector<double>                    & y);
@@ -262,6 +264,15 @@ namespace NRLib {
   void                   ReadTrend2DPlainAscii(const std::string     & file_name,
                                                std::string           & /*errText*/,
                                                NRLib::Grid2D<double> & trend2d);
+
+  void ReadTrend3DPlainAscii(const std::string     & file_name,
+                             std::string           & /*err_txt*/,
+                             NRLib::Grid<double>   & trend3d);
+
+  void ReadTrend3DBinary(const std::string   & file_name,
+                       Endianess             file_format,
+                       std::string           err_txt,
+                       NRLib::Grid<double> & trend_);
 
   RegularSurface<double> ResampleTrend2D(const RegularSurface<double> & surface,
                                          const std::vector<double>    & x,
