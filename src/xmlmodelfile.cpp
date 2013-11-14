@@ -6178,6 +6178,11 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
           }
         }
       }
+      std::vector<double> horizon_standard_deviation = modelSettings_->getTimeLapseTravelTimeHorizonSD(0);
+      for (size_t j = 0; j < horizon_standard_deviation.size(); ++j) {
+        if (horizon_standard_deviation[j] != 0)
+          errTxt += "The standard deviations for the travel time horizon for the first time lapse need to be zero\n";
+      }
     }
   }
 }

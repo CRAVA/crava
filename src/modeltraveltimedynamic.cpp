@@ -38,6 +38,8 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
   rms_data_given_(false),
   horizon_data_given_(false)
 {
+  LogKit::WriteHeader("Reading Travel Time Data");
+
   std::string errTxt = "";
 
   bool failed_surfaces = false;
@@ -94,7 +96,11 @@ ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
   int n_horizons = static_cast<int>(push_down_horizons.size());
 
   if (n_horizons > 0) {
-    LogKit::WriteHeader("Reading horizon travel time data");
+    LogKit::LogFormatted(LogKit::Low, "\nReading horizon travel time data:\n");
+
+    const std::vector<std::string> & initial_names = modelSettings->getTimeLapseTravelTimeHorizons(0);
+
+    int n_initial_horizones = static_cast<int>(initial_names.size());
 
     horizon_data_given_ = true;
 
@@ -107,11 +113,16 @@ ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
     for (int i = 0; i < n_horizons; i++) {
       LogKit::LogFormatted(LogKit::Low, "\nHorizon \""+horizon_names_[i]+"\":\n");
 
-      LogKit::LogFormatted(LogKit::Low, "  Reading horizon file file "+initial_horizons[i]+"\n");
-      initial_horizons_[i] = Surface(initial_horizons[i]); //Finn riktig fil, trenger ikke være gitt i samme rekkefølge
-
       LogKit::LogFormatted(LogKit::Low, "  Reading push down file "+push_down_horizons[i]+"\n");
       push_down_horizons_[i] = Surface(push_down_horizons[i]);
+
+      for (int j = 0; j < n_initial_horizones; ++j) {
+        if (horizon_names_[i] == initial_names[j]) {
+          LogKit::LogFormatted(LogKit::Low, "  Reading horizon file file "+initial_horizons[j]+"\n");
+          initial_horizons_[i] = Surface(initial_horizons[j]);
+          break;
+        }
+      }
     }
   }
 
@@ -119,7 +130,6 @@ ModelTravelTimeDynamic::processHorizons(const ModelSettings  * modelSettings,
     errTxt += tmpErrText;
     failed = true;
   }
-
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -137,7 +147,7 @@ ModelTravelTimeDynamic::processRMSData(const ModelSettings * modelSettings,
   const std::string & file_name  = inputFiles->getRmsVelocities(this_time_lapse_);
 
   if (file_name != "") {
-    LogKit::WriteHeader("Reading RMS travel time data");
+    LogKit::LogFormatted(LogKit::Low, "\nReading RMS travel time data:\n");
 
     rms_data_given_ = true;
 
