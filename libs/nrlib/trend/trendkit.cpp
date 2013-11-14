@@ -1334,15 +1334,15 @@ size_t FindLowerBoundInSortedVector(const std::vector<double> & x,
     return(n - 1);
   }
   else {
-    size_t j = std::floor((upp - low)*0.5);
+    size_t j = static_cast<size_t>(std::floor((upp - low)*0.5));
     while (upp - low > 1) {
       while (x[j] <= x_0 && upp - low > 1) {
         low = j;
-        j   = low + std::floor((upp - low)*0.5);
+        j   = low + static_cast<size_t>(std::floor((upp - low)*0.5));
       }
       while (x_0 < x[j] && upp - low > 1) {
         upp = j;
-        j   = low + std::floor((upp - low)*0.5);
+        j   = low + static_cast<size_t>(std::floor((upp - low)*0.5));
       }
     }
     return(j);
@@ -1363,15 +1363,15 @@ size_t FindUpperBoundInSortedVector(const std::vector<double> & x,
     return(n - 1);
   }
   else {
-    size_t j = std::floor((upp - low)*0.5);
+    size_t j = static_cast<size_t>(std::floor((upp - low)*0.5));
     while (upp - low > 1) {
       while (x[j] < x_0 && upp - low > 1) {
         low = j;
-        j   = low + std::floor((upp - low)*0.5);
+        j   = low + static_cast<size_t>(std::floor((upp - low)*0.5));
       }
       while (x_0 <= x[j] && upp - low > 1) {
         upp = j;
-        j   = low + std::floor((upp - low)*0.5);
+        j   = low + static_cast<size_t>(std::floor((upp - low)*0.5));
       }
     }
     return(std::min(j + 1, n - 1));
