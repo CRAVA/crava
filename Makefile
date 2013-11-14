@@ -69,7 +69,7 @@ test:	$(PROGRAM) $(GRAMMAR)
 
 help:
 	@echo ''
-	@echo 'Usage:  make type [mode=...] [case=...]'
+	@echo 'Usage:  make type [mode=...] [case=...] [passive=...] [at=...]'
 	@echo ''
 	@echo 'types'
 	@echo '  clean     : Remove object files generated from  src'
@@ -89,4 +89,7 @@ help:
 	@echo 'case'
 	@echo '  n         : Comma-separated list of test case numbers (number given first in the test case'
 	@echo '              directory name) or a range give as 1-5'
+	@echo ''
+	@echo 'at'
+	@echo '  nr        : Needed to compile under Ubuntu at NR'
 	@echo ''

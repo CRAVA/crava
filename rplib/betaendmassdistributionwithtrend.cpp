@@ -145,6 +145,18 @@ BetaEndMassDistributionWithTrend::ReSample(double s1, double s2)
 }
 
 double
+BetaEndMassDistributionWithTrend::GetMeanValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(mean_->GetValue(s1, s2, dummy));
+}
+double
+BetaEndMassDistributionWithTrend::GetVarianceValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(var_->GetValue(s1, s2, dummy));
+}
+
+
+double
 BetaEndMassDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 {
   // Want sample from Y(s1, s2) ~ Beta(0, 1, alpha(s1,s2), beta(s1,s2))
