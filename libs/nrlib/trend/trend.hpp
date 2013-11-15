@@ -1,4 +1,4 @@
-// $Id: trend.hpp 1185 2013-06-06 12:21:12Z anner $
+// $Id: trend.hpp 1218 2013-11-15 10:35:04Z gudmundh $
 #ifndef NRLIB_TREND_HPP
 #define NRLIB_TREND_HPP
 
@@ -61,8 +61,8 @@ private:
 
 class Trend1D : public Trend {
 public:
-  Trend1D(const std::vector<double> trend, int reference = 1);
-  Trend1D(const std::vector<double> trend, int reference, double dz);
+  Trend1D(const std::vector<double> & trend, int reference = 1);
+  Trend1D(const std::vector<double> & trend, int reference, double dz);
   Trend1D(const std::string &filename, int reference = 1);
   Trend1D(const Trend1D & trend);
   Trend1D();
@@ -102,8 +102,8 @@ private:
 
 class Trend2D : public Trend {
 public:
-  Trend2D(const NRLib::Grid2D<double> trend, int reference1 = 2, int reference2 = 3);
-  Trend2D(const NRLib::Grid2D<double> trend, int reference1, int reference2, double dz1, double dz2);
+  Trend2D(const NRLib::Grid2D<double> & trend, int reference1 = 2, int reference2 = 3);
+  Trend2D(const NRLib::Grid2D<double> & trend, int reference1, int reference2, double dz1, double dz2);
   Trend2D(const std::string &filename, int reference1 = 2, int reference2 = 3);
   Trend2D(const Trend2D & trend);
   Trend2D();

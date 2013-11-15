@@ -1,4 +1,4 @@
-// $Id: trendstorage.cpp 1183 2013-05-31 08:45:27Z ulvmoen $
+// $Id: trendstorage.cpp 1218 2013-11-15 10:35:04Z gudmundh $
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"
@@ -282,9 +282,6 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
   std::vector<double> resampled_trend(static_cast<int>(n_cube_samples));;
   std::vector<double> trend_values;
   std::vector<double> trend_sampling;
-  double              s_min;
-  double              dz;
-
 
   if(estimate_ == true) {
 
@@ -487,6 +484,9 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
       return(0);
     }
     else {
+      double              s_min;
+      double              dz;
+
       ReadTrend1D(file_name,errTxt,trend_values,s_min,dz);
 
       double s_max          = s_min + dz*static_cast<int>(trend_values.size());

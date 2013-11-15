@@ -1,4 +1,4 @@
-// $Id: trendkit.cpp 1185 2013-06-06 12:21:12Z anner $
+// $Id: trendkit.cpp 1219 2013-11-15 10:52:48Z gudmundh $
 #include "trendkit.hpp"
 #include "../iotools/logkit.hpp"
 #include "../iotools/fileio.hpp"
@@ -104,7 +104,6 @@ void ReadTrend1D(const std::string        & file_name,
   ReadNextToken(file,dummyStr,line);
   if (line == thisLine)
     DiscardRestOfLine(file,line,false);
-  thisLine = line;
 
   int nz = ParseType<int>(dummyStr);
 
@@ -170,7 +169,6 @@ GetTrend1DFileFormat(const std::string & file_name,
                      std::string       & errText)
 {
   std::string   dummyStr;
-  std::string   targetString;
   std::ifstream file;
 
   // test for jason file format
@@ -180,7 +178,7 @@ GetTrend1DFileFormat(const std::string & file_name,
   int  line          = 0;
   int  thisLine      = 0;
   bool lineIsComment = true;
-  bool commentFound = false;
+  bool commentFound  = false;
 
   while (lineIsComment == true) {
     ReadNextToken(file,dummyStr,line);
@@ -368,13 +366,10 @@ bool CheckConfigurations1D(const std::vector<double> & x,
                            const double              & bandwidth,
                            std::string               & errTxt)
 {
-  double delta     = 1e-5;
   double upp       = 3.0;
   double large     = 1.0;
 
   size_t n_samples = y.size();
-  size_t n_low     = 10;
-  size_t n_small   = 32;
 
   double x_min     = *std::min_element(x.begin(), x.end());
   double x_max     = *std::max_element(x.begin(), x.end());
@@ -402,18 +397,18 @@ bool CheckConfigurations1D(const std::vector<double> & x,
       }
 
       else {
-        if (n_samples < n_low) {
+        if (n_samples < 10) {
           errTxt += "Error: Too few observations. \n";
           errTxt += "       The algorithm requires at least 11 observations. \n";
           return(false);
         }
         else {
-          if (bandwidth < delta) {
+          if (bandwidth < 1e-5) {
             errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
             return(false);
           }
           else {
-            if (n_samples < n_small) {
+            if (n_samples < 32) {
               LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
               LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
             }
@@ -894,13 +889,10 @@ bool CheckConfigurations2D(const std::vector<double> & x,
                            const double              & bandwidth_y,
                            std::string               & errTxt)
 {
-  double              delta     = 1e-5;
   double              upp       = 3.0;
   double              large     = 1.0;
 
   size_t              n_samples = z.size();
-  size_t              n_small   = 48;
-  size_t              n_low     = 10;
 
   double              x_min     = *std::min_element(x.begin(), x.end());
   double              x_max     = *std::max_element(x.begin(), x.end());
@@ -932,18 +924,18 @@ bool CheckConfigurations2D(const std::vector<double> & x,
       }
 
       else {
-        if (n_samples < n_low) {
+        if (n_samples < 10) {
           errTxt += "Error: Too few observations. \n";
           errTxt += "       The algorithm requires at least 11 observations. \n";
           return(false);
         } else {
-          if (bandwidth_x < delta || bandwidth_y < delta ) {
+          if (bandwidth_x < 1e-5 || bandwidth_y < 1e-5) {
             errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
             errTxt += "       Consider using a low-dimensional method. \n";
             return(false);
           }
           else {
-            if (n_samples < n_small) {
+            if (n_samples < 48) {
               LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
               LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
             }
@@ -1262,24 +1254,20 @@ void LocalLinearRegression2DSurface(const std::vector<double>         & x,
           double c2  = 0.0;
           double c3  = 0.0;
 
-          double weight;
-
-          size_t m;
-
           for (size_t k = 0; k < K; k++) {
-            m      = index[k];
-            weight = weights[k];
+            size_t m      = index[k];
+            double weight = weights[k];
 
-            a11    = a11 +                          weight;
-            a12    = a12 + x[m]                    *weight;
-            a13    = a13 +           y[m]          *weight;
-            a22    = a22 + x[m]*x[m]               *weight;
-            a23    = a23 + x[m]     *y[m]          *weight;
-            a33    = a33 +           y[m]*y[m]     *weight;
+            a11 = a11 +                          weight;
+            a12 = a12 + x[m]                    *weight;
+            a13 = a13 +           y[m]          *weight;
+            a22 = a22 + x[m]*x[m]               *weight;
+            a23 = a23 + x[m]     *y[m]          *weight;
+            a33 = a33 +           y[m]*y[m]     *weight;
 
-            c1     = c1  +                     z[m]*weight;
-            c2     = c2  + x[m]               *z[m]*weight;
-            c3     = c3  +           y[m]     *z[m]*weight;
+            c1 = c1  +                     z[m]*weight;
+            c2 = c2  + x[m]               *z[m]*weight;
+            c3 = c3  +           y[m]     *z[m]*weight;
           }
 
           // add a smll number to the diagonal in case the matrix is singular.
@@ -1327,11 +1315,11 @@ size_t FindLowerBoundInSortedVector(const std::vector<double> & x,
   size_t low = 0;
   size_t upp = n - 1;
 
-  if (x_0 <= x[0]) {
-    return(0);
+  if (x_0 <= x[low]) {
+    return(low);
   }
-  else if (x_0 >= x[n - 1]) {
-    return(n - 1);
+  else if (x_0 >= x[upp]) {
+    return(upp);
   }
   else {
     size_t j = static_cast<size_t>(std::floor((upp - low)*0.5));
@@ -1356,11 +1344,11 @@ size_t FindUpperBoundInSortedVector(const std::vector<double> & x,
   size_t low = 0;
   size_t upp = n - 1;
 
-  if (x_0 <= x[0]) {
-    return(0);
+  if (x_0 <= x[low]) {
+    return(low);
   }
-  else if (x_0 >= x[n - 1]) {
-    return(n - 1);
+  else if (x_0 >= x[upp]) {
+    return(upp);
   }
   else {
     size_t j = static_cast<size_t>(std::floor((upp - low)*0.5));
@@ -1961,7 +1949,6 @@ void ReadTrend2DPlainAscii(const std::string     & file_name,
 {
   std::ifstream file;
   OpenRead(file,file_name);
-  std::string dummyStr;
   int line = 0;
 
   int ni = ReadNext<int>(file, line);
@@ -1982,7 +1969,7 @@ void ReadTrend2DPlainAscii(const std::string     & file_name,
 
 
 void ReadTrend3DPlainAscii(const std::string   & file_name,
-                           std::string         & err_txt,
+                           std::string         & /*err_txt*/,
                            NRLib::Grid<double> & trend3d)
 {
   std::ifstream file;

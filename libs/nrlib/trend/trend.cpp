@@ -1,4 +1,4 @@
-// $Id: trend.cpp 1185 2013-06-06 12:21:12Z anner $
+// $Id: trend.cpp 1218 2013-11-15 10:35:04Z gudmundh $
 #include "trend.hpp"
 #include "trendkit.hpp"
 #include "../exception/exception.hpp"
@@ -84,7 +84,7 @@ TrendConstant::DrawPoint(const NRLib::Volume &volume) const
 }
 //-------------------------------------------------------------------//
 
-Trend1D::Trend1D(const std::vector<double> trend, int reference)
+Trend1D::Trend1D(const std::vector<double> & trend, int reference)
 : trend_(trend)
 {
   if(trend_.empty() || reference > 3 || reference < 1)
@@ -95,7 +95,7 @@ Trend1D::Trend1D(const std::vector<double> trend, int reference)
   reference_  = reference;
 }
 
-Trend1D::Trend1D(const std::vector<double> trend, int reference, double dz)
+Trend1D::Trend1D(const std::vector<double> & trend, int reference, double dz)
 : trend_(trend)
 {
   //Use this constructor when the increment needs to be specified
@@ -269,9 +269,9 @@ Trend1D::GetMeanValue(void) const
 
 
 //-------------------------------------------------------------------//
-Trend2D::Trend2D(const NRLib::Grid2D<double> trend,
-                 int                         reference1,
-                 int                         reference2)
+Trend2D::Trend2D(const NRLib::Grid2D<double> & trend,
+                 int                           reference1,
+                 int                           reference2)
 : trend_(trend)
 {
   // Use this constructor when the total length of the trend is one
@@ -287,11 +287,11 @@ Trend2D::Trend2D(const NRLib::Grid2D<double> trend,
 }
 
 
-Trend2D::Trend2D(const NRLib::Grid2D<double> trend,
-                 int                         reference1,
-                 int                         reference2,
-                 double                      dz1,
-                 double                      dz2)
+Trend2D::Trend2D(const NRLib::Grid2D<double> & trend,
+                 int                           reference1,
+                 int                           reference2,
+                 double                        dz1,
+                 double                        dz2)
 : trend_(trend)
 {
   //Use this constructor when the increment needs to be specified

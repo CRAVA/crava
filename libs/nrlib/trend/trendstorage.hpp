@@ -1,4 +1,4 @@
-// $Id: trendstorage.hpp 1183 2013-05-31 08:45:27Z ulvmoen $
+// $Id: trendstorage.hpp 1217 2013-11-14 14:13:29Z gudmundh $
 #ifndef NRLIB_TRENDSTORAGE_HPP
 #define NRLIB_TRENDSTORAGE_HPP
 
