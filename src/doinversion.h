@@ -38,21 +38,21 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
 //                         int                       sortedVintage,
 //                         Simbox                  * timeBGSimbox);
 
-bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
-                         ModelGeneral            * modelGeneral,
-                         ModelAVOStatic          * modelAVOstatic,
-                         CommonData              * commonData,
-                         SeismicParametersHolder & seismicParameters,
-                         InputFiles              * inputFiles,
-                         int                       vintage,
-                         int                       i_interval);
+//bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
+//                             ModelGeneral            * modelGeneral,
+//                             ModelAVOStatic          * modelAVOStatic,
+//                             InputFiles              * inputFiles,
+//                             SeismicParametersHolder & seismicParameters,
+//                             int                       sortedVintage);
 
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelGeneral            * modelGeneral,
-                             ModelAVOStatic          * modelAVOStatic,
-                             InputFiles              * inputFiles,
+                             ModelAVOStatic          * modelAVOstatic,
+                             CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
-                             int                       sortedVintage);
+                             InputFiles              * inputFiles,
+                             int                       vintage,
+                             int                       i_interval);
 
 bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
                                     const ModelGeneral            * modelGeneral,

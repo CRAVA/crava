@@ -131,8 +131,12 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
     //
     // INVERSION/ESTIMATION
     //
+    checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+    bool estimationMode = modelSettings->getEstimationMode();
+    if (estimationMode == false)
+      faciesEstimInterval_ = commonData->GetFaciesEstimInterval(); //Read in in CommonData under SetupPriorFaciesProb based on estimation_simbox. Should this have been per interval?
 
-    faciesEstimInterval_ = commonData->GetFaciesEstimInterval();
+    //Maybe load in from modelSettings here, things that are needed in doAVOInversion
 
     checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
   }

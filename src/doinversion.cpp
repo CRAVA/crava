@@ -71,60 +71,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
   //Add in ModelTravelTimeStatic when ready
 }
 
-bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
-                         ModelGeneral            * modelGeneral,
-                         ModelAVOStatic          * modelAVOstatic,
-                         CommonData              * commonData,
-                         SeismicParametersHolder & seismicParameters,
-                         InputFiles              * inputFiles,
-                         int                       vintage,
-                         int                       i_interval)
-{
 
-  ModelAVODynamic * modelAVOdynamic = NULL;
-
-  // Wells are adjusted by ModelAVODynamic constructor.
-  modelAVOdynamic = new ModelAVODynamic(modelSettings,
-                                        inputFiles,
-                                        //modelGeneral->getFailedDetails(),
-                                        //modelAVOstatic->getFailedDetails(),
-                                        modelGeneral->getTimeSimbox(),
-                                        //timeBGSimbox,
-                                        //modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getRandomGen(),
-                                        modelGeneral->getTimeDepthMapping(),
-                                        //modelGeneral->getTimeCutMapping(),
-                                        modelAVOstatic->getWaveletEstimInterval(),
-                                        modelAVOstatic->getWellMoveInterval(),
-                                        modelAVOstatic->getFaciesEstimInterval(),
-                                        modelAVOstatic,
-                                        modelGeneral,
-                                        commonData,
-                                        vintage,
-                                        seismicParameters,
-                                        i_interval);
-
-
-
-
-  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
-
-  if(failedLoadingModel == false){
-
-    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
-
-    delete crava;
-  }
-
-  //H Changed from float * to map i BlockedLogsCommon
-  //modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
-
-  delete modelAVOdynamic;
-
-  return(failedLoadingModel);
-
-
-}
 
 //bool doFirstAVOInversion(ModelSettings           * modelSettings,
 //                         ModelGeneral            * modelGeneral,
@@ -172,42 +119,100 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings, //Intervals
 //  return(failedLoadingModel);
 //}
 
+//bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
+//                             ModelGeneral            * modelGeneral,
+//                             ModelAVOStatic          * modelAVOstatic,
+//                             InputFiles              * inputFiles,
+//                             SeismicParametersHolder & seismicParameters,
+//                             int                       vintage)
+//{
+//  ModelAVODynamic * modelAVOdynamic = NULL;
+//
+//  modelAVOdynamic = new ModelAVODynamic(modelSettings,
+//                                        inputFiles,
+//                                        modelAVOstatic,
+//                                        modelGeneral,
+//                                        seismicParameters,
+//                                        modelGeneral->getTimeSimbox(),
+//                                        modelGeneral->getCorrelationDirection(),
+//                                        modelGeneral->getTimeDepthMapping(),
+//                                        modelGeneral->getTimeCutMapping(),
+//                                        vintage);
+//
+//  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
+//
+//  if(failedLoadingModel == false) {
+//
+//    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
+//
+//    delete crava;
+//  }
+//
+//  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
+//
+//  delete modelAVOdynamic;
+//
+//  return(failedLoadingModel);
+//}
 
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelGeneral            * modelGeneral,
                              ModelAVOStatic          * modelAVOstatic,
-                             InputFiles              * inputFiles,
+                             CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
-                             int                       vintage)
+                             InputFiles              * inputFiles,
+                             int                       vintage,
+                             int                       i_interval)
 {
+  //For intervals: Combination of doFirstAVOInversion and doTimeLapseAVOInversion
+
   ModelAVODynamic * modelAVOdynamic = NULL;
 
+  // Wells are adjusted by ModelAVODynamic constructor.
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
                                         inputFiles,
+                                        //modelGeneral->getFailedDetails(),
+                                        //modelAVOstatic->getFailedDetails(),
+                                        modelGeneral->getTimeSimbox(),
+                                        //timeBGSimbox,
+                                        //modelGeneral->getCorrelationDirection(),
+                                        modelGeneral->getRandomGen(),
+                                        modelGeneral->getTimeDepthMapping(),
+                                        //modelGeneral->getTimeCutMapping(),
+                                        modelAVOstatic->getWaveletEstimInterval(),
+                                        modelAVOstatic->getWellMoveInterval(),
+                                        modelAVOstatic->getFaciesEstimInterval(),
                                         modelAVOstatic,
                                         modelGeneral,
+                                        commonData,
+                                        vintage,
                                         seismicParameters,
-                                        modelGeneral->getTimeSimbox(),
-                                        modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getTimeDepthMapping(),
-                                        modelGeneral->getTimeCutMapping(),
-                                        vintage);
+                                        i_interval);
+
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
-  if(failedLoadingModel == false) {
+  if(failedLoadingModel == false){
 
-    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
+    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters); //Change name to: AVOInversion
 
     delete crava;
   }
 
-  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
+  //H Changed from float * to map i BlockedLogsCommon
+  //modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
+
+
 }
+
+
+
+
+
 
 bool
 doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
