@@ -76,7 +76,7 @@ DeltaDistributionWithTrend::GetMeanValue(double s1, double s2)
   return(mean_->GetValue(s1, s2, dummy));
 }
 double
-DeltaDistributionWithTrend::GetVarianceValue(double s1, double s2)
+DeltaDistributionWithTrend::GetVarianceValue(double /*s1*/, double /*s2*/)
 {
   return(0.0);
 }

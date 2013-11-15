@@ -1,4 +1,4 @@
-// $Id: trendstorage.hpp 1166 2013-05-03 11:34:58Z ulvmoen $
+// $Id: trendstorage.hpp 1183 2013-05-31 08:45:27Z ulvmoen $
 #ifndef NRLIB_TRENDSTORAGE_HPP
 #define NRLIB_TRENDSTORAGE_HPP
 
@@ -44,9 +44,9 @@ public:
 
   virtual ~TrendConstantStorage();
 
-  virtual TrendStorage * Clone()       const { return new TrendConstantStorage(*this) ;}
-  virtual double         GetMean()     const { return mean_value_                     ;}
-  virtual bool           GetEstimate() const { return estimate_                       ;}
+  virtual TrendStorage * Clone()   const { return new TrendConstantStorage(*this) ;}
+  virtual double         GetMean() const { return mean_value_                     ;}
+  virtual bool           GetEstimate()                                                                 const { return estimate_                 ;}
 
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,

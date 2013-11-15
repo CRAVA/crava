@@ -1,4 +1,4 @@
-// $Id: trendkit.cpp 1075 2012-09-19 13:42:16Z georgsen $
+// $Id: trendkit.cpp 1185 2013-06-06 12:21:12Z anner $
 #include "trendkit.hpp"
 #include "../iotools/logkit.hpp"
 #include "../iotools/fileio.hpp"
@@ -1192,14 +1192,14 @@ void LocalLinearRegression2DSurface(const std::vector<double>         & x,
   std::vector<double> weights(nSamples, RMISSING);
   std::vector<size_t> index(nSamples, nSamples + 1);
 
-  std::vector<double> x_order(nSamples, 0);
-  std::vector<size_t> x_backward(nSamples, -1);
-  std::vector<size_t> x_forward(nSamples, -1);
+  std::vector<double> x_order;
+  std::vector<size_t> x_backward;
+  std::vector<size_t> x_forward;
   SortOrderAndRank(x, x_order, x_backward, x_forward);
 
-  std::vector<double> y_order(nSamples, 0);
-  std::vector<size_t> y_backward(nSamples, -1);
-  std::vector<size_t> y_forward(nSamples, -1);
+  std::vector<double> y_order;
+  std::vector<size_t> y_backward;
+  std::vector<size_t> y_forward;
   SortOrderAndRank(y, y_order, y_backward, y_forward);
 
 
@@ -1384,6 +1384,10 @@ void SortOrderAndRank(const std::vector<double> & x,
                       std::vector<size_t>       & x_rank)
 {
   size_t n = x.size();
+
+  x_sort.resize(n, 0);
+  x_order.resize(n, 0);
+  x_rank.resize(n, 0);
 
   std::vector<std::pair<double, size_t> > x_order_tmp(n);
   std::vector<std::pair<size_t, size_t> > x_rank_tmp(n);
@@ -1628,14 +1632,14 @@ void KernelSmoother2DSurface(const std::vector<double>         & x,
   std::vector<double> weights(nSamples, RMISSING);
   std::vector<size_t> index(nSamples, nSamples + 1);
 
-  std::vector<double> x_order(nSamples, 0);
-  std::vector<size_t> x_backward(nSamples, -1);
-  std::vector<size_t> x_forward(nSamples, -1);
+  std::vector<double> x_order;
+  std::vector<size_t> x_backward;
+  std::vector<size_t> x_forward;
   SortOrderAndRank(x, x_order, x_backward, x_forward);
 
-  std::vector<double> y_order(nSamples, 0);
-  std::vector<size_t> y_backward(nSamples, -1);
-  std::vector<size_t> y_forward(nSamples, -1);
+  std::vector<double> y_order;
+  std::vector<size_t> y_backward;
+  std::vector<size_t> y_forward;
   SortOrderAndRank(y, y_order, y_backward, y_forward);
 
 
@@ -1977,5 +1981,36 @@ void ReadTrend2DPlainAscii(const std::string     & file_name,
 }
 
 
+void ReadTrend3DPlainAscii(const std::string   & file_name,
+                           std::string         & err_txt,
+                           NRLib::Grid<double> & trend3d)
+{
+  std::ifstream file;
+  OpenRead(file, file_name);
+
+  int line = 0;
+
+  int ni = ReadNext<int>(file, line);
+  int nj = ReadNext<int>(file, line);
+  int nk = ReadNext<int>(file, line);
+  trend3d.Resize(ni, nj, nk);
+  ReadAsciiArrayFast(file, trend3d.begin(), trend3d.GetN());
+  file.close();
+
 }
 
+
+void ReadTrend3DBinary(const std::string   & file_name,
+                       Endianess             file_format,
+                       std::string           err_txt,
+                       NRLib::Grid<double> & trend3d)
+{
+  std::ifstream file;
+  OpenRead(file, file_name);
+  std::vector<int> dim(3);
+  ReadBinaryIntArray(file, dim.begin(), 3, file_format);
+  trend3d.Resize(dim[0], dim[1], dim[2]);
+  ReadBinaryFloatArray(file, trend3d.begin(), trend3d.GetN(), file_format);
+  file.close();
+}
+}
