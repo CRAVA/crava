@@ -1,4 +1,4 @@
-// $Id: trendkit.hpp 1185 2013-06-06 12:21:12Z anner $
+// $Id: trendkit.hpp 1217 2013-11-14 14:13:29Z gudmundh $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
