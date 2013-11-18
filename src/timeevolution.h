@@ -53,6 +53,10 @@ private:
                              TimeLine                              & time_line,
                              const std::vector<DistributionsRock*> & dist_rock);
 
+  // Adjusting the covariance to span all samples
+  NRLib::Matrix AdjustCovarianceToSpanSamples(NRLib::Vector                                    mu,
+                                              NRLib::Matrix                                    sigma,
+                                              std::vector<std::vector<double> >  & m_ik);
   // Adjusting diagonal of matrix to be inverted if necessary,
   // and adjusting the other matrices similarly to ensure block form of evolution
   // matrices and correction term covariance:

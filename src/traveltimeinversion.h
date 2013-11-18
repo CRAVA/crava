@@ -97,6 +97,7 @@ private:
                                            const int                 & n_pad_below) const;
 
   std::vector<double>           calculateDSquare(const std::vector<double> & d) const;
+  void                          biasAdjustDsquare(std::vector<double> & d2, double variance) const;
 
   NRLib::Grid2D<double>         calculateSigmaDSquare(const std::vector<double> & rms_velocity,
                                                     const double              & standard_deviation) const;
@@ -201,7 +202,8 @@ private:
                                                std::vector<KrigingData2D> & mu_log_vp_post) const;
 
   void                          addCovariance(const NRLib::Grid2D<double> & Sigma_post,
-                                              std::vector<double>         & cov_stationary) const;
+                                              std::vector<double>         & cov_stationary,
+                                              int                           n_nopad) const;
 
   std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
                                                         const int                   & n_nopad) const;
@@ -217,7 +219,7 @@ private:
                                                                const std::vector<double>   & pri_circulant_cov,
                                                                const std::vector<double>   & post_circulant_cov,
                                                                const int                   & n_rms_traces,
-                                                               const Surface               * priorCorrXY,
+                                                               const Surface               * errorCorrXY,
                                                                const float                 & corrGradI,
                                                                const float                 & corrGradJ,
                                                                FFTGrid                     * pri_mu,

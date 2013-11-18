@@ -392,16 +392,16 @@ Wavelet3D::createAverageWavelet(const Simbox * simBox)
       //double deltaF = static_cast<double>(nz_)*1000.0/(relT*simBox->getlz()*static_cast<double>(nzp_));
       for(int k=0;k < (nzp_/2 +1);k++)
       {
-        fftw_complex amp = w1->getCAmp(k,sfLoc);
-        average2[k].re+= amp.re*divNy;
-        average2[k].im+= amp.im*divNy;
+        fftw_complex amp = w1->getCAmp(k,static_cast<float>(sfLoc));
+        average2[k].re+= static_cast<float>(amp.re*divNy);
+        average2[k].im+= static_cast<float>(amp.im*divNy);
       }
       delete w1;
     }
     for(k=0;k < (nzp_/2 +1);k++)
     {
-      average1[k].re+=average2[k].re*divNx;
-      average1[k].im+=average2[k].im*divNx;
+      average1[k].re+=static_cast<float>(average2[k].re*divNx);
+      average1[k].im+=static_cast<float>(average2[k].im*divNx);
     }
   }
   w1= createLocalWavelet1D( 0, 0);

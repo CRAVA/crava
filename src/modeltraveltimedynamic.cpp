@@ -67,6 +67,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
   failed_ = failed_loading_model;
   failed_details_.push_back(failed_surfaces);
   failed_details_.push_back(failed_rms_data);
+  errorCorrXY_ =setErrorCorrXYGrid(timeSimbox,  modelSettings);
 }
 
  //-------------------------------------------------------------------------------------------//
@@ -75,6 +76,9 @@ ModelTravelTimeDynamic::~ModelTravelTimeDynamic()
 {
   for (size_t i = 0; i < rms_traces_.size(); i++)
     delete rms_traces_[i];
+
+  if(errorCorrXY_!= NULL)
+    delete errorCorrXY_;
 
   delete simbox_above_;
   delete simbox_below_;
@@ -210,7 +214,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
   int line = 0;
 
-  while (line < 32) {
+  while (line < 32) {  // NBNB can be made more robust
     NRLib::DiscardRestOfLine(file, line, false);
   }
 
@@ -247,7 +251,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
 
             int i_ind;
             int j_ind;
-            timeSimbox->getIndexes(this_utmx, this_utmy, i_ind, j_ind);
+            timeSimbox->getIndexes(utmx, utmy, i_ind, j_ind);
 
             if (i_ind != IMISSING && j_ind != IMISSING) {
               RMSTrace * trace = new RMSTrace(IL,
@@ -427,4 +431,46 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
     errTxt += "A problem was encountered for the simbox below the reservoir in the RMS inversion\n";
     errTxt += "There are no RMS data below the reservoir\n";
   }
+}
+
+
+Surface *
+ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
+{
+  float dx  = static_cast<float>(timeSimbox->getdx());
+  float dy  = static_cast<float>(timeSimbox->getdy());
+
+  int   nx  = modelSettings->getNXpad();
+  int   ny  = modelSettings->getNYpad();
+
+  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+
+  if(modelSettings->getLateralTravelTimeErrorCorr()!=NULL)
+  {
+    int refi,refj;
+    for(int j=0;j<ny;j++)
+    {
+      for(int i=0;i<nx;i++)
+      {
+        if(i<(nx/2+1))
+        {
+          refi = i;
+        }
+        else
+        {
+          refi = i-nx;
+        }
+        if(j< (ny/2+1))
+        {
+          refj = j;
+        }
+        else
+        {
+          refj = j-ny;
+        }
+        (*grid)(j*nx+i) = modelSettings->getLateralTravelTimeErrorCorr()->corr(refi*dx, refj*dy);
+      }
+    }
+  }
+  return(grid);
 }

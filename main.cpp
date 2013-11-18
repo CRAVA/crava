@@ -259,6 +259,7 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::TRAVEL_TIME :
+        modelSettings->setLateralTravelTimeErrorCorr();
         failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
                                                      modelGeneral,
                                                      inputFiles,
@@ -267,7 +268,14 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::GRAVITY :
-        errTxt += "Error: Asked for 3D gravimetric inversion: Not available.\n";
+        failedFirst =doTimeLapseGravimetricInversion(modelSettings,
+                                     modelGeneral,
+                                     modelGravityStatic,
+                                     inputFiles,
+                                     vintage,
+                                     seismicParameters);
+
+        errTxt += "Warning Gravimetric under construction\n";
         break;
 
       default :

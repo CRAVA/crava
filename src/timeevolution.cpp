@@ -424,7 +424,8 @@ void TimeEvolution::PrintToScreen(NRLib::Vector v, int dim, std::string name)
   std::cout << std::endl;
 }
 
-NRLib::Vector TimeEvolution::computePriorMeanStaticAndDynamicLastTimeStep()
+NRLib::Vector
+  TimeEvolution::computePriorMeanStaticAndDynamicLastTimeStep()
 {
  NRLib::Vector priorMean=initial_mean_;
  NRLib::Vector tmp;
@@ -456,4 +457,62 @@ NRLib::Matrix
 
 
   return priorCov;
+}
+
+NRLib::Matrix
+  TimeEvolution::AdjustCovarianceToSpanSamples(NRLib::Vector  mu,NRLib::Matrix sigma, std::vector<std::vector<double>  > & m_ik)
+{
+  double treshold = 20;
+  double eps = 1e-8;
+
+  int nd  =mu.length();
+  int n  =m_ik.size();
+
+  NRLib::Matrix AdjustedSigma(nd,nd);
+
+  AdjustedSigma=sigma;
+  NRLib::Vector delta(nd);
+
+  NRLib::Matrix SigmaInv;
+
+  DoRobustInversion(SigmaInv, AdjustedSigma, nd,eps);
+
+  for(int i=0;i<n;i++){
+
+    for(int j=0;j<nd;j++){
+      delta(j)=m_ik[i][j]-mu(j);
+    }
+
+    double norm=0.0;
+    for(int j=0;j<nd;j++){
+      for(int k=0;k<nd;k++){
+         norm +=  delta(j)*SigmaInv(j,k)*delta(k);
+      }
+    }
+
+    if( norm > treshold ){
+      double factor =   norm/treshold-1;
+
+      double l2Norm = 0;
+      for(int j=0;j<nd;j++){
+        l2Norm =delta(j)*delta(j);
+      }
+
+      double currentVar=0.0;
+      for(int j=0;j<nd;j++){
+        for(int k=0;k<nd;k++){
+          currentVar +=  delta(j)*AdjustedSigma(j,k)*delta(k);
+        }
+      }
+      for(int j=0;j<nd;j++){
+        for(int k=0;k<nd;k++){
+          AdjustedSigma(j,k)=AdjustedSigma(j,k)+currentVar*factor*delta(j)*delta(k)/l2Norm;// updated Covariance
+        }
+      }
+      DoRobustInversion(SigmaInv, AdjustedSigma, nd,eps);// Inverse of updated Covariance;
+    }
+  }
+
+  std::cout << "Warning: Adjustment under construction in TimeEvolution::AdjustCovarianceToSpanSamples " << std::endl;
+  return AdjustedSigma;
 }
