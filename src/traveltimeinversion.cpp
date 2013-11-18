@@ -38,7 +38,7 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
                        seismicParameters);
 
 
-  int n_rms_inversions = 1;
+  int n_rms_inversions = 1; // For first time
   if (this_time_lapse > 0)
     n_rms_inversions = 2;
 
@@ -92,9 +92,10 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
   const Surface top_simbox  = dynamic_cast<const Surface &> (timeSimbox->GetTopSurface());
   const Surface base_simbox = dynamic_cast<const Surface &> (timeSimbox->GetBotSurface());
 
-  int nx  = timeSimbox->getnx();
-  int ny  = timeSimbox->getny();
-  int nzp = mu_log_vp_dynamic->getNzp();
+  int nx      = timeSimbox->getnx();
+  int ny      = timeSimbox->getny();
+  int nzp     = mu_log_vp_dynamic->getNzp();
+  int n_model = mu_log_vp_dynamic->getNz();
 
   float monitorSize = std::max(1.0f, static_cast<float>(nx * ny) * 0.02f);
   float nextMonitor = monitorSize;
@@ -135,7 +136,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                        mu_post,
                        mu_log_vp_post);
 
-        addCovariance(Sigma_post, cov_circulant);
+        addCovariance(Sigma_post, cov_circulant,n_model);
 
         n_traces++;
 
@@ -167,7 +168,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                                  cov_log_vp,
                                  cov_circulant,
                                  n_traces,
-                                 modelGeneral->getPriorCorrXY(),
+                                 modelTravelTimeDynamic->getErrorCorrXY(),
                                  corrGradI,
                                  corrGradJ,
                                  mu_log_vp_dynamic,
@@ -275,11 +276,15 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   const double range_below                 = modelTravelTimeDynamic->getRangeBelow();
   const double standard_deviation          = modelTravelTimeDynamic->getRMSStandardDeviation();
 
+  double dtAbove                           = simbox_above->getMinDz();
+  double dtBelow                           = simbox_below->getMinDz();
+
   int n_above                              = simbox_above->getnz();
   int n_below                              = simbox_below->getnz();
-  int n_pad_above                          = n_above + static_cast<int>(std::ceil(range_above));
-  int n_pad_below                          = n_below + static_cast<int>(std::ceil(range_below));
+  int n_pad_above                          = n_above + static_cast<int>(std::ceil(range_above/dtAbove));
+  int n_pad_below                          = n_below + static_cast<int>(std::ceil(range_below/dtBelow));
   int n_pad_model                          = mu_log_vp_grid->getNzp();
+  int n_model                              = mu_log_vp_grid->getNz();
 
   int n_rms_traces                         = static_cast<int>(rms_traces.size());
 
@@ -338,7 +343,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
         cov_model(j, k) = Sigma_post(j + n_pad_above, k + n_pad_above);
     }
 
-    addCovariance(cov_model, cov_circulant_model);
+    addCovariance(cov_model, cov_circulant_model,n_model);
 
     if (i + 1 >= static_cast<int>(nextMonitor)) {
       nextMonitor += monitorSize;
@@ -365,7 +370,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                  cov_log_vp,
                                  cov_circulant_model,
                                  n_rms_traces,
-                                 modelGeneral->getPriorCorrXY(),
+                                 modelTravelTimeDynamic->getErrorCorrXY(),
                                  corrGradI,
                                  corrGradJ,
                                  mu_log_vp_grid,
@@ -615,6 +620,8 @@ TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_top,
                            Sigma_m_square);
 
   std::vector<double>   d_square       = calculateDSquare(rms_trace->getVelocity());
+  biasAdjustDsquare(d_square ,standard_deviation*standard_deviation);
+
   NRLib::Grid2D<double> Sigma_d_square = calculateSigmaDSquare(rms_trace->getVelocity(), standard_deviation);
 
   std::vector<double>   mu_post;
@@ -718,7 +725,6 @@ TravelTimeInversion::calculatePosteriorModel(const std::vector<double>   & d,
     for (int j = 0; j < n_layers; j++)
       Sigma_post(i,j) = Sigma_post1(i,j);
   }
-
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -735,6 +741,18 @@ TravelTimeInversion::calculateDSquare(const std::vector<double> & d) const
   return d_square;
 }
 //-----------------------------------------------------------------------------------------//
+
+
+//-----------------------------------------------------------------------------------------//
+void
+TravelTimeInversion::biasAdjustDsquare(std::vector<double> & d2, double variance) const
+{
+  int n = static_cast<int>(d2.size());
+
+  for (int i = 0; i < n; i++)
+    d2[i] -= variance;
+}
+//----------
 
 NRLib::Grid2D<double>
 TravelTimeInversion::calculateGHorizon(double                      dt,
@@ -809,18 +827,15 @@ TravelTimeInversion::calculateG(const std::vector<double> & rms_time,
 
   for (int j = 0; j < n_rms_data; j++) {
     int k=0;
-    double prev_t = t[0];
-    while (rms_time[j] >= t[k] && k < n_layers) {
+    double prev_base_t = t[0];
+    while (rms_time[j] >= t[k]+dt[k] && k < n_layers) { // while rms_time is below the base of the current cell
       G(j,k) = dt[k] / rms_time[j];
-      if (t[k] != 0)
-        prev_t = t[k];
+      if (t[k] != 0)  // no increment  if this is a padding cell
+        prev_base_t = t[k]+dt[k];
       k++;
     }
-    if (k < n_layers) {
-      if (t[k-1] == 0)
-        G(j,k) = (rms_time[j] - prev_t) / rms_time[j];
-      else
-        G(j,k) = (rms_time[j] - t[k-1]) / rms_time[j];
+    if (k < n_layers) { // the rms_time is within the current cell
+        G(j,k) = (rms_time[j] - prev_base_t) / rms_time[j];
     }
   }
 
@@ -981,12 +996,10 @@ TravelTimeInversion::generateMuVpBelow(const double & top_value,
   for (int i = 0; i < nz; i++)
     mu_vp[i] = mu_vp[i + 1];
 
-  int diff = nzp - nz;
+  std::vector<double> mu_vp_out(nzp, mu_vp[nz-1]);
 
-  std::vector<double> mu_vp_out(nzp, mu_vp[0]);
-
-  for (int i = diff; i < nzp; i++)
-    mu_vp_out[i] = mu_vp[i-diff];
+  for (int i = 0; i < nz; i++)
+    mu_vp_out[i] = mu_vp[i];
 
 
   return mu_vp_out;
@@ -1314,12 +1327,13 @@ TravelTimeInversion::calculateMinusFirstCentralMomentLogNormal(const std::vector
 
 void
 TravelTimeInversion::addCovariance(const NRLib::Grid2D<double> & Sigma_post,
-                                   std::vector<double>         & cov_stationary) const
+                                   std::vector<double>         & cov_stationary,
+                                   int n_nopad) const
 {
 
   int nzp = static_cast<int>(Sigma_post.GetNI());
 
-  std::vector<double> circulant = makeCirculantCovariance(Sigma_post, nzp);
+  std::vector<double> circulant = makeCirculantCovariance(Sigma_post, n_nopad);
 
   for (int i = 0; i < nzp; i++)
     cov_stationary[i] += circulant[i];
@@ -1460,7 +1474,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
                                                     const std::vector<double>   & pri_circulant_cov,
                                                     const std::vector<double>   & post_circulant_cov,
                                                     const int                   & n_rms_traces,
-                                                    const Surface               * priorCorrXY,
+                                                    const Surface               * errorCorrXY,
                                                     const float                 & corrGradI,
                                                     const float                 & corrGradJ,
                                                     FFTGrid                     * pri_mu,
@@ -1536,7 +1550,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
   stationary_covariance->createRealGrid();
   stationary_covariance->setType(FFTGrid::COVARIANCE);
 
-  stationary_covariance->fillInParamCorr(priorCorrXY, var_e_r, corrGradI, corrGradJ);
+  stationary_covariance->fillInParamCorr(errorCorrXY, var_e_r, corrGradI, corrGradJ);
 
   delete [] pri_cov_r;
   delete [] post_cov_r;
@@ -1634,6 +1648,15 @@ TravelTimeInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
   multiplyComplex(pri_cov_c, nominator_sum, cnzp, mult_c);
   subtractComplex(pri_cov_c, post_cov_c, cnzp, subtract_c);
   divideComplex(mult_c, subtract_c, cnzp, var_e_c);
+
+  if(var_e_c[0].re<0)
+     LogKit::LogFormatted(LogKit::Low,"\n Warning: TraveltimeInversion has no or little  effect :-( \n");
+
+  for(int i=1; i<cnzp;i++){
+    var_e_c[i].im  = 0;
+    if(var_e_c[i].re < 0)
+      var_e_c[i].re = var_e_c[i-1].re; //Keep positive even though it is not well defined
+  }
 
   delete [] conj_pri_cov;
   delete [] diff_prior;

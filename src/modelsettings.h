@@ -31,6 +31,7 @@ public:
 
   Vario                          * getAngularCorr(int i)                const { return angularCorr_[i]                            ;}
   Vario                          * getLateralCorr(void)                 const { return lateralCorr_                               ;}
+  Vario                          * getLateralTravelTimeErrorCorr(void)  const { return lateralTraveltimeErrorCorr_                ;}
   Vario                          * getBackgroundVario(void)             const { return backgroundVario_                           ;}
   Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_                         ;}
   SegyGeometry                   * getAreaParameters(void)              const { return geometry_                                  ;}
@@ -250,6 +251,7 @@ public:
   void rotateVariograms(float angle);
   void setLastAngularCorr(Vario * vario);
   void setLateralCorr(Vario * vario);
+  void setLateralTravelTimeErrorCorr(); // NBNB sets a default variogram
   void setBackgroundVario(Vario * vario);
   void setLocalWaveletVario(Vario * vario);
   void copyBackgroundVarioToLocalWaveletVario(void);
@@ -551,6 +553,7 @@ private:
   Vario                           * lateralCorr_;                ///< Variogram for lateral parameter correlation
   Vario                           * backgroundVario_;            ///< Used for lateral background correlation.
   Vario                           * localWaveletVario_;          ///< Used for local wavelet (gain and shift) and local noise.
+  Vario                           * lateralTraveltimeErrorCorr_; // < Used for RMS and traveltime inversion>
 
   SegyGeometry                    * geometry_full_;              ///< area parameters of full seismic data
   SegyGeometry                    * geometry_;                   // area parameters

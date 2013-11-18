@@ -88,9 +88,9 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
 
     Simbox * fullTimeSimbox = modelGeneral->getTimeSimbox();
 
-    x_upscaling_factor_ = 10;   // user input...
-    y_upscaling_factor_ = 10;
-    z_upscaling_factor_ = 5;
+    x_upscaling_factor_ = modelSettings->getNXpad()/5 + 1;   // should be user input...
+    y_upscaling_factor_ = modelSettings->getNYpad()/5 + 1;
+    z_upscaling_factor_ = modelSettings->getNZpad()/5 + 1;
 
     SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
 
@@ -204,7 +204,7 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * 
   upscaling_kernel_->setType(FFTGrid::PARAMETER);
   upscaling_kernel_->fillInConstant(0.0);
 
-  upscaling_kernel_->setAccessMode(FFTGrid::WRITE);
+  upscaling_kernel_->setAccessMode(FFTGrid::RANDOMACCESS);
 
   for(int k = 0; k < nz_upscaled_; k++)
     for(int j = 0; j < ny_upscaled_; j++)

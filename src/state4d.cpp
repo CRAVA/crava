@@ -615,10 +615,10 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
          // getting Prior for Parameter
           muCurrentPrior=muFullPrior[parameterNumber];
-          sigmaCurrentPrior = sigmaFullPrior[parameterNumber][parameterNumber].re;
+          sigmaCurrentPrior = static_cast<double>(sigmaFullPrior[parameterNumber][parameterNumber].re);
          // getting posterior for Parameter
          muCurrentPosterior = Epost->getNextComplex();
-         sigmaCurrentPosterior=CovPost->getNextComplex().re;
+         sigmaCurrentPosterior=static_cast<double>(CovPost->getNextComplex().re);
 
          // getting correlation between Parameter and others
          for(int l=0;l<6;l++){
@@ -630,23 +630,23 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
            double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
 
            fftw_complex d;
-           d.re =  muCurrentPrior.re + (sigmaD/sigmaCurrentPrior)*(muCurrentPosterior.re -  muCurrentPrior.re);
-           d.im =  muCurrentPrior.im + (sigmaD/sigmaCurrentPrior)*(muCurrentPosterior.im -  muCurrentPrior.im);
+           d.re =  muCurrentPrior.re + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.re -  muCurrentPrior.re)));
+           d.im =  muCurrentPrior.im + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.im -  muCurrentPrior.im)));
 
            for(int l=0;l<6;l++)
            {
-              muFullPosterior[l].re =  muFullPrior[l].re + sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re)/sigmaD;
-              muFullPosterior[l].re+=                    - sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im)/sigmaD;
+              muFullPosterior[l].re =  muFullPrior[l].re + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re))/sigmaD);
+              muFullPosterior[l].re+=                    - static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im))/sigmaD);
 
-              muFullPosterior[l].im = muFullPrior[l].im + sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im)/sigmaD;
-              muFullPosterior[l].im +=                    sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re)/sigmaD;
+              muFullPosterior[l].im = muFullPrior[l].im + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im))/sigmaD);
+              muFullPosterior[l].im +=                    static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re))/sigmaD);
            }
 
            for(int l=0;l<6;l++)
              for(int m=0;m<6;m++)
              {
-                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - ( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im)/sigmaD;
-                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - (-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re)/sigmaD;
+                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - static_cast<float>(static_cast<double>(( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im))/sigmaD);
+                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - static_cast<float>(static_cast<double>((-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re))/sigmaD);
              }
          }else
          {
