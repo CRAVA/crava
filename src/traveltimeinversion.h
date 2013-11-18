@@ -148,7 +148,7 @@ private:
 
   NRLib::Grid2D<double>         generateSigmaModel(const std::vector<double> & cov_grid) const;
 
-  std::vector<double>           getCovLogVp(const FFTGrid * cov_log_vp) const;
+  std::vector<double>           getCovLogVp(FFTGrid * cov_log_vp) const;
 
   void                          transformVpToVpSquare(const std::vector<double>   & mu_vp,
                                                       const NRLib::Grid2D<double> & Sigma_vp,
@@ -290,10 +290,20 @@ private:
                                                          FFTGrid                 * stationary_observation_covariance,
                                                          FFTGrid                *& post_cov_vp) const;
 
+  void                          calculateDistanceGrid(const Simbox              * simbox,
+                                                      const NRLib::Grid<double> & divided_grid,
+                                                      NRLib::Grid<double>       & distance) const;
+
   void                          calculateDistanceGrid(const Simbox        * simbox,
                                                       FFTGrid             * mu_vp,
                                                       FFTGrid             * post_mu_vp,
                                                       NRLib::Grid<double> & distance) const;
+
+  NRLib::Grid<double>           calculateEVpGrid(FFTGrid * mu_log_vp,
+                                                 FFTGrid * cov_log_vp) const;
+
+  NRLib::Grid<double>           calculateDividedGrid(const NRLib::Grid<double> & pri_vp,
+                                                     const NRLib::Grid<double> & post_vp) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,
