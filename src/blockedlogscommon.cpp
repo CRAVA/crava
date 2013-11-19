@@ -3275,3 +3275,35 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
   delete [] synt_seis_r;
 
 }
+
+
+void BlockedLogsCommon::FindMeanVsVp(float                          mean_vs_vp,
+                                     int                            n_vs_vp,
+                                     const NRLib::Surface<double> & top,
+                                     const NRLib::Surface<double> & bot)
+{
+  std::vector<bool> active_cell(n_blocks_, true);
+
+  for(size_t i = 0; i < n_blocks_; i++) {
+    double z_top  = top.GetZ(x_pos_blocked_[i], y_pos_blocked_[i]);
+    double z_base = bot.GetZ(x_pos_blocked_[i], y_pos_blocked_[i]);
+
+    if((z_pos_blocked_[i] < z_top) || (z_pos_blocked_[i] > z_base))
+      active_cell[i] = false;
+
+  }
+
+  mean_vs_vp = 0.0;
+  n_vs_vp    = 0;
+
+  const std::vector<double> & vp_background_resolution = GetVpBackgroundResolution();
+
+  for(size_t i = 0; i < n_blocks_; i++) {
+    if(GetVpBackgroundResolution()[i] != RMISSING && GetVsBackgroundResolution()[i] != RMISSING && active_cell[i] == true) {
+      mean_vs_vp += GetVsBackgroundResolution()[i] / GetVpBackgroundResolution()[i];
+      n_vs_vp    += 1;
+    }
+  }
+
+  mean_vs_vp /= n_vs_vp;
+}

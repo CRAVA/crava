@@ -53,6 +53,9 @@ public:
   const std::vector<std::vector<NRLib::Grid<double> > > & GetPriorFaciesProbCubes()              const { return prior_facies_prob_cubes_    ;}
   const std::vector<NRLib::Grid<double> >               & GetPriorFaciesProbCubesInterval(int i) const { return prior_facies_prob_cubes_[i] ;}
 
+  const std::vector<double>                             & GetBackgroundVsVpRatios()    const     { return background_vs_vp_ratios_    ;}
+  const double                                          & GetBackgroundVsVpRatioInterval(int i)  { return background_vs_vp_ratios_[i] ;}
+
   //SET FUNCTIONS
   void AddParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)             { parameters_[i]    = parameters  ;}
   void AddParameterForInterval(int i, int j, NRLib::Grid<double> parameter)                      { parameters_[i][j] = parameter   ;}
@@ -61,8 +64,10 @@ public:
   void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]   = prior_var_0 ;}
   void AddTrendCubes(std::vector<CravaTrend> trend_cubes)                                        { trend_cubes_      = trend_cubes ;}
 
-
   void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
+
+  void SetBackgroundVsVpRatios(std::vector<double> vs_vp_ratios)                                 { background_vs_vp_ratios_             = vs_vp_ratios ;}
+  void SetBackgroundVsVpRatio(int i_interval, double vs_vp_ratio)                                { background_vs_vp_ratios_[i_interval] = vs_vp_ratio  ;}
 
 
 private:
@@ -152,15 +157,17 @@ private:
   // CLASS VARIABLES
   size_t                                               n_intervals_;
   bool                                                 multiple_interval_setting_;
-  std::vector<std::string> interval_names_;
-  std::vector<Surface>     eroded_surfaces_; ///H Eroded surfaces stored in simboxes?
-  std::vector<int>         erosion_priorities_;
-  std::vector<std::string> surface_files_;
+  std::vector<std::string>                             interval_names_;
+  std::vector<Surface>                                 eroded_surfaces_; ///H Eroded surfaces stored in simboxes?
+  std::vector<int>                                     erosion_priorities_;
+  std::vector<std::string>                             surface_files_;
 
   //std::vector<Simbox>                                  simboxes_;                 // original inversion interval without correlation directions
   std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector
   std::vector<std::vector<NRLib::Grid<double> > >      parameters_;               // must have same size as the simbox vector
   //H Change parameters_ to map?
+
+  std::vector<double>                                  background_vs_vp_ratios_; //vs_vp_ratios from generation of backgroundmodel for multiinteval
 
   std::vector<std::vector<NRLib::Grid<double> > >      prior_facies_prob_cubes_;   //Vector over facies, then intervals.
 

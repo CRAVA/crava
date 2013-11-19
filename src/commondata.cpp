@@ -1224,8 +1224,8 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   int n_timelapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
   for(int i = 0; i < n_timelapses; i++) {
 
-    std::vector<float> angles = model_settings->getAngle(i);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
+    //std::vector<float> angles = model_settings->getAngle(i);
+    //std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
     int n_angles = model_settings->getNumberOfAngles(i);
 
@@ -1501,7 +1501,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     std::vector<float> sn_ratio = model_settings->getSNRatio(i);
     std::vector<float> angles = model_settings->getAngle(i);
-    bool use_local_noise = model_settings->getUseLocalNoise(i);
+    use_local_noise_ = model_settings->getUseLocalNoise(i);
 
     //Fra ModelAvoDynamic::processSeismic:
     std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
@@ -1652,7 +1652,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   sn_ratio[j],
                                   estimate_wavelets[j],
                                   use_ricker_wavelet[j],
-                                  use_local_noise);
+                                  use_local_noise_);
       else
         error += Process3DWavelet(model_settings,
                                   input_files,
@@ -1679,9 +1679,9 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     } //angle
 
     if(local_noise_set == true) {
-      for(int i=0;i<n_angles;i++)
-        if(local_noise_scale[i]==NULL)
-          local_noise_scale[i] = new Grid2D(estimation_simbox_.getnx(),
+      for(int k=0; k < n_angles; k++)
+        if(local_noise_scale[k]==NULL)
+          local_noise_scale[k] = new Grid2D(estimation_simbox_.getnx(),
                                             estimation_simbox_.getny(),
                                             1.0);
     }
@@ -3590,10 +3590,10 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
     //for(int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
     //std::string interval_name = model_settings->getIntervalName(i_interval);
 
-    if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
-    {
-      if (n_facies > 0)
-      {
+    if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
+      if (n_facies > 0) {
+        prior_facies_.resize(multiple_interval_grid_->GetNIntervals());
+
         for(int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
           std::string interval_name = model_settings->getIntervalName(i_interval);
 
@@ -3830,7 +3830,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings  * model_settings,
       for(int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
         std::string interval_name = model_settings->getIntervalName(i_interval);
 
-        prior_facies_.resize(n_facies);
+        prior_facies_.resize(multiple_interval_grid_->GetNIntervals());
         typedef std::map<std::string,float> map_type;
         map_type my_map;
 
@@ -5246,24 +5246,30 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
 
         if(model_settings->getIntervalNames().size() == 0) {
-          std::vector<NRLib::Grid<double> > back_model;
-          back_model.resize(3);
+          std::vector<NRLib::Grid<double> > parameters(3);
 
           if(model_settings->getMultizoneBackground() == true)
-            background = new Background(back_model, wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Kun multizone på bakgrunnsmodell.
-          else //Hverken multizone eller multiinterval
-            background = new Background(back_model, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings); //Hverken multizone eller multiinterval.
+            Background(parameters, wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Not multiple intervals but multizone background model
+          else //Neither multizone or multiinterval
+            Background(parameters, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings);
 
-          multiple_interval_grid_->AddParametersForInterval(0, back_model);
+          double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
+
+          multiple_interval_grid_->AddParametersForInterval(0, parameters);
+          multiple_interval_grid_->SetBackgroundVsVpRatio(0, vs_vp_ratio);
         }
-        else { //Ikke multizone på bakgrunnsmodell, men multiinterval
-          std::vector<std::vector<NRLib::Grid<double> > > background_parameters; //Koble mot multiple_interval_grid_
+        else { //Multiple intervals, not multizone background
+          std::vector<std::vector<NRLib::Grid<double> > > parameters;
+          std::vector<double> vs_vp_ratios;
 
-          Background(background_parameters, wells_, multiple_interval_grid_, model_settings, err_text);
+          Background(parameters, wells_, multiple_interval_grid_, model_settings, err_text);
 
-          for(size_t i = 0; i < model_settings->getIntervalNames().size(); i++)
-            multiple_interval_grid_->AddParametersForInterval(i, background_parameters[i]);
+          for(size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
+            multiple_interval_grid_->AddParametersForInterval(i, parameters[i]);
+            vs_vp_ratios[i] = FindMeanVsVp(parameters[i][0], parameters[i][1]);
+          }
 
+          multiple_interval_grid_->SetBackgroundVsVpRatios(vs_vp_ratios);
         }
 
         if(bl_bg != NULL)
@@ -5274,7 +5280,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       for(int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
 
-        const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
+        //const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
 
         std::vector<NRLib::Grid<double> > parameters(3);
 
@@ -5288,18 +5294,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
         typedef std::map<std::string, DistributionsRock *> rf_map_type;
         rf_map_type rf_map = GetRockDistributionTime0();
-
-        //typedef std::map<std::string, DistributionsRock *> rfMapType;
-        //rfMapType rfMap = rock_distributions_[i];
-
-        //typedef std::map<std::string, std::vector<DistributionsRock *> > rf_map_type;
-        //rf_map_type rf_map = rock_distributions_[i];
-
-        //for(int i = 0; i < n_facies; i++) {
-        //  rf_map_type::iterator iter = rf_map.find(facies_names[i]);
-        //  if(iter != rf_map.end())
-        //    rock_distribution[i] = iter->second;
-        //}
 
         for(int j = 0; j < n_facies; j++) {
           rf_map_type::iterator iter = rf_map.find(facies_names[j]);
@@ -5315,9 +5309,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                         parameters[2],
                                         estimation_simbox_,
                                         multiple_interval_grid_->GetTrendCube(i_interval));
-                                        //i_interval);
+        double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
         multiple_interval_grid_->AddParametersForInterval(i_interval, parameters);
+        multiple_interval_grid_->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
 
       }
     }
@@ -5326,9 +5321,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
     int n_intervals = multiple_interval_grid_->GetNIntervals();
 
-    std::vector<std::vector<NRLib::Grid<double> > > parameters; //For intervals.
+    std::vector<std::vector<NRLib::Grid<double> > > parameters; //For intervals. vector(parameters)vector(intervals). Parameters on the outside due to reading grid from file.
     parameters.resize(3);
-
 
     std::vector<std::string> par_name;
     if (model_settings->getUseAIBackground())
@@ -5343,7 +5337,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
       par_name.push_back("Vs "+model_settings->getBackgroundType());
     par_name.push_back("Rho "+model_settings->getBackgroundType());
 
-    for(int i=0 ; i<3 ; i++)
+    for(int i=0; i < 3; i++)
     {
       float const_back_value = model_settings->getConstBackValue(i);
       const std::string & back_file = input_files->getBackFile(i);
@@ -5436,7 +5430,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
       {
         err_text += "Trying to set background model to 0 for parameter "+par_name[i]+"\n";
       }
-    }
+    } //for i = 0,1,2
 
     if (err_text == "") {
 
@@ -5445,24 +5439,23 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid_->GetIntervalName(i) + "\n");
         LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
         LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
-        for(int j=0 ; j<3 ; j++) {
 
-          double avg;
-          double min;
-          double max;
+        for(int j=0; j < 3; j++) {
+
+          double avg = 0.0;
+          double min = 0.0;
+          double max = 0.0;
           parameters[i][j].GetAvgMinMax(avg, min, max);
           //GetAvgMinMaxGrid(parameters[i][j], avg, min, max);
 
           LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
-                                par_name[i].c_str(),
-                                avg,
-                                min,
-                                max);
-                                //back_model[i]->getAvgReal(),
-                                //back_model[i]->getMinReal(),
-                                //back_model[i]->getMaxReal());
+                               par_name[i].c_str(),
+                               avg, //back_model[i]->getAvgReal(),
+                               min, //back_model[i]->getMinReal(),
+                               max);//back_model[i]->getMaxReal());
+
         }
-        if (model_settings->getUseAIBackground())   { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
+        if (model_settings->getUseAIBackground()) { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
           LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
           SubtractGrid(parameters[i][0], parameters[i][2]);
           //back_model[0]->subtract(back_model[2]);
@@ -5484,14 +5477,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
       }
     }
 
+    std::vector<double> vs_vp_ratios;
     for(int i = 0; i < n_intervals; i++) {
-      //std::vector<NRLib::Grid<double> > parameters_tmp(3);
-      for(int j = 0; j < 3; j++) {
-        multiple_interval_grid_->AddParameterForInterval(i, j, parameters[j][i]);
-        //parameters_tmp[j] = parameters[j][i];
-      }
-      //multiple_interval_grid_->AddParametersForInterval(i, parameters_tmp);
+     for(int j = 0; j < 3; j++) {
+       multiple_interval_grid_->AddParameterForInterval(i, j, parameters[j][i]);
+     }
+     vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
     }
+    multiple_interval_grid_->SetBackgroundVsVpRatios(vs_vp_ratios);
+
   }
 
     //if (failed == false) { //H Writing of background models?
@@ -5516,6 +5510,28 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   }
 
   return true;
+}
+
+double CommonData::FindMeanVsVp(NRLib::Grid<double> & vp,
+                                NRLib::Grid<double> & vs) {
+
+  //Copied from background
+  double mean = 0;
+  int ni  = vp.GetNI();
+  int nj  = vp.GetNJ();
+  int nk  = vp.GetNK();
+  for(int k=0; k < nk; k++) {
+    for(int j=0; j < nj; j++) {
+      for(int i=0; i < ni; i++) {
+        double v1 = vp(i,j,k);
+        double v2 = vs(i,j,k);
+        mean += exp(v2-v1);
+      }
+    }
+  }
+  mean = mean/double(ni*nj*nk);
+
+  return(mean);
 }
 
 void CommonData::SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid,

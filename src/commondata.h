@@ -67,6 +67,23 @@ public:
   GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
   bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
 
+  bool                                    GetUseLocalNoise()                            { return use_local_noise_                            ;}
+  std::map<int, std::vector<Grid2D *> > & GetLocalNoiseScale()                          { return local_noise_scale_                          ;}
+  std::vector<Grid2D *>                 & GetLocalNoiseScaleTimeLapse(int time_lapse)   { return local_noise_scale_.find(time_lapse)->second ;}
+  std::vector<SeismicStorage>           & GetSeismicDataTimeLapse(int time_lapse)       { return seismic_data_.find(time_lapse)->second      ;}
+  std::map<int, std::vector<float> >    & GetSNRatio()                                  { return sn_ratio_                                   ;}
+  std::vector<float>                    & GetSNRatioTimeLapse(int time_lapse)           { return sn_ratio_.find(time_lapse)->second          ;}
+
+  bool                                    GetRefMatFromFileGlobalVpVs()                 { return refmat_from_file_global_vpvs_               ;}
+  float **                                GetReflectionMatrixTimeLapse(int time_lapse)  { return reflection_matrix_.find(time_lapse)->second ;}
+
+  void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
+                                     double                 vsvp,
+                                     const ModelSettings  * model_settings,
+                                     int                    number_of_angles,
+                                     int                    this_time_lapse);
+
+
 private:
 
   void LoadWellMoveInterval(const InputFiles             * input_files,
@@ -245,11 +262,11 @@ private:
                        const std::string                  & read_reason,
                        std::string                        & err_text);
 
-  void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
-                                     double                 vsvp,
-                                     const ModelSettings  * model_settings,
-                                     int                    number_of_angles,
-                                     int                    this_time_lapse);
+  //void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
+  //                                   double                 vsvp,
+  //                                   const ModelSettings  * model_settings,
+  //                                   int                    number_of_angles,
+  //                                   int                    this_time_lapse);
 
   int Process1DWavelet(const ModelSettings                      * modelSettings,
                        const InputFiles                         * inputFiles,
@@ -492,6 +509,9 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
+  double FindMeanVsVp(NRLib::Grid<double> & vp,
+                      NRLib::Grid<double> & vs);
+
   //void GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
   //                      double                    & avg,
   //                      double                    & min,
@@ -699,6 +719,7 @@ private:
   std::map<int, std::vector<Grid2D *> >         local_scale_;
   std::map<int, std::vector<float> >            global_noise_estimate_;
   std::map<int, std::vector<float> >            sn_ratio_;
+  bool                                          use_local_noise_;
 
   std::vector<std::vector<int> >                facies_nr_wells_;               ///< Facies Numbers per well.
   std::vector<std::vector<std::string> >        facies_names_wells_;            ///< Facies Names per well
@@ -708,7 +729,7 @@ private:
   std::vector<int>                              facies_labels_;
 
   // Prior correlation
-  std::vector<Surface *>                          prior_corr_XY_;
+  std::vector<Surface *>                        prior_corr_XY_;
   //std::vector<NRLib::Matrix>                      prior_var_0_;
   //std::vector<std::vector<NRLib::Grid<double> > > prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho

@@ -127,8 +127,8 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0],  //Vp_vs from background not used in CommonData
-  //             back_model_[1]);
+  //vsvp_ = findMeanVsVp(bg_vp, bg_vs); //Moved to Commondata
+
 }
 
 //-------------------------------------------------------------------------------
@@ -196,12 +196,12 @@ Background::Background(std::vector<NRLib::Grid<double> > & parameters,
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0],
-  //             back_model_[1]);
+  //vsvp_ = findMeanVsVp(bg_vp, bg_vs); //Moved to Commondata
 }
 
 //-------------------------------------------------------------------------------
 Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
+                       //std::vector<double>                             & vs_vp_ratios,
                        const std::vector<NRLib::Well>                  & wells,
                        MultiIntervalGrid                               * multiple_interval_grid,
                        const ModelSettings                             * model_settings,
@@ -229,8 +229,10 @@ Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & paramet
 
   //padAndSetBackgroundModelInterval(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0], //Vp_vs from background not used in CommonData
-               //back_model_[1]);
+  //for(int i = 0; i < n_intervals; i++) { //Moved to Commondata
+  //  vs_vp_ratios[i] = findMeanVsVp(bg_vp[i], bg_vs[i]);
+  //}
+
 }
 
 //-------------------------------------------------------------------------------
@@ -515,8 +517,8 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
   bool write1D          = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
   bool write3D          = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
-  writeTrendsToFile(trend_vp, simbox, write1D, write3D, has_velocity_trend, name_vp, model_settings->getFileGrid());
-  writeTrendsToFile(trend_vs, simbox, write1D, write3D, has_velocity_trend, name_vs, model_settings->getFileGrid());
+  writeTrendsToFile(trend_vp,  simbox, write1D, write3D, has_velocity_trend, name_vp,  model_settings->getFileGrid());
+  writeTrendsToFile(trend_vs,  simbox, write1D, write3D, has_velocity_trend, name_vs,  model_settings->getFileGrid());
   writeTrendsToFile(trend_rho, simbox, write1D, write3D, has_velocity_trend, name_rho, model_settings->getFileGrid());
 
   if (velocity.GetN() != 0) { //!= NULL) {
@@ -589,9 +591,9 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
                                               model_settings->getBackgroundVario(),
                                               model_settings->getDebugFlag());
 
-  makeKrigedBackground(kriging_data_vp, bg_vp, trend_vp, simbox, covGrid2D, "Vp");
-  makeKrigedBackground(kriging_data_vs , bg_vs , trend_vs , simbox, covGrid2D, "Vs");
-  makeKrigedBackground(kriging_data_rho  , bg_rho  , trend_rho  , simbox, covGrid2D, "Rho");
+  makeKrigedBackground(kriging_data_vp,  bg_vp,  trend_vp,  simbox, covGrid2D, "Vp");
+  makeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs");
+  makeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho");
 
   delete &covGrid2D;
 
@@ -3863,6 +3865,31 @@ Background::findMeanVsVp(FFTGrid * Vp,
   vsvp_ = mean;
 }
 
+//-------------------------------------------------------------------------------
+//double
+//Background::findMeanVsVp(NRLib::Grid<double> & vp,
+//                         NRLib::Grid<double> & vs)
+//{
+//
+//  double mean = 0;
+//  int ni  = vp.GetNI();
+//  int nj  = vp.GetNJ();
+//  int nk  = vp.GetNK();
+//  for(int k=0; k < nk; k++) {
+//    for(int j=0; j < nj; j++) {
+//      for(int i=0; i < ni; i++) {
+//        double v1 = vp(i,j,k);
+//        double v2 = vs(i,j,k);
+//        mean += exp(v2-v1);
+//      }
+//    }
+//  }
+//  mean = mean/double(ni*nj*nk);
+//
+//  return(mean);
+//
+//}
+
 
 //-------------------------------------------------------------------------------
 void
@@ -3916,8 +3943,8 @@ Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp, //FFTGrid      
   NRLib::Grid<double> res_bg_rho;
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
-  resampleParameter(res_bg_vp, bg_vp, time_simbox, time_bg_simbox);
-  resampleParameter(res_bg_vs, bg_vs, time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_vp,  bg_vp,  time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_vs,  bg_vs,  time_simbox, time_bg_simbox);
   resampleParameter(res_bg_rho, bg_rho, time_simbox, time_bg_simbox);
 
   //if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {

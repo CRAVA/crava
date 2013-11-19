@@ -48,26 +48,6 @@ public:
   //                int                            t,
   //                SeismicParametersHolder      & seismicParameters);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
 
-  ModelAVODynamic(ModelSettings               *& modelSettings,
-                  const InputFiles             * inputFiles,
-                  //std::vector<bool>              failedGeneralDetails,
-                  //std::vector<bool>              failedStaticDetails,
-                  const Simbox                 * timeSimbox,
-                  //const Simbox                 * timeBGSimbox,
-                  //const Surface                * correlationDirection,
-                  RandomGen                    * /*randomGen*/,
-                  GridMapping                  * timeDepthMapping,
-                  //const GridMapping            * timeCutMapping,
-                  const std::vector<Surface *> & waveletEstimInterval,
-                  const std::vector<Surface *> & /*wellMoveInterval*/,
-                  const std::vector<Surface *> & /*faciesEstimInterval*/,
-                  ModelAVOStatic               * modelAVOstatic,
-                  ModelGeneral                 * modelGeneral,
-                  CommonData                   * commonData,
-                  int                            t,
-                  SeismicParametersHolder      & seismicParameters,
-                  int                            i_interval);
-
   //ModelAVODynamic(ModelSettings          *& modelSettings,
   //                const InputFiles        * inputFiles,
   //                ModelAVOStatic          * modelAVOstatic,
@@ -91,6 +71,39 @@ public:
                   //const GridMapping       * timeCutMapping,
                   int                       t,
                   int                       i_interval);
+
+  //ModelAVODynamic(ModelSettings               *& modelSettings,
+  //                const InputFiles             * inputFiles,
+  //                //std::vector<bool>              failedGeneralDetails,
+  //                //std::vector<bool>              failedStaticDetails,
+  //                const Simbox                 * timeSimbox,
+  //                //const Simbox                 * timeBGSimbox,
+  //                //const Surface                * correlationDirection,
+  //                RandomGen                    * /*randomGen*/,
+  //                GridMapping                  * timeDepthMapping,
+  //                //const GridMapping            * timeCutMapping,
+  //                const std::vector<Surface *> & waveletEstimInterval,
+  //                const std::vector<Surface *> & /*wellMoveInterval*/,
+  //                const std::vector<Surface *> & /*faciesEstimInterval*/,
+  //                ModelAVOStatic               * modelAVOstatic,
+  //                ModelGeneral                 * modelGeneral,
+  //                CommonData                   * commonData,
+  //                int                            t,
+  //                SeismicParametersHolder      & seismicParameters,
+  //                int                            i_interval);
+
+  //ModelAVODynamic(ModelSettings          *& modelSettings,
+  //                const InputFiles        * inputFiles,
+  //                ModelAVOStatic          * modelAVOstatic,
+  //                ModelGeneral            * modelGeneral,
+  //                CommonData              * commoData,
+  //                SeismicParametersHolder & seismicParameters,
+  //                const Simbox            * timeSimbox,
+  //                //const Surface           * correlationDirection,
+  //                const GridMapping       * timeDepthMapping,
+  //                //const GridMapping       * timeCutMapping,
+  //                int                       t,
+  //                int                       i_interval);
 
   ~ModelAVODynamic();
 
@@ -191,8 +204,13 @@ private:
                                                 const ModelSettings * modelSettings);
   int              getWaveletFileFormat(const std::string & fileName,
                                         std::string & errText);
-  double           vsvpFromWells(const std::vector<WellData *> & wells,
-                                 int                     nWells);
+  //double           vsvpFromWells(const std::vector<WellData *> & wells,
+  //                               int                     nWells);
+  void             vsvpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                 CommonData                                     * common_data,
+                                 int                                              i_interval,
+                                 double                                         & vsvp,
+                                 int                                            & N);
   void             readAndWriteLocalGridsToFile(const std::string   & fileName,
                                                 const std::string   & type,
                                                 const float           scaleFactor,
@@ -223,6 +241,9 @@ private:
                                                 NRLib::Grid2D<float> & refTimeGradY);
 
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
+
+
+  std::vector<SeismicStorage> seismic_data_;       ///< Seismic data for this vintage. Vector over angles.
 
   int                       numberOfAngles_;
   FFTGrid                ** seisCube_;              ///< Seismic data cubes

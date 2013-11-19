@@ -65,6 +65,7 @@ public:
              std::string                       & err_text);
 
   Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
+             //std::vector<double>                             & vs_vp_ratios,
              const std::vector<NRLib::Well>                  & wells,
              MultiIntervalGrid                               * multiple_interval_grid,
              const ModelSettings                             * model_settings,
@@ -458,6 +459,8 @@ private:
                                    const float * trend);
   void         findMeanVsVp(FFTGrid * Vp,
                             FFTGrid * Vs);
+  //double       findMeanVsVp(NRLib::Grid<double> & vp,
+  //                          NRLib::Grid<double> & vs);
   FFTGrid    * copyFFTGrid(FFTGrid   * origGrid,
                            const bool  expTrans,
                            const bool  fileGrid) const;

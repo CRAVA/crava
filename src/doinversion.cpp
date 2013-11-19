@@ -192,7 +192,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
-  if(failedLoadingModel == false){
+  if(failedLoadingModel == false) {
 
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters); //Change name to: AVOInversion
 

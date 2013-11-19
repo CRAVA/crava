@@ -167,8 +167,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   // 3. SET UP BACKGROUND MODEL ----------------------------------------------------------
 
-  if(model_settings->getIntervalNames().size() > 0)
+  if(model_settings->getIntervalNames().size() > 0) {
     parameters_.resize(model_settings->getIntervalNames().size());
+    background_vs_vp_ratios_.resize(model_settings->getIntervalNames().size());
+  }
 
   std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
   std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
