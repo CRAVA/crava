@@ -91,7 +91,7 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
 
   // computes covariance off all variables
   NRLib::Matrix Cov_all(dim*K,dim*K);
-  NRLib::Matrix Cov_robust1(dim*K,dim*K);
+ // NRLib::Matrix Cov_robust1(dim*K,dim*K);
   NRLib::Matrix Cov_robust(dim*K,dim*K);
   NRLib::Vector E_all(dim*K);
 
@@ -115,12 +115,12 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
 
   NRLib::WriteMatrixToFile("Cov_all.dat",Cov_all);
 
-  Cov_robust1 = makeCovRobust( E_all ,Cov_all, vectorSample, dim, K*dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
-  Cov_robust = makeCovRobust( E_all ,Cov_robust1, vectorSample, 0, dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
+  Cov_robust = makeCovRobust( E_all ,Cov_all, vectorSample, dim, K*dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
+  //Cov_robust = makeCovRobust( E_all ,Cov_robust1, vectorSample, 0, dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
   NRLib::WriteMatrixToFile("Cov_robust.dat",Cov_robust);
 
 
-  std::cout << "Warning: Adjustment under construction in TimeEvolution::SetUpEvolutionMatrices " << std::endl;
+  //std::cout << "Warning: Adjustment under construction in TimeEvolution::SetUpEvolutionMatrices " << std::endl;
 
   // Data structures for evolution matrix and correction term
   NRLib::Matrix A_k(2*dim, 2*dim);
@@ -132,16 +132,6 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
   NRLib::Matrix Cov_mk_mk(2*dim,2*dim);
   NRLib::Matrix Cov_mk_mkm1(2*dim,2*dim);
   NRLib::Matrix Cov_mkm1_mkm1(2*dim,2*dim);
-
-  initial_cov_.resize(dim,dim);
-  initial_mean_.resize(dim);
-
-  for (int d1 = 0; d1<dim; d1++)
-  {
-    initial_mean_(d1)=E_all(d1);
-    for(int d2=0;d2<dim;d2++)
-      initial_cov_(d1,d2) = Cov_robust(d1,d2);
-  }
 
   // For all time steps, find A_k, delta_k, delta_mu_k
   for (int k = 1; k < K; ++k)
@@ -187,7 +177,10 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
         }
       }
     }
-
+    if(k==1){
+      initial_cov_  = Cov_mkm1_mkm1;
+      initial_mean_ = E_mkm1;
+    }
     NRLib::Matrix SigmaInv;
 
     NRLib::WriteMatrixToFile("Cov_mk_mk.dat",Cov_mk_mk);

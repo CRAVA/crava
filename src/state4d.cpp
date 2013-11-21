@@ -3,6 +3,7 @@
 #include "src/timeevolution.h"
 #include "src/simbox.h"
 #include "lib/lib_matr.h"
+#include "nrlib/iotools/logkit.hpp"
 #include "src/correlatedrocksamples.h"
 #include "rplib/distributionsrock.h"
 #include "src/rockphysicsinversion4d.h"
@@ -372,9 +373,12 @@ void State4D::split(SeismicParametersHolder & current_state )
          sigmaCurrentPosterior[1][2]=sigma[4]->getNextComplex();
          sigmaCurrentPosterior[2][2]=sigma[5]->getNextComplex();
          // compleating matrixes
-         sigmaCurrentPosterior[1][0]=sigmaCurrentPosterior[0][1];
-         sigmaCurrentPosterior[2][0]=sigmaCurrentPosterior[0][2];
-         sigmaCurrentPosterior[2][1]=sigmaCurrentPosterior[1][2];
+         sigmaCurrentPosterior[1][0].re =  sigmaCurrentPosterior[0][1].re;
+         sigmaCurrentPosterior[1][0].im = -sigmaCurrentPosterior[0][1].im;
+         sigmaCurrentPosterior[2][0].re =  sigmaCurrentPosterior[0][2].re;
+         sigmaCurrentPosterior[2][0].im = -sigmaCurrentPosterior[0][2].im;
+         sigmaCurrentPosterior[2][1].re =  sigmaCurrentPosterior[1][2].re;
+         sigmaCurrentPosterior[2][1].im = -sigmaCurrentPosterior[1][2].im;
 
          for(int l=0;l<6;l++)
            for(int m=l+1;m<6;m++)
@@ -403,6 +407,7 @@ void State4D::split(SeismicParametersHolder & current_state )
         // solving the matrixequations see NR-Note: SAND/04/2012 page 6.
 
         // computing: sandwich= inv(sigmaCurrentPrior)*sigmaCurrentVsFullPrior=inv(sigmaCurrentPrior)*adjoint(sigmaFullVsCurrentPrior);
+
          lib_matrCopyCpx(sigmaCurrentPrior, 3, 3, sigmaCurrentPriorChol);
          lib_matrAdjoint(sigmaFullVsCurrentPrior, 6, 3,sandwich); // here sandwich = adjoint(sigmaFullVsCurrentPrior);
 
@@ -809,9 +814,9 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
    timeIncSpatialCorr.createGrid();
    // NBNB this isa quick fix
    if(time_step==0)
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,50.0,0.0f,0.0f); // longer vertical range in first go
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // longer vertical range in first go
    else
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,5.0,0.0f,0.0f); //
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); //
    //NBNB OK  this correlation should come from interface and be more like:
    /* timeIncSpatialCorr.fillInParamCorr(timeEvolution.getPriorCorrXY(time_step),
                                     timeEvolution.getPriorcircCorrT(timeStep),
@@ -864,12 +869,13 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
             counter++;
 
             //Enforcing symmetry of overall matrix.
+            // (Hermitian symmetry Hence  - for imaginary part)
             if (d1 != d2) {
               sigma_real(d2, d1) = sigma_real(d1, d2);
-              sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+              sigma_imag(d2 ,d1) = -sigma_imag(d1, d2);
 
               sigma_real(d2+3, d1+3) = sigma_real(d1+3, d2+3);
-              sigma_imag(d2+3 ,d1+3) = sigma_imag(d1+3, d2+3);
+              sigma_imag(d2+3 ,d1+3) = -sigma_imag(d1+3, d2+3);
             }
           }
         }
@@ -882,9 +888,9 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
             sigma_imag(d1, d2) = get_value.im;
             counter++;
 
-            //Enforcing symmetry of overall matrix.
+            //Enforcing symmetry of overall matrix. (Hermitian symmetry Hence  - for imaginary part)
             sigma_real(d2, d1) = sigma_real(d1, d2);
-            sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+            sigma_imag(d2 ,d1) = -sigma_imag(d1, d2);
           }
         }
         // Evolve values.
@@ -1064,6 +1070,7 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   NRLib::Vector fullPriorMean    = timeEvolution.computePriorMeanStaticAndDynamicLastTimeStep();
   NRLib::Matrix fullPriorCov     = timeEvolution.computePriorCovStaticAndDynamicLastTimeStep();
   NRLib::Matrix fullPosteriorCov = GetFullCov();
+
 
   if(debug)
   {
