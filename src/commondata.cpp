@@ -154,6 +154,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
   if(multiple_interval_grid_->GetNIntervals() == 1)
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
+  //Punkt o: diverse:
+  ReadAngularCorrelations(model_settings, err_text);
+
 }
 
 CommonData::~CommonData() {
@@ -496,6 +499,15 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           {
             err_text += "Error when reading storm-file " + filename +": " + NRLib::ToString(e.what()) + "\n";
           }
+          bool cover_ok = false;
+          cover_ok = CheckThatDataCoverGrid(stormgrid, //H Correct? Just checks that stormgrid.z > simbox.z
+                                            &estimation_simbox_,
+                                            model_settings->getGuardZone(),
+                                            err_text);
+
+          if(cover_ok == false)
+            err_text += "Data from storm file " + filename + " is not read.\n";
+
 
           if(err_text == "") {
             SeismicStorage seismicdata_tmp;
@@ -576,6 +588,58 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
     err_text += "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n";
     err_text += "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n";
     err_text += "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(zn,1)+"\n";
+
+    return false;
+  }
+
+  return true;
+}
+
+bool
+CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
+                                   const Simbox  & simbox,
+                                   float           guard_zone,
+                                   std::string   & err_text) const{
+  // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
+  //float dz = segy->GetDz();
+  //float z0 = offset + 0.5f*dz;
+  //float zn = z0 + (segy->GetNz() - 1)*dz;
+
+  float storm_top = stormgrid->GetTopZMin(stormgrid->GetNI(), stormgrid->GetNJ());
+  float storm_bot = stormgrid->GetBotZMax(stormgrid->GetNI(), stormgrid->GetNJ());
+
+  // Top and base of interval of interest
+  float top_grid = static_cast<float>(simbox.getTopZMin());
+  float bot_grid = static_cast<float>(simbox.getBotZMax());
+
+  // Find guard zone
+  float top_guard = top_grid - guard_zone;
+  float bot_guard = bot_grid + guard_zone;
+
+  if(top_guard < storm_top) {
+    err_text += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
+    err_text += "must start at "+NRLib::ToString(top_guard)+"ms (in CRAVA grid) to allow for a ";
+    err_text += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    err_text += "  Seismic data start (CRAVA grid) : "+NRLib::ToString(storm_top,1)+"\n";
+    err_text += "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n";
+    err_text += "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n";
+    err_text += "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n";
+    err_text += "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n";
+    err_text += "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(storm_bot,1)+"\n";
+
+    return false;
+  }
+
+  if(bot_guard > storm_bot) {
+    err_text += "\nThere is not enough seismic data below the interval of interest. The seismic data\n";
+    err_text += "must end at "+NRLib::ToString(bot_guard)+"ms (in CRAVA grid) to allow for a ";
+    err_text += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    err_text += "  Seismic data start (CRAVA grid) : "+NRLib::ToString(storm_top,1)+"\n";
+    err_text += "  Top of upper guard zone         : "+NRLib::ToString(top_guard,1)+"\n";
+    err_text += "  Top of interval-of-interest     : "+NRLib::ToString(top_grid,1)+"\n\n";
+    err_text += "  Base of interval-of-interest    : "+NRLib::ToString(bot_grid,1)+"\n";
+    err_text += "  Base of lower guard zone        : "+NRLib::ToString(bot_guard,1)+"\n";
+    err_text += "  Seismic data end (CRAVA grid)   : "+NRLib::ToString(storm_bot,1)+"\n";
 
     return false;
   }
@@ -1495,7 +1559,8 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
   for(int i = 0; i < n_timeLapses; i++) {
 
-    Wavelet ** wavelet; ///< Wavelet for angle
+    //Wavelet ** wavelet; ///< Wavelet for angle
+    //std::vector<Wavelet *> wavelet;
 
     int n_angles = model_settings->getNumberOfAngles(i);
 
@@ -1519,7 +1584,9 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    wavelet = new Wavelet * [n_angles];
+    //wavelet = new Wavelet * [n_angles];
+    std::vector<Wavelet *> wavelet(n_angles);
+
     std::vector<Grid2D *> local_noise_scale; ///< Scale factors for local noise
     std::vector<Grid2D *> local_shift;
     std::vector<Grid2D *> local_scale;
@@ -1761,7 +1828,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              const InputFiles                         * input_files,
                              const SeismicStorage                     * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
-                             //std::vector<BlockedLogsCommon *> blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
@@ -1781,23 +1847,23 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
   //Grid2D * shiftGrid(NULL);
   //Grid2D * gainGrid(NULL);
   if(model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
-      Surface help(input_files->getScaleFile(i_timelapse,j_angle));
+      Surface help(input_files->getScaleFile(i_timelapse, j_angle));
       //gainGrid = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
       local_scale = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
       ResampleSurfaceToGrid2D(&help, local_scale);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
-    Surface helpShift(input_files->getShiftFile(i_timelapse,j_angle));
+    Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
     local_shift = new Grid2D(estimation_simbox_.getnx(),estimation_simbox_.getny(), 0.0);
     ResampleSurfaceToGrid2D(&helpShift, local_shift);
   }
   if (use_local_noise && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
-    Surface helpNoise(input_files->getLocalNoiseFile(i_timelapse,j_angle));
+    Surface helpNoise(input_files->getLocalNoiseFile(i_timelapse, j_angle));
     local_noise_scale = new Grid2D(estimation_simbox_.getnx(), estimation_simbox_.getny(), 0.0);
     ResampleSurfaceToGrid2D(&helpNoise, local_noise_scale);
   }
 
-  if (estimate_wavelet)
+  if (estimate_wavelet) {
     wavelet = new Wavelet1D(&estimation_simbox_,
                             seismic_data,
                             mapped_blocked_logs,
@@ -1807,7 +1873,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             j_angle,
                             error,
                             err_text);
-
+  }
   else { //Not estimation modus
     if(use_ricker_wavelet)
         wavelet = new Wavelet1D(model_settings,
@@ -1835,13 +1901,13 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       if(seismic_data->GetFileName() != "") {
       //if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
         float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
-        const float limHigh  = 3.0f;
-        const float limLow   = 0.33f;
+        const float lim_high  = 3.0f;
+        const float lim_low   = 0.33f;
 
         if(model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
            wavelet->multiplyRAmpByConstant(prescale);
         else {
-          if(model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+          if(model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
              std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
             if(model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
               err_text += text;
@@ -1877,12 +1943,12 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                                                                    //gainGrid,
                                                                    local_scale,
                                                                    sn_ratio,
-                                                                   model_settings->getWaveletScale(i_timelapse,j_angle),
-                                                                   model_settings->getEstimateSNRatio(i_timelapse,j_angle),
-                                                                   model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle),
-                                                                   model_settings->getEstimateLocalNoise(i_timelapse,j_angle),
-                                                                   model_settings->getEstimateLocalShift(i_timelapse,j_angle),
-                                                                   model_settings->getEstimateLocalScale(i_timelapse,j_angle),
+                                                                   model_settings->getWaveletScale(i_timelapse, j_angle),
+                                                                   model_settings->getEstimateSNRatio(i_timelapse, j_angle),
+                                                                   model_settings->getEstimateGlobalWaveletScale(i_timelapse, j_angle),
+                                                                   model_settings->getEstimateLocalNoise(i_timelapse, j_angle),
+                                                                   model_settings->getEstimateLocalShift(i_timelapse, j_angle),
+                                                                   model_settings->getEstimateLocalScale(i_timelapse, j_angle),
                                                                    estimate_wavelet);
       if(model_settings->getEstimateSNRatio(i_timelapse,j_angle))
         sn_ratio = SNRatio_tmp;
@@ -1955,7 +2021,6 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                              const InputFiles                         * input_files,
                              const SeismicStorage                     * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
-                             //std::vector<BlockedLogsCommon *> blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
@@ -4397,7 +4462,9 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       interval_grids[i_interval].Resize(xpad, ypad, zpad);
 
       StormContGrid * stormgrid_tmp = NULL;
+      FFTGrid * fft_grid_tmp = NULL;
       FillInData(interval_grids[i_interval],
+                 fft_grid_tmp,
                  interval_simboxes[i_interval],
                  stormgrid_tmp,
                  segy,
@@ -4405,10 +4472,12 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
-                 err_text,
+                 //err_text,
                  grid_type);
       if (stormgrid_tmp != NULL)
        delete stormgrid_tmp;
+      if (fft_grid_tmp != NULL)
+        delete fft_grid_tmp;
 
       if (missing_traces_simbox > 0) {
         if(missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
@@ -4449,6 +4518,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 }
 
 void CommonData::FillInData(NRLib::Grid<double> & grid,
+                            FFTGrid             * fft_grid,
                             const Simbox        & simbox,
                             StormContGrid       * storm_grid,
                             const SegY          * segy,
@@ -4456,7 +4526,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
                             int                 & missing_traces_simbox,
                             int                 & missing_traces_padding,
                             int                 & dead_traces_simbox,
-                            std::string         & err_text,
+                            //std::string         & err_text,
                             int                   grid_type,
                             bool                  scale,
                             bool                  is_segy)
@@ -4479,13 +4549,31 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
     scalehor  = 0.001f; //1000.0;
   }
 
-  int ni = grid.GetNI();
-  int nj = grid.GetNJ();
-  int nk = grid.GetNK();
+  bool is_nrlib_grid = true;
+  if(grid.GetN() == 0) //Send in an empty NRLib::Grid if we want fft-grid
+    is_nrlib_grid = false;
 
-  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",ni,nj,nk);
+  int nx   = grid.GetNI();
+  int ny   = grid.GetNJ();
+  int nz   = grid.GetNK();
+  int nxp  = grid.GetNI();
+  int nyp  = grid.GetNJ();
+  int nzp  = grid.GetNK();
+  int rnxp = grid.GetNI(); //2*(nxp/2+1);
 
-  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f); //nyp_*rnxp_
+  if(is_nrlib_grid == false) {
+    nx   = fft_grid->getNx();
+    ny   = fft_grid->getNy();
+    nz   = fft_grid->getNz();
+    nxp  = fft_grid->getNxp();
+    nyp  = fft_grid->getNyp();
+    nzp  = fft_grid->getNzp();
+    rnxp = fft_grid->getRNxp();
+  }
+
+  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:", nxp, nyp, nzp);
+
+  float monitorSize = std::max(1.0f, static_cast<float>(nyp*rnxp)*0.02f);
   float nextMonitor = monitorSize;
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |");
@@ -4521,11 +4609,21 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
   missing_traces_padding = 0; // Part of padding is outside seismic data
   dead_traces_simbox     = 0; // Simbox is inside seismic data but trace is missing
 
-  for (int j = 0 ; j < nj ; j++) {
-    for (int i = 0 ; i < ni ; i++) {
+  for (int j = 0 ; j < nyp ; j++) {
+    for (int i = 0 ; i < rnxp ; i++) {
 
-      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
-      int refj  = j; //getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
+      int refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
+      int refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
+
+      //if(is_nrlib_grid) { //GetFillNumber will return i if i < nx and < nxp
+      //  refi = i;
+      //  refj = j;
+      //}
+      //else {
+      //  refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
+      //  refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
+      //}
+
       int refk  = 0;
 
       double x, y, z0;
@@ -4578,7 +4676,7 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
               z_max = static_cast<float>(grid_z);
           }
 
-          dz_data = (z_max- z_min) / grid.GetNK();
+          dz_data = (z_max- z_min) / storm_grid->GetNK();
           dz_min = dz_data/4.0f;
           z0_data = z_min;
         }
@@ -4627,9 +4725,9 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
 
-          std::vector<float> grid_trace(nk);
+          std::vector<float> grid_trace(nzp);
 
-          std::string err_text_tmp = "";
+          //std::string err_text_tmp = "";
           smooth_length*=scalevert;
           if(grid_type == DATA) {
             SmoothTraceInGuardZone(data_trace,
@@ -4665,12 +4763,14 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
                                 z0_data,     // Time of first data sample
                                 dz_min,
                                 rmt,
-                                grid.GetNK());
+                                nz,
+                                nzp);
+                                //grid.GetNK());
 
           //Interpolate and shift trend before adding to grid_trace.
           //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
           if(grid_type != DATA) {
-            std::vector<float> trend_interpolated(nk);
+            std::vector<float> trend_interpolated(nzp);
             InterpolateAndShiftTrend(trend_interpolated,
                                      z0_grid,     // Centre of first cell
                                      dz_grid,
@@ -4678,14 +4778,16 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
                                      z0_data,     // Time of first data sample
                                      dz_min,
                                      rmt,
-                                     grid.GetNK());
+                                     nz,
+                                     nzp);
+                                     //grid.GetNK());
 
             //Add trend
             for(size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
               grid_trace[k_trace] += trend_interpolated[k_trace];
           }
 
-          err_text += err_text_tmp;
+          //err_text += err_text_tmp;
 
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
@@ -4699,13 +4801,13 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
       }
       else {
         SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
-        if (i < ni && j < nj )
+        if (i < nx && j < ny)
           missing_traces_simbox++;
         else
-          missing_traces_padding++; //H Won't happen.
+          missing_traces_padding++; //H Won't happen with NRLibGrid
       }
 
-      if (ni*j + i + 1 >= static_cast<int>(nextMonitor)) { //rnxp_
+      if (rnxp*j + i + 1 >= static_cast<int>(nextMonitor)) { //rnxp_
         nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
@@ -4720,6 +4822,319 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
 
   Timings::setTimeResamplingSeismic(wall,cpu);
 }
+
+int CommonData::GetFillNumber(int i, int n, int np) {
+
+  //  for the series                 i = 0,1,2,3,4,5,6,7
+  //  GetFillNumber(i, 5 , 8)  returns   0,1,2,3,4,4,1,0 (cut middle, i.e 3,2)
+  //  GetFillNumber(i, 4 , 8)  returns   0,1,2,3,3,2,1,0 (copy)
+  //  GetFillNumber(i, 3 , 8)  returns   0,1,2,2,1,1,1,0 (drag middle out, i.e. 1)
+
+  int refi     =  0;
+  int BeloWnp, AbovEn;
+
+  if (i< np)
+  {
+    if (i<n)
+      // then it is in the main cube
+      refi  =  i;
+    else
+    {
+      // Get cyclic extention
+      BeloWnp  = np-i-1;
+      AbovEn   = i-n+1;
+      if(AbovEn < BeloWnp)
+      {
+        // Then the index is closer to end than start.
+        refi=std::max(n-AbovEn,n/2);
+      } else {
+        // The it is closer to  start than the end
+        refi=std::min(BeloWnp,n/2);
+      }//endif
+    }//endif
+  }//endif
+  else
+  {
+    // This happens when the index is larger than the padding size
+    // this happens in some cases because rnxp_ is larger than nxp_
+    // and the x cycle is of length rnxp_
+    refi=IMISSING;
+  }//endif
+  return(refi);
+}
+
+//void CommonData::FillInData(NRLib::Grid<double> & grid,
+//                            const Simbox        & simbox,
+//                            StormContGrid       * storm_grid,
+//                            const SegY          * segy,
+//                            float                 smooth_length,
+//                            int                 & missing_traces_simbox,
+//                            int                 & missing_traces_padding,
+//                            int                 & dead_traces_simbox,
+//                            std::string         & err_text,
+//                            int                   grid_type,
+//                            bool                  scale,
+//                            bool                  is_segy)
+//{
+//  assert(grid_type != CTMISSING);
+//
+//  double wall=0.0, cpu=0.0;
+//  TimeKit::getTime(wall,cpu);
+//
+//  float scalevert, scalehor;
+//  if(scale == false || is_segy == true)
+//  {
+//    scalevert = 1.0;
+//    scalehor  = 1.0;
+//  }
+//  else //from sgri file
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+//    scalevert = 0.001f; //1000.0;
+//    scalehor  = 0.001f; //1000.0;
+//  }
+//
+//  int ni = grid.GetNI();
+//  int nj = grid.GetNJ();
+//  int nk = grid.GetNK();
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",ni,nj,nk);
+//
+//  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f); //nyp_*rnxp_
+//  float nextMonitor = monitorSize;
+//  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
+//  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
+//  printf("\n  ^");
+//
+//  //
+//  // Find proper length of time samples to get N*log(N) performance in FFT.
+//  //
+//  size_t n_samples = 0;
+//  float  dz_data   = 0.0f;
+//  float  dz_min    = 0.0f;
+//  if(is_segy) {
+//    n_samples = segy->FindNumberOfSamplesInLongestTrace();
+//    dz_data   = segy->GetDz();
+//    dz_min    = dz_data/4.0f;
+//  }
+//  else
+//    n_samples = storm_grid->GetNK();
+//
+//  int nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
+//  int mt = 4*nt;           // Use four times the sampling density for the fine-meshed data
+//
+//  //
+//  // Create FFT plans
+//  //
+//  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//
+//  //
+//  // Do resampling
+//  //
+//  missing_traces_simbox  = 0; // Part of simbox is outside seismic data
+//  missing_traces_padding = 0; // Part of padding is outside seismic data
+//  dead_traces_simbox     = 0; // Simbox is inside seismic data but trace is missing
+//
+//  for (int j = 0 ; j < nj ; j++) {
+//    for (int i = 0 ; i < ni ; i++) {
+//
+//      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
+//      int refj  = j; //getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
+//      int refk  = 0;
+//
+//      double x, y, z0;
+//      simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
+//      x*=  scalehor;
+//      y*=  scalehor;
+//      z0*= scalevert;
+//
+//      double dz = simbox.getdz(refi, refj)*scalevert;
+//      float  xf = static_cast<float>(x);
+//      float  yf = static_cast<float>(y);
+//
+//      bool is_inside = false;
+//      if(is_segy)
+//        is_inside = segy->GetGeometry()->IsInside(xf, yf);
+//      else {
+//        if(storm_grid->IsInside(xf, yf) == 1)
+//          is_inside = true;
+//      }
+//
+//      if(is_inside == true) {
+//        bool  missing = true;
+//        float z0_data = RMISSING;
+//
+//        std::vector<float> data_trace;
+//        size_t grid_i = 0;
+//        size_t grid_j = 0;
+//        double grid_x = 0.0;
+//        double grid_y = 0.0;
+//        double grid_z = 0.0;
+//        float value =   0.0f;
+//
+//        float z_min = 0.0f;
+//        float z_max = 0.0f;
+//
+//        //Get data_trace for this i and j.
+//        if(is_segy) {
+//          segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+//        }
+//        else {
+//          storm_grid->FindXYIndex(xf, yf, grid_i, grid_j);
+//          for(size_t k = 0; k < grid.GetNK(); k++) {
+//            storm_grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
+//            value = storm_grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+//            data_trace.push_back(value);
+//
+//            if(k == 0)
+//              z_min = static_cast<float>(grid_z);
+//            if(k == grid.GetNK()-1)
+//              z_max = static_cast<float>(grid_z);
+//          }
+//
+//          dz_data = (z_max- z_min) / grid.GetNK();
+//          dz_min = dz_data/4.0f;
+//          z0_data = z_min;
+//        }
+//
+//        size_t n_trace = data_trace.size();
+//        float trend_first = 0.0f;
+//        float trend_last  = 0.0f;
+//
+//        if(grid_type != DATA) {
+//          //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
+//          if(data_trace[0] == 0) {
+//            std::vector<float> data_trace_new;
+//            for(size_t k_trace = 0; k_trace < n_trace; k_trace++) {
+//              if(data_trace[k_trace] != 0)
+//                data_trace_new.push_back(data_trace[k_trace]);
+//            }
+//            data_trace = data_trace_new;
+//            n_trace = data_trace.size();
+//          }
+//
+//          n_samples = data_trace.size();
+//          nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
+//          mt = 4*nt;
+//
+//          fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//          fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+//
+//          //Remove trend from trace
+//          trend_first = data_trace[0];
+//          trend_last = data_trace[n_trace - 1];
+//          float trend_inc = (trend_last - trend_first) / (n_trace - 1);
+//          for(size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
+//            data_trace[k_trace] -= trend_first + k_trace * trend_inc;
+//          }
+//        }
+//
+//        if(is_segy == false || (is_segy == true && !missing)) {
+//          int         cnt      = nt/2 + 1;
+//          int         rnt      = 2*cnt;
+//          int         cmt      = mt/2 + 1;
+//          int         rmt      = 2*cmt;
+//
+//          fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+//          fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+//
+//          float       dz_grid  = static_cast<float>(dz);
+//          float       z0_grid  = static_cast<float>(z0);
+//
+//          std::vector<float> grid_trace(nk);
+//
+//          std::string err_text_tmp = "";
+//          smooth_length*=scalevert;
+//          if(grid_type == DATA) {
+//            SmoothTraceInGuardZone(data_trace,
+//                                   dz_data,
+//                                   smooth_length);
+//          }
+//
+//          ResampleTrace(data_trace,
+//                        fftplan1,
+//                        fftplan2,
+//                        rAmpData,
+//                        rAmpFine,
+//                        cnt,
+//                        rnt,
+//                        cmt,
+//                        rmt);
+//
+//          std::vector<float> data_trace_trend_long;
+//          if(grid_type != DATA) {
+//            float trend_inc = (trend_last - trend_first) / (rmt - 1);
+//
+//            data_trace_trend_long.resize(rmt);
+//            for(int k_trace = 0; k_trace < rmt; k_trace++) {
+//              data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
+//            }
+//          }
+//
+//          //Includes a shift
+//          InterpolateGridValues(grid_trace,
+//                                z0_grid,     // Centre of first cell
+//                                dz_grid,
+//                                rAmpFine,
+//                                z0_data,     // Time of first data sample
+//                                dz_min,
+//                                rmt,
+//                                grid.GetNK());
+//
+//          //Interpolate and shift trend before adding to grid_trace.
+//          //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
+//          if(grid_type != DATA) {
+//            std::vector<float> trend_interpolated(nk);
+//            InterpolateAndShiftTrend(trend_interpolated,
+//                                     z0_grid,     // Centre of first cell
+//                                     dz_grid,
+//                                     data_trace_trend_long,
+//                                     z0_data,     // Time of first data sample
+//                                     dz_min,
+//                                     rmt,
+//                                     grid.GetNK());
+//
+//            //Add trend
+//            for(size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
+//              grid_trace[k_trace] += trend_interpolated[k_trace];
+//          }
+//
+//          err_text += err_text_tmp;
+//
+//          fftw_free(rAmpData);
+//          fftw_free(rAmpFine);
+//
+//          SetTrace(grid_trace, grid, i, j);
+//        }
+//        else {
+//          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
+//          dead_traces_simbox++;
+//        }
+//      }
+//      else {
+//        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
+//        if (i < ni && j < nj )
+//          missing_traces_simbox++;
+//        else
+//          missing_traces_padding++; //H Won't happen with NRLibGrid
+//      }
+//
+//      if (ni*j + i + 1 >= static_cast<int>(nextMonitor)) { //rnxp_
+//        nextMonitor += monitorSize;
+//        printf("^");
+//        fflush(stdout);
+//      }
+//
+//    }
+//  }
+//  LogKit::LogFormatted(LogKit::Low,"\n");
+//
+//  fftwnd_destroy_plan(fftplan1);
+//  fftwnd_destroy_plan(fftplan2);
+//
+//  Timings::setTimeResamplingSeismic(wall,cpu);
+//}
 
 int CommonData::FindClosestFactorableNumber(int leastint)
 {
@@ -4856,7 +5271,9 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
                                        float                z0_data,
                                        float                dz_fine,
                                        int                  n_fine,
-                                       int                  grid_nk)
+                                       int                  nz,
+                                       int                  nzp)
+                                       //int                  grid_nk)
 {
   //
   // Bilinear interpolation
@@ -4871,7 +5288,7 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
   int n_grid = static_cast<int>(grid_trace.size());
 
   for (int k = 0 ; k < n_grid ; k++) {
-    int refk = GetZSimboxIndex(k, grid_nk);
+    int refk = GetZSimboxIndex(k, nz, nzp); //grid_nk);
     float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
     int   l1 = static_cast<int>(floor(dl));
     int   l2 = static_cast<int>(ceil(dl));
@@ -4905,7 +5322,8 @@ void CommonData::InterpolateAndShiftTrend(std::vector<float>       & interpolate
                                           float                      z0_data,
                                           float                      dz_fine,
                                           int                        n_fine,
-                                          int                        grid_nk)
+                                          int                        nz,
+                                          int                        nzp)
 {
   //
   // Bilinear interpolation
@@ -4920,7 +5338,7 @@ void CommonData::InterpolateAndShiftTrend(std::vector<float>       & interpolate
   int n_grid = static_cast<int>(interpolated_trend.size());
 
   for (int k = 0 ; k < n_grid ; k++) {
-    int refk = GetZSimboxIndex(k, grid_nk);
+    int refk = GetZSimboxIndex(k, nz, nzp);// grid_nk);
     float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
     int   l1 = static_cast<int>(floor(dl));
     int   l2 = static_cast<int>(ceil(dl));
@@ -4951,14 +5369,18 @@ void CommonData::InterpolateAndShiftTrend(std::vector<float>       & interpolate
 }
 
 int CommonData::GetZSimboxIndex(int k,
-                                int grid_nk)
+                                int nz,
+                                int nzp)
+                                //int grid_nk)
 {
   int refk;
 
-  if(k < grid_nk) //(nz_+nzp_)/2)
+  //if(k < grid_nk)
+  if(k < (nz + nzp)/2)
     refk=k;
   else
-    refk=k-grid_nk;
+    refk=k-nzp;
+    //refk=k-grid_nk;
 
   return refk;
 }
@@ -5026,7 +5448,9 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       try {
 
       SegY * segy_tmp = NULL;
+      FFTGrid * fft_grid_tmp = NULL;
       FillInData(interval_grids[i_interval],
+                 fft_grid_tmp,
                  interval_simboxes[i_interval],
                  stormgrid,
                  segy_tmp,
@@ -5034,14 +5458,15 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
-                 err_text,
+                 //err_text,
                  grid_type,
                  scale,
                  false);
 
       if (segy_tmp != NULL)
        delete segy_tmp;
-
+      if(fft_grid_tmp != NULL)
+        delete fft_grid_tmp;
 
       }
       catch (NRLib::Exception & e) {
@@ -5166,7 +5591,6 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
 
   return true;
 }
-
 
 
 bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
@@ -5472,11 +5896,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           //back_model[1]->subtract(back_model[0]);
           //back_model[1]->changeSign();
         }
-        //background = new Background(back_model);
-
       }
     }
 
+    //Add background model to multiintervalgrid
     std::vector<double> vs_vp_ratios;
     for(int i = 0; i < n_intervals; i++) {
      for(int j = 0; j < 3; j++) {
@@ -7099,4 +7522,13 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
   }
 
 }
+
+void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
+                                         std::string   & err_text) {
+
+  for(size_t i = 0; i < model_settings->getNumberOfTimeLapses(); i++) {
+    angular_correlations_.push_back(model_settings->getAngularCorr(i));
+  }
+}
+
 

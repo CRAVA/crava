@@ -247,10 +247,10 @@ public:
                                                                 std::string                 type,
                                                                 const std::vector<double> & bg);
 
-  void                                   FindMeanVsVp(float                          mean_vs_vp,
-                                                      int                            n_vs_vp,
-                                                      const NRLib::Surface<double> & top,
-                                                      const NRLib::Surface<double> & bot);
+  void                                   FindMeanVsVp(const NRLib::Surface<double> & top,
+                                                      const NRLib::Surface<double> & bot,
+                                                      double                         mean_vs_vp,
+                                                      int                            n_vs_vp);
 
 private:
 

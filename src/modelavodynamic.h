@@ -107,8 +107,11 @@ public:
 
   ~ModelAVODynamic();
 
-  FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
-  Wavelet                    ** getWavelets()              const { return wavelet_                ;}
+  //FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
+  //Wavelet                    ** getWavelets()              const { return wavelet_                ;}
+  std::vector<FFTGrid *>        getSeisCubes()             const { return seisCubes_              ;}
+  std::vector<Wavelet *>        getWavelets()              const { return wavelets_               ;}
+
   float                      ** getAMatrix()               const { return reflectionMatrix_       ;}
   Grid2D                      * getLocalNoiseScale(int i)  const { return localNoiseScale_[i]     ;}
   const std::vector<Grid2D *> & getLocalNoiseScales()      const { return localNoiseScale_        ;}
@@ -246,8 +249,11 @@ private:
   std::vector<SeismicStorage> seismic_data_;       ///< Seismic data for this vintage. Vector over angles.
 
   int                       numberOfAngles_;
-  FFTGrid                ** seisCube_;              ///< Seismic data cubes
-  Wavelet                ** wavelet_;               ///< Wavelet for angle
+  //FFTGrid                ** seisCube_;              ///< Seismic data cubes
+  //Wavelet                ** wavelet_;               ///< Wavelet for angle
+
+  std::vector<Wavelet *>    wavelets_;
+  std::vector<FFTGrid *>    seisCubes_;
 
   float                  ** reflectionMatrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
                                                     ///< indicating that standard approximation will be used.

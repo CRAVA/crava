@@ -77,12 +77,29 @@ public:
   bool                                    GetRefMatFromFileGlobalVpVs()                 { return refmat_from_file_global_vpvs_               ;}
   float **                                GetReflectionMatrixTimeLapse(int time_lapse)  { return reflection_matrix_.find(time_lapse)->second ;}
 
+  Vario                                 * GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
+
+  std::vector<Wavelet *>                & GetWavelet(int time_lapse)                    { return wavelets_.find(time_lapse)->second          ;}
+
   void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
                                      double                 vsvp,
                                      const ModelSettings  * model_settings,
                                      int                    number_of_angles,
                                      int                    this_time_lapse);
 
+  void FillInData(NRLib::Grid<double> & grid,
+                  FFTGrid             * fft_grid,
+                  const Simbox        & simbox,
+                  StormContGrid       * storm_grid,
+                  const SegY          * segy,
+                  float                 smooth_length,
+                  int                 & missing_traces_simbox,
+                  int                 & missing_traces_padding,
+                  int                 & dead_traces_simbox,
+                  //std::string         & err_text,
+                  int                   grid_type,
+                  bool                  scale = false,
+                  bool                  is_segy = true);
 
 private:
 
@@ -226,6 +243,11 @@ private:
                                     const Simbox & time_cut_simbox,
                                     float          guard_zone,
                                     std::string &  err_text) const;
+
+  bool       CheckThatDataCoverGrid(StormContGrid * stormgrid,
+                                    const Simbox  & simbox,
+                                    float           guard_zone,
+                                    std::string   & err_text) const;
 
   void ProcessLogsNorsarWell(NRLib::Well                  & new_well,
                              std::string                  & error_text,
@@ -431,18 +453,7 @@ private:
                     std::string                       & err_text,
                     bool                                nopadding = true);
 
-  void FillInData(NRLib::Grid<double> & grid,
-                  const Simbox        & simbox,
-                  StormContGrid       * storm_grid,
-                  const SegY          * segy,
-                  float                 smooth_length,
-                  int                 & missing_traces_simbox,
-                  int                 & missing_traces_padding,
-                  int                 & dead_traces_simbox,
-                  std::string         & err_text,
-                  int                   grid_type,
-                  bool                  scale = false,
-                  bool                  is_segy = true);
+  int GetFillNumber(int i, int n, int np);
 
   int FindClosestFactorableNumber(int leastint);
 
@@ -467,7 +478,9 @@ private:
                              float                z0_data,
                              float                dz_fine,
                              int                  n_fine,
-                             int                  grid_nk);
+                             int                  nz,
+                             int                  nzp);
+                             //int                  grid_nk);
 
   void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
                                 float                      z0_grid,
@@ -476,10 +489,14 @@ private:
                                 float                      z0_data,
                                 float                      dz_fine,
                                 int                        n_fine,
-                                int                        grid_nk);
+                                int                        nz,
+                                int                        nzp);
+                                //int                        grid_nk);
 
   int GetZSimboxIndex(int k,
-                      int grid_nk);
+                      int nz,
+                      int nzp);
+                      //int grid_nk);
 
   void SetTrace(const std::vector<float> & trace,
                 NRLib::Grid<double>      & grid,
@@ -645,6 +662,9 @@ private:
                         bool                   & failed,
                         int                      i_timelapse);
 
+  void ReadAngularCorrelations(ModelSettings * model_settings,
+                               std::string   & err_text);
+
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
@@ -679,7 +699,7 @@ private:
   Simbox                                        estimation_simbox_;
   NRLib::Volume                                 full_inversion_volume_;
 
-  std::map<int, std::vector<SeismicStorage> >   seismic_data_;
+  std::map<int, std::vector<SeismicStorage> >   seismic_data_; //Map timelapse
 
   // Well logs
   std::vector<std::string>                      log_names_;
@@ -713,7 +733,8 @@ private:
   std::map<int, float **>                       reflection_matrix_;
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
-  std::map<int, Wavelet**>                      wavelets_;
+  //std::map<int, Wavelet**>                      wavelets_;  //Map time_lapse
+  std::map<int, std::vector<Wavelet *> >        wavelets_; //Map time_lapse, vector angles
   std::map<int, std::vector<Grid2D *> >         local_noise_scale_;
   std::map<int, std::vector<Grid2D *> >         local_shift_;
   std::map<int, std::vector<Grid2D *> >         local_scale_;
@@ -750,6 +771,9 @@ private:
   //Depth conversion
   GridMapping                                 * time_depth_mapping_;
   bool                                          velocity_from_inversion_;
+
+  //Angular correlations
+  std::vector<Vario *>                          angular_correlations_;
 
 
 };

@@ -498,23 +498,20 @@ Wavelet3D::createWavelet1DForErrorNorm(void)
 }
 
 float
-Wavelet3D::calculateSNRatio(const Simbox                             * simbox,
-                            const SeismicStorage                     * seismic_data,
+Wavelet3D::calculateSNRatio(const Simbox                                     * simbox,
+                            const SeismicStorage                             * seismic_data,
                             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                            //const std::vector<BlockedLogsCommon *>     blocked_logs,
-                            //const FFTGrid                            * seisCube,
-                            //const std::vector<WellData *>            & wells,
-                            const ModelSettings                      * modelSettings,
-                            std::string                              & errText,
-                            int                                      & error,
-                            const NRLib::Grid2D<float>               & refTimeGradX,
-                            const NRLib::Grid2D<float>               & refTimeGradY,
-                            const std::vector<std::vector<double> >  & tGradX,
-                            const std::vector<std::vector<double> >  & tGradY,
-                            int                                        number,
-                            float                                      SNRatio,
-                            bool                                       estimateSNRatio,
-                            bool                                       estimateWavelet)
+                            const ModelSettings                              * modelSettings,
+                            std::string                                      & errText,
+                            int                                              & error,
+                            const NRLib::Grid2D<float>                       & refTimeGradX,
+                            const NRLib::Grid2D<float>                       & refTimeGradY,
+                            const std::vector<std::vector<double> >          & tGradX,
+                            const std::vector<std::vector<double> >          & tGradY,
+                            int                                                number,
+                            float                                              SNRatio,
+                            bool                                               estimateSNRatio,
+                            bool                                               estimateWavelet)
 {
   std::string angle    = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   unsigned int nWells  = modelSettings->getNumberOfWells();
