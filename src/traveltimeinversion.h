@@ -19,6 +19,7 @@ class Vario;
 class FFTGrid;
 class KrigingData2D;
 class State4D;
+class GridMapping;
 
 class TravelTimeInversion
 {
@@ -311,11 +312,12 @@ private:
                                                       FFTGrid             * post_mu_vp,
                                                       NRLib::Grid<double> & distance) const;
 
-  NRLib::Grid<double>           calculateEVpGrid(FFTGrid * mu_log_vp,
-                                                 FFTGrid * cov_log_vp) const;
+  void                          calculateEVpGrid(FFTGrid  * mu_log_vp,
+                                                 FFTGrid  * cov_log_vp,
+                                                 FFTGrid *& mu_vp) const;
 
-  NRLib::Grid<double>           calculateDividedGrid(const NRLib::Grid<double> & pri_vp,
-                                                     const NRLib::Grid<double> & post_vp) const;
+ NRLib::Grid<double>           calculateDividedGrid(FFTGrid * pri_vp,
+                                                    FFTGrid * post_vp) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,
@@ -343,6 +345,15 @@ private:
   void                          resampleFFTGrid(const NRLib::Grid<double> & resample_grid,
                                                 const Simbox              * old_simbox,
                                                 FFTGrid                   * grid) const;
+
+  void                          generateTimeDepthMapping(FFTGrid       * post_mu_log_vp_above,
+                                                         FFTGrid       * post_cov_log_vp_above,
+                                                         FFTGrid       * mu_log_vp_grid,
+                                                         FFTGrid       * cov_log_vp_grid,
+                                                         int             output_format,
+                                                         const Simbox  * simbox_above,
+                                                         const Simbox  * timeSimbox,
+                                                         GridMapping  *& grid_depth_mapping) const;
 };
 
 #endif

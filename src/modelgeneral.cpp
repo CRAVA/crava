@@ -4824,6 +4824,14 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
   timeSimbox_ = new Simbox(new_timeSimbox);
 }
 
+void
+ModelGeneral::setTimeDepthMapping(GridMapping * new_timeDepthMapping)
+{
+  if (timeDepthMapping_ != NULL)
+    delete timeDepthMapping_;
+
+  timeDepthMapping_ = new_timeDepthMapping;
+}
 
 void
 ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)
