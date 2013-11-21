@@ -325,9 +325,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                             Sigma_log_vp_above,
                             pri_cov_circulant_above);
 
-  std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "mu_log_vp_above";
-  mu_log_vp_above->writeFile(fileName, IO::PathToBackground(), simbox_above, "NO_LABEL");
-
   float monitorSize = std::max(1.0f, static_cast<float>(n_rms_traces) * 0.02f);
   float nextMonitor = monitorSize;
   std::cout
@@ -535,11 +532,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                      stationary_covariance_above,
                                      observation_filter_above);
 
-      stationary_d_above->invFFTInPlace();
-      std::string fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "stationary_observations_above";
-      stationary_d_above->writeFile(fileName, IO::PathToBackground(), simbox_above, "NO_LABEL");
-      stationary_d_above->fftInPlace();
-
       stationary_covariance_above->fftInPlace();
       Sigma_log_vp_above         ->fftInPlace();
 
@@ -550,11 +542,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                 stationary_d_above,
                                 stationary_covariance_above,
                                 post_mu_log_vp_above);
-
-      post_mu_log_vp_above->invFFTInPlace();
-      fileName = IO::PrefixTravelTimeData() + IO::PrefixRMSData() + "post_mu_log_vp_above";
-      post_mu_log_vp_above->writeFile(fileName, IO::PathToBackground(), simbox_above, "NO_LABEL");
-      post_mu_log_vp_above->fftInPlace();
 
       FFTGrid * post_cov_log_vp_above = NULL;
       calculateLogVpCovariance(observation_filter_above,
@@ -585,7 +572,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
       modelGeneral->setTimeDepthMapping(time_depth_mapping); // delete time_depth_mapping in modelGeneral
 
     }
-
 
     State4D state_4d = modelGeneral->getState4D();
 
