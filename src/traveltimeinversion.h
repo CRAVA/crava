@@ -34,7 +34,7 @@ private:
                                                    ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                    SeismicParametersHolder & seismicParameters) const;
 
-  void                          do1DHorizonInversion(const FFTGrid               * mu_log_vp_dynamic,
+  void                          do1DHorizonInversion(FFTGrid                     * mu_log_vp_dynamic,
                                                      const NRLib::Grid2D<double> & Sigma_log_vp_dynamic,
                                                      const Simbox                * timeSimbox,
                                                      const std::vector<Surface>  & initial_horizons,
@@ -58,7 +58,7 @@ private:
                                                  const NRLib::Grid2D<double> & Sigma_m_below,
                                                  const double                & standard_deviation,
                                                  const RMSTrace              * rms_trace,
-                                                 const FFTGrid               * mu_log_vp,
+                                                 FFTGrid                     * mu_log_vp,
                                                  const std::vector<double>   & cov_grid_log_vp,
                                                  const Simbox                * simbox_above,
                                                  const Simbox                * simbox_below,
@@ -113,9 +113,21 @@ private:
                                                          std::vector<double>         & mu_vp_square,
                                                          NRLib::Grid2D<double>       & Sigma_vp_square) const;
 
-  std::vector<double>           generateMuLogVpModel(const FFTGrid * mu_log_vp,
-                                                     const int     & i_ind,
-                                                     const int     & j_ind) const;
+  void                          generateMuSigmaLogVpAbove(const int                    & nz,
+                                                          const int                    & nzp,
+                                                          const double                 & mu_vp_top,
+                                                          const NRLib::Grid2D<double>  & Sigma_vp_above,
+                                                          const Surface                * errorCorrXY,
+                                                          const float                  & corrGradI,
+                                                          const float                  & corrGradJ,
+                                                          FFTGrid                      * mu_log_vp_grid,
+                                                          FFTGrid                     *& mu_log_vp_above,
+                                                          FFTGrid                     *& Sigma_log_vp_above,
+                                                          std::vector<double>          & cov_circulant_above) const;
+
+  std::vector<double>           generateMuLogVpModel(FFTGrid   * mu_log_vp,
+                                                     const int & i_ind,
+                                                     const int & j_ind) const;
 
   std::vector<double>           generateMuVpAbove(const double & top_value,
                                                   const double & base_value,
@@ -277,7 +289,6 @@ private:
                                                             FFTGrid                 * stationary_observation_covariance) const;
 
   void                          calculateLogVpExpectation(const std::vector<int>  & observation_filter,
-                                                          const NRLib::Matrix     & prior_var_vp,
                                                           FFTGrid                 * mu_vp,
                                                           FFTGrid                 * cov_vp,
                                                           FFTGrid                 * stationary_observations,
@@ -285,7 +296,6 @@ private:
                                                           FFTGrid                *& post_mu_vp) const;
 
   void                          calculateLogVpCovariance(const std::vector<int>  & observation_filter,
-                                                         const NRLib::Matrix     & prior_var_vp,
                                                          FFTGrid                 * mu_vp,
                                                          FFTGrid                 * cov_vp,
                                                          FFTGrid                 * stationary_observations,
