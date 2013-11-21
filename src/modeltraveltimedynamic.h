@@ -45,6 +45,7 @@ public:
   const double                  getLzLimit()                        const { return lz_limit_                        ;}
   const bool                    getRMSDataGiven()                   const { return rms_data_given_                  ;}
   const Surface *               getErrorCorrXY()                    const { return errorCorrXY_                     ;}
+  const int                     getOutputGridFormat()               const { return format_flag_                     ;}
 
 private:
 
@@ -108,6 +109,8 @@ private:
 
   double                    lz_limit_;                              ///< Minimum allowed value for (min interval thickness)/(max interval thickness)
                                                                     ///< Also stored in modelSettings. Needed in rmsinversion.cpp
+
+  int                       format_flag_;                           ///< Decides output format, see modelSettings where it is also used
 
   Simbox *                  simbox_above_;                          ///< Simbox to be used above the reservoir
   Simbox *                  simbox_below_;                          ///< Simbox to be used below the reservoir
