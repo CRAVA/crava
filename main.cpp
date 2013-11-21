@@ -211,16 +211,27 @@ int main(int argc, char** argv)
     for(int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
 
       //Priormodell i 3D
+
+      //From NRLib::Grid to FFT-grid, need to fill in padding.
       SeismicParametersHolder seismicParametersInterval;
       //Forventningsgrid (fra multisonegrid)
-      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval));
-      //seismicParametersInterval.setBackgroundParametersIntervals(common_data->GetMultipleIntervalGrid()->GetParametersAllIntervals());
-
+      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval),
+                                                                modelSettings->getNXpad(),
+                                                                modelSettings->getNYpad(),
+                                                                modelSettings->getNZpad());
       //korrelasjonsgrid (2m)
-      seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval));
+      seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval),
+                                                 modelSettings->getNXpad(),
+                                                 modelSettings->getNYpad(),
+                                                 modelSettings->getNZpad());
+
       seismicParametersInterval.setCrCovParameters(common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[0],
                                                    common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[1],
-                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2]);
+                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2],
+                                                   modelSettings->getNXpad(),
+                                                   modelSettings->getNYpad(),
+                                                   modelSettings->getNZpad());
+
       seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
 
       //ModelGeneral

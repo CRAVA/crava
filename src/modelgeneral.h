@@ -23,6 +23,9 @@
 #include "rplib/distributionsfluid.h"
 #include "rplib/distributionssolid.h"
 
+#include "nrlib/grid/grid.hpp"
+#include "src/blockedlogscommon.h"
+
 struct irapgrid;
 class Corr;
 class Wavelet;
@@ -256,6 +259,11 @@ private:
                                         NRLib::Vector            & initialMean,
                                         NRLib::Matrix            & initialCov);
 
+  void              setupState4D(ModelSettings           *& modelSettings,
+                                 SeismicParametersHolder  & seismicParameters,
+                                 NRLib::Vector            & initialMean,
+                                 NRLib::Matrix            & initialCov);
+
   void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<float>               & probability,
                                                        const std::vector<double>              & trend_position,
@@ -370,14 +378,8 @@ private:
 
 
   Simbox                  * timeSimbox_;                 ///< Information about simulation area.
-  Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness
 
-  Surface                 * correlationDirection_;       ///< Grid giving the correlation direction.
   RandomGen               * randomGen_;                  ///< Random generator.
-
-  double                    gradX_;                      ///< X-gradient of correlation rotation.
-  double                    gradY_;                      ///< Y-gradient of correlation rotation.
-                                                         ///< These are only used with correlation surfaces.
 
   CravaTrend                                                    trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
   std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
@@ -386,17 +388,15 @@ private:
   TimeEvolution             timeEvolution_;
 
   GridMapping             * timeDepthMapping_;           ///< Contains both simbox and mapping used for depth conversion
-  GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut
 
-  bool                      velocityFromInversion_;
 
-  bool                      failed_;                     ///< Indicates whether errors occured during construction.
-  std::vector<bool>         failed_details_;             ///< Detailed failed information.
+  bool                      velocityFromInversion_;  //Needed? Copy from CommonData.
 
   TimeLine                * timeLine_;
-  std::vector<WellData *>   wells_;                      ///< Well data
 
-  bool                      forwardModeling_;
+  //Replaces WellData wells_
+  std::map<std::string, BlockedLogsCommon *> blocked_logs_;
+
   int                       numberOfWells_;
 
   std::vector<float>        priorFacies_;                ///< Prior facies probabilities
@@ -409,7 +409,28 @@ private:
   bool                      do4DRockPhysicsInversion_;
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
-  Surface                 * priorCorrXY_;                ///< Lateral correlation
+
+
+
+  //Fjernes:
+  Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness  //Fjernes
+
+  Surface                 * correlationDirection_;       ///< Grid giving the correlation direction. //Fjernes
+
+  double                    gradX_;                      ///< X-gradient of correlation rotation. //Fjernes
+  double                    gradY_;                      ///< Y-gradient of correlation rotation. //Fjernes
+                                                         ///< These are only used with correlation surfaces.
+
+  GridMapping             * timeCutMapping_;             ///< Simbox and mapping for timeCut  //Fjernes
+
+  bool                      failed_;                     ///< Indicates whether errors occured during construction. //Fjernes
+  std::vector<bool>         failed_details_;             ///< Detailed failed information. //Fjernes
+
+  std::vector<WellData *>   wells_;                      ///< Well data //Fjernes
+
+  bool                      forwardModeling_; //Flyttes til ModelAvoStatic
+
+  Surface                 * priorCorrXY_;                ///< Lateral correlation //Fjernes
 
 };
 

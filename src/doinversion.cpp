@@ -49,18 +49,26 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
 {
   // Construct ModelGeneral object first.
   // For each data type, construct the static model class before the dynamic.
-  modelGeneral    = new ModelGeneral(modelSettings, inputFiles, seismicParameters, commonData, i_interval);
-  //modelAVOstatic  = new ModelAVOStatic(modelSettings,
-  //                                     modelGeneral,
-  //                                     inputFiles,
-  //                                     modelGeneral->getTimeCutMapping(),
-  //                                     modelGeneral->getTimeSimbox(),
-  //                                     timeBGSimbox,
-  //                                     modelGeneral->getTimeSimboxConstThick(),
-  //                                     modelGeneral->getWells());
+  modelGeneral    = new ModelGeneral(modelSettings,
+                                     inputFiles,
+                                     seismicParameters,
+                                     commonData,
+                                     i_interval);
 
- // Add some logic to decide if modelGravityStatic should be created. To be done later.
- //modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
+  modelAVOstatic  = new ModelAVOStatic(modelSettings,
+                                       modelGeneral,
+                                       inputFiles,
+                                       commonData,
+                                       modelGeneral->getTimeSimbox(),
+                                       i_interval);
+
+  // Add some logic to decide if modelGravityStatic should be created. To be done later.
+  modelGravityStatic = new ModelGravityStatic(modelSettings,
+                                              commonData,
+                                              modelGeneral->getTimeSimbox(),
+                                              i_interval);
+
+  //Add in ModelTravelTimeStatic when ready
 }
 
 

@@ -75,6 +75,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
       //
       // INVERSION/ESTIMATION
       //
+
       loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
                         timeSimbox, inputFiles, errText, failedExtraSurf);
 
@@ -114,6 +115,77 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
   failed_ = failedLoadingModel;
   failed_details_.push_back(failedExtraSurf);
   failed_details_.push_back(failedPriorFacies);
+}
+
+ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
+                               ModelGeneral         *& modelGeneral,
+                               const InputFiles      * inputFiles,
+                               CommonData            * commonData,
+                               Simbox                * timeSimbox,
+                               int                     i_interval)
+{
+  forwardModeling_        = modelSettings->getForwardModeling();
+
+  bool failedModelGeneral = modelGeneral->getFailed();
+
+  //failed_                 = false;
+  //bool failedExtraSurf    = false;
+  //bool failedPriorFacies  = false;
+
+  //bool failedLoadingModel = false;
+
+  //std::string errText("");
+
+  if(!failedModelGeneral)
+  {
+    if (modelSettings->getForwardModeling() == false)
+    {
+      //
+      // INVERSION/ESTIMATION
+      //
+
+      faciesEstimInterval_ = commonData->GetFaciesEstimInterval();
+
+      //loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
+      //                  timeSimbox, inputFiles, errText, failedExtraSurf);
+
+      //blockLogs(wells, timeSimbox, timeBGSimbox, timeSimboxConstThick, modelSettings);
+
+      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+
+      //bool estimationMode = modelSettings->getEstimationMode();
+      //if (estimationMode == false && !failedExtraSurf)
+      //{
+      //  Simbox * timeCutSimbox = NULL;
+      //  if (timeCutMapping != NULL)
+      //    timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+      //  else
+      //    timeCutSimbox = timeSimbox;
+
+      //  modelGeneral->processPriorFaciesProb(faciesEstimInterval_,
+      //                                       wells,
+      //                                       timeSimbox,
+      //                                       timeCutSimbox,
+      //                                       modelSettings,
+      //                                       failedPriorFacies,
+      //                                       errText,
+      //                                       inputFiles);
+      //}
+    }
+    else // forward modeling
+      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+  }
+  //failedLoadingModel = failedExtraSurf || failedPriorFacies;
+
+  //if (failedLoadingModel) {
+  //  LogKit::WriteHeader("Error(s) while loading data");
+  //  LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+  //  LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+  //}
+
+  //failed_ = failedLoadingModel;
+  //failed_details_.push_back(failedExtraSurf);
+  //failed_details_.push_back(failedPriorFacies);
 }
 
 
@@ -348,7 +420,7 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                                   std::vector<Surface *> & faciesEstimInterval,
                                   std::vector<Surface *> & wellMoveInterval,
                                   Simbox                 * timeSimbox,
-                                  const InputFiles             * inputFiles,
+                                  const InputFiles       * inputFiles,
                                   std::string            & errText,
                                   bool                   & failed)
 {

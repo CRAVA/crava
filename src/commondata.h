@@ -17,6 +17,7 @@
 #include "src/multiintervalgrid.h"
 #include "src/background.h"
 //#include "src/timeevolution.h"
+#include "src/gridmapping.h"
 
 class CravaTrend;
 class InputFiles;
@@ -25,6 +26,7 @@ class ModelSettings;
 class TimeLine;
 //class ModelGravityStatic;
 class MultiIntervalGrid;
+class GridMapping;
 
 class CommonData{
 public:
@@ -43,43 +45,27 @@ public:
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
   MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
 
-  //void ReadGridFromFile(const std::string       & file_name,
-  //                      const std::string       & par_name,
-  //                      const float               offset,
-  //                      FFTGrid                *& grid,
-  //                      const SegyGeometry     *& geometry,
-  //                      const TraceHeaderFormat * format,
-  //                      int                       grid_type,
-  //                      const Simbox            * time_simbox,
-  //                      //const Simbox            * time_cut_simbox,
-  //                      const ModelSettings     * model_settings,
-  //                      std::string             & err_text,
-  //                      bool                      nopadding = false) const;
+  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()               const { return rock_distributions_ ;}
+  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariablesInterval(int i) const { return reservoir_variables_[i] ;}
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        std::vector<NRLib::Grid<double> > & grid,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const std::vector<Simbox>         & interval_simboxes,
-                        const Simbox                      & estimation_simbox,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  TimeLine                               * GetTimeLine()                        { return time_line_       ;}
+  const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
+  const std::vector<int>                 & GetFaciesLabels()              const { return facies_labels_   ;}
+  const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
+  const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        NRLib::Grid<double>               & interval_grids,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const Simbox                      & simboxes,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()       const { return mapped_blocked_logs_ ;}
+
+  std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
+
+  std::vector<float>       & GetGravityObservationUtmxInterval(int i)          { return observation_location_utmx_[i]  ;}
+  std::vector<float>       & GetGravityObservationUtmyInterval(int i)          { return observation_location_utmy_[i]  ;}
+  std::vector<float>       & GetGravityObservationDepthInterval(int i)         { return observation_location_depth_[i] ;}
+  std::vector<float>       & GetGravityResponseInterval(int i)                 { return gravity_response_[i]           ;}
+  std::vector<float>       & GetGravityStdDevInterval(int i)                   { return gravity_std_dev_[i]            ;}
+
+  GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
+  bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
 
 private:
 
@@ -358,12 +344,16 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
+  void FindFaciesEstimationInterval(InputFiles             * input_files,
+                                    std::vector<Surface *> & facies_estim_interval,
+                                    std::string            & err_text);
+
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                    const InputFiles   * input_files,
                                    std::string        & tmp_err_text) const;
                                    //int                  i_interval) const;
 
-  void CommonData::SetFaciesNamesFromRockPhysics();
+  void SetFaciesNamesFromRockPhysics();
 
   void ReadPriorFaciesProbCubes(const InputFiles                                * input_files,
                                 ModelSettings                                   * model_settings,
@@ -379,21 +369,34 @@ private:
   //                                int nzp,
   //                                bool fileGrid);
 
+  void ReadGridFromFile(const std::string                 & file_name,
+                        const std::string                 & par_name,
+                        const float                         offset,
+                        std::vector<NRLib::Grid<double> > & grid,
+                        const SegyGeometry               *& geometry,
+                        const TraceHeaderFormat           * format,
+                        int                                 grid_type,
+                        const std::vector<Simbox>         & interval_simboxes,
+                        const Simbox                      & estimation_simbox,
+                        const ModelSettings               * model_settings,
+                        std::string                       & err_text,
+                        bool                                nopadding = true);
+
+  void ReadGridFromFile(const std::string                 & file_name,
+                        const std::string                 & par_name,
+                        const float                         offset,
+                        NRLib::Grid<double>               & interval_grids,
+                        const SegyGeometry               *& geometry,
+                        const TraceHeaderFormat           * format,
+                        int                                 grid_type,
+                        const Simbox                      & simboxes,
+                        const ModelSettings               * model_settings,
+                        std::string                       & err_text,
+                        bool                                nopadding = true);
+
   void ReadCravaFile(NRLib::Grid<double> & grid,
                      const std::string   & file_name,
                      std::string         & err_text);
-
-  //void ReadSegyFile(const std::string       & file_name,
-  //                  FFTGrid                *& target,
-  //                  const Simbox            * time_simbox, //Simbox * timeSimbox
-  //                  const ModelSettings     * model_settings,
-  //                  const SegyGeometry     *& geometry,
-  //                  int                       grid_type,
-  //                  const std::string       & par_name,
-  //                  float                     offset,
-  //                  const TraceHeaderFormat * format,
-  //                  std::string             & err_text,
-  //                  bool                      nopadding) const;
 
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<double> > & interval_grids,
@@ -408,23 +411,24 @@ private:
                     std::string                       & err_text,
                     bool                                nopadding = true);
 
-  void FillInSeismicDataFromSegY(NRLib::Grid<double> & grid,
-                                 const SegY          * segy,
-                                 const Simbox        & simbox,
-                                 float                 smooth_length,
-                                 int                 & missingTracesSimbox,
-                                 int                 & missingTracesPadding,
-                                 int                 & deadTracesSimbox,
-                                 std::string         & err_text);
+  void FillInData(NRLib::Grid<double> & grid,
+                  const Simbox        & simbox,
+                  StormContGrid       * storm_grid,
+                  const SegY          * segy,
+                  float                 smooth_length,
+                  int                 & missing_traces_simbox,
+                  int                 & missing_traces_padding,
+                  int                 & dead_traces_simbox,
+                  std::string         & err_text,
+                  int                   grid_type,
+                  bool                  scale = false,
+                  bool                  is_segy = true);
 
   int FindClosestFactorableNumber(int leastint);
 
   void SmoothTraceInGuardZone(std::vector<float> & data_trace,
-                              float                z0_data,
-                              float                zn_data,
                               float                dz_data,
-                              float                smooth_length,
-                              std::string        & err_text);
+                              float                smooth_length);
 
   void ResampleTrace(const std::vector<float> & data_trace,
                      const rfftwnd_plan       & fftplan1,
@@ -445,6 +449,15 @@ private:
                              int                  n_fine,
                              int                  grid_nk);
 
+  void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+                                float                      z0_grid,
+                                float                      dz_grid,
+                                const std::vector<float> & trend_long,
+                                float                      z0_data,
+                                float                      dz_fine,
+                                int                        n_fine,
+                                int                        grid_nk);
+
   int GetZSimboxIndex(int k,
                       int grid_nk);
 
@@ -458,16 +471,6 @@ private:
                 size_t                i,
                 size_t                j);
 
-  //void ReadStormFile(const std::string   & f_name,
-  //                   FFTGrid            *& target,
-  //                   const int             grid_type,
-  //                   const std::string   & par_name,
-  //                   const Simbox        * time_simbox,
-  //                   const ModelSettings * model_settings,
-  //                   std::string         & err_text,
-  //                   bool                  scale,
-  //                   bool                  nopadding) const;
-
   void ReadStormFile(const std::string                 & file_name,
                      std::vector<NRLib::Grid<double> > & interval_grids,
                      const int                           grid_type,
@@ -475,7 +478,12 @@ private:
                      const std::vector<Simbox>         & interval_simboxes,
                      const ModelSettings               * model_settings,
                      std::string                       & err_text,
-                     bool                                scale);
+                     bool                                is_storm = true,
+                     bool                                nopadding = true);
+
+  bool SetupDepthConversion(ModelSettings  * model_settings,
+                            InputFiles     * input_files,
+                            std::string    & err_text);
 
   bool SetupBackgroundModel(ModelSettings  * model_settings,
                             InputFiles     * input_files,
@@ -636,6 +644,7 @@ private:
   bool setup_trend_cubes_;
   bool setup_estimation_rock_physics_;
   bool setup_prior_facies_probabilities_;
+  bool setup_depth_conversion_;
   bool setup_background_model_;
   bool setup_prior_correlation_;
   bool setup_timeline_;
@@ -664,14 +673,19 @@ private:
 
   std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
   std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
+  //H: Remove intervals for reservoir_variables_ too?
 
   // prior facies
   std::vector<std::vector<float> >                prior_facies_;                  ///< Prior facies probabilities
+  std::vector<Surface *>                          facies_estim_interval_;
+
   //std::vector<std::vector<FFTGrid *> >          prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
   //std::vector<std::vector<NRLib::Grid<double> > > prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities. Vector(facies) vector(intervals).
 
   // Timeline
   TimeLine                                    * time_line_;
+
+  bool                                          forward_modeling_;
 
   std::map<int, float **>                       reflection_matrix_;
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
@@ -688,6 +702,7 @@ private:
   std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
   std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells. (Intervals?)
+  std::vector<int>                              facies_labels_;
 
   // Prior correlation
   std::vector<Surface *>                          prior_corr_XY_;
@@ -707,6 +722,11 @@ private:
   //Traveltime parameters per timelapse
   std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
   std::vector<NRLib::Grid<double> >             rms_data_;                      ///< RMS data U^2
+
+  //Depth conversion
+  GridMapping                                 * time_depth_mapping_;
+  bool                                          velocity_from_inversion_;
+
 
 };
 #endif

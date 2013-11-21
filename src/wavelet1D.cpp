@@ -19,7 +19,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
-#include "src/blockedlogs.h"
+//#include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet1D.h"
 #include "src/welldata.h"
