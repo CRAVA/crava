@@ -33,6 +33,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
   failed_details_(0),
   this_time_lapse_(vintage),
   lz_limit_(RMISSING),
+  format_flag_(modelSettings->getOutputGridFormat()),
   simbox_above_(NULL),
   simbox_below_(NULL),
   rms_data_given_(false),

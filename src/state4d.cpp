@@ -1016,7 +1016,7 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   // Note rockSample contains rock sample for all time steps.
   int nSim=10000; // NBNB OK 10000->1000 for speed during debug
 
-  LogKit::LogFormatted(LogKit::Low,"\nSampling rockp hysics distribution...");
+  LogKit::LogFormatted(LogKit::Low,"\nSampling rock physics distribution...");
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
 
