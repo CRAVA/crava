@@ -241,13 +241,17 @@ int main(int argc, char** argv)
       switch (eventType) {
 
       case TimeLine::AVO :
-        if (modelSettings->getDo4DInversion()) // In case of 4D inversion
+        if (modelSettings->getDo4DInversion()){ // In case of 4D inversion
+          modelGeneral->dump4Dparameters(modelSettings,"_before_AVO_",vintage);
           failedFirst = doTimeLapseAVOInversion(modelSettings,
                                                 modelGeneral,
                                                 modelAVOstatic,
                                                 inputFiles,
                                                 seismicParameters,
                                                 vintage);
+           modelGeneral->dump4Dparameters(modelSettings,"_after_AVO_",vintage);
+
+        }
         else  // In case of 3D inversion
           failedFirst = doFirstAVOInversion(modelSettings,
                                             modelGeneral,
@@ -265,6 +269,7 @@ int main(int argc, char** argv)
                                                      inputFiles,
                                                      vintage,
                                                      seismicParameters);
+         modelGeneral->dump4Dparameters(modelSettings,"_after_Traveltime_",vintage);
         break;
 
       case TimeLine::GRAVITY :
@@ -274,6 +279,7 @@ int main(int argc, char** argv)
                                      inputFiles,
                                      vintage,
                                      seismicParameters);
+         modelGeneral->dump4Dparameters(modelSettings,"_after_Gravimetric_",vintage);
 
         errTxt += "Warning Gravimetric under construction\n";
         break;
@@ -309,6 +315,7 @@ int main(int argc, char** argv)
                                            inputFiles,
                                            seismicParameters,
                                            vintage);
+          modelGeneral->dump4Dparameters(modelSettings,"_after_AVO_",vintage);
           break;
 
         case TimeLine::TRAVEL_TIME :
@@ -317,6 +324,7 @@ int main(int argc, char** argv)
                                                   inputFiles,
                                                   vintage,
                                                   seismicParameters);
+           modelGeneral->dump4Dparameters(modelSettings,"_after_Traveltime_",vintage);
           break;
 
         case TimeLine::GRAVITY :
@@ -326,6 +334,7 @@ int main(int argc, char** argv)
                                                    inputFiles,
                                                    vintage,
                                                    seismicParameters);
+           modelGeneral->dump4Dparameters(modelSettings,"_after_Gravimetric_",vintage);
           break;
 
         default :
