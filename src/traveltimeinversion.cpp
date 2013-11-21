@@ -24,7 +24,6 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
                                          SeismicParametersHolder & seismicParameters)
 {
   LogKit::WriteHeader("Building Stochastic Travel Time Inversion Model");
-
   time_t time_start;
   time_t time_end;
   time(&time_start);
@@ -43,17 +42,21 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
   if (this_time_lapse > 0)
     n_rms_inversions = 2;
 
-  for (int i = 0; i < n_rms_inversions; ++i) {
-    if (rms_data_given == true)
+  if (rms_data_given == true){
+    for (int i = 0; i < n_rms_inversions; ++i)
+    {
+      if(i>0)                                          // need to get set back seismic parameters  to
+        modelGeneral->mergeState4D(seismicParameters); // do the inversion again with a better timeframe ....
       doRMSInversion(modelGeneral,
                      modelTravelTimeDynamic,
                      seismicParameters,
                      i);
+
+    }
   }
 
   time(&time_end);
   LogKit::LogFormatted(LogKit::DebugLow, "\nTime elapsed :  %d\n", time_end - time_start);
-
 
 }
 //-----------------------------------------------------------------------------------------//
@@ -635,12 +638,12 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
 
     for (int k = 0; k < n_horizons; ++k) {
       if (time_P0[k] != missing_value && push_down[k] != missing_value) {
-        d[k]          = time_P0[k] + push_down[k];
+        d[k]          = time_P0[k]+push_down[k]-top;
         Sigma_d(k, k) = std::pow(standard_deviation[k], 2);
       }
     }
 
-    double dt  = timeSimbox->getdz(i_ind, j_ind);
+    double dt  = timeSimbox->getdz(i_ind, j_ind); // NBNB Check this  for original(static) vs current.
     int    nz  = timeSimbox->getnz();
     int    nzp = mu_log_vp_dynamic->getNzp();
 
@@ -2083,7 +2086,7 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
                                                const int                    & nzp,
                                                const double                 & mu_vp_top,
                                                const NRLib::Grid2D<double>  & Sigma_vp_above,
-                                               const Surface                * errorCorrXY,
+                                               const Surface                * parCorrXY,
                                                const float                  & corrGradI,
                                                const float                  & corrGradJ,
                                                FFTGrid                      * mu_log_vp_grid,
@@ -2174,7 +2177,7 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
   Sigma_log_vp_above->createRealGrid();
   Sigma_log_vp_above->setType(FFTGrid::COVARIANCE);
 
-  Sigma_log_vp_above->fillInParamCorr(errorCorrXY, cov_circ_r, corrGradI, corrGradJ);
+  Sigma_log_vp_above->fillInParamCorr(parCorrXY, cov_circ_r, corrGradI, corrGradJ);
 
 
 }
