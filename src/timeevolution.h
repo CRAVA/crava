@@ -43,7 +43,8 @@ private:
   std::vector< NRLib::Matrix> cov_correction_term_;
 
   //Expand every 3-vector into a 6-vector of 3 static and 3 dynamic elements.
-  void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik) const;
+  void SplitSamplesStaticDynamic2(std::vector<std::vector<std::vector<double> > > & m_ik) const;
+  std::vector<std::vector<double> >  SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > >  m_ik) const;
 
   // Estimate time evolution matrices and correction term mean and covariance:
   void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          & evolution_matrix,
@@ -52,11 +53,20 @@ private:
                              int                                     i_max,
                              TimeLine                              & time_line,
                              const std::vector<DistributionsRock*> & dist_rock);
+  void SetUpEvolutionMatrices2(std::vector< NRLib::Matrix>          & evolution_matrix,
+                             std::vector< NRLib::Matrix>           & cov_correction_term,
+                             std::vector< NRLib::Vector>           & mean_correction_term,
+                             int                                     i_max,
+                             TimeLine                              & time_line,
+                             const std::vector<DistributionsRock*> & dist_rock);
 
-  // Adjusting the covariance to span all samples
-  NRLib::Matrix AdjustCovarianceToSpanSamples(NRLib::Vector                                    mu,
-                                              NRLib::Matrix                                    sigma,
-                                              std::vector<std::vector<double> >  & m_ik);
+  // Adjusting the covariance to span all samples for parameters from firstIndex, to lastindex; leave rest alone.
+  NRLib::Matrix makeCovRobust(NRLib::Vector                                    mu,
+                              NRLib::Matrix                                    sigma,
+                              std::vector<std::vector<double> >              & sample,
+                              int                                              firstIndex,
+                              int                                              lastIndex,
+                              double                                           adjustment_factor );
   // Adjusting diagonal of matrix to be inverted if necessary,
   // and adjusting the other matrices similarly to ensure block form of evolution
   // matrices and correction term covariance:

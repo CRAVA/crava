@@ -241,13 +241,14 @@ int main(int argc, char** argv)
       switch (eventType) {
 
       case TimeLine::AVO :
-        if (modelSettings->getDo4DInversion()) // In case of 4D inversion
+        if (modelSettings->getDo4DInversion()){ // In case of 4D inversion
           failedFirst = doTimeLapseAVOInversion(modelSettings,
                                                 modelGeneral,
                                                 modelAVOstatic,
                                                 inputFiles,
                                                 seismicParameters,
                                                 vintage);
+        }
         else  // In case of 3D inversion
           failedFirst = doFirstAVOInversion(modelSettings,
                                             modelGeneral,

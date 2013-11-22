@@ -4774,34 +4774,29 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   state4d_.FFT();
 }
 
+
 void
 ModelGeneral::advanceTime(const int               & previous_vintage,
                           const double            & time_change,
                           SeismicParametersHolder & seismicParameters,
                           ModelSettings           * modelSettings)
 {
-  if(time_change > 0) { // Only split, evolve and merge at positive time change
+  if(time_change > 0) { // Only evolve and merge at positive time change
 
-    bool debug = false;
-    if (debug == true) {
-      dump4Dparameters(modelSettings,
-                       "_prior",
-                       previous_vintage);  // note this prior should be equal to
-                                           // next_prior in previous step
-      dumpSeismicParameters(modelSettings,
-                            "_posterior",
-                            previous_vintage,
-                            seismicParameters);
-    }
-
-    state4d_.split(seismicParameters);
+    bool debug = true;
 
     if (debug == true)
       dump4Dparameters(modelSettings,
-                       "_posterior",
+                       "_BeforeEvolve_",
                        previous_vintage);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
+
+    if (debug == true)
+      dump4Dparameters(modelSettings,
+                       "_AfterEvolve_",
+                       previous_vintage+1);
+
     state4d_.merge(seismicParameters);
 
 
@@ -4834,16 +4829,18 @@ ModelGeneral::setTimeDepthMapping(GridMapping * new_timeDepthMapping)
 }
 
 void
-ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)
+ModelGeneral::mergeState4D(SeismicParametersHolder &  seismicParameters)
 {
-  bool debug=true;
-  int time_step=timeEvolution_.GetNTimSteps()-1;
-  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
-
-  state4d_.split(seismicParameters);
-  dump4Dparameters(modelSettings, "_posterior", time_step);
-
+  state4d_.merge(seismicParameters);
 }
+
+
+void
+ModelGeneral::updateState4D(SeismicParametersHolder &  seismicParameters)
+{
+  state4d_.split(seismicParameters);
+}
+
 
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)

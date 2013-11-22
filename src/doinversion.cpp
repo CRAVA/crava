@@ -110,7 +110,6 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
   if(failedLoadingModel == false) {
-
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     delete crava;
@@ -119,6 +118,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
+  modelGeneral->updateState4D(seismicParameters);
 
   return(failedLoadingModel);
 }
@@ -148,7 +148,6 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
   }
 
   delete modelTravelTimeDynamic;
-
   return(failedLoadingModel);
 }
 
