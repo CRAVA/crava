@@ -558,6 +558,10 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
       post_cov_log_vp_above->invFFTInPlace();
 
       GridMapping * time_depth_mapping = NULL;
+
+      mu_log_vp_grid->invFFTInPlace();
+      cov_log_vp_grid->invFFTInPlace();
+
       generateTimeDepthMapping(post_mu_log_vp_above,
                                post_cov_log_vp_above,
                                mu_log_vp_grid,
@@ -566,6 +570,8 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                simbox_above,
                                timeSimbox,
                                time_depth_mapping);
+       mu_log_vp_grid->fftInPlace();
+       cov_log_vp_grid->fftInPlace();
 
       delete stationary_d_above;
       delete stationary_covariance_above;
@@ -2100,7 +2106,7 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
   const int nxp = mu_log_vp_grid->getNxp();
   const int nyp = mu_log_vp_grid->getNyp();
 
-  const int    rnxp = 2 * (nx / 2 + 1);
+  const int    rnxp = 2 * (nxp / 2 + 1);
 
   FFTGrid * bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, false); // Grid without padding
   bgGrid->createRealGrid();
@@ -2146,7 +2152,12 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
       std::vector<double> mu_vp_above(nzp);
 
       for (int k = 0; k < nzp; k++)
-        mu_vp_above[k] = static_cast<double>(mu_log_vp_above->getRealValue(i, j, k, true));
+      {
+        double a=static_cast<double>(mu_log_vp_above->getRealValue(i, j, k, true));
+        if(a<=0) // avoid problems with log of negative values
+          a=1.0;
+        mu_vp_above[k] =a ;
+      }
 
       std::vector<double>   mu_log_vp_above_trace;
       NRLib::Grid2D<double> Sigma_log_vp_above;
