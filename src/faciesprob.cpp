@@ -656,7 +656,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 
   SpatialWellFilter * spatWellFilter = new SpatialWellFilter(nWellsToBeFiltered);
 
-  FFTGrid * postCovAlpha = seismicParameters.GetCovAlpha();
+  FFTGrid * postCovAlpha = seismicParameters.GetCovVp();
 
   for(int i=0; i<nWellsToBeFiltered; i++)
     spatWellFilter->setPriorSpatialCorrSyntWell(postCovAlpha, syntWellData[i], i);

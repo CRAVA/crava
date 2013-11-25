@@ -72,12 +72,12 @@ Crava::Crava(ModelSettings           * modelSettings,
   modelAVOstatic_    = modelAVOstatic;
   modelAVOdynamic_   = modelAVOdynamic;
 
-  nx_                = seismicParameters.GetMuAlpha()->getNx();
-  ny_                = seismicParameters.GetMuAlpha()->getNy();
-  nz_                = seismicParameters.GetMuAlpha()->getNz();
-  nxp_               = seismicParameters.GetMuAlpha()->getNxp();
-  nyp_               = seismicParameters.GetMuAlpha()->getNyp();
-  nzp_               = seismicParameters.GetMuAlpha()->getNzp();
+  nx_                = seismicParameters.GetMuVp()->getNx();
+  ny_                = seismicParameters.GetMuVp()->getNy();
+  nz_                = seismicParameters.GetMuVp()->getNz();
+  nxp_               = seismicParameters.GetMuVp()->getNxp();
+  nyp_               = seismicParameters.GetMuVp()->getNyp();
+  nzp_               = seismicParameters.GetMuVp()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
@@ -94,14 +94,14 @@ Crava::Crava(ModelSettings           * modelSettings,
   //wells_             = modelGeneral_->getWells();
   blocked_wells_     = modelGeneral_->getBlockedWells();
   simbox_            = modelGeneral_->getTimeSimbox();
-  meanAlpha_         = seismicParameters.GetMuAlpha();
-  meanBeta_          = seismicParameters.GetMuBeta();
+  meanVp_         = seismicParameters.GetMuVp();
+  meanVs_          = seismicParameters.GetMuVs();
   meanRho_           = seismicParameters.GetMuRho();
   random_            = modelGeneral_->getRandomGen();
   seisWavelet_       = modelAVOdynamic_->getWavelets();
   A_                 = modelAVOdynamic_->getAMatrix();
-  postAlpha_         = meanAlpha_;         // Write over the input to save memory
-  postBeta_          = meanBeta_;          // Write over the input to save memory
+  postVp_         = meanVp_;         // Write over the input to save memory
+  postVs_          = meanVs_;          // Write over the input to save memory
   postRho_           = meanRho_;           // Write over the input to save memory
   fprob_             = NULL;
   thetaDeg_          = new float[ntheta_];
@@ -123,7 +123,7 @@ Crava::Crava(ModelSettings           * modelSettings,
   SpatialWellFilter * spatwellfilter = NULL;
 
   // reality check: all dimensions involved match
-  assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
+  assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
   if(!modelSettings_->getForwardModeling()) {
@@ -134,7 +134,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
       spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
-      FFTGrid * alphaCov = seismicParameters.GetCovAlpha();
+      FFTGrid * alphaCov = seismicParameters.GetCovVp();
       alphaCov->setAccessMode(FFTGrid::RANDOMACCESS);
 
       //for(int i=0; i<nWells_; i++)
@@ -154,7 +154,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     float corrGradI, corrGradJ;
     modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
 
-    fftw_real * corrT = seismicParameters.extractParamCorrFromCovAlpha(nzp_);
+    fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
     float dt = static_cast<float>(modelGeneral->getTimeSimbox()->getdz());
     if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
@@ -189,13 +189,13 @@ Crava::Crava(ModelSettings           * modelSettings,
 
     if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->getUseLocalNoise())
     {
-      meanAlpha2_ = copyFFTGrid(meanAlpha_);
-      meanBeta2_  = copyFFTGrid(meanBeta_);
+      meanVp2_ = copyFFTGrid(meanVp_);
+      meanVs2_  = copyFFTGrid(meanVs_);
       meanRho2_   = copyFFTGrid(meanRho_);
     }
 
-    meanAlpha_->fftInPlace();
-    meanBeta_ ->fftInPlace();
+    meanVp_->fftInPlace();
+    meanVs_ ->fftInPlace();
     meanRho_  ->fftInPlace();
   }
   else{
@@ -229,14 +229,14 @@ Crava::Crava(ModelSettings           * modelSettings,
 
     if (!modelAVOdynamic->getUseLocalNoise()) {// Already done in crava.cpp if local noise
       postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-      postCovAlpha00_       = seismicParameters.createPostCov00(seismicParameters.GetCovAlpha());
-      postCovBeta00_        = seismicParameters.createPostCov00(seismicParameters.GetCovBeta());
+      postCovVp00_       = seismicParameters.createPostCov00(seismicParameters.GetCovVp());
+      postCovVs00_        = seismicParameters.createPostCov00(seismicParameters.GetCovVs());
       postCovRho00_         = seismicParameters.createPostCov00(seismicParameters.GetCovRho());
     }
     seismicParameters.printPostVariances(postVar0_);
 
     if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0){
-      seismicParameters.writeFilePostVariances(postVar0_, postCovAlpha00_, postCovBeta00_, postCovRho00_);
+      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
       seismicParameters.writeFilePostCovGrids(modelGeneral->getTimeSimbox());
     }
 
@@ -266,7 +266,7 @@ Crava::Crava(ModelSettings           * modelSettings,
       doPredictionKriging(seismicParameters);
 
     if(modelSettings->getGenerateSeismicAfterInv())
-      computeSyntSeismic(postAlpha_,postBeta_,postRho_);
+      computeSyntSeismic(postVp_,postVs_,postRho_);
     //
     // Temporary placement.
     //
@@ -281,15 +281,15 @@ Crava::Crava(ModelSettings           * modelSettings,
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
 
-    computeSyntSeismic(postAlpha_,postBeta_,postRho_);
+    computeSyntSeismic(postVp_,postVs_,postRho_);
   }
 
-  postAlpha_->fftInPlace();
-  postBeta_->fftInPlace();
+  postVp_->fftInPlace();
+  postVs_->fftInPlace();
   postRho_->fftInPlace();
 
 
-  seismicParameters.setBackgroundParameters(postAlpha_, postBeta_, postRho_);
+  seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
   seismicParameters.FFTCovGrids();
 
   delete spatwellfilter;
@@ -992,36 +992,36 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
   delete[] errorSmooth2;
 
-  meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);
-  meanBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
+  meanVp_->setAccessMode(FFTGrid::READANDWRITE);
+  meanVs_ ->setAccessMode(FFTGrid::READANDWRITE);
   meanRho_  ->setAccessMode(FFTGrid::READANDWRITE);
 
-  FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
-  FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
-  FFTGrid * postCovRho         = seismicParameters.GetCovRho();
-  FFTGrid * postCrCovAlphaBeta = seismicParameters.GetCrCovAlphaBeta();
-  FFTGrid * postCrCovAlphaRho  = seismicParameters.GetCrCovAlphaRho();
-  FFTGrid * postCrCovBetaRho   = seismicParameters.GetCrCovBetaRho();
+  FFTGrid * postCovVp      = seismicParameters.GetCovVp();
+  FFTGrid * postCovVs      = seismicParameters.GetCovVs();
+  FFTGrid * postCovRho     = seismicParameters.GetCovRho();
+  FFTGrid * postCrCovVpVs  = seismicParameters.GetCrCovVpVs();
+  FFTGrid * postCrCovVpRho = seismicParameters.GetCrCovVpRho();
+  FFTGrid * postCrCovVsRho = seismicParameters.GetCrCovVsRho();
 
   if(modelGeneral->getIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
-    sigma[0] = postCovAlpha;
-    sigma[1] = postCrCovAlphaBeta;
-    sigma[2] = postCrCovAlphaRho;
-    sigma[3] = postCovBeta;
-    sigma[4] = postCrCovBetaRho;
+    sigma[0] = postCovVp;
+    sigma[1] = postCrCovVpVs;
+    sigma[2] = postCrCovVpRho;
+    sigma[3] = postCovVs;
+    sigma[4] = postCrCovVsRho;
     sigma[5] = postCovRho;
     modelGeneral->mergeCovariance(sigma); //To avoid a second FFT of these.
   }
   else
     seismicParameters.FFTCovGrids();
 
-  postCovAlpha      ->setAccessMode(FFTGrid::READ);
-  postCovBeta       ->setAccessMode(FFTGrid::READ);
-  postCovRho        ->setAccessMode(FFTGrid::READ);
-  postCrCovAlphaBeta->setAccessMode(FFTGrid::READ);
-  postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);
-  postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);
+  postCovVp     ->setAccessMode(FFTGrid::READ);
+  postCovVs     ->setAccessMode(FFTGrid::READ);
+  postCovRho    ->setAccessMode(FFTGrid::READ);
+  postCrCovVpVs ->setAccessMode(FFTGrid::READ);
+  postCrCovVpRho->setAccessMode(FFTGrid::READ);
+  postCrCovVsRho->setAccessMode(FFTGrid::READ);
 
   errCorr_->fftInPlace();
   errCorr_->setAccessMode(FFTGrid::READ);
@@ -1098,8 +1098,8 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
     for( j = 0; j < nyp_; j++) {
       for( i = 0; i < cnxp; i++) {
-        ijkMean[0] = meanAlpha_->getNextComplex();
-        ijkMean[1] = meanBeta_ ->getNextComplex();
+        ijkMean[0] = meanVp_->getNextComplex();
+        ijkMean[1] = meanVs_ ->getNextComplex();
         ijkMean[2] = meanRho_  ->getNextComplex();
 
         for(l = 0; l < ntheta_; l++ )
@@ -1150,15 +1150,15 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
           }
         }
 
-        postAlpha_->setNextComplex(ijkMean[0]);
-        postBeta_ ->setNextComplex(ijkMean[1]);
+        postVp_->setNextComplex(ijkMean[0]);
+        postVs_ ->setNextComplex(ijkMean[1]);
         postRho_  ->setNextComplex(ijkMean[2]);
-        postCovAlpha->setNextComplex(parVar[0][0]);
-        postCovBeta ->setNextComplex(parVar[1][1]);
+        postCovVp->setNextComplex(parVar[0][0]);
+        postCovVs ->setNextComplex(parVar[1][1]);
         postCovRho  ->setNextComplex(parVar[2][2]);
-        postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
-        postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
-        postCrCovBetaRho  ->setNextComplex(parVar[1][2]);
+        postCrCovVpVs->setNextComplex(parVar[0][1]);
+        postCrCovVpRho ->setNextComplex(parVar[0][2]);
+        postCrCovVsRho  ->setNextComplex(parVar[1][2]);
 
         for(l=0;l<ntheta_;l++)
           seisData_[l]->setNextComplex(ijkRes[l]);
@@ -1176,24 +1176,24 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
   //  time(&timeend);
   // LogKit::LogFormatted(LogKit::Low,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
-  meanAlpha_      = NULL; // the content is taken care of by  postAlpha_
-  meanBeta_       = NULL; // the content is taken care of by  postBeta_
+  meanVp_      = NULL; // the content is taken care of by  postVp_
+  meanVs_       = NULL; // the content is taken care of by  postVs_
   meanRho_        = NULL; // the content is taken care of by  postRho_
 
-  postAlpha_->endAccess();
-  postBeta_->endAccess();
+  postVp_->endAccess();
+  postVs_->endAccess();
   postRho_->endAccess();
 
-  postCovAlpha      ->endAccess();
-  postCovBeta       ->endAccess();
+  postCovVp      ->endAccess();
+  postCovVs       ->endAccess();
   postCovRho        ->endAccess();
-  postCrCovAlphaBeta->endAccess();
-  postCrCovAlphaRho ->endAccess();
-  postCrCovBetaRho  ->endAccess();
+  postCrCovVpVs->endAccess();
+  postCrCovVpRho ->endAccess();
+  postCrCovVsRho  ->endAccess();
   errCorr_          ->endAccess();
 
-  postAlpha_->invFFTInPlace();
-  postBeta_ ->invFFTInPlace();
+  postVp_->invFFTInPlace();
+  postVs_ ->invFFTInPlace();
   postRho_  ->invFFTInPlace();
 
   for(l=0;l<ntheta_;l++)
@@ -1223,17 +1223,17 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
   if(modelGeneral_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
-    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-    postAlpha_->expTransf();
+    postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
+    postVp_->expTransf();
     GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
     const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
     const Simbox * timeSimbox = simbox_;
     if(dcMap != NULL)
       timeSimbox = dcMap->getSimbox();
 
-    tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
-    postAlpha_->logTransf();
-    postAlpha_->endAccess();
+    tdMap->setMappingFromVelocity(postVp_, timeSimbox);
+    postVp_->logTransf();
+    postVp_->endAccess();
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
@@ -1243,25 +1243,25 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     seismicParameters.updatePriorVar();
 
     postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-    postCovAlpha00_       = seismicParameters.createPostCov00(postCovAlpha);
-    postCovBeta00_        = seismicParameters.createPostCov00(postCovBeta);
+    postCovVp00_       = seismicParameters.createPostCov00(postCovVp);
+    postCovVs00_        = seismicParameters.createPostCov00(postCovVs);
     postCovRho00_         = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
 
-    correctAlphaBetaRho(modelSettings_);
+    correctVpVsRho(modelSettings_);
   }
 
   if(doing4DInversion_==false)
   {
     if(writePrediction_ == true )
-      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
+      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
       outputGridsElastic_, fileGrid_, -1, false);
 
     writeBWPredicted();
   }
 
-  delete [] seisData_;
+  //delete [] seisData_;
   delete [] kW;
   delete [] errMult1;
   delete [] errMult2;
@@ -1419,9 +1419,9 @@ Crava::doPredictionKriging(SeismicParametersHolder & seismicParameters)
   if(writePrediction_ == true) { //No need to do this if output not requested.
     double wall2=0.0, cpu2=0.0;
     TimeKit::getTime(wall2,cpu2);
-    doPostKriging(seismicParameters, *postAlpha_, *postBeta_, *postRho_);
+    doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_);
     Timings::setTimeKrigingPred(wall2,cpu2);
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
+    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
                                      outputGridsElastic_, fileGrid_, -1, true);
   }
 }
@@ -1437,19 +1437,19 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
   if(nSim_>0)
   {
     bool kriging = (krigingParameter_ > 0);
-    FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
-    FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
+    FFTGrid * postCovVp       = seismicParameters.GetCovVp();
+    FFTGrid * postCovVs        = seismicParameters.GetCovVs();
     FFTGrid * postCovRho         = seismicParameters.GetCovRho();
-    FFTGrid * postCrCovAlphaBeta = seismicParameters.GetCrCovAlphaBeta();
-    FFTGrid * postCrCovAlphaRho  = seismicParameters.GetCrCovAlphaRho();
-    FFTGrid * postCrCovBetaRho   = seismicParameters.GetCrCovBetaRho();
+    FFTGrid * postCrCovVpVs = seismicParameters.GetCrCovVpVs();
+    FFTGrid * postCrCovVpRho  = seismicParameters.GetCrCovVpRho();
+    FFTGrid * postCrCovVsRho   = seismicParameters.GetCrCovVsRho();
 
-    assert( postCovAlpha->getIsTransformed() );
-    assert( postCovBeta->getIsTransformed() );
+    assert( postCovVp->getIsTransformed() );
+    assert( postCovVs->getIsTransformed() );
     assert( postCovRho->getIsTransformed() );
-    assert( postCrCovAlphaBeta->getIsTransformed() );
-    assert( postCrCovAlphaRho->getIsTransformed() );
-    assert( postCrCovBetaRho->getIsTransformed() );
+    assert( postCrCovVpVs->getIsTransformed() );
+    assert( postCrCovVpRho->getIsTransformed() );
+    assert( postCrCovVsRho->getIsTransformed() );
 
     int             simNr,i,j,k,l;
     fftw_complex ** ijkPostCov;
@@ -1481,12 +1481,12 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
       seed1->fillInComplexNoise(randomGen);
       seed2->fillInComplexNoise(randomGen);
 
-      postCovAlpha      ->setAccessMode(FFTGrid::READ);
-      postCovBeta       ->setAccessMode(FFTGrid::READ);
+      postCovVp      ->setAccessMode(FFTGrid::READ);
+      postCovVs       ->setAccessMode(FFTGrid::READ);
       postCovRho        ->setAccessMode(FFTGrid::READ);
-      postCrCovAlphaBeta->setAccessMode(FFTGrid::READ);
-      postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);
-      postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);
+      postCrCovVpVs->setAccessMode(FFTGrid::READ);
+      postCrCovVpRho ->setAccessMode(FFTGrid::READ);
+      postCrCovVsRho  ->setAccessMode(FFTGrid::READ);
       seed0 ->setAccessMode(FFTGrid::READANDWRITE);
       seed1 ->setAccessMode(FFTGrid::READANDWRITE);
       seed2 ->setAccessMode(FFTGrid::READANDWRITE);
@@ -1497,12 +1497,12 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
         for(j = 0; j < nyp_; j++)
           for(i = 0; i < cnxp; i++)
           {
-            ijkPostCov[0][0] = postCovAlpha      ->getNextComplex();
-            ijkPostCov[1][1] = postCovBeta       ->getNextComplex();
+            ijkPostCov[0][0] = postCovVp      ->getNextComplex();
+            ijkPostCov[1][1] = postCovVs       ->getNextComplex();
             ijkPostCov[2][2] = postCovRho        ->getNextComplex();
-            ijkPostCov[0][1] = postCrCovAlphaBeta->getNextComplex();
-            ijkPostCov[0][2] = postCrCovAlphaRho ->getNextComplex();
-            ijkPostCov[1][2] = postCrCovBetaRho  ->getNextComplex();
+            ijkPostCov[0][1] = postCrCovVpVs->getNextComplex();
+            ijkPostCov[0][2] = postCrCovVpRho ->getNextComplex();
+            ijkPostCov[1][2] = postCrCovVsRho  ->getNextComplex();
 
             ijkPostCov[1][0].re =  ijkPostCov[0][1].re;
             ijkPostCov[1][0].im = -ijkPostCov[0][1].im;
@@ -1534,12 +1534,12 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
             seed2->setNextComplex(ijkSeed[2]);
           }
 
-          postCovAlpha->endAccess();  //
-          postCovBeta->endAccess();   //
+          postCovVp->endAccess();  //
+          postCovVs->endAccess();   //
           postCovRho->endAccess();
-          postCrCovAlphaBeta->endAccess();
-          postCrCovAlphaRho->endAccess();
-          postCrCovBetaRho->endAccess();
+          postCrCovVpVs->endAccess();
+          postCrCovVpRho->endAccess();
+          postCrCovVsRho->endAccess();
           seed0->endAccess();
           seed1->endAccess();
           seed2->endAccess();
@@ -1579,9 +1579,9 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
                 }
           }
 
-          seed0->add(postAlpha_);
+          seed0->add(postVp_);
           seed0->endAccess();
-          seed1->add(postBeta_);
+          seed1->add(postVs_);
           seed1->endAccess();
           seed2->add(postRho_);
           seed2->endAccess();
@@ -1614,19 +1614,19 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
 
 void
 Crava::doPostKriging(SeismicParametersHolder & seismicParameters,
-                     FFTGrid                 & postAlpha,
-                     FFTGrid                 & postBeta,
+                     FFTGrid                 & postVp,
+                     FFTGrid                 & postVs,
                      FFTGrid                 & postRho)
 {
 
   LogKit::WriteHeader("Kriging to wells");
 
-  CovGridSeparated covGridAlpha      (*seismicParameters.GetCovAlpha()      );
-  CovGridSeparated covGridBeta       (*seismicParameters.GetCovBeta()       );
+  CovGridSeparated covGridVp      (*seismicParameters.GetCovVp()      );
+  CovGridSeparated covGridVs       (*seismicParameters.GetCovVs()       );
   CovGridSeparated covGridRho        (*seismicParameters.GetCovRho()        );
-  CovGridSeparated covGridCrAlphaBeta(*seismicParameters.GetCrCovAlphaBeta());
-  CovGridSeparated covGridCrAlphaRho (*seismicParameters.GetCrCovAlphaRho() );
-  CovGridSeparated covGridCrBetaRho  (*seismicParameters.GetCrCovBetaRho()  );
+  CovGridSeparated covGridCrVpVs(*seismicParameters.GetCrCovVpVs());
+  CovGridSeparated covGridCrVpRho (*seismicParameters.GetCrCovVpRho() );
+  CovGridSeparated covGridCrVsRho  (*seismicParameters.GetCrCovVsRho()  );
 
   //KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
   KrigingData3D kd(blocked_wells_, nWells_, 1); // 1 = full resolution logs
@@ -1637,11 +1637,11 @@ Crava::doPostKriging(SeismicParametersHolder & seismicParameters,
 
   CKrigingAdmin pKriging(*simbox_,
                          kd.getData(), kd.getNumberOfData(),
-                         covGridAlpha, covGridBeta, covGridRho,
-                         covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho,
+                         covGridVp, covGridVs, covGridRho,
+                         covGridCrVpVs, covGridCrVpRho, covGridCrVsRho,
                          krigingParameter_);
 
-  pKriging.KrigAll(postAlpha, postBeta, postRho, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
+  pKriging.KrigAll(postVp, postVs, postRho, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
 }
 
 FFTGrid *
@@ -1962,10 +1962,10 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
     FFTGrid * likelihood = NULL;
     if((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
-      int nx = postAlpha_->getNx();
-      int ny = postAlpha_->getNy();
-      int nz = postAlpha_->getNz();
-      if(postAlpha_->isFile()==1)
+      int nx = postVp_->getNx();
+      int ny = postVp_->getNy();
+      int nz = postVp_->getNz();
+      if(postVp_->isFile()==1)
         likelihood = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
       else
         likelihood = new FFTGrid(nx, ny, nz, nx, ny, nz);
@@ -1974,10 +1974,10 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
     if(modelSettings->getFaciesProbRelative())
     {
-      meanAlpha2_->subtract(postAlpha_);
-      meanAlpha2_->changeSign();
-      meanBeta2_->subtract(postBeta_);
-      meanBeta2_->changeSign();
+      meanVp2_->subtract(postVp_);
+      meanVp2_->changeSign();
+      meanVs2_->subtract(postVs_);
+      meanVs2_->changeSign();
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
       if(modelSettings->getFaciesProbFromRockPhysics())
@@ -1989,8 +1989,8 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
-      fprob_ = new FaciesProb(meanAlpha2_,
-                              meanBeta2_,
+      fprob_ = new FaciesProb(meanVp2_,
+                              meanVs2_,
                               meanRho2_,
                               nfac,
                               modelSettings->getPundef(),
@@ -2017,8 +2017,8 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               trend_min[1],
                               trend_max[1]);
 
-      delete meanAlpha2_;
-      delete meanBeta2_;
+      delete meanVp2_;
+      delete meanVs2_;
       delete meanRho2_;
     }
     else if(modelSettings->getFaciesProbRelative() == false)
@@ -2031,8 +2031,8 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       std::vector<double> trend_max;
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
-      fprob_ = new FaciesProb(postAlpha_,
-                                postBeta_,
+      fprob_ = new FaciesProb(postVp_,
+                                postVs_,
                                 postRho_,
                                 nfac,
                                 modelSettings->getPundef(),
@@ -2372,7 +2372,7 @@ Crava::computeFilter(NRLib::SymmetricMatrix & Sprior,
 }
 
 
-void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
+void Crava::correctVpVsRho(ModelSettings * modelSettings)
 {
   int i,j,k;
 
@@ -2437,11 +2437,11 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
   for(int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
-  postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-  postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+  postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
+  postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-  meanAlpha2_->setAccessMode(FFTGrid::RANDOMACCESS);
-  meanBeta2_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanVp2_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanVs2_->setAccessMode(FFTGrid::RANDOMACCESS);
   meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
 
   for(i=0;i<nx_;i++)
@@ -2472,11 +2472,11 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
         }
       }
 
-      postAlpha_->getRealTrace(alpha, i, j);
-      postBeta_->getRealTrace(beta, i, j);
+      postVp_->getRealTrace(alpha, i, j);
+      postVs_->getRealTrace(beta, i, j);
       postRho_->getRealTrace(rho, i, j);
-      meanAlpha2_->getRealTrace(meanalpha, i, j);
-      meanBeta2_->getRealTrace(meanbeta, i, j);
+      meanVp2_->getRealTrace(meanalpha, i, j);
+      meanVs2_->getRealTrace(meanbeta, i, j);
       meanRho2_->getRealTrace(meanrho, i, j);
 
       for(k=0;k<nz_;k++)
@@ -2488,23 +2488,23 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
         beta[k]   = float(meanbeta[k] +sigmanew(1,0)*alphadiff + sigmanew(1,1)*betadiff + sigmanew(1,2)*rhodiff);
         rho[k]    = float(meanrho[k]  +sigmanew(2,0)*alphadiff + sigmanew(2,1)*betadiff + sigmanew(2,2)*rhodiff);
       }
-      postAlpha_->setRealTrace(i,j, alpha);
-      postBeta_->setRealTrace(i,j,beta);
+      postVp_->setRealTrace(i,j, alpha);
+      postVs_->setRealTrace(i,j,beta);
       postRho_->setRealTrace(i,j,rho);
     }
   }
 
-  postAlpha_->endAccess();
-  postBeta_->endAccess();
+  postVp_->endAccess();
+  postVs_->endAccess();
   postRho_->endAccess();
-  meanAlpha2_->endAccess();
-  meanBeta2_->endAccess();
+  meanVp2_->endAccess();
+  meanVs2_->endAccess();
   meanRho2_->endAccess();
 
   if(!(modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative())) {
     //We do not need these, and they will not be deleted elsewhere in this case.
-    delete meanAlpha2_;
-    delete meanBeta2_;
+    delete meanVp2_;
+    delete meanVs2_;
     delete meanRho2_;
   }
 
@@ -2544,13 +2544,13 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
 //  {
 //    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
 //
-//    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
-//    postAlpha_->endAccess();
+//    postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
+//    bw->setLogFromGrid(postVp_,0,1,"ALPHA_PREDICTED");
+//    postVp_->endAccess();
 //
-//    postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
-//    postBeta_->endAccess();
+//    postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
+//    bw->setLogFromGrid(postVs_,0,1,"BETA_PREDICTED");
+//    postVs_->endAccess();
 //
 //    postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
 //    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
@@ -2564,13 +2564,13 @@ void Crava::writeBWPredicted(void)
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-    blocked_log->SetLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
-    postAlpha_->endAccess();
+    postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
+    blocked_log->SetLogFromGrid(postVp_,0,1,"ALPHA_PREDICTED");
+    postVp_->endAccess();
 
-    postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
-    blocked_log->SetLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
-    postBeta_->endAccess();
+    postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
+    blocked_log->SetLogFromGrid(postVs_,0,1,"BETA_PREDICTED");
+    postVs_->endAccess();
 
     postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
     blocked_log->SetLogFromGrid(postRho_,0,1,"RHO_PREDICTED");

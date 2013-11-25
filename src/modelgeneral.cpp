@@ -3416,11 +3416,11 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 
 
   // Copying grids for sigma static
-  vp_vp_stat   = new FFTGrid( seismicParameters.GetCovAlpha());
-  vp_vs_stat   = new FFTGrid( seismicParameters.GetCrCovAlphaBeta());
-  vp_rho_stat  = new FFTGrid( seismicParameters.GetCrCovAlphaRho());
-  vs_vs_stat   = new FFTGrid( seismicParameters.GetCovBeta());
-  vs_rho_stat  = new FFTGrid( seismicParameters.GetCrCovBetaRho());
+  vp_vp_stat   = new FFTGrid( seismicParameters.GetCovVp());
+  vp_vs_stat   = new FFTGrid( seismicParameters.GetCrCovVpVs());
+  vp_rho_stat  = new FFTGrid( seismicParameters.GetCrCovVpRho());
+  vs_vs_stat   = new FFTGrid( seismicParameters.GetCovVs());
+  vs_rho_stat  = new FFTGrid( seismicParameters.GetCrCovVsRho());
   rho_rho_stat = new FFTGrid( seismicParameters.GetCovRho());
 
   state4d.setStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
@@ -4722,7 +4722,7 @@ ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
 {
   //H Difference: Earlier a background was made from rockphysics3d, which was copied to seismicParameters and state4d.
   //Now, use background created in CommonData
-  state4d_.setStaticMu(seismicParameters.GetMuAlpha(), seismicParameters.GetMuBeta(), seismicParameters.GetMuRho());
+  state4d_.setStaticMu(seismicParameters.GetMuVp(), seismicParameters.GetMuVs(), seismicParameters.GetMuRho());
 
   copyCorrelationsTo4DState(seismicParameters, state4d_);
 
@@ -4904,7 +4904,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   std::stringstream tag;
   bool transformHere=false;
 
-  if(current_state.GetMuAlpha()->getIsTransformed())
+  if(current_state.GetMuVp()->getIsTransformed())
   {
     transformHere=true;
     current_state.invFFTAllGrids();
@@ -4912,7 +4912,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
 
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuVp() , fileName,  tag.str(),true);
   /*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
@@ -4921,7 +4921,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // */
   // write sigma current
   tag.str(std::string());tag.clear();label = "cov_vp_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovAlpha() , fileName,  tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovVp() , fileName,  tag.str(),true);
   /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovAlphaBeta() , fileName,  tag.str(),true);

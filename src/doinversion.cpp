@@ -231,6 +231,7 @@ bool
 doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                 ModelGeneral            * modelGeneral,
                                 ModelGravityStatic      * modelGravityStatic,
+                                CommonData              * commonData,
                                 InputFiles              * inputFiles,
                                 int                     & vintage,
                                 SeismicParametersHolder & seismicParameters)
@@ -240,6 +241,7 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
   modelGravityDynamic = new ModelGravityDynamic(modelSettings,
                                                 modelGeneral,
                                                 modelGravityStatic,
+                                                commonData,
                                                 inputFiles,
                                                 vintage,
                                                 seismicParameters);

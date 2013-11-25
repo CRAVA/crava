@@ -43,10 +43,10 @@ public:
   ~Crava();
 
   int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
-  int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+  int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);
 
-  FFTGrid              * getPostAlpha() { return postAlpha_ ;}
-  FFTGrid              * getPostBeta()  { return postBeta_  ;}
+  FFTGrid              * getPostVp() { return postVp_ ;}
+  FFTGrid              * getPostVs()  { return postVs_  ;}
   FFTGrid              * getPostRho()   { return postRho_   ;}
 
   int                    getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
@@ -122,9 +122,9 @@ private:
 
   void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
   void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
-  void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
+  void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postVp, FFTGrid & postVs, FFTGrid & postRho);
 
-  void                   correctAlphaBetaRho(ModelSettings * modelSettings);
+  void                   correctVpVsRho(ModelSettings * modelSettings);
 
   FFTGrid *              computeSeismicImpedance(FFTGrid * alpha,
                                                  FFTGrid * beta,
@@ -161,11 +161,11 @@ private:
   int                nSim_;             // number of simulations
   float            * thetaDeg_;         // in degrees
 
-  FFTGrid          * meanAlpha_;        // mean values
-  FFTGrid          * meanBeta_;
+  FFTGrid          * meanVp_;        // mean values
+  FFTGrid          * meanVs_;
   FFTGrid          * meanRho_;
-  FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method
-  FFTGrid          * meanBeta2_;
+  FFTGrid          * meanVp2_;       // copy of mean values, to be used for facies prob, new method
+  FFTGrid          * meanVs2_;
   FFTGrid          * meanRho2_;
 
   //Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
@@ -188,12 +188,12 @@ private:
 
   NRLib::Matrix      priorVar0_;
   NRLib::Matrix      postVar0_;
-  std::vector<float> postCovAlpha00_;        // Posterior covariance in (i,j) = (0,0)
-  std::vector<float> postCovBeta00_;
+  std::vector<float> postCovVp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float> postCovVs00_;
   std::vector<float> postCovRho00_;
 
-  FFTGrid          * postAlpha_;        // posterior values
-  FFTGrid          * postBeta_;
+  FFTGrid          * postVp_;        // posterior values
+  FFTGrid          * postVs_;
   FFTGrid          * postRho_;
   FFTGrid          * errCorr_;
 

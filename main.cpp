@@ -279,7 +279,7 @@ int main(int argc, char** argv)
           failedFirst = doTimeLapseTravelTimeInversion(modelSettings, modelGeneral, inputFiles, eventIndex, seismicParametersInterval);
           break;
         case TimeLine::GRAVITY :
-          failedFirst = doTimeLapseGravimetricInversion(modelSettings, modelGeneral, modelGravityStatic, inputFiles, eventIndex, seismicParametersInterval);
+          failedFirst = doTimeLapseGravimetricInversion(modelSettings, modelGeneral, modelGravityStatic, common_data, inputFiles, eventIndex, seismicParametersInterval);
           break;
         default :
           errTxt += "Error: Unknown inverstion type.\n";
@@ -322,6 +322,7 @@ int main(int argc, char** argv)
             failed = doTimeLapseGravimetricInversion(modelSettings,
                                                      modelGeneral,
                                                      modelGravityStatic,
+                                                     common_data,
                                                      inputFiles,
                                                      eventIndex,
                                                      seismicParametersInterval);

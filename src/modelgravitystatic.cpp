@@ -134,11 +134,11 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
   // Set up gravimetric baseline
   LogKit::WriteHeader("Setting up gravimetric baseline");
 
-  observation_location_utmx_  = commonData->GetGravityObservationUtmxInterval(i_interval); //H When will these be used?
-  observation_location_utmy_  = commonData->GetGravityObservationUtmyInterval(i_interval);
-  observation_location_depth_ = commonData->GetGravityObservationDepthInterval(i_interval);
-  gravity_response_           = commonData->GetGravityResponseInterval(i_interval);
-  gravity_std_dev_            = commonData->GetGravityStdDevInterval(i_interval);
+  observation_location_utmx_  = commonData->GetGravityObservationUtmxTimeLapse(0); //H Not used?
+  observation_location_utmy_  = commonData->GetGravityObservationUtmyTimeLapse(0);
+  observation_location_depth_ = commonData->GetGravityObservationDepthTimeLapse(0);
+  gravity_response_           = commonData->GetGravityResponseTimeLapse(0);
+  gravity_std_dev_            = commonData->GetGravityStdDevTimeLapse(0);
 
   x_upscaling_factor_ = 10;   // user input...
   y_upscaling_factor_ = 10;

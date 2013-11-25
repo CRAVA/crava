@@ -69,7 +69,7 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
     failedLoadingModel = true;
   }
 
-  if(failedLoadingModel == false){
+  if(failedLoadingModel == false) {
     LogKit::WriteHeader("Setting up gravimetric time lapse");
 
     // Find first gravity data file
@@ -109,31 +109,76 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
 
 }
 
-ModelGravityDynamic::ModelGravityDynamic(ModelGravityStatic       * modelGravityStatic,
-                                         Simbox                   * simbox,
-                                         SeismicParametersHolder  & seismicParameters,
-                                         const std::vector<float> & observation_location_utmx,
-                                         const std::vector<float> & observation_location_utmy,
-                                         const std::vector<float> & observation_location_depth,
-                                         const std::vector<float> & gravity_response,
-                                         const std::vector<float> & gravity_std_dev)
+ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
+                                         const ModelGeneral           * modelGeneral,
+                                         ModelGravityStatic           * modelGravityStatic,
+                                         CommonData                   * commonData,
+                                         const InputFiles             * inputFiles,
+                                         int                            t,
+                                         SeismicParametersHolder      & seismicParameters)
+
 {
-  //modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
-  observation_location_utmx_  = observation_location_utmx;
-  observation_location_utmy_  = observation_location_utmy;
-  observation_location_depth_ = observation_location_depth;
-  gravity_response_           = gravity_response;
-  gravity_std_dev_            = gravity_std_dev;
+  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
 
   debug_                  = true;
   failed_                 = false;
+  thisTimeLapse_          = t;
 
-  LogKit::WriteHeader("Setting up gravimetric time lapse");
+  bool failedLoadingModel = false;
+  bool failedReadingFile  = false;
+  std::string errText("");
 
-  LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
-  BuildGMatrix(modelGravityStatic, seismicParameters, simbox);
-  LogKit::LogFormatted(LogKit::Low, "ok.\n");
+  int nObs = 30;     // should this be given in input file
+  int nColumns = 5;  // We require data files to have five columns
+
+  // Check that timeLapse is ok
+  if(thisTimeLapse_ < 1 && thisTimeLapse_ > modelSettings->getNumberOfVintages()){
+    errText += "Not valid time lapse";
+    failedLoadingModel = true;
+  }
+
+  if(failedLoadingModel == false){
+    LogKit::WriteHeader("Setting up gravimetric time lapse");
+
+    observation_location_utmx_  = commonData->GetGravityObservationUtmxTimeLapse(thisTimeLapse_);
+    observation_location_utmy_  = commonData->GetGravityObservationUtmyTimeLapse(thisTimeLapse_);
+    observation_location_depth_ = commonData->GetGravityObservationDepthTimeLapse(thisTimeLapse_);
+    gravity_response_           = commonData->GetGravityResponseTimeLapse(thisTimeLapse_);
+    gravity_std_dev_            = commonData->GetGravityStdDevTimeLapse(thisTimeLapse_);
+
+
+    LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
+    BuildGMatrix(modelGravityStatic, seismicParameters);
+    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+  }
+
 }
+
+//ModelGravityDynamic::ModelGravityDynamic(ModelGravityStatic       * modelGravityStatic,
+//                                         Simbox                   * simbox,
+//                                         SeismicParametersHolder  & seismicParameters,
+//                                         const std::vector<float> & observation_location_utmx,
+//                                         const std::vector<float> & observation_location_utmy,
+//                                         const std::vector<float> & observation_location_depth,
+//                                         const std::vector<float> & gravity_response,
+//                                         const std::vector<float> & gravity_std_dev)
+//{
+//  //modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
+//  observation_location_utmx_  = observation_location_utmx;
+//  observation_location_utmy_  = observation_location_utmy;
+//  observation_location_depth_ = observation_location_depth;
+//  gravity_response_           = gravity_response;
+//  gravity_std_dev_            = gravity_std_dev;
+//
+//  debug_                  = true;
+//  failed_                 = false;
+//
+//  LogKit::WriteHeader("Setting up gravimetric time lapse");
+//
+//  LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
+//  BuildGMatrix(modelGravityStatic, seismicParameters, simbox);
+//  LogKit::LogFormatted(LogKit::Low, "ok.\n");
+//}
 
 ModelGravityDynamic::~ModelGravityDynamic(void)
 {
@@ -153,8 +198,8 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
     fullSizeTimeSimbox = simbox;
 
     // Use vp_current, found in Seismic parameters holder here.
-  FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMuAlpha());  // for upscaling
-  FFTGrid * meanAlphaFullSize = new FFTGrid(expMeanAlpha);                    // for full size matrix
+  FFTGrid * expMeanVp      = new FFTGrid(seismicParameters.GetMuVp());  // for upscaling
+  FFTGrid * meanVpFullSize = new FFTGrid(expMeanVp);                    // for full size matrix
 
   int nx = fullSizeTimeSimbox->getnx();
   int ny = fullSizeTimeSimbox->getny();
@@ -164,9 +209,9 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   double dy = fullSizeTimeSimbox->getdy();
   //double dz = fullSizeTimeSimbox->getdz();  //Tvilsomt?
 
-  int nxp = expMeanAlpha->getNxp();
-  int nyp = expMeanAlpha->getNyp();
-  int nzp = expMeanAlpha->getNzp();
+  int nxp = expMeanVp->getNxp();
+  int nyp = expMeanVp->getNyp();
+  int nzp = expMeanVp->getNzp();
 
   int nxp_upscaled = modelGravityStatic->GetNxp_upscaled();
   int nyp_upscaled = modelGravityStatic->GetNyp_upscaled();
@@ -193,15 +238,15 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   G_fullsize_.resize(nObs, N_fullsize);
 
   // Need to be in real domain for transforming from log domain
-  if(expMeanAlpha->getIsTransformed())
-    expMeanAlpha->invFFTInPlace();
+  if(expMeanVp->getIsTransformed())
+    expMeanVp->invFFTInPlace();
 
-  if(meanAlphaFullSize->getIsTransformed())
-    meanAlphaFullSize->invFFTInPlace();
+  if(meanVpFullSize->getIsTransformed())
+    meanVpFullSize->invFFTInPlace();
 
-  float sigma_squared = GravimetricInversion::GetSigmaForTransformation(seismicParameters.GetCovAlpha());
-  GravimetricInversion::MeanExpTransform(expMeanAlpha,      sigma_squared);
-  GravimetricInversion::MeanExpTransform(meanAlphaFullSize, sigma_squared);
+  float sigma_squared = GravimetricInversion::GetSigmaForTransformation(seismicParameters.GetCovVp());
+  GravimetricInversion::MeanExpTransform(expMeanVp,      sigma_squared);
+  GravimetricInversion::MeanExpTransform(meanVpFullSize, sigma_squared);
 
 
   //Smooth (convolve) and subsample
@@ -211,15 +256,15 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   upscalingKernel_conj->conjugate();  // Conjugate only in FFT domain.
 
   // Need to be in FFT domain for convolution and subsampling
-  if(expMeanAlpha->getIsTransformed() == false)
-    expMeanAlpha->fftInPlace();
+  if(expMeanVp->getIsTransformed() == false)
+    expMeanVp->fftInPlace();
 
-  expMeanAlpha->multiply(upscalingKernel_conj);  // Now is expMeanAlpha smoothed
+  expMeanVp->multiply(upscalingKernel_conj);  // Now is expMeanAlpha smoothed
 
-  FFTGrid * upscaledMeanAlpha;
-  GravimetricInversion::Subsample(upscaledMeanAlpha, expMeanAlpha, nx_upscaled, ny_upscaled, nz_upscaled, nxp_upscaled, nyp_upscaled, nzp_upscaled);
+  FFTGrid * upscaledMeanVp;
+  GravimetricInversion::Subsample(upscaledMeanVp, expMeanVp, nx_upscaled, ny_upscaled, nz_upscaled, nxp_upscaled, nyp_upscaled, nzp_upscaled);
 
-  upscaledMeanAlpha->invFFTInPlace();
+  upscaledMeanVp->invFFTInPlace();
 
   float x0, y0, z0; // Coordinates for the observations points
   int J = 0;        // Index in matrix counting cell number
@@ -245,7 +290,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
       for(int jj = 0; jj < ny_upscaled; jj++){
         for(int kk = 0; kk < nz_upscaled; kk++){   // eller i sist??
           double x, y, z;
-          vp = upscaledMeanAlpha->getRealValue(ii,jj,kk);
+          vp = upscaledMeanVp->getRealValue(ii,jj,kk);
 
           int istart = ii*upscaling_factor_x;
           int istop  = (ii+1)*upscaling_factor_x;
@@ -323,7 +368,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
         for(int kk = 0; kk < nz; kk++){
           double x, y, z;
           fullSizeTimeSimbox->getCoord(ii, jj, kk, x, y, z); // assuming these are center positions...
-          vp = meanAlphaFullSize->getRealValue(ii, jj, kk);
+          vp = meanVpFullSize->getRealValue(ii, jj, kk);
           dt = fullSizeTimeSimbox->getdz(ii, jj);
           if(debug_){
             dt = 1;  // such that vp*dt = 80

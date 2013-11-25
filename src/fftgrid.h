@@ -46,21 +46,21 @@ public:
 
   //void                 fillFromGridFillPadding(const NRLib::Grid<double> & grid);
 
-  void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                              float                z0_data,
-                                              float                zn_data,
-                                              float                dz_data,
-                                              float                smooth_length,
-                                              std::string        & errTxt);
-  void                 resampleTrace(const std::vector<float> & data_trace,
-                                     const rfftwnd_plan       & fftplan1,
-                                     const rfftwnd_plan       & fftplan2,
-                                     fftw_real                * rAmpData,
-                                     fftw_real                * rAmpFine,
-                                     int                        cnt,
-                                     int                        rnt,
-                                     int                        cmt,
-                                     int                        rmt);
+  //void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
+  //                                            float                z0_data,
+  //                                            float                zn_data,
+  //                                            float                dz_data,
+  //                                            float                smooth_length,
+  //                                            std::string        & errTxt);
+  //void                 resampleTrace(const std::vector<float> & data_trace,
+  //                                   const rfftwnd_plan       & fftplan1,
+  //                                   const rfftwnd_plan       & fftplan2,
+  //                                   fftw_real                * rAmpData,
+  //                                   fftw_real                * rAmpFine,
+  //                                   int                        cnt,
+  //                                   int                        rnt,
+  //                                   int                        cmt,
+  //                                   int                        rmt);
 
   double               InterpolateTrilinear(double  x_min,
                                    double           x_max,

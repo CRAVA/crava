@@ -7264,6 +7264,10 @@ bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
                                        InputFiles    * input_files,
                                        std::string   & err_text_common) {
 
+  //H Intervals? It is set up per timelapse, divide it it per intevals?
+  //  Seperate based on depth and simox-intevals?
+  //  Alternative: Read all here -> split up in modelGravityStatic/modelGravityDynamic where these are used.
+
   std::string err_text = "";
 
   bool failed                 = false;

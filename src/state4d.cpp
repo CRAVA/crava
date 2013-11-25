@@ -95,8 +95,8 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   //First, merge expectations.
   std::vector<FFTGrid *> mu(3);
-  mu[0] =  current_state.GetMuAlpha(); //mu_Alpha
-  mu[1] =  current_state.GetMuBeta(); //mu_Beta
+  mu[0] =  current_state.GetMuVp(); //mu_Alpha
+  mu[1] =  current_state.GetMuVs(); //mu_Beta
   mu[2] =  current_state.GetMuRho(); //mu_Rho
 
   for(int i = 0; i<3; i++)
@@ -147,11 +147,11 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   //Merge covariances
   std::vector<FFTGrid *> sigma(6);
-  sigma[0]=current_state.GetCovAlpha();
-  sigma[1]=current_state.GetCrCovAlphaBeta();
-  sigma[2]=current_state.GetCrCovAlphaRho();
-  sigma[3]=current_state.GetCovBeta();
-  sigma[4]=current_state.GetCrCovBetaRho();
+  sigma[0]=current_state.GetCovVp();
+  sigma[1]=current_state.GetCrCovVpVs();
+  sigma[2]=current_state.GetCrCovVpRho();
+  sigma[3]=current_state.GetCovVs();
+  sigma[4]=current_state.GetCrCovVsRho();
   sigma[5]=current_state.GetCovRho();
 
   mergeCov(sigma);
@@ -256,8 +256,8 @@ void State4D::split(SeismicParametersHolder & current_state )
   assert(allGridsAreTransformed());
 
   std::vector<FFTGrid *> mu(3);
-  mu[0] =  current_state.GetMuAlpha(); //mu_Alpha
-  mu[1] =  current_state.GetMuBeta(); //mu_Beta
+  mu[0] =  current_state.GetMuVp(); //mu_Alpha
+  mu[1] =  current_state.GetMuVs(); //mu_Beta
   mu[2] =  current_state.GetMuRho(); //mu_Rho
 
   for(int i = 0; i<3; i++)
@@ -269,11 +269,11 @@ void State4D::split(SeismicParametersHolder & current_state )
   }
 
   std::vector<FFTGrid *> sigma(6);
-  sigma[0]=current_state.GetCovAlpha();
-  sigma[1]=current_state.GetCrCovAlphaBeta();
-  sigma[2]=current_state.GetCrCovAlphaRho();
-  sigma[3]=current_state.GetCovBeta();
-  sigma[4]=current_state.GetCrCovBetaRho();
+  sigma[0]=current_state.GetCovVp();
+  sigma[1]=current_state.GetCrCovVpVs();
+  sigma[2]=current_state.GetCrCovVpRho();
+  sigma[3]=current_state.GetCovVs();
+  sigma[4]=current_state.GetCrCovVsRho();
   sigma[5]=current_state.GetCovRho();
 
 
@@ -309,7 +309,7 @@ void State4D::split(SeismicParametersHolder & current_state )
     sigmaFullPrior[i]          = new fftw_complex[6];
     sigmaFullVsCurrentPrior[i] = new fftw_complex[3];
     sigmaFullPosterior[i]      = new fftw_complex[6];
-    adjointSandwich[i]          = new fftw_complex[3];
+    adjointSandwich[i]         = new fftw_complex[3];
   }
 
   fftw_complex** sigmaCurrentPrior       = new fftw_complex*[3];

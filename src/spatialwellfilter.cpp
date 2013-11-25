@@ -234,12 +234,12 @@ void SpatialWellFilter::doFilteringSyntWells(std::vector<SyntWellData *>        
     const int *kpos = syntWellData[w1]->getKpos();
     float regularization = Definitions::SpatialFilterRegularisationValue();
 
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovAlpha(),       n, 0,   0);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovBeta(),        n, n,   n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovRho(),         n, 2*n, 2*n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaBeta(), n, 0,   n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovAlphaRho(),  n, 0,   2*n);
-    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovBetaRho(),   n, 2*n, n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovVp(),      n, 0,   0);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovVs(),      n, n,   n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCovRho(),     n, 2*n, 2*n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovVpVs(),  n, 0,   n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovVpRho(), n, 0,   2*n);
+    fillValuesInSigmapostSyntWell(sigmapost, ipos, jpos, kpos, seismicParameters.GetCrCovVsRho(), n, 2*n, n);
 
     // In case the synthetic well is longer than the vertical size of covgrid,
     // set correlation for the relevant grid points to 0
@@ -582,12 +582,12 @@ void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> b
 
       float regularization = Definitions::SpatialFilterRegularisationValue();
 
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovAlpha()      , n, 0  , 0   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovBeta()       , n, n  , n   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovRho()        , n, 2*n, 2*n );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovAlphaBeta(), n, 0  , n   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovAlphaRho() , n, 0  , 2*n );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovBetaRho()  , n, 2*n, n   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVp()     , n, 0  , 0   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVs()     , n, n  , n   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovRho()    , n, 2*n, 2*n );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpVs() , n, 0  , n   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpRho(), n, 0  , 2*n );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVsRho(), n, 2*n, n   );
 
       for(int l1=0 ; l1 < n ; l1++) {
         for(int l2=0 ; l2 < n ; l2++) {

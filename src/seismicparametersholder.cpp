@@ -11,15 +11,15 @@
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
-  muAlpha_        = NULL;
-  muBeta_         = NULL;
-  muRho_          = NULL;
-  covAlpha_       = NULL;
-  covBeta_        = NULL;
-  covRho_         = NULL;
-  crCovAlphaBeta_ = NULL;
-  crCovAlphaRho_  = NULL;
-  crCovBetaRho_   = NULL;
+  muVp_         = NULL;
+  muVs_         = NULL;
+  muRho_        = NULL;
+  covVp_        = NULL;
+  covVs_        = NULL;
+  covRho_       = NULL;
+  crCovVpVs_    = NULL;
+  crCovVpRho_   = NULL;
+  crCovVsRho_   = NULL;
 
   priorVar0_.resize(3,3);
 }
@@ -27,29 +27,29 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
-  if(covAlpha_!=NULL)
-    delete covAlpha_;
+  if(covVp_!=NULL)
+    delete covVp_;
 
-  if(covBeta_!=NULL)
-    delete covBeta_;
+  if(covVs_!=NULL)
+    delete covVs_;
 
   if(covRho_!=NULL)
     delete covRho_;
 
-  if(crCovAlphaBeta_!=NULL)
-    delete crCovAlphaBeta_ ;
+  if(crCovVpVs_!=NULL)
+    delete crCovVpVs_ ;
 
-  if(crCovAlphaRho_!=NULL)
-    delete crCovAlphaRho_ ;
+  if(crCovVpRho_!=NULL)
+    delete crCovVpRho_ ;
 
-  if(crCovBetaRho_!=NULL)
-    delete crCovBetaRho_;
+  if(crCovVsRho_!=NULL)
+    delete crCovVsRho_;
 
-  if(muAlpha_!=NULL)
-    delete muAlpha_;
+  if(muVp_!=NULL)
+    delete muVp_;
 
-  if(muBeta_!=NULL)
-    delete muBeta_;
+  if(muVs_!=NULL)
+    delete muVs_;
 
   if(muRho_!=NULL)
     delete muRho_;
@@ -58,13 +58,13 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 
 void
-SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muAlpha,
-                                                 FFTGrid  * muBeta,
+SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muVp,
+                                                 FFTGrid  * muVs,
                                                  FFTGrid  * muRho)
 {
-  muAlpha_   = muAlpha;
-  muBeta_    = muBeta;
-  muRho_     = muRho;
+  muVp_   = muVp;
+  muVs_   = muVs;
+  muRho_  = muRho;
 }
 
 void
@@ -73,9 +73,9 @@ SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib
                                                          int                                       ny_pad,
                                                          int                                       nz_pad)
 {
-  muAlpha_ = new FFTGrid(mu_parameters[0], nx_pad, ny_pad, nz_pad);
-  muBeta_  = new FFTGrid(mu_parameters[1], nx_pad, ny_pad, nz_pad);
-  muRho_   = new FFTGrid(mu_parameters[2], nx_pad, ny_pad, nz_pad);
+  muVp_  = new FFTGrid(mu_parameters[0], nx_pad, ny_pad, nz_pad);
+  muVs_  = new FFTGrid(mu_parameters[1], nx_pad, ny_pad, nz_pad);
+  muRho_ = new FFTGrid(mu_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
 void
@@ -84,9 +84,9 @@ SeismicParametersHolder::setCovParameters(const std::vector<NRLib::Grid<double> 
                                           int                                       ny_pad,
                                           int                                       nz_pad)
 {
-  covAlpha_ = new FFTGrid(cov_parameters[0], nx_pad, ny_pad, nz_pad);
-  covBeta_  = new FFTGrid(cov_parameters[1], nx_pad, ny_pad, nz_pad);
-  covRho_   = new FFTGrid(cov_parameters[2], nx_pad, ny_pad, nz_pad);
+  covVp_  = new FFTGrid(cov_parameters[0], nx_pad, ny_pad, nz_pad);
+  covVs_  = new FFTGrid(cov_parameters[1], nx_pad, ny_pad, nz_pad);
+  covRho_ = new FFTGrid(cov_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
 void
@@ -97,30 +97,30 @@ SeismicParametersHolder::setCrCovParameters(const NRLib::Grid<double> & cr_cov_v
                                             int                         ny_pad,
                                             int                         nz_pad)
 {
-  crCovAlphaBeta_ = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
-  crCovAlphaRho_  = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
-  crCovBetaRho_   = new FFTGrid(cr_cov_vp_vs, nx_pad, ny_pad, nz_pad);
+  crCovVpVs_  = new FFTGrid(cr_cov_vp_vs,  nx_pad, ny_pad, nz_pad);
+  crCovVpRho_ = new FFTGrid(cr_cov_vp_rho, nx_pad, ny_pad, nz_pad);
+  crCovVsRho_ = new FFTGrid(cr_cov_vs_rho, nx_pad, ny_pad, nz_pad);
 }
 
 
 //--------------------------------------------------------------------
 void
-SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muAlpha,
-                                                  FFTGrid  * muBeta,
+SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muVp,
+                                                  FFTGrid  * muVs,
                                                   FFTGrid  * muRho)
 {
-  if(muAlpha_!=NULL)
-    delete muAlpha_;
+  if(muVp_!=NULL)
+    delete muVp_;
 
-  if(muBeta_!=NULL)
-    delete muBeta_;
+  if(muVs_!=NULL)
+    delete muVs_;
 
   if(muRho_!=NULL)
     delete muRho_;
 
-  muAlpha_= new FFTGrid(muAlpha);
-  muBeta_ = new FFTGrid(muBeta);
-  muRho_  = new FFTGrid(muRho);
+  muVp_  = new FFTGrid(muVp);
+  muVs_  = new FFTGrid(muVs);
+  muRho_ = new FFTGrid(muRho);
 }
 
 
@@ -195,26 +195,26 @@ SeismicParametersHolder::createCorrGrids(int  nx,
                                          int  nzp,
                                          bool fileGrid)
 {
-  covAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
-  covBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
-  covRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
-  crCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
-  crCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
-  crCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  covVp_      = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  covVs_      = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  covRho_     = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  crCovVpVs_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  crCovVpRho_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  crCovVsRho_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
 
-  covAlpha_       ->setType(FFTGrid::COVARIANCE);
-  covBeta_        ->setType(FFTGrid::COVARIANCE);
-  covRho_         ->setType(FFTGrid::COVARIANCE);
-  crCovAlphaBeta_ ->setType(FFTGrid::COVARIANCE);
-  crCovAlphaRho_  ->setType(FFTGrid::COVARIANCE);
-  crCovBetaRho_   ->setType(FFTGrid::COVARIANCE);
+  covVp_     ->setType(FFTGrid::COVARIANCE);
+  covVs_     ->setType(FFTGrid::COVARIANCE);
+  covRho_    ->setType(FFTGrid::COVARIANCE);
+  crCovVpVs_ ->setType(FFTGrid::COVARIANCE);
+  crCovVpRho_->setType(FFTGrid::COVARIANCE);
+  crCovVsRho_->setType(FFTGrid::COVARIANCE);
 
-  covAlpha_       ->createRealGrid();
-  covBeta_        ->createRealGrid();
-  covRho_         ->createRealGrid();
-  crCovAlphaBeta_ ->createRealGrid();
-  crCovAlphaRho_  ->createRealGrid();
-  crCovBetaRho_   ->createRealGrid();
+  covVp_     ->createRealGrid();
+  covVs_     ->createRealGrid();
+  covRho_    ->createRealGrid();
+  crCovVpVs_ ->createRealGrid();
+  crCovVpRho_->createRealGrid();
+  crCovVsRho_->createRealGrid();
 }
 //-------------------------------------------------------------------
 FFTGrid *
@@ -240,19 +240,19 @@ SeismicParametersHolder::initializeCorrelations(const Surface            * prior
 {
   fftw_real * circCorrT = computeCircCorrT(priorCorrT, lowIntCut, nzp);
 
-  covAlpha_      ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  covBeta_       ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  covRho_        ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovAlphaBeta_->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovAlphaRho_ ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovBetaRho_  ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  covVp_     ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  covVs_     ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  covRho_    ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  crCovVpVs_ ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  crCovVpRho_->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+  crCovVsRho_->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
 
-  covAlpha_      ->multiplyByScalar(static_cast<float>(priorVar0_(0,0)));
-  covBeta_       ->multiplyByScalar(static_cast<float>(priorVar0_(1,1)));
-  covRho_        ->multiplyByScalar(static_cast<float>(priorVar0_(2,2)));
-  crCovAlphaBeta_->multiplyByScalar(static_cast<float>(priorVar0_(0,1)));
-  crCovAlphaRho_ ->multiplyByScalar(static_cast<float>(priorVar0_(0,2)));
-  crCovBetaRho_  ->multiplyByScalar(static_cast<float>(priorVar0_(1,2)));
+  covVp_     ->multiplyByScalar(static_cast<float>(priorVar0_(0,0)));
+  covVs_     ->multiplyByScalar(static_cast<float>(priorVar0_(1,1)));
+  covRho_    ->multiplyByScalar(static_cast<float>(priorVar0_(2,2)));
+  crCovVpVs_ ->multiplyByScalar(static_cast<float>(priorVar0_(0,1)));
+  crCovVpRho_->multiplyByScalar(static_cast<float>(priorVar0_(0,2)));
+  crCovVsRho_->multiplyByScalar(static_cast<float>(priorVar0_(1,2)));
 
   fftw_free(circCorrT);
 }
@@ -271,29 +271,29 @@ SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz,
 {
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  muAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muVp_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muVs_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  muRho_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  muAlpha_->setType(FFTGrid::PARAMETER);
-  muBeta_ ->setType(FFTGrid::PARAMETER);
-  muRho_  ->setType(FFTGrid::PARAMETER);
+  muVp_ ->setType(FFTGrid::PARAMETER);
+  muVs_ ->setType(FFTGrid::PARAMETER);
+  muRho_->setType(FFTGrid::PARAMETER);
 
-  muAlpha_->createGrid();
-  muBeta_ ->createGrid();
-  muRho_  ->createGrid();
+  muVp_ ->createGrid();
+  muVs_ ->createGrid();
+  muRho_->createGrid();
 
-  muAlpha_->fillInConstant(0.0);
-  muBeta_ ->fillInConstant(0.0);
-  muRho_  ->fillInConstant(0.0);
+  muVp_ ->fillInConstant(0.0);
+  muVs_ ->fillInConstant(0.0);
+  muRho_->fillInConstant(0.0);
 
-  covAlpha_->fillInConstant(0.0);
-  covBeta_ ->fillInConstant(0.0);
-  covRho_  ->fillInConstant(0.0);
+  covVp_ ->fillInConstant(0.0);
+  covVs_ ->fillInConstant(0.0);
+  covRho_->fillInConstant(0.0);
 
-  crCovAlphaBeta_->fillInConstant(0.0);
-  crCovAlphaRho_ ->fillInConstant(0.0);
-  crCovBetaRho_  ->fillInConstant(0.0);
+  crCovVpVs_ ->fillInConstant(0.0);
+  crCovVpRho_->fillInConstant(0.0);
+  crCovVsRho_->fillInConstant(0.0);
 }
 //--------------------------------------------------------------------
 void
@@ -301,11 +301,11 @@ SeismicParametersHolder::invFFTAllGrids()
 {
   LogKit::LogFormatted(LogKit::High,"\nBacktransforming background grids from FFT domain to time domain...");
 
-  if(muAlpha_->getIsTransformed())
-    muAlpha_->invFFTInPlace();
+  if(muVp_->getIsTransformed())
+    muVp_->invFFTInPlace();
 
-  if(muBeta_->getIsTransformed())
-    muBeta_->invFFTInPlace();
+  if(muVs_->getIsTransformed())
+    muVs_->invFFTInPlace();
 
   if(muRho_->getIsTransformed())
     muRho_->invFFTInPlace();
@@ -320,11 +320,11 @@ SeismicParametersHolder::FFTAllGrids()
 {
   LogKit::LogFormatted(LogKit::High,"\nTransforming background grids from time domain to FFT domain ...");
 
-  if(!muAlpha_->getIsTransformed())
-    muAlpha_->fftInPlace();
+  if(!muVp_->getIsTransformed())
+    muVp_->fftInPlace();
 
-  if(!muBeta_->getIsTransformed())
-    muBeta_->fftInPlace();
+  if(!muVs_->getIsTransformed())
+    muVs_->fftInPlace();
 
   if(!muRho_->getIsTransformed())
     muRho_->fftInPlace();
@@ -341,23 +341,23 @@ SeismicParametersHolder::invFFTCovGrids()
 {
   LogKit::LogFormatted(LogKit::High,"\nBacktransforming correlation grids from FFT domain to time domain...");
 
-  if (covAlpha_->getIsTransformed())
-    covAlpha_->invFFTInPlace();
+  if (covVp_->getIsTransformed())
+    covVp_->invFFTInPlace();
 
-  if (covBeta_->getIsTransformed())
-    covBeta_->invFFTInPlace();
+  if (covVs_->getIsTransformed())
+    covVs_->invFFTInPlace();
 
   if (covRho_->getIsTransformed())
     covRho_->invFFTInPlace();
 
-  if (crCovAlphaBeta_->getIsTransformed())
-    crCovAlphaBeta_->invFFTInPlace();
+  if (crCovVpVs_->getIsTransformed())
+    crCovVpVs_->invFFTInPlace();
 
-  if (crCovAlphaRho_->getIsTransformed())
-    crCovAlphaRho_->invFFTInPlace();
+  if (crCovVpRho_->getIsTransformed())
+    crCovVpRho_->invFFTInPlace();
 
-  if (crCovBetaRho_->getIsTransformed())
-    crCovBetaRho_->invFFTInPlace();
+  if (crCovVsRho_->getIsTransformed())
+    crCovVsRho_->invFFTInPlace();
 
   LogKit::LogFormatted(LogKit::High,"...done\n");
 }
@@ -367,23 +367,23 @@ SeismicParametersHolder::FFTCovGrids()
 {
   LogKit::LogFormatted(LogKit::High,"Transforming correlation grids in seismic parameters holder from time domain to FFT domain...");
 
-  if (!covAlpha_->getIsTransformed())
-    covAlpha_->fftInPlace();
+  if (!covVp_->getIsTransformed())
+    covVp_->fftInPlace();
 
-  if (!covBeta_->getIsTransformed())
-    covBeta_->fftInPlace();
+  if (!covVs_->getIsTransformed())
+    covVs_->fftInPlace();
 
   if (!covRho_->getIsTransformed())
     covRho_->fftInPlace();
 
-  if (!crCovAlphaBeta_->getIsTransformed())
-    crCovAlphaBeta_->fftInPlace();
+  if (!crCovVpVs_->getIsTransformed())
+    crCovVpVs_->fftInPlace();
 
-  if (!crCovAlphaRho_->getIsTransformed())
-    crCovAlphaRho_->fftInPlace();
+  if (!crCovVpRho_->getIsTransformed())
+    crCovVpRho_->fftInPlace();
 
-  if (!crCovBetaRho_->getIsTransformed())
-    crCovBetaRho_->fftInPlace();
+  if (!crCovVsRho_->getIsTransformed())
+    crCovVsRho_->fftInPlace();
 
   LogKit::LogFormatted(LogKit::High,"...done\n");
 }
@@ -400,12 +400,12 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
   fftw_complex ik;
   fftw_complex jk;
 
-  fftw_complex iiTmp = covAlpha_      ->getNextComplex();
-  fftw_complex jjTmp = covBeta_       ->getNextComplex();
-  fftw_complex kkTmp = covRho_        ->getNextComplex();
-  fftw_complex ijTmp = crCovAlphaBeta_->getNextComplex();
-  fftw_complex ikTmp = crCovAlphaRho_ ->getNextComplex();
-  fftw_complex jkTmp = crCovBetaRho_  ->getNextComplex();
+  fftw_complex iiTmp = covVp_     ->getNextComplex();
+  fftw_complex jjTmp = covVs_     ->getNextComplex();
+  fftw_complex kkTmp = covRho_    ->getNextComplex();
+  fftw_complex ijTmp = crCovVpVs_ ->getNextComplex();
+  fftw_complex ikTmp = crCovVpRho_->getNextComplex();
+  fftw_complex jkTmp = crCovVsRho_->getNextComplex();
 
   if(priorVar0_(0,0) != 0)
     iiTmp.re = iiTmp.re / static_cast<float>(priorVar0_(0,0));
@@ -543,7 +543,7 @@ SeismicParametersHolder::getPriorCorrTFiltered(int nz, int nzp) const
   // This is the cyclic and filtered version of CorrT which
   // has one or more zeros in the middle
 
-  fftw_real * circCorrT = extractParamCorrFromCovAlpha(nzp);
+  fftw_real * circCorrT = extractParamCorrFromCovVp(nzp);
 
   float * priorCorrTFiltered = new float[nzp];
 
@@ -716,8 +716,8 @@ SeismicParametersHolder::printPostVariances(const NRLib::Matrix & postVar0) cons
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postVar0,
-                                                const std::vector<float> & postCovAlpha00,
-                                                const std::vector<float> & postCovBeta00,
+                                                const std::vector<float> & postCovVp00,
+                                                const std::vector<float> & postCovVs00,
                                                 const std::vector<float> & postCovRho00) const
 {
   std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
@@ -739,9 +739,9 @@ SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postV
   std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
   std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
   std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
-  writeFilePostCorrT(postCovAlpha00, IO::PathToCorrelations(), baseName1);
-  writeFilePostCorrT(postCovBeta00,  IO::PathToCorrelations(), baseName2);
-  writeFilePostCorrT(postCovRho00,   IO::PathToCorrelations(), baseName3);
+  writeFilePostCorrT(postCovVp00,  IO::PathToCorrelations(), baseName1);
+  writeFilePostCorrT(postCovVs00,  IO::PathToCorrelations(), baseName2);
+  writeFilePostCorrT(postCovRho00, IO::PathToCorrelations(), baseName3);
 }
 
 //--------------------------------------------------------------------
@@ -750,14 +750,14 @@ SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
 {
   std::string fileName;
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
-  covAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covAlpha_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
-  covAlpha_ ->endAccess();
+  covVp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  covVp_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
+  covVp_ ->endAccess();
 
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
-  covBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
-  covBeta_ ->endAccess();
+  covVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  covVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
+  covVs_ ->endAccess();
 
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
   covRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -765,41 +765,41 @@ SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
   covRho_ ->endAccess();
 
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
-  crCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovAlphaBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
-  crCovAlphaBeta_ ->endAccess();
+  crCovVpVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  crCovVpVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
+  crCovVpVs_ ->endAccess();
 
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
-  crCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovAlphaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
-  crCovAlphaRho_ ->endAccess();
+  crCovVpRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  crCovVpRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
+  crCovVpRho_ ->endAccess();
 
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
-  crCovBetaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovBetaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
-  crCovBetaRho_ ->endAccess();
+  crCovVsRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  crCovVsRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
+  crCovVsRho_ ->endAccess();
 }
 
 //-------------------------------------------------------------------
 fftw_real *
-SeismicParametersHolder::extractParamCorrFromCovAlpha(int nzp) const
+SeismicParametersHolder::extractParamCorrFromCovVp(int nzp) const
 {
-  assert(covAlpha_->getIsTransformed() == false);
+  assert(covVp_->getIsTransformed() == false);
 
-  covAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+  covVp_->setAccessMode(FFTGrid::RANDOMACCESS);
 
   fftw_real * circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
   //int         refk;
-  float       constant = covAlpha_->getRealValue(0,0,0);
+  float       constant = covVp_->getRealValue(0,0,0);
 
   for(int k = 0 ; k < 2*(nzp/2+1) ; k++ ){
     if(k < nzp)
-      circCorrT[k] = covAlpha_->getRealValue(0,0,k,true)/constant;
+      circCorrT[k] = covVp_->getRealValue(0,0,k,true)/constant;
     else
       circCorrT[k] = RMISSING;
   }
 
-  covAlpha_->endAccess();
+  covVp_->endAccess();
 
   return circCorrT;//fftw_free(circCorrT);
 }
@@ -807,14 +807,14 @@ SeismicParametersHolder::extractParamCorrFromCovAlpha(int nzp) const
 void
 SeismicParametersHolder::updatePriorVar()
 {
-  priorVar0_(0,0) = getOrigin(covAlpha_);
-  priorVar0_(1,1) = getOrigin(covBeta_);
+  priorVar0_(0,0) = getOrigin(covVp_);
+  priorVar0_(1,1) = getOrigin(covVs_);
   priorVar0_(2,2) = getOrigin(covRho_);
-  priorVar0_(0,1) = getOrigin(crCovAlphaBeta_);
+  priorVar0_(0,1) = getOrigin(crCovVpVs_);
   priorVar0_(1,0) = priorVar0_(0,1);
-  priorVar0_(2,0) = getOrigin(crCovAlphaRho_);
+  priorVar0_(2,0) = getOrigin(crCovVpRho_);
   priorVar0_(0,2) = priorVar0_(2,0);
-  priorVar0_(2,1) = getOrigin(crCovBetaRho_);
+  priorVar0_(2,1) = getOrigin(crCovVsRho_);
   priorVar0_(1,2) = priorVar0_(2,1);
 }
 //--------------------------------------------------------------------

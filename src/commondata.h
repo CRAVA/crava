@@ -58,11 +58,11 @@ public:
 
   std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
 
-  std::vector<float>       & GetGravityObservationUtmxInterval(int i)          { return observation_location_utmx_[i]  ;}
-  std::vector<float>       & GetGravityObservationUtmyInterval(int i)          { return observation_location_utmy_[i]  ;}
-  std::vector<float>       & GetGravityObservationDepthInterval(int i)         { return observation_location_depth_[i] ;}
-  std::vector<float>       & GetGravityResponseInterval(int i)                 { return gravity_response_[i]           ;}
-  std::vector<float>       & GetGravityStdDevInterval(int i)                   { return gravity_std_dev_[i]            ;}
+  std::vector<float>       & GetGravityObservationUtmxTimeLapse(int time_lapse)  { return observation_location_utmx_[time_lapse]  ;}
+  std::vector<float>       & GetGravityObservationUtmyTimeLapse(int time_lapse)  { return observation_location_utmy_[time_lapse]  ;}
+  std::vector<float>       & GetGravityObservationDepthTimeLapse(int time_lapse) { return observation_location_depth_[time_lapse] ;}
+  std::vector<float>       & GetGravityResponseTimeLapse(int time_lapse)         { return gravity_response_[time_lapse]           ;}
+  std::vector<float>       & GetGravityStdDevTimeLapse(int time_lapse)           { return gravity_std_dev_[time_lapse]            ;}
 
   GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
   bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
