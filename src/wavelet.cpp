@@ -87,14 +87,14 @@ Wavelet::Wavelet(int       dim,
 }
 
 
-Wavelet::Wavelet(const std::string & fileName,
-                 int                 fileFormat,
-                 const ModelSettings     * modelSettings,
-                 const float             * reflCoef,
-                 float               theta,
-                 int                 dim,
-                 int               & errCode,
-                 std::string       & errText)
+Wavelet::Wavelet(const std::string   & fileName,
+                 int                   fileFormat,
+                 const ModelSettings * modelSettings,
+                 const float         * reflCoef,
+                 float                 theta,
+                 int                   dim,
+                 int                 & errCode,
+                 std::string         & errText)
   : theta_(theta),
     inFFTorder_(false),
     isReal_(true),
@@ -1373,3 +1373,10 @@ Wavelet::Ricker(double t, float peakF)
    return (1 - 2*c) * exp(-c);
 }
 
+void
+Wavelet::SetReflectionCoeffs(const float * reflCoef)
+{
+  coeff_[0] = reflCoef[0];
+  coeff_[1] = reflCoef[1];
+  coeff_[2] = reflCoef[2];
+}

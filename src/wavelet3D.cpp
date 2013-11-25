@@ -41,11 +41,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                      const std::vector<std::vector<double> >    & tGradX,
                      const std::vector<std::vector<double> >    & tGradY,
                      const SeismicStorage                       * seismic_data,
-                     //const FFTGrid                              * seisCube,
                      const ModelSettings                        * modelSettings,
                      std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                     //const std::vector<BlockedLogsCommon *>     & blocked_logs,
-                     //const std::vector<WellData *>              & wells,
                      const Simbox                               * simBox,
                      const float                                * reflCoef,
                      int                                          angle_index,
@@ -528,13 +525,10 @@ Wavelet3D::calculateSNRatio(const Simbox                                     * s
   std::vector<int>   nActiveData(nWells, 0);
 
   unsigned int w = 0;
-  //for (unsigned int w=0; w<nWells; w++) {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if (wells[w]->getUseForWaveletEstimation()) {
-    //if(modelSettings->getIndicatorWavelet(w) > 0) {
     if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 

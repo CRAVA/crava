@@ -81,6 +81,11 @@ public:
 
   std::vector<Wavelet *>                & GetWavelet(int time_lapse)                    { return wavelets_.find(time_lapse)->second          ;}
 
+  const std::vector<std::vector<double> > & GetTGradX()                           const { return t_grad_x_                                   ;}
+  const std::vector<std::vector<double> > & GetTGradY()                           const { return t_grad_y_                                   ;}
+  const NRLib::Grid2D<float>              & GetRefTimeGradX()                     const { return ref_time_grad_x_                            ;}
+  const NRLib::Grid2D<float>              & GetRefTimeGradY()                     const { return ref_time_grad_y_                            ;}
+
   void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
                                      double                 vsvp,
                                      const ModelSettings  * model_settings,
@@ -294,8 +299,8 @@ private:
                        const InputFiles                         * inputFiles,
                        const SeismicStorage                     * seismic_data,
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
-                       //std::vector<BlockedLogsCommon *> blocked_logs_common,
                        const std::vector<Surface *>             & waveletEstimInterval,
+                       const float                              * reflection_matrix,
                        std::string                              & err_text,
                        Wavelet                                 *& wavelet,
                        Grid2D                                  *& local_noise_scale,
@@ -312,9 +317,9 @@ private:
   int Process3DWavelet(const ModelSettings                      * model_settings,
                        const InputFiles                         * input_files,
                        const SeismicStorage                     * seismic_data,
-                       //std::vector<BlockedLogsCommon *> blocked_logs_common,
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                        const std::vector<Surface *>             & wavelet_estim_interval,
+                       const float                              * reflection_matrix,
                        std::string                              & err_text,
                        Wavelet                                 *& wavelet,
                        unsigned int                               i_timelapse,
@@ -507,6 +512,16 @@ private:
                 NRLib::Grid<double> & grid,
                 size_t                i,
                 size_t                j);
+
+  void SetTrace(const std::vector<float> & trace,
+                FFTGrid                  * grid,
+                size_t                     i,
+                size_t                     j);
+
+  void SetTrace(float     value,
+                FFTGrid * grid,
+                size_t    i,
+                size_t    j);
 
   void ReadStormFile(const std::string                 & file_name,
                      std::vector<NRLib::Grid<double> > & interval_grids,
@@ -719,8 +734,8 @@ private:
   //H: Remove intervals for reservoir_variables_ too?
 
   // prior facies
-  std::vector<std::vector<float> >                prior_facies_;                  ///< Prior facies probabilities
-  std::vector<Surface *>                          facies_estim_interval_;
+  std::vector<std::vector<float> >               prior_facies_;                  ///< Prior facies probabilities
+  std::vector<Surface *>                         facies_estim_interval_;
 
   //std::vector<std::vector<FFTGrid *> >          prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
   //std::vector<std::vector<NRLib::Grid<double> > > prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities. Vector(facies) vector(intervals).
@@ -730,7 +745,7 @@ private:
 
   bool                                          forward_modeling_;
 
-  std::map<int, float **>                       reflection_matrix_;
+  std::map<int, float **>                       reflection_matrix_; //Map timelapse
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
   //std::map<int, Wavelet**>                      wavelets_;  //Map time_lapse
@@ -741,6 +756,11 @@ private:
   std::map<int, std::vector<float> >            global_noise_estimate_;
   std::map<int, std::vector<float> >            sn_ratio_;
   bool                                          use_local_noise_;
+
+  std::vector<std::vector<double> >             t_grad_x_;
+  std::vector<std::vector<double> >             t_grad_y_;
+  NRLib::Grid2D<float>                          ref_time_grad_x_; ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>                          ref_time_grad_y_; ///< Time gradient in x-direction for reference time surface (t0)
 
   std::vector<std::vector<int> >                facies_nr_wells_;               ///< Facies Numbers per well.
   std::vector<std::vector<std::string> >        facies_names_wells_;            ///< Facies Names per well

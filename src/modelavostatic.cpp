@@ -579,7 +579,7 @@ void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> b
 //  }
 //}
 
-void ModelAVOStatic::generateSyntheticSeismic(Wavelet                                 ** wavelet,
+void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
                                               std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                               const float *                      const * reflectionMatrix,
                                               const Simbox                             * timeSimbox,

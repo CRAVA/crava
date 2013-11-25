@@ -75,7 +75,7 @@ public:
   //                                          const ModelSettings   * modelSettings,
   //                                          int                     nAngles);                    // Changes wells
 
-  void             generateSyntheticSeismic(Wavelet                                 ** wavelet,
+  void             generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
                                             std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                             const float *                      const * reflectionMatrix,
                                             const Simbox                             * timeSimbox,

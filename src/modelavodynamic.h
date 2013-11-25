@@ -64,7 +64,7 @@ public:
                   ModelAVOStatic          * modelAVOstatic,
                   ModelGeneral            * modelGeneral,
                   CommonData              * commoData,
-                  SeismicParametersHolder & seismicParameters,
+                  //SeismicParametersHolder & seismicParameters,
                   const Simbox            * timeSimbox,
                   //const Surface           * correlationDirection,
                   const GridMapping       * timeDepthMapping,
@@ -245,8 +245,6 @@ private:
 
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
-
-  std::vector<SeismicStorage> seismic_data_;       ///< Seismic data for this vintage. Vector over angles.
 
   int                       numberOfAngles_;
   //FFTGrid                ** seisCube_;              ///< Seismic data cubes

@@ -126,7 +126,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
 
   // 12. Set up background model
   if(setup_multigrid_) {
-    if (model_settings->getGenerateBackground()) {
+    if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if(model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
         setup_background_model_ = SetupBackgroundModel(model_settings, input_files, err_text);
       else if(model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
@@ -1609,11 +1609,15 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     unsigned int n_wells = model_settings->getNumberOfWells();
 
-    std::vector<std::vector<double> > t_grad_x(n_wells);
-    std::vector<std::vector<double> > t_grad_y(n_wells);
 
-    NRLib::Grid2D<float> ref_time_grad_x; ///< Time gradient in x-direction for reference time surface (t0)
-    NRLib::Grid2D<float> ref_time_grad_y; ///< Time gradient in x-direction for reference time surface (t0)
+
+    //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
+    t_grad_x_.resize(n_wells);
+    t_grad_y_.resize(n_wells);
+    //std::vector<std::vector<double> > t_grad_x(n_wells);
+    //std::vector<std::vector<double> > t_grad_y(n_wells);
+    //NRLib::Grid2D<float> ref_time_grad_x; ///< Time gradient in x-direction for reference time surface (t0)
+    //NRLib::Grid2D<float> ref_time_grad_y; ///< Time gradient in x-direction for reference time surface (t0)
     NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
     NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
@@ -1655,8 +1659,8 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
           Wavelet3D::setGradientMaps(structure_depth_grad_x,
                                      structure_depth_grad_y);
           ComputeReferenceTimeGradient(&t0_surf,
-                                       ref_time_grad_x,
-                                       ref_time_grad_y);
+                                       ref_time_grad_x_,
+                                       ref_time_grad_y_);
         }
         else{
           err_text += "Problems reading reference time surface in (x,y).\n";
@@ -1670,10 +1674,10 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       for(size_t w = 0; w < n_wells; w++) {
         if(!estimateWellGradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
           double v0=model_settings->getAverageVelocity();
-          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x, ref_time_grad_y, t_grad_x[w], t_grad_y[w]);
+          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x_[w], t_grad_y_[w]);
         } else {
           mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data_[i], &estimation_simbox_, n_angles, t_grad_x_[w], t_grad_y_[w], SigmaXY);
         }
       }
     }
@@ -1708,6 +1712,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   &seismic_data_[i][j],
                                   mapped_blocked_logs_,
                                   wavelet_estim_interval,
+                                  *reflection_matrix_[i],
                                   err_text,
                                   wavelet[j],
                                   local_noise_scale[j],
@@ -1726,16 +1731,17 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   &seismic_data_[i][j],
                                   mapped_blocked_logs_,
                                   wavelet_estim_interval,
+                                  *reflection_matrix_[i],
                                   err_text,
                                   wavelet[j],
                                   i, //Timelapse
                                   j, //Angle
                                   angles[j],
                                   sn_ratio[j],
-                                  ref_time_grad_x,
-                                  ref_time_grad_y,
-                                  t_grad_x,
-                                  t_grad_y,
+                                  ref_time_grad_x_,
+                                  ref_time_grad_y_,
+                                  t_grad_x_,
+                                  t_grad_y_,
                                   estimate_wavelets[j]);
 
       if(local_noise_scale[j] != NULL)
@@ -1829,6 +1835,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              const SeismicStorage                     * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
+                             const float                              * reflection_matrix,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
                              Grid2D                                  *& local_noise_scale, //local noise estimates?
@@ -1869,7 +1876,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             mapped_blocked_logs,
                             wavelet_estim_interval,
                             model_settings,
-                            *reflection_matrix_[i_timelapse],
+                            reflection_matrix,
+                            //*reflection_matrix_[i_timelapse],
                             j_angle,
                             error,
                             err_text);
@@ -1877,7 +1885,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
   else { //Not estimation modus
     if(use_ricker_wavelet)
         wavelet = new Wavelet1D(model_settings,
-                                *reflection_matrix_[i_timelapse],
+                                reflection_matrix,
+                                //*reflection_matrix_[i_timelapse],
                                 angle,
                                 model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
                                 error);
@@ -1892,7 +1901,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
         wavelet = new Wavelet1D(wavelet_file,
                                 file_format,
                                 model_settings,
-                                *reflection_matrix_[i_timelapse],
+                                reflection_matrix,
+                                //*reflection_matrix_[i_timelapse],
                                 angle,
                                 error,
                                 err_text);
@@ -2022,6 +2032,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                              const SeismicStorage                     * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
+                             const float                              * reflection_matrix,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
                              unsigned int                               i_timelapse,
@@ -2046,7 +2057,8 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                             model_settings,
                             mapped_blocked_logs,
                             &estimation_simbox_,
-                            *reflection_matrix_[i_timelapse],
+                            reflection_matrix,
+                            //*reflection_matrix_[i_timelapse],
                             j_angle,
                             error,
                             err_text);
@@ -2062,7 +2074,8 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
       wavelet = new Wavelet3D(wavelet_file,
                               file_format,
                               model_settings,
-                              *reflection_matrix_[i_timelapse],
+                              reflection_matrix,
+                              //*reflection_matrix_[i_timelapse],
                               angle,
                               error,
                               err_text,
@@ -4614,16 +4627,6 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
 
       int refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
       int refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
-
-      //if(is_nrlib_grid) { //GetFillNumber will return i if i < nx and < nxp
-      //  refi = i;
-      //  refj = j;
-      //}
-      //else {
-      //  refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
-      //  refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
-      //}
-
       int refk  = 0;
 
       double x, y, z0;
@@ -4792,15 +4795,26 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
-          SetTrace(grid_trace, grid, i, j);
+          if(is_nrlib_grid)
+            SetTrace(grid_trace, grid, i, j);
+          else
+            SetTrace(grid_trace, fft_grid, i, j);
         }
         else {
-          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
+          if(is_nrlib_grid)
+            SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
+          else
+            SetTrace(0.0f, fft_grid, i, j);
+
           dead_traces_simbox++;
         }
       }
       else {
-        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
+        if(is_nrlib_grid)
+          SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
+        else
+          SetTrace(0.0f, fft_grid, i, j);
+
         if (i < nx && j < ny)
           missing_traces_simbox++;
         else
@@ -5404,6 +5418,26 @@ void CommonData::SetTrace(float                 value,
   for (size_t k = 0; k < grid.GetNK(); k++) {
     grid(i, j, k) = static_cast<double>(value);
     //setRealValue(i, j, k, value, true);
+  }
+}
+
+void CommonData::SetTrace(const std::vector<float> & trace,
+                          FFTGrid                  * grid,
+                          size_t                     i,
+                          size_t                     j)
+{
+  for (size_t k = 0; k < grid->getNzp(); k++) {
+    grid->setRealValue(i, j, k, trace[i], true);
+  }
+}
+
+void CommonData::SetTrace(float     value,
+                          FFTGrid * grid,
+                          size_t    i,
+                          size_t    j)
+{
+  for (size_t k = 0; k < grid->getNzp(); k++) {
+    grid->setRealValue(i, j, k, value, true);
   }
 }
 

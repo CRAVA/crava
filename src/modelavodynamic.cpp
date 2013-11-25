@@ -398,7 +398,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  ModelAVOStatic          * modelAVOstatic,
                                  ModelGeneral            * modelGeneral,
                                  CommonData              * commonData,
-                                 SeismicParametersHolder & seismicParameters,
+                                 //SeismicParametersHolder & seismicParameters,
                                  const Simbox            * timeSimbox,
                                  //const Surface           * correlationDirection,
                                  const GridMapping       * timeDepthMapping,
@@ -406,56 +406,34 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  int                       t,
                                  int                       i_interval)
 { //Time lapse constructor
-  //seisCube_               = NULL;
-  //wavelet_                = NULL;
+
+  //H Earlier two versions of ModelAVODynamic, one from doFirstTimeLapseInversion and one from doTimeLapseInversion. Now combine to only one.
+
   reflectionMatrix_       = NULL;
   failed_                 = false;
   thisTimeLapse_          = t;
-  //angularCorr_            = modelSettings->getAngularCorr(thisTimeLapse_);
-  //SNRatio_                = modelSettings->getSNRatio(thisTimeLapse_);
-  //useLocalNoise_          = modelSettings->getUseLocalNoise(thisTimeLapse_);
-  //angle_                  = modelSettings->getAngle(thisTimeLapse_);
+  bool failedLoadingModel = false;
+  numberOfAngles_         = modelSettings->getNumberOfAngles(thisTimeLapse_);
+  bool estimationMode     = modelSettings->getEstimationMode();  //Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
+  localNoiseScale_        = commonData->GetLocalNoiseScaleTimeLapse(thisTimeLapse_);
+  useLocalNoise_          = commonData->GetUseLocalNoise();
+
   //estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
   //matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
-  numberOfAngles_         = modelSettings->getNumberOfAngles(thisTimeLapse_);
-
   wavelets_.resize(numberOfAngles_);
   seisCubes_.resize(numberOfAngles_);
-
-  //bool failedWavelet      = false;
-  //bool failedSeismic      = false;
-  //bool failedReflMat      = false;
-  //bool failedPriorCorr    = false;
-  bool failedLoadingModel = false;
-
-  Background * background = NULL;
-
-  std::string errText("");
-
-  bool estimationMode = modelSettings->getEstimationMode();  //Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
-
-  //H Earlier two versions of ModelAVODynamic, one from doFirstTimeLapseInversion and one from doTimeLapseInversion
-  //Now combine to only one.
-
-  localNoiseScale_ = commonData->GetLocalNoiseScaleTimeLapse(thisTimeLapse_);
-  useLocalNoise_   = commonData->GetUseLocalNoise();
-  seismic_data_    = commonData->GetSeismicDataTimeLapse(thisTimeLapse_);
-
-  //H If wavelet is reestimated in point 2, use that SNRatio, else from CommonData.
-  //SNRatio_         = commonData->GetSNRatioTimeLapse(thisTimeLapse_);
   SNRatio_.resize(numberOfAngles_);
 
-  std::string interval_name = modelSettings->getIntervalName(i_interval);
+  const std::vector<SeismicStorage> & seismic_data  = commonData->GetSeismicDataTimeLapse(thisTimeLapse_);
 
-  angle_.resize(seismic_data_.size());
-  for(size_t i = 0; i < seismic_data_.size(); i++)
-    angle_[i] = seismic_data_[i].GetAngle();
+  angle_.resize(numberOfAngles_);
+  for(size_t i = 0; i < numberOfAngles_; i++)
+    angle_[i] = seismic_data[i].GetAngle();
 
-  //AngulurCorr should be stored as a vector, and should come from commonData (?)
+  //AngulurCorr should be stored as a vector (?)
   angularCorr_ = commonData->GetAngularCorrelation(thisTimeLapse_);
 
-  //1 seisCube_ -> vector (over angles)
-  // Need to resample seismic-data from correct vintage into the simbox for this interval.
+  //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seisCubes_.resize(numberOfAngles_);
 
   const Simbox * interval_simbox = commonData->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
@@ -492,9 +470,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     if(seismic_type == 2) //SGRI
       scale = true;
 
-    int missing_traces_simbox;
-    int missing_traces_padding;
-    int dead_traces_simbox;
+    int missingTracesSimbox;
+    int missingTracesPadding;
+    int deadTracesSimbox;
 
     NRLib::Grid<double> grid_tmp;
     commonData->FillInData(grid_tmp,
@@ -503,9 +481,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                            storm,
                            segy,
                            modelSettings->getSmoothLength(),
-                           missing_traces_simbox,
-                           missing_traces_padding,
-                           dead_traces_simbox,
+                           missingTracesSimbox,
+                           missingTracesPadding,
+                           deadTracesSimbox,
                            seisCubes_[i]->getType(),
                            scale,
                            is_segy);
@@ -517,44 +495,20 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
-     if (missing_traces_simbox > 0) {
-        if(missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
-          err_text += "Error: Data in file "+file_name+" was completely outside the inversion area.\n";
-          failed = true;
-        }
-        else {
-          if(grid_type == PARAMETER) {
-            err_text += "Grid in file "+file_name+" does not cover the inversion area.\n";
-          }
-          else {
-            LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(missing_traces_simbox)
-                               +" grid columns are outside the area defined by the seismic data.\n");
-            std::string text;
-            text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
-            text += "   the seismic data specified in file \'"+file_name+"\'.";
-            TaskList::addTask(text);
-          }
-        }
-      }
-      if (missingTracesPadding > 0) {
-        int nx     = simbox->getnx();
-        int ny     = simbox->getny();
-        int nxpad  = xpad - nx;
-        int nypad  = ypad - ny;
-        int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+    //if (missingTracesSimbox > 0) {}
+    if (missingTracesPadding > 0) {
+      int nx     = interval_simbox->getnx();
+      int ny     = interval_simbox->getny();
+      int nxpad  = nxp - nx;
+      int nypad  = nyp - ny;
+      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
         LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
                            +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
-      }
-      if (dead_traces_simbox > 0) {
-        LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny())+"\n");
-      }
-
-
-
-
-
-
+    }
+    if (deadTracesSimbox > 0) {
+      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                         +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(interval_simbox->getnx()*interval_simbox->getny())+"\n");
+    }
   }
 
   //Get Vp/Vs
@@ -562,7 +516,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   double vsvp = 0.0;
   int    n_well_points = 0;
   if(modelSettings->getVpVsRatioIntervals().size() > 0) { //model file
-    vpvs = static_cast<double>(modelSettings->getVpVsRatioIntervals().find(interval_name)->second);
+    vpvs = static_cast<double>(modelSettings->getVpVsRatioIntervals().find(modelSettings->getIntervalName(i_interval))->second);
     vsvp = 1 / vpvs;
   }
   else if(modelSettings->getVpVsRatioFromWells()) { //wells
@@ -578,54 +532,30 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     vpvs = 1 / vsvp;
   }
 
-
-  //Reflection matrix
-  if(commonData->GetRefMatFromFileGlobalVpVs() == true) { //Either from file or a global value in model-file
-
-    //Reflection matrix made from file or global vp/vs: Do not change per interval.
+  //Reflection matrix: From file or global vp/vs: do not change per interval
+  if(commonData->GetRefMatFromFileGlobalVpVs() == true) {
     reflectionMatrix_ = commonData->GetReflectionMatrixTimeLapse(thisTimeLapse_);
   }
-  else {  //Vp/Vs set temporary to 2 in CommonData. Need to set up reflection matrix with correct vp/vs per interval.
+  else {  //Vp/Vs set temporary to 2 in CommonData: update reflection matrix per interval.
 
     if(modelSettings->getVpVsRatioIntervals().size() > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + commonData->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
                                         +"with Vp/Vs ratio specified in model file.\n");
 
-      //float vpvs = modelSettings->getVpVsRatioIntervals().find(interval_name)->second;
-      //double vsvp = static_cast<double>(1 / vpvs);
-
       commonData->SetupDefaultReflectionMatrix(reflectionMatrix_, vsvp, modelSettings, numberOfAngles_, thisTimeLapse_);
 
     }
-    else if(modelSettings->getVpVsRatioFromWells()) { //else if (background == NULL || modelSettings->getVpVsRatioFromWells()) {
+    else if(modelSettings->getVpVsRatioFromWells()) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + commonData->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
                                        + " with Vp and Vs from wells\n");
-      //double vsvp     = 0.0;
-      //int    n_points = 0;
-
-      //vsvpFromWells(modelGeneral->getBlockedWells(),
-      //              commonData,
-      //              i_interval,
-      //              vsvp,
-      //              n_points);
-
-      if(n_well_points < 10) {
+      if(n_well_points < 10)
         LogKit::LogFormatted(LogKit::Warning," Less than 10 total well-points was inside interval. For this interval the vp-vs ratio will be taken from the background model.");
 
-        //Vp/Vs From background model
-        //vsvp = commonData->GetMultipleIntervalGrid()->GetBackgroundVsVpRatioInterval(i_interval);
-        //commonData->SetupDefaultReflectionMatrix(reflectionMatrix_, vsvp, modelSettings, numberOfAngles_, thisTimeLapse_);
-      }
-      //else
-        commonData->SetupDefaultReflectionMatrix(reflectionMatrix_, vsvp, modelSettings, numberOfAngles_, thisTimeLapse_);
-
+      commonData->SetupDefaultReflectionMatrix(reflectionMatrix_, vsvp, modelSettings, numberOfAngles_, thisTimeLapse_);
     }
-    else {
-      //Vp/Vs from background model or rock-physics. Manualen: By default, the ratio is taken from the background model
+    else { //Rock-physics or background model (In manual: vp/vs from background model is default)
 
-      //H Vp/Vs from rock-physics: Get it from background model generated by rock-physics? CommonData::GenerateRockPhysics3DBackground
-      //Get it from background model, whether it is generated/rock-physics/file/constant ?
-
+      //H Vp/Vs from rock-physics: Get it from background model generated by rock-physics?
       if(modelSettings->getGenerateBackgroundFromRockPhysics()) {
         LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + commonData->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
                                           +" with Vp and Vs from the Rock Physics model.\n");
@@ -634,101 +564,107 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + commonData->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
                                         +" with Vp and Vs from the background model.\n");
       }
-
-      //double vsvp = commonData->GetMultipleIntervalGrid()->GetBackgroundVsVpRatioInterval(i_interval);
       commonData->SetupDefaultReflectionMatrix(reflectionMatrix_, vsvp, modelSettings, numberOfAngles_, thisTimeLapse_);
     }
   }
 
-  //Wavelet
-  //wavelet_ to vector
-  //If wavelet is estimated -> reestimate scale and noise (with updated vp/vs for this interval, waveletshape is from estimation in commondata.).
+  //Wavelet: estimated -> reestimate scale and noise (with updated vp/vs for this interval, waveletshape is from estimation in commondata.).
   std::vector<bool> wavelet_estimated = modelSettings->getEstimateWavelet(thisTimeLapse_); //vector over angles
+  wavelets_ = commonData->GetWavelet(thisTimeLapse_);
+
+  //Stored in Commondata for wavelets (Per timelapse, per angle):
+  //local_noise_scale  //Updated above (taken directly from commonData)
+  //local_shift
+  //local_scale
+  //global_noise_estimate
+  //sn_ratio
 
   for(int i = 0; i < numberOfAngles_; i++) {
 
+    wavelets_[i] = commonData->GetWavelet(thisTimeLapse_)[i];
+
     if(wavelet_estimated[i] == true) { //Reestimate scale and noise with vp/vs for this interval.
 
-      //Commondata (Per timelapse, per angle):
-      //wavelet
-      //local_noise_scale
-      //local_shift
-      //local_scale
-      //global_noise_estimate
-      //sn_ratio
+      std::string errText;
+      int error = 0;
+      Grid2D * noiseScaled_tmp;
+      Grid2D * shiftGrid_tmp;
+      Grid2D * gainGrid_tmp;
 
+      float SNRatio_new = 0.0f;
 
+      //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
+      wavelets_[i]->SetReflectionCoeffs(*reflectionMatrix_);
 
+      LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise for interval " + commonData->GetMultipleIntervalGrid()->GetIntervalName(i_interval) +
+                                        + " and angle number " + NRLib::ToString(i) + ".\n");
 
+      if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
+        SNRatio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(commonData->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+                                                                    &seismic_data[i],
+                                                                    commonData->GetBlockedLogs(),
+                                                                    modelSettings,
+                                                                    errText,
+                                                                    error,
+                                                                    i, //angle
+                                                                    noiseScaled_tmp,
+                                                                    shiftGrid_tmp,
+                                                                    gainGrid_tmp,
+                                                                    commonData->GetSNRatioTimeLapse(thisTimeLapse_)[i], //Just input? new value is returned?
+                                                                    wavelets_[i]->getScale(), //Just input? scale_ is updated inside?
+                                                                    true,   // doEstimateSNRatio
+                                                                    true,   // doEstimateGlobalScale
+                                                                    false,  // doEstimateLocalNoise
+                                                                    false,  // doEstimateLocalShift,
+                                                                    false,  // doEstimateLocalScale,
+                                                                    false); // doEstimateWavelet,
+      }
+      else { //3D wavelet
 
+        const std::vector<std::vector<double> > & refTimeGradX = commonData->GetTGradX();
+        const std::vector<std::vector<double> > & refTimeGradY = commonData->GetTGradY();
+        const NRLib::Grid2D<float>              & tGradX       = commonData->GetRefTimeGradX();
+        const NRLib::Grid2D<float>              & tGradY       = commonData->GetRefTimeGradY();
 
-      //Update SNRatio_[i]
+        SNRatio_new = wavelets_[i]->calculateSNRatio(commonData->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+                                                     &seismic_data[i],
+                                                     commonData->GetBlockedLogs(),
+                                                     modelSettings,
+                                                     errText,
+                                                     error,
+                                                     tGradX,
+                                                     tGradY,
+                                                     refTimeGradX,
+                                                     refTimeGradY,
+                                                     i, //angle
+                                                     commonData->GetSNRatioTimeLapse(thisTimeLapse_)[i],
+                                                     true,   //estimateSNRatio
+                                                     false); //estimateWavelet
+      }
+
+      SNRatio_[i] = SNRatio_new;
+
+      if(errText != "" || error > 0) {
+        failedLoadingModel = true;
+        LogKit::LogFormatted(LogKit::Error, "\nError when reestimating scale and noise: ");
+        LogKit::LogFormatted(LogKit::Error, "\n"+errText);
+      }
+
     }
     else {
       wavelets_[i] = commonData->GetWavelet(thisTimeLapse_)[i];
       SNRatio_[i]  = commonData->GetSNRatioTimeLapse(thisTimeLapse_)[i];
     }
-
-
   }
 
+  if(modelSettings->getEstimateWaveletNoise())
+    modelAVOstatic->generateSyntheticSeismic(wavelets_, modelGeneral->getBlockedWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
 
-  if(estimationMode == false) {
-    FFTGrid * backModel[3];
-    backModel[0] = seismicParameters.GetMuAlpha();
-    backModel[1] = seismicParameters.GetMuBeta();
-    backModel[2] = seismicParameters.GetMuRho();
-
-    background = new Background(backModel);
-  }
-  if(estimationMode == false || modelSettings->getEstimateWaveletNoise() ){
-    processReflectionMatrix(reflectionMatrix_, background, modelGeneral->getWells(), modelSettings,
-                              inputFiles, errText, failedReflMat);
-  }
-
-  if(failedReflMat == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() ))
-    processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
-                   modelSettings, inputFiles, errText, failedSeismic);
-
-  if(failedSeismic == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() )){
-    modelAVOstatic->addSeismicLogs(modelGeneral->getWells(), seisCube_, modelSettings, numberOfAngles_);
-    if(failedReflMat == false)
-      processWavelets(wavelet_, seisCube_, modelGeneral->getWells(), reflectionMatrix_,
-                      timeSimbox, correlationDirection, modelAVOstatic->getWaveletEstimInterval(),
-                      modelSettings, inputFiles, errText, failedWavelet);
-  }
-  if(failedSeismic == false && failedWavelet == false && failedReflMat == false && modelSettings->getEstimateWaveletNoise() )
-    modelAVOstatic->generateSyntheticSeismic(wavelet_, modelGeneral->getBlockedWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
-    //modelAVOstatic->generateSyntheticSeismic(wavelet_, modelGeneral->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
-
-  //if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
-  //  modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
   if(estimationMode)
     modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
-    //modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
-
-  if(background != NULL) {
-    // New background model has not been made, and background is owned by seismicParameters
-    background->releaseGrids();
-    delete background;
-  }
-
-  //failedLoadingModel = failedSeismic || failedPriorCorr || failedReflMat || failedWavelet;
-
-  //if (failedLoadingModel) {
-  //  LogKit::WriteHeader("Error(s) while loading data");
-  //  LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-  //  LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  //}
 
   failed_ = failedLoadingModel;
-  //failed_details_.push_back(failedSeismic);
-  //failed_details_.push_back(failedPriorCorr);
-  //failed_details_.push_back(failedReflMat);
-  //failed_details_.push_back(failedWavelet);
 }
-
-
 
 
 
@@ -1091,12 +1027,16 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
 
 ModelAVODynamic::~ModelAVODynamic(void)
 {
-  if (wavelet_ != NULL)
-  {
-    for(int i=0;i<numberOfAngles_;i++)
-      if(wavelet_[i] != NULL)
-        delete wavelet_[i];
-    delete [] wavelet_;
+  //if (wavelet_ != NULL)
+  //{
+  //  for(int i=0;i<numberOfAngles_;i++)
+  //    if(wavelet_[i] != NULL)
+  //      delete wavelet_[i];
+  //  delete [] wavelet_;
+  //}
+  for(int i=0;i<numberOfAngles_;i++) {
+    if(wavelets_[i] != NULL)
+      delete wavelets_[i];
   }
 
   if(reflectionMatrix_ != NULL) {
@@ -1110,17 +1050,20 @@ ModelAVODynamic::~ModelAVODynamic(void)
       delete localNoiseScale_[i];
   }
 
-  if(seisCube_ != NULL) {
-    for(int i=0;i<numberOfAngles_;i++)
-      delete seisCube_[i];
-    delete [] seisCube_;
-  }
+  //if(seisCube_ != NULL) {
+  //  for(int i=0;i<numberOfAngles_;i++)
+  //    delete seisCube_[i];
+  //  delete [] seisCube_;
+  //}
+  for(int i=0;i<numberOfAngles_;i++)
+    delete seisCubes_[i];
+
 }
 
 void
 ModelAVODynamic::releaseGrids(void)
 {
-  seisCube_ = NULL;
+  //seisCube_ = NULL;
 }
 
 float **

@@ -232,7 +232,8 @@ public:
 
   void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
                                                                   int                     n_angles,
-                                                                  Wavelet **              wavelet,
+                                                                  std::vector<Wavelet *> & wavelet,
+                                                                  //Wavelet **              wavelet,
                                                                   int                     nz,
                                                                   int                     nzp,
                                                                   const Simbox          * timeSimbox);

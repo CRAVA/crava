@@ -171,24 +171,16 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   // Wells are adjusted by ModelAVODynamic constructor.
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
                                         inputFiles,
-                                        //modelGeneral->getFailedDetails(),
-                                        //modelAVOstatic->getFailedDetails(),
-                                        modelGeneral->getTimeSimbox(),
-                                        //timeBGSimbox,
-                                        //modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getRandomGen(),
-                                        modelGeneral->getTimeDepthMapping(),
-                                        //modelGeneral->getTimeCutMapping(),
-                                        modelAVOstatic->getWaveletEstimInterval(),
-                                        modelAVOstatic->getWellMoveInterval(),
-                                        modelAVOstatic->getFaciesEstimInterval(),
                                         modelAVOstatic,
                                         modelGeneral,
                                         commonData,
+                                        //seismicParameters,
+                                        modelGeneral->getTimeSimbox(),
+                                        //modelGeneral->getCorrelationDirection(),
+                                        modelGeneral->getTimeDepthMapping(),
+                                        //modelGeneral->getTimeCutMapping(),
                                         vintage,
-                                        seismicParameters,
                                         i_interval);
-
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 

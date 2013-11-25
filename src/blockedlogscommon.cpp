@@ -1912,8 +1912,8 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
 
   for(i=start;i < start+length-1;i++)
   {
-    double ei1 = ComputeElasticImpedance(vp_vert[i], static_cast<float>(vs_vert[i]),static_cast<float>(rho_vert[i]),coeff);
-    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]),coeff);
+    double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
+    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]), coeff);
     cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
@@ -3193,7 +3193,8 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 
 void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_coef,
                                                  int                     n_angles,
-                                                 Wavelet **              wavelet,
+                                                 std::vector<Wavelet *> & wavelet,
+                                                 //Wavelet **              wavelet,
                                                  int                     nz,
                                                  int                     nzp,
                                                  const Simbox          * simbox) {

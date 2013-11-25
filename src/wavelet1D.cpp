@@ -58,7 +58,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   //theta_      = seisCube->getTheta();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  cnzp_       = nzp_/2+1;
+  //cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
   cz_         = 0;
@@ -68,6 +68,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
   std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
   nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+  cnzp_       = nzp_/2+1;
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -643,13 +644,10 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 
 
 float
-Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSettings,
-                                          const Simbox                * simbox,
-                                          const SeismicStorage             * seismic_data,
+Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                              * modelSettings,
+                                          const Simbox                                     * simbox,
+                                          const SeismicStorage                             * seismic_data,
                                           const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs)
-                                          //const std::vector<BlockedLogsCommon *> &  blocked_logs)
-                                          //const FFTGrid               * seisCube,
-                                          //std::vector<WellData *> wells)
 {
   int nWells          = modelSettings->getNumberOfWells();
 //The reason why the next three variables are not taken from the class variables is that this function is called
@@ -823,6 +821,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
       std::vector<double> rho(nz_);
       blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
       std::vector<double> seisData(nz_);
+      blocked_log->GetVerticalTrend(seisLog, seisData);
       std::vector<bool> hasData(nz_);
       for (int k = 0 ; k < nz_ ; k++)
         hasData[k] = seisData[k] != RMISSING && vp[k] != RMISSING && vs[k] != RMISSING && rho[k] != RMISSING;
@@ -1637,11 +1636,11 @@ Wavelet1D::adjustLowfrequency(fftw_real                * vec_r,
 
 void
 Wavelet1D::findWavelet(fftw_real               ** ccor_seis_cpp_r,
-                      fftw_real               ** cor_cpp_r,
-                      fftw_real               ** wavelet_r,
-                      const std::vector<float> & wellWeight,
-                      int                        nWells,
-                      int                        nt)
+                       fftw_real               ** cor_cpp_r,
+                       fftw_real               ** wavelet_r,
+                       const std::vector<float> & wellWeight,
+                       int                        nWells,
+                       int                        nt)
 {
   fftw_complex* c_sc,*c_cc,*wav;
 
