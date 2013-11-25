@@ -260,7 +260,6 @@ int main(int argc, char** argv)
         break;
 
       case TimeLine::TRAVEL_TIME :
-        modelSettings->setLateralTravelTimeErrorCorr();
         failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
                                                      modelGeneral,
                                                      inputFiles,

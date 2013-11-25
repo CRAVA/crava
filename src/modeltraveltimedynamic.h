@@ -76,15 +76,15 @@ private:
                                                  const int     & outputDomain,
                                                  const int     & otherOutput,
                                                  std::string   & errTxt);
-  Surface *                     setErrorCorrXYGrid(const Simbox * timeSimbox,
-                                                 const ModelSettings * modelSettings);
+  Surface *                     setErrorCorrXYGrid(const Simbox        * timeSimbox,
+                                                   const ModelSettings * modelSettings) const;
 
   std::vector<Surface>      push_down_horizons_;                    ///< Push down horizons used for horizon inversion
   std::vector<Surface>      initial_horizons_;                      ///< TP0 being the initial horizon before push down
   std::vector<std::string>  horizon_names_;                         ///< Names corresponding to the horizons
 
   std::vector<double>       horizon_standard_deviation_;            ///< Observation error for the horizon data
-  Surface*                  errorCorrXY_ ;                          // Lateral error coorrelation for traveltime data
+  Surface *                 errorCorrXY_ ;                          // Lateral error coorrelation for traveltime data
 
   std::vector<RMSTrace *>   rms_traces_;
 

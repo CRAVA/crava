@@ -43,10 +43,11 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
     n_rms_inversions = 2;
 
   if (rms_data_given == true){
-    for (int i = 0; i < n_rms_inversions; ++i)
-    {
-      if(i>0)                                          // need to get set back seismic parameters  to
+    for (int i = 0; i < n_rms_inversions; ++i) {
+      if (i > 0) {                                     // need to set back seismic parameters to
         modelGeneral->mergeState4D(seismicParameters); // do the inversion again with a better timeframe ....
+        seismicParameters.invFFTAllGrids();
+      }
       doRMSInversion(modelGeneral,
                      modelTravelTimeDynamic,
                      seismicParameters,
@@ -570,8 +571,9 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                simbox_above,
                                timeSimbox,
                                time_depth_mapping);
-       mu_log_vp_grid->fftInPlace();
-       cov_log_vp_grid->fftInPlace();
+
+      mu_log_vp_grid->fftInPlace();
+      cov_log_vp_grid->fftInPlace();
 
       delete stationary_d_above;
       delete stationary_covariance_above;

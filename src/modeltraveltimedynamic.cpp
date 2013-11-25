@@ -57,6 +57,8 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
                  errTxt,
                  failed_rms_data);
 
+  errorCorrXY_ = setErrorCorrXYGrid(timeSimbox,  modelSettings);
+
   bool failed_loading_model = failed_surfaces || failed_rms_data;
 
   if (failed_loading_model) {
@@ -68,7 +70,6 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings * modelSettin
   failed_ = failed_loading_model;
   failed_details_.push_back(failed_surfaces);
   failed_details_.push_back(failed_rms_data);
-  errorCorrXY_ =setErrorCorrXYGrid(timeSimbox,  modelSettings);
 }
 
  //-------------------------------------------------------------------------------------------//
@@ -436,7 +437,8 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
 
 
 Surface *
-ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
+ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox        * timeSimbox,
+                                           const ModelSettings * modelSettings) const
 {
   float dx  = static_cast<float>(timeSimbox->getdx());
   float dy  = static_cast<float>(timeSimbox->getdy());
@@ -444,32 +446,26 @@ ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox * timeSimbox, const Mode
   int   nx  = modelSettings->getNXpad();
   int   ny  = modelSettings->getNYpad();
 
-  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+  Surface * grid = new Surface(0, 0, dx * nx, dy * ny, nx, ny, RMISSING);
 
-  if(modelSettings->getLateralTravelTimeErrorCorr()!=NULL)
-  {
+  Vario * vario = modelSettings->getLateralTravelTimeErrorCorr(this_time_lapse_);
+
+  if (vario != NULL) {
     int refi,refj;
-    for(int j=0;j<ny;j++)
-    {
-      for(int i=0;i<nx;i++)
-      {
-        if(i<(nx/2+1))
-        {
+
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0; i < nx; i++) {
+        if (i < (nx / 2 + 1))
           refi = i;
-        }
         else
-        {
-          refi = i-nx;
-        }
-        if(j< (ny/2+1))
-        {
+          refi = i - nx;
+
+        if ( j < (ny / 2 + 1))
           refj = j;
-        }
         else
-        {
-          refj = j-ny;
-        }
-        (*grid)(j*nx+i) = modelSettings->getLateralTravelTimeErrorCorr()->corr(refi*dx, refj*dy);
+          refj = j - ny;
+
+        (*grid)(j * nx + i) = vario->corr(refi * dx, refj * dy);
       }
     }
   }

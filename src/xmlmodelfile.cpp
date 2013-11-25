@@ -1138,6 +1138,7 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("rms-data");
   legalCommands.push_back("horizon");
+  legalCommands.push_back("lateral-correlation-stationary-data");
 
   bool rms_given = false;
   if (parseRMSVelocities(root, errTxt) == true)
@@ -1161,6 +1162,15 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
     errTxt += "At least one of <rms-data> and <horizon> needs to be given in <survey><travel-time>\n";
   else
     modelSettings_->addTimeLapseTravelTimeGiven(true);
+
+  Vario * vario = NULL;
+  if (parseVariogram(root, "lateral-correlation-stationary-data", vario, errTxt) == true) {
+    if (vario != NULL)
+      modelSettings_->addLateralTravelTimeErrorCorr(vario);
+  }
+  else
+    modelSettings_->addDefaultLateralTravelTimeErrorCorr();
+
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
