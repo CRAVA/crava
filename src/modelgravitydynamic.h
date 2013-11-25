@@ -39,15 +39,6 @@ public:
                       int                            t,
                       SeismicParametersHolder      & seismicParameters);
 
-  //ModelGravityDynamic(ModelGravityStatic       * modelGravityStatic,
-  //                    Simbox                   * simbox,
-  //                    SeismicParametersHolder  & seismicParameters,
-  //                    const std::vector<float> & observation_location_utmx,
-  //                    const std::vector<float> & observation_location_utmy,
-  //                    const std::vector<float> & observation_location_depth,
-  //                    const std::vector<float> & gravity_response,
-  //                    const std::vector<float> & gravity_std_dev);
-
   // Possible other parameters?
   // GridMapping timeDepthMapping
   // Simbox timeSimbox

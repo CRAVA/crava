@@ -95,9 +95,9 @@ void State4D::merge(SeismicParametersHolder & current_state )
 
   //First, merge expectations.
   std::vector<FFTGrid *> mu(3);
-  mu[0] =  current_state.GetMuVp(); //mu_Alpha
-  mu[1] =  current_state.GetMuVs(); //mu_Beta
-  mu[2] =  current_state.GetMuRho(); //mu_Rho
+  mu[0] =  current_state.GetMeanVp(); //mu_Alpha
+  mu[1] =  current_state.GetMeanVs(); //mu_Beta
+  mu[2] =  current_state.GetMeanRho(); //mu_Rho
 
   for(int i = 0; i<3; i++)
   {
@@ -256,9 +256,9 @@ void State4D::split(SeismicParametersHolder & current_state )
   assert(allGridsAreTransformed());
 
   std::vector<FFTGrid *> mu(3);
-  mu[0] =  current_state.GetMuVp(); //mu_Alpha
-  mu[1] =  current_state.GetMuVs(); //mu_Beta
-  mu[2] =  current_state.GetMuRho(); //mu_Rho
+  mu[0] =  current_state.GetMeanVp(); //mu_Alpha
+  mu[1] =  current_state.GetMeanVs(); //mu_Beta
+  mu[2] =  current_state.GetMeanRho(); //mu_Rho
 
   for(int i = 0; i<3; i++)
   {

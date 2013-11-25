@@ -40,74 +40,72 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/volume/volume.hpp"
 
-//H Lage constructor som passer med at innlesning er flyttet til CommonData
-
-ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
-                                         const ModelGeneral           * modelGeneral,
-                                         ModelGravityStatic           * modelGravityStatic,
-                                         const InputFiles             * inputFiles,
-                                         int                            t,
-                                         SeismicParametersHolder      & seismicParameters)
-
-{
-  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
-
-  debug_                  = true;
-  failed_                 = false;
-  thisTimeLapse_          = t;
-
-  bool failedLoadingModel = false;
-  bool failedReadingFile  = false;
-  std::string errText("");
-
-  int nObs = 30;     // should this be given in input file
-  int nColumns = 5;  // We require data files to have five columns
-
-  // Check that timeLapse is ok
-  if(thisTimeLapse_ < 1 && thisTimeLapse_ >modelSettings->getNumberOfVintages()){
-    errText += "Not valid time lapse";
-    failedLoadingModel = true;
-  }
-
-  if(failedLoadingModel == false) {
-    LogKit::WriteHeader("Setting up gravimetric time lapse");
-
-    // Find first gravity data file
-    std::string fileName = inputFiles->getGravimetricData(thisTimeLapse_);
-
-    observation_location_utmx_ .resize(nObs);
-    observation_location_utmy_ .resize(nObs);
-    observation_location_depth_.resize(nObs);
-    gravity_response_.resize(nObs);
-    gravity_std_dev_ .resize(nObs);
-
-    ModelGravityStatic::ReadGravityDataFile(fileName,
-                                            "gravimetric survey ", // +thisTimeLapse_,
-                                            nObs, nColumns,
-                                            observation_location_utmx_,
-                                            observation_location_utmy_,
-                                            observation_location_depth_,
-                                            gravity_response_,
-                                            gravity_std_dev_,
-                                            failedReadingFile,
-                                            errText);
-    failedLoadingModel = failedReadingFile;
-
-    LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
-    BuildGMatrix(modelGravityStatic, seismicParameters);
-    LogKit::LogFormatted(LogKit::Low, "ok.\n");
-  }
-
-  if (failedLoadingModel) {
-    LogKit::WriteHeader("Error(s) with gravimetric surveys.");
-    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  }
-
-  failed_ = failedLoadingModel || failedReadingFile;
-  failed_details_.push_back(failedReadingFile);
-
-}
+//ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
+//                                         const ModelGeneral           * modelGeneral,
+//                                         ModelGravityStatic           * modelGravityStatic,
+//                                         const InputFiles             * inputFiles,
+//                                         int                            t,
+//                                         SeismicParametersHolder      & seismicParameters)
+//
+//{
+//  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
+//
+//  debug_                  = true;
+//  failed_                 = false;
+//  thisTimeLapse_          = t;
+//
+//  bool failedLoadingModel = false;
+//  bool failedReadingFile  = false;
+//  std::string errText("");
+//
+//  int nObs = 30;     // should this be given in input file
+//  int nColumns = 5;  // We require data files to have five columns
+//
+//  // Check that timeLapse is ok
+//  if(thisTimeLapse_ < 1 && thisTimeLapse_ >modelSettings->getNumberOfVintages()){
+//    errText += "Not valid time lapse";
+//    failedLoadingModel = true;
+//  }
+//
+//  if(failedLoadingModel == false) {
+//    LogKit::WriteHeader("Setting up gravimetric time lapse");
+//
+//    // Find first gravity data file
+//    std::string fileName = inputFiles->getGravimetricData(thisTimeLapse_);
+//
+//    observation_location_utmx_ .resize(nObs);
+//    observation_location_utmy_ .resize(nObs);
+//    observation_location_depth_.resize(nObs);
+//    gravity_response_.resize(nObs);
+//    gravity_std_dev_ .resize(nObs);
+//
+//    ModelGravityStatic::ReadGravityDataFile(fileName,
+//                                            "gravimetric survey ", // +thisTimeLapse_,
+//                                            nObs, nColumns,
+//                                            observation_location_utmx_,
+//                                            observation_location_utmy_,
+//                                            observation_location_depth_,
+//                                            gravity_response_,
+//                                            gravity_std_dev_,
+//                                            failedReadingFile,
+//                                            errText);
+//    failedLoadingModel = failedReadingFile;
+//
+//    LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
+//    BuildGMatrix(modelGravityStatic, seismicParameters);
+//    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+//  }
+//
+//  if (failedLoadingModel) {
+//    LogKit::WriteHeader("Error(s) with gravimetric surveys.");
+//    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+//    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+//  }
+//
+//  failed_ = failedLoadingModel || failedReadingFile;
+//  failed_details_.push_back(failedReadingFile);
+//
+//}
 
 ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
                                          const ModelGeneral           * modelGeneral,
@@ -118,7 +116,13 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
                                          SeismicParametersHolder      & seismicParameters)
 
 {
-  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
+  //H Set up for intervals?
+  // BuildGMatrix uses simbox from modelGeneral and expMeanVp from sesismicParameters, both set up for only this interval.
+
+  // BuildGMatrix: For each obs (=30). Create x,y,z based on simbox, and create localDistanceSquared = distance x and x0(1 of 30 obs from file).
+  // Change observation_location_depth_ to be per interval? Only use the x0, y0, z0 which are inside simbox?
+
+  modelGeneral_           = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
 
   debug_                  = true;
   failed_                 = false;
@@ -154,32 +158,6 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
 
 }
 
-//ModelGravityDynamic::ModelGravityDynamic(ModelGravityStatic       * modelGravityStatic,
-//                                         Simbox                   * simbox,
-//                                         SeismicParametersHolder  & seismicParameters,
-//                                         const std::vector<float> & observation_location_utmx,
-//                                         const std::vector<float> & observation_location_utmy,
-//                                         const std::vector<float> & observation_location_depth,
-//                                         const std::vector<float> & gravity_response,
-//                                         const std::vector<float> & gravity_std_dev)
-//{
-//  //modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
-//  observation_location_utmx_  = observation_location_utmx;
-//  observation_location_utmy_  = observation_location_utmy;
-//  observation_location_depth_ = observation_location_depth;
-//  gravity_response_           = gravity_response;
-//  gravity_std_dev_            = gravity_std_dev;
-//
-//  debug_                  = true;
-//  failed_                 = false;
-//
-//  LogKit::WriteHeader("Setting up gravimetric time lapse");
-//
-//  LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
-//  BuildGMatrix(modelGravityStatic, seismicParameters, simbox);
-//  LogKit::LogFormatted(LogKit::Low, "ok.\n");
-//}
-
 ModelGravityDynamic::~ModelGravityDynamic(void)
 {
 }
@@ -198,7 +176,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
     fullSizeTimeSimbox = simbox;
 
     // Use vp_current, found in Seismic parameters holder here.
-  FFTGrid * expMeanVp      = new FFTGrid(seismicParameters.GetMuVp());  // for upscaling
+  FFTGrid * expMeanVp      = new FFTGrid(seismicParameters.GetMeanVp());  // for upscaling
   FFTGrid * meanVpFullSize = new FFTGrid(expMeanVp);                    // for full size matrix
 
   int nx = fullSizeTimeSimbox->getnx();

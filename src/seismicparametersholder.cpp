@@ -11,9 +11,9 @@
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
-  muVp_         = NULL;
-  muVs_         = NULL;
-  muRho_        = NULL;
+  meanVp_         = NULL;
+  meanVs_         = NULL;
+  meanRho_        = NULL;
   covVp_        = NULL;
   covVs_        = NULL;
   covRho_       = NULL;
@@ -45,37 +45,37 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
   if(crCovVsRho_!=NULL)
     delete crCovVsRho_;
 
-  if(muVp_!=NULL)
-    delete muVp_;
+  if(meanVp_!=NULL)
+    delete meanVp_;
 
-  if(muVs_!=NULL)
-    delete muVs_;
+  if(meanVs_!=NULL)
+    delete meanVs_;
 
-  if(muRho_!=NULL)
-    delete muRho_;
+  if(meanRho_!=NULL)
+    delete meanRho_;
 
 }
 //--------------------------------------------------------------------
 
 void
-SeismicParametersHolder::setBackgroundParameters(FFTGrid  * muVp,
-                                                 FFTGrid  * muVs,
-                                                 FFTGrid  * muRho)
+SeismicParametersHolder::setBackgroundParameters(FFTGrid  * meanVp,
+                                                 FFTGrid  * meanVs,
+                                                 FFTGrid  * meanRho)
 {
-  muVp_   = muVp;
-  muVs_   = muVs;
-  muRho_  = muRho;
+  meanVp_   = meanVp;
+  meanVs_   = meanVs;
+  meanRho_  = meanRho;
 }
 
 void
-SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters,
+SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mean_parameters,
                                                          int                                       nx_pad,
                                                          int                                       ny_pad,
                                                          int                                       nz_pad)
 {
-  muVp_  = new FFTGrid(mu_parameters[0], nx_pad, ny_pad, nz_pad);
-  muVs_  = new FFTGrid(mu_parameters[1], nx_pad, ny_pad, nz_pad);
-  muRho_ = new FFTGrid(mu_parameters[2], nx_pad, ny_pad, nz_pad);
+  meanVp_  = new FFTGrid(mean_parameters[0], nx_pad, ny_pad, nz_pad);
+  meanVs_  = new FFTGrid(mean_parameters[1], nx_pad, ny_pad, nz_pad);
+  meanRho_ = new FFTGrid(mean_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
 void
@@ -105,22 +105,22 @@ SeismicParametersHolder::setCrCovParameters(const NRLib::Grid<double> & cr_cov_v
 
 //--------------------------------------------------------------------
 void
-SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muVp,
-                                                  FFTGrid  * muVs,
-                                                  FFTGrid  * muRho)
+SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
+                                                  FFTGrid  * meanVs,
+                                                  FFTGrid  * meanRho)
 {
-  if(muVp_!=NULL)
-    delete muVp_;
+  if(meanVp_!=NULL)
+    delete meanVp_;
 
-  if(muVs_!=NULL)
-    delete muVs_;
+  if(meanVs_!=NULL)
+    delete meanVs_;
 
-  if(muRho_!=NULL)
-    delete muRho_;
+  if(meanRho_!=NULL)
+    delete meanRho_;
 
-  muVp_  = new FFTGrid(muVp);
-  muVs_  = new FFTGrid(muVs);
-  muRho_ = new FFTGrid(muRho);
+  meanVp_  = new FFTGrid(meanVp);
+  meanVs_  = new FFTGrid(meanVs);
+  meanRho_ = new FFTGrid(meanRho);
 }
 
 
@@ -271,21 +271,21 @@ SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz,
 {
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  muVp_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muVs_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muRho_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVp_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVs_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanRho_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  muVp_ ->setType(FFTGrid::PARAMETER);
-  muVs_ ->setType(FFTGrid::PARAMETER);
-  muRho_->setType(FFTGrid::PARAMETER);
+  meanVp_ ->setType(FFTGrid::PARAMETER);
+  meanVs_ ->setType(FFTGrid::PARAMETER);
+  meanRho_->setType(FFTGrid::PARAMETER);
 
-  muVp_ ->createGrid();
-  muVs_ ->createGrid();
-  muRho_->createGrid();
+  meanVp_ ->createGrid();
+  meanVs_ ->createGrid();
+  meanRho_->createGrid();
 
-  muVp_ ->fillInConstant(0.0);
-  muVs_ ->fillInConstant(0.0);
-  muRho_->fillInConstant(0.0);
+  meanVp_ ->fillInConstant(0.0);
+  meanVs_ ->fillInConstant(0.0);
+  meanRho_->fillInConstant(0.0);
 
   covVp_ ->fillInConstant(0.0);
   covVs_ ->fillInConstant(0.0);
@@ -301,14 +301,14 @@ SeismicParametersHolder::invFFTAllGrids()
 {
   LogKit::LogFormatted(LogKit::High,"\nBacktransforming background grids from FFT domain to time domain...");
 
-  if(muVp_->getIsTransformed())
-    muVp_->invFFTInPlace();
+  if(meanVp_->getIsTransformed())
+    meanVp_->invFFTInPlace();
 
-  if(muVs_->getIsTransformed())
-    muVs_->invFFTInPlace();
+  if(meanVs_->getIsTransformed())
+    meanVs_->invFFTInPlace();
 
-  if(muRho_->getIsTransformed())
-    muRho_->invFFTInPlace();
+  if(meanRho_->getIsTransformed())
+    meanRho_->invFFTInPlace();
   LogKit::LogFormatted(LogKit::High,"...done\n");
 
   invFFTCovGrids();
@@ -320,14 +320,14 @@ SeismicParametersHolder::FFTAllGrids()
 {
   LogKit::LogFormatted(LogKit::High,"\nTransforming background grids from time domain to FFT domain ...");
 
-  if(!muVp_->getIsTransformed())
-    muVp_->fftInPlace();
+  if(!meanVp_->getIsTransformed())
+    meanVp_->fftInPlace();
 
-  if(!muVs_->getIsTransformed())
-    muVs_->fftInPlace();
+  if(!meanVs_->getIsTransformed())
+    meanVs_->fftInPlace();
 
-  if(!muRho_->getIsTransformed())
-    muRho_->fftInPlace();
+  if(!meanRho_->getIsTransformed())
+    meanRho_->fftInPlace();
   LogKit::LogFormatted(LogKit::High,"...done\n");
 
   FFTCovGrids();

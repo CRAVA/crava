@@ -4722,7 +4722,7 @@ ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
 {
   //H Difference: Earlier a background was made from rockphysics3d, which was copied to seismicParameters and state4d.
   //Now, use background created in CommonData
-  state4d_.setStaticMu(seismicParameters.GetMuVp(), seismicParameters.GetMuVs(), seismicParameters.GetMuRho());
+  state4d_.setStaticMu(seismicParameters.GetMeanVp(), seismicParameters.GetMeanVs(), seismicParameters.GetMeanRho());
 
   copyCorrelationsTo4DState(seismicParameters, state4d_);
 
@@ -4904,7 +4904,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   std::stringstream tag;
   bool transformHere=false;
 
-  if(current_state.GetMuVp()->getIsTransformed())
+  if(current_state.GetMeanVp()->getIsTransformed())
   {
     transformHere=true;
     current_state.invFFTAllGrids();
@@ -4912,7 +4912,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
 
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuVp() , fileName,  tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMeanVp() , fileName,  tag.str(),true);
   /*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
