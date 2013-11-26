@@ -283,8 +283,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   FFTGrid * mu_log_vp_grid                 = seismicParameters.GetMuAlpha();
   FFTGrid * cov_log_vp_grid                = seismicParameters.GetCovBeta();
 
-  std::vector<double> cov_log_vp           = getCovLogVp(cov_log_vp_grid);
-
   const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
   const Simbox * simbox_above              = modelTravelTimeStatic ->getSimboxAbove();
   const Simbox * simbox_below              = modelTravelTimeDynamic->getSimboxBelow();
@@ -327,7 +325,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   delete variogram_above;
   delete variogram_below;
 
-  std::vector<double> pri_cov_circulant_above(n_pad_above, 0);
   FFTGrid * mu_log_vp_above    = NULL;
   FFTGrid * Sigma_log_vp_above = NULL;
   generateMuSigmaLogVpAbove(n_above,
@@ -339,8 +336,10 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                             corrGradJ,
                             mu_log_vp_grid,
                             mu_log_vp_above,
-                            Sigma_log_vp_above,
-                            pri_cov_circulant_above);
+                            Sigma_log_vp_above);
+
+  std::vector<double> cov_log_vp_above = getCovLogVp(Sigma_log_vp_above);
+  std::vector<double> cov_log_vp_model = getCovLogVp(cov_log_vp_grid);
 
   float monitorSize = std::max(1.0f, static_cast<float>(n_rms_traces) * 0.02f);
   float nextMonitor = monitorSize;
@@ -360,14 +359,14 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
     std::vector<double>   mu_post;
     NRLib::Grid2D<double> Sigma_post;
 
-    do1DRMSInversion(mu_vp_top,
-                     mu_vp_base,
-                     Sigma_vp_above,
+    do1DRMSInversion(mu_vp_base,
                      Sigma_vp_below,
                      standard_deviation,
                      rms_traces[i],
+                     mu_log_vp_above,
                      mu_log_vp_grid,
-                     cov_log_vp,
+                     cov_log_vp_above,
+                     cov_log_vp_model,
                      simbox_above,
                      simbox_below,
                      timeSimbox,
@@ -429,7 +428,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
 
   generateStationaryDistribution(timeSimbox,
                                  mu_log_vp_post_model,
-                                 cov_log_vp,
+                                 cov_log_vp_model,
                                  cov_circulant_model,
                                  n_rms_traces,
                                  errorCorrXY,
@@ -538,7 +537,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
 
       generateStationaryDistribution(simbox_above,
                                      mu_log_vp_post_above,
-                                     pri_cov_circulant_above,
+                                     cov_log_vp_above,
                                      cov_circulant_above,
                                      n_rms_traces,
                                      errorCorrXY,
@@ -677,7 +676,7 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
                                                 time_P0,
                                                 push_down);
 
-    std::vector<double> mu_log_vp = generateMuLogVpModel(mu_log_vp_dynamic, i_ind, j_ind);
+    std::vector<double> mu_log_vp = generateMuLogVpFromGrid(mu_log_vp_dynamic, i_ind, j_ind);
 
     // Transform to Vp^(-1)
     std::vector<double>   mu_vp_minus;
@@ -709,14 +708,14 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
 //-----------------------------------------------------------------------------------------//
 
 void
-TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_top,
-                                      const double                & mu_vp_base,
-                                      const NRLib::Grid2D<double> & Sigma_m_above,
+TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_base,
                                       const NRLib::Grid2D<double> & Sigma_m_below,
                                       const double                & standard_deviation,
                                       const RMSTrace              * rms_trace,
-                                      FFTGrid                     * mu_log_vp,
-                                      const std::vector<double>   & cov_grid_log_vp,
+                                      FFTGrid                     * mu_log_vp_above,
+                                      FFTGrid                     * mu_log_vp_model,
+                                      const std::vector<double>   & cov_grid_log_vp_above,
+                                      const std::vector<double>   & cov_grid_log_vp_model,
                                       const Simbox                * simbox_above,
                                       const Simbox                * simbox_below,
                                       const Simbox                * timeSimbox,
@@ -738,8 +737,8 @@ TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_top,
   int n_model = timeSimbox->getnz();
   int n_below = simbox_below->getnz();
 
-  int n_pad_above = static_cast<int>(Sigma_m_above.GetNI());
-  int n_pad_model = mu_log_vp->getNzp();
+  int n_pad_above = mu_log_vp_above->getNzp();
+  int n_pad_model = mu_log_vp_model->getNzp();
   int n_pad_below = static_cast<int>(Sigma_m_below.GetNI());
 
   const std::vector<double> time = rms_trace->getTime();
@@ -757,18 +756,18 @@ TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_top,
                                        n_pad_model,
                                        n_pad_below);
 
-  std::vector<double>   mu_log_vp_model = generateMuLogVpModel(mu_log_vp, i_ind, j_ind);
+  std::vector<double> mu_log_vp_model_profile = generateMuLogVpFromGrid(mu_log_vp_model, i_ind, j_ind);
+  std::vector<double> mu_log_vp_above_profile = generateMuLogVpFromGrid(mu_log_vp_above, i_ind, j_ind);
 
   std::vector<double>   mu_m_square;
   NRLib::Grid2D<double> Sigma_m_square;
 
-  calculateMuSigma_mSquare(mu_log_vp_model,
-                           cov_grid_log_vp,
-                           mu_vp_top,
+  calculateMuSigma_mSquare(mu_log_vp_above_profile,
+                           mu_log_vp_model_profile,
+                           cov_grid_log_vp_above,
+                           cov_grid_log_vp_model,
                            mu_vp_base,
-                           Sigma_m_above,
                            Sigma_m_below,
-                           n_above,
                            n_below,
                            mu_m_square,
                            Sigma_m_square);
@@ -1021,13 +1020,12 @@ TravelTimeInversion::calculateSigmaDSquare(const std::vector<double> & rms_veloc
 
 //-----------------------------------------------------------------------------------------//
 void
-TravelTimeInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_model,
-                                              const std::vector<double>   & cov_grid_log_vp,
-                                              const double                & mu_vp_top,
+TravelTimeInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_above,
+                                              const std::vector<double>   & mu_log_vp_model,
+                                              const std::vector<double>   & cov_grid_log_vp_above,
+                                              const std::vector<double>   & cov_grid_log_vp_model,
                                               const double                & mu_vp_base,
-                                              const NRLib::Grid2D<double> & Sigma_vp_above,
                                               const NRLib::Grid2D<double> & Sigma_vp_below,
-                                              const int                   & n_above,
                                               const int                   & n_below,
                                               std::vector<double>         & mu_vp_square,
                                               NRLib::Grid2D<double>       & Sigma_vp_square) const
@@ -1036,14 +1034,10 @@ TravelTimeInversion::calculateMuSigma_mSquare(const std::vector<double>   & mu_l
   int n_layers_simbox = static_cast<int>(mu_log_vp_model.size());
 
   // Model
-  NRLib::Grid2D<double> Sigma_log_vp_model = generateSigmaModel(cov_grid_log_vp);
+  NRLib::Grid2D<double> Sigma_log_vp_model = generateSigmaModel(cov_grid_log_vp_model);
 
   // Above
-  int                   n_pad_above    = static_cast<int>(Sigma_vp_above.GetNI());
-  std::vector<double>   mu_vp_above    = generateMuVpAbove(mu_vp_top, std::exp(mu_log_vp_model[0]), n_above, n_pad_above);
-  std::vector<double>   mu_log_vp_above;
-  NRLib::Grid2D<double> Sigma_log_vp_above;
-  calculateCentralMomentLogNormalInverse(mu_vp_above, Sigma_vp_above, mu_log_vp_above, Sigma_log_vp_above);
+  NRLib::Grid2D<double> Sigma_log_vp_above = generateSigmaModel(cov_grid_log_vp_above);
 
   // Below
   int                   n_pad_below    = static_cast<int>(Sigma_vp_below.GetNI());
@@ -1104,9 +1098,9 @@ TravelTimeInversion::getCovLogVp(FFTGrid * cov_log_vp) const
 //-----------------------------------------------------------------------------------------//
 
 std::vector<double>
-TravelTimeInversion::generateMuLogVpModel(FFTGrid   * mu_log_vp,
-                                          const int & i_ind,
-                                          const int & j_ind) const
+TravelTimeInversion::generateMuLogVpFromGrid(FFTGrid   * mu_log_vp,
+                                             const int & i_ind,
+                                             const int & j_ind) const
 {
 
   int n_layers_padding = mu_log_vp->getNzp();
@@ -2112,8 +2106,7 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
                                                const float                  & corrGradJ,
                                                FFTGrid                      * mu_log_vp_grid,
                                                FFTGrid                     *& mu_log_vp_above,
-                                               FFTGrid                     *& Sigma_log_vp_above,
-                                               std::vector<double>          & cov_circulant_above) const
+                                               FFTGrid                     *& Sigma_log_vp_above) const
 {
 
   const int nx  = mu_log_vp_grid->getNx();
@@ -2159,7 +2152,7 @@ TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz
 
   mu_log_vp_above->setAccessMode(FFTGrid::READANDWRITE);
 
-  cov_circulant_above.resize(nzp, 0);
+  std::vector<double> cov_circulant_above(nzp, 0);
 
   for (int i = 0; i < rnxp ; i++) {
     for (int j = 0; j < nyp; j++) {
