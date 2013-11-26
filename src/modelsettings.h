@@ -223,7 +223,7 @@ public:
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
-  double                           getRMSStandardDeviation()            const { return RMSStandardDeviation_                      ;}
+  double                           getRMSStandardDeviation(int i)       const { return RMSStandardDeviation_[i]                   ;}
   bool                             getRMSPriorGiven()                   const { return RMSPriorGiven_                             ;}
   int                              getRMSnLayersAbove()                 const { return RMSnLayersAbove_                           ;}
   int                              getRMSnLayersBelow()                 const { return RMSnLayersBelow_                           ;}
@@ -458,7 +458,7 @@ public:
   void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
   void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
-  void setRMSStandardDeviation(double value)              { RMSStandardDeviation_ = value                        ;}
+  void addRMSStandardDeviation(double value)              { RMSStandardDeviation_.push_back(value)               ;}
   void setRMSPriorGiven(bool given)                       { RMSPriorGiven_   = given                             ;}
   void setRMSnLayersAbove(int n_layers)                   { RMSnLayersAbove_ = n_layers                          ;}
   void setRMSnLayersBelow(int n_layers)                   { RMSnLayersBelow_ = n_layers                          ;}
@@ -566,7 +566,7 @@ private:
 
   std::vector<std::string>          travelTimeHorizonName_;      // Name of travel time horizon
   std::vector<double>               travelTimeHorizonSD_;        // Standard deviation of the travel time horizon
-  double                            RMSStandardDeviation_;       // Standard deviation for the RMS data
+  std::vector<double>               RMSStandardDeviation_;       // Standard deviation for the RMS data
   bool                              RMSPriorGiven_;              // True if prior information is given for RMS inversion
   int                               RMSnLayersAbove_;            // n layers above the reservoir in inversion of RMS velocities
   int                               RMSnLayersBelow_;            // n layers below the reservoir in inversion of RMS velocities

@@ -6,6 +6,7 @@
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
+#include "src/modeltraveltimestatic.h"
 #include "src/modeltraveltimedynamic.h"
 #include "src/modelgravitystatic.h"
 #include "src/modelgravitydynamic.h"
@@ -17,6 +18,7 @@
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
                        ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
@@ -34,6 +36,10 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                        timeBGSimbox,
                                        modelGeneral->getTimeSimboxConstThick(),
                                        modelGeneral->getWells());
+
+  modelTravelTimeStatic = new ModelTravelTimeStatic(modelSettings,
+                                                    inputFiles,
+                                                    modelGeneral->getTimeSimbox());
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
   modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
@@ -126,6 +132,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 bool
 doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
                                ModelGeneral            * modelGeneral,
+                               ModelTravelTimeStatic   * modelTravelTimeStatic,
                                const InputFiles        * inputFiles,
                                const int               & vintage,
                                SeismicParametersHolder & seismicParameters)
@@ -134,6 +141,7 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
 
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
                                                       inputFiles,
+                                                      modelTravelTimeStatic,
                                                       modelGeneral->getTimeSimbox(),
                                                       vintage);
 
@@ -141,6 +149,7 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
 
   if(failedLoadingModel == false) {
     TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
+                                                                          modelTravelTimeStatic,
                                                                           modelTravelTimeDynamic,
                                                                           seismicParameters);
 

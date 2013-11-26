@@ -335,6 +335,7 @@
     <ClCompile Include="src\modelgravitystatic.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
+    <ClCompile Include="src\modeltraveltimestatic.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
     <ClCompile Include="src\posteriorelasticpdf.cpp" />
     <ClCompile Include="src\posteriorelasticpdf2d.cpp" />
@@ -1369,6 +1370,7 @@
     <ClInclude Include="rplib\table_vp2.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\modeltraveltimestatic.h" />
     <ClInclude Include="src\rmstrace.h" />
     <ClInclude Include="src\gravimetricinversion.h" />
     <ClInclude Include="src\modelgravitydynamic.h" />

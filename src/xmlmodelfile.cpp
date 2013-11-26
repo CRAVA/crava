@@ -684,9 +684,10 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   inputFiles_   ->clearTimeLapseTravelTime();
   if (parseTravelTime(root, errTxt) == false) {
     modelSettings_->addTimeLapseTravelTimeGiven(false);
-    modelSettings_->setRMSStandardDeviation(RMISSING);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
     modelSettings_->addTravelTimeHorizonName("");
     modelSettings_->addTravelTimeHorizonSD(RMISSING);
+    modelSettings_->addLateralTravelTimeErrorCorr(NULL);
     inputFiles_   ->addRmsVelocity("");
     inputFiles_   ->addTravelTimeHorizon("");
   }
@@ -1145,7 +1146,7 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
     rms_given = true;
   else {
     inputFiles_->addRmsVelocity("");
-    modelSettings_->setRMSStandardDeviation(RMISSING);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
   }
 
   int n_horizons = 0;
@@ -1195,7 +1196,7 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 
   double value;
   if(parseValue(root, "standard-deviation", value, errTxt) == true)
-    modelSettings_->setRMSStandardDeviation(value);
+    modelSettings_->addRMSStandardDeviation(value);
   else
     errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 
