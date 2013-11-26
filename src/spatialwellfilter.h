@@ -9,9 +9,9 @@
 #include "rplib/syntwelldata.h"
 
 class FFTGrid;
-class Crava;
-class WellData;
-class BlockedLogs;
+class AVOInversion;
+//class WellData;
+//class BlockedLogs;
 class BlockedLogsCommon;
 class SeismicParametersHolder;
 
@@ -43,10 +43,10 @@ public:
   //                                     SeismicParametersHolder       & seismicParameters);
 
   void                    doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
-                                      int                                        nWells,
+                                      //int                                        nWells,
                                       bool                                       useVpRhoFilter,
                                       int                                        nAngles,
-                                      const Crava                              * cravaResult,
+                                      const AVOInversion                       * avoInversionResult,
                                       const std::vector<Grid2D *>              & noiseScale,
                                       SeismicParametersHolder                  & seismicParameters);
 
@@ -56,12 +56,12 @@ public:
                                                 int                                        nWells,
                                                 const NRLib::Matrix                      & priorVar0);
 
-  void                         doFiltering(WellData                   ** wells,
-                                           int                           nWells,
-                                           bool                          useVpRhoFilter,
-                                           int                           nAngles,
-                                           const Crava                 * cravaResult,
-                                           const std::vector<Grid2D *> & noiseScale);
+  //void                         doFiltering(WellData                   ** wells,
+  //                                         int                           nWells,
+  //                                         bool                          useVpRhoFilter,
+  //                                         int                           nAngles,
+  //                                         const AVOInversion          * avoInversionResult,
+  //                                         const std::vector<Grid2D *> & noiseScale);
 
   std::vector<NRLib::Matrix> & getSigmae(void)     { return sigmae_ ;}
   std::vector<double **>     & getSigmaeSynt()     {return sigmaeSynt_;}
@@ -90,7 +90,7 @@ private:
 
   void completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
                       int                           lastn,
-                      const Crava                 * cravaResult,
+                      const AVOInversion          * avoInversionResult,
                       const std::vector<Grid2D *> & noiseScale);
 
   void updateSigmaEVpRho(std::vector<NRLib::Matrix> & sigmaeVpRho,
@@ -101,7 +101,7 @@ private:
 
   void completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmaeVpRho,
                            int                           lastn,
-                           const Crava                 * cravaResult,
+                           const AVOInversion          * avoInversionResult,
                            const std::vector<Grid2D *> & noiseScale);
 
   void fillValuesInSigmapostSyntWell(double     ** sigmapost,

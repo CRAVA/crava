@@ -2,8 +2,8 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#ifndef CRAVA_H
-#define CRAVA_H
+#ifndef AVOINVERSION_H
+#define AVOINVERSION_H
 
 #include "fftw.h"
 #include "definitions.h"
@@ -31,16 +31,16 @@ class SeismicParametersHolder;
 class BlockedLogsCommon;
 
 
-class Crava
+class AVOInversion
 {
 public:
-  Crava(ModelSettings           * modelSettings,
+  AVOInversion(ModelSettings           * modelSettings,
         ModelGeneral            * modelGeneral,
         ModelAVOStatic          * modelAVOstatic,
         ModelAVODynamic         * modelAVOdynamic,
         SeismicParametersHolder & seismicParameters);
 
-  ~Crava();
+  ~AVOInversion();
 
   int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
   int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);

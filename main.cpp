@@ -32,7 +32,7 @@
 #include "src/program.h"
 #include "src/definitions.h"
 #include "src/wavelet.h"
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/fftgrid.h"
 #include "src/gridmapping.h"
 #include "src/simbox.h"

@@ -4,7 +4,7 @@
 
 #include "rfftw.h"
 
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/wavelet.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
@@ -48,11 +48,11 @@
 #include <time.h>
 #include <string>
 
-Crava::Crava(ModelSettings           * modelSettings,
-             ModelGeneral            * modelGeneral,
-             ModelAVOStatic          * modelAVOstatic,
-             ModelAVODynamic         * modelAVOdynamic,
-             SeismicParametersHolder & seismicParameters)
+AVOInversion::AVOInversion(ModelSettings           * modelSettings,
+                           ModelGeneral            * modelGeneral,
+                           ModelAVOStatic          * modelAVOstatic,
+                           ModelAVODynamic         * modelAVOdynamic,
+                           SeismicParametersHolder & seismicParameters)
 {
 
 
@@ -80,7 +80,7 @@ Crava::Crava(ModelSettings           * modelSettings,
   nzp_               = seismicParameters.GetMeanVp()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
-  wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
+  wnc_               = modelSettings_->getWNC();     // white noise component see avoinversion.h
   energyTreshold_    = modelSettings_->getEnergyThreshold();
   ntheta_            = modelAVOdynamic->getNumberOfAngles();
   doing4DInversion_  = modelSettings->getDo4DInversion();
@@ -245,7 +245,7 @@ Crava::Crava(ModelSettings           * modelSettings,
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
       spatwellfilter->doFiltering(modelGeneral->getBlockedWells(),
-                                  modelSettings->getNumberOfWells(),
+                                  //modelSettings->getNumberOfWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
                                   this,
@@ -296,7 +296,7 @@ Crava::Crava(ModelSettings           * modelSettings,
 
 }
 
-Crava::~Crava()
+AVOInversion::~AVOInversion()
 {
   delete [] thetaDeg_;
   delete [] empSNRatio_;
@@ -333,7 +333,7 @@ Crava::~Crava()
 }
 
 void
-Crava::computeDataVariance(void)
+AVOInversion::computeDataVariance(void)
 {
   //
   // Compute variation in raw seismic
@@ -377,7 +377,7 @@ Crava::computeDataVariance(void)
 }
 
 void
-Crava::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
+AVOInversion::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
 {
   //
   //  Setup error correlation matrix
@@ -415,8 +415,8 @@ Crava::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
 }
 
 void
-Crava::computeVariances(fftw_real     * corrT,
-                        ModelSettings * modelSettings)
+AVOInversion::computeVariances(fftw_real     * corrT,
+                               ModelSettings * modelSettings)
 {
   computeDataVariance();
 
@@ -487,9 +487,9 @@ Crava::computeVariances(fftw_real     * corrT,
 }
 
 void
-Crava::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
-                                             float     * corrT,
-                                             float     * A ) const
+AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
+                                                    float     * corrT,
+                                                    float     * A ) const
 {
   double eiVar=0.0;
   for(int l=0; l<3 ; l++)
@@ -501,9 +501,9 @@ Crava::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
 }
 
 void
-Crava::computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
-                                                  float     * corrT,
-                                                  float     * A ) const
+AVOInversion::computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
+                                                         float     * corrT,
+                                                         float     * A ) const
 {
   computeElasticImpedanceTimeCovariance(refCovT, corrT, A);
 
@@ -523,7 +523,7 @@ Crava::computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
 
 
 int
-Crava::checkScale(void)
+AVOInversion::checkScale(void)
 {
   std::string scaleWarning1;
   std::string scaleWarning2;
@@ -603,7 +603,7 @@ Crava::checkScale(void)
 }
 
 void
-Crava::divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters)
+AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters)
 {
   int i,j,k,l,flag;
 
@@ -737,13 +737,13 @@ Crava::divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameter
 
 
 void
-Crava::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
-                               Wavelet1D                     * wLocal,
-                               double                          sf,
-                               Wavelet                       * wGlobal,
-                               const SeismicParametersHolder & seismicParameters,
-                               float                         * A,
-                               float                           errorVar)
+AVOInversion::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
+                                      Wavelet1D                     * wLocal,
+                                      double                          sf,
+                                      Wavelet                       * wGlobal,
+                                      const SeismicParametersHolder & seismicParameters,
+                                      float                         * A,
+                                      float                           errorVar)
 {
 // Computes the 1D inversion (of a single cube) with the local wavelet
 // and then multiply up with the values of the global wavelet
@@ -831,7 +831,7 @@ Crava::computeAdjustmentFactor(fftw_complex                  * adjustmentFactor,
 }
 
 void
-Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
+AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
 {
   int i,j,k,l,flag;
 
@@ -899,8 +899,8 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
 }
 
 int
-Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
-                                     SeismicParametersHolder & seismicParameters)
+AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
+                                            SeismicParametersHolder & seismicParameters)
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
 
@@ -1309,14 +1309,14 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 }
 //--------------------------------------------------------------------
 void
-Crava::getNextErrorVariance(fftw_complex **& errVar,
-                            fftw_complex   * errMult1,
-                            fftw_complex   * errMult2,
-                            fftw_complex   * errMult3,
-                            int              ntheta,
-                            float            wnc,
-                            double        ** errThetaCov,
-                            bool             invert_frequency) const
+AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
+                                   fftw_complex   * errMult1,
+                                   fftw_complex   * errMult2,
+                                   fftw_complex   * errMult3,
+                                   int              ntheta,
+                                   float            wnc,
+                                   double        ** errThetaCov,
+                                   bool             invert_frequency) const
 {
   fftw_complex ijkErrLam;
   fftw_complex ijkTmp;
@@ -1348,7 +1348,7 @@ Crava::getNextErrorVariance(fftw_complex **& errVar,
 }
 
 void
-Crava::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
+AVOInversion::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
 {
   for(int l = 0; l < ntheta_; l++)
   {
@@ -1358,7 +1358,7 @@ Crava::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
 }
 
 void
-Crava::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
+AVOInversion::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
 {
   int l;
   for(l = 0; l < ntheta_; l++)
@@ -1369,7 +1369,7 @@ Crava::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
 }
 
 void
-Crava::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm)
+AVOInversion::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm)
 {
   int l;
   float modulus,modulusFine,maxMod;
@@ -1398,13 +1398,13 @@ Crava::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWavele
 }
 
 std::complex<double>
-Crava::SetComplexNumber(const fftw_complex & c)
+AVOInversion::SetComplexNumber(const fftw_complex & c)
 {
   return std::complex<double>(c.re, c.im);
 }
 
 void
-Crava::SetComplexVector(NRLib::ComplexVector & V,
+AVOInversion::SetComplexVector(NRLib::ComplexVector & V,
                         fftw_complex         * v)
 {
   for (int l=0; l < ntheta_; l++) {
@@ -1414,7 +1414,7 @@ Crava::SetComplexVector(NRLib::ComplexVector & V,
 
 
 void
-Crava::doPredictionKriging(SeismicParametersHolder & seismicParameters)
+AVOInversion::doPredictionKriging(SeismicParametersHolder & seismicParameters)
 {
   if(writePrediction_ == true) { //No need to do this if output not requested.
     double wall2=0.0, cpu2=0.0;
@@ -1427,7 +1427,7 @@ Crava::doPredictionKriging(SeismicParametersHolder & seismicParameters)
 }
 
 int
-Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen)
+AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen)
 {
   LogKit::WriteHeader("Simulating from posterior model");
 
@@ -1613,10 +1613,10 @@ Crava::simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomG
 }
 
 void
-Crava::doPostKriging(SeismicParametersHolder & seismicParameters,
-                     FFTGrid                 & postVp,
-                     FFTGrid                 & postVs,
-                     FFTGrid                 & postRho)
+AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
+                            FFTGrid                 & postVp,
+                            FFTGrid                 & postVs,
+                            FFTGrid                 & postRho)
 {
 
   LogKit::WriteHeader("Kriging to wells");
@@ -1645,7 +1645,7 @@ Crava::doPostKriging(SeismicParametersHolder & seismicParameters,
 }
 
 FFTGrid *
-Crava::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int angle)
+AVOInversion::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int angle)
 {
   FFTGrid * impedance = createFFTGrid();
   impedance->setType(FFTGrid::DATA);
@@ -1679,7 +1679,7 @@ Crava::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, i
 
 
 void
-Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
+AVOInversion::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
 {
   LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
@@ -1775,7 +1775,7 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
 
 
 float
-Crava::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
+AVOInversion::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
 {
   float var = 0.0;
   int i,j,corrInd;
@@ -1791,9 +1791,9 @@ Crava::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
 
 
 void
-Crava::fillkW_flens(int                     k,
-                    NRLib::ComplexVector  & kW,
-                    Wavelet              ** seisWavelet)
+AVOInversion::fillkW_flens(int                     k,
+                           NRLib::ComplexVector  & kW,
+                           Wavelet              ** seisWavelet)
 {
   for(int l = 0; l < ntheta_; l++) {
     double kWR =  static_cast<double>( seisWavelet[l]->getCAmp(k).re );
@@ -1803,9 +1803,9 @@ Crava::fillkW_flens(int                     k,
 }
 
 void
-Crava::fillkWNorm_flens(int                     k,
-                        NRLib::ComplexVector  & kWNorm,
-                        Wavelet1D            ** wavelet)
+AVOInversion::fillkWNorm_flens(int                     k,
+                               NRLib::ComplexVector  & kWNorm,
+                               Wavelet1D            ** wavelet)
 {
   for (int l = 0; l < ntheta_; l++)
   {
@@ -1816,9 +1816,9 @@ Crava::fillkWNorm_flens(int                     k,
 }
 
 void
-Crava::fillInverseAbskWRobust_flens(int                     k,
-                                    NRLib::ComplexVector  & invkW,
-                                    Wavelet1D            ** seisWaveletForNorm)
+AVOInversion::fillInverseAbskWRobust_flens(int                     k,
+                                           NRLib::ComplexVector  & invkW,
+                                           Wavelet1D            ** seisWaveletForNorm)
 {
   for(int l = 0; l < ntheta_; l++) {
     fftw_complex value       = seisWaveletForNorm[l]->getCAmp(k);
@@ -1842,7 +1842,7 @@ Crava::fillInverseAbskWRobust_flens(int                     k,
 
 
 FFTGrid*
-Crava::createFFTGrid()
+AVOInversion::createFFTGrid()
 {
   FFTGrid* fftGrid;
 
@@ -1855,7 +1855,7 @@ Crava::createFFTGrid()
 }
 
 FFTGrid*
-Crava::copyFFTGrid(FFTGrid * fftGridOld)
+AVOInversion::copyFFTGrid(FFTGrid * fftGridOld)
 {
   FFTGrid* fftGrid;
   if(fileGrid_)
@@ -1867,7 +1867,7 @@ Crava::copyFFTGrid(FFTGrid * fftGridOld)
 
 
 FFTFileGrid*
-Crava::copyFFTGrid(FFTFileGrid * fftGridOld)
+AVOInversion::copyFFTGrid(FFTFileGrid * fftGridOld)
 {
   FFTFileGrid* fftGrid;
   fftGrid =  new FFTFileGrid(fftGridOld);
@@ -1875,7 +1875,7 @@ Crava::copyFFTGrid(FFTFileGrid * fftGridOld)
 }
 
 void
-Crava::printEnergyToScreen()
+AVOInversion::printEnergyToScreen()
 {
   int i;
   LogKit::LogFormatted(LogKit::Low,"\n                       ");
@@ -1899,9 +1899,9 @@ Crava::printEnergyToScreen()
 
 
 void
-Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
-                         bool                            useFilter,
-                         SeismicParametersHolder       & seismicParameters)
+AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
+                                bool                            useFilter,
+                                SeismicParametersHolder       & seismicParameters)
 {
   ModelSettings * modelSettings = modelSettings_;
 
@@ -2005,7 +2005,6 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               modelAVOdynamic_->getLocalNoiseScales(),
                               modelSettings_,
                               filteredlogs,
-                              //wells_,
                               blocked_wells_,
                               modelGeneral_->getTrendCubes(),
                               nWells_,
@@ -2124,19 +2123,19 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 }
 
 NRLib::Matrix
-Crava::getPriorVar0() const
+AVOInversion::getPriorVar0() const
 {
   return priorVar0_;
 }
 
 NRLib::Matrix
-Crava::getPostVar0(void) const
+AVOInversion::getPostVar0(void) const
 {
   return postVar0_;
 }
 
 NRLib::SymmetricMatrix
-Crava::getSymmetricPriorVar0() const
+AVOInversion::getSymmetricPriorVar0() const
 {
   NRLib::SymmetricMatrix PriorVar0(3);
   PriorVar0(0,0) = static_cast<double>(priorVar0_(0,0));
@@ -2149,7 +2148,7 @@ Crava::getSymmetricPriorVar0() const
 }
 
 NRLib::SymmetricMatrix
-Crava::getSymmetricPostVar0(void) const
+AVOInversion::getSymmetricPostVar0(void) const
 {
   NRLib::SymmetricMatrix PostVar0(3);
   PostVar0(0,0) = static_cast<double>(postVar0_(0,0));
@@ -2162,7 +2161,7 @@ Crava::getSymmetricPostVar0(void) const
 }
 
 //-------------------------------------------
-void Crava::computeG(NRLib::Matrix & G) const
+void AVOInversion::computeG(NRLib::Matrix & G) const
 //-------------------------------------------
 {
   //
@@ -2246,10 +2245,10 @@ void Crava::computeG(NRLib::Matrix & G) const
   G = H2*Sinv;
 }
 
-void Crava::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
-                                     NRLib::Matrix & G,
-                                     NRLib::Vector & scales,
-                                     NRLib::Matrix & sigmamdnew) const
+void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
+                                            NRLib::Matrix & G,
+                                            NRLib::Vector & scales,
+                                            NRLib::Matrix & sigmamdnew) const
 {
   //  this function name is not suited... it returns not what we should think perhaps...
   //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
@@ -2352,8 +2351,8 @@ void Crava::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
 
 
 NRLib::Matrix
-Crava::computeFilter(NRLib::SymmetricMatrix & Sprior,
-                     NRLib::SymmetricMatrix & Spost) const
+AVOInversion::computeFilter(NRLib::SymmetricMatrix & Sprior,
+                            NRLib::SymmetricMatrix & Spost) const
 {
   //
   // Filter = I - Sigma_post * inv(Sigma_prior)
@@ -2372,7 +2371,7 @@ Crava::computeFilter(NRLib::SymmetricMatrix & Sprior,
 }
 
 
-void Crava::correctVpVsRho(ModelSettings * modelSettings)
+void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 {
   int i,j,k;
 
@@ -2537,7 +2536,7 @@ void Crava::correctVpVsRho(ModelSettings * modelSettings)
 
 }
 
-//void Crava::writeBWPredicted(void)
+//void AVOInversion::writeBWPredicted(void)
 //{
 //  int i;
 //  for (i=0; i<nWells_; i++)
@@ -2558,7 +2557,7 @@ void Crava::correctVpVsRho(ModelSettings * modelSettings)
 //   }
 //}
 
-void Crava::writeBWPredicted(void)
+void AVOInversion::writeBWPredicted(void)
 {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);

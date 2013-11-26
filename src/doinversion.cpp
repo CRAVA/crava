@@ -1,6 +1,6 @@
 #include <time.h>
 
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
@@ -177,7 +177,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                                         //seismicParameters,
                                         modelGeneral->getTimeSimbox(),
                                         //modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getTimeDepthMapping(),
+                                        //modelGeneral->getTimeDepthMapping(),
                                         //modelGeneral->getTimeCutMapping(),
                                         vintage,
                                         i_interval);
@@ -186,9 +186,9 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   if(failedLoadingModel == false) {
 
-    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters); //Change name to: AVOInversion
+    AVOInversion * avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters); //Change name to: AVOInversion
 
-    delete crava;
+    delete avoinversion;
   }
 
   //H Changed from float * to map i BlockedLogsCommon

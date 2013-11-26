@@ -24,9 +24,9 @@
 #include "src/faciesprob.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/simbox.h"
-#include "src/blockedlogs.h"
+//#include "src/blockedlogs.h"
 #include "src/modelsettings.h"
 #include "src/definitions.h"
 #include "src/spatialwellfilter.h"
@@ -52,14 +52,13 @@ FaciesProb::FaciesProb(FFTGrid                                  * alpha,
                        std::vector<FFTGrid *>                     priorFaciesCubes,
                        const std::vector<NRLib::Matrix>         & sigmaEOrig,
                        bool                                       useFilter,
-                       //std::vector<WellData *>             wells,
                        std::map<std::string, BlockedLogsCommon *> blocked_wells,
                        int                                        nWells,
                        const std::vector<Surface *>             & faciesEstimInterval,
                        const double                               dz,
                        bool                                       relative,
                        bool                                       noVs,
-                       Crava                                    * cravaResult,
+                       AVOInversion                             * avoInversionResult,
                        const std::vector<Grid2D *>              & noiseScale,
                        const ModelSettings                      * modelSettings,
                        FFTGrid                                  * seismicLH,
@@ -81,7 +80,7 @@ FaciesProb::FaciesProb(FFTGrid                                  * alpha,
                  p_undef,
                  priorFacies,
                  priorFaciesCubes,
-                 cravaResult,
+                 avoInversionResult,
                  noiseScale,
                  modelSettings,
                  seismicLH,
@@ -104,12 +103,11 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                        const std::map<std::string, DistributionsRock *>   & rock_distributions,
                        const std::vector<std::string>                     & facies_names,
                        const std::vector<Surface *>                       & faciesEstimInterval,
-                       Crava                                              * cravaResult,
+                       AVOInversion                                       * avoInversionResult,
                        SeismicParametersHolder                            & seismicParameters,
                        const std::vector<Grid2D *>                        & noiseScale,
                        const ModelSettings                                * modelSettings,
                        SpatialWellFilter                                  * filteredLogs,
-                       //std::vector<WellData *>                              wells,
                        std::map<std::string, BlockedLogsCommon *>           blocked_wells,
                        CravaTrend                                         & trend_cubes,
                        int                                                  nWells,
@@ -140,7 +138,6 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                                             volume,
                                             filteredLogs->getSigmae(),
                                             useFilter,
-                                            //wells,
                                             blocked_wells,
                                             nWells,
                                             faciesEstimInterval,
@@ -148,7 +145,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                                             relative,
                                             modelSettings->getNoVsFaciesProb(),
                                             priorFaciesCubes,
-                                            cravaResult,
+                                            avoInversionResult,
                                             noiseScale,
                                             modelSettings,
                                             facies_names);
@@ -162,7 +159,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
     posteriorPdf[0].resize(nFacies_,NULL);
     nDimensions = MakePosteriorElasticPDFRockPhysics(posteriorPdf,
                                                      volume,
-                                                     cravaResult,
+                                                     avoInversionResult,
                                                      seismicParameters,
                                                      priorFaciesCubes,
                                                      modelSettings,
@@ -228,8 +225,8 @@ std::vector<FFTGrid *>
 FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<double> & alpha, //
                                           const std::vector<double> & beta,
                                           const std::vector<double> & rho,
-                                          const std::vector<int>   & faciesLog,
-                                          const Simbox             * volume)
+                                          const std::vector<int>    & faciesLog,
+                                          const Simbox              * volume)
 {
   std::vector<FFTGrid *> hist;
   hist.resize(nFacies_, NULL);
@@ -306,7 +303,7 @@ void FaciesProb::makeFaciesDens(int                                nfac,
                                 Simbox                          ** volume,
                                 int                                index,
                                 NRLib::Matrix                    & G,
-                                Crava                            * cravaResult,
+                                AVOInversion                     * avoInversionResult,
                                 const std::vector<Grid2D *>      & noiseScale)
 {
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
@@ -356,10 +353,10 @@ void FaciesProb::makeFaciesDens(int                                nfac,
     NRLib::Matrix H(3,3);
     NRLib::Matrix junk(3,3);
 
-    cravaResult->newPosteriorCovPointwise(H,
-                                          G,
-                                          scale,
-                                          junk);
+    avoInversionResult->newPosteriorCovPointwise(H,
+                                                 G,
+                                                 scale,
+                                                 junk);
 
     NRLib::Vector h1(3);
 
@@ -547,7 +544,7 @@ void FaciesProb::makeFaciesDens(int                                nfac,
 
 int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >         & posteriorPdf,
                                                    std::vector<Simbox *>                                    & volume,
-                                                   Crava                                                    * cravaResult,
+                                                   AVOInversion                                             * avoInversionResult,
                                                    SeismicParametersHolder                                  & seismicParameters,
                                                    std::vector<FFTGrid *>                                   & priorFaciesCubes,
                                                    const ModelSettings                                      * modelSettings,
@@ -615,7 +612,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   // v is the transformation matrix for the elastic variables
   std::vector<std::vector<double> > v;
 
-  FillSigmaPriAndSigmaPost(cravaResult, sigma_pri_temp, sigma_post_temp);
+  FillSigmaPriAndSigmaPost(avoInversionResult, sigma_pri_temp, sigma_post_temp);
   if(nDimensions>3) {
     v.resize(2);
     v[0].resize(3,0.0);
@@ -662,7 +659,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     spatWellFilter->setPriorSpatialCorrSyntWell(postCovAlpha, syntWellData[i], i);
 
   // NB! EN doFilteringSyntWells can potentially invert 2N matrices instead
-  spatWellFilter->doFilteringSyntWells(syntWellData, v, seismicParameters, nWellsToBeFiltered, cravaResult->getPriorVar0());
+  spatWellFilter->doFilteringSyntWells(syntWellData, v, seismicParameters, nWellsToBeFiltered, avoInversionResult->getPriorVar0());
 
   // TRANSFORM SIGMA E ACCORDING TO DIMENSION REDUCTION MATRIX V --------------------------
 
@@ -938,7 +935,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
                                           bool                                                 relative,
                                           bool                                                 noVs,
                                           std::vector<FFTGrid *>                             & priorFaciesCubes,
-                                          Crava                                              * cravaResult,
+                                          AVOInversion                                       * avoInversionResult,
                                           const std::vector<Grid2D *>                        & noiseScale,
                                           const ModelSettings                                * modelSettings,
                                           const std::vector<std::string>                       facies_names)
@@ -956,7 +953,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
   int nAng = static_cast<int>(noiseScale.size());
   NRLib::Matrix G(nAng, 3);
 
-  cravaResult->computeG(G);
+  avoInversionResult->computeG(G);
 
   //Set the grid temporarily to 100*100*50
   int nbinsa = 100;
@@ -1003,7 +1000,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
       NRLib::Matrix H(3, 3);
       NRLib::Matrix junk(3,3);
 
-      cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
+      avoInversionResult->newPosteriorCovPointwise(H, G, scale, junk);
 
       NRLib::Vector h1(3);
 
@@ -1186,7 +1183,7 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
                                 float                                      p_undef,
                                 const std::vector<float>                 & priorFacies,
                                 std::vector<FFTGrid *>                     priorFaciesCubes,
-                                Crava                                    * cravaResult,
+                                AVOInversion                             * avoInversionResult,
                                 const std::vector<Grid2D *>              & noiseScale,
                                 const ModelSettings                      * modelSettings,
                                 FFTGrid                                  * seismicLH,
@@ -1212,7 +1209,7 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
   int nAng = static_cast<int>(noiseScale.size());
 
   NRLib::Matrix G(nAng, 3);
-  cravaResult->computeG(G);
+  avoInversionResult->computeG(G);
 
   for(int i=0;i<densdim;i++) {
     makeFaciesDens(nFac,
@@ -1227,7 +1224,7 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
                    &volume[i],
                    i,
                    G,
-                   cravaResult,
+                   avoInversionResult,
                    noiseScale);
 
     if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && (i == 0 || i == densdim-1)) {
@@ -3594,11 +3591,11 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
   return(result);
 }
 
-void    FaciesProb::FillSigmaPriAndSigmaPost(Crava   * cravaResult,
-                                             double ** sigma_pri_temp,
-                                             double ** sigma_post_temp)
+void    FaciesProb::FillSigmaPriAndSigmaPost(AVOInversion * avoInversionResult,
+                                             double      ** sigma_pri_temp,
+                                             double      ** sigma_post_temp)
 {
-  NRLib::Matrix priorVar0 = cravaResult->getPriorVar0();
+  NRLib::Matrix priorVar0 = avoInversionResult->getPriorVar0();
 
   sigma_pri_temp[0][0] = priorVar0(0,0);
   sigma_pri_temp[1][1] = priorVar0(1,1);
@@ -3610,7 +3607,7 @@ void    FaciesProb::FillSigmaPriAndSigmaPost(Crava   * cravaResult,
   sigma_pri_temp[1][2] = priorVar0(1,2);
   sigma_pri_temp[2][1] = priorVar0(2,1);
 
-  NRLib::Matrix postVar0 = cravaResult->getPostVar0();
+  NRLib::Matrix postVar0 = avoInversionResult->getPostVar0();
   sigma_post_temp[0][0] = postVar0(0,0);
   sigma_post_temp[1][1] = postVar0(1,1);
   sigma_post_temp[2][2] = postVar0(2,2);

@@ -18,10 +18,10 @@
 
 #include "src/spatialwellfilter.h"
 #include "src/definitions.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/timings.h"
 #include "src/modelsettings.h"
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/seismicparametersholder.h"
 #include "src/blockedlogscommon.h"
 
@@ -509,10 +509,10 @@ void SpatialWellFilter::doFilteringSyntWells(std::vector<SyntWellData *>        
 //}
 
 void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
-                                    int                                        nWells,
+                                    //int                                        nWells,
                                     bool                                       useVpRhoFilter,
                                     int                                        nAngles,
-                                    const Crava                              * cravaResult,
+                                    const AVOInversion                       * avoInversionResult,
                                     const std::vector<Grid2D *>              & noiseScale,
                                     SeismicParametersHolder                  & seismicParameters)
 //-------------------------------------------------------------------------------
@@ -544,7 +544,7 @@ void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> b
     }
   }
 
-  NRLib::Matrix priorCov0 = cravaResult->getPriorVar0();
+  NRLib::Matrix priorCov0 = avoInversionResult->getPriorVar0();
 
   bool no_wells_filtered = true;
   int w1 = 0;
@@ -675,13 +675,13 @@ void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> b
   if(no_wells_filtered == false)
     completeSigmaE(sigmae_,
                    lastn,
-                   cravaResult,
+                   avoInversionResult,
                    noiseScale);
 
   if(useVpRhoFilter == true)
     completeSigmaEVpRho(sigmaeVpRho,
                         lastn,
-                        cravaResult,
+                        avoInversionResult,
                         noiseScale);
 
   if (no_wells_filtered) {
@@ -805,7 +805,7 @@ void SpatialWellFilter::updateSigmaE(NRLib::Matrix       & sigmae,
 //-------------------------------------------------------------------------------
 void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
                                        int                           lastn,
-                                       const Crava                 * cravaResult,
+                                       const AVOInversion          * avoInversionResult,
                                        const std::vector<Grid2D *> & noiseScale)
 //-------------------------------------------------------------------------------
 {
@@ -837,15 +837,15 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
       scale(angle) = 1.0;
 
     NRLib::Matrix G(nAng, 3);
-    cravaResult->computeG(G);
+    avoInversionResult->computeG(G);
 
     NRLib::Matrix dummy(3,3);
     NRLib::Matrix H(3,3);
 
-    cravaResult->newPosteriorCovPointwise(dummy,
-                                          G,
-                                          scale,
-                                          H);
+    avoInversionResult->newPosteriorCovPointwise(dummy,
+                                                 G,
+                                                 scale,
+                                                 H);
 
     NRLib::Matrix postCovAdj = H * H;
 
@@ -854,8 +854,8 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
       for(int j = 0 ; j <= i ; j++)
         symPostCovAdj(j,i) = postCovAdj(j,i);
 
-    NRLib::SymmetricMatrix SigmaPri0  = cravaResult->getSymmetricPriorVar0();
-    NRLib::Matrix          filter     = cravaResult->computeFilter(SigmaPri0, symPostCovAdj);
+    NRLib::SymmetricMatrix SigmaPri0  = avoInversionResult->getSymmetricPriorVar0();
+    NRLib::Matrix          filter     = avoInversionResult->computeFilter(SigmaPri0, symPostCovAdj);
 
     NRLib::Matrix          sigmaE0    = filter * postCovAdj;
 
@@ -877,10 +877,10 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
         factor *= 2;
       }
 
-      cravaResult->newPosteriorCovPointwise(dummy,
-                                            G,
-                                            scale,
-                                            H);    // H is the square root of postCovAdj
+      avoInversionResult->newPosteriorCovPointwise(dummy,
+                                                   G,
+                                                   scale,
+                                                   H);    // H is the square root of postCovAdj
 
       postCovAdj = H * H;
 
@@ -888,7 +888,7 @@ void SpatialWellFilter::completeSigmaE(std::vector<NRLib::Matrix>  & sigmae,
         for(int j = 0 ; j <= i ; j++)
           symPostCovAdj(j,i) = postCovAdj(j,i);
 
-      filter = cravaResult->computeFilter(SigmaPri0, symPostCovAdj);
+      filter = avoInversionResult->computeFilter(SigmaPri0, symPostCovAdj);
 
       NRLib::Matrix sigmaETmp = filter * postCovAdj;
 
@@ -1106,7 +1106,7 @@ void SpatialWellFilter::updateSigmaEVpRho(std::vector<NRLib::Matrix> & sigmaeVpR
 //------------------------------------------------------------------------------------
 void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmaeVpRho,
                                             int                           lastn,
-                                            const Crava                 * cravaResult,
+                                            const AVOInversion          * avoInversionResult,
                                             const std::vector<Grid2D *> & noiseScale)
 //------------------------------------------------------------------------------------
 {
@@ -1128,7 +1128,7 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
       maxScale[angle] = maxS/minS;
     }
 
-    NRLib::Matrix sigmaPri0 = cravaResult->getPriorVar0();
+    NRLib::Matrix sigmaPri0 = avoInversionResult->getPriorVar0();
 
     NRLib::SymmetricMatrix priCovVpRho(2);
     priCovVpRho(0,0) = sigmaPri0(0,0);
@@ -1145,11 +1145,11 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
 
     NRLib::Matrix G(nAng, 3);
 
-    cravaResult->computeG(G);
-    cravaResult->newPosteriorCovPointwise(dummy,
-                                          G,
-                                          scale,
-                                          help);
+    avoInversionResult->computeG(G);
+    avoInversionResult->newPosteriorCovPointwise(dummy,
+                                                 G,
+                                                 scale,
+                                                 help);
 
     NRLib::Matrix postCovAdj = help * help;
 
@@ -1158,8 +1158,8 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
     postCovVpRho(1,0) = postCovAdj(2,0);
     postCovVpRho(1,1) = postCovAdj(2,2);
 
-    NRLib::Matrix filter = cravaResult->computeFilter(priCovVpRho,
-                                                      postCovVpRho);
+    NRLib::Matrix filter = avoInversionResult->computeFilter(priCovVpRho,
+                                                             postCovVpRho);
 
     NRLib::Matrix sigmaE0 = filter * postCovVpRho;
 
@@ -1175,7 +1175,7 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
         factor *= 2;
       }
 
-      cravaResult->newPosteriorCovPointwise(dummy, G, scale,  help);  // help is the square root of postCovAdj
+      avoInversionResult->newPosteriorCovPointwise(dummy, G, scale,  help);  // help is the square root of postCovAdj
 
       postCovAdj = help * help;
 
@@ -1184,8 +1184,8 @@ void SpatialWellFilter::completeSigmaEVpRho(std::vector<NRLib::Matrix>  & sigmae
       postCovVpRho(1,0) = postCovAdj(2,0);
       postCovVpRho(1,1) = postCovAdj(2,2);
 
-      filter = cravaResult->computeFilter(priCovVpRho,
-                                          postCovVpRho);
+      filter = avoInversionResult->computeFilter(priCovVpRho,
+                                                 postCovVpRho);
 
       NRLib::Matrix sigmaETmp = filter * postCovVpRho;
 

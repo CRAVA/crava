@@ -67,7 +67,7 @@ public:
                   //SeismicParametersHolder & seismicParameters,
                   const Simbox            * timeSimbox,
                   //const Surface           * correlationDirection,
-                  const GridMapping       * timeDepthMapping,
+                  //const GridMapping       * timeDepthMapping,
                   //const GridMapping       * timeCutMapping,
                   int                       t,
                   int                       i_interval);

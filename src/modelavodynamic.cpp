@@ -401,7 +401,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  //SeismicParametersHolder & seismicParameters,
                                  const Simbox            * timeSimbox,
                                  //const Surface           * correlationDirection,
-                                 const GridMapping       * timeDepthMapping,
+                                 //const GridMapping       * timeDepthMapping,
                                  //const GridMapping       * timeCutMapping,
                                  int                       t,
                                  int                       i_interval)
@@ -417,6 +417,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   bool estimationMode     = modelSettings->getEstimationMode();  //Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
   localNoiseScale_        = commonData->GetLocalNoiseScaleTimeLapse(thisTimeLapse_);
   useLocalNoise_          = commonData->GetUseLocalNoise();
+
+  //timeDepthMapping ? "Skal evt. eksistera for heile resultate og ikkje per sone."
+  //timeCutMapping Er dekka av det ntye simboxformatet
 
   //estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
   //matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
