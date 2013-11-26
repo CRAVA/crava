@@ -3,6 +3,7 @@
 ***************************************************************************/
 
 #include "src/traveltimeinversion.h"
+#include "src/modeltraveltimestatic.h"
 #include "src/modeltraveltimedynamic.h"
 #include "src/seismicparametersholder.h"
 #include "src/simbox.h"
@@ -20,6 +21,7 @@
 
 
 TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
+                                         ModelTravelTimeStatic   * modelTravelTimeStatic,
                                          ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                          SeismicParametersHolder & seismicParameters)
 {
@@ -34,6 +36,7 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
 
   if (horizon_data_given == true && this_time_lapse > 0)
     doHorizonInversion(modelGeneral,
+                       modelTravelTimeStatic,
                        modelTravelTimeDynamic,
                        seismicParameters);
 
@@ -43,11 +46,13 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
     n_rms_inversions = 2;
 
   if (rms_data_given == true){
-    for (int i = 0; i < n_rms_inversions; ++i)
-    {
-      if(i>0)                                          // need to get set back seismic parameters  to
+    for (int i = 0; i < n_rms_inversions; ++i) {
+      if (i > 0) {                                     // need to set back seismic parameters to
         modelGeneral->mergeState4D(seismicParameters); // do the inversion again with a better timeframe ....
+        seismicParameters.invFFTAllGrids();
+      }
       doRMSInversion(modelGeneral,
+                     modelTravelTimeStatic,
                      modelTravelTimeDynamic,
                      seismicParameters,
                      i);
@@ -70,6 +75,7 @@ TravelTimeInversion::~TravelTimeInversion()
 
 void
 TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
+                                        ModelTravelTimeStatic   * modelTravelTimeStatic,
                                         ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                         SeismicParametersHolder & seismicParameters) const
 {
@@ -87,9 +93,16 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
   std::vector<double>   cov_log_vp   = getCovLogVp(cov_log_vp_dynamic);
   NRLib::Grid2D<double> Sigma_log_vp = generateSigmaModel(cov_log_vp);
 
-  const std::vector<Surface> initial_horizons   = modelTravelTimeDynamic->getInitialHorizons();
-  const std::vector<Surface> push_down_horizons = modelTravelTimeDynamic->getPushDownHorizons();
-  const std::vector<double>  standard_deviation = modelTravelTimeDynamic->getHorizonStandardDeviation();
+  const std::vector<Surface>     initial_horizons      = modelTravelTimeStatic->getInitialHorizons();
+  const std::vector<std::string> initial_horizon_names = modelTravelTimeStatic->getInitialHorizonNames();
+  const std::vector<Surface>     push_down_horizons    = modelTravelTimeDynamic->getPushDownHorizons();
+  const std::vector<std::string> push_down_names       = modelTravelTimeDynamic->getHorizonNames();
+  const std::vector<double>      standard_deviation    = modelTravelTimeDynamic->getHorizonStandardDeviation();
+
+  std::vector<Surface> sorted_initial_horizons = sortHorizons(initial_horizons,
+                                                              push_down_horizons,
+                                                              initial_horizon_names,
+                                                              push_down_names);
 
   const Simbox * timeSimbox  = modelGeneral->getTimeSimbox();
 
@@ -122,7 +135,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
       do1DHorizonInversion(mu_log_vp_dynamic,
                            Sigma_log_vp,
                            timeSimbox,
-                           initial_horizons,
+                           sorted_initial_horizons,
                            push_down_horizons,
                            standard_deviation,
                            top_simbox,
@@ -218,7 +231,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
     Simbox * new_simbox = NULL;
     std::string errTxt  = "";
     generateNewSimbox(distance,
-                      modelTravelTimeDynamic->getLzLimit(),
+                      modelTravelTimeStatic->getLzLimit(),
                       timeSimbox,
                       new_simbox,
                       errTxt);
@@ -259,6 +272,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
 //-----------------------------------------------------------------------------------------//
 void
 TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
+                                    ModelTravelTimeStatic   * modelTravelTimeStatic,
                                     ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                     SeismicParametersHolder & seismicParameters,
                                     const int               & inversion_number) const
@@ -272,15 +286,15 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   std::vector<double> cov_log_vp           = getCovLogVp(cov_log_vp_grid);
 
   const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
-  const Simbox * simbox_above              = modelTravelTimeDynamic->getSimboxAbove();
+  const Simbox * simbox_above              = modelTravelTimeStatic ->getSimboxAbove();
   const Simbox * simbox_below              = modelTravelTimeDynamic->getSimboxBelow();
   const std::vector<RMSTrace *> rms_traces = modelTravelTimeDynamic->getRMSTraces();
-  const double mu_vp_top                   = modelTravelTimeDynamic->getMeanVpTop();
-  const double mu_vp_base                  = modelTravelTimeDynamic->getMeanVpBase();
-  const double var_vp_above                = modelTravelTimeDynamic->getVarVpAbove();
-  const double var_vp_below                = modelTravelTimeDynamic->getVarVpBelow();
-  const double range_above                 = modelTravelTimeDynamic->getRangeAbove();
-  const double range_below                 = modelTravelTimeDynamic->getRangeBelow();
+  const double mu_vp_top                   = modelTravelTimeStatic ->getMeanVpTop();
+  const double mu_vp_base                  = modelTravelTimeStatic ->getMeanVpBase();
+  const double var_vp_above                = modelTravelTimeStatic ->getVarVpAbove();
+  const double var_vp_below                = modelTravelTimeStatic ->getVarVpBelow();
+  const double range_above                 = modelTravelTimeStatic ->getRangeAbove();
+  const double range_below                 = modelTravelTimeStatic ->getRangeBelow();
   const double standard_deviation          = modelTravelTimeDynamic->getRMSStandardDeviation();
   const int    this_time_lapse             = modelTravelTimeDynamic->getThisTimeLapse();
 
@@ -476,7 +490,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
     Simbox * new_simbox = NULL;
     std::string errTxt  = "";
     generateNewSimbox(distance,
-                      modelTravelTimeDynamic->getLzLimit(),
+                      modelTravelTimeStatic->getLzLimit(),
                       timeSimbox,
                       new_simbox,
                       errTxt);
@@ -566,12 +580,13 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                post_cov_log_vp_above,
                                mu_log_vp_grid,
                                cov_log_vp_grid,
-                               modelTravelTimeDynamic->getOutputGridFormat(),
+                               modelTravelTimeStatic->getOutputGridFormat(),
                                simbox_above,
                                timeSimbox,
                                time_depth_mapping);
-       mu_log_vp_grid->fftInPlace();
-       cov_log_vp_grid->fftInPlace();
+
+      mu_log_vp_grid->fftInPlace();
+      cov_log_vp_grid->fftInPlace();
 
       delete stationary_d_above;
       delete stationary_covariance_above;
@@ -2657,6 +2672,8 @@ TravelTimeInversion::resampleState4D(const NRLib::Grid<double> & resample_grid,
   resampleFFTGrid(resample_grid,
                   old_simbox,
                   mu_rho_dynamic);
+
+  LogKit::LogFormatted(LogKit::Low,"done\n\n");
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -2688,6 +2705,8 @@ TravelTimeInversion::resampleSeismicParameters(const NRLib::Grid<double> & resam
   seismic_parameters.setBackgroundParameters(mu_alpha,
                                              mu_beta,
                                              mu_rho);
+
+  LogKit::LogFormatted(LogKit::Low,"done\n\n");
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -2795,6 +2814,7 @@ TravelTimeInversion::generateTimeDepthMapping(FFTGrid       * post_mu_log_vp_abo
                                               const Simbox  * timeSimbox,
                                               GridMapping  *& grid_depth_mapping) const
 {
+  LogKit::LogFormatted(LogKit::Low, "\nGenerating depth simbox...");
 
   FFTGrid * post_mu_vp_above  = NULL;
   calculateEVpGrid(post_mu_log_vp_above,
@@ -2830,6 +2850,8 @@ TravelTimeInversion::generateTimeDepthMapping(FFTGrid       * post_mu_log_vp_abo
   grid_depth_mapping->calculateSurfaceFromVelocity(post_mu_vp_grid_model,
                                                    timeSimbox);
 
+  LogKit::LogFormatted(LogKit::Low,"done\n\n");
+
   grid_depth_mapping->setDepthSimbox(timeSimbox,
                                      timeSimbox->getnz(),
                                      output_format,
@@ -2844,4 +2866,31 @@ TravelTimeInversion::generateTimeDepthMapping(FFTGrid       * post_mu_log_vp_abo
   delete grid_mapping_above;
   delete post_mu_vp_above;
   delete post_mu_vp_grid_model;
+
+
+}
+
+//-----------------------------------------------------------------------------------------//
+
+std::vector<Surface>
+TravelTimeInversion::sortHorizons(const std::vector<Surface> & initial_horizons,
+                                  const std::vector<Surface> & push_down_horizons,
+                                  const std::vector<std::string> & initial_horizon_names,
+                                  const std::vector<std::string> & push_down_names) const
+{
+  int n_push_down = static_cast<int>(push_down_horizons.size());
+  int n_initial   = static_cast<int>(initial_horizons.size());
+
+  std::vector<Surface> sorted_initial(n_push_down);
+
+  for (int i = 0; i < n_push_down; i++) {
+    for (int j = 0; j < n_initial; j++) {
+      if (push_down_names[i] == initial_horizon_names[j]) {
+        sorted_initial[i] = initial_horizons[j];
+        break;
+      }
+    }
+  }
+
+  return sorted_initial;
 }

@@ -12,6 +12,7 @@
 
 class ModelGeneral;
 class SeismicParametersHolder;
+class ModelTravelTimeStatic;
 class ModelTravelTimeDynamic;
 class Simbox;
 class RMSTrace;
@@ -25,13 +26,15 @@ class TravelTimeInversion
 {
 public:
   TravelTimeInversion(ModelGeneral            * modelGeneral,
-               ModelTravelTimeDynamic  * modelTravelTimeDynamic,
-               SeismicParametersHolder & seismicParameters);
+                      ModelTravelTimeStatic   * modelTravelTimeStatic,
+                      ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                      SeismicParametersHolder & seismicParameters);
 
   ~TravelTimeInversion();
 
 private:
   void                          doHorizonInversion(ModelGeneral            * modelGeneral,
+                                                   ModelTravelTimeStatic   * modelTravelTimeStatic,
                                                    ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                    SeismicParametersHolder & seismicParameters) const;
 
@@ -49,6 +52,7 @@ private:
                                                      NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
 
   void                          doRMSInversion(ModelGeneral            * modelGeneral,
+                                               ModelTravelTimeStatic   * modelTravelTimeStatic,
                                                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                SeismicParametersHolder & seismicParameters,
                                                const int               & inversion_number) const;
@@ -316,8 +320,8 @@ private:
                                                  FFTGrid  * cov_log_vp,
                                                  FFTGrid *& mu_vp) const;
 
- NRLib::Grid<double>           calculateDividedGrid(FFTGrid * pri_vp,
-                                                    FFTGrid * post_vp) const;
+ NRLib::Grid<double>            calculateDividedGrid(FFTGrid * pri_vp,
+                                                     FFTGrid * post_vp) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,
@@ -354,6 +358,12 @@ private:
                                                          const Simbox  * simbox_above,
                                                          const Simbox  * timeSimbox,
                                                          GridMapping  *& grid_depth_mapping) const;
+
+  std::vector<Surface>          sortHorizons(const std::vector<Surface> & initial_horizons,
+                                             const std::vector<Surface> & push_down_horizons,
+                                             const std::vector<std::string> & initial_horizon_names,
+                                             const std::vector<std::string> & push_down_names) const;
+
 };
 
 #endif

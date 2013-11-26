@@ -684,9 +684,10 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   inputFiles_   ->clearTimeLapseTravelTime();
   if (parseTravelTime(root, errTxt) == false) {
     modelSettings_->addTimeLapseTravelTimeGiven(false);
-    modelSettings_->setRMSStandardDeviation(RMISSING);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
     modelSettings_->addTravelTimeHorizonName("");
     modelSettings_->addTravelTimeHorizonSD(RMISSING);
+    modelSettings_->addLateralTravelTimeErrorCorr(NULL);
     inputFiles_   ->addRmsVelocity("");
     inputFiles_   ->addTravelTimeHorizon("");
   }
@@ -1138,13 +1139,14 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("rms-data");
   legalCommands.push_back("horizon");
+  legalCommands.push_back("lateral-correlation-stationary-data");
 
   bool rms_given = false;
   if (parseRMSVelocities(root, errTxt) == true)
     rms_given = true;
   else {
     inputFiles_->addRmsVelocity("");
-    modelSettings_->setRMSStandardDeviation(RMISSING);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
   }
 
   int n_horizons = 0;
@@ -1161,6 +1163,15 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
     errTxt += "At least one of <rms-data> and <horizon> needs to be given in <survey><travel-time>\n";
   else
     modelSettings_->addTimeLapseTravelTimeGiven(true);
+
+  Vario * vario = NULL;
+  if (parseVariogram(root, "lateral-correlation-stationary-data", vario, errTxt) == true) {
+    if (vario != NULL)
+      modelSettings_->addLateralTravelTimeErrorCorr(vario);
+  }
+  else
+    modelSettings_->addDefaultLateralTravelTimeErrorCorr();
+
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1185,7 +1196,7 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 
   double value;
   if(parseValue(root, "standard-deviation", value, errTxt) == true)
-    modelSettings_->setRMSStandardDeviation(value);
+    modelSettings_->addRMSStandardDeviation(value);
   else
     errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 

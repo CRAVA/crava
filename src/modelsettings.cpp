@@ -42,7 +42,6 @@ ModelSettings::ModelSettings(void)
 {
   lateralCorr_                = new GenExpVario(1, 1000, 1000);
   backgroundVario_            = new GenExpVario(1, 2000, 2000);
-  lateralTraveltimeErrorCorr_ =     NULL;
   localWaveletVario_          =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_full_              =     NULL;
   geometry_                   =     NULL;
@@ -207,8 +206,10 @@ ModelSettings::~ModelSettings(void)
   if (localWaveletVario_ != NULL)
     delete localWaveletVario_;
 
-  if (lateralTraveltimeErrorCorr_!=NULL)
-    delete lateralTraveltimeErrorCorr_;
+  for (size_t i = 0; i < timeLapseTravelTimeLateralCorrelation_.size(); i++) {
+    if (timeLapseTravelTimeLateralCorrelation_[i] != NULL)
+      delete timeLapseTravelTimeLateralCorrelation_[i];
+  }
 
   if(geometry_ != NULL)
     delete geometry_;
@@ -322,13 +323,17 @@ ModelSettings::setLateralCorr(Vario * vario)
 }
 
 void
-ModelSettings::setLateralTravelTimeErrorCorr()
+ModelSettings::addDefaultLateralTravelTimeErrorCorr()
 {
-  if (lateralTraveltimeErrorCorr_ != NULL)
-    delete lateralTraveltimeErrorCorr_;
-  lateralTraveltimeErrorCorr_ = new GenExpVario(1, 50.0, 50.0, 0.0); //!NBNB OK this should be set in moelfile
+  Vario * lateralTravelTimeErrorCorr = new GenExpVario(1, 50.0, 50.0, 0.0);
+  timeLapseTravelTimeLateralCorrelation_.push_back(lateralTravelTimeErrorCorr);
 }
 
+void
+ModelSettings::addLateralTravelTimeErrorCorr(Vario * vario)
+{
+  timeLapseTravelTimeLateralCorrelation_.push_back(vario);
+}
 
 void
 ModelSettings::setBackgroundVario(Vario * vario)

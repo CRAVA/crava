@@ -31,7 +31,7 @@ public:
 
   Vario                          * getAngularCorr(int i)                const { return angularCorr_[i]                            ;}
   Vario                          * getLateralCorr(void)                 const { return lateralCorr_                               ;}
-  Vario                          * getLateralTravelTimeErrorCorr(void)  const { return lateralTraveltimeErrorCorr_                ;}
+  Vario                          * getLateralTravelTimeErrorCorr(int i) const { return timeLapseTravelTimeLateralCorrelation_[i]  ;}
   Vario                          * getBackgroundVario(void)             const { return backgroundVario_                           ;}
   Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_                         ;}
   SegyGeometry                   * getAreaParameters(void)              const { return geometry_                                  ;}
@@ -223,7 +223,7 @@ public:
   std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
-  double                           getRMSStandardDeviation()            const { return RMSStandardDeviation_                      ;}
+  double                           getRMSStandardDeviation(int i)       const { return RMSStandardDeviation_[i]                   ;}
   bool                             getRMSPriorGiven()                   const { return RMSPriorGiven_                             ;}
   int                              getRMSnLayersAbove()                 const { return RMSnLayersAbove_                           ;}
   int                              getRMSnLayersBelow()                 const { return RMSnLayersBelow_                           ;}
@@ -251,7 +251,8 @@ public:
   void rotateVariograms(float angle);
   void setLastAngularCorr(Vario * vario);
   void setLateralCorr(Vario * vario);
-  void setLateralTravelTimeErrorCorr(); // NBNB sets a default variogram
+  void addDefaultLateralTravelTimeErrorCorr();
+  void addLateralTravelTimeErrorCorr(Vario * vario);
   void setBackgroundVario(Vario * vario);
   void setLocalWaveletVario(Vario * vario);
   void copyBackgroundVarioToLocalWaveletVario(void);
@@ -457,7 +458,7 @@ public:
   void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
   void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
-  void setRMSStandardDeviation(double value)              { RMSStandardDeviation_ = value                        ;}
+  void addRMSStandardDeviation(double value)              { RMSStandardDeviation_.push_back(value)               ;}
   void setRMSPriorGiven(bool given)                       { RMSPriorGiven_   = given                             ;}
   void setRMSnLayersAbove(int n_layers)                   { RMSnLayersAbove_ = n_layers                          ;}
   void setRMSnLayersBelow(int n_layers)                   { RMSnLayersBelow_ = n_layers                          ;}
@@ -553,7 +554,6 @@ private:
   Vario                           * lateralCorr_;                ///< Variogram for lateral parameter correlation
   Vario                           * backgroundVario_;            ///< Used for lateral background correlation.
   Vario                           * localWaveletVario_;          ///< Used for local wavelet (gain and shift) and local noise.
-  Vario                           * lateralTraveltimeErrorCorr_; // < Used for RMS and traveltime inversion>
 
   SegyGeometry                    * geometry_full_;              ///< area parameters of full seismic data
   SegyGeometry                    * geometry_;                   // area parameters
@@ -566,7 +566,7 @@ private:
 
   std::vector<std::string>          travelTimeHorizonName_;      // Name of travel time horizon
   std::vector<double>               travelTimeHorizonSD_;        // Standard deviation of the travel time horizon
-  double                            RMSStandardDeviation_;       // Standard deviation for the RMS data
+  std::vector<double>               RMSStandardDeviation_;       // Standard deviation for the RMS data
   bool                              RMSPriorGiven_;              // True if prior information is given for RMS inversion
   int                               RMSnLayersAbove_;            // n layers above the reservoir in inversion of RMS velocities
   int                               RMSnLayersBelow_;            // n layers below the reservoir in inversion of RMS velocities
@@ -617,6 +617,7 @@ private:
 
   std::vector<std::vector<std::string> > timeLapseTravelTimeHorizon_; // Travel time horizon names in different time lapses
   std::vector<std::vector<double> >      timeLapseTravelTimeHorizonSD_; // Standard deviation of travel time horizons for different time lapses
+  std::vector<Vario *>                   timeLapseTravelTimeLateralCorrelation_; // Lateral correlation for calculated stationary observations in travel time inversion
 
   std::vector<std::vector<TraceHeaderFormat*> > timeLapseLocalTHF_;
 
