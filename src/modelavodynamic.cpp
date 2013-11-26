@@ -24,7 +24,7 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
@@ -433,7 +433,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   for(size_t i = 0; i < numberOfAngles_; i++)
     angle_[i] = seismic_data[i].GetAngle();
 
-  //AngulurCorr should be stored as a vector (?)
+  //AngulurCorr between angle i and j
   angularCorr_ = commonData->GetAngularCorrelation(thisTimeLapse_);
 
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.

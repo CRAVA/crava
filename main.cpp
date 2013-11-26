@@ -36,7 +36,7 @@
 #include "src/fftgrid.h"
 #include "src/gridmapping.h"
 #include "src/simbox.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
 #include "src/tasklist.h"

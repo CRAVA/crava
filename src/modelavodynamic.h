@@ -18,7 +18,7 @@
 struct irapgrid;
 class Wavelet;
 class Simbox;
-class WellData;
+//class WellData;
 class FFTGrid;
 class RandomGen;
 class GridMapping;
@@ -119,7 +119,9 @@ public:
   bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
-  Vario                       * getAngularCorr()           const { return angularCorr_                    ;}
+  //Vario                       * getAngularCorr()           const { return angularCorr_                    ;}
+  const std::vector<std::vector<float> > & getAngularCorr() const { return angularCorr_                   ;}
+
   float                         getSNRatio(int i)          const { return SNRatio_[i]                     ;}
   bool                          getUseLocalNoise()         const { return useLocalNoise_                  ;}
   float                         getAngle(int i)            const { return angle_[i]                       ;}
@@ -179,28 +181,28 @@ private:
   //                                 std::string                  & errText,
   //                                 bool                         & failed);
 
-  int              process1DWavelet(const ModelSettings          * modelSettings,
-                                    const InputFiles             * inputFiles,
-                                    const Simbox                 * timeSimbox,
-                                    //const FFTGrid        * const * seisCube,
-                                    std::vector<WellData *>        wells,
-                                    //const std::vector<Surface *> & waveletEstimInterval,
-                                    const float                  * reflectionMatrix,
-                                    std::string                  & errText,
-                                    Wavelet                     *& wavelet,
-                                    unsigned int                   i,
-                                    bool                           useRickerWavelet);
+  //int              process1DWavelet(const ModelSettings          * modelSettings,
+  //                                  const InputFiles             * inputFiles,
+  //                                  const Simbox                 * timeSimbox,
+  //                                  //const FFTGrid        * const * seisCube,
+  //                                  std::vector<WellData *>        wells,
+  //                                  //const std::vector<Surface *> & waveletEstimInterval,
+  //                                  const float                  * reflectionMatrix,
+  //                                  std::string                  & errText,
+  //                                  Wavelet                     *& wavelet,
+  //                                  unsigned int                   i,
+  //                                  bool                           useRickerWavelet);
 
- int               process3DWavelet(const ModelSettings                     * modelSettings,
-                                    const InputFiles                        * inputFiles,
-                                    const Simbox                            * timeSimbox,
-                                    //const FFTGrid                   * const * seisCube,
-                                    //const std::vector<WellData *>           & wells,
-                                    //const std::vector<Surface *>            & waveletEstimInterval,
-                                    const float                             * reflectionMatrix,
-                                    std::string                             & errText,
-                                    Wavelet                                *& wavelet,
-                                    unsigned int                              i);
+ //int               process3DWavelet(const ModelSettings                     * modelSettings,
+ //                                   const InputFiles                        * inputFiles,
+ //                                   const Simbox                            * timeSimbox,
+ //                                   //const FFTGrid                   * const * seisCube,
+ //                                   //const std::vector<WellData *>           & wells,
+ //                                   //const std::vector<Surface *>            & waveletEstimInterval,
+ //                                   const float                             * reflectionMatrix,
+ //                                   std::string                             & errText,
+ //                                   Wavelet                                *& wavelet,
+ //                                   unsigned int                              i);
 
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 double          vsvp,
@@ -264,7 +266,9 @@ private:
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   //std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
-  Vario                   * angularCorr_;
+  std::vector<std::vector<float > > angularCorr_;   ///< correlations between angle i and j.
+  //Vario                   * angularCorr_;
+
   std::vector<float>        SNRatio_;
   std::vector<float>        angle_;
   //std::vector<bool>         matchEnergies_;

@@ -31,13 +31,13 @@ class Corr;
 class Wavelet;
 class Vario;
 class Simbox;
-class WellData;
+//class WellData;
 class FFTGrid;
 class RandomGen;
 class GridMapping;
 class InputFiles;
 class TimeLine;
-class WellData;
+//class WellData;
 class SeismicParameters;
 class CravaTrend;
 

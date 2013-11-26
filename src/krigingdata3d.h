@@ -6,7 +6,7 @@
 #ifndef KRIGINGDATA3D_H
 #define KRIGINGDATA3D_H
 
-class WellData;
+//class WellData;
 class CBWellPt;
 class BlockedLogsCommon;
 

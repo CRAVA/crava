@@ -16,7 +16,7 @@
 
 class Simbox;
 class FFTGrid;
-class WellData;
+//class WellData;
 class ModelSettings;
 class Wavelet1D;
 

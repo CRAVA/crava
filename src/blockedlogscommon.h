@@ -118,8 +118,8 @@ public:
   void                                   GetVerticalTrend(const int        * blocked_log,
                                                           std::vector<int> & trend);
 
-  void                                   GetVerticalTrend(const std::vector<double> & blocked_log,
-                                                          float                     * trend) const;
+  //void                                   GetVerticalTrend(const std::vector<double> & blocked_log,
+  //                                                        float                     * trend) const;
 
   void                                   GetVerticalTrendLimited(const std::vector<double>       & blocked_log,
                                                                  std::vector<double>             & trend,
@@ -252,6 +252,12 @@ public:
                                                       const NRLib::Surface<double> & bot,
                                                       double                         mean_vs_vp,
                                                       int                            n_vs_vp);
+
+  static void                            ApplyFilter(std::vector<double> & log_filtered,
+                                                     std::vector<double> & log_interpolated,
+                                                     int                   n_time_samples,
+                                                     double                dt_milliseconds,
+                                                     float                 max_hz);
 
 private:
 
@@ -397,12 +403,6 @@ private:
   void    InterpolateLog(std::vector<double>       & log_interpolated,
                          const std::vector<double> & log_resampled,
                          int                         nd);
-
-  void    ApplyFilter(std::vector<double> & log_filtered,
-                      std::vector<double> & log_interpolated,
-                      int                   n_time_samples,
-                      double                dt_milliseconds,
-                      float                 max_hz);
 
   void    WriteRMSWell(float                    max_hz_background,
                        float                    max_hz_seismic,

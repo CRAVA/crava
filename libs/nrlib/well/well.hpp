@@ -139,11 +139,11 @@ namespace NRLib {
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
-    void SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_ = use_for_background_trend         ;}
-    void SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_ = use_for_filtering                       ;}
+    void SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
+    void SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_            = use_for_filtering            ;}
     void SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
-    void SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_ = use_for_wavelet_estimation     ;}
-    void SetRealVsLog(int real_vs_log)                                  { real_vs_log_ = real_vs_log                                   ;}
+    void SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_   = use_for_wavelet_estimation   ;}
+    void SetRealVsLog(int real_vs_log)                                  { real_vs_log_                  = real_vs_log                  ;}
 
     int GetUseForBackgroundTrend(void)     const { return use_for_background_trend_     ;}
     int GetUseForFiltering(void)           const { return use_for_filtering_            ;}

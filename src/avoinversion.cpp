@@ -14,7 +14,7 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/vario.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/krigingdata3d.h"
 #include "src/covgridseparated.h"
 #include "src/krigingadmin.h"

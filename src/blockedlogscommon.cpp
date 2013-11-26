@@ -1965,38 +1965,38 @@ void BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_lo
   }
 }
 
-void BlockedLogsCommon::GetVerticalTrend(const std::vector<double> & blocked_log,
-                                         float                     * trend) const {
-  if (blocked_log.size() != 0 && trend != NULL) {
-    std::vector<int> count(n_layers_);
-
-    for (int k = 0 ; k < n_layers_ ; k++) {
-      trend[k] = 0.0;
-      count[k] = 0;
-    }
-
-    for (size_t m = 0 ; m < n_blocks_ ; m++) {
-      if (blocked_log[m] != RMISSING) {
-        trend[k_pos_[m]] += static_cast<float>(blocked_log[m]);
-        count[k_pos_[m]]++;
-      }
-    }
-
-    for (int k = 0 ; k < n_layers_ ; k++) {
-      if (count[k] > 0)
-        trend[k] = trend[k]/count[k];
-      else
-        trend[k] = RMISSING;
-    }
-  }
-  else {
-    if (blocked_log.size() == 0)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsForZone::getVerticalTrend(): Trying to use an undefined blocked log\n");
-    if (trend == NULL)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsForZone::getVerticalTrend(): Trying to use an undefined trend\n");
-    exit(1);
-  }
-}
+//void BlockedLogsCommon::GetVerticalTrend(const std::vector<double> & blocked_log,
+//                                         float                     * trend) const {
+//  if (blocked_log.size() != 0 && trend != NULL) {
+//    std::vector<int> count(n_layers_);
+//
+//    for (int k = 0 ; k < n_layers_ ; k++) {
+//      trend[k] = 0.0;
+//      count[k] = 0;
+//    }
+//
+//    for (size_t m = 0 ; m < n_blocks_ ; m++) {
+//      if (blocked_log[m] != RMISSING) {
+//        trend[k_pos_[m]] += static_cast<float>(blocked_log[m]);
+//        count[k_pos_[m]]++;
+//      }
+//    }
+//
+//    for (int k = 0 ; k < n_layers_ ; k++) {
+//      if (count[k] > 0)
+//        trend[k] = trend[k]/count[k];
+//      else
+//        trend[k] = RMISSING;
+//    }
+//  }
+//  else {
+//    if (blocked_log.size() == 0)
+//      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsForZone::getVerticalTrend(): Trying to use an undefined blocked log\n");
+//    if (trend == NULL)
+//      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsForZone::getVerticalTrend(): Trying to use an undefined trend\n");
+//    exit(1);
+//  }
+//}
 
 void BlockedLogsCommon::GetVerticalTrend(const int         * blocked_log,
                                          std::vector<int>  & trend)

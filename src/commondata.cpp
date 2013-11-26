@@ -5709,7 +5709,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           if(model_settings->getMultizoneBackground() == true)
             Background(parameters, wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Not multiple intervals but multizone background model
           else //Neither multizone or multiinterval
-            Background(parameters, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings);
+            Background(parameters, wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings, err_text);
 
           double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
@@ -7564,8 +7564,24 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
 void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
                                          std::string   & err_text) {
 
-  for(size_t i = 0; i < model_settings->getNumberOfTimeLapses(); i++) {
-    angular_correlations_.push_back(model_settings->getAngularCorr(i));
+  for(size_t t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
+
+    Vario * vario                     = model_settings->getAngularCorr(t);
+    int n_angles                      = model_settings->getNumberOfAngles(t);
+    const std::vector<float> & angles = model_settings->getAngle(t);
+
+    std::vector<std::vector<float> > angle_corr(n_angles);
+
+    for(int i = 0; i < n_angles; i++) {
+      angle_corr[i].resize(n_angles);
+
+      for(int j = 0; j < n_angles; j++) {
+        float d_angle = angles[i] - angles[j];
+        angle_corr[i][i] = vario->corr(d_angle, 0); //old: corr(a[i] - a[j], 0);
+      }
+    }
+
+    angular_correlations_.push_back(angle_corr);
   }
 }
 

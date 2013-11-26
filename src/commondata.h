@@ -7,7 +7,7 @@
 #define COMMONDATA_H
 
 #include "src/simbox.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "lib/utils.h"
@@ -77,7 +77,8 @@ public:
   bool                                    GetRefMatFromFileGlobalVpVs()                 { return refmat_from_file_global_vpvs_               ;}
   float **                                GetReflectionMatrixTimeLapse(int time_lapse)  { return reflection_matrix_.find(time_lapse)->second ;}
 
-  Vario                                 * GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
+  std::vector<std::vector<float> >      & GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
+  //Vario                                 * GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
 
   std::vector<Wavelet *>                & GetWavelet(int time_lapse)                    { return wavelets_.find(time_lapse)->second          ;}
 
@@ -793,7 +794,8 @@ private:
   bool                                          velocity_from_inversion_;
 
   //Angular correlations
-  std::vector<Vario *>                          angular_correlations_;
+  std::vector<std::vector<std::vector<float> > > angular_correlations_;
+  //std::vector<Vario *>                          angular_correlations_;
 
 
 };

@@ -10,7 +10,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/krigingdata3d.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/definitions.h"
 #include "src/blockedlogscommon.h"

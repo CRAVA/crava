@@ -13,7 +13,7 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"

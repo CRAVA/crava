@@ -15,7 +15,7 @@ public:
                               float   dz);
 
   static void      krigVector(double * data,
-                              float  * trend,
+                              double * trend,
                               int      nd,
                               float    dz);
 
@@ -36,7 +36,7 @@ private:
                                  int     md);
 
   static void      subtractTrend(double * data,
-                                 float  * trend,
+                                 double * trend,
                                  int    * index,
                                  int      md);
 
@@ -45,7 +45,7 @@ private:
                             int     nd);
 
   static void      addTrend(double * data,
-                            float  * trend,
+                            double * trend,
                             int      nd);
 
   static void      allocateSpaceForMatrixEq(double ** & K,

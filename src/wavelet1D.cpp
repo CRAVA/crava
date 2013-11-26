@@ -22,7 +22,7 @@
 //#include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet1D.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"

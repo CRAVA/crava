@@ -27,7 +27,7 @@
 #include "src/wavelet3D.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"

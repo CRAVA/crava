@@ -18,7 +18,7 @@ class Wavelet;
 class Wavelet1D;
 class Simbox;
 class RandomGen;
-class WellData;
+//class WellData;
 class CKrigingAdmin;
 class CovGridSeparated;
 class KrigingData3D;
