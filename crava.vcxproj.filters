@@ -1011,6 +1011,9 @@
     <ClCompile Include="src\traveltimeinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\modeltraveltimestatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1698,6 +1701,9 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\traveltimeinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modeltraveltimestatic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>

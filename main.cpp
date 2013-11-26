@@ -47,6 +47,7 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 #include "src/timeline.h"
+#include "src/modeltraveltimestatic.h"
 #include "src/modelgravitystatic.h"
 
 #include "src/seismicparametersholder.h"
@@ -177,11 +178,12 @@ int main(int argc, char** argv)
   try
   {
     XmlModelFile modelFile(argv[1]);
-    InputFiles     * inputFiles     = modelFile.getInputFiles();
-    ModelSettings  * modelSettings  = modelFile.getModelSettings();
-    ModelGeneral   * modelGeneral   = NULL;
-    ModelAVOStatic * modelAVOstatic = NULL;
-    ModelGravityStatic * modelGravityStatic = NULL;
+    InputFiles            * inputFiles            = modelFile.getInputFiles();
+    ModelSettings         * modelSettings         = modelFile.getModelSettings();
+    ModelGeneral          * modelGeneral          = NULL;
+    ModelAVOStatic        * modelAVOstatic        = NULL;
+    ModelTravelTimeStatic * modelTravelTimeStatic = NULL;
+    ModelGravityStatic    * modelGravityStatic    = NULL;
     NRLib::Random::Initialize();
 
 
@@ -206,6 +208,7 @@ int main(int argc, char** argv)
 
     setupStaticModels(modelGeneral,
                       modelAVOstatic,
+                      modelTravelTimeStatic,
                       modelGravityStatic,
                       modelSettings,
                       inputFiles,
@@ -213,8 +216,12 @@ int main(int argc, char** argv)
                       timeBGSimbox);
 
     if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
-       modelAVOstatic == NULL || modelAVOstatic->getFailed())
-      return(1);
+       modelAVOstatic == NULL || modelAVOstatic->getFailed() ||
+       modelTravelTimeStatic->getFailed()                    ||
+       modelGravityStatic->GetFailed()) {
+
+         return(1);
+    }
 
     if(modelGeneral->getTimeLine() == NULL) { //Forward modelling.
       bool failed = doFirstAVOInversion(modelSettings,
@@ -262,18 +269,19 @@ int main(int argc, char** argv)
       case TimeLine::TRAVEL_TIME :
         failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
                                                      modelGeneral,
+                                                     modelTravelTimeStatic,
                                                      inputFiles,
                                                      vintage,
                                                      seismicParameters);
         break;
 
       case TimeLine::GRAVITY :
-        failedFirst =doTimeLapseGravimetricInversion(modelSettings,
-                                     modelGeneral,
-                                     modelGravityStatic,
-                                     inputFiles,
-                                     vintage,
-                                     seismicParameters);
+        failedFirst = doTimeLapseGravimetricInversion(modelSettings,
+                                                      modelGeneral,
+                                                      modelGravityStatic,
+                                                      inputFiles,
+                                                      vintage,
+                                                      seismicParameters);
 
         errTxt += "Warning Gravimetric under construction\n";
         break;
@@ -314,6 +322,7 @@ int main(int argc, char** argv)
         case TimeLine::TRAVEL_TIME :
           failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                   modelGeneral,
+                                                  modelTravelTimeStatic,
                                                   inputFiles,
                                                   vintage,
                                                   seismicParameters);
