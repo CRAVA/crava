@@ -57,14 +57,14 @@ private:
                                                SeismicParametersHolder & seismicParameters,
                                                const int               & inversion_number) const;
 
-  void                          do1DRMSInversion(const double                & mu_vp_top,
-                                                 const double                & mu_vp_base,
-                                                 const NRLib::Grid2D<double> & Sigma_m_above,
+  void                          do1DRMSInversion(const double                & mu_vp_base,
                                                  const NRLib::Grid2D<double> & Sigma_m_below,
                                                  const double                & standard_deviation,
                                                  const RMSTrace              * rms_trace,
-                                                 FFTGrid                     * mu_log_vp,
-                                                 const std::vector<double>   & cov_grid_log_vp,
+                                                 FFTGrid                     * mu_log_vp_above,
+                                                 FFTGrid                     * mu_log_vp_model,
+                                                 const std::vector<double>   & cov_grid_log_vp_above,
+                                                 const std::vector<double>   & cov_grid_log_vp_model,
                                                  const Simbox                * simbox_above,
                                                  const Simbox                * simbox_below,
                                                  const Simbox                * timeSimbox,
@@ -107,13 +107,12 @@ private:
   NRLib::Grid2D<double>         calculateSigmaDSquare(const std::vector<double> & rms_velocity,
                                                     const double              & standard_deviation) const;
 
-  void                          calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_model,
-                                                         const std::vector<double>   & cov_grid_log_vp,
-                                                         const double                & mu_vp_top,
+  void                          calculateMuSigma_mSquare(const std::vector<double>   & mu_log_vp_above,
+                                                         const std::vector<double>   & mu_log_vp_model,
+                                                         const std::vector<double>   & cov_grid_log_vp_above,
+                                                         const std::vector<double>   & cov_grid_log_vp_model,
                                                          const double                & mu_vp_base,
-                                                         const NRLib::Grid2D<double> & Sigma_vp_above,
                                                          const NRLib::Grid2D<double> & Sigma_vp_below,
-                                                         const int                   & n_above,
                                                          const int                   & n_below,
                                                          std::vector<double>         & mu_vp_square,
                                                          NRLib::Grid2D<double>       & Sigma_vp_square) const;
@@ -127,12 +126,11 @@ private:
                                                           const float                  & corrGradJ,
                                                           FFTGrid                      * mu_log_vp_grid,
                                                           FFTGrid                     *& mu_log_vp_above,
-                                                          FFTGrid                     *& Sigma_log_vp_above,
-                                                          std::vector<double>          & cov_circulant_above) const;
+                                                          FFTGrid                     *& Sigma_log_vp_above) const;
 
-  std::vector<double>           generateMuLogVpModel(FFTGrid   * mu_log_vp,
-                                                     const int & i_ind,
-                                                     const int & j_ind) const;
+  std::vector<double>           generateMuLogVpFromGrid(FFTGrid   * mu_log_vp,
+                                                        const int & i_ind,
+                                                        const int & j_ind) const;
 
   std::vector<double>           generateMuVpAbove(const double & top_value,
                                                   const double & base_value,
@@ -311,17 +309,15 @@ private:
                                                       const NRLib::Grid<double> & divided_grid,
                                                       NRLib::Grid<double>       & distance) const;
 
-  void                          calculateDistanceGrid(const Simbox        * simbox,
-                                                      FFTGrid             * mu_vp,
-                                                      FFTGrid             * post_mu_vp,
-                                                      NRLib::Grid<double> & distance) const;
-
   void                          calculateEVpGrid(FFTGrid  * mu_log_vp,
                                                  FFTGrid  * cov_log_vp,
                                                  FFTGrid *& mu_vp) const;
 
- NRLib::Grid<double>            calculateDividedGrid(FFTGrid * pri_vp,
-                                                     FFTGrid * post_vp) const;
+ NRLib::Grid<double>            calculateDividedGridRMS(FFTGrid * pri_vp,
+                                                        FFTGrid * post_vp) const;
+
+ NRLib::Grid<double>            calculateDividedGridHorizon(FFTGrid * post_mu_vp,
+                                                            FFTGrid * post_cov_mu_vp) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,
