@@ -2477,7 +2477,7 @@ TravelTimeInversion::calculateDividedGridHorizon(FFTGrid * post_mu_vp,
                                                  FFTGrid * post_cov_mu_vp) const
 {
   // In the horizon posterior, E[ln(Vp1/Vp0)|d] and Cov(ln(Vp1/Vp0)|d) have been calculated
-  // Of interest in the divided grid is E[(Vp0/Vp1)|d], which can be calculated from post_vp
+  // Of interest in the divided grid is E[(Vp0/Vp1)|d], which can be calculated from post_mu_vp and post_cov_mu_vp
 
   std::vector<double>   cov_log_vp   = getCovLogVp(post_cov_mu_vp);
   NRLib::Grid2D<double> Sigma_log_vp = generateSigmaModel(cov_log_vp);
@@ -2488,12 +2488,10 @@ TravelTimeInversion::calculateDividedGridHorizon(FFTGrid * post_mu_vp,
 
   NRLib::Grid<double> divided_grid(nx, ny, nz);
 
-  post_cov_mu_vp->setAccessMode(FFTGrid::READ);
-
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-      std::vector<double> mu_log_vp = generateMuLogVpFromGrid(post_mu_vp, i, j); //AccessMode set in function
+      std::vector<double> mu_log_vp = generateMuLogVpFromGrid(post_mu_vp, i, j);
 
       // Transform to (Vp0/Vp1)
       std::vector<double>   mu_vp_minus;
@@ -2507,8 +2505,6 @@ TravelTimeInversion::calculateDividedGridHorizon(FFTGrid * post_mu_vp,
         divided_grid(i, j, k) = mu_vp_minus[k];
     }
   }
-
-  post_cov_mu_vp->endAccess();
 
   return divided_grid;
 }
