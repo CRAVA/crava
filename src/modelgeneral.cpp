@@ -4166,46 +4166,46 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
   }
 }
 
-Surface *
-ModelGeneral::findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
-{
-  float dx  = static_cast<float>(timeSimbox->getdx());
-  float dy  = static_cast<float>(timeSimbox->getdy());
-
-  int   nx  = modelSettings->getNXpad();
-  int   ny  = modelSettings->getNYpad();
-
-  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
-
-  if(modelSettings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
-  {
-    int refi,refj;
-    for(int j=0;j<ny;j++)
-    {
-      for(int i=0;i<nx;i++)
-      {
-        if(i<(nx/2+1))
-        {
-          refi = i;
-        }
-        else
-        {
-          refi = i-nx;
-        }
-        if(j< (ny/2+1))
-        {
-          refj = j;
-        }
-        else
-        {
-          refj = j-ny;
-        }
-        (*grid)(j*nx+i) = modelSettings->getLateralCorr()->corr(refi*dx, refj*dy);
-      }
-    }
-  }
-  return(grid);
-}
+//Surface *
+//ModelGeneral::findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
+//{
+//  float dx  = static_cast<float>(timeSimbox->getdx());
+//  float dy  = static_cast<float>(timeSimbox->getdy());
+//
+//  int   nx  = modelSettings->getNXpad();
+//  int   ny  = modelSettings->getNYpad();
+//
+//  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+//
+//  if(modelSettings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
+//  {
+//    int refi,refj;
+//    for(int j=0;j<ny;j++)
+//    {
+//      for(int i=0;i<nx;i++)
+//      {
+//        if(i<(nx/2+1))
+//        {
+//          refi = i;
+//        }
+//        else
+//        {
+//          refi = i-nx;
+//        }
+//        if(j< (ny/2+1))
+//        {
+//          refj = j;
+//        }
+//        else
+//        {
+//          refj = j-ny;
+//        }
+//        (*grid)(j*nx+i) = modelSettings->getLateralCorr()->corr(refi*dx, refj*dy);
+//      }
+//    }
+//  }
+//  return(grid);
+//}
 
 void
 ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,

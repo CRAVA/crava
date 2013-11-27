@@ -34,11 +34,17 @@ class BlockedLogsCommon;
 class AVOInversion
 {
 public:
+  //AVOInversion(ModelSettings           * modelSettings,
+  //      ModelGeneral            * modelGeneral,
+  //      ModelAVOStatic          * modelAVOstatic,
+  //      ModelAVODynamic         * modelAVOdynamic,
+  //      SeismicParametersHolder & seismicParameters);
+
   AVOInversion(ModelSettings           * modelSettings,
-        ModelGeneral            * modelGeneral,
-        ModelAVOStatic          * modelAVOstatic,
-        ModelAVODynamic         * modelAVOdynamic,
-        SeismicParametersHolder & seismicParameters);
+               ModelGeneral            * modelGeneral,
+               ModelAVOStatic          * modelAVOstatic,
+               ModelAVODynamic         * modelAVOdynamic,
+               SeismicParametersHolder & seismicParameters);
 
   ~AVOInversion();
 

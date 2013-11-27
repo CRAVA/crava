@@ -352,7 +352,7 @@ private:
   void              estimateCorrXYFromSeismic(Surface *& CorrXY,
                                               FFTGrid ** seisCube,
                                               int numberOfAngles);
-  Surface         * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
+  //Surface         * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
 
   int               computeTime(int year, int month, int day) const;
 

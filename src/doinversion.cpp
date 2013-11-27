@@ -186,7 +186,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   if(failedLoadingModel == false) {
 
-    AVOInversion * avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters); //Change name to: AVOInversion
+    AVOInversion * avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     delete avoinversion;
   }
