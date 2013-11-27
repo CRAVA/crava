@@ -342,12 +342,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   //wells_             = modelGeneral_->getWells();
   blocked_wells_     = modelGeneral_->getBlockedWells();
   simbox_            = modelGeneral_->getTimeSimbox();
-  meanVp_            = seismicParameters.GetMeanVp();
-  meanVs_            = seismicParameters.GetMeanVs();
-  meanRho_           = seismicParameters.GetMeanRho();
   random_            = modelGeneral_->getRandomGen();
   seisWavelet_       = modelAVOdynamic_->getWavelets();
   A_                 = modelAVOdynamic_->getAMatrix();
+  meanVp_            = seismicParameters.GetMeanVp();
+  meanVs_            = seismicParameters.GetMeanVs();
+  meanRho_           = seismicParameters.GetMeanRho();
   postVp_            = meanVp_;         // Write over the input to save memory
   postVs_            = meanVs_;         // Write over the input to save memory
   postRho_           = meanRho_;        // Write over the input to save memory
@@ -424,7 +424,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
-      delete corrTFiltered;
+      delete [] corrTFiltered;
     }
 
     if(simbox_->getIsConstantThick() == false)
@@ -477,10 +477,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seismicParameters.updatePriorVar();
 
     if (!modelAVOdynamic->getUseLocalNoise()) {// Already done in crava.cpp if local noise
-      postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-      postCovVp00_       = seismicParameters.createPostCov00(seismicParameters.GetCovVp());
-      postCovVs00_        = seismicParameters.createPostCov00(seismicParameters.GetCovVs());
-      postCovRho00_         = seismicParameters.createPostCov00(seismicParameters.GetCovRho());
+      postVar0_     = seismicParameters.getPriorVar0(); //Updated variables
+      postCovVp00_  = seismicParameters.createPostCov00(seismicParameters.GetCovVp());
+      postCovVs00_  = seismicParameters.createPostCov00(seismicParameters.GetCovVs());
+      postCovRho00_ = seismicParameters.createPostCov00(seismicParameters.GetCovRho());
     }
     seismicParameters.printPostVariances(postVar0_);
 
@@ -536,7 +536,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   postVp_->fftInPlace();
   postVs_->fftInPlace();
   postRho_->fftInPlace();
-
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
   seismicParameters.FFTCovGrids();
@@ -1013,7 +1012,7 @@ AVOInversion::computeAdjustmentFactor(fftw_complex                  * adjustment
   float * corrT = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
   computeReflectionCoefficientTimeCovariance(rcCovT, corrT, A);
   rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
-
+  delete [] corrT;
 
   // computes the time Covariance in the errorterm with wavelet Local can be more efficiently computed
   Wavelet1D *errorSmooth  = new Wavelet1D(wLocal ,Wavelet::FIRSTORDERFORWARDDIFF);
@@ -1216,7 +1215,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
   int cnxp  = nxp_/2+1;
 
-  for(l = 0; l < ntheta_ ; l++)
+  for (l = 0; l < ntheta_ ; l++)
   {
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     std::string fileName;
@@ -1256,7 +1255,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   FFTGrid * postCrCovVpRho = seismicParameters.GetCrCovVpRho();
   FFTGrid * postCrCovVsRho = seismicParameters.GetCrCovVsRho();
 
-  if(modelGeneral->getIs4DActive() == true) {
+  if (modelGeneral->getIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
     sigma[0] = postCovVp;
     sigma[1] = postCrCovVpVs;
@@ -1471,16 +1470,19 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       }
     }
   }
-  for(l=0;l<ntheta_;l++)
+
+  for (l=0;l<ntheta_;l++)
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if(modelGeneral_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
+  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
     postVp_->expTransf();
-    GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
-    const Simbox * timeSimbox = simbox_;
+    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
+    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
+    const Simbox      * timeSimbox = simbox_;
     if(dcMap != NULL)
       timeSimbox = dcMap->getSimbox();
 
@@ -1490,26 +1492,25 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if(modelAVOdynamic_->getUseLocalNoise()) {
+  if (modelAVOdynamic_->getUseLocalNoise()) {
     seismicParameters.invFFTCovGrids();
-
     seismicParameters.updatePriorVar();
 
-    postVar0_             = seismicParameters.getPriorVar0(); //Updated variables
-    postCovVp00_       = seismicParameters.createPostCov00(postCovVp);
-    postCovVs00_        = seismicParameters.createPostCov00(postCovVs);
-    postCovRho00_         = seismicParameters.createPostCov00(postCovRho);
+    postVar0_     = seismicParameters.getPriorVar0(); //Updated variables
+    postCovVp00_  = seismicParameters.createPostCov00(postCovVp);
+    postCovVs00_  = seismicParameters.createPostCov00(postCovVs);
+    postCovRho00_ = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
 
     correctVpVsRho(modelSettings_);
   }
 
-  if(doing4DInversion_==false)
+  if (doing4DInversion_==false)
   {
     if(writePrediction_ == true )
       ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-      outputGridsElastic_, fileGrid_, -1, false);
+                                       outputGridsElastic_, fileGrid_, -1, false);
 
     writeBWPredicted();
   }
