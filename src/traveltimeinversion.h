@@ -309,17 +309,15 @@ private:
                                                       const NRLib::Grid<double> & divided_grid,
                                                       NRLib::Grid<double>       & distance) const;
 
-  void                          calculateDistanceGrid(const Simbox        * simbox,
-                                                      FFTGrid             * mu_vp,
-                                                      FFTGrid             * post_mu_vp,
-                                                      NRLib::Grid<double> & distance) const;
-
   void                          calculateEVpGrid(FFTGrid  * mu_log_vp,
                                                  FFTGrid  * cov_log_vp,
                                                  FFTGrid *& mu_vp) const;
 
- NRLib::Grid<double>            calculateDividedGrid(FFTGrid * pri_vp,
-                                                     FFTGrid * post_vp) const;
+ NRLib::Grid<double>            calculateDividedGridRMS(FFTGrid * pri_vp,
+                                                        FFTGrid * post_vp) const;
+
+ NRLib::Grid<double>            calculateDividedGridHorizon(FFTGrid * post_mu_vp,
+                                                            FFTGrid * post_cov_mu_vp) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,

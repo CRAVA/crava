@@ -153,7 +153,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                        mu_post,
                        mu_log_vp_post);
 
-        addCovariance(Sigma_post, cov_circulant,n_model);
+        addCovariance(Sigma_post, cov_circulant, n_model);
 
         n_traces++;
 
@@ -221,11 +221,13 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
 
     mu_log_vp_dynamic->invFFTInPlace();
     post_mu_log_vp   ->invFFTInPlace();
+    post_cov_log_vp  ->invFFTInPlace();
+
+    NRLib::Grid<double> divided_grid = calculateDividedGridHorizon(post_mu_log_vp, post_cov_log_vp);
 
     NRLib::Grid<double> distance;
     calculateDistanceGrid(timeSimbox,
-                          mu_log_vp_dynamic,
-                          post_mu_log_vp,
+                          divided_grid,
                           distance);
 
     Simbox * new_simbox = NULL;
@@ -478,7 +480,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                      post_cov_log_vp,
                      post_mu_vp);
 
-    NRLib::Grid<double> divided_grid = calculateDividedGrid(pri_mu_vp, post_mu_vp);
+    NRLib::Grid<double> divided_grid = calculateDividedGridRMS(pri_mu_vp, post_mu_vp);
 
     NRLib::Grid<double> distance;
     calculateDistanceGrid(timeSimbox,
@@ -2387,46 +2389,6 @@ TravelTimeInversion::calculateDistanceGrid(const Simbox              * simbox,
 //-----------------------------------------------------------------------------------------//
 
 void
-TravelTimeInversion::calculateDistanceGrid(const Simbox        * simbox,
-                                           FFTGrid             * mu_vp,
-                                           FFTGrid             * post_mu_vp,
-                                           NRLib::Grid<double> & distance) const
-{
-  int nx  = simbox->getnx();
-  int ny  = simbox->getny();
-  int nz  = simbox->getnz();
-
-  distance.Resize(nx, ny, nz);
-
-  mu_vp     ->setAccessMode(FFTGrid::READ);
-  post_mu_vp->setAccessMode(FFTGrid::READ);
-
-  double d1; // time from top to base of a cell in the old time grid
-  double d2; // time from top to base of a cell in the new time grid
-  double v1; // old velocity, being prior velocity
-  double v2; // new velocity, being posterior velocity
-
-  for (int k = 0; k < nz; k++) {
-    for (int j = 0; j < ny; j++) {
-      for (int i = 0; i < nx; i++) {
-        d1 = simbox    ->getdz(i, j);
-        v1 = mu_vp     ->getRealValue(i, j, k);
-        v2 = post_mu_vp->getRealValue(i, j, k);
-
-        d2 = v1 * d1 / v2;
-
-        distance(i, j, k) = d2;
-      }
-    }
-  }
-
-  mu_vp     ->endAccess();
-  post_mu_vp->endAccess();
-}
-
-//-----------------------------------------------------------------------------------------//
-
-void
 TravelTimeInversion::calculateEVpGrid(FFTGrid  * mu_log_vp,
                                       FFTGrid  * cov_log_vp,
                                       FFTGrid *& mu_vp) const
@@ -2482,8 +2444,8 @@ TravelTimeInversion::calculateEVpGrid(FFTGrid  * mu_log_vp,
 //-----------------------------------------------------------------------------------------//
 
 NRLib::Grid<double>
-TravelTimeInversion::calculateDividedGrid(FFTGrid * pri_vp,
-                                          FFTGrid * post_vp) const
+TravelTimeInversion::calculateDividedGridRMS(FFTGrid * pri_vp,
+                                             FFTGrid * post_vp) const
 {
 
   int nx  = pri_vp->getNx();
@@ -2504,6 +2466,49 @@ TravelTimeInversion::calculateDividedGrid(FFTGrid * pri_vp,
 
   pri_vp ->endAccess();
   post_vp->endAccess();
+
+  return divided_grid;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+NRLib::Grid<double>
+TravelTimeInversion::calculateDividedGridHorizon(FFTGrid * post_mu_vp,
+                                                 FFTGrid * post_cov_mu_vp) const
+{
+  // In the horizon posterior, E[ln(Vp1/Vp0)|d] and Cov(ln(Vp1/Vp0)|d) have been calculated
+  // Of interest in the divided grid is E[(Vp0/Vp1)|d], which can be calculated from post_vp
+
+  std::vector<double>   cov_log_vp   = getCovLogVp(post_cov_mu_vp);
+  NRLib::Grid2D<double> Sigma_log_vp = generateSigmaModel(cov_log_vp);
+
+  int nx  = post_mu_vp->getNx();
+  int ny  = post_mu_vp->getNy();
+  int nz  = post_mu_vp->getNz();
+
+  NRLib::Grid<double> divided_grid(nx, ny, nz);
+
+  post_cov_mu_vp->setAccessMode(FFTGrid::READ);
+
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+
+      std::vector<double> mu_log_vp = generateMuLogVpFromGrid(post_mu_vp, i, j); //AccessMode set in function
+
+      // Transform to (Vp0/Vp1)
+      std::vector<double>   mu_vp_minus;
+      NRLib::Grid2D<double> Sigma_vp_minus;
+      calculateMinusFirstCentralMomentLogNormal(mu_log_vp,
+                                                Sigma_log_vp,
+                                                mu_vp_minus,
+                                                Sigma_vp_minus);
+
+      for (int k = 0; k < nz; k++)
+        divided_grid(i, j, k) = mu_vp_minus[k];
+    }
+  }
+
+  post_cov_mu_vp->endAccess();
 
   return divided_grid;
 }
