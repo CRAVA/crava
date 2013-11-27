@@ -5669,7 +5669,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         BlockedLogsCommon * bl_bg;
         std::map<std::string, BlockedLogsCommon *> mapped_bg_bl;
 
-        //H Intervals? Could set up bg_simbox per interval
+        //H Could this extended simbox be included the new simbox (which containts correlation surfaces?)
         if(input_files->getCorrDirFile() != "") { //H Could be given as a top-file and base-file?
 
           Surface tmpSurf(input_files->getCorrDirFile());
