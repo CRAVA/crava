@@ -138,7 +138,30 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
 
     //Maybe load in from modelSettings here, things that are needed in doAVOInversion
 
+
+
+    //Set up errCorr here
+    int nx  = commonData->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNI();
+    int ny  = commonData->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNJ();
+    int nz  = commonData->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNK();
+    int nxp = modelSettings->getNXpad();
+    int nyp = modelSettings->getNYpad();
+    int nzp = modelSettings->getNZpad();
+
+    errCorr_ = createFFTGrid(nx, ny, nz,
+                             nxp, nyp, nzp,
+                             modelSettings->getFileGrid());
+    errCorr_ ->setType(FFTGrid::COVARIANCE);
+    errCorr_ ->createRealGrid();
+
+    float corrGradI = 0.0f;
+    float corrGradJ = 0.0f;
+    //commonData::GetCorrGradIJ(timeSimbox, corrGradI, corrGradJ);  //H COMES LATER
+
+    errCorr_->fillInErrCorr(commonData->GetPriorCorrXY(i_interval), corrGradI, corrGradJ);
+
     checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+
   }
   else // forward modeling
     checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
@@ -597,6 +620,20 @@ void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>            
     if(blocked_log->GetIsDeviated() == true)
       blocked_log->GenerateSyntheticSeismic(reflectionMatrix, nAngles, wavelet, nz, nzp, timeSimbox);
   }
+}
+
+//-------------------------------------------------------------------
+FFTGrid *
+ModelAVOStatic::createFFTGrid(int nx,  int ny,  int nz,
+                              int nxp, int nyp, int nzp,
+                              bool fileGrid)
+{
+  FFTGrid * fftGrid;
+  if(fileGrid)
+    fftGrid = new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fftGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+  return(fftGrid);
 }
 
 

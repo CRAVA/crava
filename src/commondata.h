@@ -87,6 +87,10 @@ public:
   const NRLib::Grid2D<float>              & GetRefTimeGradX()                     const { return ref_time_grad_x_                            ;}
   const NRLib::Grid2D<float>              & GetRefTimeGradY()                     const { return ref_time_grad_y_                            ;}
 
+  const Surface                           * GetPriorCorrXY(int i_interval)              { return prior_corr_XY_[i_interval]                  ;}
+
+
+
   void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
                                      double                 vsvp,
                                      const ModelSettings  * model_settings,

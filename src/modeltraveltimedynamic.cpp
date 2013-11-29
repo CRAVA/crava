@@ -44,14 +44,14 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
                   failed_surfaces);
 
   bool failed_rms_data = false;
-  processRMSData(rms_data_,
-                 modelSettings,
-                 inputFiles,
-                 modelGeneral->getTimeSimbox(),
-                 modelGeneral->getTimeDepthMapping(),
-                 modelGeneral->getTimeCutMapping(),
-                 errTxt,
-                 failed_rms_data);
+  //processRMSData(rms_data_, //H Commented out since modelGeneral doesn't have TimeCutMapping. Fix when setting up TravelTimeDynamic
+  //               modelSettings,
+  //               inputFiles,
+  //               modelGeneral->getTimeSimbox(),
+  //               modelGeneral->getTimeDepthMapping(),
+  //               modelGeneral->getTimeCutMapping(),
+  //               errTxt,
+  //               failed_rms_data);
 
   bool failed_loading_model = failed_surfaces || failed_rms_data;
 

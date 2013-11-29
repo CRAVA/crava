@@ -44,9 +44,11 @@ public:
 
   const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
 
-  /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return waveletEstimInterval_   ;}
-  /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return faciesEstimInterval_   ;}
-  /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return wellMoveInterval_   ;}
+  /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return waveletEstimInterval_ ;}
+  /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return faciesEstimInterval_  ;}
+  /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return wellMoveInterval_     ;}
+
+  FFTGrid                          * getErrCorr()                         { return errCorr_              ;}
 
   //bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
@@ -82,6 +84,10 @@ public:
                                             const ModelSettings                      * modelSettings,
                                             int                                        nAngles);
 
+  static FFTGrid *        createFFTGrid(int nx,  int ny,  int nz,
+                                        int nxp, int nyp, int nzp,
+                                        bool fileGrid);
+
   //void             deleteDynamicWells(std::vector<WellData *> wells,
   //                                    int         nWells);
 
@@ -109,6 +115,8 @@ private:
   std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
   std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
   std::vector<Surface *>    wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
+
+  FFTGrid                 * errCorr_;
 
   //bool                      failed_;                ///< Indicates whether errors occured during construction.
   //std::vector<bool>         failed_details_;        ///< Detailed failed information.

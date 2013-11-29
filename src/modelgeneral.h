@@ -69,6 +69,7 @@ public:
   //Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
 
   bool                       getVelocityFromInversion() const { return velocityFromInversion_  ;}
+  bool                       getMultiInterval()         const { return multiinterval_          ;}
   //bool                       getFailed()                const { return failed_                 ;}
   //std::vector<bool>          getFailedDetails()         const { return failed_details_         ;}
 
@@ -406,7 +407,7 @@ private:
   bool                      do4DRockPhysicsInversion_;
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
-
+  bool                      multiinterval_;              ///< True if there is multiple intervals
 
 
   //Fjernes:

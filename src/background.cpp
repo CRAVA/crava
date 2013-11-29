@@ -457,9 +457,9 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
                                     const ModelSettings                        * model_settings,
                                     std::string                                & err_text)
 {
-  const int   nz     = simbox->getnz();
+  const int   nz      = simbox->getnz();
   const int   n_wells = model_settings->getNumberOfWells();
-  const float dz     = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
+  const float dz      = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
   std::string name_vp  = "Vp";
   std::string name_vs  = "Vs";
@@ -540,8 +540,8 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
                              name_rho);
 
     bool has_velocity_trend = velocity.GetN() != 0; // != NULL;
-    bool write1D          = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-    bool write3D          = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
+    bool write1D            = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
+    bool write3D            = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
     writeTrendsToFile(trend_vp,  simbox, write1D, write3D, has_velocity_trend, name_vp,  model_settings->getFileGrid());
     writeTrendsToFile(trend_vs,  simbox, write1D, write3D, has_velocity_trend, name_vs,  model_settings->getFileGrid());
@@ -1107,7 +1107,7 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
                             erosion_priority,
                             surface,
                             model_settings->getSurfaceUncertainty(),
-                            model_settings->getFileGrid(),
+                            //model_settings->getFileGrid(),
                             "multizone");
 
 
@@ -1409,7 +1409,7 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
                                     const std::vector<int>           & erosion_priority,
                                     const std::vector<Surface>       & surface,
                                     const std::vector<double>        & surface_uncertainty,
-                                    const bool                         is_file,
+                                    //const bool                         is_file,
                                     const std::string                & type) const
 {
 
@@ -2943,7 +2943,7 @@ Background::writeMultizoneTrendsToFile(const std::vector<std::vector<double> > &
                           erosion_priority,
                           surface,
                           surface_uncertainty,
-                          isFile,
+                          //isFile,
                           "trend in multizone");
 
   //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp, true, isFile);

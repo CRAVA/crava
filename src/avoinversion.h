@@ -72,11 +72,11 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
-  void                   computeDataVariance(void);
-  void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
+  //void                   computeDataVariance(void);
+  //void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
 
-  void                   computeVariances(fftw_real     * corrT,
-                                          ModelSettings * modelSettings);
+  //void                   computeVariances(fftw_real     * corrT,
+  //                                        ModelSettings * modelSettings);
 
   void                   writeBWPredicted(void);
   float                  getEmpSNRatio(int l)     const { return empSNRatio_[l]     ;}
@@ -104,7 +104,7 @@ private:
 
   int                    checkScale(void);
 
-  void                   fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
+  void                   fillkW(int k, fftw_complex* kW, std::vector<Wavelet *> seisWavelet);
   void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
   void                   fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
 
@@ -124,7 +124,7 @@ private:
   FFTGrid              * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
 
-  float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
+  //float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
 
   void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
   void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
@@ -185,7 +185,9 @@ private:
                                         // avoid ill posed problems.
   float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
-  float            * empSNRatio_;       // signal noise ratio empirical
+  //float            * empSNRatio_;       // signal noise ratio empirical
+  std::vector<float> empSNRatio_;
+
   float            * theoSNRatio_;      // signal noise ratio from model
   float            * modelVariance_;
   float            * signalVariance_;
@@ -203,10 +205,12 @@ private:
   FFTGrid          * postRho_;
   FFTGrid          * errCorr_;
 
-  int                     krigingParameter_;
+  bool               multiinterval_;
+
+  int                                        krigingParameter_;
   //std::vector<WellData *> wells_;
   std::map<std::string, BlockedLogsCommon *> blocked_wells_;
-  int                     nWells_;
+  int                                        nWells_;
 
   int                scaleWarning_;
   std::string        scaleWarningText_;

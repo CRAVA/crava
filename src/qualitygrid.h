@@ -51,8 +51,7 @@ private:
 
   void setupKrigingData2D(std::vector<KrigingData2D>               & krigingData,
                           std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                          const Simbox                             * simbox,
-                          const int                                  nWells) const;
+                          const Simbox                             * simbox) const;
 
   void makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
                            FFTGrid                   *& grid,

@@ -434,13 +434,13 @@ ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
 }
 
 void
-ParameterOutput::writeToFile(const Simbox      * simbox,
-                             ModelGeneral      * modelGeneral,
-                             const ModelSettings     * modelSettings,
-                             FFTGrid           * grid,
-                             const std::string & fileName,
-                             const std::string & sgriLabel,
-                             bool padding)
+ParameterOutput::writeToFile(const Simbox        * simbox,
+                             ModelGeneral        * modelGeneral,
+                             const ModelSettings * modelSettings,
+                             FFTGrid             * grid,
+                             const std::string   & fileName,
+                             const std::string   & sgriLabel,
+                             bool                  padding)
 {
   GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
   GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();

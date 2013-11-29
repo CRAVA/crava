@@ -384,7 +384,7 @@ private:
                                        const std::vector<int>           & erosion_priority,
                                        const std::vector<Surface>       & surface,
                                        const std::vector<double>        & surface_uncertainty,
-                                       const bool                         isFile,
+                                       //const bool                         isFile,
                                        const std::string                & type) const;
 
   void         MakeMultiIntervalBackground(std::vector<NRLib::Grid<double> > & bg_vp,

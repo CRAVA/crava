@@ -104,23 +104,34 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   postVs_            = meanVs_;         // Write over the input to save memory
   postRho_           = meanRho_;        // Write over the input to save memory
   fprob_             = NULL;
-  thetaDeg_          = new float[ntheta_];
-  empSNRatio_        = new float[ntheta_];
-  theoSNRatio_       = new float[ntheta_];
-  modelVariance_     = new float[ntheta_];
-  signalVariance_    = new float[ntheta_];
-  errorVariance_     = new float[ntheta_];
-  dataVariance_      = new float[ntheta_];
+  //thetaDeg_          = new float[ntheta_];
+  //empSNRatio_        = new float[ntheta_];
+  //theoSNRatio_       = new float[ntheta_];
+  //modelVariance_     = new float[ntheta_];
+  //signalVariance_    = new float[ntheta_];
+  //errorVariance_     = new float[ntheta_];
+  //dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
   scaleWarningText_  = "";
-  errThetaCov_       = new double*[ntheta_];
+  //errThetaCov_       = new double*[ntheta_];
   sigmamdnew_        = NULL;
-  for(int i=0;i<ntheta_;i++) {
-    errThetaCov_[i]  = new double[ntheta_];
-    thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
-  }
+
+  errThetaCov_       = modelAVOdynamic->getErrThetaCov();
+  thetaDeg_          = modelAVOdynamic->getThetaDeg();
+  //for(int i=0;i<ntheta_;i++) {
+  //  errThetaCov_[i]  = new double[ntheta_];
+  //  thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
+  //}
+  empSNRatio_        = modelAVOdynamic->getSNRatio();
+  dataVariance_      = modelAVOdynamic->getDataVariance();
+  errorVariance_     = modelAVOdynamic->getErrorVariance();
+  modelVariance_     = modelAVOdynamic->getModelVariance();
+  signalVariance_    = modelAVOdynamic->getSignalVariance();
+  theoSNRatio_       = modelAVOdynamic->getTheoSNRatio();
 
   SpatialWellFilter * spatwellfilter = NULL;
+
+  multiinterval_ = modelGeneral->getMultiInterval();
 
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -152,28 +163,31 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       covVp->endAccess();
     }
 
-    float corrGradI, corrGradJ;
-    modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+    //float corrGradI, corrGradJ;
+    //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
+    //Do not write correlation grids with multiple intervals
     float dt = static_cast<float>(modelGeneral->getTimeSimbox()->getdz());
-    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multiinterval_ == false)
       seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
-    errCorr_ = createFFTGrid();
-    errCorr_ ->setType(FFTGrid::COVARIANCE);
-    errCorr_ ->createRealGrid();
-    errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
+    errCorr_ = modelAVOstatic->getErrCorr();
+    //errCorr_ = createFFTGrid();
+    //errCorr_ ->setType(FFTGrid::COVARIANCE);
+    //errCorr_ ->createRealGrid();
+    //errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
 
     for(int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-    computeVariances(corrT, modelSettings_);
+    //computeVariances(corrT, modelSettings_);
+
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);
 
-    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
+    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multiinterval_ == false) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
       delete [] corrTFiltered;
@@ -190,14 +204,14 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->getUseLocalNoise())
     {
-      meanVp2_ = copyFFTGrid(meanVp_);
+      meanVp2_  = copyFFTGrid(meanVp_);
       meanVs2_  = copyFFTGrid(meanVs_);
-      meanRho2_   = copyFFTGrid(meanRho_);
+      meanRho2_ = copyFFTGrid(meanRho_);
     }
 
-    meanVp_->fftInPlace();
+    meanVp_ ->fftInPlace();
     meanVs_ ->fftInPlace();
-    meanRho_  ->fftInPlace();
+    meanRho_->fftInPlace();
   }
   else{
     modelAVOdynamic_->releaseGrids();
@@ -236,7 +250,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0){
+    //H
+    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
       seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
       seismicParameters.writeFilePostCovGrids(modelGeneral->getTimeSimbox());
     }
@@ -245,20 +260,13 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if(modelAVOdynamic->getUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      spatwellfilter->doFiltering(modelGeneral->getBlockedWells(),
+      spatwellfilter->doFiltering(modelGeneral->getBlockedWells(), //modelGeneral->getWells()
                                   //modelSettings->getNumberOfWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
                                   this,
                                   modelAVOdynamic->getLocalNoiseScales(),
                                   seismicParameters);
-      //spatwellfilter->doFiltering(modelGeneral->getWells(),
-      //                            modelSettings->getNumberOfWells(),
-      //                            modelSettings->getNoVsFaciesProb(),
-      //                            activeAngles,
-      //                            this,
-      //                            modelAVOdynamic->getLocalNoiseScales(),
-      //                            seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
       computeFaciesProb(spatwellfilter, useFilter, seismicParameters);
@@ -271,9 +279,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //
     // Temporary placement.
     //
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+
+    //H Writing of wells?
+    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
       modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
-      //modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
@@ -285,8 +294,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     computeSyntSeismic(postVp_,postVs_,postRho_);
   }
 
-  postVp_->fftInPlace();
-  postVs_->fftInPlace();
+  postVp_ ->fftInPlace();
+  postVs_ ->fftInPlace();
   postRho_->fftInPlace();
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
@@ -299,7 +308,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 AVOInversion::~AVOInversion()
 {
   delete [] thetaDeg_;
-  delete [] empSNRatio_;
+  //delete [] empSNRatio_;
   delete [] theoSNRatio_;
   delete [] modelVariance_;
   delete [] signalVariance_;
@@ -332,163 +341,163 @@ AVOInversion::~AVOInversion()
   }
 }
 
-void
-AVOInversion::computeDataVariance(void)
-{
-  //
-  // Compute variation in raw seismic
-  //
-  int rnxp = 2*(nxp_/2+1);
-  for(int l=0 ; l < ntheta_ ; l++)
-  {
-    double  totvar = 0;
-    long int ndata = 0;
-    dataVariance_[l]=0.0;
-    seisData_[l]->setAccessMode(FFTGrid::READ);
-    for(int k=0 ; k<nzp_ ; k++)
-    {
-      double tmpvar1 = 0;
-      for(int j=0;j<nyp_;j++)
-      {
-        double tmpvar2 = 0;
-        for(int i=0; i <rnxp; i++)
-        {
-          float tmp=seisData_[l]->getNextReal();
-          if(k < nz_ && j < ny_ &&  i < nx_ && tmp != 0.0)
-          {
-            tmpvar2 += double(tmp*tmp);
-            ndata++;
-          }
-        }
-        tmpvar1 += tmpvar2;
-      }
-      totvar += tmpvar1;
-    }
-    seisData_[l]->endAccess();
-    if (ndata == 0) {
-      dataVariance_[l] = 0.0;
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING: All seismic data in stack "+NRLib::ToString(l)+" have zero amplitude.\n");
-      TaskList::addTask("Check the seismic data for stack"+NRLib::ToString(l)+". All data have zero amplitude.");
-    }
-    else {
-      dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
-    }
-  }
-}
+//void
+//AVOInversion::computeDataVariance(void)
+//{
+//  //
+//  // Compute variation in raw seismic
+//  //
+//  int rnxp = 2*(nxp_/2+1);
+//  for(int l=0 ; l < ntheta_ ; l++)
+//  {
+//    double  totvar = 0;
+//    long int ndata = 0;
+//    dataVariance_[l]=0.0;
+//    seisData_[l]->setAccessMode(FFTGrid::READ);
+//    for(int k=0 ; k<nzp_ ; k++)
+//    {
+//      double tmpvar1 = 0;
+//      for(int j=0;j<nyp_;j++)
+//      {
+//        double tmpvar2 = 0;
+//        for(int i=0; i <rnxp; i++)
+//        {
+//          float tmp=seisData_[l]->getNextReal();
+//          if(k < nz_ && j < ny_ &&  i < nx_ && tmp != 0.0)
+//          {
+//            tmpvar2 += double(tmp*tmp);
+//            ndata++;
+//          }
+//        }
+//        tmpvar1 += tmpvar2;
+//      }
+//      totvar += tmpvar1;
+//    }
+//    seisData_[l]->endAccess();
+//    if (ndata == 0) {
+//      dataVariance_[l] = 0.0;
+//      LogKit::LogFormatted(LogKit::Low,"\nWARNING: All seismic data in stack "+NRLib::ToString(l)+" have zero amplitude.\n");
+//      TaskList::addTask("Check the seismic data for stack"+NRLib::ToString(l)+". All data have zero amplitude.");
+//    }
+//    else {
+//      dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
+//    }
+//  }
+//}
 
-void
-AVOInversion::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
-{
-  //
-  //  Setup error correlation matrix
-  //
-  for(int l=0 ; l < ntheta_ ; l++)
-  {
-    empSNRatio_[l] = modelAVOdynamic_->getSNRatio(l);
-    if(modelAVOdynamic_->getUseLocalNoise() == true) {
-      double minScale = noiseScale[l]->FindMin(RMISSING);
-      errorVariance_[l] = float(dataVariance_[l]*minScale/empSNRatio_[l]);
-    }
-    else
-      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+//void
+//AVOInversion::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
+//{
+//  //
+//  //  Setup error correlation matrix
+//  //
+//  for(int l=0 ; l < ntheta_ ; l++)
+//  {
+//    empSNRatio_[l] = modelAVOdynamic_->getSNRatio(l);
+//    if(modelAVOdynamic_->getUseLocalNoise() == true) {
+//      double minScale = noiseScale[l]->FindMin(RMISSING);
+//      errorVariance_[l] = float(dataVariance_[l]*minScale/empSNRatio_[l]);
+//    }
+//    else
+//      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+//
+//    if (empSNRatio_[l] < 1.1f)
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
+//      LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
+//      LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
+//      exit(1);
+//    }
+//  }
+//
+//  //Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
+//  const std::vector<std::vector<float> > & angularCorr = modelAVOdynamic_->getAngularCorr();
+//
+//  for(int i = 0; i < ntheta_; i++)
+//    for(int j = 0; j < ntheta_; j++)
+//      {
+//        errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
+//                                                *sqrt(errorVariance_[j])
+//                                                *angularCorr[i][j]);
+//        //float dTheta = modelAVOdynamic_->getAngle(i) - modelAVOdynamic_->getAngle(j);
+//        //errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
+//        //                                        *sqrt(errorVariance_[j])
+//        //                                        *angularCorr->corr(dTheta,0));
+//      }
+//
+//}
 
-    if (empSNRatio_[l] < 1.1f)
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
-      LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-      LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
-      exit(1);
-    }
-  }
-
-  //Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
-  const std::vector<std::vector<float> > & angularCorr = modelAVOdynamic_->getAngularCorr();
-
-  for(int i = 0; i < ntheta_; i++)
-    for(int j = 0; j < ntheta_; j++)
-      {
-        errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
-                                                *sqrt(errorVariance_[j])
-                                                *angularCorr[i][j]);
-        //float dTheta = modelAVOdynamic_->getAngle(i) - modelAVOdynamic_->getAngle(j);
-        //errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
-        //                                        *sqrt(errorVariance_[j])
-        //                                        *angularCorr->corr(dTheta,0));
-      }
-
-}
-
-void
-AVOInversion::computeVariances(fftw_real     * corrT,
-                               ModelSettings * modelSettings)
-{
-  computeDataVariance();
-
-  setupErrorCorrelation(modelAVOdynamic_->getLocalNoiseScales());
-
-  Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
-  float      * paramVar    = new float[ntheta_] ;
-  float      * WDCorrMVar  = new float[ntheta_];
-
-  for(int i=0 ; i < ntheta_ ; i++)
-  {
-    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
-    errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
-    delete wavelet1D;
-
-    std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
-    std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
-    errorSmooth[i]->printToFile(fileName);
-  }
-
-  // Compute variation in parameters
-  for(int i=0 ; i < ntheta_ ; i++)
-  {
-    paramVar[i]=0.0;
-    for(int l=0; l<3 ; l++)
-      for(int m=0 ; m<3 ; m++)
-        paramVar[i] += static_cast<float>(priorVar0_(l,m))*A_[i][l]*A_[i][m];
-  }
-
-  // Compute variation in wavelet
-  for(int l=0 ; l < ntheta_ ; l++)
-  {
-    WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
-  }
-
-  // Compute signal and model variance and theoretical signal-to-noise-ratio
-  for(int l=0 ; l < ntheta_ ; l++)
-  {
-    modelVariance_[l]  = WDCorrMVar[l]*paramVar[l];
-    signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
-  }
-
-  for(int l=0 ; l < ntheta_ ; l++)
-  {
-    if (modelAVOdynamic_->getMatchEnergies(l))
-    {
-      LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
-      float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
-      seisWavelet_[l]->scale(gain);
-      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
-          (modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l)))
-      {
-        std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
-        std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
-        seisWavelet_[l]->writeWaveletToFile(fileName, 1.0,false); // dt_max = 1.0;
-      }
-      modelVariance_[l] *= gain*gain;
-      signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
-    }
-    theoSNRatio_[l] = signalVariance_[l]/errorVariance_[l];
-  }
-
-  delete [] paramVar ;
-  delete [] WDCorrMVar;
-  for(int i=0;i<ntheta_;i++)
-    delete errorSmooth[i];
-  delete [] errorSmooth;
-}
+//void
+//AVOInversion::computeVariances(fftw_real     * corrT,
+//                               ModelSettings * modelSettings)
+//{
+//  computeDataVariance();
+//
+//  setupErrorCorrelation(modelAVOdynamic_->getLocalNoiseScales());
+//
+//  Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
+//  float      * paramVar    = new float[ntheta_] ;
+//  float      * WDCorrMVar  = new float[ntheta_];
+//
+//  for(int i=0 ; i < ntheta_ ; i++)
+//  {
+//    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
+//    errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
+//    delete wavelet1D;
+//
+//    std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
+//    std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
+//    errorSmooth[i]->printToFile(fileName);
+//  }
+//
+//  // Compute variation in parameters
+//  for(int i=0 ; i < ntheta_ ; i++)
+//  {
+//    paramVar[i]=0.0;
+//    for(int l=0; l<3 ; l++)
+//      for(int m=0 ; m<3 ; m++)
+//        paramVar[i] += static_cast<float>(priorVar0_(l,m))*A_[i][l]*A_[i][m];
+//  }
+//
+//  // Compute variation in wavelet
+//  for(int l=0 ; l < ntheta_ ; l++)
+//  {
+//    WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
+//  }
+//
+//  // Compute signal and model variance and theoretical signal-to-noise-ratio
+//  for(int l=0 ; l < ntheta_ ; l++)
+//  {
+//    modelVariance_[l]  = WDCorrMVar[l]*paramVar[l];
+//    signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
+//  }
+//
+//  for(int l=0 ; l < ntheta_ ; l++)
+//  {
+//    if (modelAVOdynamic_->getMatchEnergies(l))
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
+//      float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
+//      seisWavelet_[l]->scale(gain);
+//      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0)// ||
+//          //(modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l))) //H Estimationmode true not possible in avoinversion?
+//      {
+//        std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
+//        std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
+//        seisWavelet_[l]->writeWaveletToFile(fileName, 1.0,false); // dt_max = 1.0;
+//      }
+//      modelVariance_[l] *= gain*gain;
+//      signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
+//    }
+//    theoSNRatio_[l] = signalVariance_[l]/errorVariance_[l];
+//  }
+//
+//  delete [] paramVar ;
+//  delete [] WDCorrMVar;
+//  for(int i=0;i<ntheta_;i++)
+//    delete errorSmooth[i];
+//  delete [] errorSmooth;
+//}
 
 void
 AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
@@ -1227,16 +1236,16 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
+  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it. //True implies multiinterval not used
     LogKit::WriteHeader("Setup time-to-depth relationship");
     LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
     postVp_->expTransf();
     GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
+    //const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping(); //H Should be covered by the new simbox format. Need to change inside tdMap->setMappingFromVelocity?
     const Simbox      * timeSimbox = simbox_;
-    if(dcMap != NULL)
-      timeSimbox = dcMap->getSimbox();
+    //if(dcMap != NULL)
+      //timeSimbox = dcMap->getSimbox();
 
     tdMap->setMappingFromVelocity(postVp_, timeSimbox);
     postVp_->logTransf();
@@ -1354,7 +1363,7 @@ AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
 }
 
 void
-AVOInversion::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
+AVOInversion::fillkW(int k, fftw_complex* kW, std::vector<Wavelet *> seisWavelet) //Wavelet**
 {
   for(int l = 0; l < ntheta_; l++)
   {
@@ -1560,7 +1569,6 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           seed1->setAccessMode(FFTGrid::RANDOMACCESS);
           seed1->invFFTInPlace();
 
-
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace();
 
@@ -1598,8 +1606,12 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
             doPostKriging(seismicParameters, *seed0, *seed1, *seed2);
             Timings::addToTimeKrigingSim(wall2,cpu2);
           }
-          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-                                           outputGridsElastic_, fileGrid_, simNr, kriging);
+
+          //Only write simulated results if there is one interval
+          if(multiinterval_ == false) {
+            ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
+                                             outputGridsElastic_, fileGrid_, simNr, kriging);
+          }
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     }
@@ -1651,16 +1663,16 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
 }
 
 FFTGrid *
-AVOInversion::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int angle)
+AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, int angle)
 {
   FFTGrid * impedance = createFFTGrid();
   impedance->setType(FFTGrid::DATA);
   impedance->createRealGrid();
   impedance->setAccessMode(FFTGrid::WRITE);
 
-  int rnxp  = alpha->getRNxp();
-  alpha->setAccessMode(FFTGrid::READ);
-  beta->setAccessMode(FFTGrid::READ);
+  int rnxp = vp->getRNxp();
+  vp->setAccessMode(FFTGrid::READ);
+  vs->setAccessMode(FFTGrid::READ);
   rho->setAccessMode(FFTGrid::READ);
   for(int k = 0; k < nzp_; k++) {
     for(int j = 0; j < nyp_; j++)
@@ -1668,8 +1680,8 @@ AVOInversion::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid *
       for(int i = 0; i < rnxp; i++)
       {
         float imp = 0;
-        imp += alpha->getNextReal()*A_[angle][0];
-        imp += beta->getNextReal()*A_[angle][1];
+        imp += vp->getNextReal()*A_[angle][0];
+        imp += vs->getNextReal()*A_[angle][1];
         imp += rho->getNextReal()*A_[angle][2];
 
         impedance->setNextReal(imp);
@@ -1677,8 +1689,8 @@ AVOInversion::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid *
     }
   }
   impedance->endAccess();
-  alpha->endAccess();
-  beta->endAccess();
+  vp->endAccess();
+  vs->endAccess();
   rho->endAccess();
   return(impedance);
 }
@@ -1780,20 +1792,20 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
 }
 
 
-float
-AVOInversion::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
-{
-  float var = 0.0;
-  int i,j,corrInd;
-
-  for(i=0;i<nzp_;i++)
-    for(j=0;j<nzp_;j++)
-    {
-      corrInd = std::max(i-j,j-i);
-      var += WD->getRAmp(i)*corrT[corrInd]*WD->getRAmp(j);
-    }
-    return var;
-}
+//float
+//AVOInversion::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
+//{
+//  float var = 0.0;
+//  int i,j,corrInd;
+//
+//  for(i=0;i<nzp_;i++)
+//    for(j=0;j<nzp_;j++)
+//    {
+//      corrInd = std::max(i-j,j-i);
+//      var += WD->getRAmp(i)*corrT[corrInd]*WD->getRAmp(j);
+//    }
+//    return var;
+//}
 
 
 void
@@ -1955,13 +1967,6 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
           ( blocked_log->HasSyntheticVsLog()            ? "yes" : " no" ),
           ( blocked_log->GetIsDeviated()                ? "yes" : " no" ));
       }
-      //for(int i=0 ; i<nWells_ ; i++) {
-      //  LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
-      //    wells_[i]->getWellname().c_str(),
-      //    ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
-      //    ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
-      //    ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
-      //}
     }
 
     std::string baseName = IO::PrefixFaciesProbability();
@@ -1991,8 +1996,10 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;
-      float corrGradI, corrGradJ;
-      modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+
+      //float corrGradI, corrGradJ; //H Not used?
+      //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(meanVp2_,
@@ -2037,45 +2044,39 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(postVp_,
-                                postVs_,
-                                postRho_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                modelGeneral_->getPriorFacies(),
-                                modelGeneral_->getPriorFaciesCubes(),
-                                likelihood,
-                                modelGeneral_->getRockDistributionTime0(),
-                                modelGeneral_->getFaciesNames(),
-                                modelAVOstatic_->getFaciesEstimInterval(),
-                                this,
-                                seismicParameters,
-                                modelAVOdynamic_->getLocalNoiseScales(),
-                                modelSettings_,
-                                filteredlogs,
-                                //wells_,
-                                blocked_wells_,
-                                modelGeneral_->getTrendCubes(),
-                                nWells_,
-                                simbox_->getdz(),
-                                useFilter,
-                                false,
-                                trend_min[0],
-                                trend_max[0],
-                                trend_min[1],
-                                trend_max[1]);
+                              postVs_,
+                              postRho_,
+                              nfac,
+                              modelSettings->getPundef(),
+                              modelGeneral_->getPriorFacies(),
+                              modelGeneral_->getPriorFaciesCubes(),
+                              likelihood,
+                              modelGeneral_->getRockDistributionTime0(),
+                              modelGeneral_->getFaciesNames(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
+                              this,
+                              seismicParameters,
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
+                              filteredlogs,
+                              blocked_wells_,
+                              modelGeneral_->getTrendCubes(),
+                              nWells_,
+                              simbox_->getdz(),
+                              useFilter,
+                              false,
+                              trend_min[0],
+                              trend_max[0],
+                              trend_min[1],
+                              trend_max[1]);
 
     }
     if(!modelSettings->getFaciesProbFromRockPhysics()){
-      fprob_->calculateConditionalFaciesProb(blocked_wells_,
+      fprob_->calculateConditionalFaciesProb(blocked_wells_, //wells_
                                              nWells_,
                                              modelAVOstatic_->getFaciesEstimInterval(),
                                              facies_names,
                                              simbox_->getdz());
-      //fprob_->calculateConditionalFaciesProb(wells_,
-      //                                       nWells_,
-      //                                       modelAVOstatic_->getFaciesEstimInterval(),
-      //                                       facies_names,
-      //                                       simbox_->getdz());
     }
     LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
 
@@ -2104,14 +2105,11 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       }
     }
     if(modelSettings->getFaciesProbFromRockPhysics() == false) {
-      //fprob_->writeBWFaciesProb(wells_, nWells_);
       fprob_->writeBWFaciesProb(blocked_wells_, nWells_);
-      //std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
       std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
 
       if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
         QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, modelGeneral_);
-        //QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
     }
 
     if(likelihood != NULL) {
@@ -2425,12 +2423,12 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help,eigvectrans,3,3,3,sigmamdold);
 
-  float * alpha     = new float[nz_];
-  float * beta      = new float[nz_];
-  float * rho       = new float[nz_];
-  float * meanalpha = new float[nz_];
-  float * meanbeta  = new float[nz_];
-  float * meanrho   = new float[nz_];
+  float * vp      = new float[nz_];
+  float * vs      = new float[nz_];
+  float * rho     = new float[nz_];
+  float * meanvp  = new float[nz_];
+  float * meanvs  = new float[nz_];
+  float * meanrho = new float[nz_];
 
   if(modelSettings->getNumberOfSimulations()>0)
     sigmamdnew_ = new NRLib::Grid2D<double **>(nx_,ny_,NULL);
@@ -2477,24 +2475,24 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
         }
       }
 
-      postVp_->getRealTrace(alpha, i, j);
-      postVs_->getRealTrace(beta, i, j);
+      postVp_->getRealTrace(vp, i, j);
+      postVs_->getRealTrace(vs, i, j);
       postRho_->getRealTrace(rho, i, j);
-      meanVp2_->getRealTrace(meanalpha, i, j);
-      meanVs2_->getRealTrace(meanbeta, i, j);
+      meanVp2_->getRealTrace(meanvp, i, j);
+      meanVs2_->getRealTrace(meanvs, i, j);
       meanRho2_->getRealTrace(meanrho, i, j);
 
       for(k=0;k<nz_;k++)
       {
-        float alphadiff = alpha[k] - meanalpha[k];
-        float betadiff  = beta[k]  - meanbeta[k];
+        float vpdiff = vp[k] - meanvp[k];
+        float vsdiff  = vs[k]  - meanvs[k];
         float rhodiff   = rho[k]   - meanrho[k];
-        alpha[k]  = float(meanalpha[k]+sigmanew(0,0)*alphadiff + sigmanew(0,1)*betadiff + sigmanew(0,2)*rhodiff);
-        beta[k]   = float(meanbeta[k] +sigmanew(1,0)*alphadiff + sigmanew(1,1)*betadiff + sigmanew(1,2)*rhodiff);
-        rho[k]    = float(meanrho[k]  +sigmanew(2,0)*alphadiff + sigmanew(2,1)*betadiff + sigmanew(2,2)*rhodiff);
+        vp[k]  = float(meanvp[k] +sigmanew(0,0)*vpdiff + sigmanew(0,1)*vsdiff + sigmanew(0,2)*rhodiff);
+        vs[k]  = float(meanvs[k] +sigmanew(1,0)*vpdiff + sigmanew(1,1)*vsdiff + sigmanew(1,2)*rhodiff);
+        rho[k] = float(meanrho[k]+sigmanew(2,0)*vpdiff + sigmanew(2,1)*vsdiff + sigmanew(2,2)*rhodiff);
       }
-      postVp_->setRealTrace(i,j, alpha);
-      postVs_->setRealTrace(i,j,beta);
+      postVp_->setRealTrace(i,j, vp);
+      postVs_->setRealTrace(i,j, vs);
       postRho_->setRealTrace(i,j,rho);
     }
   }
@@ -2513,11 +2511,11 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
     delete meanRho2_;
   }
 
-  delete [] alpha;
-  delete [] beta;
+  delete [] vp;
+  delete [] vs;
   delete [] rho;
-  delete [] meanalpha;
-  delete [] meanbeta;
+  delete [] meanvp;
+  delete [] meanvs;
   delete [] meanrho;
 
   for(i=0;i<3;i++)

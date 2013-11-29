@@ -51,6 +51,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_traveltime_inversion_(false),
   //trend_cubes_(false),
   refmat_from_file_global_vpvs_(false),
+  velocity_from_inversion_(false),
   multiple_interval_grid_(NULL),
   time_line_(NULL)
 {
@@ -4300,19 +4301,6 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
   }
 }
 
-//FFTGrid*
-//CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
-//{
-//  FFTGrid* fftGrid;
-//
-//  if(fileGrid)
-//    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
-//  else
-//    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
-//
-//  return(fftGrid);
-//}
-
 void CommonData::ReadCravaFile(NRLib::Grid<double> & grid,
                                const std::string   & file_name,
                                std::string         & err_text) {
@@ -4818,10 +4806,10 @@ void CommonData::FillInData(NRLib::Grid<double> & grid,
         if (i < nx && j < ny)
           missing_traces_simbox++;
         else
-          missing_traces_padding++; //H Won't happen with NRLibGrid
+          missing_traces_padding++; //Won't happen with NRLib::Grid
       }
 
-      if (rnxp*j + i + 1 >= static_cast<int>(nextMonitor)) { //rnxp_
+      if (rnxp*j + i + 1 >= static_cast<int>(nextMonitor)) {
         nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
@@ -5426,7 +5414,7 @@ void CommonData::SetTrace(const std::vector<float> & trace,
                           size_t                     i,
                           size_t                     j)
 {
-  for (size_t k = 0; k < grid->getNzp(); k++) {
+  for (int k = 0; k < grid->getNzp(); k++) {
     grid->setRealValue(i, j, k, trace[i], true);
   }
 }
@@ -5436,7 +5424,7 @@ void CommonData::SetTrace(float     value,
                           size_t    i,
                           size_t    j)
 {
-  for (size_t k = 0; k < grid->getNzp(); k++) {
+  for (int k = 0; k < grid->getNzp(); k++) {
     grid->setRealValue(i, j, k, value, true);
   }
 }
@@ -5571,7 +5559,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
 
   NRLib::Grid<double> velocity;
   std::string velocity_field = input_files->getVelocityField();
-  velocity_from_inversion_ = false;
+  //velocity_from_inversion_ = false;
 
   LoadVelocity(velocity,
                &estimation_simbox_,
@@ -7564,7 +7552,7 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
 void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
                                          std::string   & err_text) {
 
-  for(size_t t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
+  for(int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
 
     Vario * vario                     = model_settings->getAngularCorr(t);
     int n_angles                      = model_settings->getNumberOfAngles(t);

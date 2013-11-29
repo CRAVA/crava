@@ -11,15 +11,15 @@
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
-  meanVp_         = NULL;
-  meanVs_         = NULL;
-  meanRho_        = NULL;
-  covVp_        = NULL;
-  covVs_        = NULL;
-  covRho_       = NULL;
-  crCovVpVs_    = NULL;
-  crCovVpRho_   = NULL;
-  crCovVsRho_   = NULL;
+  meanVp_     = NULL;
+  meanVs_     = NULL;
+  meanRho_    = NULL;
+  covVp_      = NULL;
+  covVs_      = NULL;
+  covRho_     = NULL;
+  crCovVpVs_  = NULL;
+  crCovVpRho_ = NULL;
+  crCovVsRho_ = NULL;
 
   priorVar0_.resize(3,3);
 }

@@ -123,11 +123,11 @@ void QualityGrid::generateProbField(FFTGrid                                 *& g
 {
 
   const int nz = simbox->getnz();
-  const int nWells = modelSettings->getNumberOfWells();
+  //const int nWells = modelSettings->getNumberOfWells();
 
   std::vector<KrigingData2D> krigingData(nz);
-  //setupKrigingData2D(krigingData, wells, simbox, nWells);
-  setupKrigingData2D(krigingData, blocked_wells, simbox, nWells);
+
+  setupKrigingData2D(krigingData, blocked_wells, simbox);
 
   Vario * vario = modelSettings->getBackgroundVario();
   const CovGrid2D & cov = makeCovGrid2D(simbox, vario);
@@ -172,12 +172,10 @@ void QualityGrid::generateProbField(FFTGrid                                 *& g
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D>               & krigingData,
                                      std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                     const Simbox                             * simbox,
-                                     const int                                  nWells) const
+                                     const Simbox                             * simbox) const
+                                     //const int                                  nWells) const
 {
   int w = 0;
-//  for (int w=0; w<nWells; w++)
-//  {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
@@ -188,9 +186,6 @@ void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D>               & 
     const std::vector<int> & ipos = blocked_log->GetIposVector();
     const std::vector<int> & jpos = blocked_log->GetJposVector();
     const std::vector<int> & kpos = blocked_log->GetKposVector();
-    //const int * ipos = bl->getIpos();
-    //const int * jpos = bl->getJpos();
-    //const int * kpos = bl->getKpos();
 
     for (int m=0; m<nBlocks; m++)
     {

@@ -257,6 +257,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
   timeSimbox_             = new Simbox();
   randomGen_              = NULL;
   timeLine_               = NULL;
+  multiinterval_          = false;
   //numberOfWells_          = modelSettings->getNumberOfWells();
 
   {
@@ -316,6 +317,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       //
       // INVERSION/ESTIMATION
       //
+      if(modelSettings->getIntervalNames().size() > 0)
+        multiinterval_ = true;
+
 
       //checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
 
@@ -333,7 +337,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
 
       bool estimationMode = modelSettings->getEstimationMode();
 
-      //H Dybdekonverting skal kjøres hvis det ikke er multiinterval? Evt. flytte loadVelocity (eller alt) til CommonData først ettersom det er en innlesning.
+      //TimeDepthMapping if intervals isn't used.
       if(commonData->GetMultipleIntervalGrid()->GetNIntervals() == 1) {
         timeDepthMapping_ = commonData->GetTimeDepthMapping();
         velocityFromInversion_ = commonData->GetVelocityFromInversion(); //Needed?

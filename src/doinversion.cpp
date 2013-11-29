@@ -170,11 +170,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   // Wells are adjusted by ModelAVODynamic constructor.
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
-                                        inputFiles,
+                                        //inputFiles,
                                         modelAVOstatic,
                                         modelGeneral,
                                         commonData,
-                                        //seismicParameters,
+                                        seismicParameters,
                                         modelGeneral->getTimeSimbox(),
                                         //modelGeneral->getCorrelationDirection(),
                                         //modelGeneral->getTimeDepthMapping(),

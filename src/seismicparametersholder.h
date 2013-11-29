@@ -23,9 +23,9 @@ public:
   //void getMeanReferenceVector(std::vector<FFTGrid *> mu);
   //void getCovReferenceVector(std::vector<FFTGrid *> sigma);
 
-  FFTGrid                     * GetMeanVp()                          { return meanVp_       ;}
-  FFTGrid                     * GetMeanVs()                          { return meanVs_       ;}
-  FFTGrid                     * GetMeanRho()                         { return meanRho_      ;}
+  FFTGrid                     * GetMeanVp()                        { return meanVp_     ;}
+  FFTGrid                     * GetMeanVs()                        { return meanVs_     ;}
+  FFTGrid                     * GetMeanRho()                       { return meanRho_    ;}
   FFTGrid                     * GetCovVp()                         { return covVp_      ;}
   FFTGrid                     * GetCovVs()                         { return covVs_      ;}
   FFTGrid                     * GetCovRho()                        { return covRho_     ;}
