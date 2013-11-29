@@ -53,18 +53,18 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
         const TraceHeaderFormat * dummy2     = NULL;
         const float               offset     = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
 
-        ModelGeneral::readGridFromFile(trendCubeNames[grid_number],
-                                       log_name,
-                                       offset,
-                                       trend_cube,
-                                       dummy1,
-                                       dummy2,
-                                       FFTGrid::PARAMETER,
-                                       timeSimbox,
-                                       timeCutSimbox,
-                                       modelSettings,
-                                       errorText,
-                                       true);
+        //ModelGeneral::readGridFromFile(trendCubeNames[grid_number],
+        //                               log_name,
+        //                               offset,
+        //                               trend_cube,
+        //                               dummy1,
+        //                               dummy2,
+        //                               FFTGrid::PARAMETER,
+        //                               timeSimbox,
+        //                               timeCutSimbox,
+        //                               modelSettings,
+        //                               errorText,
+        //                               true);
 
         if(errorText != "") {
           errorText += "Reading of file \'"+trendCubeNames[grid_number]+"\' failed\n";

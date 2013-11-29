@@ -443,11 +443,11 @@ ParameterOutput::writeToFile(const Simbox        * simbox,
                              bool                  padding)
 {
   GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
-  GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();
+  GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
   float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
   TraceHeaderFormat *format = modelSettings->getTraceHeaderFormatOutput();
 
-  grid->writeFile(fileName,
+  grid->writeFile(fileName, //H FIX to use new simbox instead of timeCutMapping
                   IO::PathToInversionResults(),
                   simbox,
                   sgriLabel,

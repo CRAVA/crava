@@ -1256,17 +1256,17 @@ ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
       if(offset[i] < 0)
         offset[i] = modelSettings->getSegyOffset(this_timelapse_);
 
-      ModelGeneral::readGridFromFile(fileName,
-                                     dataName,
-                                     offset[i],
-                                     seisCube[i],
-                                     geometry[i],
-                                     modelSettings->getTraceHeaderFormat(this_timelapse_, i),
-                                     FFTGrid::DATA,
-                                     timeSimbox,
-                                     timeCutSimbox,
-                                     modelSettings,
-                                     tmpErrText);
+      //ModelGeneral::readGridFromFile(fileName,
+      //                               dataName,
+      //                               offset[i],
+      //                               seisCube[i],
+      //                               geometry[i],
+      //                               modelSettings->getTraceHeaderFormat(this_timelapse_, i),
+      //                               FFTGrid::DATA,
+      //                               timeSimbox,
+      //                               timeCutSimbox,
+      //                               modelSettings,
+      //                               tmpErrText);
       if(tmpErrText != "")
       {
         tmpErrText += "\nReading of file \'"+fileName+"\' for "+dataName+" failed.\n";

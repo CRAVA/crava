@@ -130,17 +130,17 @@ ModelTravelTimeDynamic::processRMSData(FFTGrid                 *& rms_data,
   std::string         data_name = "RMS data";
   std::string         tmpErrText = "";
 
-  ModelGeneral::readGridFromFile(file_name,
-                                 data_name,
-                                 offset,
-                                 rms_data,
-                                 geometry,
-                                 modelSettings->getTravelTimeTraceHeaderFormat(thisTimeLapse_),
-                                 FFTGrid::DATA,
-                                 timeSimbox,
-                                 timeCutSimbox,
-                                 modelSettings,
-                                 tmpErrText);
+  //ModelGeneral::readGridFromFile(file_name,
+  //                               data_name,
+  //                               offset,
+  //                               rms_data,
+  //                               geometry,
+  //                               modelSettings->getTravelTimeTraceHeaderFormat(thisTimeLapse_),
+  //                               FFTGrid::DATA,
+  //                               timeSimbox,
+  //                               timeCutSimbox,
+  //                               modelSettings,
+  //                               tmpErrText);
 
   if(tmpErrText != "") {
     tmpErrText += "\nReading of file \'"+file_name+"\' for "+data_name+" failed.\n";

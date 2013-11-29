@@ -128,18 +128,18 @@ public:
                                   int nzp,
                                   bool fileGrid);
 
-  static void       readGridFromFile(const std::string       & fileName,
-                                     const std::string       & parName,
-                                     const float               offset,
-                                     FFTGrid                *& grid,
-                                     const SegyGeometry     *& geometry,
-                                     const TraceHeaderFormat * format,
-                                     int                       gridType,
-                                     const Simbox            * timeSimbox,
-                                     const Simbox            * timeCutSimbox,
-                                     const ModelSettings     * modelSettings,
-                                     std::string             & errorText,
-                                     bool                      nopadding = false);
+  //static void       readGridFromFile(const std::string       & fileName,
+  //                                   const std::string       & parName,
+  //                                   const float               offset,
+  //                                   FFTGrid                *& grid,
+  //                                   const SegyGeometry     *& geometry,
+  //                                   const TraceHeaderFormat * format,
+  //                                   int                       gridType,
+  //                                   const Simbox            * timeSimbox,
+  //                                   const Simbox            * timeCutSimbox,
+  //                                   const ModelSettings     * modelSettings,
+  //                                   std::string             & errorText,
+  //                                   bool                      nopadding = false);
 
   //static void       readSegyFile(const std::string       & fileName,
   //                               FFTGrid                *& target,
