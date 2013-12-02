@@ -53,7 +53,7 @@ FaciesProb::FaciesProb(FFTGrid                                  * alpha,
                        const std::vector<NRLib::Matrix>         & sigmaEOrig,
                        bool                                       useFilter,
                        std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                       int                                        nWells,
+                       //int                                        nWells,
                        const std::vector<Surface *>             & faciesEstimInterval,
                        const double                               dz,
                        bool                                       relative,
@@ -72,7 +72,7 @@ FaciesProb::FaciesProb(FFTGrid                                  * alpha,
                  useFilter,
                  //wells,
                  blocked_wells,
-                 nWells,
+                 //nWells,
                  faciesEstimInterval,
                  dz,
                  relative,
@@ -110,7 +110,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                        SpatialWellFilter                                  * filteredLogs,
                        std::map<std::string, BlockedLogsCommon *>           blocked_wells,
                        CravaTrend                                         & trend_cubes,
-                       int                                                  nWells,
+                       //int                                                  nWells,
                        const double                                         dz,
                        bool                                                 useFilter,
                        bool                                                 relative,
@@ -139,7 +139,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                                             filteredLogs->getSigmae(),
                                             useFilter,
                                             blocked_wells,
-                                            nWells,
+                                            //nWells,
                                             faciesEstimInterval,
                                             dz,
                                             relative,
@@ -929,7 +929,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
                                           bool                                                 useFilter,
                                           //std::vector<WellData *>                              wells,
                                           std::map<std::string, BlockedLogsCommon *>           blocked_wells,
-                                          int                                                  nWells,
+                                          //int                                                  nWells,
                                           const std::vector<Surface *>                       & faciesEstimInterval,
                                           const double                                         dz,
                                           bool                                                 relative,
@@ -947,7 +947,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
 
   int densdim = static_cast<int>(sigmaEOrig.size());
 
-  setNeededLogsSpatial(blocked_wells, nWells, faciesEstimInterval, dz, relative, noVs, useFilter,
+  setNeededLogsSpatial(blocked_wells, faciesEstimInterval, dz, relative, noVs, useFilter,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   int nAng = static_cast<int>(noiseScale.size());
@@ -1175,7 +1175,7 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
                                 const std::vector<NRLib::Matrix>         & sigmaEOrig,
                                 bool                                       useFilter,
                                 std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                int                                        nWells,
+                                //int                                        nWells,
                                 const std::vector<Surface *>             & faciesEstimInterval,
                                 const double                               dz,
                                 bool                                       relative,
@@ -1192,9 +1192,9 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
   std::vector<double> alphaFiltered; //float
   std::vector<double> betaFiltered;
   std::vector<double> rhoFiltered;
-  std::vector<int>   faciesLog;
+  std::vector<int>    faciesLog;
 
-  setNeededLogsSpatial(blocked_wells, nWells, faciesEstimInterval, dz, relative, noVs, useFilter,
+  setNeededLogsSpatial(blocked_wells, faciesEstimInterval, dz, relative, noVs, useFilter,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   int densdim = static_cast<int>(sigmaEOrig.size());
@@ -1513,292 +1513,8 @@ FaciesProb::createExpVol(const Simbox * volume)
   return(expVol);
 }
 
-
-//void FaciesProb::calculateConditionalFaciesProb(std::vector<WellData *>          wells,
-//                                                int                              nWells,
-//                                                const std::vector<Surface *>   & faciesEstimInterval,
-//                                                const std::vector<std::string> & faciesNames,
-//                                                const double                     dz)
-//{
-//  //
-//  // Get the needed blocked logs
-//  //
-//  BlockedLogs ** bw = new BlockedLogs * [nWells];
-//  int totBlocks = 0;
-//  int count = 0;
-//
-//  for (int i = 0 ; i < nWells ; i++)
-//  {
-//    if(wells[i]->getUseForFaciesProbabilities())
-//    {
-//      bw[count] = wells[i]->getBlockedLogsConstThick();
-//      totBlocks += bw[count]->getNumberOfBlocks();
-//      count++;
-//    }
-//  }
-//  int nActiveWells = count;
-//
-//  //
-//  // Put all blocked facies logs in one vector
-//  //
-//  int ** BWfacies        = new int * [nActiveWells];
-//  int ** faciesCountWell = new int * [nActiveWells];
-//  int *  faciesCount     = new int[nFacies_];
-//  for(int f=0; f < nFacies_; f++)
-//    faciesCount[f] = 0;
-//  for (int i = 0 ; i < nActiveWells ; i++)
-//  {
-//    const int   nBlocks    = bw[i]->getNumberOfBlocks();
-//    const int * BWfacies_i = bw[i]->getFacies();
-//    BWfacies[i] = new int[nBlocks];
-//    faciesCountWell[i] = new int[nFacies_];
-//    for(int f=0; f < nFacies_; f++)
-//      faciesCountWell[i][f] = 0;
-//
-//    if (faciesEstimInterval.size() > 0) {
-//      const double * xPos  = bw[i]->getXpos();
-//      const double * yPos  = bw[i]->getYpos();
-//      const double * zPos  = bw[i]->getZpos();
-//
-//      for (int b = 0 ; b < nBlocks ; b++) {
-//        const double zTop  = faciesEstimInterval[0]->GetZ(xPos[b],yPos[b]);
-//        const double zBase = faciesEstimInterval[1]->GetZ(xPos[b],yPos[b]);
-//        if ( (zPos[b]-0.5*dz) < zTop || (zPos[b]+0.5*dz) > zBase)
-//          BWfacies[i][b] = IMISSING;
-//        else
-//          BWfacies[i][b] = BWfacies_i[b];
-//        //LogKit::LogFormatted(LogKit::Low,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
-//      }
-//    }
-//    else {
-//      for (int b = 0 ; b < nBlocks ; b++) {
-//        BWfacies[i][b] = BWfacies_i[b];
-//        //LogKit::LogFormatted(LogKit::Low,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
-//      }
-//    }
-//    for(int b = 0; b < nBlocks; b++) {
-//      for(int f=0; f < nFacies_; f++){
-//        if(BWfacies[i][b] == f){
-//          faciesCountWell[i][f]++;
-//          faciesCount[f]++;
-//        }
-//      }
-//    }
-//  }
-//
-//  //
-//  // Block facies probabilities and put them in one vector
-//  //
-//  float *** BWfaciesProb = new float ** [nFacies_];
-//  for(int f = 0 ; f < nFacies_ ; f++)
-//  {
-//    faciesProb_[f]->setAccessMode(FFTGrid::RANDOMACCESS);
-//    BWfaciesProb[f] = new float * [nActiveWells];
-//    for (int i = 0 ; i < nActiveWells ; i++)
-//    {
-//      const int   nBlocks = bw[i]->getNumberOfBlocks();
-//      const int * ipos    = bw[i]->getIpos();
-//      const int * jpos    = bw[i]->getJpos();
-//      const int * kpos    = bw[i]->getKpos();
-//      BWfaciesProb[f][i] = new float[nBlocks];
-//      for(int b = 0 ; b < nBlocks ; b++)
-//      {
-//        BWfaciesProb[f][i][b] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
-//        //LogKit::LogFormatted(LogKit::Low,"f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
-//      }
-//    }
-//    faciesProb_[f]->endAccess();
-//  }
-//
-//  //
-//  // Sum probabilities for a given facies
-//  //
-//  float *** sumProb = new float ** [nFacies_];
-//  int   *** numProb = new int ** [nFacies_];
-//  for(int f1 = 0 ; f1 < nFacies_ ; f1++)
-//  {
-//    sumProb[f1] = new float * [nFacies_];
-//    numProb[f1] = new int * [nFacies_];
-//    for(int f2 = 0 ; f2 < nFacies_ ; f2++)
-//    {
-//      sumProb[f1][f2] = new float[nActiveWells];
-//      numProb[f1][f2] = new int[nActiveWells];
-//      for (int i = 0 ; i < nActiveWells ; i++)
-//      {
-//        sumProb[f1][f2][i] = 0.0f;
-//        numProb[f1][f2][i] = 0;
-//        for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
-//        {
-//          if (BWfacies[i][b] == f1) {
-//            //LogKit::LogFormatted(LogKit::Low,"f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
-//            sumProb[f1][f2][i] += BWfaciesProb[f2][i][b];
-//            numProb[f1][f2][i] += 1;
-//          }
-//        }
-//      }
-//    }
-//  }
-//  for (int i = 0 ; i < nActiveWells ; i++)
-//    delete [] BWfacies[i];
-//  delete [] BWfacies;
-//
-//  for(int f = 0 ; f < nFacies_ ; f++) {
-//    for (int i = 0 ; i < nActiveWells ; i++)
-//      delete [] BWfaciesProb[f][i];
-//    delete [] BWfaciesProb[f];
-//  }
-//  delete [] BWfaciesProb;
-//
-//
-//  float ** condFaciesProb  = new float * [nFacies_];
-//  for(int f = 0 ; f < nFacies_ ; f++)
-//    condFaciesProb[f] = new float[nFacies_];
-//
-//  float * totProb = new float[nFacies_];
-//
-//  //
-//  // Estimate P( facies2 | facies1 ) for each well
-//  //
-//  bool low_probabilities = false;
-//  for (int i = 0 ; i < nActiveWells ; i++)
-//  {
-//    for(int f1 = 0 ; f1 < nFacies_ ; f1++)
-//    {
-//      totProb[f1] = 0.0f;
-//      for(int f2 = 0 ; f2 < nFacies_ ; f2++)
-//      {
-//        if (numProb[f1][f2][i] > 0)
-//          condFaciesProb[f1][f2] = sumProb[f1][f2][i]/numProb[f1][f2][i];
-//        else
-//          condFaciesProb[f1][f2] = 0.0f;
-//        totProb[f1] += condFaciesProb[f1][f2];
-//      }
-//    }
-//
-//    LogKit::LogFormatted(LogKit::Low,"\nWell: "+bw[i]->getWellname()+"\n");
-//    LogKit::LogFormatted(LogKit::Low,"\nFacies      |");
-//    for(int f=0 ; f < nFacies_ ; f++)
-//      LogKit::LogFormatted(LogKit::Low," %11s",faciesNames[f].c_str());
-//    LogKit::LogFormatted(LogKit::Low,"\n------------+");
-//    for(int f=0 ; f < nFacies_ ; f++)
-//      LogKit::LogFormatted(LogKit::Low,"------------",f);
-//    LogKit::LogFormatted(LogKit::Low,"\n");
-//    for(int f1=0 ; f1 < nFacies_ ; f1++)
-//    {
-//      LogKit::LogFormatted(LogKit::Low,"%-11s |",faciesNames[f1].c_str());
-//      for(int f2=0 ; f2 < nFacies_ ; f2++)
-//      {
-//        LogKit::LogFormatted(LogKit::Low," %11.3f",condFaciesProb[f2][f1]);
-//      }
-//      LogKit::LogFormatted(LogKit::Low,"\n");
-//    }
-//    LogKit::LogFormatted(LogKit::Low,"Total Prob  |");
-//    for(int f=0 ; f < nFacies_ ; f++)
-//    {
-//      LogKit::LogFormatted(LogKit::Low," %11.3f",totProb[f]);
-//    }
-//    LogKit::LogFormatted(LogKit::Low,"\n");
-//
-//    bool low_probabilities_this_well = false;
-//    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities_this_well, faciesCountWell[i]);
-//    low_probabilities = low_probabilities || low_probabilities_this_well;
-//  }
-//
-//  for (int i = 0 ; i < nActiveWells ; i++)
-//    delete [] faciesCountWell[i];
-//  delete [] faciesCountWell;
-//
-//  //if (low_probabilities) {
-//  //   std::string text;
-//  //   text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
-//  //   text += "   facies probabilities for all wells.\n";
-//  //   TaskList::addTask(text);
-//  // }
-//
-//  //
-//  // Estimate P( facies2 | facies1 )
-//  //
-//  LogKit::LogFormatted(LogKit::High,"\nThe table below gives the mean conditional probability of finding one of");
-//  LogKit::LogFormatted(LogKit::High,"\nthe facies specified in the left column when one of the facies specified");
-//  LogKit::LogFormatted(LogKit::High,"\nin the top row are observed in well logs ==> P(A|B)\n");
-//  for(int f1 = 0 ; f1 < nFacies_ ; f1++)
-//  {
-//    totProb[f1] = 0.0f;
-//    for(int f2 = 0 ; f2 < nFacies_ ; f2++)
-//    {
-//      float sumFaciesProb = 0.0f;
-//      int   numFaciesProb =   0;
-//      for (int i = 0 ; i < nActiveWells ; i++)
-//      {
-//        if (numProb[f1][f2][i] > 0)
-//        {
-//          sumFaciesProb += sumProb[f1][f2][i];
-//          numFaciesProb += numProb[f1][f2][i];
-//        }
-//      }
-//      if (numFaciesProb > 0)
-//        condFaciesProb[f1][f2] = sumFaciesProb/numFaciesProb;
-//      else
-//        condFaciesProb[f1][f2] = 0.0f;
-//      totProb[f1] += condFaciesProb[f1][f2];
-//    }
-//  }
-//
-//  for(int f1 = 0 ; f1 < nFacies_ ; f1++) {
-//    for(int f2 = 0 ; f2 < nFacies_ ; f2++) {
-//      delete [] sumProb[f1][f2];
-//      delete [] numProb[f1][f2];
-//    }
-//    delete [] sumProb[f1];
-//    delete [] numProb[f1];
-//  }
-//  delete [] sumProb;
-//  delete [] numProb;
-//
-//  LogKit::LogFormatted(LogKit::Low,"\nFor all wells:\n");
-//  LogKit::LogFormatted(LogKit::Low,"\nFacies      |");
-//  for(int f=0 ; f < nFacies_ ; f++)
-//    LogKit::LogFormatted(LogKit::Low," %11s",faciesNames[f].c_str());
-//  LogKit::LogFormatted(LogKit::Low,"\n------------+");
-//  for(int f=0 ; f < nFacies_ ; f++)
-//    LogKit::LogFormatted(LogKit::Low,"------------",f);
-//  LogKit::LogFormatted(LogKit::Low,"\n");
-//  for(int f1=0 ; f1 < nFacies_ ; f1++)
-//  {
-//    LogKit::LogFormatted(LogKit::Low,"%-11s |",faciesNames[f1].c_str());
-//    for(int f2=0 ; f2 < nFacies_ ; f2++)
-//      LogKit::LogFormatted(LogKit::Low," %11.3f",condFaciesProb[f2][f1]);
-//    LogKit::LogFormatted(LogKit::Low,"\n");
-//  }
-//  LogKit::LogFormatted(LogKit::Low,"Total Prob  |");
-//  for(int f=0 ; f < nFacies_ ; f++)
-//  {
-//    LogKit::LogFormatted(LogKit::Low," %11.3f",totProb[f]);
-//  }
-//  LogKit::LogFormatted(LogKit::Low,"\n");
-//
-//  low_probabilities = false;
-//  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", true, low_probabilities, faciesCount);
-//
-//  if (low_probabilities) {
-//    std::string text;
-//    text  = "For one or several facies, the total probability of finding that facies is less than\n";
-//    text += "   0.95. This indicates a problem with the estimation. Check each well carefully.\n";
-//    TaskList::addTask(text);
-//  }
-//
-//  delete [] totProb;
-//  delete [] faciesCount;
-//
-//  for(int i=0 ; i < nFacies_ ; i++)
-//    delete [] condFaciesProb[i];
-//  delete [] condFaciesProb;
-//  // We cannot delete blocked logs here, only the array of blocked logs.
-//  delete [] bw;
-//}
-
 void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                                int                                        nWells,
+                                                //int                                        nWells,
                                                 const std::vector<Surface *>             & faciesEstimInterval,
                                                 const std::vector<std::string>           & faciesNames,
                                                 const double                               dz)
@@ -1806,7 +1522,8 @@ void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLog
   //
   // Get the needed blocked logs
   //
-  BlockedLogsCommon ** bw = new BlockedLogsCommon * [nWells];
+
+  BlockedLogsCommon ** bw = new BlockedLogsCommon * [blocked_wells.size()];
   int totBlocks = 0;
   int count = 0;
 
@@ -2787,7 +2504,7 @@ void FaciesProb::CalculateVariances(const std::vector<double> & alpha, //float
 //}
 
 void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                      int                                        nWells,
+                                      //int                                        nWells,
                                       const std::vector<Surface *>             & faciesEstimInterval,
                                       const double                               dz,
                                       bool                                       relative,
@@ -2804,13 +2521,9 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    nData += blocked_log->GetNumberOfBlocks();
+    if(blocked_log->GetUseForFaciesProbabilities())
+      nData += blocked_log->GetNumberOfBlocks();
   }
-
-  //for(int w=0;w<nWells;w++) {
-  //  if(wells[w]->getUseForFaciesProbabilities())
-  //    nData += wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
-  //}
 
   alphaFiltered.resize(nData, RMISSING);
   betaFiltered.resize(nData, RMISSING);
@@ -2824,7 +2537,6 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if(wells[w]->getUseForFaciesProbabilities())
     if(blocked_log->GetUseForFaciesProbabilities())
     {
       //BlockedLogs * bw = wells[w]->getBlockedLogsOrigThick();
@@ -3088,207 +2800,8 @@ void FaciesProb::normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes)
     priorFaciesCubes[i]->endAccess();
 }
 
-//std::vector<double> FaciesProb::calculateChiSquareTest(std::vector<WellData *>        wells,
-//                                                       int                            nWells,
-//                                                       const std::vector<Surface *> & faciesEstimInterval)
-//{
-//  int    i, j, k;
-//  int    count;
-//  int    df;
-//  int    thisFacies = IMISSING;
-//  int    nActualFacies;
-//  float  sum;
-//  double chi_i;
-//  double chi;
-//
-//  std::vector<double>      pValue(nWells);
-//  std::vector<float>       prob(nFacies_);
-//  std::vector<std::string> fit(nWells);
-//
-//  for (i=0; i<nWells; i++)
-//  {
-//    BlockedLogs  * bw        = wells[i]->getBlockedLogsOrigThick();
-//    const int      nBlocks   = bw->getNumberOfBlocks();
-//    const int    * BWfacies  = bw->getFacies();
-//    const int    * ipos      = bw->getIpos();
-//    const int    * jpos      = bw->getJpos();
-//    const int    * kpos      = bw->getKpos();
-//    const double   dz        = bw->getDz();
-//    const double * xPos      = bw->getXpos();
-//    const double * yPos      = bw->getYpos();
-//    const double * zPos      = bw->getZpos();
-//
-//    df    = 0;
-//    chi   = 0;
-//    count = 0;
-//
-//    for (j=0; j<nFacies_; j++)
-//      prob[j] = 0;
-//
-//    // Find the first facies in well
-//    for (j=0; j<nBlocks; j++)
-//    {
-//      if(BWfacies[j] != IMISSING)
-//      {
-//        thisFacies = BWfacies[j];
-//        break;
-//      }
-//    }
-//
-//    //
-//    // Block facies probabilities and put them in one vector
-//    //
-//    std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
-//
-//    for (j = 0 ; j < nFacies_ ; j++)
-//    {
-//      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
-//      for(k = 0 ; k < nBlocks ; k++)
-//      {
-//        BWfaciesProb[k][j] = faciesProb_[j]->getRealValue(ipos[k],jpos[k],kpos[k]);
-//      }
-//      faciesProb_[j]->endAccess();
-//    }
-//
-//    nActualFacies = nFacies_;
-//    for (j = 0; j<nFacies_; j++)
-//    {
-//      sum = 0;
-//      for (k = 0; k<nBlocks; k++)
-//        sum += BWfaciesProb[k][j];
-//      if (sum == 0)
-//        nActualFacies -= 1;
-//    }
-//
-//    for (j=0 ; j < nBlocks ; j++)
-//    {
-//      if (faciesEstimInterval.size() > 0)
-//      {
-//        const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
-//        const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
-//
-//        if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
-//        {
-//          if (BWfacies[j] != thisFacies)
-//          {
-//            chi_i = 0;
-//            for (k=0; k<nFacies_; k++)
-//            {
-//              if (prob[k]!=0)
-//              {
-//                if (k==thisFacies)
-//                  chi_i += std::pow(count-prob[k],2)/prob[k];
-//                else
-//                  chi_i += std::pow(0-prob[k],2)/prob[k];
-//              }
-//            }
-//            thisFacies = BWfacies[j];
-//            count = 1;
-//            chi  += chi_i;
-//            df   += 1;
-//            for (k=0; k<nFacies_; k++)
-//              prob[k] = BWfaciesProb[j][k];
-//          }
-//          else
-//          {
-//            count += 1;
-//            for (k=0; k<nFacies_; k++)
-//              prob[k] += BWfaciesProb[j][k];
-//          }
-//        }
-//      }
-//      else
-//      {
-//        if (BWfacies[j]!=IMISSING)
-//        {
-//          if (BWfacies[j] != thisFacies)
-//          {
-//            chi_i = 0;
-//            for (k=0; k<nFacies_; k++)
-//            {
-//              if (prob[k]!=0)
-//              {
-//                if (k==thisFacies)
-//                  chi_i += std::pow(count-prob[k],2)/prob[k];
-//                else
-//                  chi_i += std::pow(0-prob[k],2)/prob[k];
-//              }
-//            }
-//            thisFacies = BWfacies[j];
-//            count = 1;
-//            chi  += chi_i;
-//            df   += 1;
-//            for (k=0; k<nFacies_; k++)
-//              prob[k] = BWfaciesProb[j][k];
-//          }
-//          else
-//          {
-//            count += 1;
-//            for (k=0; k<nFacies_; k++)
-//              prob[k] += BWfaciesProb[j][k];
-//          }
-//        }
-//      }
-//    }
-//    // Include last observations
-//    chi_i = 0;
-//    for (k=0; k<nFacies_; k++)
-//    {
-//      if (prob[k]!=0)
-//      {
-//        if (k==thisFacies)
-//          chi_i += std::pow(count-prob[k],2)/prob[k];
-//        else
-//          chi_i += std::pow(0-prob[k],2)/prob[k];
-//      }
-//    }
-//    chi += chi_i;
-//    chi *= 0.3; //Scale chi to give better fit
-//    df  += 1;
-//
-//    if (nActualFacies == 1)
-//    {
-//      fit[i] = "not calculated";
-//      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The number of actual facies is one, so estimation makes no sence.\n");
-//      TaskList::addTask("Check that all facies have probability larger than zero");
-//    }
-//    else
-//    {
-//      NRLib::ChiSquared chisquared((nActualFacies-1)*df);
-//      pValue[i] = 1-chisquared.Cdf(chi);
-//
-//      if (pValue[i] >= 0.05)
-//        fit[i] = "good";
-//      if (pValue[i] < 0.05 && pValue[i] >= 0.025)
-//        fit[i] = "poor";
-//      if (pValue[i] < 0.025 && pValue[i] >= 0.005)
-//        fit[i] = "bad";
-//      if (pValue[i] < 0.005)
-//        fit[i] = "very bad";
-//    }
-//  }
-//
-//  LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
-//
-//  LogKit::LogFormatted(LogKit::Medium,"\nWell                   Fit");
-//  LogKit::LogFormatted(LogKit::Medium,"\n");
-//  for (i = 0 ; i < 24+13*nFacies_ ; i++)
-//    LogKit::LogFormatted(LogKit::Medium,"-");
-//  LogKit::LogFormatted(LogKit::Medium,"\n");
-//
-//  for (int w = 0 ; w < nWells ; w++)
-//  {
-//    LogKit::LogFormatted(LogKit::Medium,"%-23s",wells[w]->getWellname().c_str());
-//    LogKit::LogFormatted(LogKit::Medium,fit[w]);
-//    LogKit::LogFormatted(LogKit::Medium,"\n");
-//  }
-//  LogKit::LogFormatted(LogKit::Medium,"\n");
-//
-//  return pValue;
-//}
-
 std::vector<double> FaciesProb::calculateChiSquareTest(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                                       int                                        nWells,
+                                                       //int                                        nWells,
                                                        const std::vector<Surface *>             & faciesEstimInterval)
 {
   int    i, j, k;
@@ -3300,9 +2813,9 @@ std::vector<double> FaciesProb::calculateChiSquareTest(std::map<std::string, Blo
   double chi_i;
   double chi;
 
-  std::vector<double>      pValue(nWells);
+  std::vector<double>      pValue(blocked_wells.size());
   std::vector<float>       prob(nFacies_);
-  std::vector<std::string> fit(nWells);
+  std::vector<std::string> fit(blocked_wells.size());
 
   //for (i=0; i<nWells; i++)
   //{
@@ -3509,24 +3022,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(std::map<std::string, Blo
   return pValue;
 }
 
-//void FaciesProb::writeBWFaciesProb(std::vector<WellData *> wells,
-//                                    int         nWells)
-//{
-//  int i, j;
-//  for (i=0; i<nWells; i++)
-//  {
-//    BlockedLogs  * bw = wells[i]->getBlockedLogsOrigThick();
-//    for (j=0; j<nFacies_; j++)
-//    {
-//      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
-//      bw->setLogFromGrid(faciesProb_[j],j,nFacies_,"FACIES_PROB");
-//      faciesProb_[j]->endAccess();
-//    }
-//   }
-//}
-
-void FaciesProb::writeBWFaciesProb(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                   int                                        nWells)
+void FaciesProb::writeBWFaciesProb(std::map<std::string, BlockedLogsCommon *> blocked_wells)
 {
   int j;
 
@@ -3534,9 +3030,6 @@ void FaciesProb::writeBWFaciesProb(std::map<std::string, BlockedLogsCommon *> bl
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-  //for (i=0; i<nWells; i++)
-  //{
-  //  BlockedLogs  * bw = wells[i]->getBlockedLogsOrigThick();
     for (j=0; j<nFacies_; j++)
     {
       faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -3547,8 +3040,8 @@ void FaciesProb::writeBWFaciesProb(std::map<std::string, BlockedLogsCommon *> bl
 }
 
 FFTGrid *
-FaciesProb::createLHCube(FFTGrid     * likelihood,
-                         int           fac,
+FaciesProb::createLHCube(FFTGrid                  * likelihood,
+                         int                        fac,
                          const std::vector<float> & priorFacies,
                          std::vector<FFTGrid *>     priorFaciesCubes)
 {

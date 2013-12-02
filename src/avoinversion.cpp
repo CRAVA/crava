@@ -56,7 +56,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 {
 
 
-  if(modelSettings->getForwardModeling())
+  if(modelAVOstatic->getForwardModeling())
     LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
   LogKit::WriteHeader("Building Stochastic Model");
@@ -89,7 +89,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   outputGridsElastic_= modelSettings_->getOutputGridsElastic();
   writePrediction_   = modelSettings_->getWritePrediction();
   krigingParameter_  = modelSettings_->getKrigingParameter();
-  nWells_            = modelSettings_->getNumberOfWells();
+  //nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
   //wells_             = modelGeneral_->getWells();
   blocked_wells_     = modelGeneral_->getBlockedWells();
@@ -118,7 +118,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   errThetaCov_       = modelAVOdynamic->getErrThetaCov();
   thetaDeg_          = modelAVOdynamic->getThetaDeg();
-  //for(int i=0;i<ntheta_;i++) {
+  //for (int i=0;i<ntheta_;i++) {
   //  errThetaCov_[i]  = new double[ntheta_];
   //  thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
   //}
@@ -137,7 +137,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-  if(!modelSettings_->getForwardModeling()) {
+  if(!modelAVOstatic->getForwardModeling()) {
     priorVar0_      = seismicParameters.getPriorVar0();
     seisData_       = modelAVOdynamic_->getSeisCubes();
     modelAVOdynamic_->releaseGrids();
@@ -149,7 +149,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       FFTGrid * covVp = seismicParameters.GetCovVp();
       covVp->setAccessMode(FFTGrid::RANDOMACCESS);
 
-      //for(int i=0; i<nWells_; i++)
+      //for (int i=0; i<nWells_; i++)
       //  spatwellfilter->setPriorSpatialCorr(alphaCov, wells_[i], i);
       int i = 0;
       for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
@@ -179,7 +179,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //errCorr_ ->createRealGrid();
     //errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
 
-    for(int i=0 ; i< ntheta_ ; i++)
+    for (int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
     //computeVariances(corrT, modelSettings_);
@@ -196,7 +196,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet(seismicParameters);
 
-    for(int i = 0 ; i < ntheta_ ; i++){
+    for (int i = 0 ; i < ntheta_ ; i++){
       seisData_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
@@ -318,19 +318,19 @@ AVOInversion::~AVOInversion()
     delete fprob_;
   delete errCorr_;
 
-  for(int i = 0;i<ntheta_;i++)
+  for (int i = 0;i<ntheta_;i++)
     delete[] errThetaCov_[i];
   delete [] errThetaCov_;
 
   if(sigmamdnew_!=NULL)
   {
-    for(int i=0;i<nx_;i++)
+    for (int i=0;i<nx_;i++)
     {
-      for(int j=0;j<ny_;j++)
+      for (int j=0;j<ny_;j++)
       {
         if((*sigmamdnew_)(i,j)!=NULL)
         {
-          for(int ii=0;ii<3;ii++)
+          for (int ii=0;ii<3;ii++)
             delete [] (*sigmamdnew_)(i,j)[ii];
           delete [] (*sigmamdnew_)(i,j);
         }
@@ -348,19 +348,19 @@ AVOInversion::~AVOInversion()
 //  // Compute variation in raw seismic
 //  //
 //  int rnxp = 2*(nxp_/2+1);
-//  for(int l=0 ; l < ntheta_ ; l++)
+//  for (int l=0 ; l < ntheta_ ; l++)
 //  {
 //    double  totvar = 0;
 //    long int ndata = 0;
 //    dataVariance_[l]=0.0;
 //    seisData_[l]->setAccessMode(FFTGrid::READ);
-//    for(int k=0 ; k<nzp_ ; k++)
+//    for (int k=0 ; k<nzp_ ; k++)
 //    {
 //      double tmpvar1 = 0;
-//      for(int j=0;j<nyp_;j++)
+//      for (int j=0;j<nyp_;j++)
 //      {
 //        double tmpvar2 = 0;
-//        for(int i=0; i <rnxp; i++)
+//        for (int i=0; i <rnxp; i++)
 //        {
 //          float tmp=seisData_[l]->getNextReal();
 //          if(k < nz_ && j < ny_ &&  i < nx_ && tmp != 0.0)
@@ -391,7 +391,7 @@ AVOInversion::~AVOInversion()
 //  //
 //  //  Setup error correlation matrix
 //  //
-//  for(int l=0 ; l < ntheta_ ; l++)
+//  for (int l=0 ; l < ntheta_ ; l++)
 //  {
 //    empSNRatio_[l] = modelAVOdynamic_->getSNRatio(l);
 //    if(modelAVOdynamic_->getUseLocalNoise() == true) {
@@ -413,8 +413,8 @@ AVOInversion::~AVOInversion()
 //  //Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
 //  const std::vector<std::vector<float> > & angularCorr = modelAVOdynamic_->getAngularCorr();
 //
-//  for(int i = 0; i < ntheta_; i++)
-//    for(int j = 0; j < ntheta_; j++)
+//  for (int i = 0; i < ntheta_; i++)
+//    for (int j = 0; j < ntheta_; j++)
 //      {
 //        errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
 //                                                *sqrt(errorVariance_[j])
@@ -439,7 +439,7 @@ AVOInversion::~AVOInversion()
 //  float      * paramVar    = new float[ntheta_] ;
 //  float      * WDCorrMVar  = new float[ntheta_];
 //
-//  for(int i=0 ; i < ntheta_ ; i++)
+//  for (int i=0 ; i < ntheta_ ; i++)
 //  {
 //    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
 //    errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
@@ -451,28 +451,28 @@ AVOInversion::~AVOInversion()
 //  }
 //
 //  // Compute variation in parameters
-//  for(int i=0 ; i < ntheta_ ; i++)
+//  for (int i=0 ; i < ntheta_ ; i++)
 //  {
 //    paramVar[i]=0.0;
-//    for(int l=0; l<3 ; l++)
-//      for(int m=0 ; m<3 ; m++)
+//    for (int l=0; l<3 ; l++)
+//      for (int m=0 ; m<3 ; m++)
 //        paramVar[i] += static_cast<float>(priorVar0_(l,m))*A_[i][l]*A_[i][m];
 //  }
 //
 //  // Compute variation in wavelet
-//  for(int l=0 ; l < ntheta_ ; l++)
+//  for (int l=0 ; l < ntheta_ ; l++)
 //  {
 //    WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
 //  }
 //
 //  // Compute signal and model variance and theoretical signal-to-noise-ratio
-//  for(int l=0 ; l < ntheta_ ; l++)
+//  for (int l=0 ; l < ntheta_ ; l++)
 //  {
 //    modelVariance_[l]  = WDCorrMVar[l]*paramVar[l];
 //    signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
 //  }
 //
-//  for(int l=0 ; l < ntheta_ ; l++)
+//  for (int l=0 ; l < ntheta_ ; l++)
 //  {
 //    if (modelAVOdynamic_->getMatchEnergies(l))
 //    {
@@ -494,7 +494,7 @@ AVOInversion::~AVOInversion()
 //
 //  delete [] paramVar ;
 //  delete [] WDCorrMVar;
-//  for(int i=0;i<ntheta_;i++)
+//  for (int i=0;i<ntheta_;i++)
 //    delete errorSmooth[i];
 //  delete [] errorSmooth;
 //}
@@ -505,11 +505,11 @@ AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
                                                     float     * A ) const
 {
   double eiVar=0.0;
-  for(int l=0; l<3 ; l++)
-      for(int m=0 ; m<3 ; m++)
+  for (int l=0; l<3 ; l++)
+      for (int m=0 ; m<3 ; m++)
         eiVar += A[l]*static_cast<float>(priorVar0_(l,m))*A[m];
 
-  for(int k=0;k<nzp_;k++)
+  for (int k=0;k<nzp_;k++)
     eiCovT[k]=static_cast<fftw_real>(eiVar*corrT[k]);
 }
 
@@ -523,7 +523,7 @@ AVOInversion::computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
   fftw_real first = refCovT[0];
   fftw_real prev  = refCovT[nzp_-1];
 
-  for(int i=0;i<nzp_-1;i++)
+  for (int i=0;i<nzp_-1;i++)
   {
     fftw_real curr = refCovT[i];
     fftw_real next = refCovT[i+1];
@@ -551,7 +551,7 @@ AVOInversion::checkScale(void)
   bool thisThetaIsOk;
   int  isOk=0;
 
-  for(int l=0 ; l < ntheta_ ; l++)
+  for (int l=0 ; l < ntheta_ ; l++)
   {
     thisThetaIsOk=true;
 
@@ -638,7 +638,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
   plan1  = rfftwnd_create_plan(1,&nzp_,FFTW_REAL_TO_COMPLEX,flag);
   plan2  = rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
 
-  for(l=0 ; l< ntheta_ ; l++ )
+  for (l=0 ; l< ntheta_ ; l++ )
   {
     int dim=seisWavelet_[l]->getDim();
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
@@ -648,8 +648,8 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
     }
 
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
-    for(i=0; i < nxp_; i++)
-      for(j=0; j< nyp_; j++)
+    for (i=0; i < nxp_; i++)
+      for (j=0; j< nyp_; j++)
       {
         // gets data
         int iInd=i;
@@ -672,7 +672,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         if(jInd >= ny_ )
           jInd = 2*ny_-jInd-1;
 
-        for(k=0;k<nzp_;k++)
+        for (k=0;k<nzp_;k++)
         {
           rData[k] = seisData_[l]->getRealValue(i,j,k, true)/static_cast<float>(sqrt(static_cast<float>(nzp_)));
 
@@ -698,7 +698,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
         delete localWavelet;
 
-        for(k=0;k < (nzp_/2 +1);k++) // all complex values
+        for (k=0;k < (nzp_/2 +1);k++) // all complex values
         {
           if( (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
           {
@@ -713,7 +713,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
           }
         }
         rfftwnd_one_complex_to_real(plan2 ,cData ,rData);
-        for(k=0;k<nzp_;k++)
+        for (k=0;k<nzp_;k++)
         {
           seisData_[l]->setRealValue(i,j,k,rData[k]/static_cast<float>(sqrt(static_cast<float>(nzp_))),true);
         }
@@ -796,7 +796,7 @@ AVOInversion::computeAdjustmentFactor(fftw_complex                  * adjustment
   modW *= maxfrequency/static_cast<float>(highCut_); // this is the mean squared sum over relevant frequency band.(up to highCut_)
                                                      // Makes the problem less sensitive to the padding size
 
-  for(int k=0;k< (nzp_/2 +1);k++)
+  for (int k=0;k< (nzp_/2 +1);k++)
   {
     fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...see below
     float wLoc2          = (wLoc.re*wLoc.re+wLoc.im*wLoc.im);
@@ -863,17 +863,17 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
 
   Wavelet1D* localWavelet;
 
-  for(l=0 ; l< ntheta_ ; l++ )
+  for (l=0 ; l< ntheta_ ; l++ )
   {
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
     seisData_[l]->invFFTInPlace();
 
-    for(i=0; i < nx_; i++)
-      for(j=0; j< ny_; j++)
+    for (i=0; i < nx_; i++)
+      for (j=0; j< ny_; j++)
       {
         float sf = static_cast<float>(simbox_->getRelThick(i,j))*seisWavelet_[l]->getLocalStretch(i,j);
 
-        for(k=0;k<nzp_;k++)
+        for (k=0;k<nzp_;k++)
         {
           rData[k] = seisData_[l]->getRealValue(i,j,k, true)/static_cast<float>(sqrt(static_cast<float>(nzp_)));
         }
@@ -881,7 +881,7 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
         localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
 
-        for(k=0;k < (nzp_/2 +1);k++) // all complex values
+        for (k=0;k < (nzp_/2 +1);k++) // all complex values
         {
             scaleWVal    =  localWavelet->getCAmp(k,sf);    // NBNB change here
           //scaleWVal    =  localWavelet->getCAmp(k);
@@ -893,7 +893,7 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
         }
         delete localWavelet;
         rfftwnd_one_complex_to_real(plan2 ,cData ,rData);
-        for(k=0;k<nzp_;k++)
+        for (k=0;k<nzp_;k++)
         {
           seisData_[l]->setRealValue(i,j,k,rData[k]/static_cast<float>(sqrt(static_cast<double>(nzp_))),true);
         }
@@ -935,31 +935,31 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   fftw_complex   kD,kD3;
 
   fftw_complex**  K  = new fftw_complex*[ntheta_];
-  for(i = 0; i < ntheta_; i++)
+  for (i = 0; i < ntheta_; i++)
     K[i] = new fftw_complex[3];
 
   fftw_complex**  KS  = new fftw_complex*[ntheta_];
-  for(i = 0; i < ntheta_; i++)
+  for (i = 0; i < ntheta_; i++)
     KS[i] = new fftw_complex[3];
 
   fftw_complex**  KScc  = new fftw_complex*[3]; // cc - complex conjugate (and transposed)
-  for(i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++)
     KScc[i] = new fftw_complex[ntheta_];
 
   fftw_complex**  parVar = new fftw_complex*[3];
-  for(i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++)
     parVar[i] = new fftw_complex[3];
 
   fftw_complex**  margVar = new fftw_complex*[ntheta_];
-  for(i = 0; i < ntheta_; i++)
+  for (i = 0; i < ntheta_; i++)
     margVar[i] = new fftw_complex[ntheta_];
 
   fftw_complex**  errVar = new fftw_complex*[ntheta_];
-  for(i = 0; i < ntheta_; i++)
+  for (i = 0; i < ntheta_; i++)
     errVar[i] = new fftw_complex[ntheta_];
 
   fftw_complex** reduceVar = new fftw_complex*[3];
-  for(i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++)
     reduceVar[i]= new fftw_complex[3];
 
   Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
@@ -1049,7 +1049,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   float realFrequency;
 
   Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
-  for(l = 0; l < ntheta_; l++)
+  for (l = 0; l < ntheta_; l++)
   {
     seisWaveletForNorm[l]=seisWavelet_[l]->createWavelet1DForErrorNorm();
     seisWaveletForNorm[l]->fft1DInPlace();
@@ -1066,7 +1066,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  for(k = 0; k < nzp_; k++)
+  for (k = 0; k < nzp_; k++)
   {
     realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
     kD = diff1Operator->getCAmp(k);                      // defines content of kD
@@ -1093,13 +1093,13 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
       // defines error-term multipliers
       lib_matrFillOnesVecCpx(errMult1,ntheta_);          // defines content of errMult1
-      for(l=0; l < ntheta_; l++)
+      for (l=0; l < ntheta_; l++)
       {
         errMult1[l].re /= seisWavelet_[l]->getNorm();    // defines content of errMult1
       }
 
       lib_matrFillValueVecCpx(kD3,errMult2,ntheta_);     // defines content of errMult2
-      for(l=0; l < ntheta_; l++)
+      for (l=0; l < ntheta_; l++)
       {
         //float errorSmoothMult =  1.0f/errorSmooth3[l]->findNormWithinFrequencyBand(lowCut_,highCut_); // defines scaleFactor;
         float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;
@@ -1109,13 +1109,13 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       fillInverseAbskWRobust(k,errMult3,seisWaveletForNorm);// defines content of errMult3
     }
 
-    for( j = 0; j < nyp_; j++) {
-      for( i = 0; i < cnxp; i++) {
+    for ( j = 0; j < nyp_; j++) {
+      for ( i = 0; i < cnxp; i++) {
         ijkMean[0] = meanVp_->getNextComplex();
         ijkMean[1] = meanVs_ ->getNextComplex();
         ijkMean[2] = meanRho_  ->getNextComplex();
 
-        for(l = 0; l < ntheta_; l++ )
+        for (l = 0; l < ntheta_; l++ )
         {
           ijkData[l] = seisData_[l]->getNextComplex();
           ijkRes[l]  = ijkData[l];
@@ -1173,7 +1173,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
         postCrCovVpRho ->setNextComplex(parVar[0][2]);
         postCrCovVsRho  ->setNextComplex(parVar[1][2]);
 
-        for(l=0;l<ntheta_;l++)
+        for (l=0;l<ntheta_;l++)
           seisData_[l]->setNextComplex(ijkRes[l]);
       }
     }
@@ -1209,7 +1209,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   postVs_ ->invFFTInPlace();
   postRho_->invFFTInPlace();
 
-  for(l=0;l<ntheta_;l++)
+  for (l=0;l<ntheta_;l++)
     seisData_[l]->endAccess();
 
   //Finish use of seisData_, since we need the memory.
@@ -1219,7 +1219,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       multiplyDataByScaleWaveletAndWriteToFile("residuals");
     else
     {
-      for(l=0;l<ntheta_;l++)
+      for (l=0;l<ntheta_;l++)
       {
         std::string angle     = NRLib::ToString(thetaDeg_[l],1);
         std::string sgriLabel = " Residuals for incidence angle "+angle;
@@ -1290,7 +1290,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete    diff3Operator;
 
 
-  for(i = 0; i < ntheta_; i++)
+  for (i = 0; i < ntheta_; i++)
   {
     delete[]  K[i];
     delete[]  KS[i];
@@ -1309,7 +1309,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete[] errorSmooth;
   delete[] seisWaveletForNorm;
 
-  for(i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++)
   {
     delete[] KScc[i];
     delete[] parVar[i] ;
@@ -1344,8 +1344,8 @@ AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
 
   if(invert_frequency) // inverting only relevant frequencies
   {
-    for(int l = 0; l < ntheta; l++ ) {
-      for(int m = 0; m < ntheta; m++ )
+    for (int l = 0; l < ntheta; l++ ) {
+      for (int m = 0; m < ntheta; m++ )
       {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
         errVar[l][m].re  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im));
         errVar[l][m].re += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im));
@@ -1365,7 +1365,7 @@ AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
 void
 AVOInversion::fillkW(int k, fftw_complex* kW, std::vector<Wavelet *> seisWavelet) //Wavelet**
 {
-  for(int l = 0; l < ntheta_; l++)
+  for (int l = 0; l < ntheta_; l++)
   {
     kW[l].re  =  float( seisWavelet[l]->getCAmp(k).re );
     kW[l].im  = -float( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
@@ -1376,7 +1376,7 @@ void
 AVOInversion::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
 {
   int l;
-  for(l = 0; l < ntheta_; l++)
+  for (l = 0; l < ntheta_; l++)
   {
     kWNorm[l].re   =  float( wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
     kWNorm[l].im   = -float( wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm()); // // adjust for complex conjugate in getCAmp(k)
@@ -1390,7 +1390,7 @@ AVOInversion::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** sei
   float modulus,modulusFine,maxMod;
   fftw_complex value;
   fftw_complex valueFine;
-  for(l = 0; l < ntheta_; l++)
+  for (l = 0; l < ntheta_; l++)
   {
     value  = seisWaveletForNorm[l]->getCAmp(k);
     valueFine = seisWaveletForNorm[l]->getCAmp(k,0.999f);// denser sampling of wavelet
@@ -1474,7 +1474,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
     FFTGrid *       seed2;
 
     ijkPostCov = new fftw_complex*[3];
-    for(l=0;l<3;l++)
+    for (l=0;l<3;l++)
       ijkPostCov[l]=new fftw_complex[3];
 
     ijkSeed = new fftw_complex[3];
@@ -1488,7 +1488,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
 
     // long int timestart, timeend;
 
-    for(simNr = 0; simNr < nSim_;  simNr++)
+    for (simNr = 0; simNr < nSim_;  simNr++)
     {
       // time(&timestart);
 
@@ -1508,9 +1508,9 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
 
       int cnxp=nxp_/2+1;
       int cholFlag;
-      for(k = 0; k < nzp_; k++)
-        for(j = 0; j < nyp_; j++)
-          for(i = 0; i < cnxp; i++)
+      for (k = 0; k < nzp_; k++)
+        for (j = 0; j < nyp_; j++)
+          for (i = 0; i < cnxp; i++)
           {
             ijkPostCov[0][0] = postCovVp     ->getNextComplex();
             ijkPostCov[1][1] = postCovVs     ->getNextComplex();
@@ -1537,7 +1537,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
             }
             else
             {
-              for(l=0; l< 3;l++)
+              for (l=0; l< 3;l++)
               {
                 ijkSeed[l].re =0.0;
                 ijkSeed[l].im = 0.0;
@@ -1577,9 +1577,9 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
             float vp, vs, rho;
             float vpnew, vsnew, rhonew;
 
-            for(j=0;j<ny_;j++)
-              for(i=0;i<nx_;i++)
-                for(k=0;k<nz_;k++)
+            for (j=0;j<ny_;j++)
+              for (i=0;i<nx_;i++)
+                for (k=0;k<nz_;k++)
                 {
                   vp  = seed0->getRealValue(i,j,k);
                   vs  = seed1->getRealValue(i,j,k);
@@ -1620,7 +1620,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
     delete seed1;
     delete seed2;
 
-    for(l=0;l<3;l++)
+    for (l=0;l<3;l++)
       delete  [] ijkPostCov[l];
     delete [] ijkPostCov;
     delete [] ijkSeed;
@@ -1647,7 +1647,7 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
   CovGridSeparated covGridCrVsRho(*seismicParameters.GetCrCovVsRho());
 
   //KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
-  KrigingData3D kd(blocked_wells_, nWells_, 1); // 1 = full resolution logs
+  KrigingData3D kd(blocked_wells_, 1); // 1 = full resolution logs
 
   std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
   std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
@@ -1674,10 +1674,10 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
   vp->setAccessMode(FFTGrid::READ);
   vs->setAccessMode(FFTGrid::READ);
   rho->setAccessMode(FFTGrid::READ);
-  for(int k = 0; k < nzp_; k++) {
-    for(int j = 0; j < nyp_; j++)
+  for (int k = 0; k < nzp_; k++) {
+    for (int j = 0; j < nyp_; j++)
     {
-      for(int i = 0; i < rnxp; i++)
+      for (int i = 0; i < rnxp; i++)
       {
         float imp = 0;
         imp += vp->getNextReal()*A_[angle][0];
@@ -1708,21 +1708,21 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
     rho->invFFTInPlace();
   }
 
-  for(int l=0;l<ntheta_;l++) {
+  for (int l=0;l<ntheta_;l++) {
     FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
     imp->setAccessMode(FFTGrid::RANDOMACCESS);
-    for(int i=0;i<nx_; i++) {
-      for(int j=0;j<ny_;j++) {
+    for (int i=0;i<nx_; i++) {
+      for (int j=0;j<ny_;j++) {
         Wavelet1D impVec(0,nz_, nzp_);
         //impVec.setupAsVector();
         int k;
-        for(k=0;k<nz_;k++){
+        for (k=0;k<nz_;k++){
           float value = imp->getRealValue(i, j, k, true);
           impVec.setRAmp(value, k);
         }
         //Tapering:
         float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
-        for(;k<nzp_;k++) {
+        for (;k<nzp_;k++) {
           float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
           impVec.setRAmp(value, k);
         }
@@ -1733,7 +1733,7 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
 
         float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
 
-        for(int k=0;k<(nzp_/2 +1);k++) {
+        for (int k=0;k<(nzp_/2 +1);k++) {
           fftw_complex r = resultVec.getCAmp(k);
           fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
           fftw_complex s;
@@ -1744,7 +1744,7 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
         delete localWavelet;
 
         resultVec.invFFT1DInPlace();
-        for(int k=0;k<nzp_;k++){
+        for (int k=0;k<nzp_;k++){
           float value = resultVec.getRAmp(k);
           imp->setRealValue(i, j, k, value, true);
         }
@@ -1764,9 +1764,9 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
       seis.readCravaFile(fileName, errText);
       if(errText == "") {
         seis.setAccessMode(FFTGrid::RANDOMACCESS);
-        for(int k=0;k<nz_;k++) {
-          for(int j=0;j<ny_;j++) {
-            for(int i=0;i<nx_;i++) {
+        for (int k=0;k<nz_;k++) {
+          for (int j=0;j<ny_;j++) {
+            for (int i=0;i<nx_;i++) {
               float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
               imp->setRealValue(i, j, k, residual);
             }
@@ -1798,8 +1798,8 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
 //  float var = 0.0;
 //  int i,j,corrInd;
 //
-//  for(i=0;i<nzp_;i++)
-//    for(j=0;j<nzp_;j++)
+//  for (i=0;i<nzp_;i++)
+//    for (j=0;j<nzp_;j++)
 //    {
 //      corrInd = std::max(i-j,j-i);
 //      var += WD->getRAmp(i)*corrT[corrInd]*WD->getRAmp(j);
@@ -1813,7 +1813,7 @@ AVOInversion::fillkW_flens(int                     k,
                            NRLib::ComplexVector  & kW,
                            Wavelet              ** seisWavelet)
 {
-  for(int l = 0; l < ntheta_; l++) {
+  for (int l = 0; l < ntheta_; l++) {
     double kWR =  static_cast<double>( seisWavelet[l]->getCAmp(k).re );
     double kWI = -static_cast<double>( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
     kW(l) = std::complex<double>(kWR, kWI);
@@ -1838,7 +1838,7 @@ AVOInversion::fillInverseAbskWRobust_flens(int                     k,
                                            NRLib::ComplexVector  & invkW,
                                            Wavelet1D            ** seisWaveletForNorm)
 {
-  for(int l = 0; l < ntheta_; l++) {
+  for (int l = 0; l < ntheta_; l++) {
     fftw_complex value       = seisWaveletForNorm[l]->getCAmp(k);
     fftw_complex valueFine   = seisWaveletForNorm[l]->getCAmp(k, 0.999f);// denser sampling of wavelet
 
@@ -1897,21 +1897,21 @@ AVOInversion::printEnergyToScreen()
 {
   int i;
   LogKit::LogFormatted(LogKit::Low,"\n                       ");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"  Seismic %4.1f ",thetaDeg_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"  Seismic %4.1f ",thetaDeg_[i]);
   LogKit::LogFormatted(LogKit::Low,"\n----------------------");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"---------------");
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"---------------");
   LogKit::LogFormatted(LogKit::Low,"\nObserved data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",dataVariance_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",dataVariance_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nModelled data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",signalVariance_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",signalVariance_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nError variance         :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",errorVariance_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",errorVariance_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nWavelet scale          :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %2.3e  ",seisWavelet_[i]->getScale());
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %2.3e  ",seisWavelet_[i]->getScale());
   LogKit::LogFormatted(LogKit::Low,"\nEmpirical S/N          :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",empSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",empSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nModelled S/N           :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",theoSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",theoSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
@@ -1938,7 +1938,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
       LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
       const std::vector<float> priorFacies = modelGeneral_->getPriorFacies();
-      for(int i=0 ; i<nfac; i++) {
+      for (int i=0 ; i<nfac; i++) {
         LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names[i].c_str(),priorFacies[i]);
       }
     }
@@ -1957,7 +1957,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       LogKit::LogFormatted(LogKit::Low,"\n");
       LogKit::LogFormatted(LogKit::Low,"Well                    Use    SyntheticVs    Deviated\n");
       LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------\n");
-      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
 
@@ -2020,7 +2020,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               filteredlogs,
                               blocked_wells_,
                               modelGeneral_->getTrendCubes(),
-                              nWells_,
+                              //nWells_,
                               simbox_->getdz(),
                               useFilter,
                               true,
@@ -2061,7 +2061,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               filteredlogs,
                               blocked_wells_,
                               modelGeneral_->getTrendCubes(),
-                              nWells_,
+                              //nWells_,
                               simbox_->getdz(),
                               useFilter,
                               false,
@@ -2073,7 +2073,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     }
     if(!modelSettings->getFaciesProbFromRockPhysics()){
       fprob_->calculateConditionalFaciesProb(blocked_wells_, //wells_
-                                             nWells_,
+                                             //nWells_,
                                              modelAVOstatic_->getFaciesEstimInterval(),
                                              facies_names,
                                              simbox_->getdz());
@@ -2082,7 +2082,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF){
-      for(int i=0;i<nfac;i++)
+      for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName +"With_Undef_"+ facies_names[i];
@@ -2097,7 +2097,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                                         modelGeneral_->getPriorFaciesCubes());
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
-      for(int i=0;i<nfac;i++)
+      for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName + facies_names[i];
@@ -2105,15 +2105,15 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       }
     }
     if(modelSettings->getFaciesProbFromRockPhysics() == false) {
-      fprob_->writeBWFaciesProb(blocked_wells_, nWells_);
-      std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
+      fprob_->writeBWFaciesProb(blocked_wells_);
+      std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, modelAVOstatic_->getFaciesEstimInterval());
 
       if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
         QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, modelGeneral_);
     }
 
     if(likelihood != NULL) {
-      for(int i=0;i<nfac;i++) {
+      for (int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelGeneral_->getPriorFacies(), modelGeneral_->getPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + facies_names[i];
@@ -2387,15 +2387,15 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   NRLib::Matrix sigmamd(3,3);
 
   double **sigmamdx = new double*[3];
-  for(i=0;i<3;i++)
+  for (i=0;i<3;i++)
     sigmamdx[i] = new double[3];
 
   double **sigmamdold = new double*[3];
-  for(i=0;i<3;i++)
+  for (i=0;i<3;i++)
     sigmamdold[i] = new double[3];
 
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
+  for (i=0;i<3;i++)
+    for (j=0;j<3;j++)
       sigmamdold[i][j] = postVar0_(i,j);
 
   double  * eigval       = new double[3];
@@ -2404,7 +2404,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   double ** eigvectrans  = new double*[3];
   int     * error        = new int[1];
   double ** help         = new double*[3];
-  for(i=0;i<3;i++)
+  for (i=0;i<3;i++)
   {
     eigvec[i]      = new double[3];
     eigvalmat[i]   = new double[3];
@@ -2413,8 +2413,8 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   }
 
   lib_matr_eigen(sigmamdold,3,eigvec,eigval,error);
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
+  for (i=0;i<3;i++)
+    for (j=0;j<3;j++)
       if(i==j && eigval[i]>0.0)
         eigvalmat[i][j]=1.0/sqrt(eigval[i]);
       else
@@ -2437,7 +2437,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
   std::vector<double> minScale(modelAVOdynamic_->getNumberOfAngles());
 
-  for(int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
+  for (int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
   postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2447,9 +2447,9 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   meanVs2_->setAccessMode(FFTGrid::RANDOMACCESS);
   meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
 
-  for(i=0;i<nx_;i++)
+  for (i=0;i<nx_;i++)
   {
-    for(j=0;j<ny_;j++)
+    for (j=0;j<ny_;j++)
     {
       NRLib::Vector scales(modelAVOdynamic_->getNumberOfAngles());
       for (int angle=0 ; angle<modelAVOdynamic_->getNumberOfAngles() ; angle++)
@@ -2467,10 +2467,10 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
       if(sigmamdnew_!=NULL)
       {
         (*sigmamdnew_)(i,j) = new double*[3];
-        for(int ii=0;ii<3;ii++)
+        for (int ii=0;ii<3;ii++)
         {
           (*sigmamdnew_)(i,j)[ii] = new double[3];
-          for(int jj=0;jj<3;jj++)
+          for (int jj=0;jj<3;jj++)
             (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
         }
       }
@@ -2482,7 +2482,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
       meanVs2_->getRealTrace(meanvs, i, j);
       meanRho2_->getRealTrace(meanrho, i, j);
 
-      for(k=0;k<nz_;k++)
+      for (k=0;k<nz_;k++)
       {
         float vpdiff = vp[k] - meanvp[k];
         float vsdiff  = vs[k]  - meanvs[k];
@@ -2518,7 +2518,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   delete [] meanvs;
   delete [] meanrho;
 
-  for(i=0;i<3;i++)
+  for (i=0;i<3;i++)
   {
     delete [] eigvectrans[i];
     delete [] eigvalmat[i];
@@ -2534,7 +2534,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   delete [] error;
   delete [] help;
 
-  for(i=0;i<3;i++)
+  for (i=0;i<3;i++)
     delete sigmamdx[i];
   delete [] sigmamdx;
 
@@ -2563,7 +2563,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
 void AVOInversion::writeBWPredicted(void)
 {
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 

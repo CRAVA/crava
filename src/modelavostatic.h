@@ -42,13 +42,15 @@ public:
 
   ~ModelAVOStatic();
 
-  const std::vector<Surface*> & getFaciesEstimInterval()   const { return facies_estim_interval_    ;}
+  const std::vector<Surface*>      & getFaciesEstimInterval()       const { return facies_estim_interval_  ;}
 
   /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return wavelet_estim_interval_ ;}
   /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return facies_estim_interval_  ;}
   /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return well_move_interval_     ;}
 
-  FFTGrid                          * getErrCorr()                         { return err_corr_              ;}
+  FFTGrid                          * getErrCorr()                         { return err_corr_               ;}
+
+  bool                               getForwardModeling()                 { return forward_modeling_       ;}
 
   //bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}

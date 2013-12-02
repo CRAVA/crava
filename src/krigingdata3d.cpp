@@ -90,7 +90,6 @@ KrigingData3D::KrigingData3D(int ntot)
 //}
 
 KrigingData3D::KrigingData3D(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                             int                                        nWells,
                              int                                        type)
   : data_(NULL),
     nd_(0)

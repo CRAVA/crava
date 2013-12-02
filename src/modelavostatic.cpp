@@ -171,21 +171,21 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 ModelAVOStatic::~ModelAVOStatic(void)
 {
 
-  if(wavelet_estim_interval_.size() == 2) {
+  if (wavelet_estim_interval_.size() == 2) {
     if (wavelet_estim_interval_[0] != NULL)
       delete wavelet_estim_interval_[0];
     if (wavelet_estim_interval_[1] != NULL)
       delete wavelet_estim_interval_[1];
   }
 
-  if(facies_estim_interval_.size() == 2) {
+  if (facies_estim_interval_.size() == 2) {
     if (facies_estim_interval_[0] != NULL)
       delete facies_estim_interval_[0];
     if (facies_estim_interval_[1] != NULL)
       delete facies_estim_interval_[1];
   }
 
-  if(well_move_interval_.size() == 2) {
+  if (well_move_interval_.size() == 2) {
     if (well_move_interval_[0] != NULL)
       delete well_move_interval_[0];
     if (well_move_interval_[1] != NULL)
@@ -266,7 +266,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
 
   int n_grids;
   long long int grid_mem;
-  if(model_settings->getForwardModeling() == true) {
+  if (model_settings->getForwardModeling() == true) {
     if (model_settings->getFileGrid())  // Use disk buffering
       n_grids = n_grid_file_mode;
     else
@@ -277,12 +277,12 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
   else {
     if (model_settings->getFileGrid()) { // Use disk buffering
       n_grids = n_grid_file_mode;
-      if(model_settings->getKrigingParameter() > 0) {
+      if (model_settings->getKrigingParameter() > 0) {
         n_grids += n_grid_kriging;
       }
-      if(model_settings->getNumberOfSimulations() > 0)
+      if (model_settings->getNumberOfSimulations() > 0)
         n_grids = n_grid_parameters;
-      if(model_settings->getUseLocalNoise(0)) {
+      if (model_settings->getUseLocalNoise(0)) {
         n_grids = 2*n_grid_parameters;
       }
 
@@ -291,10 +291,10 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
     else {
       //baseP and baseU are the padded and unpadde grids allocated at each peak.
       int base_P = n_grid_parameters + n_grid_covariances;
-      if(model_settings->getUseLocalNoise(0) == true || (model_settings->getEstimateFaciesProb() && model_settings->getFaciesProbRelative()))
+      if (model_settings->getUseLocalNoise(0) == true || (model_settings->getEstimateFaciesProb() && model_settings->getFaciesProbRelative()))
         base_P += n_grid_background;
       int base_U = 0;
-      if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
         base_U += static_cast<int>(facies_prob.size());
 
       //First peak: At inversion
@@ -304,34 +304,34 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
       long long int peak_grid_mem = peak_1P*grid_size_pad + peak_1U*grid_size_base; //First peak must be currently largest.
       int peak_n_grid = peak_1P;                                             //Also in number of padded grids
 
-      if(model_settings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
+      if (model_settings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak_2P = base_P + 3; //Three extra parameter grids for simulated parameters.
-        if(model_settings->getUseLocalNoise(0) == true &&
+        if (model_settings->getUseLocalNoise(0) == true &&
            (model_settings->getEstimateFaciesProb() == false || model_settings->getFaciesProbRelative() == false))
           peak_2P -= n_grid_background; //Background grids are released before simulation in this case.
         int peak_2U = base_U;     //Base level is the same, but may increase.
         bool compute_grid_used = ((model_settings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
-        if(compute_grid_used == true)
+        if (compute_grid_used == true)
           peak_2P += n_grid_compute;
-        else if(model_settings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
+        else if (model_settings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
           peak_2U += n_grid_kriging;
 
-        if(peak_2P > peak_n_grid)
+        if (peak_2P > peak_n_grid)
           peak_n_grid = peak_2P;
 
         long long int peak_2_mem = peak_2P*grid_size_pad + peak_2U*grid_size_base;
-        if(peak_2_mem > peak_grid_mem)
+        if (peak_2_mem > peak_grid_mem)
           peak_grid_mem = peak_2_mem;
       }
 
-      if(model_settings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
+      if (model_settings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
         int peak_3P = base_P;                //No extra padded grids, so this one can not peak here.
         int peak_3U = base_U + n_grid_facies;  //But this one will, and may trigger new memory max.
-        if((model_settings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
+        if ((model_settings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
           peak_3U += 1; //Also needs to store seismic likelihood.
 
         long long int peak_3_mem = peak_3P*grid_size_pad + peak_3U*grid_size_base + 2000000*n_grid_histograms; //These are 2MB when Vs is used.
-        if(peak_3_mem > peak_grid_mem)
+        if (peak_3_mem > peak_grid_mem)
           peak_grid_mem = peak_3_mem;
       }
       n_grids  = peak_n_grid;
@@ -339,7 +339,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
     }
   }
   FFTGrid::setMaxAllowedGrids(n_grids);
-  if(model_settings->getDebugFlag()>0)
+  if (model_settings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
 
   int   work_size   = 2500 + static_cast<int>( 0.65*grid_size_pad); //Size of memory used beyond grids.
@@ -362,7 +362,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
   else
     LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f megaBytes\n",mega_bytes);
 
-  if(mem2>mem1)
+  if (mem2>mem1)
     LogKit::LogFormatted(LogKit::Low,"\n This estimate is too high because seismic data are cut to fit the internal grid\n");
   if (!model_settings->getFileGrid()) {
     //
@@ -614,7 +614,7 @@ void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>            
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    if(blocked_log->GetIsDeviated() == true)
+    if (blocked_log->GetIsDeviated() == true)
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, n_angles, wavelet, nz, nzp, time_simbox);
   }
 }
@@ -626,7 +626,7 @@ ModelAVOStatic::createFFTGrid(int nx,  int ny,  int nz,
                               bool file_grid)
 {
   FFTGrid * fft_grid;
-  if(file_grid)
+  if (file_grid)
     fft_grid = new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
   else
     fft_grid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);

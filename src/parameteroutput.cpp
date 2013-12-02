@@ -11,16 +11,16 @@
 #include "src/io.h"
 
 void
-ParameterOutput::writeParameters(const Simbox  * simbox,
-                                 ModelGeneral  * modelGeneral,
+ParameterOutput::writeParameters(const Simbox        * simbox,
+                                 ModelGeneral        * modelGeneral,
                                  const ModelSettings * modelSettings,
-                                 FFTGrid       * alpha,
-                                 FFTGrid       * beta,
-                                 FFTGrid       * rho,
-                                 int             outputFlag,
-                                 bool            fileGrid,
-                                 int             simNum,
-                                 bool            kriged)
+                                 FFTGrid             * alpha,
+                                 FFTGrid             * beta,
+                                 FFTGrid             * rho,
+                                 int                   outputFlag,
+                                 bool                  fileGrid,
+                                 int                   simNum,
+                                 bool                  kriged)
 {
   std::string prefix;
   std::string suffix;
