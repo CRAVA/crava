@@ -141,11 +141,11 @@ public:
 
   void                          releaseGrids();                        // Cuts connection to SeisCube_
 
-  static float  ** readMatrix(const std::string & fileName,
-                              int                 n1,
-                              int                 n2,
-                              const std::string & readReason,
-                              std::string       & errText);
+  //static float  ** readMatrix(const std::string & fileName,
+  //                            int                 n1,
+  //                            int                 n2,
+  //                            const std::string & readReason,
+  //                            std::string       & errText);
 
   //static void             processBackground(Background                    *& background,
   //                                          const std::vector<WellData *>  & wells,
@@ -213,11 +213,11 @@ private:
  //                                   Wavelet                                *& wavelet,
  //                                   unsigned int                              i);
 
-  void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
-                                                double          vsvp,
-                                                const ModelSettings * modelSettings);
-  int              getWaveletFileFormat(const std::string & fileName,
-                                        std::string & errText);
+  //void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
+  //                                              double          vsvp,
+  //                                              const ModelSettings * modelSettings);
+  //int              getWaveletFileFormat(const std::string & fileName,
+  //                                      std::string & errText);
   //double           vsvpFromWells(const std::vector<WellData *> & wells,
   //                               int                     nWells);
   void             vsvpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
@@ -225,36 +225,36 @@ private:
                                  int                                              i_interval,
                                  double                                         & vsvp,
                                  int                                            & N);
-  void             readAndWriteLocalGridsToFile(const std::string   & fileName,
-                                                const std::string   & type,
-                                                const float           scaleFactor,
-                                                const ModelSettings * modelSettings,
-                                                const unsigned int    i,
-                                                const Simbox        * timeSimbox,
-                                                const Grid2D        * grid);
-  void             resampleSurfaceToGrid2D(const Simbox  * simbox,
-                                           const Surface * surface,
-                                           Grid2D        * outgrid);
-  void             resampleGrid2DToSurface(const Simbox  * simbox,
-                                           const Grid2D  * grid,
-                                           Surface      *& surface);
+  //void             readAndWriteLocalGridsToFile(const std::string   & fileName,
+  //                                              const std::string   & type,
+  //                                              const float           scaleFactor,
+  //                                              const ModelSettings * modelSettings,
+  //                                              const unsigned int    i,
+  //                                              const Simbox        * timeSimbox,
+  //                                              const Grid2D        * grid);
+  //void             resampleSurfaceToGrid2D(const Simbox  * simbox,
+  //                                         const Surface * surface,
+  //                                         Grid2D        * outgrid);
+  //void             resampleGrid2DToSurface(const Simbox  * simbox,
+  //                                         const Grid2D  * grid,
+  //                                         Surface      *& surface);
   bool             findTimeGradientSurface(const std::string     & refTimeFile,
                                            const Simbox          * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
-  void             computeStructureDepthGradient(double                 v0,
-                                                 double                 radius,
-                                                 const Simbox         * timeSimbox,
-                                                 const Surface        * t0Surf,
-                                                 const Surface        * correlationDirection,
-                                                 NRLib::Grid2D<float> & structureDepthGradX,
-                                                 NRLib::Grid2D<float> & structureDepthGradY);
-  void            computeReferenceTimeGradient( const Simbox         * timeSimbox,
-                                                const Surface        * t0Surf,
-                                                NRLib::Grid2D<float> & refTimeGradX,
-                                                NRLib::Grid2D<float> & refTimeGradY);
+  //void             computeStructureDepthGradient(double                 v0,
+  //                                               double                 radius,
+  //                                               const Simbox         * timeSimbox,
+  //                                               const Surface        * t0Surf,
+  //                                               const Surface        * correlationDirection,
+  //                                               NRLib::Grid2D<float> & structureDepthGradX,
+  //                                               NRLib::Grid2D<float> & structureDepthGradY);
+  //void            computeReferenceTimeGradient(const Simbox         * timeSimbox,
+  //                                             const Surface        * t0Surf,
+  //                                             NRLib::Grid2D<float> & refTimeGradX,
+  //                                             NRLib::Grid2D<float> & refTimeGradY);
 
-  void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
+  //void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
   void              computeDataVariance(std::vector<FFTGrid *> & seisData,
                                         float                  * dataVariance,
@@ -300,14 +300,14 @@ private:
   bool                      use_local_noise_;
   int                       this_timelapse_;
 
-  float * theta_deg_;
-  float * data_variance_;
-  float * error_variance_;
-  float * model_variance_;
-  float * signal_variance_;
-  float * theo_sn_ratio_;      // signal noise ratio from model
+  float                   * theta_deg_;
+  float                   * data_variance_;
+  float                   * error_variance_;
+  float                   * model_variance_;
+  float                   * signal_variance_;
+  float                   * theo_sn_ratio_;      // signal noise ratio from model
 
-  double ** err_theta_cov_;
+  double                 ** err_theta_cov_;
 
 };
 

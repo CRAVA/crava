@@ -438,7 +438,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         std::string filename = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(filename);
 
-        if(file_type == IO::SEGY) { //From ModelGeneral::readSegyFile
+        if(file_type == IO::SEGY) { //Copied out reading part from ModelGeneral::readSegyFile, no resampling
 
           SegY * segy = NULL;
 
@@ -447,9 +447,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           if(format == NULL) { //Unknown format
             std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
 
-            if (model_settings->getTraceHeaderFormat() != NULL)
-            {
-
+            if (model_settings->getTraceHeaderFormat() != NULL) {
               traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
             }
             segy = new SegY(filename,
@@ -478,7 +476,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
                                 padding,
                                 only_volume,
                                 relative_padding);
-            segy->CreateRegularGrid();
+            segy->CreateRegularGrid(); //sets geometry
 
             SeismicStorage seismicdata(filename, SeismicStorage::SEGY, angles[i], segy);
             seismic_data_angle.push_back(seismicdata);
@@ -491,13 +489,11 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         else if(file_type == IO::STORM || file_type == IO::SGRI) { //From ModelGeneral::readStormFile
           StormContGrid * stormgrid = NULL;
 
-          try
-          {
+          try {
             stormgrid = new StormContGrid(0,0,0);
             stormgrid->ReadFromFile(filename);
           }
-          catch (NRLib::Exception & e)
-          {
+          catch (NRLib::Exception & e) {
             err_text += "Error when reading storm-file " + filename +": " + NRLib::ToString(e.what()) + "\n";
           }
           bool cover_ok = false;
@@ -508,7 +504,6 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
           if(cover_ok == false)
             err_text += "Data from storm file " + filename + " is not read.\n";
-
 
           if(err_text == "") {
             SeismicStorage seismicdata_tmp;
@@ -2176,7 +2171,7 @@ CommonData::ComputeStructureDepthGradient(double v0,
        gx=0.0;
        gy=0.0;
        estimation_simbox_.getXYCoord(i,j,x,y);
-       CalculateSmoothGrad( t0_surf, x, y, radius, ds,gxTmp, gyTmp);
+       CalculateSmoothGrad(t0_surf, x, y, radius, ds,gxTmp, gyTmp);
        gx=-gxTmp;
        gy=-gyTmp;
        if( correlation_direction !=NULL){
@@ -7468,7 +7463,7 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
       failed = true;
     }
 
-    if(failed = false)
+    if(failed == false)
       rms_data_.push_back(rms_data);
 
     LogKit::LogFormatted(LogKit::Low,"\n");

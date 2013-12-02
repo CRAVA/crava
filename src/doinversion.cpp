@@ -56,7 +56,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                      i_interval);
 
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
-                                       modelGeneral,
+                                       //modelGeneral,
                                        inputFiles,
                                        commonData,
                                        modelGeneral->getTimeSimbox(),
@@ -160,7 +160,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelAVOStatic          * modelAVOstatic,
                              CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
-                             InputFiles              * inputFiles,
+                             //InputFiles              * inputFiles,
                              int                       vintage,
                              int                       i_interval)
 {

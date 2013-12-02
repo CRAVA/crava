@@ -273,7 +273,7 @@ int main(int argc, char** argv)
         switch(eventType) {
 
         case TimeLine::AVO :
-          failedFirst = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, common_data, seismicParametersInterval, inputFiles, eventIndex, i_interval);
+          failedFirst = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, common_data, seismicParametersInterval, eventIndex, i_interval);
           break;
         case TimeLine::TRAVEL_TIME :
           failedFirst = doTimeLapseTravelTimeInversion(modelSettings, modelGeneral, inputFiles, eventIndex, seismicParametersInterval);
@@ -307,7 +307,7 @@ int main(int argc, char** argv)
                                              modelAVOstatic,
                                              common_data,
                                              seismicParametersInterval,
-                                             inputFiles,
+                                             //inputFiles,
                                              eventIndex,
                                              i_interval);
             break;

@@ -451,16 +451,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     seis_cubes_[i] = ModelAVOStatic::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
 
-    //if(modelSettings->getFileGrid())
-    //  seisCubes_[i] =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
-    //else
-    //  seisCubes_[i] = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
-
     seis_cubes_[i]->setType(FFTGrid::PARAMETER);
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
 
-    SegY * segy;
+    SegY          * segy;
     StormContGrid * storm;
 
     bool is_segy = false;
@@ -514,7 +509,60 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
                          +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
     }
+
   }
+
+  //Logging from processSeismic
+  LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+  LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+
+  for (int i = 0; i < number_of_angles_; i++) {
+    if (seis_cubes_[i] != NULL) {
+      double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
+      if (geo_angle < 0)
+        geo_angle += 360.0;
+
+      int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+
+      if(seismic_type == 0) {
+
+        SegY * segy = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
+
+        LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                             segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
+                             segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
+                             segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
+
+        if(segy != NULL)
+          delete segy;
+      }
+      else {
+
+        StormContGrid * storm = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
+
+        LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                             storm->GetXMin(), storm->GetYMin(),
+                             storm->GetLX(),   storm->GetLY(), geo_angle,
+                             storm->GetDX(),   storm->GetDY());
+
+        if(storm != NULL)
+          delete storm;
+      }
+
+    }
+  }
+
+  //H Missing from processSeismic:
+  //seisCube[i]->writeFile
+  //seisCube[i]->writeCravaFile
+
+  //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
+  if(model_general->getMultiInterval() == false) {
+    model_avo_static->addSeismicLogs(model_general->getBlockedWells(),
+                                     seis_cubes_,
+                                     number_of_angles_);
+  }
+
 
   //Get Vp/Vs
   double vpvs = 0.0;
@@ -1166,59 +1214,59 @@ ModelAVODynamic::releaseGrids(void)
   //seisCube_ = NULL;
 }
 
-float **
-ModelAVODynamic::readMatrix(const std::string & fileName, int n1, int n2,
-                            const std::string & readReason,
-                            std::string       & errText)
-{
-  float * tmpRes = new float[n1*n2+1];
-  std::ifstream inFile;
-  NRLib::OpenRead(inFile,fileName);
-  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
-  LogKit::LogFormatted(LogKit::Low,text);
-  std::string storage;
-  int index = 0;
-  int error = 0;
-
-  while(error == 0 && inFile >> storage) {
-    if(index < n1*n2) {
-      try {
-        tmpRes[index] = NRLib::ParseType<float>(storage);
-      }
-      catch (NRLib::Exception & e) {
-        errText += "Error in "+fileName+"\n";
-        errText += e.what();
-        error = 1;
-      }
-    }
-    index++;
-  }
-  if(error == 0) {
-    if(index != n1*n2) {
-      error = 1;
-      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
-    }
-  }
-
-  float ** result = NULL;
-  if(error == 0) {
-    LogKit::LogFormatted(LogKit::Low,"ok.\n");
-    result = new float * [n1];
-    int i, j;
-    index = 0;
-    for(i=0;i<n1;i++) {
-      result[i] = new float[n2];
-      for(j=0;j<n2;j++) {
-        result[i][j] = tmpRes[index];
-        index++;
-      }
-    }
-  }
-  else
-    LogKit::LogFormatted(LogKit::Low,"failed.\n");
-  delete [] tmpRes;
-  return(result);
-}
+//float **
+//ModelAVODynamic::readMatrix(const std::string & fileName, int n1, int n2,
+//                            const std::string & readReason,
+//                            std::string       & errText)
+//{
+//  float * tmpRes = new float[n1*n2+1];
+//  std::ifstream inFile;
+//  NRLib::OpenRead(inFile,fileName);
+//  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+//  LogKit::LogFormatted(LogKit::Low,text);
+//  std::string storage;
+//  int index = 0;
+//  int error = 0;
+//
+//  while(error == 0 && inFile >> storage) {
+//    if(index < n1*n2) {
+//      try {
+//        tmpRes[index] = NRLib::ParseType<float>(storage);
+//      }
+//      catch (NRLib::Exception & e) {
+//        errText += "Error in "+fileName+"\n";
+//        errText += e.what();
+//        error = 1;
+//      }
+//    }
+//    index++;
+//  }
+//  if(error == 0) {
+//    if(index != n1*n2) {
+//      error = 1;
+//      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
+//    }
+//  }
+//
+//  float ** result = NULL;
+//  if(error == 0) {
+//    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+//    result = new float * [n1];
+//    int i, j;
+//    index = 0;
+//    for(i=0;i<n1;i++) {
+//      result[i] = new float[n2];
+//      for(j=0;j<n2;j++) {
+//        result[i][j] = tmpRes[index];
+//        index++;
+//      }
+//    }
+//  }
+//  else
+//    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+//  delete [] tmpRes;
+//  return(result);
+//}
 
 void
 ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
@@ -1608,60 +1656,60 @@ ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
 //  }
 //}
 
-void
-ModelAVODynamic::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
-                                              double                vsvp,
-                                              const ModelSettings * modelSettings)
-{
-  int      i;
-  float ** A      = new float * [number_of_angles_];
-
-  // For debugging
-  //background->setClassicVsVp();
-
-  double           vsvp2       = vsvp*vsvp;
-  std::vector<int> seismicType = modelSettings->getSeismicType(this_timelapse_);
-
-  for(i = 0; i < number_of_angles_; i++)
-  {
-    double angle = static_cast<double>(angle_[i]);
-    A[i] = new float[3];
-    double sint  = sin(angle);
-    double sint2 = sint*sint;
-    if(seismicType[i] == ModelSettings::STANDARDSEIS) {  //PP
-      double tan2t=tan(angle)*tan(angle);
-
-      A[i][0] = float( (1.0 +tan2t )/2.0 ) ;
-      A[i][1] = float( -4*vsvp2 * sint2 );
-      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
-    }
-    else if(seismicType[i] == ModelSettings::PSSEIS) {
-      double cost  = cos(angle);
-      double cosp  = sqrt(1-vsvp2*sint2);
-      double fac   = 0.5*sint/cosp;
-
-      A[i][0] = 0;
-      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
-      A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
-    }
-  }
-  reflectionMatrix = A;
-  double vpvs = 1.0f/vsvp;
-  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
-  std::string text;
-  if (vpvs < modelSettings->getVpVsRatioMin()) {
-    LogKit::LogFormatted(LogKit::Warning,"\nA very small Vp/Vs-ratio has been detected. Values below %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMin());
-    text  = "Check the Vp/Vs-ratio. A small value has been found. If the value is acceptable,\n";
-    text += "   you can remove this task using the <minimim-vp-vs-ratio> keyword.\n";
-    TaskList::addTask(text);
-  }
-  else if (vpvs > modelSettings->getVpVsRatioMax()) {
-    LogKit::LogFormatted(LogKit::Warning,"\nA very large Vp/Vs-ratio has been detected. Values above %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMax());
-    text  = "Check the Vp/Vs-ratio. A large value has been found. If the value is acceptable,\n";
-    text += "   you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
-    TaskList::addTask(text);
-  }
-}
+//void
+//ModelAVODynamic::setupDefaultReflectionMatrix(float             **& reflectionMatrix,
+//                                              double                vsvp,
+//                                              const ModelSettings * modelSettings)
+//{
+//  int      i;
+//  float ** A      = new float * [number_of_angles_];
+//
+//  // For debugging
+//  //background->setClassicVsVp();
+//
+//  double           vsvp2       = vsvp*vsvp;
+//  std::vector<int> seismicType = modelSettings->getSeismicType(this_timelapse_);
+//
+//  for(i = 0; i < number_of_angles_; i++)
+//  {
+//    double angle = static_cast<double>(angle_[i]);
+//    A[i] = new float[3];
+//    double sint  = sin(angle);
+//    double sint2 = sint*sint;
+//    if(seismicType[i] == ModelSettings::STANDARDSEIS) {  //PP
+//      double tan2t=tan(angle)*tan(angle);
+//
+//      A[i][0] = float( (1.0 +tan2t )/2.0 ) ;
+//      A[i][1] = float( -4*vsvp2 * sint2 );
+//      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
+//    }
+//    else if(seismicType[i] == ModelSettings::PSSEIS) {
+//      double cost  = cos(angle);
+//      double cosp  = sqrt(1-vsvp2*sint2);
+//      double fac   = 0.5*sint/cosp;
+//
+//      A[i][0] = 0;
+//      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
+//      A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
+//    }
+//  }
+//  reflectionMatrix = A;
+//  double vpvs = 1.0f/vsvp;
+//  LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
+//  std::string text;
+//  if (vpvs < modelSettings->getVpVsRatioMin()) {
+//    LogKit::LogFormatted(LogKit::Warning,"\nA very small Vp/Vs-ratio has been detected. Values below %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMin());
+//    text  = "Check the Vp/Vs-ratio. A small value has been found. If the value is acceptable,\n";
+//    text += "   you can remove this task using the <minimim-vp-vs-ratio> keyword.\n";
+//    TaskList::addTask(text);
+//  }
+//  else if (vpvs > modelSettings->getVpVsRatioMax()) {
+//    LogKit::LogFormatted(LogKit::Warning,"\nA very large Vp/Vs-ratio has been detected. Values above %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMax());
+//    text  = "Check the Vp/Vs-ratio. A large value has been found. If the value is acceptable,\n";
+//    text += "   you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
+//    TaskList::addTask(text);
+//  }
+//}
 
 //double ModelAVODynamic::vsvpFromWells(const std::vector<WellData *> & wells,
 //                                      int                             nWells)
@@ -1682,7 +1730,7 @@ ModelAVODynamic::setupDefaultReflectionMatrix(float             **& reflectionMa
 void ModelAVODynamic::vsvpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     CommonData                                     * common_data,
                                     int                                              i_interval,
-                                    double                                         & vsvp,
+                                    double                                         & vs_vp,
                                     int                                            & N) {
 
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
@@ -1692,20 +1740,20 @@ void ModelAVODynamic::vsvpFromWells(const std::map<std::string, BlockedLogsCommo
     const NRLib::Surface<double> & top  = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetTopSurface();
     const NRLib::Surface<double> & base = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetBotSurface();
 
-    double meanVsVp = 0.0; // Average Vs/Vp for this well
-    int    nVsVp    = 0; // Number of samples behind Vs/Vp estimate
+    double mean_vs_vp = 0.0; // Average Vs/Vp for this well
+    int    n_vs_vp    = 0; // Number of samples behind Vs/Vp estimate
 
-    blocked_log->FindMeanVsVp(top, base, meanVsVp, nVsVp);
+    blocked_log->FindMeanVsVp(top, base, mean_vs_vp, n_vs_vp);
 
-    N += nVsVp;
-    vsvp += meanVsVp*nVsVp;
+    N += n_vs_vp;
+    vs_vp += mean_vs_vp*n_vs_vp;
 
     //int n = wells[i]->getNumberOfVsVpSamples(); //nVsVp_
     //N    += n;
     //VsVp += wells[i]->getMeanVsVp()*n; //meanVsVp_
   }
 
-  vsvp /= N;
+  vs_vp /= N;
 
   //return static_cast<double>(VsVp);
 }
@@ -2168,150 +2216,150 @@ void ModelAVODynamic::vsvpFromWells(const std::map<std::string, BlockedLogsCommo
 //  return error;
 //}
 
-int
-ModelAVODynamic::getWaveletFileFormat(const std::string & fileName, std::string & errText)
-{
-  int fileformat = -1;
-  int line       = 0;
-  int pos;
-  std::string dummyStr;
-  std::string targetString;
+//int
+//ModelAVODynamic::getWaveletFileFormat(const std::string & fileName, std::string & errText)
+//{
+//  int fileformat = -1;
+//  int line       = 0;
+//  int pos;
+//  std::string dummyStr;
+//  std::string targetString;
+//
+//  std::ifstream file;
+//  NRLib::OpenRead(file,fileName);
+//
+//  std::getline(file,dummyStr);
+//  line++;
+//  targetString = "pulse file-3";
+//  pos = Utils::findEnd(dummyStr, 0, targetString);
+//  if (pos >= 0)
+//    fileformat = Wavelet::NORSAR;
+//  file.close();
+//  file.clear();
+//
+//  if(fileformat<0) { // not norsar format
+//      // test for jason file format
+//    NRLib::OpenRead(file,fileName);
+//    line         = 0;
+//    int thisLine = 0;
+//    bool lineIsComment = true;
+//    while (lineIsComment == true) {
+//      NRLib::ReadNextToken(file,dummyStr,line);
+//      if (NRLib::CheckEndOfFile(file)) {
+//        errText += "End of wavelet file "+fileName+" is premature\n";
+//        return 0;
+//      }
+//      else {
+//        if (thisLine == line) {
+//          NRLib::DiscardRestOfLine(file,line,false);
+//          thisLine = line;
+//        }
+//        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+//          lineIsComment = false;
+//      }
+//    }
+//    file.close();
+//    if (NRLib::IsNumber(dummyStr)) // not convertable number
+//      fileformat= Wavelet::JASON;
+//  }
+//  return fileformat;
+//}
 
-  std::ifstream file;
-  NRLib::OpenRead(file,fileName);
-
-  std::getline(file,dummyStr);
-  line++;
-  targetString = "pulse file-3";
-  pos = Utils::findEnd(dummyStr, 0, targetString);
-  if (pos >= 0)
-    fileformat = Wavelet::NORSAR;
-  file.close();
-  file.clear();
-
-  if(fileformat<0) { // not norsar format
-      // test for jason file format
-    NRLib::OpenRead(file,fileName);
-    line         = 0;
-    int thisLine = 0;
-    bool lineIsComment = true;
-    while (lineIsComment == true) {
-      NRLib::ReadNextToken(file,dummyStr,line);
-      if (NRLib::CheckEndOfFile(file)) {
-        errText += "End of wavelet file "+fileName+" is premature\n";
-        return 0;
-      }
-      else {
-        if (thisLine == line) {
-          NRLib::DiscardRestOfLine(file,line,false);
-          thisLine = line;
-        }
-        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-          lineIsComment = false;
-      }
-    }
-    file.close();
-    if (NRLib::IsNumber(dummyStr)) // not convertable number
-      fileformat= Wavelet::JASON;
-  }
-  return fileformat;
-}
-
-void
-ModelAVODynamic::readAndWriteLocalGridsToFile(const std::string   & fileName,
-                                              const std::string   & type,
-                                              const float           scaleFactor,
-                                              const ModelSettings * modelSettings,
-                                              const unsigned int    i,
-                                              const Simbox        * timeSimbox,
-                                              const Grid2D        * grid)
-{
-  bool   estimationMode   = modelSettings->getEstimationMode();
-  int    outputFormat     = modelSettings->getOutputGridFormat();
-  double angle            = angle_[i]*180.0/M_PI;
-
-  Surface * help = NULL;
-
-  if(fileName != "") {
-    std::string toPath = NRLib::RemovePath(fileName);
-
-    if (type == IO::PrefixLocalNoise())
-      toPath = NRLib::PrependDir(IO::PathToNoise(), toPath);
-    else
-      toPath = NRLib::PrependDir(IO::PathToWavelets(), toPath);
-
-    NRLib::CreateDirIfNotExists(toPath);
-    NRLib::CopyFile(fileName, toPath, true);
-  }
-  else {
-    if (grid != NULL) {
-      resampleGrid2DToSurface(timeSimbox, grid, help);
-    }
-  }
-  if ((estimationMode ||
-    ((type==IO::PrefixLocalWaveletGain() || type==IO::PrefixLocalWaveletShift()) && (modelSettings->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0) ||
-    (type==IO::PrefixLocalNoise() && (modelSettings->getOtherOutputFlag() & IO::LOCAL_NOISE)>0)) &&
-     help != NULL)
-  {
-    std::string baseName = type + NRLib::ToString(angle, 1);
-    help->Multiply(scaleFactor);
-    if (type==IO::PrefixLocalNoise())
-      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
-    else
-      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
-  }
-  if (help != NULL)
-    delete help;
-}
+//void
+//ModelAVODynamic::readAndWriteLocalGridsToFile(const std::string   & fileName,
+//                                              const std::string   & type,
+//                                              const float           scaleFactor,
+//                                              const ModelSettings * modelSettings,
+//                                              const unsigned int    i,
+//                                              const Simbox        * timeSimbox,
+//                                              const Grid2D        * grid)
+//{
+//  bool   estimationMode   = modelSettings->getEstimationMode();
+//  int    outputFormat     = modelSettings->getOutputGridFormat();
+//  double angle            = angle_[i]*180.0/M_PI;
+//
+//  Surface * help = NULL;
+//
+//  if(fileName != "") {
+//    std::string toPath = NRLib::RemovePath(fileName);
+//
+//    if (type == IO::PrefixLocalNoise())
+//      toPath = NRLib::PrependDir(IO::PathToNoise(), toPath);
+//    else
+//      toPath = NRLib::PrependDir(IO::PathToWavelets(), toPath);
+//
+//    NRLib::CreateDirIfNotExists(toPath);
+//    NRLib::CopyFile(fileName, toPath, true);
+//  }
+//  else {
+//    if (grid != NULL) {
+//      resampleGrid2DToSurface(timeSimbox, grid, help);
+//    }
+//  }
+//  if ((estimationMode ||
+//    ((type==IO::PrefixLocalWaveletGain() || type==IO::PrefixLocalWaveletShift()) && (modelSettings->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0) ||
+//    (type==IO::PrefixLocalNoise() && (modelSettings->getOtherOutputFlag() & IO::LOCAL_NOISE)>0)) &&
+//     help != NULL)
+//  {
+//    std::string baseName = type + NRLib::ToString(angle, 1);
+//    help->Multiply(scaleFactor);
+//    if (type==IO::PrefixLocalNoise())
+//      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
+//    else
+//      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
+//  }
+//  if (help != NULL)
+//    delete help;
+//}
 
 
-void
-ModelAVODynamic::resampleSurfaceToGrid2D(const Simbox  * simbox,
-                                         const Surface * surface,
-                                         Grid2D        * outgrid)
-{
-  for(int i=0;i<simbox->getnx();i++) {
-    for(int j=0;j<simbox->getny();j++) {
-      double x, y, z;
-      simbox->getCoord(i, j, 0, x, y, z);
-      (*outgrid)(i,j) = static_cast<float>(surface->GetZ(x,y));
-    }
-  }
-}
+//void
+//ModelAVODynamic::resampleSurfaceToGrid2D(const Simbox  * simbox,
+//                                         const Surface * surface,
+//                                         Grid2D        * outgrid)
+//{
+//  for(int i=0;i<simbox->getnx();i++) {
+//    for(int j=0;j<simbox->getny();j++) {
+//      double x, y, z;
+//      simbox->getCoord(i, j, 0, x, y, z);
+//      (*outgrid)(i,j) = static_cast<float>(surface->GetZ(x,y));
+//    }
+//  }
+//}
 
-void
-ModelAVODynamic::resampleGrid2DToSurface(const Simbox   * simbox,
-                                         const Grid2D   * grid,
-                                         Surface       *& surface)
-{
-  double xmin,xmax,ymin,ymax;
-  simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
-  int nx,ny;
-  double angle = simbox->getAngle()*180.0/M_PI;
-  if(angle > -45 || angle < 45)
-  {
-    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
-    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
-  }
-  else
-  {
-    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
-    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
-  }
-  surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
-  double x,y;
-  int i1,j1;
-  for(int i=0;i<nx;i++) {
-    for(int j=0;j<ny;j++) {
-      surface->GetXY(i,j,x,y);
-      simbox->getIndexes(x,y,i1,j1);
-      if(i1==IMISSING || j1== IMISSING)
-        surface->SetMissing(i,j);
-      else
-        (*surface)(i,j) = (*grid)(i1,j1);
-    }
-  }
-}
+//void
+//ModelAVODynamic::resampleGrid2DToSurface(const Simbox   * simbox,
+//                                         const Grid2D   * grid,
+//                                         Surface       *& surface)
+//{
+//  double xmin,xmax,ymin,ymax;
+//  simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
+//  int nx,ny;
+//  double angle = simbox->getAngle()*180.0/M_PI;
+//  if(angle > -45 || angle < 45)
+//  {
+//    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
+//    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
+//  }
+//  else
+//  {
+//    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
+//    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
+//  }
+//  surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
+//  double x,y;
+//  int i1,j1;
+//  for(int i=0;i<nx;i++) {
+//    for(int j=0;j<ny;j++) {
+//      surface->GetXY(i,j,x,y);
+//      simbox->getIndexes(x,y,i1,j1);
+//      if(i1==IMISSING || j1== IMISSING)
+//        surface->SetMissing(i,j);
+//      else
+//        (*surface)(i,j) = (*grid)(i1,j1);
+//    }
+//  }
+//}
 
 bool
 ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
@@ -2380,162 +2428,162 @@ ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
   return(inside);
 }
 
-void
-ModelAVODynamic::computeStructureDepthGradient(double                 v0,
-                                               double                 radius,
-                                               const Simbox         * timeSimbox,
-                                               const Surface        * t0Surf,
-                                               const Surface        * correlationDirection_,
-                                               NRLib::Grid2D<float> & structureDepthGradX,
-                                               NRLib::Grid2D<float> & structureDepthGradY)
- {
-   double ds = 12.5;
+//void
+//ModelAVODynamic::computeStructureDepthGradient(double                 v0,
+//                                               double                 radius,
+//                                               const Simbox         * timeSimbox,
+//                                               const Surface        * t0Surf,
+//                                               const Surface        * correlationDirection_,
+//                                               NRLib::Grid2D<float> & structureDepthGradX,
+//                                               NRLib::Grid2D<float> & structureDepthGradY)
+// {
+//   double ds = 12.5;
+//
+//   int nx = timeSimbox->getnx();
+//   int ny = timeSimbox->getny();
+//   structureDepthGradX.Resize(nx,ny);
+//   structureDepthGradY.Resize(nx,ny);
+//   double mp=v0*0.001*0.5; // 0.001 is due to s vs ms convension
+//
+//   for(int i=0;i<nx;i++)
+//     for(int j=0;j<ny;j++)
+//     {
+//       double x,y;
+//       double gx,gy,gxTmp,gyTmp;
+//       gx=0.0;
+//       gy=0.0;
+//       timeSimbox->getXYCoord(i,j,x,y);
+//       calculateSmoothGrad( t0Surf, x, y, radius, ds,gxTmp, gyTmp);
+//       gx=-gxTmp;
+//       gy=-gyTmp;
+//       if( correlationDirection_!=NULL){
+//         calculateSmoothGrad( correlationDirection_, x, y, radius, ds,gxTmp, gyTmp);
+//         gx+=gxTmp;
+//         gy+=gyTmp;
+//       }else{
+//         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+//         gx+=gxTmp*0.5;
+//         gy+=gyTmp*0.5;
+//         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
+//         gx+=gxTmp*0.5;
+//         gy+=gyTmp*0.5;
+//       }
+//
+//       gx*=mp;
+//       gy*=mp;
+//       structureDepthGradX(i,j) =float(gx);
+//       structureDepthGradY(i,j) =float(gy);
+//     }
+// }
 
-   int nx = timeSimbox->getnx();
-   int ny = timeSimbox->getny();
-   structureDepthGradX.Resize(nx,ny);
-   structureDepthGradY.Resize(nx,ny);
-   double mp=v0*0.001*0.5; // 0.001 is due to s vs ms convension
-
-   for(int i=0;i<nx;i++)
-     for(int j=0;j<ny;j++)
-     {
-       double x,y;
-       double gx,gy,gxTmp,gyTmp;
-       gx=0.0;
-       gy=0.0;
-       timeSimbox->getXYCoord(i,j,x,y);
-       calculateSmoothGrad( t0Surf, x, y, radius, ds,gxTmp, gyTmp);
-       gx=-gxTmp;
-       gy=-gyTmp;
-       if( correlationDirection_!=NULL){
-         calculateSmoothGrad( correlationDirection_, x, y, radius, ds,gxTmp, gyTmp);
-         gx+=gxTmp;
-         gy+=gyTmp;
-       }else{
-         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
-         gx+=gxTmp*0.5;
-         gy+=gyTmp*0.5;
-         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
-         gx+=gxTmp*0.5;
-         gy+=gyTmp*0.5;
-       }
-
-       gx*=mp;
-       gy*=mp;
-       structureDepthGradX(i,j) =float(gx);
-       structureDepthGradY(i,j) =float(gy);
-     }
- }
-
-void
-ModelAVODynamic::computeReferenceTimeGradient(const Simbox     *timeSimbox,
-                              const Surface * t0Surf,
-                              NRLib::Grid2D<float> &refTimeGradX,
-                              NRLib::Grid2D<float> &refTimeGradY)
- {
-   double radius = 50.0;
-   double ds = 12.5;
-   int nx = timeSimbox->getnx();
-   int ny = timeSimbox->getny();
-   refTimeGradX.Resize(nx,ny);
-   refTimeGradY.Resize(nx,ny);
-   for(int i=0;i<nx;i++)
-     for(int j=0;j<ny;j++)
-     {
-       double x,y;
-       double gx,gy;
-       timeSimbox->getXYCoord(i,j,x,y);
-       calculateSmoothGrad( t0Surf, x, y, radius, ds,gx, gy);
-       refTimeGradX(i,j) =float(gx);
-       refTimeGradY(i,j) =float(gy);
-     }
- }
-
-
-void
-ModelAVODynamic::calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy)
-{
-  /// Return smoothed Gradient. Computes the gradient as a regression
-  /// among points within a given distance from the central point.
-  //  Returns missing if central point is outside the grid.
-  /// Returns  otherwise it is ok,
-  int i,j,k,l;
-  int discRadius = int(floor(radius/ds));
-  int nPoints    = (2*discRadius+1)*(2*discRadius+1);
-  std::vector<double> Z(3*nPoints,0.0);
-  std::vector<double> Y(nPoints,0.0);
-  std::vector<double> cov(9,0.0);
-  std::vector<double> invCov(9,0.0);
-  std::vector<double> proj(3,0.0);
-  double z0;
-  int cy=0;
-  int cz=0;
-
-  double baseDepth =surf->GetZ(x,y);
+//void
+//ModelAVODynamic::computeReferenceTimeGradient(const Simbox         *timeSimbox,
+//                                              const Surface       * t0Surf,
+//                                              NRLib::Grid2D<float> &refTimeGradX,
+//                                              NRLib::Grid2D<float> &refTimeGradY)
+// {
+//   double radius = 50.0;
+//   double ds = 12.5;
+//   int nx = timeSimbox->getnx();
+//   int ny = timeSimbox->getny();
+//   refTimeGradX.Resize(nx,ny);
+//   refTimeGradY.Resize(nx,ny);
+//   for(int i=0;i<nx;i++)
+//     for(int j=0;j<ny;j++)
+//     {
+//       double x,y;
+//       double gx,gy;
+//       timeSimbox->getXYCoord(i,j,x,y);
+//       calculateSmoothGrad( t0Surf, x, y, radius, ds,gx, gy);
+//       refTimeGradX(i,j) =float(gx);
+//       refTimeGradY(i,j) =float(gy);
+//     }
+// }
 
 
-  for(i=- discRadius;i<=discRadius;i++)
-    for( j=- discRadius;j<=discRadius;j++)
-    {
-      double dx= i*ds;
-      double dy= j*ds;
-      double foo=surf->GetZ(x+dx,y+dy);
-      Y[cy] = foo;
-      Z[cz] = 1.0;
-      Z[cz + 1] = dx;
-      Z[cz + 2] = dy;
-      cy++;
-      cz += 3;
-    }
-
-  int nData=0;
-  for(i=0; i < nPoints; i++)
-  {
-    if(!surf->IsMissing(Y[i]))
-    {
-      nData++;
-      for(k=0;k<3;k++)
-      {
-        for(l=0;l<3;l++)
-          cov[k+l*3]+=Z[k + 3*i] * Z[l + 3*i];
-
-        proj[k]+=Z[k + 3*i]*(Y[i]-baseDepth);
-      }
-    }
-  }
-
-  double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
-                  +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
-
-  if(det != 0)
-  {
-      invCov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
-      invCov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
-      invCov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
-      invCov[3] = (cov[5]*cov[6] - cov[3]*cov[8]) / det;
-      invCov[4] = (cov[0]*cov[8] - cov[2]*cov[6]) / det;
-      invCov[5] = (cov[2]*cov[3] - cov[0]*cov[5]) / det;
-      invCov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
-      invCov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
-      invCov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
-
-      z0 = baseDepth;
-      gx = 0.0;
-      gy = 0.0;
-      for(k=0;k<3;k++)
-      {
-        z0 += invCov[k]*proj[k]; //NBNB check
-        gx += invCov[3+k]*proj[k];
-        gy += invCov[6+k]*proj[k];
-      }
-  }
-  else
-  {
-   gx = RMISSING;
-   gy = RMISSING;
-  }
-}
+//void
+//ModelAVODynamic::calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy)
+//{
+//  /// Return smoothed Gradient. Computes the gradient as a regression
+//  /// among points within a given distance from the central point.
+//  //  Returns missing if central point is outside the grid.
+//  /// Returns  otherwise it is ok,
+//  int i,j,k,l;
+//  int discRadius = int(floor(radius/ds));
+//  int nPoints    = (2*discRadius+1)*(2*discRadius+1);
+//  std::vector<double> Z(3*nPoints,0.0);
+//  std::vector<double> Y(nPoints,0.0);
+//  std::vector<double> cov(9,0.0);
+//  std::vector<double> invCov(9,0.0);
+//  std::vector<double> proj(3,0.0);
+//  double z0;
+//  int cy=0;
+//  int cz=0;
+//
+//  double baseDepth =surf->GetZ(x,y);
+//
+//
+//  for(i=- discRadius;i<=discRadius;i++)
+//    for( j=- discRadius;j<=discRadius;j++)
+//    {
+//      double dx= i*ds;
+//      double dy= j*ds;
+//      double foo=surf->GetZ(x+dx,y+dy);
+//      Y[cy] = foo;
+//      Z[cz] = 1.0;
+//      Z[cz + 1] = dx;
+//      Z[cz + 2] = dy;
+//      cy++;
+//      cz += 3;
+//    }
+//
+//  int nData=0;
+//  for(i=0; i < nPoints; i++)
+//  {
+//    if(!surf->IsMissing(Y[i]))
+//    {
+//      nData++;
+//      for(k=0;k<3;k++)
+//      {
+//        for(l=0;l<3;l++)
+//          cov[k+l*3]+=Z[k + 3*i] * Z[l + 3*i];
+//
+//        proj[k]+=Z[k + 3*i]*(Y[i]-baseDepth);
+//      }
+//    }
+//  }
+//
+//  double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
+//                  +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
+//
+//  if(det != 0)
+//  {
+//      invCov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
+//      invCov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
+//      invCov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
+//      invCov[3] = (cov[5]*cov[6] - cov[3]*cov[8]) / det;
+//      invCov[4] = (cov[0]*cov[8] - cov[2]*cov[6]) / det;
+//      invCov[5] = (cov[2]*cov[3] - cov[0]*cov[5]) / det;
+//      invCov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
+//      invCov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
+//      invCov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
+//
+//      z0 = baseDepth;
+//      gx = 0.0;
+//      gy = 0.0;
+//      for(k=0;k<3;k++)
+//      {
+//        z0 += invCov[k]*proj[k]; //NBNB check
+//        gx += invCov[3+k]*proj[k];
+//        gy += invCov[6+k]*proj[k];
+//      }
+//  }
+//  else
+//  {
+//   gx = RMISSING;
+//   gy = RMISSING;
+//  }
+//}
 
 
 void

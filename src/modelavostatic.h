@@ -33,22 +33,22 @@ public:
   //               Simbox                * timeSimboxConstThick,
   //               std::vector<WellData *> wells);
 
-  ModelAVOStatic(ModelSettings        *& modelSettings,
-                 ModelGeneral         *& modelGeneral,
-                 const InputFiles      * inputFiles,
-                 CommonData            * commonData,
-                 Simbox                * timeSimbox,
+  ModelAVOStatic(ModelSettings        *& model_settings,
+                 //ModelGeneral         *& model_general,
+                 const InputFiles      * input_files,
+                 CommonData            * common_data,
+                 Simbox                * simbox,
                  int                     i_intervals);
 
   ~ModelAVOStatic();
 
-  const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
+  const std::vector<Surface*> & getFaciesEstimInterval()   const { return facies_estim_interval_    ;}
 
-  /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return waveletEstimInterval_ ;}
-  /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return faciesEstimInterval_  ;}
-  /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return wellMoveInterval_     ;}
+  /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return wavelet_estim_interval_ ;}
+  /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return facies_estim_interval_  ;}
+  /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return well_move_interval_     ;}
 
-  FFTGrid                          * getErrCorr()                         { return errCorr_              ;}
+  FFTGrid                          * getErrCorr()                         { return err_corr_              ;}
 
   //bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
@@ -56,7 +56,7 @@ public:
   //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
   //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
   void             writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                     ModelSettings                            * modelSettings,
+                                     ModelSettings                            * model_settings,
                                      std::vector<std::string>                   facies_name,
                                      std::vector<int>                           facies_label) const;
 
@@ -66,9 +66,10 @@ public:
   //                                int                         nAngles);                              // Changes wells
 
   void             addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                  FFTGrid                                 ** seisCube,
-                                  const ModelSettings                      * modelSettings,
-                                  int                                        nAngles);                              // Changes wells
+                                  std::vector<FFTGrid *>                     seis_cube,
+                                  //FFTGrid                                 ** seis_cube,
+                                  //const ModelSettings                      * model_settings,
+                                  int                                        n_angles);                              // Changes wells
 
   //void             generateSyntheticSeismic(Wavelet              ** wavelet,
   //                                          std::vector<WellData *> wells,
@@ -79,14 +80,14 @@ public:
 
   void             generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
                                             std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                            const float *                      const * reflectionMatrix,
-                                            const Simbox                             * timeSimbox,
-                                            const ModelSettings                      * modelSettings,
-                                            int                                        nAngles);
+                                            const float *                      const * reflection_matrix,
+                                            const Simbox                             * time_simbox,
+                                            const ModelSettings                      * model_settings,
+                                            int                                        n_angles);
 
   static FFTGrid *        createFFTGrid(int nx,  int ny,  int nz,
                                         int nxp, int nyp, int nzp,
-                                        bool fileGrid);
+                                        bool file_grid);
 
   //void             deleteDynamicWells(std::vector<WellData *> wells,
   //                                    int         nWells);
@@ -106,17 +107,17 @@ private:
   //                                   std::string            & errText,
   //                                   bool                   & failed);
 
-  void             checkAvailableMemory(Simbox              * timeSimbox,
-                                        ModelSettings       * modelSettings,
-                                        const InputFiles    * inputFiles);
+  void             checkAvailableMemory(Simbox              * time_simbox,
+                                        ModelSettings       * model_settings,
+                                        const InputFiles    * input_files);
 
-  bool                      forwardModeling_;
+  bool                      forward_modeling_;
 
-  std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
-  std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
-  std::vector<Surface *>    wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *>    wavelet_estim_interval_;  ///< Grids giving the wavelet estimation interval.
+  std::vector<Surface *>    facies_estim_interval_;   ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *>    well_move_interval_;      ///< Grids giving the facies estimation intervals.
 
-  FFTGrid                 * errCorr_;
+  FFTGrid                 * err_corr_;
 
   //bool                      failed_;                ///< Indicates whether errors occured during construction.
   //std::vector<bool>         failed_details_;        ///< Detailed failed information.

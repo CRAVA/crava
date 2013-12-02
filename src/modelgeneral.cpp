@@ -520,21 +520,21 @@ ModelGeneral::~ModelGeneral(void)
 //                           modelSettings->getFileGrid());
 //    target->setType(gridType);
 //
-//    //if (gridType == FFTGrid::DATA) {
-//    //  target->fillInSeismicDataFromSegY(segy,
-//    //                                    timeSimbox,
-//    //                                    modelSettings->getSmoothLength(),
-//    //                                    missingTracesSimbox,
-//    //                                    missingTracesPadding,
-//    //                                    deadTracesSimbox,
-//    //                                    errText);
-//    //}
-//    //else {
-//    //  missingTracesSimbox = target->fillInFromSegY(segy,
-//    //                                               timeSimbox,
-//    //                                               parName,
-//    //                                               nopadding);
-//    //}
+//    if (gridType == FFTGrid::DATA) {
+//      target->fillInSeismicDataFromSegY(segy,
+//                                        timeSimbox,
+//                                        modelSettings->getSmoothLength(),
+//                                        missingTracesSimbox,
+//                                        missingTracesPadding,
+//                                        deadTracesSimbox,
+//                                        errText);
+//    }
+//    else {
+//      missingTracesSimbox = target->fillInFromSegY(segy,
+//                                                   timeSimbox,
+//                                                   parName,
+//                                                   nopadding);
+//    }
 //
 //    if (missingTracesSimbox > 0) {
 //      if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
