@@ -49,8 +49,8 @@ public:
   //const std::vector<NRLib::Grid<double> >               & GetCorrParametersInterval(int i) const { return prior_corr_[i]          ;}
   //const NRLib::Matrix                                   & GetPriorVar0(int i) const              { return prior_var_0_[i]         ;}
 
-  const std::vector<CravaTrend>                          & GetTrendCubes() const                  { return trend_cubes_              ;}
-  const CravaTrend                                       & GetTrendCube(int i) const              { return trend_cubes_[i]           ;}
+  const std::vector<std::vector<NRLib::Grid<double> > > & GetPriorFaciesProbCubes()              const { return prior_facies_prob_cubes_    ;}
+  const std::vector<NRLib::Grid<double> >               & GetPriorFaciesProbCubesInterval(int i) const { return prior_facies_prob_cubes_[i] ;}
 
 
   // SET FUNCTIONS
