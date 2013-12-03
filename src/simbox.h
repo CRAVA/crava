@@ -56,6 +56,7 @@ public:
 
   // GET functions ------------------------------------------------------
 
+  bool           IsPointBetweenOriginalSurfaces(double x, double y, double z) const;
   int            getIndex(double x, double y, double z)   const;
   int            getClosestZIndex(double x, double y, double z);
   void           getIndexes(double x, double y, int & xInd, int & yInd) const;
@@ -108,6 +109,10 @@ public:
   double         getTopZMax()                    const { return(GetTopZMax(nx_,ny_))          ;}
   double         getBotZMin()                    const { return(GetBotZMin(nx_,ny_))          ;}
   double         getBotZMax()                    const { return(GetBotZMax(nx_,ny_))          ;}
+  int            GetNZpad(void)                  const { return nz_pad_                       ;}
+  double         GetGradX()                      const { return grad_x_                       ;}
+  double         GetGradY()                      const { return grad_y_                       ;}
+
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
   double         getTop(int i, int j) const;
@@ -131,6 +136,8 @@ public:
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);
   void           setDepth(const NRLib::Surface<double>& top_surf, const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck);
+  void           setNZpad(int nz_pad)           { nz_pad_                    = nz_pad                     ;}
+  void           setZPadFac(double z_pad_fac)   { z_pad_fac_                 = z_pad_fac                  ;}
 
   // other public functions
 
@@ -146,6 +153,10 @@ public:
                                     Surface             * templateSurf) const;
 
 private:
+  int            nz_pad_;
+  double         z_pad_fac_;
+  double         grad_x_;
+  double         grad_y_;
   double         dx_, dy_, dz_;            // Working resolution.
   int            nx_, ny_, nz_;            // Number of cells in each direction.
   int            status_;                  // Since Simbox may be incomplete or with error

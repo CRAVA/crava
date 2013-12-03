@@ -217,10 +217,10 @@ int main(int argc, char** argv)
       //seismicParametersInterval.setBackgroundParametersIntervals(common_data->GetMultipleIntervalGrid()->GetParametersAllIntervals());
 
       //korrelasjonsgrid (2m)
-      seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval));
-      seismicParametersInterval.setCrCovParameters(common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[0],
-                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[1],
-                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2]);
+      seismicParametersInterval.setCovParameters(common_data->GetCorrParametersInterval(i_interval));
+      seismicParametersInterval.setCrCovParameters(common_data->GetCorrParametersInterval(i_interval)[0],
+                                                   common_data->GetCorrParametersInterval(i_interval)[1],
+                                                   common_data->GetCorrParametersInterval(i_interval)[2]);
       seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
 
       //ModelGeneral

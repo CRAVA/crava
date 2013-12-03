@@ -547,7 +547,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
     //  -------------------------------------
     //
     //  We cannot use the reduced loop structure involving indA, indB, and indC
-    //  when we mix A, B, or R. This is not performance problem, however, since
+    //  when we mix A, B, or R. This is not a performance problem, however, since
     //  most of the calculation time will go into calculating Cov_t
     //
     for(j=0;j<nd;j++)

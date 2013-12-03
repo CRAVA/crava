@@ -28,8 +28,8 @@ class MultiIntervalGrid;
 
 class CommonData{
 public:
-  CommonData(ModelSettings    * model_settings,
-             InputFiles       * input_files);
+  CommonData(ModelSettings                            * model_settings,
+             InputFiles                               * input_files);
 
   ~ CommonData();
 
@@ -175,8 +175,10 @@ private:
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
+                               const MultiIntervalGrid                        & multiple_interval_grid,
                                std::vector<NRLib::Well>                       & wells,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
+                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
                                std::string                                    & err_text);
 
   //bool       CheckThatDataCoverGrid(const SegY            * segy,
@@ -354,9 +356,9 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings  * model_settings,
-                            InputFiles     * input_files,
-                            std::string    & err_text);
+  bool SetupPriorFaciesProb(ModelSettings                               * model_settings,
+                            InputFiles                                  * input_files,
+                            std::string                                 & err_text);
 
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                    const InputFiles   * input_files,
@@ -534,38 +536,28 @@ private:
                                      int        output_domain,
                                      int        other_output);
 
-  //NRLib::Grid<double>
-  //FFTGridRealToGrid(const FFTGrid * fft_grid);
 
   bool SetupPriorCorrelation(ModelSettings                                                * model_settings,
                              const InputFiles                                             * input_files,
+                             const std::vector<NRLib::Well>                               & wells,
+                             std::map<std::string, BlockedLogsCommon *>                   & mapped_blocked_logs_for_correlation,
                              const std::vector<Simbox>                                    & interval_simboxes,
-                             const std::vector<Simbox>                                    & simboxes,
-                             const std::map<std::string, std::map<std::string, float> >   & prior_facies,
+                             const std::vector<std::vector<float> >                       & prior_facies_prob,
+                             const std::vector<std::string>                               & facies_names,
                              const std::vector<CravaTrend>                                & trend_cubes,
                              const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
                              std::string                                                  & err_text);
-                             //bool                                                       & failed);
 
-  //void  SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
-  //                               const std::vector<float>  & priorCorrT,
-  //                               Surface                   * priorCorrXY,
-  //                               const int                 & minIntFq,
-  //                               const float               & corrGradI,
-  //                               const float               & corrGradJ,
-  //                               const int                 & nx,
-  //                               const int                 & ny,
-  //                               const int                 & nz,
-  //                               const int                 & nxPad,
-  //                               const int                 & nyPad,
-  //                               const int                 & nzPad,
-  //                               int                         i_interval);
+  void            GetCorrGradIJ(float         & corr_grad_I, 
+                                float         & corr_grad_J,
+                                const Simbox  * simbox) const;
 
-  void  CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                            const std::vector<float>                         & probability,
-                                            const CravaTrend                                 & trend_cubes,
-                                            NRLib::Grid2D<double>                            & param_corr,
-                                            std::string                                      & err_txt);
+  void  CalculateCorrelationsFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+                                             const std::map<std::string, float>               & probability,
+                                             const std::vector<std::string>                   & facies_names,
+                                             const CravaTrend                                 & trend_cubes,
+                                             NRLib::Grid2D<double>                            & param_corr,
+                                             std::string                                      & err_txt);
 
   void  CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                            const std::vector<float>               & probability,
@@ -654,7 +646,8 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;           ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
   std::vector<std::string>                      continuous_logs_to_be_blocked_; ///< Continuous logs that should be blocked
   std::vector<std::string>                      discrete_logs_to_be_blocked_;   ///< Discrete logs that should be blocked
 

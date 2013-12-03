@@ -69,24 +69,62 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
 
 }
 
+// For correlation estimation
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
+                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
+                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
+                                     const MultiIntervalGrid          & multiple_interval_grid,
+                                     bool                               interpolate,
+                                     std::string                      & err_text){
+  n_angles_     = 0;
+  well_name_    = well_data->GetWellName();
+  n_layers_     = 0;
+  n_blocks_     = 0;
+  interpolate_  = interpolate;
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+
+  bool failed = false;
+
+  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
+                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+
+  if(failed)
+  err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+
+  if(!failed){
+    if(interval_simboxes.size() == 1){
+      // If there is only one interval, the well can be blocked as before.
+      BlockWell(&interval_simboxes[0], continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+    }
+    else{
+      // If there are multiple intervals, special treatment is required. Neighbouring cells vertically 
+      // must have the same correlation within each trace.
+      BlockWellForCorrelationEstimation(multiple_interval_grid, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
+    }
+  }
+
+  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
+  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
+}
+
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
-                                     //bool                             & failed,
                                      std::string                      & err_text){
   n_angles_ = 0;
   well_name_ = well_data->GetWellName();
   n_layers_ = estimation_simbox->getnz();
   n_blocks_ = 0;
   interpolate_ = interpolate;
+
   bool failed = false;
 
-  // Get well name
-  well_name_ = well_data->GetWellName();
-
-  // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
+  // Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
@@ -171,24 +209,25 @@ BlockedLogsCommon::~BlockedLogsCommon(){
 
 }
 
-void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
-                                  const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
-                                  const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
-                                  std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
-                                  std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
-                                  unsigned int                                          n_data,
-                                  bool                                                  facies_log_defined,
-                                  const std::map<int, std::string>                    & facies_map,
-                                  bool                                                  interpolate,
-                                  bool                                                & failed,
-                                  std::string                                         & err_text){
-
-  std::vector<int> b_ind(n_data); // Gives which block each well log entry contributes to
+void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGrid                             & multiple_interval_grid,
+                                                          const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
+                                                          const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                                                          std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                                          std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                                          unsigned int                                          n_data,
+                                                          bool                                                  facies_log_defined,
+                                                          const std::map<int, std::string>                    & facies_map,
+                                                          bool                                                  interpolate,
+                                                          int                                                 & n_layers,
+                                                          bool                                                & failed,
+                                                          std::string                                         & err_text){
+  std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
 
   try{
 
-    FindSizeAndBlockPointers(estimation_simbox, b_ind);
-    FindBlockIJK(estimation_simbox, b_ind);
+    FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers);
+    FindBlockIJK(multiple_interval_grid, b_ind);
 
     // Coordinate logs and necessary logs
 
@@ -249,16 +288,243 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     err_text += "Error: "+std::string(e.what());
     failed = true;
   }
+}
+
+void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
+                                  const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
+                                  const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                                  std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                  std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                  unsigned int                                          n_data,
+                                  bool                                                  facies_log_defined,
+                                  const std::map<int, std::string>                    & facies_map,
+                                  bool                                                  interpolate,
+                                  bool                                                & failed,
+                                  std::string                                         & err_text){
+
+  std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
+
+  try{
+
+    FindSizeAndBlockPointers(estimation_simbox, b_ind);
+    FindBlockIJK(estimation_simbox, b_ind);
+
+    // Coordinate logs and necessary logs
+
+    BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
+    BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
+    BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
+    BlockContinuousLog(b_ind, twt_raw_logs_, twt_blocked_    );
+
+    // Continuous logs
+
+    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++){
+      std::vector<double> temp_vector_blocked;
+      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+      continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+    }
+
+    // Discrete logs
+    if (facies_log_defined)
+      BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
+
+    (void) discrete_logs_unblocked;
+    (void) discrete_logs_blocked;
+
+    if(interpolate){
+      for(unsigned int i=1;i<n_data;i++) {
+        if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+          int start, end;
+          if(b_ind[i] > b_ind[i-1]) {
+            start = b_ind[i-1];
+            end   = b_ind[i];
+          }
+          else {
+            start = b_ind[i];
+            end   = b_ind[i-1];
+          }
+          for(int j = start+1;j<end;j++) {
+            float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+            // Coordinate logs
+            InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
+            InterpolateContinuousLog(twt_blocked_, start, end, j, t);
+
+            // all blocked continuous logs
+            for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
+              InterpolateContinuousLog(it->second, start, end, j, t);
+            }
+
+          }
+        }
+      }
+    }
+
+    if(cont_logs_background_resolution_.size() > 1)
+      CreateHighCutBackground(b_ind);
+
+  }catch(NRLib::Exception & e) {
+    err_text += "Error: "+std::string(e.what());
+    failed = true;
+  }
 
 }
 
+void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       & multiple_interval_grid,
+                                                  std::vector<int>              & b_ind,
+                                                  int                             n_data,
+                                                  int                           & n_layers){
+
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+  const std::vector<double> x_pos             = GetXposRawLogs();
+  const std::vector<double> y_pos             = GetYposRawLogs();
+  const std::vector<double> z_pos             = GetZposRawLogs();
+  int   n_intervals                           = static_cast<int>(interval_simboxes.size());
+  //
+  // Find first cell in first simbox that the well hits
+  //
+  int first_I(IMISSING);
+  int first_J(IMISSING);
+  int first_K(IMISSING);
+  for (int n = 0 ; n < n_intervals; n++){
+    for (int m = 0 ; m < n_data ; m++) {
+      interval_simboxes[n].getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
+      if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
+        first_S_ = n;
+        first_M_ = m;
+        break;
+      }
+    }
+    if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING)
+      break;
+  }
+  //
+  // Find last cell in last simbox that the well hits
+  //
+  int last_I(IMISSING);
+  int last_J(IMISSING);
+  int last_K(IMISSING);
+  for (int n = n_intervals-1 ; n >= 0; n--){
+    for (int m = n_data - 1 ; m > 0 ; m--) {
+      interval_simboxes[n_intervals - 1].getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
+      if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
+        last_S_ = n;
+        last_M_ = m;
+        break;
+      }
+      if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING)
+        break;
+    }
+  }
+  //
+  // Count number of blocks needed for the defined part of well.
+  //
+  for (int m = 0 ; m < n_data ; m++) {
+    b_ind[m] = IMISSING;
+  }
+  int new_I, new_J, new_K;
+  int old_I = first_I;
+  int old_J = first_J;
+  int old_K = first_K;
+  int old_simbox = 0;
+
+  int n_defined_blocks = 0;
+  b_ind[first_M_] = first_K; // The first defined well log entry contributes to this block.
+
+  //
+  // The well positions used to be given in float rather than double. Unfortunately, this
+  // allowed a well to oscillate between two or more cells, leading to a breakdown of the
+  // algorithm below. To remedy for this we introduced the array simbox_ind which records
+  // the indices of the simbox cells that are already accounted for, so that these are not
+  // enlisted more than one time.
+  //
+  // ASSUMPTION: all simboxes have same nx and ny
+  int * simbox_ind = new int[n_data];                                     // help hack
+  const int nx    = interval_simboxes[0].getnx();                         // help hack
+  const int ny    = interval_simboxes[0].getny();                         // help hack
+  std::vector<int> nz(multiple_interval_grid.GetNIntervals());
+  for(size_t m = 0; m<interval_simboxes.size(); m++){
+    nz[m] = interval_simboxes[m].getnz();                                 //
+    n_layers += nz[m];
+  }
+  std::vector<double> dz_rel(multiple_interval_grid.GetNIntervals());
+  double dz_0 = interval_simboxes[0].getdz();
+  for(size_t m = 0; m<interval_simboxes.size(); m++){
+    dz_rel[m] = interval_simboxes[m].getdz()/dz_0;
+  }
+
+  simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                         // help hack
+
+  for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
+    // Find which interval simbox we are in (this function simply iterates through the simboxes
+    // to find out where the x,y,z-coordinates belong
+    int simbox_number = multiple_interval_grid.WhichSimbox(x_pos[m], y_pos[m], z_pos[m]);
+
+    interval_simboxes[simbox_number].getIndexes(x_pos[m], y_pos[m], z_pos[m] , new_I , new_J , new_K);
+
+    // Add the previous zones multiplied by relative vertical grid size
+    double temp_K = new_K*dz_rel[simbox_number];
+    for (int n = 0; n<simbox_number; n++){
+      temp_K += dz_rel[n]*nz[n];
+    }
+    int tot_K = static_cast<int>(temp_K);
+
+    if (new_I != old_I || new_J != old_J || tot_K != old_K) {
+
+      int  this_ind = nx*ny*tot_K + nx*new_J + new_I;                    // help hack
+      bool block_not_listed = true;                                      // help hack
+      for (int l = 0 ; l < n_defined_blocks ; l++) {                     // help hack
+        if (this_ind == simbox_ind[l]) {                                 // help hack
+          block_not_listed = false;                                      // help hack
+          break;                                                         // help hack
+        }                                                                // help hack
+      }                                                                  // help hack
+      if (block_not_listed) {                                            // help hack
+        simbox_ind[n_defined_blocks+1] = this_ind;                       // help hack
+        old_I = new_I;
+        old_J = new_J;
+        old_K = tot_K;
+        n_defined_blocks++;
+      }
+      else {
+      }
+    }
+    b_ind[m] = first_K + n_defined_blocks;
+  }
+  n_defined_blocks++;
+  //
+  // Why we cannot use n_blocks_ = nDefined:
+  //
+  // When we calculate the background model for each parameter we first
+  // estimate a vertical trend in the total volume, anf then we interpolate
+  // the blocked log intop this trend volume. To avoid sharp contrast we
+  // ensure that the blocked log is defined from top to base of the volume.
+  // In regions where the log is undefined we generate it by kriging from
+  // the rest of the log. Likewise, in regions where there is no blocked
+  // log at all because the well was too short, we have to make a virtual
+  // well.
+  //
+  n_blocks_ = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
+
+  bool debug = false;
+  if (debug) {
+    LogKit::LogFormatted(LogKit::Low,"first_S_, last_S_          = %d, %d    \n",first_S_,last_S_);
+    LogKit::LogFormatted(LogKit::Low,"first_M_, last_M_          = %d, %d    \n",first_M_,last_M_);
+    LogKit::LogFormatted(LogKit::Low,"n_layers_                  = %d        \n",n_layers_);
+    LogKit::LogFormatted(LogKit::Low,"first_I,first_J,first_K     = %d, %d, %d\n",first_I,first_J,first_K);
+    LogKit::LogFormatted(LogKit::Low,"last_I,last_J,last_K        = %d, %d, %d\n",last_I,last_J,last_K);
+    LogKit::LogFormatted(LogKit::Low,"n_defined_blocks, n_blocks_ = %d, %d    \n",n_defined_blocks,n_blocks_);
+  }
+  delete [] simbox_ind;
+}
 
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
                                                   std::vector<int>     & b_ind){
   int   nd = static_cast<int>(b_ind.size());
-  const std::vector<double> x_pos = GetXpos();
-  const std::vector<double> y_pos = GetYpos();
-  const std::vector<double> tvd   = GetTVD();
+  const std::vector<double> x_pos = GetXposNotBlocked();
+  const std::vector<double> y_pos = GetYposNotBlocked();
+  const std::vector<double> z_pos = GetZposNotBlocked();
 
   //
   // Find first cell in Simbox that the well hits
@@ -267,7 +533,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   int first_J(IMISSING);
   int first_K(IMISSING);
   for (int m = 0 ; m < nd ; m++) {
-    estimation_simbox->getIndexes(x_pos[m], y_pos[m], tvd[m], first_I, first_J, first_K);
+    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
     if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
       first_M_ = m;
       break;
@@ -280,7 +546,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   int last_J(IMISSING);
   int last_K(IMISSING);
   for (int m = nd - 1 ; m > 0 ; m--) {
-    estimation_simbox->getIndexes(x_pos[m], y_pos[m], tvd[m], last_I, last_J, last_K);
+    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
     if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
       last_M_ = m;
       break;
@@ -313,7 +579,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                        // help hack
 
   for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
-    estimation_simbox->getIndexes(x_pos[m], y_pos[m], tvd[m], new_I ,new_J, new_K);
+    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], new_I ,new_J, new_K);
 
     if (new_I != old_I || new_J != old_J || new_K != old_K) {
 
@@ -363,18 +629,18 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   delete [] simbox_ind;
 }
 
-void
-BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                            std::vector<int>     & b_ind)
+//------------------------------------------------------------------------------
+void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
+                                                  std::vector<int>     & b_ind)
 {
   //int            dummy;
   int            missing = 99999;
   //const int      nd = well.GetNumberOfNonMissingData();//->getNd();
   int nd = n_data_;
 
-  const std::vector<double> & x = GetXpos();
-  const std::vector<double> & y = GetYpos();
-  const std::vector<double> & z = GetZpos();
+  const std::vector<double> & x = GetXposNotBlocked();
+  const std::vector<double> & y = GetYposNotBlocked();
+  const std::vector<double> & z = GetZposNotBlocked();
 
   //
   // Find first cell in StormContGrid that the well hits
@@ -473,15 +739,86 @@ BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
   n_blocks_ = static_cast<int>(first_K) + n_defined_blocks + (n_layers_ - static_cast<int>(last_K) - 1);
 }
 
+//------------------------------------------------------------------------------
+void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          & multiple_interval_grid,
+                                        const std::vector<int>           & bInd){
+  
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();                                       
+  i_pos_.resize(n_blocks_);
+  j_pos_.resize(n_blocks_);
+  k_pos_.resize(n_blocks_);
+
+  const std::vector<double> x_pos = this->GetXposRawLogs();
+  const std::vector<double> y_pos = this->GetYposRawLogs();
+  const std::vector<double> z_pos = this->GetZposRawLogs();
+
+  //
+  // Set IJK for virtual part of well in upper part of the first simbox where it is found
+  //
+  int b = -1; // block counter;
+  int first_I, first_J, first_K;
+  interval_simboxes[first_S_].getIndexes(x_pos[first_M_], y_pos[first_M_], z_pos[first_M_], first_I, first_J, first_K);
+  for (int k = 0 ; k < first_K ; k++) {
+    b++;
+    i_pos_[b] = first_I;
+    j_pos_[b] = first_J;
+    k_pos_[b] = k;
+  }
+
+  //
+  // Set IJK for the defined part of the well
+  //
+  b = first_K;
+  i_pos_[b] = first_I;
+  j_pos_[b] = first_J;
+  k_pos_[b] = first_K;
+  int i, j, k;
+  for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
+    if (bInd[m] != bInd[m - 1]) {
+      b++;
+      interval_simboxes[first_S_].getIndexes(x_pos[m], y_pos[m], z_pos[m], i, j, k);
+      i_pos_[b] = i;
+      j_pos_[b] = j;
+      k_pos_[b] = k;
+    }
+  }
+  first_B_ = first_K;
+  last_B_  = b;
+
+  //
+  // Set IJK for the virtual part of well in lower part of simbox
+  //
+  int last_I,  last_J,  last_K;
+  interval_simboxes[last_S_].getIndexes(x_pos[last_M_], y_pos[last_M_], z_pos[last_M_], last_I, last_J, last_K);
+  for (int k = last_K + 1 ; k < n_layers_ ; k++) {
+    b++;
+    i_pos_[b] = last_I;
+    j_pos_[b] = last_J;
+    k_pos_[b] = k;
+  }
+
+  dz_ = static_cast<float>(interval_simboxes[last_S_].getRelThick(i_pos_[0],j_pos_[0])*interval_simboxes[last_S_].getdz());
+
+  bool debug = false;
+  if (debug) {
+    LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",first_B_,last_B_);
+    LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",first_I, first_J, first_K);
+    LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",last_I, last_J, last_K);
+    for (unsigned int b = 0 ; b < n_blocks_ ; b++)
+      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,i_pos_[b],j_pos_[b],k_pos_[b]);
+  }
+}
+
+//------------------------------------------------------------------------------
 void    BlockedLogsCommon::FindBlockIJK(const Simbox             * const estimation_simbox,
                                         const std::vector<int>   & bInd){
   i_pos_.resize(n_blocks_);
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  const std::vector<double> x_pos = this->GetXpos();
-  const std::vector<double> y_pos = this->GetYpos();
-  const std::vector<double> z_pos = this->GetZpos();
+  const std::vector<double> x_pos = this->GetXposRawLogs();
+  const std::vector<double> y_pos = this->GetYposRawLogs();
+  const std::vector<double> z_pos = this->GetZposRawLogs();
 
   //
   // Set IJK for virtual part of well in upper part of simbox
@@ -553,9 +890,9 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid    & stormgrid,
   //kpos_ = new int[nBlocks_];
 
   //int   dummy;
-  const std::vector<double> & x = GetXpos();
-  const std::vector<double> & y = GetYpos();
-  const std::vector<double> & z = GetZpos();
+  const std::vector<double> & x = GetXposNotBlocked();
+  const std::vector<double> & y = GetYposNotBlocked();
+  const std::vector<double> & z = GetZposNotBlocked();
 
   //
   // Set IJK for virtual part of well in upper part of stormgrid

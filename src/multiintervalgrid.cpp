@@ -21,8 +21,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   Surface               * top_surface = NULL;
   Surface               * base_surface = NULL;
-  //std::vector<Surface>    eroded_surfaces(n_intervals_+1);
-  eroded_surfaces_.resize(n_intervals_+1);
+  std::vector<Surface>    eroded_surfaces(n_intervals_+1);
   std::string             previous_interval_name("");
   std::string             top_surface_file_name_temp("");
   std::string             base_surface_file_name_temp("");
@@ -30,14 +29,14 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   //std::vector<int>        erosion_priorities_;
   trend_cubes_.resize(n_intervals_);
 
-  // if there are multiple intervals (there can potentially be 1 interval as well)
+  // if the multiple interval keyword is used
   if(interval_names_.size() > 0){
     multiple_interval_setting_ = true;
     desired_grid_resolution_.resize(interval_names_.size());
     relative_grid_resolution_.resize(interval_names_.size());
     n_intervals_ = static_cast<int>(interval_names_.size());
-    eroded_surfaces_.resize(n_intervals_ + 1);
-    LogKit::WriteHeader("Setting up Multiple Interval Grid");
+    eroded_surfaces.resize(n_intervals_ + 1);
+    LogKit::WriteHeader("Setting up multiple interval grid");
     surfaces.resize(n_intervals_+1); //Store surfaces.
     erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
@@ -47,9 +46,9 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     multiple_interval_setting_ = false;
     desired_grid_resolution_.resize(1);
     relative_grid_resolution_.resize(1);
-    eroded_surfaces_.resize(2);
+    eroded_surfaces.resize(2);
     n_intervals_ = 1;
-    LogKit::WriteHeader("Setting up Grid");
+    LogKit::WriteHeader("Setting up grid");
     surfaces.resize(1);
     interval_simboxes_.resize(1);
   }
@@ -84,7 +83,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                                      model_settings->getTimeNzInterval(interval_names_[i]));
         }
 
-        ErodeAllSurfaces(eroded_surfaces_,
+        ErodeAllSurfaces(eroded_surfaces,
                          erosion_priorities_,
                          surfaces,
                          *estimation_simbox);
@@ -97,11 +96,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     else{
       top_surface_file_name_temp = input_files->getTimeSurfFile(0);
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
-      eroded_surfaces_[0] = *top_surface;
+      eroded_surfaces[0] = *top_surface;
 
       base_surface_file_name_temp = input_files->getTimeSurfFile(1);
       base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
-      eroded_surfaces_[1] = *base_surface;
+      eroded_surfaces[1] = *base_surface;
 
       desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox,
                                                     model_settings->getTimeNz());
@@ -129,7 +128,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         SetupIntervalSimboxes(model_settings,
                               estimation_simbox,
                               interval_names_,
-                              eroded_surfaces_,
+                              eroded_surfaces,
                               interval_simboxes_,
                               input_files->getCorrDirIntervalFiles(),
                               input_files->getCorrDirIntervalTopSurfaceFiles(),
@@ -210,7 +209,19 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 }
 
 MultiIntervalGrid::~MultiIntervalGrid(){
+}
 
+// ---------------------------------------------------------------------------------------------------------------
+int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const{
+
+  int simbox_num = -1;
+  for (size_t i = 0; i<interval_simboxes_.size(); i++){
+    if (interval_simboxes_[i].IsInside(x,y,z)){
+      simbox_num = i;
+      break;
+    }
+  }
+  return simbox_num;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -497,9 +508,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
                                                       std::vector<NRLib::Grid<double> >          & vs_interval,
                                                       std::vector<NRLib::Grid<double> >          & rho_interval,
-                                                      const std::vector<Simbox>                 & interval_simboxes,
-                                                      std::vector<double>                       & relative_grid_resolution) const{
-  (void) relative_grid_resolution;
+                                                      const std::vector<Simbox>                 & interval_simboxes) const{
 
   for(size_t i=0; i<n_intervals_; i++) {
     int    nx        = interval_simboxes[i].getnx();
@@ -552,10 +561,6 @@ void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<do
     vp_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
     vs_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
     rho_interval[i] = NRLib::Grid<double>(nx, ny, nz_zone, 0);
-
-    //For each interval, store the actual vertical resolution relative to the wanted.
-    //relative_grid_resolution_.push_back();
-
   }
 }
 
@@ -577,8 +582,8 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   int nz_pad          = SetPaddingSize(nz, z_pad_fac);
   z_pad_fac           = static_cast<double>(nz_pad - nz)/static_cast<double>(nz);
 
-  model_settings->setNZpad(nz_pad);
-  model_settings->setZPadFac(z_pad_fac);
+  simbox->setNZpad(nz_pad);
+  simbox->setZPadFac(z_pad_fac);
 }
 
 // --------------------------------------------------------------------------------

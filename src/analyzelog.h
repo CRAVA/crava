@@ -19,6 +19,14 @@ public:
              const Simbox          * simbox,
              const ModelSettings   * modelSettings,
              std::string           & errTxt);
+
+  Analyzelog(const std::vector<WellData *>                & wells,
+             std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
+             Background                                   * background,
+             const Simbox                                 * simbox,
+             const ModelSettings                          * modelSettings,
+             std::string                                  & errTxt);
+
   ~Analyzelog(void);
 
   float        ** getVar0(void)         const { return Var0_         ;}
