@@ -114,6 +114,55 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
  // velocity->endAccess();
 }
 
+void
+GridMapping::makeTimeDepthMapping(NRLib::Grid<double> & velocity,
+                                  const Simbox        * timeSimbox)
+{
+  Simbox * depthSimbox = simbox_; // For readability
+
+  int nx  = depthSimbox->getnx();
+  int ny  = depthSimbox->getny();
+  int nz  = depthSimbox->getnz();
+  mapping_ = new StormContGrid(*depthSimbox, nx, ny, nz);
+ // velocity->setAccessMode(FFTGrid::RANDOMACCESS);
+  for(int i=0;i<nx;i++)
+  {
+    for(int j=0;j<ny;j++)
+    {
+      double x,y;
+      depthSimbox->getXYCoord(i,j,x,y);
+      double tTop   = timeSimbox->getTop(x,y);
+      double tBase  = timeSimbox->getBot(x,y);
+      double zTop   = depthSimbox->getTop(x,y);
+      double zBase  = depthSimbox->getBot(x,y);
+      double deltaT = (tBase-tTop)/(static_cast<double>(2000*timeSimbox->getnz()));
+      double deltaZ = (zBase-zTop)/static_cast<double>(nz);
+      double sum    = 0.0;
+      double sumz   = 0.0;
+      for(int k=0 ; k<timeSimbox->getnz() ; k++)
+        sumz +=deltaT*velocity(i,j,k);
+      double c = (zBase-zTop)/sumz;
+      (*mapping_)(i,j,0) = static_cast<float>(tTop);
+      int kk = 0;
+      for(int k=1;k<nz;k++)
+      {
+        double z = k*deltaZ;
+        while(sum<z && kk<nz)
+        {
+          kk++;
+          sum+=deltaT*c*velocity(i,j,kk-1);
+        }
+        double v   = velocity(i,j,kk-1);
+        double z0  = tTop;
+        double dz1 = 2000.0*static_cast<double>(kk-1)*deltaT;
+        double dz2 = 2000.0*(z - sum + deltaT*c*v)/(c*v);
+        (*mapping_)(i,j,k) = static_cast<float>(z0 + dz1 + dz2);
+      }
+    }
+  }
+ // velocity->endAccess();
+}
+
 
 void
 GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox)
@@ -150,8 +199,6 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
     exit(1);
   }
 }
-
-
 
 void
 GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
@@ -230,6 +277,105 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
                 sum += velocity->getRealValue(i3,j3,k);
               if(i4!=IMISSING && j4!=IMISSING)
                 sum += velocity->getRealValue(i4,j4,k);
+            }
+            (*isochore)(i,j) = sum*dt/static_cast<double>(n);
+          }
+        }
+      }
+    }
+
+    if(z0Grid_==NULL)
+    {
+      z0Grid_ = new Surface(*isochore);
+      z0Grid_->Multiply(-1.0);
+      z0Grid_->AddNonConform(z1Grid_);
+    }
+    else
+    {
+      z1Grid_ = new Surface(*isochore);
+      z1Grid_->AddNonConform(z0Grid_);
+    }
+    delete isochore;
+  }
+}
+
+void
+GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> & velocity,
+                                          const Simbox        * timeSimbox)
+{
+  if(z0Grid_==NULL || z1Grid_==NULL)
+  {
+    Surface * isochore;
+    if(z0Grid_==NULL)
+      isochore = new Surface(*z1Grid_);
+    else
+      isochore = new Surface(*z0Grid_);
+
+    //
+    // If a constant time surface has been used, it may have only four grid
+    // nodes. To handle this situation we use the grid resolution whenever
+    // this is larger than the surface resolution.
+    //
+    int maxNx = std::max(timeSimbox->getnx(), static_cast<int>(isochore->GetNI()));
+    int maxNy = std::max(timeSimbox->getny(), static_cast<int>(isochore->GetNJ()));
+    isochore->Resize(maxNx, maxNy);
+
+    double dx = 0.5*isochore->GetDX();
+    double dy = 0.5*isochore->GetDY();
+
+    for(int j=0 ; j<static_cast<int>(isochore->GetNJ()) ; j++)
+    {
+      for(int i=0 ; i<static_cast<int>(isochore->GetNI()) ; i++)
+      {
+        double x, y;
+        isochore->GetXY(i,j,x,y);
+        double tTop  = timeSimbox->getTop(x,y);
+        double tBase = timeSimbox->getBot(x,y);
+        int    nz    = timeSimbox->getnz();
+        double dt    = (tBase - tTop)/(2000.0*static_cast<double>(nz));
+
+        int ii, jj;
+        timeSimbox->getIndexes(x,y,ii,jj);
+
+        if(ii!=IMISSING && jj!=IMISSING)
+        {
+          double sum = 0.0;
+          for(int k=0 ; k<nz ; k++)
+            sum += velocity(ii,jj,k);
+          (*isochore)(i,j) = sum*dt;
+        }
+        else
+        {
+          int i1, i2, i3, i4, j1, j2, j3, j4;
+          timeSimbox->getIndexes(x+dx, y+dy, i1, j1);
+          timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
+          timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
+          timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
+
+          int n = 0;
+          if(i1!=IMISSING && j1!=IMISSING)
+            n++;
+          if(i2!=IMISSING && j2!=IMISSING)
+            n++;
+          if(i3!=IMISSING && j3!=IMISSING)
+            n++;
+          if(i4!=IMISSING && j4!=IMISSING)
+            n++;
+
+          if (n==0)
+            isochore->SetMissing(i,j);
+          else
+          {
+            double sum = 0.0;
+            for(int k=0 ; k<nz ; k++) {
+              if(i1!=IMISSING && j1!=IMISSING)
+                sum += velocity(i1,j1,k);
+              if(i2!=IMISSING && j2!=IMISSING)
+                sum += velocity(i2,j2,k);
+              if(i3!=IMISSING && j3!=IMISSING)
+                sum += velocity(i3,j3,k);
+              if(i4!=IMISSING && j4!=IMISSING)
+                sum += velocity(i4,j4,k);
             }
             (*isochore)(i,j) = sum*dt/static_cast<double>(n);
           }
