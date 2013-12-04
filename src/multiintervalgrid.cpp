@@ -137,6 +137,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               model_settings->getCorrDirIntervalBaseConform(),
                               desired_grid_resolution_,
                               relative_grid_resolution_,
+                              dz_rel_,
                               err_text,
                               failed);
       }
@@ -255,6 +256,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 const std::map<std::string, bool>         & corr_dir_base_conform,
                                                 std::vector<double>                       & desired_grid_resolution,
                                                 std::vector<double>                       & relative_grid_resolution,
+                                                std::vector<double>                       & dz_rel,
                                                 std::string                               & err_text,
                                                 bool                                      & failed) const{
 
@@ -334,9 +336,10 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Calculate Z padding ----------------------------------------------------------------
 
     if(!failed){
+      // calculated dz should be the same as the desired grid resolution?
       int status = interval_simboxes[i].calculateDz(model_settings->getLzLimit(),err_text);
-      EstimateZPaddingSize(&interval_simboxes[i], model_settings);
       relative_grid_resolution[i] = interval_simboxes[i].getdz() / desired_grid_resolution[i];
+      EstimateZPaddingSize(&interval_simboxes[i], model_settings);
 
 
       if(status == Simbox::BOXOK)
@@ -377,6 +380,13 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     if(interval_simboxes[i].getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
       err_text += "dz for interval \'" + interval_names[i] + "\' is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
       failed = true;
+    }
+    else{
+      dz_rel.resize(interval_names.size());
+      double dz_0 = interval_simboxes[0].getdz();
+      for(size_t m = 0; m<interval_simboxes.size(); m++){
+        dz_rel[m] = interval_simboxes[m].getdz()/dz_0;
+      }
     }
   }
 }
@@ -576,7 +586,7 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   {
     double w_length    = static_cast<double>(model_settings->getDefaultWaveletLength());
     double p_fac      = 1.0;
-    z_pad             = w_length/p_fac;                             // Use half a wavelet as padding
+    z_pad             = w_length/p_fac;                               // Use half a wavelet as padding
     z_pad_fac         = std::min(1.0, z_pad/min_lz);                  // More than 100% padding is not sensible
   }
   int nz_pad          = SetPaddingSize(nz, z_pad_fac);

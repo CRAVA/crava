@@ -42,6 +42,7 @@ public:
   const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_            ;}
   const std::vector<double>                              & GetRelativeGridResolution() const     { return relative_grid_resolution_ ;}
   const std::vector<double>                              & GetDesiredGridResolution() const      { return desired_grid_resolution_  ;}
+  const std::vector<double>                              & GetDzRel() const                      { return dz_rel_                   ;}
 
   //const std::vector<std::vector<NRLib::Grid<double> > > & GetCovParametersIntervals() const      { return prior_cov_              ;}
   //const std::vector<NRLib::Grid<double> >               & GetCovParametersInterval(int i) const  { return prior_cov_[i]           ;}
@@ -60,6 +61,7 @@ public:
   void AddParametersCorrForInterval(int i, std::vector<NRLib::Grid<double> > corr)               { prior_corr_[i]    = corr        ;}
   void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]   = prior_var_0 ;}
   void AddTrendCubes(std::vector<CravaTrend> trend_cubes)                                        { trend_cubes_      = trend_cubes ;}
+  void SetDzRel(std::vector<double> & dz_rel)                                                    { dz_rel_           = dz_rel      ;}
 
 
   void AddPriorFaciesCubes(std::vector<std::vector<NRLib::Grid<double> > > prior_cubes)          { prior_facies_prob_cubes_ = prior_cubes ;}
@@ -79,6 +81,7 @@ private:
                               const std::map<std::string, bool>         & corr_dir_base_conform,
                               std::vector<double>                       & desired_grid_resolution,
                               std::vector<double>                       & relative_grid_resolution,
+                              std::vector<double>                       & dz_rel,
                               std::string                               & err_text,
                               bool                                      & failed) const;
 
@@ -168,6 +171,7 @@ private:
 
   std::vector<double>                                  desired_grid_resolution_;  //Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; //Actual grid resolution relative to the wanted grid resolution.
+  std::vector<double>                                  dz_rel_;                   //Actual grid resolution relative to simbox 0
 
   std::vector<CravaTrend>                              trend_cubes_;  //Trend cubes per interval.
 

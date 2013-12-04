@@ -284,6 +284,9 @@ private:
                        const std::vector<int>           & b_ind);
 
   void    FindBlockIJK(const MultiIntervalGrid          & multiple_interval_grid,
+                       const std::vector<double>        & x_pos,
+                       const std::vector<double>        & y_pos,
+                       const std::vector<double>        & z_pos,
                        const std::vector<int>           & b_ind);
 
   void    FindBlockIJK(const StormContGrid              & stormgrid,
@@ -372,8 +375,9 @@ private:
   // CLASS VARIABLES -----------------------------
 
   unsigned int       n_blocks_;         // number of blocks
-  unsigned int       n_data_; //Number of non-missing
+  unsigned int       n_data_;           //Number of non-missing
   std::string        well_name_;
+
 
   std::map<int, std::string>  facies_map_;
   bool               facies_log_defined_;
@@ -387,6 +391,7 @@ private:
   std::vector<double> twt_blocked_;    // Blocked twt value
   std::vector<int>    facies_blocked_; // Blocked facies log
 
+  std::vector<int> s_pos_;    // Simbox number for block
   std::vector<int> i_pos_;    // Simbox i position for block
   std::vector<int> j_pos_;    // Simbox j position for block
   std::vector<int> k_pos_;    // Simbox k position for block

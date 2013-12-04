@@ -48,8 +48,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
   bool failed = false;
 
   // Remove missing values
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   well_data->SetNumberOfNonMissingData(n_data_);
@@ -85,8 +85,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
 
   bool failed = false;
 
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   if(failed)
@@ -168,8 +168,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
     disc_logs_to_be_blocked.push_back(it->first);
   }
 
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   //
@@ -227,14 +227,14 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
   try{
 
     FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers);
-    FindBlockIJK(multiple_interval_grid, b_ind);
+    FindBlockIJK(multiple_interval_grid, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(), b_ind);
 
     // Coordinate logs and necessary logs
 
-    BlockCoordinateLog(b_ind, x_pos_unblocked_, x_pos_blocked_);
-    BlockCoordinateLog(b_ind, y_pos_unblocked_, y_pos_blocked_);
-    BlockCoordinateLog(b_ind, z_pos_unblocked_, z_pos_blocked_);
-    BlockContinuousLog(b_ind, twt_unblocked_, twt_blocked_    );
+    BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
+    BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
+    BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
+    BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
 
     // Continuous logs
 
@@ -246,7 +246,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 
     // Discrete logs
     if (facies_log_defined)
-      BlockFaciesLog(b_ind, facies_unblocked_, facies_map, facies_map.size(), facies_blocked_);
+      BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
 
     (void) discrete_logs_unblocked;
     (void) discrete_logs_blocked;
@@ -418,7 +418,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     }
   }
   //
-  // Count number of blocks needed for the defined part of well.
+  // Count number of blocks needed for the defined part of the well.
   //
   for (int m = 0 ; m < n_data ; m++) {
     b_ind[m] = IMISSING;
@@ -448,11 +448,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     nz[m] = interval_simboxes[m].getnz();                                 //
     n_layers += nz[m];
   }
-  std::vector<double> dz_rel(multiple_interval_grid.GetNIntervals());
-  double dz_0 = interval_simboxes[0].getdz();
-  for(size_t m = 0; m<interval_simboxes.size(); m++){
-    dz_rel[m] = interval_simboxes[m].getdz()/dz_0;
-  }
+
+  // dz_rel is the dz of simbox i relative to the first simbox
+  const std::vector<double> dz_rel = multiple_interval_grid.GetDzRel();
 
   simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                         // help hack
 
@@ -638,9 +636,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgr
   //const int      nd = well.GetNumberOfNonMissingData();//->getNd();
   int nd = n_data_;
 
-  const std::vector<double> & x = GetXposNotBlocked();
-  const std::vector<double> & y = GetYposNotBlocked();
-  const std::vector<double> & z = GetZposNotBlocked();
+  const std::vector<double> & x = GetXposRawLogs();
+  const std::vector<double> & y = GetYposRawLogs();
+  const std::vector<double> & z = GetZposRawLogs();
 
   //
   // Find first cell in StormContGrid that the well hits
@@ -741,61 +739,117 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgr
 
 //------------------------------------------------------------------------------
 void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          & multiple_interval_grid,
+                                        const std::vector<double>        & x_pos_raw_logs,
+                                        const std::vector<double>        & y_pos_raw_logs,
+                                        const std::vector<double>        & z_pos_raw_logs,
                                         const std::vector<int>           & bInd){
   
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();                                       
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
   i_pos_.resize(n_blocks_);
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
-
-  const std::vector<double> x_pos = this->GetXposRawLogs();
-  const std::vector<double> y_pos = this->GetYposRawLogs();
-  const std::vector<double> z_pos = this->GetZposRawLogs();
+  s_pos_.resize(n_blocks_);
 
   //
-  // Set IJK for virtual part of well in upper part of the first simbox where it is found
+  // 1. Set IJK for virtual part of well in upper part of the first simbox where it is found
   //
   int b = -1; // block counter;
   int first_I, first_J, first_K;
-  interval_simboxes[first_S_].getIndexes(x_pos[first_M_], y_pos[first_M_], z_pos[first_M_], first_I, first_J, first_K);
+  interval_simboxes[first_S_].getIndexes(x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], z_pos_raw_logs[first_M_], first_I, first_J, first_K);
+  for (int s = 0 ;  s < first_S_; s++){
+    b = -1;
+    for(int k = 0; k < interval_simboxes[s].getnz(); k++){
+      b++;
+      s_pos_[b] = s;
+      i_pos_[b] = first_I;
+      j_pos_[b] = first_J;
+      k_pos_[b] = k;
+    }
+  }
+
+  // IJK in the simbox with the first well observation
+  b = -1;
   for (int k = 0 ; k < first_K ; k++) {
     b++;
+    s_pos_[b] = first_S_;
     i_pos_[b] = first_I;
     j_pos_[b] = first_J;
     k_pos_[b] = k;
   }
 
   //
-  // Set IJK for the defined part of the well
+  // 2. Set IJK for the defined part of the well
   //
   b = first_K;
+  s_pos_[b] = first_S_;
   i_pos_[b] = first_I;
   j_pos_[b] = first_J;
   k_pos_[b] = first_K;
   int i, j, k;
-  for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
+  int max_k;
+  if (first_S_ = last_S_){
+    max_k = last_M_+1;
+  }
+  else{
+    max_k = interval_simboxes[first_S_].getnz();
+  }
+  // loop over the first simbox where the well is observed
+  for (int m = first_M_ + 1 ; m < max_k ; m++) {
     if (bInd[m] != bInd[m - 1]) {
       b++;
-      interval_simboxes[first_S_].getIndexes(x_pos[m], y_pos[m], z_pos[m], i, j, k);
+      interval_simboxes[first_S_].getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
+      s_pos_[b] = first_S_;
       i_pos_[b] = i;
       j_pos_[b] = j;
       k_pos_[b] = k;
     }
   }
   first_B_ = first_K;
-  last_B_  = b;
+  //last_B_  = b;
+
+  // the remaining simboxes where the well is observed
+  for (int s = first_S_+1; s <= last_S_ ; s++){
+    if(last_S_ = s){
+      max_k = last_M_+1;
+    }
+    else{
+      max_k = interval_simboxes[s].getnz();
+    }
+    for (int k = 0; k<max_k; k++){
+      if (bInd[k] != bInd[k - 1]) {
+        b++;
+        interval_simboxes[s].getIndexes(x_pos_raw_logs[k], y_pos_raw_logs[k], z_pos_raw_logs[k], i, j, k);
+        s_pos_[b] = first_S_;
+        i_pos_[b] = i;
+        j_pos_[b] = j;
+        k_pos_[b] = k;
+      }
+    }
+  }
+  last_B_ = b;
 
   //
-  // Set IJK for the virtual part of well in lower part of simbox
+  // 3. Set IJK for the virtual part of the well in the lower simboxes
   //
   int last_I,  last_J,  last_K;
-  interval_simboxes[last_S_].getIndexes(x_pos[last_M_], y_pos[last_M_], z_pos[last_M_], last_I, last_J, last_K);
+  interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
   for (int k = last_K + 1 ; k < n_layers_ ; k++) {
     b++;
     i_pos_[b] = last_I;
     j_pos_[b] = last_J;
     k_pos_[b] = k;
   }
+
+  for (int s = first_S_+1; s < static_cast<int>(interval_simboxes.size()) ; s++){
+    for (int k = 0; k<interval_simboxes[s].getnz(); k++){
+      b++;
+      i_pos_[b] = last_I;
+      j_pos_[b] = last_J;
+      k_pos_[b] = k;
+    }
+  }
+
+  // EN HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   dz_ = static_cast<float>(interval_simboxes[last_S_].getRelThick(i_pos_[0],j_pos_[0])*interval_simboxes[last_S_].getdz());
 
@@ -890,9 +944,9 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid    & stormgrid,
   //kpos_ = new int[nBlocks_];
 
   //int   dummy;
-  const std::vector<double> & x = GetXposNotBlocked();
-  const std::vector<double> & y = GetYposNotBlocked();
-  const std::vector<double> & z = GetZposNotBlocked();
+  const std::vector<double> & x = GetXposRawLogs();
+  const std::vector<double> & y = GetYposRawLogs();
+  const std::vector<double> & z = GetZposRawLogs();
 
   //
   // Set IJK for virtual part of well in upper part of stormgrid
@@ -1719,11 +1773,11 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(float     *& blocked_log,
 }
 //------------------------------------------------------------------------------
 void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * well_data,
-                                                  std::vector<double>                          & x_pos_unblocked,
-                                                  std::vector<double>                          & y_pos_unblocked,
-                                                  std::vector<double>                          & z_pos_unblocked,
-                                                  std::vector<double>                          & twt_unblocked,
-                                                  std::vector<int>                             & facies_unblocked,
+                                                  std::vector<double>                          & x_pos_raw_logs,
+                                                  std::vector<double>                          & y_pos_raw_logs,
+                                                  std::vector<double>                          & z_pos_raw_logs,
+                                                  std::vector<double>                          & twt_raw_logs,
+                                                  std::vector<int>                             & facies_raw_logs,
                                                   std::map<std::string, std::vector<double> >  & continuous_logs_unblocked,
                                                   std::map<std::string, std::vector<int> >     & discrete_logs_unblocked,
                                                   const std::vector<std::string>               & cont_logs_to_be_blocked,
@@ -1784,12 +1838,12 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
       // TWT is the variable we are testing for WELLMISSING values
       double dummy = continuous_logs_unblocked_temp.find("TWT")->second[i];
       if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
-        x_pos_unblocked.push_back(continuous_logs_well.find("X_pos")->second[i]);
-        y_pos_unblocked.push_back(continuous_logs_well.find("Y_pos")->second[i]);
-        z_pos_unblocked.push_back(continuous_logs_well.find("TVD")->second[i]);
-        twt_unblocked.push_back(continuous_logs_well.find("TWT")->second[i]);
+        x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
+        y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
+        z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
+        twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
         if(facies_log_defined_)
-          facies_unblocked.push_back(discrete_logs_well.find("Facies")->second[i]);
+          facies_raw_logs.push_back(discrete_logs_well.find("Facies")->second[i]);
 
         // Loop over continuous variables and push back this element
         for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
