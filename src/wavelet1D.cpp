@@ -59,7 +59,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
   //cnzp_       = nzp_/2+1;
-  rnzp_       = 2*cnzp_;
+  //rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
   cz_         = 0;
   inFFTorder_ = true;
@@ -69,6 +69,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
   nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
   cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -96,28 +97,27 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   std::vector<float>  dzWell(nWells);
 
   int i = 0;
-  //for(int i=0;i<nWells;i++) {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     const BlockedLogsCommon * blocked_log = iter->second;
 
     cpp_r[i]           = new fftw_real[rnzp_];
     synt_seis_r[i]     = new fftw_real[rnzp_];
-    for(int j=0;j<rnzp_;j++) {
+
+    for (int j=0; j < rnzp_; j++) {
       cpp_r[i][j]       = 0;
       synt_seis_r[i][j] = 0;
     }
+
     seis_r[i]                   = new fftw_real[rnzp_];
     cor_cpp_r[i]                = new fftw_real[rnzp_];
     ccor_seis_cpp_r[i]          = new fftw_real[rnzp_];
     wavelet_r[i]                = new fftw_real[rnzp_];
 
-    //const std::vector<int> ipos = blocked_logs[i]->GetIposVector();
-    //const std::vector<int> jpos = blocked_logs[i]->GetJposVector();
-    const std::vector<int> ipos = blocked_log->GetIposVector();
-    const std::vector<int> jpos = blocked_log->GetJposVector();
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
 
-    dzWell[i]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    dzWell[i]                     = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
 
     i++;
   }
@@ -132,13 +132,10 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   int nUsedWells = 0;
 
   int w = 0;
-  //for (int w = 0 ; w < nWells ; w++) {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if (wells[w]->getUseForWaveletEstimation()) {
-    //if(modelSettings->getIndicatorWavelet(w) > 0) {
     if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
 
@@ -237,8 +234,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     std::vector<float> shiftWell(nWells);
     float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
     multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-    for(int w=0;w<nWells;w++)
-    {
+    for(int w=0; w < nWells;w++) {
       if(wellWeight[w]>0)
         adjustLowfrequency(ccor_seis_cpp_r[w], dzWell[w],  nzp_, waveletTaperLength);
     }
@@ -341,12 +337,10 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
     w = 0;
-    //for(int w=0; w<nWells; w++) {
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;
-      //if (wells[w]->getUseForWaveletEstimation() &&
-        //if(modelSettings->getIndicatorWavelet(w) > 0 &&
+
       if(blocked_log->GetUseForWaveletEstimation() &&
         ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
 

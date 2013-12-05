@@ -14,8 +14,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      std::string    & err_text,
                                      bool           & failed) {
 
-  std::vector<std::string> interval_names_ = model_settings->getIntervalNames();
-  n_intervals_ = static_cast<int>(interval_names_.size());
+  std::vector<std::string> interval_names_                        = model_settings->getIntervalNames();
+  n_intervals_                                                    = static_cast<int>(interval_names_.size());
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
 
@@ -119,7 +119,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   //Set up a vector of simboxes, one per interval.
 
-  interval_simboxes_.resize(interval_names_.size());
+  //interval_simboxes_.resize(interval_names_.size()); //H Removed
+
+  //H Testing while SetupIntervalSimbox is uncomplete.
+  //interval_names_.push_back("test");
+  //multiple_interval_setting_ = true;
 
   if (!failed){
     try{
@@ -167,14 +171,14 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   // 3. SET UP BACKGROUND MODEL ----------------------------------------------------------
 
-  if (model_settings->getIntervalNames().size() > 0) {
-    parameters_.resize(model_settings->getIntervalNames().size());
-    background_vs_vp_ratios_.resize(model_settings->getIntervalNames().size());
-  }
+  //if (model_settings->getIntervalNames().size() > 0) {
+  //  parameters_.resize(model_settings->getIntervalNames().size());
+  //  background_vs_vp_ratios_.resize(model_settings->getIntervalNames().size());
+  //}
 
-  std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
-  std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
-  std::vector<NRLib::Grid<double> > rho_intervals(n_intervals_);
+  //std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
+  //std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
+  //std::vector<NRLib::Grid<double> > rho_intervals(n_intervals_);
 
   //if (!failed){
   //  try{
@@ -228,6 +232,18 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
                                              double                                      & relative_grid_resolution,
                                              std::string                                 & err_text,
                                              bool                                        & failed) const{
+
+
+  // H TESTING WITH ONE CORRELATION DIRECTION
+  Surface * corr_surf     = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
+  int n_layers = model_settings->getTimeNz();
+  Surface top_surface = eroded_surfaces_[0];
+  Surface base_surface = eroded_surfaces_[1];
+  interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+  interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+
+
+
   // Calculate Z padding ----------------------------------------------------------------
   int status = interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
   EstimateZPaddingSize(&interval_simbox, model_settings);

@@ -24,32 +24,33 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
                                      std::string     & err_text,
                                      float             max_hz_background,
                                      float             max_hz_seismic) {
-  n_angles_ = 0;
-  well_name_ = well_data->GetWellName();
-  n_layers_ = estimation_simbox->getnz();
-  n_blocks_ = 0;
-  interpolate_ = interpolate;
-  is_deviated_ = well_data->IsDeviated();
+  n_angles_                     = 0;
+  well_name_                    = well_data->GetWellName();
+  n_layers_                     = estimation_simbox->getnz();
+  n_blocks_                     = 0;
+  interpolate_                  = interpolate;
+  is_deviated_                  = well_data->IsDeviated();
   use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-  real_vs_log_ = well_data->GetRealVsLog();
-  use_for_wavelet_estimation_ = well_data->GetUseForWaveletEstimation();
-  use_for_background_trend_ = well_data->GetUseForBackgroundTrend();
-  use_for_filtering_ = well_data->GetUseForFiltering();
+  real_vs_log_                  = well_data->GetRealVsLog();
+  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+  use_for_filtering_            = well_data->GetUseForFiltering();
+  facies_log_defined_           = false;
 
   // Get all continuous and discrete logs
   std::vector<std::string> cont_logs_to_be_blocked;
   std::vector<std::string> disc_logs_to_be_blocked;
   const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
   const std::map<std::string,std::vector<int> > disc_logs = well_data->GetDiscLog();
-  for(std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
+  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
     cont_logs_to_be_blocked.push_back(it->first);
   }
-  for(std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
+  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
     disc_logs_to_be_blocked.push_back(it->first);
   }
 
   // FACIES
-  if(well_data->HasFaciesLog()){
+  if (well_data->HasFaciesLog()){
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
@@ -62,10 +63,10 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
 
   well_data->SetNumberOfNonMissingData(n_data_);
 
-  if(failed)
+  if (failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
-  if(max_hz_background != 0.0 || max_hz_seismic != 0.0)
+  if (max_hz_background != 0.0 || max_hz_seismic != 0.0)
     FilterLogs(max_hz_background, max_hz_seismic);
 
   if (!failed)
@@ -85,18 +86,25 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      bool                               interpolate,
                                      //bool                             & failed,
                                      std::string                      & err_text){
-  n_angles_ = 0;
-  well_name_ = well_data->GetWellName();
-  n_layers_ = estimation_simbox->getnz();
-  n_blocks_ = 0;
-  interpolate_ = interpolate;
-  bool failed = false;
-  is_deviated_ = well_data->IsDeviated();
+  n_angles_                     = 0;
+  well_name_                    = well_data->GetWellName();
+  n_layers_                     = estimation_simbox->getnz();
+  n_blocks_                     = 0;
+  interpolate_                  = interpolate;
+  bool failed                   = false;
+  is_deviated_                  = well_data->IsDeviated();
   use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-  real_vs_log_ = well_data->GetRealVsLog();
-  use_for_wavelet_estimation_ = well_data->GetUseForWaveletEstimation();
-  use_for_background_trend_ = well_data->GetUseForBackgroundTrend();
-  use_for_filtering_ = well_data->GetUseForFiltering();
+  real_vs_log_                  = well_data->GetRealVsLog();
+  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+  use_for_filtering_            = well_data->GetUseForFiltering();
+  facies_log_defined_           = false;
+
+  // FACIES
+  if (well_data->HasFaciesLog()){
+    facies_log_defined_ = true;
+    facies_map_ = well_data->GetFaciesMap();
+  }
 
   // Get well name
   well_name_ = well_data->GetWellName();
@@ -106,15 +114,15 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
-  if(failed)
+  if (failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
   if (!failed)
     BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+              discrete_logs_blocked_, n_data_, interpolate, facies_map_, facies_log_defined_, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
+  n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 }
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
@@ -144,10 +152,10 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   std::vector<std::string> disc_logs_to_be_blocked;
   const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
   const std::map<std::string,std::vector<int> > disc_logs = well_data->GetDiscLog();
-  for(std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
+  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
     cont_logs_to_be_blocked.push_back(it->first);
   }
-  for(std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
+  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
     disc_logs_to_be_blocked.push_back(it->first);
   }
 
@@ -162,7 +170,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   FindBlockIJK(stormgrid, b_ind);
 
 
-  for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked_.begin(); it!=continuous_logs_unblocked_.end(); it++){
+  for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked_.begin(); it!=continuous_logs_unblocked_.end(); it++){
     std::vector<double> temp_vector_blocked;
 
     BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
@@ -209,7 +217,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
     // Continuous logs
 
-    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++) {
+    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++) {
       std::vector<double> temp_vector_blocked;
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
@@ -222,11 +230,11 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     (void) discrete_logs_unblocked;
     (void) discrete_logs_blocked;
 
-    if(interpolate){
-      for(unsigned int i=1;i<n_data;i++) {
-        if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+    if (interpolate){
+      for (unsigned int i=1;i<n_data;i++) {
+        if (abs(b_ind[i]-b_ind[i-1]) > 1) {
           int start, end;
-          if(b_ind[i] > b_ind[i-1]) {
+          if (b_ind[i] > b_ind[i-1]) {
             start = b_ind[i-1];
             end   = b_ind[i];
           }
@@ -234,7 +242,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
             start = b_ind[i];
             end   = b_ind[i-1];
           }
-          for(int j = start+1;j<end;j++) {
+          for (int j = start+1;j<end;j++) {
             float t = static_cast<float>(j-start)/static_cast<float>(end-start);
             // Coordinate logs
             InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
@@ -243,7 +251,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
             InterpolateContinuousLog(twt_blocked_, start, end, j, t);
 
             // all blocked continuous logs
-            for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
+            for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
               InterpolateContinuousLog(it->second, start, end, j, t);
             }
 
@@ -252,7 +260,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
       }
     }
 
-    if(cont_logs_background_resolution_.size() > 1)
+    if (cont_logs_background_resolution_.size() > 1)
       CreateHighCutBackground(b_ind);
 
   }catch(NRLib::Exception & e) {
@@ -264,11 +272,11 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
 
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                                  std::vector<int>     & b_ind){
+                                                  std::vector<int>     & b_ind) {
   int   nd = static_cast<int>(b_ind.size());
-  const std::vector<double> x_pos = GetXpos();
-  const std::vector<double> y_pos = GetYpos();
-  const std::vector<double> tvd   = GetTVD();
+  const std::vector<double> & x_pos = x_pos_unblocked_; //H Changed from GetXpos();
+  const std::vector<double> & y_pos = y_pos_unblocked_; //GetYpos();
+  const std::vector<double> & tvd   = z_pos_unblocked_; //GetTVD();
 
   //
   // Find first cell in Simbox that the well hits
@@ -394,9 +402,9 @@ BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
   size_t first_J = missing;
   size_t first_K = missing;
 
-  for(int m=0; m<nd; m++) {
+  for (int m=0; m<nd; m++) {
     inside = stormgrid.IsInside(x[m], y[m], z[m]);
-    if(inside == true) {
+    if (inside == true) {
       stormgrid.FindIndex(x[m], y[m], z[m], first_I, first_J, first_K);
       first_M_ = m;
       break;
@@ -416,7 +424,7 @@ BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
 
   for (int m=nd-1; m>0; m--) {
     inside = stormgrid.IsInside(x[m], y[m], z[m]);
-    if(inside == true) {
+    if (inside == true) {
       stormgrid.FindIndex(x[m], y[m], z[m], last_I, last_J, last_K);
       last_M_ = m;
       break;
@@ -489,9 +497,9 @@ void    BlockedLogsCommon::FindBlockIJK(const Simbox             * const estimat
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  const std::vector<double> x_pos = this->GetXpos();
-  const std::vector<double> y_pos = this->GetYpos();
-  const std::vector<double> z_pos = this->GetZpos();
+  const std::vector<double> & x_pos = x_pos_unblocked_; // H changed from this->GetXpos();
+  const std::vector<double> & y_pos = y_pos_unblocked_; //this->GetYpos();
+  const std::vector<double> & z_pos = z_pos_unblocked_; //this->GetZpos();
 
   //
   // Set IJK for virtual part of well in upper part of simbox
@@ -655,7 +663,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     // Set undefined
     //
     std::vector<int> facies_numbers;
-    for(std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++){
+    for (std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++){
       facies_numbers.push_back(it->first);
     }
     //facies_numbers_ = facies_numbers;
@@ -693,7 +701,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     for (int i = 0 ; i < n_facies ; i++)
       count[i] = 0;
     int value = well_log[first_M_];
-    if(value!=IMISSING)
+    if (value!=IMISSING)
       count[table[value]]++;
 
     for (int m = first_M_+1 ; m < last_M_ + 1 ; m++) {
@@ -703,7 +711,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
           count[i] = 0;
       }
     value = well_log[m];
-    if(value!=IMISSING)
+    if (value!=IMISSING)
       count[table[value]]++;
     }
     blocked_log[b_ind[last_M_]] = FindMostProbable(count, n_facies, b_ind[last_M_]);
@@ -754,7 +762,7 @@ void  BlockedLogsCommon::InterpolateContinuousLog(std::vector<double>   & blocke
                                                   int                     index,
                                                   float                   rel)
 {
-  if(blocked_log[start] != RMISSING && blocked_log[end] != RMISSING && blocked_log[index] == RMISSING)
+  if (blocked_log[start] != RMISSING && blocked_log[end] != RMISSING && blocked_log[index] == RMISSING)
     blocked_log[index] = rel*blocked_log[end]+(1-rel)*blocked_log[start];
 }
 
@@ -771,7 +779,7 @@ void BlockedLogsCommon::SetSeismicGradient(double                            v0,
   y_gradient.resize(n_blocks_);
 
   double mp= 2.0/(v0*0.001);
-  for(size_t k = 0; k < n_blocks_; k++){
+  for (size_t k = 0; k < n_blocks_; k++){
     int i = i_pos_[k];
     int j = j_pos_[k];
     x_gradient[k]= structure_depth_grad_x(i,j)*mp+ref_time_grad_x(i,j);
@@ -828,7 +836,7 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
   int nx = estimation_simbox->getnx();
   int ny = estimation_simbox->getny();
   int di_neg = 0; int di_pos = 0; int dj_neg = 0; int dj_pos = 0; //The max replacement in well in x and y direction.
-  for(k = 1; k < n_blocks_; k++){
+  for (k = 1; k < n_blocks_; k++){
     di_pos = std::max(i0 - i_pos_[k] , di_pos);
     di_neg = std::min(i0 - i_pos_[k] , di_neg);
     dj_pos = std::max(j0 - j_pos_[k] , dj_pos);
@@ -842,9 +850,9 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
 
   int di = i0 - i_pos_[0];
   int dj = j0 - j_pos_[0];
-  if(di != 0 || dj != 0){
+  if (di != 0 || dj != 0){
     //adjust the well location
-    for(k = 0; k < n_blocks_; k++){
+    for (k = 0; k < n_blocks_; k++){
       i_pos_[k] += di;
       j_pos_[k] += dj;
     }
@@ -856,16 +864,16 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
   delete [] buffer;
 
   double dz, ztop, dzW, ztopW;
-  for(l = 0; l < n_angles; l++){
-    for(j = -yEx; j <= yEx; j++){
-      for(i = -xEx; i <= xEx; i++){
+  for (l = 0; l < n_angles; l++){
+    for (j = -yEx; j <= yEx; j++){
+      for (i = -xEx; i <= xEx; i++){
 
         seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0); ///H Correct values returned?
         //seis_trace = seisCube[l]->getRealTrace2(i0, j0);
 
         SmoothTrace(seis_trace);
-        //if(j == 0 ){
-        //  for(int s = 0; s < seisTrace.size(); s++)
+        //if (j == 0 ){
+        //  for (int s = 0; s < seisTrace.size(); s++)
         //    out << seisTrace[s] << std::endl;
         //}
 
@@ -876,8 +884,8 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
         //seis_trace = seisCube[l]->getRealTrace2(i0+i, j0+j);
         seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0);
         SmoothTrace(seis_trace);
-        if(i==0){
-          for(size_t s = 0; s < seis_trace.size(); s++)
+        if (i==0){
+          for (size_t s = 0; s < seis_trace.size(); s++)
             out << seis_trace[s] << std::endl;
         }
 
@@ -888,9 +896,9 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
         PeakMatch(z_peak,peak,b,z_peak_well,peak_well,b_well);//Finds the matching peaks in two traces
         z_shift[(i+2) + (j+2)*nZx] = ComputeShift(z_peak,z_peak_well,z_pos_blocked_[0]);
 
-        for(k = 1; k < n_blocks_; k++){
+        for (k = 1; k < n_blocks_; k++){
           //Check if well changes lateral position
-          if((i_pos_[k]- i_pos_[k-1] == 0) && (j_pos_[k] - j_pos_[k-1] == 0))
+          if ((i_pos_[k]- i_pos_[k-1] == 0) && (j_pos_[k] - j_pos_[k-1] == 0))
             z_shift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = ComputeShift(z_peak,z_peak_well,z_pos_blocked_[k]);
           else{
             //well has changed lateral position and we adapt to the new well position
@@ -924,7 +932,7 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
 
   SmoothGradient(x_gradient, y_gradient, q_epsilon, q_epsilon_data, sigma_gradient);
   // NBNB Odd sl�r av estimeringen for � teste om det gir bedre resultat
- /* for(k = 0; k < nBlocks_; k++){
+ /* for (k = 0; k < nBlocks_; k++){
     xGradient[k]=0.0;
     yGradient[k]=0.0;
   }*/
@@ -943,16 +951,16 @@ void BlockedLogsCommon::SmoothTrace(std::vector<float> &trace)
   unsigned int i;
   int j;
   float tmp;
-  for(j = -L; j <= L; j++){
+  for (j = -L; j <= L; j++){
     tmp = (j*j)/(2*sigma*sigma);
     gk[j+L] = exp(-tmp);
   }
 
   float N;
-  for(i = 0; i < n_trace; i++){
+  for (i = 0; i < n_trace; i++){
     N = 0;
-    for(j = -L; j <= L; j++){
-      if(i+j >= 0 && i+j < n_trace){
+    for (j = -L; j <= L; j++){
+      if (i+j >= 0 && i+j < n_trace){
         s_trace[i] += gk[j+L]*trace[i+j];
         N += gk[j+L];
       }
@@ -960,7 +968,7 @@ void BlockedLogsCommon::SmoothTrace(std::vector<float> &trace)
     s_trace[i] /= N;
   }
 
-  for(i = 0; i < n_trace; i++)
+  for (i = 0; i < n_trace; i++)
     trace[i] = s_trace[i];
 }
 
@@ -975,8 +983,8 @@ void BlockedLogsCommon::FindPeakTrace(std::vector<float> &trace, std::vector<dou
   double a;
   double c;
   int counter = 0;
-  for(k = 1; k < N-1; k++){
-    if((trace[k] >= trace[k-1] && trace[k] > trace[k+1]) || (trace[k] <= trace[k-1] && trace[k] < trace[k+1])){
+  for (k = 1; k < N-1; k++){
+    if ((trace[k] >= trace[k-1] && trace[k] > trace[k+1]) || (trace[k] <= trace[k-1] && trace[k] < trace[k+1])){
       //Data point for interpolation
       x1 = -dz; x2 = 0; x3 = dz;
       y1 = static_cast<double>(trace[k-1]); y2 = static_cast<double>(trace[k]); y3 = static_cast<double>(trace[k+1]);
@@ -1020,14 +1028,14 @@ void BlockedLogsCommon::PeakMatch(std::vector<double> &z_peak, std::vector<doubl
 
   int counter = 0;
   unsigned int lim = 0;
-  for(i = 0; i < z_peak_w.size(); i++){
-    for(j = lim; j < z_peak.size(); j++){
+  for (i = 0; i < z_peak_w.size(); i++){
+    for (j = lim; j < z_peak.size(); j++){
       diffz = fabs(z_peak_w[i] - z_peak[j]);
-      if(diffz < maxdiffz){
+      if (diffz < maxdiffz){
         //Check if the peaks point in the same direction
-        if((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
+        if ((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
           // Check for difference in peak size
-          if((fabs(peak_w[i] - peak[j]))/(fabs(peak_w[i]) + fabs(peak[j])) < diffp){
+          if ((fabs(peak_w[i] - peak[j]))/(fabs(peak_w[i]) + fabs(peak[j])) < diffp){
             pW[counter] = z_peak_w[i];
             p[counter] =  z_peak[j];
             counter++;
@@ -1038,7 +1046,7 @@ void BlockedLogsCommon::PeakMatch(std::vector<double> &z_peak, std::vector<doubl
     }
   }
   z_peak_w.resize(counter); z_peak.resize(counter);
-  for(i = 0; i < static_cast<unsigned int>(counter); i++){
+  for (i = 0; i < static_cast<unsigned int>(counter); i++){
     z_peak_w[i] = pW[i];
     z_peak[i] =  p[i];
   }
@@ -1050,19 +1058,19 @@ double BlockedLogsCommon::ComputeShift(std::vector<double> &z_peak, std::vector<
   //This routine computes the position of z0 between two peaks in the well and finds the corresponding distance in
   //the other trace. Then zShift is the difference in z between the two.
   unsigned int N = static_cast<unsigned int>(z_peak.size());
-  if(N == 0)
+  if (N == 0)
     return RMISSING; //The case of no match in the traces
   else{
     unsigned int i;
     int pos = 0;
     double zShift;
-    if(z0 < z_peak_w[0])
+    if (z0 < z_peak_w[0])
       zShift = z_peak_w[0] - z_peak[0];
-    else if(z0 >= z_peak_w[N-1])
+    else if (z0 >= z_peak_w[N-1])
       zShift = z_peak_w[N-1] - z_peak[N-1];
     else{
-      for(i = 0; i < N-1; i++){
-        if(z0 >= z_peak_w[i] && z0 < z_peak_w[i+1]){
+      for (i = 0; i < N-1; i++){
+        if (z0 >= z_peak_w[i] && z0 < z_peak_w[i+1]){
           pos = i;
           i = N;
         }
@@ -1091,7 +1099,7 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
   char* buffer = new char[1000];
   sprintf(buffer,"%s.txt", "C:/Outputfiles/gradNoSmooth");
   std::ofstream out;
-  if(append){
+  if (append){
     out.open(buffer, std::ios::app|std::ios::out);
   }
   else{
@@ -1106,12 +1114,12 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
   int cy, cz;
   int counter1 = 0;
   int counter2 = 0;
-  for(l = 0; l < n_blocks_; l++){
+  for (l = 0; l < n_blocks_; l++){
     cy = 0; cz = 0;
-    for(j = 0; j < ny; j++){
-      for(i = 0; i < nx; i++){
+    for (j = 0; j < ny; j++){
+      for (i = 0; i < nx; i++){
         data = z_shift[i + j*nx + l*nx*ny];
-        if(data != RMISSING){
+        if (data != RMISSING){
           Y[cy] = data;
           Z[cz] = 1.0;
           Z[cz + 1] = (i-(nx-1)/2)*dx;
@@ -1128,10 +1136,10 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
 
     //Compute inverse covariance (ZtZ)^-1 (diagonal matrix for our purpose)
     double tmp;
-    for(j = 0; j < 3; j++){
-      for(i = 0; i < 3; i++){
+    for (j = 0; j < 3; j++){
+      for (i = 0; i < 3; i++){
         tmp = 0;
-        for(k = 0; k < ndata; k++)
+        for (k = 0; k < ndata; k++)
           tmp += Z[i + 3*k] * Z[j + 3*k];
         cov[i + 3*j] = tmp;
       }
@@ -1139,7 +1147,7 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
     double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
                   +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
 
-    if(det != 0){
+    if (det != 0){
       invcov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
       invcov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
       invcov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
@@ -1154,10 +1162,10 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
 
       //Compute regression matrix (ZtZ)^-1Zt
       regM.resize(static_cast<unsigned int>(3*ndata));
-      for(j = 0; j < 3; j++){
-        for(i = 0; i < ndata; i++){
+      for (j = 0; j < 3; j++){
+        for (i = 0; i < ndata; i++){
           tmp = 0;
-          for(k = 0; k < 3; k++)
+          for (k = 0; k < 3; k++)
             tmp += invcov[k + 3*j]*Z[k + 3*i];
           regM[i + j*ndata] = tmp;
         }
@@ -1168,13 +1176,13 @@ void BlockedLogsCommon::ComputeGradient(std::vector<double> &q_epsilon, std::vec
       double beta0 = 0;
       double beta1 = 0;
       double beta2 = 0;
-      for(j = 0; j < ndata; j++){
+      for (j = 0; j < ndata; j++){
         beta0 += regM[j]*Y[j];
         beta1 += regM[j + ndata]*Y[j];
         beta2 += regM[j + 2*ndata]*Y[j];}
       double sigma2 = 0;
       double sigmatmp;
-      for(j = 0; j < ndata; j++){
+      for (j = 0; j < ndata; j++){
         sigmatmp = Y[j] - beta0*Z[j*3] - beta1*Z[j*3 + 1] - beta2*Z[j*3 + 2];
         sigma2 += sigmatmp*sigmatmp;
       }
@@ -1215,10 +1223,10 @@ void BlockedLogsCommon::SmoothGradient(std::vector<double>               & x_gra
   ComputePrecisionMatrix(a,b,c);
 
   //Initialize the Qm|d matrix
-  for(i = 0; i < n_beta - 2; i++){
+  for (i = 0; i < n_beta - 2; i++){
     q_beta_data(i,i)   = c + q_epsilon[2*i];
     q_beta_data(i,i+2) = b;
-    if(i % 2 == 0)
+    if (i % 2 == 0)
       q_beta_data(i,i+1) = q_epsilon[2*i+1];
     else
       q_beta_data(i,i+1) = 0;
@@ -1242,9 +1250,9 @@ void BlockedLogsCommon::SmoothGradient(std::vector<double>               & x_gra
   //Compute the product (Qbeta_Data)^-1 Qepsilon_data
   NRLib::Vector res(n_beta);
 
-  for(i = 0; i < n_beta; i++){
+  for (i = 0; i < n_beta; i++){
     double tmp = 0;
-    for(j = 0; j < n_beta; j++)
+    for (j = 0; j < n_beta; j++)
       tmp += I(i,j)*q_epsilon_data[j];
     res(i) = tmp;
   }
@@ -1252,15 +1260,15 @@ void BlockedLogsCommon::SmoothGradient(std::vector<double>               & x_gra
   // Return Sigma_gradient
   sigma_gradient.resize(n_beta);
   std::vector<double> tmp_vec(n_beta);
-  for(i = 0; i < n_beta; i++){
-    for(j = 0; j < n_beta; j++)
+  for (i = 0; i < n_beta; i++){
+    for (j = 0; j < n_beta; j++)
       tmp_vec[j] = I(i,j);
     sigma_gradient[i] = tmp_vec;
   }
 
 
   int counter = 0;
-  for(size_t i = 0; i < n_blocks_; i++){
+  for (size_t i = 0; i < n_blocks_; i++){
     x_gradient[i] = res(counter);
     y_gradient[i] = res(counter+1);
     counter += 2;
@@ -1270,7 +1278,7 @@ void BlockedLogsCommon::SmoothGradient(std::vector<double>               & x_gra
    char* buffer2 = new char[1000];
    sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
    std::ofstream out2(buffer2);
-   for(i = 0; i < nBlocks_; i++){
+   for (i = 0; i < nBlocks_; i++){
        out2 << xGradient[i] << " " << yGradient[i];
      out2 << std::endl;
    }
@@ -1303,7 +1311,7 @@ BlockedLogsCommon::InterpolateTrend(const std::vector<double> & blocked_log,
   for (size_t m = 1 ; m < n_blocks_ ; m++) {
     if (abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
-      if(k_pos_[m] < k_pos_[m-1])
+      if (k_pos_[m] < k_pos_[m-1])
         delta = -1;
       float step_mult = static_cast<float>(delta)/static_cast<float>(k_pos_[m]-k_pos_[m-1]);
       float t = step_mult;
@@ -1334,7 +1342,7 @@ void BlockedLogsCommon::EstimateCor(fftw_complex * var1_c,
                                     fftw_complex * ccor_1_2_c,
                                     int            cnzp) const
 {
-  for(int i=0;i<cnzp;i++){
+  for (int i=0;i<cnzp;i++){
     ccor_1_2_c[i].re =  var1_c[i].re*var2_c[i].re + var1_c[i].im*var2_c[i].im;
     ccor_1_2_c[i].im = -var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
   }
@@ -1417,62 +1425,65 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
   // Get the continuous and discrete logs from the Well object
 
   try{
-    std::map<std::string,std::vector<double> > continuous_logs_well = well_data->GetContLog();
-    std::map<std::string,std::vector<int> > discrete_logs_well = well_data->GetDiscLog();
+    std::map<std::string,std::vector<double> >  continuous_logs_well = well_data->GetContLog();
+    std::map<std::string,std::vector<int> >     discrete_logs_well   = well_data->GetDiscLog();
 
-    std::map<std::string, std::vector<double> >   continuous_logs_unblocked_temp;
-    std::map<std::string, std::vector<int> >      discrete_logs_unblocked_temp;
+    std::map<std::string, std::vector<double> > continuous_logs_unblocked_temp;
+    std::map<std::string, std::vector<int> >    discrete_logs_unblocked_temp;
 
     // Pick only the variables that are requested in the constructor --------------------------------------------------------
 
     // Find the continuous vectors in the wells that are to be blocked
-    for(unsigned int i=0; i<cont_logs_to_be_blocked.size(); i++){
+    for (unsigned int i=0; i<cont_logs_to_be_blocked.size(); i++){
       std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(cont_logs_to_be_blocked[i]);
       // if the well log contains this continuous log
-      if(it != continuous_logs_well.end()){
+      if (it != continuous_logs_well.end()){
         continuous_logs_unblocked_temp.insert(std::pair<std::string, std::vector<double> >(it->first, it->second));
       }
     }
 
     // Find the discrete vectors in the wells that are to be blocked
-    for(unsigned int i=0; i<disc_logs_to_be_blocked.size(); i++){
+    for (unsigned int i=0; i<disc_logs_to_be_blocked.size(); i++){
       std::map<std::string,std::vector<int> >::iterator it = discrete_logs_well.find(disc_logs_to_be_blocked[i]);
       // if the well log contains this discrete log
-      if(it != discrete_logs_well.end()){
+      if (it != discrete_logs_well.end()){
         discrete_logs_unblocked_temp.insert(std::pair<std::string, std::vector<int> >(it->first, it->second));
       }
     }
 
-    for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
+    for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
       std::vector<double> temp_vector;
       continuous_logs_unblocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector));
     }
 
-    for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
+    for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
       std::vector<int> temp_vector;
       discrete_logs_unblocked.insert(std::pair<std::string, std::vector<int> >(it->first, temp_vector));
     }
 
 
     // Remove WELLMISSING data from wells
-    for(unsigned int i=0; i<n_data_with_wellmissing; i++){
+    for (unsigned int i=0; i<n_data_with_wellmissing; i++){
       // TWT is the variable we are testing for WELLMISSING values
-      double dummy = continuous_logs_unblocked_temp.find("TWT")->second[i];
-      if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
+
+      //double dummy = continuous_logs_unblocked_temp.find("TWT")->second[i];
+      double dummy = continuous_logs_well.find("TWT")->second[i];  //H Changed in debugging test_case_2
+
+      if (dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
         x_pos_unblocked.push_back(continuous_logs_well.find("X_pos")->second[i]);
         y_pos_unblocked.push_back(continuous_logs_well.find("Y_pos")->second[i]);
         z_pos_unblocked.push_back(continuous_logs_well.find("TVD")->second[i]);
         twt_unblocked.push_back(continuous_logs_well.find("TWT")->second[i]);
-        if(facies_log_defined_)
+        if (facies_log_defined_)
           facies_unblocked.push_back(discrete_logs_well.find("Facies")->second[i]);
 
         // Loop over continuous variables and push back this element
-        for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
+        for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
           continuous_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
         }
 
         // Loop over discrete variables and push back this element
-        for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
+        for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
           discrete_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
         }
 
@@ -1546,16 +1557,16 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
 
   fftw_real    ** ccor_seis_cpp_Max_r = new fftw_real*[n_angles];
 
-  for(i=0; i < n_angles; i++) {
+  for (i=0; i < n_angles; i++) {
     max_value_max[i] = 0.0f;
     shift_I_max[i]   = 0;
   }
 
   // make offset vectors
-  for(i=-i_max_offset; i < i_max_offset+1; i++) {
+  for (i=-i_max_offset; i < i_max_offset+1; i++) {
     i_offset[i+i_max_offset]=i;
   }
-  for(j=-j_max_offset; j < j_max_offset+1; j++) {
+  for (j=-j_max_offset; j < j_max_offset+1; j++) {
     j_offset[j+j_max_offset]=j;
   }
 
@@ -1564,12 +1575,12 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   GetVerticalTrendLimited(GetRhoUnblocked(), rho_vert, limits);
 
   std::vector<bool> has_data(n_layers_);
-  for(i = 0 ; i < n_layers_ ; i++) {
+  for (i = 0 ; i < n_layers_ ; i++) {
     has_data[i] = vp_vert[i] != RMISSING && vs_vert[i] != RMISSING && rho_vert[i] != RMISSING;
   }
   FindContinuousPartOfData(has_data, n_layers_, start, length);
 
-  for( j=0; j<n_angles; j++ ){
+  for ( j=0; j<n_angles; j++ ){
     seis_r[j]              = new fftw_real[rnzp];
     cpp_r[j]               = new fftw_real[rnzp];
     cor_cpp_r[j]           = new fftw_real[rnzp];
@@ -1578,8 +1589,8 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   }
 
   // Calculate reflection coefficients
-  for( j=0; j<n_angles; j++ ){
-    for(i=0; i<rnzp; i++){
+  for ( j=0; j<n_angles; j++ ){
+    for (i=0; i<rnzp; i++){
       cpp_r[j][i] = 0;
     }
     FillInCpp(refl_coef[j],start,length,cpp_r[j],nzp);
@@ -1608,15 +1619,15 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   }
 
   // Loop through possible well locations
-  for(k=0; k<i_tot_offset; k++){
-    if(i_pos_[0]+i_offset[k]<0 || i_pos_[0]+i_offset[k]>nx-1) //Check if position is within seismic range
+  for (k=0; k<i_tot_offset; k++){
+    if (i_pos_[0]+i_offset[k]<0 || i_pos_[0]+i_offset[k]>nx-1) //Check if position is within seismic range
       continue;
 
-    for(l=0; l<j_tot_offset; l++){
-      if(j_pos_[0]+j_offset[l]<0 || j_pos_[0]+j_offset[l]>ny-1) //Check if position is within seismic range
+    for (l=0; l<j_tot_offset; l++){
+      if (j_pos_[0]+j_offset[l]<0 || j_pos_[0]+j_offset[l]>ny-1) //Check if position is within seismic range
         continue;
 
-      for( j=0; j<n_angles; j++ ){
+      for ( j=0; j<n_angles; j++ ){
 
         for (m=0; m<static_cast<int>(n_blocks_); m++)
           seis_log[m] = seis_cube_small[j](k,l,m);
@@ -1633,32 +1644,32 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
       // positive then polarity is positive
       dz = static_cast<float>(estimation_simbox->getRelThick(i_pos_[0]+i_offset[k],j_pos_[0]+j_offset[l])*estimation_simbox->getdz());
       sum = 0;
-      for( j=0; j<n_angles; j++ ){
-        if(angle_weight[j] > 0){
-          for(i=0;i<ceil(max_shift/dz);i++)//zero included
+      for ( j=0; j<n_angles; j++ ){
+        if (angle_weight[j] > 0){
+          for (i=0;i<ceil(max_shift/dz);i++)//zero included
             sum+=ccor_seis_cpp_r[j][i];
-          for(i=0;i<floor(max_shift/dz);i++)
+          for (i=0;i<floor(max_shift/dz);i++)
             sum+=ccor_seis_cpp_r[j][nzp-i-1];
         }
       }
       polarity=-1;
-      if(sum > 0)
+      if (sum > 0)
         polarity=1;
 
       // Find maximum correlation and corresponding shift for each angle
       max_tot = 0.0;
-      for( j=0; j<n_angles; j++ ){
-        if(angle_weight[j]>0){
+      for ( j=0; j<n_angles; j++ ){
+        if (angle_weight[j]>0){
           max_value[j] = 0.0f;
           shift_I[j]=0;
-          for(i=0;i<ceil(max_shift/dz);i++){
-            if(ccor_seis_cpp_r[j][i]*polarity > max_value[j]){
+          for (i=0;i<ceil(max_shift/dz);i++){
+            if (ccor_seis_cpp_r[j][i]*polarity > max_value[j]){
               max_value[j] = ccor_seis_cpp_r[j][i]*polarity;
               shift_I[j] = i;
             }
           }
-          for(i=0;i<floor(max_shift/dz);i++){
-            if(ccor_seis_cpp_r[j][nzp-1-i]*polarity > max_value[j]){
+          for (i=0;i<floor(max_shift/dz);i++){
+            if (ccor_seis_cpp_r[j][nzp-1-i]*polarity > max_value[j]){
               max_value[j] = ccor_seis_cpp_r[j][nzp-1-i]*polarity;
               shift_I[j] = -1-i;
             }
@@ -1667,39 +1678,39 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
         }
       }
 
-      if(max_tot > max_value_tot){
+      if (max_tot > max_value_tot){
         max_value_tot = max_tot;
         polarityMax = polarity;
         i_move       = i_offset[k];
         j_move       = j_offset[l];
-        for(m=0; m<n_angles; m++){
+        for (m=0; m<n_angles; m++){
           shift_I_max[m]   = shift_I[m];
           max_value_max[m] = max_value[m];
-          for(i=0;i<rnzp;i++)
+          for (i=0;i<rnzp;i++)
             ccor_seis_cpp_Max_r[m][i] = ccor_seis_cpp_r[m][i];
         }
       }
     }
   }
 
-  for(i=0; i<n_angles; i++){
+  for (i=0; i<n_angles; i++){
     shift_I[i] = shift_I_max[i];
     max_value[i] = max_value_max[i];
-    for(j=0;j<rnzp;j++)
+    for (j=0;j<rnzp;j++)
       ccor_seis_cpp_r[i][j] = ccor_seis_cpp_Max_r[i][j];
   }
   polarity = polarityMax;
 
   // Find kMove in optimal location
-  for(j=0; j<n_angles; j++){
-    if(angle_weight[j]>0){
-      if(shift_I[j] < 0){
-        if(ccor_seis_cpp_r[j][nzp+shift_I[j]-1]*polarity < max_value[j]) //then local max
+  for (j=0; j<n_angles; j++){
+    if (angle_weight[j]>0){
+      if (shift_I[j] < 0){
+        if (ccor_seis_cpp_r[j][nzp+shift_I[j]-1]*polarity < max_value[j]) //then local max
         {
           f1 = ccor_seis_cpp_r[j][nzp+shift_I[j]-1];
           f2 = ccor_seis_cpp_r[j][nzp+shift_I[j]];
           int ind3;
-          if(shift_I[j]==-1)
+          if (shift_I[j]==-1)
             ind3 = 0;
           else
             ind3=nzp+shift_I[j]+1;
@@ -1712,12 +1723,12 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
       }
       else //positive or zero shift
       {
-        if(ccor_seis_cpp_r[j][shift_I[j]+1]*polarity < max_value[j]) //then local max
+        if (ccor_seis_cpp_r[j][shift_I[j]+1]*polarity < max_value[j]) //then local max
         {
           f3 = ccor_seis_cpp_r[j][shift_I[j]+1];
           f2 = ccor_seis_cpp_r[j][shift_I[j]];
           int ind1;
-          if(shift_I[j]==0)
+          if (shift_I[j]==0)
             ind1 = nzp-1;
           else
             ind1=shift_I[j]-1;
@@ -1736,7 +1747,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   shift/=total_weight;
   k_move = shift;
 
-  for( j=0; j<n_angles; j++ ){
+  for ( j=0; j<n_angles; j++ ){
     delete [] ccor_seis_cpp_Max_r[j];
     delete [] ccor_seis_cpp_r[j];
     delete [] cor_cpp_r[j];
@@ -1763,7 +1774,7 @@ void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>       
     }
     for (int m = 0 ; m < static_cast<int>(n_blocks_); m++) {
       if (blocked_log[m] != RMISSING) {
-        if(limits.size() == 0 ||
+        if (limits.size() == 0 ||
            (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
             limits[1]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) >= z_pos_blocked_[m])) {
           trend[k_pos_[m]] += blocked_log[m];
@@ -1777,7 +1788,7 @@ void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>       
       else
         trend[k] = RMISSING;
     }
-    if(interpolate_)
+    if (interpolate_)
       InterpolateTrend(blocked_log,trend,limits);
 
   }
@@ -1795,14 +1806,14 @@ BlockedLogsCommon::InterpolateTrend(const double  * blocked_log,
                                     double        * trend)
 {
   for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
-    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+    if (abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
-      if(k_pos_[m] < k_pos_[m-1])
+      if (k_pos_[m] < k_pos_[m-1])
         delta = -1;
       double step_mult = static_cast<double>(delta)/static_cast<double>(k_pos_[m]-k_pos_[m-1]);
       double t = step_mult;
-      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
-        if(trend[j] == RMISSING)
+      for (int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if (trend[j] == RMISSING)
           trend[j] = t*blocked_log[m]+(1-t)*blocked_log[m-1];
         t += step_mult;
       }
@@ -1813,12 +1824,12 @@ BlockedLogsCommon::InterpolateTrend(const double  * blocked_log,
 void BlockedLogsCommon::InterpolateTrend(const std::vector<double>    & blocked_log,
                                          std::vector<double>          & trend) {
   for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
-    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+    if (abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
-      if(k_pos_[m] < k_pos_[m-1])
+      if (k_pos_[m] < k_pos_[m-1])
         delta = -1;
-      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
-        if(trend[j] == RMISSING)
+      for (int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if (trend[j] == RMISSING)
           trend[j] = blocked_log[m-1];
       }
     }
@@ -1829,15 +1840,15 @@ void  BlockedLogsCommon::InterpolateTrend(const std::vector<double>      & block
                                           std::vector<double>            & trend,
                                           const std::vector<Surface *>   & limits){
   for (int m = 1 ; m < static_cast<int>(n_blocks_) ; m++) {
-    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+    if (abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
-      if(k_pos_[m] < k_pos_[m-1])
+      if (k_pos_[m] < k_pos_[m-1])
         delta = -1;
       float step_mult = static_cast<float>(delta)/static_cast<float>(k_pos_[m]-k_pos_[m-1]);
       float t = step_mult;
-      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
-        if(trend[j] == RMISSING) {
-          if(limits.size() == 0 ||
+      for (int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if (trend[j] == RMISSING) {
+          if (limits.size() == 0 ||
              (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
               limits[1]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) >= z_pos_blocked_[m])) {
             trend[j] = t*blocked_log[m]+(1-t)*blocked_log[m-1];
@@ -1859,17 +1870,17 @@ void BlockedLogsCommon::FindContinuousPartOfData(const std::vector<bool> & hasDa
   int  start_longest_pice =  0;
   bool previous_had_data  = false;
 
-  for(i = 0; i < nz ;i++){
-    if(hasData[i]){
-      if(! previous_had_data)
+  for (i = 0; i < nz ;i++){
+    if (hasData[i]){
+      if (! previous_had_data)
         l_pice=1;
       else
         l_pice++;
       previous_had_data = true;
     }
     else{
-      if(previous_had_data){
-        if(length_max_pice < l_pice){
+      if (previous_had_data){
+        if (length_max_pice < l_pice){
           length_max_pice  = l_pice;
           start_longest_pice = i-l_pice;
         }
@@ -1878,8 +1889,8 @@ void BlockedLogsCommon::FindContinuousPartOfData(const std::vector<bool> & hasDa
     }
   }
 
-  if(previous_had_data){
-    if(length_max_pice < l_pice){
+  if (previous_had_data){
+    if (length_max_pice < l_pice){
       length_max_pice  = l_pice;
       start_longest_pice = i-l_pice;
     }
@@ -1899,7 +1910,7 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
                                   int           nzp){
   int i;
 
-  for(i=0;i<nzp;i++)
+  for (i=0;i<nzp;i++)
     cpp_r[i]=0;
 
   std::vector<double> vp_vert(n_layers_);
@@ -1910,10 +1921,15 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
-  for(i=start;i < start+length-1;i++)
+  std::vector<double> HTEMP;
+
+  for (i=start;i < start+length-1;i++)
   {
     double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
     double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]), coeff);
+
+    HTEMP.push_back(ei2-ei1);
+
     cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
@@ -1952,7 +1968,7 @@ void BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_lo
       else
         trend[k] = RMISSING;
     }
-    if(interpolate_ == true)
+    if (interpolate_ == true)
       InterpolateTrend(blocked_log, trend);
 
   }
@@ -2013,14 +2029,14 @@ void BlockedLogsCommon::GetVerticalTrend(const int         * blocked_log,
         count[i] = 0;
       for (size_t m = 0 ; m < n_blocks_ ; m++) {
         if (k_pos_[m] == k) {
-          if(blocked_log[m] != IMISSING) {
+          if (blocked_log[m] != IMISSING) {
             count[blocked_log[m]]++;        // Count the number of times a facies occurs in layer 'k'
           }
         }
       }
       trend[k] = FindMostProbable(count, GetNFacies(), k);
     }
-    if(interpolate_ == true)
+    if (interpolate_ == true)
       InterpolateTrend(blocked_log, trend);
 
     delete [] count;
@@ -2071,12 +2087,12 @@ BlockedLogsCommon::FindMostProbable(const int * count,
 void BlockedLogsCommon::InterpolateTrend(const int        * blocked_log,
                                          std::vector<int> & trend) {
   for (size_t m = 1 ; m < n_blocks_ ; m++) {
-    if(abs(k_pos_[m]-k_pos_[m-1]) > 1) {
+    if (abs(k_pos_[m]-k_pos_[m-1]) > 1) {
       int delta = 1;
-      if(k_pos_[m] < k_pos_[m-1])
+      if (k_pos_[m] < k_pos_[m-1])
         delta = -1;
-      for(int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
-        if(trend[j] == RMISSING)
+      for (int j = k_pos_[m-1]+delta; j != k_pos_[m];j++) {
+        if (trend[j] == RMISSING)
           trend[j] = blocked_log[m-1];
       }
     }
@@ -2125,10 +2141,10 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
                                       fftw_real             * seis_r,
                                       int                     nzp) const{
   int i;
-  for(i=0; i<nzp; i++)
+  for (i=0; i<nzp; i++)
     seis_r[i] = 0.0;
 
-  for(i=start; i<start+length; i++)
+  for (i=start; i<start+length; i++)
     seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
 /*
   int lTregion = 3;
@@ -2312,7 +2328,7 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   //
   bool filtered = ResampleTime(time_resampled, n_data_, dt); //False if well not monotonous in time.
 
-  if(filtered) {
+  if (filtered) {
     //
     // Vp
     //
@@ -2405,10 +2421,10 @@ bool BlockedLogsCommon::ResampleTime(std::vector<double> & time_resampled,
   double time_end   = z_pos_blocked_[nd - 1];
   bool   monotonous = true;
   for (int i = 1 ; (i < nd && monotonous == true); i++)
-    if(z_pos_blocked_[i] < z_pos_blocked_[i-1])
+    if (z_pos_blocked_[i] < z_pos_blocked_[i-1])
       monotonous = false;
 
-  if(monotonous == false)
+  if (monotonous == false)
     return(false);
 
   //
@@ -2568,7 +2584,7 @@ void BlockedLogsCommon::ApplyFilter(std::vector<double> & log_filtered,
   int last_nonmissing = i;
   int n_time_samples_defined = last_nonmissing - first_nonmissing + 1;
 
-  for(i=0 ; i < n_time_samples ; i++) {            // Initialise with RMISSING
+  for (i=0 ; i < n_time_samples ; i++) {            // Initialise with RMISSING
     log_filtered[i] = RMISSING;
   }
 
@@ -2612,15 +2628,15 @@ void BlockedLogsCommon::ApplyFilter(std::vector<double> & log_filtered,
     float w   = 1/T;                                         // Lowest frequency that can be extracted from log
     int   N   = int(max_hz/w + 0.5f);                        // Number of elements of Fourier vector to keep
 
-    if(cnt < N+1) {
+    if (cnt < N+1) {
       LogKit::LogMessage(LogKit::Warning, "Warning: The vertical resolution is too low to allow filtering of well logs to %3.1f Hz.\n");
     }
 
     float * magic_vector = new float[cnt];
-    for(i=0 ; ((i < N+1) && (i < cnt)); i++) {
+    for (i=0 ; ((i < N+1) && (i < cnt)); i++) {
       magic_vector[i] = 1.0;
     }
-    for(;i < cnt ; i++) {
+    for (;i < cnt ; i++) {
       magic_vector[i] = 0.0;
     }
     for (i=0 ; i<cnt ; i++) {
@@ -2640,14 +2656,14 @@ void BlockedLogsCommon::ApplyFilter(std::vector<double> & log_filtered,
     fftwnd_destroy_plan(p2);
 
     float scale= float(1.0/nt);
-    for(i=0 ; i < rnt ; i++) {
+    for (i=0 ; i < rnt ; i++) {
       rAmp[i] *= scale;
     }
 
     //
     // Fill log_filtered[]
     //
-    for(i=0 ; i < n_time_samples_defined ; i++) {
+    for (i=0 ; i < n_time_samples_defined ; i++) {
       log_filtered[first_nonmissing + i] = rAmp[i];      // Fill with values where defined
     }
     delete [] magic_vector;
@@ -2721,13 +2737,13 @@ void BlockedLogsCommon::WriteWell(int                      formats,
                                   std::vector<int>         facies_label)
 {
   //int formats = modelSettings->getWellFormatFlag();
-  if((formats & IO::RMSWELL) > 0) {
+  if ((formats & IO::RMSWELL) > 0) {
     WriteRMSWell(max_hz_background,
                  max_hz_seismic,
                  facies_name,
                  facies_label);
   }
-  if((formats & IO::NORSARWELL) > 0)
+  if ((formats & IO::NORSARWELL) > 0)
     WriteNorsarWell(max_hz_background,
                     max_hz_seismic);
 }
@@ -2767,9 +2783,9 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
   bool got_predicted           = (GetVpPredicted().size() > 0); //alpha_predicted_ != NULL);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
-  if(got_filtered_log)
+  if (got_filtered_log)
     n_logs += 3;
-  if(got_vp_rho_fac_log)
+  if (got_vp_rho_fac_log)
     n_logs += 2;
   if (got_facies)
     n_logs += 1;
@@ -2806,15 +2822,15 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
     file << params[i] << static_cast<int>(max_hz_background) << "  UNK lin\n";
     file << params[i] << static_cast<int>(max_hz_seismic)    << "  UNK lin\n";
   }
-  if(got_filtered_log) {
-    for(int i=0;i<3;i++)
+  if (got_filtered_log) {
+    for (int i=0;i<3;i++)
       file << params[i] << "_SeismicResolution UNK lin\n";
   }
   if (got_predicted) {
     for (int i=0; i<3; i++)
       file << params[i] << "_Predicted UNK lin\n";
   }
-  if(got_vp_rho_fac_log) {
+  if (got_vp_rho_fac_log) {
     file << params[0] << "_ForFacies UNK lin\n";
     file << params[2] << "_ForFacies UNK lin\n";
   }
@@ -2888,7 +2904,7 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
          << std::setw(7) << (rho[i]==RMISSING                    ? WELLMISSING : exp(rho[i]))                    << " "
          << std::setw(7) << (rho_highcut_background[i]==RMISSING ? WELLMISSING : exp(rho_highcut_background[i])) << " "
          << std::setw(7) << (rho_highcut_seismic[i]==RMISSING    ? WELLMISSING : exp(rho_highcut_seismic[i]))    << " ";
-    if(got_filtered_log == true) {
+    if (got_filtered_log == true) {
       file << std::setw(7) << (vp_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vp_seismic_resolution[i]))  << "  "
            << std::setw(7) << (vs_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vs_seismic_resolution[i]))  << "  "
            << std::setw(7) << (rho_seismic_resolution[i]==RMISSING ? WELLMISSING : exp(rho_seismic_resolution[i])) << "  ";
@@ -2898,7 +2914,7 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
            << std::setw(7) << (vs_predicted[i]==RMISSING  ? WELLMISSING : exp(vs_predicted[i]))  << "  "
            << std::setw(7) << (rho_predicted[i]==RMISSING ? WELLMISSING : exp(rho_predicted[i])) << "  ";
     }
-    if(got_vp_rho_fac_log == true) {
+    if (got_vp_rho_fac_log == true) {
       file << std::setw(7) << (vp_for_facies_[i]==RMISSING  ? WELLMISSING : exp(vp_for_facies_[i]))  << "  "
            << std::setw(7) << (rho_for_facies_[i]==RMISSING ? WELLMISSING : exp(rho_for_facies_[i])) << "  ";
     }
@@ -2969,22 +2985,22 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
 
   std::vector<double> md(n_data,0);
 
-  if(continuous_logs_blocked_.count("MD") == 0) //if(md_ == NULL)
+  if (continuous_logs_blocked_.count("MD") == 0) //if (md_ == NULL)
     md[0] = z_pos_blocked_[first_B_]*vert_scale; //zpos_
   else
     md[0] = GetMDBlocked()[first_B_]; //md_
   double dmax = 0;
   double dmin = 1e+30;
-  for(int i = first_B_+1; i <= last_B_; i++) {
+  for (int i = first_B_+1; i <= last_B_; i++) {
     double dx = x_pos_blocked_[i]-x_pos_blocked_[i-1]; //xpos_
     double dy = y_pos_blocked_[i]-y_pos_blocked_[i-1]; //ypos_
     double dz = z_pos_blocked_[i]-z_pos_blocked_[i-1]; //zpos_
     double d  = sqrt(dx*dx+dy*dy+dz*dz);
-    if(d > dmax)
+    if (d > dmax)
       dmax = d;
-    else if(d < dmin)
+    else if (d < dmin)
       dmin = d;
-    if(continuous_logs_blocked_.count("MD") == 0) //if(md_ == NULL)
+    if (continuous_logs_blocked_.count("MD") == 0) //if (md_ == NULL)
       md[i-first_B_] = md[i-first_B_-1] + d*vert_scale;
     else
       md[i-first_B_] = GetMDBlocked()[i]; //md_
@@ -3028,7 +3044,7 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
   bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes}
-  if(got_filtered_log)
+  if (got_filtered_log)
     n_logs += 3;
   if (got_facies)
     n_logs += 1;
@@ -3054,9 +3070,9 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
   unit[2] = "tons/m3";
 
   int n_files = 3;
-  if(got_filtered_log)
+  if (got_filtered_log)
     n_files += 1;
-  if(got_vp_rho_fac_log)
+  if (got_vp_rho_fac_log)
     n_files += 1;
 
   std::vector<std::string> postfix(5);
@@ -3066,7 +3082,7 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
   postfix[3] = "filtered";
   postfix[4] = "forFacies";
 
-  for(int f=0; f < n_files; f++) {
+  for (int f=0; f < n_files; f++) {
     main_file << "\n[Well log data information]\n";
     main_file << "LOGNAME log_" << postfix[f] << "\n";
     main_file << "IN_FILE " << only_name << f <<"\n";
@@ -3091,7 +3107,7 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
   //Note: logFileName created above, needed in mainFile.
   std::vector<std::ofstream *> log_files;
   log_files.resize(n_files);
-  for(int f=0; f < n_files; f++) {
+  for (int f=0; f < n_files; f++) {
     log_files[f] = new std::ofstream();
     std::string file_name = log_file_name+NRLib::ToString(f);
     NRLib::OpenWrite(*(log_files[f]), file_name.c_str());
@@ -3115,7 +3131,7 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
   const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
   const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
 
-  for(int i = first_B_; i <= last_B_; i++) {
+  for (int i = first_B_; i <= last_B_; i++) {
     track_file << std::setprecision(5) << std::setw(7)
                << md[i-first_B_] << " " << std::setw(7) << z_pos_blocked_[i]*vert_scale << " " << z_pos_blocked_[i]*vert_scale
                << " " << std::setw(10)<< x_pos_blocked_[i]*hor_scale << " " << std::setw(10)<< y_pos_blocked_[i]*hor_scale << "\n";
@@ -3135,14 +3151,14 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
                     << std::setw(7) << (vp_highcut_seismic[i]==RMISSING     ? WELLMISSING : exp(vp_highcut_seismic[i]))     << " "
                     << std::setw(7) << (vs_highcut_seismic[i]==RMISSING     ? WELLMISSING : exp(vs_highcut_seismic[i]))     << " "
                     << std::setw(7) << (rho_highcut_seismic[i]==RMISSING    ? WELLMISSING : exp(rho_highcut_seismic[i]))    << "\n";
-    if(got_filtered_log) {
+    if (got_filtered_log) {
       *(log_files[3]) << std::right   << std::fixed << std::setprecision(5)
                       << std::setw(7) << md[i-first_B_] << " "
                       << std::setw(7) << (vp_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vp_seismic_resolution[i]))  << " "
                       << std::setw(7) << (vs_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vs_seismic_resolution[i]))  << " "
                       << std::setw(7) << (rho_seismic_resolution[i]==RMISSING ? WELLMISSING : exp(rho_seismic_resolution[i])) << "\n";
     }
-    if(got_vp_rho_fac_log) {
+    if (got_vp_rho_fac_log) {
       *(log_files[3]) << std::right   << std::fixed << std::setprecision(5)
                       << std::setw(7) << md[i-first_B_] << " "
                       << std::setw(7) << (vp_for_facies_[i]==RMISSING  ? WELLMISSING : exp(vp_for_facies_[i]))  << " "
@@ -3150,7 +3166,7 @@ void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
     }
   }
   track_file.close();
-  for(int f=0; f < n_files; f++) {
+  for (int f=0; f < n_files; f++) {
     log_files[f]->close();
     delete log_files[f];
   }
@@ -3166,7 +3182,7 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
   std::vector<double> blocked_log(n_blocks_);
   //float * blocked_log = new float[n_blocks_];
   assert(n_blocks_ == n_data);
-  for(int i=0; i < n_data; i++)
+  for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 
   if (type == "ALPHA_SEISMIC_RESOLUTION") {
@@ -3285,19 +3301,19 @@ void BlockedLogsCommon::FindMeanVsVp(const NRLib::Surface<double> & top,
 {
   std::vector<bool> active_cell(n_blocks_, true);
 
-  for(size_t i = 0; i < n_blocks_; i++) {
+  for (size_t i = 0; i < n_blocks_; i++) {
     double z_top  = top.GetZ(x_pos_blocked_[i], y_pos_blocked_[i]);
     double z_base = bot.GetZ(x_pos_blocked_[i], y_pos_blocked_[i]);
 
-    if((z_pos_blocked_[i] < z_top) || (z_pos_blocked_[i] > z_base))
+    if ((z_pos_blocked_[i] < z_top) || (z_pos_blocked_[i] > z_base))
       active_cell[i] = false;
   }
 
   mean_vs_vp = 0.0;
   n_vs_vp    = 0;
 
-  for(size_t i = 0; i < n_blocks_; i++) {
-    if(GetVpBackgroundResolution()[i] != RMISSING && GetVsBackgroundResolution()[i] != RMISSING && active_cell[i] == true) {
+  for (size_t i = 0; i < n_blocks_; i++) {
+    if (GetVpBackgroundResolution()[i] != RMISSING && GetVsBackgroundResolution()[i] != RMISSING && active_cell[i] == true) {
       mean_vs_vp += GetVsBackgroundResolution()[i] / GetVpBackgroundResolution()[i];
       n_vs_vp    += 1;
     }

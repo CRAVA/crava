@@ -59,17 +59,17 @@ public:
 
   ~ModelGeneral();
 
-  Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
+  Simbox                   * getTimeSimbox()            const { return simbox_                 ;}
   //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
-  RandomGen                * getRandomGen()             const { return randomGen_              ;}
-  GridMapping              * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
+  RandomGen                * getRandomGen()             const { return random_gen_              ;}
+  GridMapping              * getTimeDepthMapping()      const { return time_depth_mapping_       ;}
   //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
   CravaTrend               & getTrendCubes()                  { return trend_cubes_            ;}
   CravaTrend                 getTrendCubes()            const { return trend_cubes_            ;}
   //Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
 
-  bool                       getVelocityFromInversion() const { return velocityFromInversion_  ;}
-  bool                       getMultiInterval()         const { return multiinterval_          ;}
+  bool                       getVelocityFromInversion() const { return velocity_from_inversion_  ;}
+  bool                       getMultiInterval()         const { return multi_interval_          ;}
   //bool                       getFailed()                const { return failed_                 ;}
   //std::vector<bool>          getFailedDetails()         const { return failed_details_         ;}
 
@@ -77,7 +77,7 @@ public:
   //Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
   State4D                    getState4D()               const { return state4d_                ;}
 
-  TimeLine                 * getTimeLine()              const { return timeLine_               ;}
+  TimeLine                 * getTimeLine()              const { return time_line_               ;}
   //std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
   std::map<std::string, BlockedLogsCommon *> getBlockedWells()    { return blocked_logs_           ;}
 
@@ -110,15 +110,15 @@ public:
 
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
-  const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_          ;}
-  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_ ;}
-  const std::vector<std::string> & getFaciesNames(void)           const { return faciesNames_          ;}
-  std::vector<int>                 getFaciesLabel()               const { return faciesLabels_         ;}
+  const std::vector<float>       & getPriorFacies()           /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string> & getFaciesNames(void)           const { return facies_names_            ;}
+  std::vector<int>                 getFaciesLabel()               const { return facies_labels_           ;}
 
-  void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel) ;}
-  void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)   ;}
+  void addFaciesLabel(int faciesLabel)                    { facies_labels_.push_back(faciesLabel) ;}
+  void addFaciesName(const std::string & faciesName)      { facies_names_.push_back(faciesName)   ;}
 
-  bool getIs4DActive() const {return(do4DInversion_);}
+  bool getIs4DActive() const {return(do_4D_inversion_);}
 
   static FFTGrid  * createFFTGrid(int nx,
                                   int ny,
@@ -278,9 +278,9 @@ private:
   //                                   const InputFiles * inputFiles,
   //                                   std::string      & errText,
   //                                   bool             & failed);
-  void              logIntervalInformation(const Simbox      * simbox,
-                                           const std::string & header_text1,
-                                           const std::string & header_text2);
+  //void              logIntervalInformation(const Simbox      * simbox,
+  //                                         const std::string & header_text1,
+  //                                         const std::string & header_text2);
   //void              setupExtendedTimeSimbox(Simbox  * timeSimbox,
   //                                          Surface * corrSurf,
   //                                          Simbox *& timeCutSimbox,
@@ -307,9 +307,9 @@ private:
   //                                     std::string                  & errTxt,
   //                                     const InputFiles             * inputFiles);
 
-  void              printExpectationAndCovariance(const std::vector<double>   & expectation,
-                                                  const NRLib::Grid2D<double> & covariance,
-                                                  const bool                  & has_trend) const;
+  //void              printExpectationAndCovariance(const std::vector<double>   & expectation,
+  //                                                const NRLib::Grid2D<double> & covariance,
+  //                                                const bool                  & has_trend) const;
 
   void              setSimboxSurfaces(Simbox                        *& simbox,
                                       const std::vector<std::string> & surfFile,
@@ -375,42 +375,44 @@ private:
   void              makeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  Simbox                  * timeSimbox_;                 ///< Information about simulation area.
+  Simbox                  * simbox_;                 ///< Information about simulation area.
 
-  RandomGen               * randomGen_;                  ///< Random generator.
+  RandomGen               * random_gen_;                  ///< Random generator.
 
   CravaTrend                                                    trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
   std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
-  TimeEvolution             timeEvolution_;
+  TimeEvolution             time_evolution_;
 
-  GridMapping             * timeDepthMapping_;           ///< Contains both simbox and mapping used for depth conversion
+  GridMapping             * time_depth_mapping_;           ///< Contains both simbox and mapping used for depth conversion
 
 
-  bool                      velocityFromInversion_;  //Needed? Copy from CommonData.
+  bool                      velocity_from_inversion_;  //Needed? Copy from CommonData.
 
-  TimeLine                * timeLine_;
+  TimeLine                * time_line_;
 
   //Replaces WellData wells_
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
 
-  //int                       numberOfWells_;
 
-  std::vector<float>        priorFacies_;                ///< Prior facies probabilities
-  std::vector<FFTGrid *>    priorFaciesProbCubes_;       ///< Cubes for prior facies probabilities
 
-  std::vector<int>          faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
-  std::vector<std::string>  faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
+  std::vector<float>        prior_facies_;                ///< Prior facies probabilities
+  std::vector<FFTGrid *>    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities
 
-  bool                      do4DInversion_;
-  bool                      do4DRockPhysicsInversion_;
+  std::vector<int>          facies_labels_;               ///< Facies labels, flyttes til blockedlogs
+  std::vector<std::string>  facies_names_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
+
+  bool                      do_4D_inversion_;
+  bool                      do_4D_rock_physics_vnversion_;
   State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
-  bool                      multiinterval_;              ///< True if there is multiple intervals
+  bool                      multi_interval_;              ///< True if there is multiple intervals
 
 
   //Fjernes:
+  //int                       numberOfWells_;
+
   //Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness  //Fjernes
 
   //Surface                 * correlationDirection_;       ///< Grid giving the correlation direction. //Fjernes

@@ -429,11 +429,14 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
       std::vector<float> angles = model_settings->getAngle(this_timelapse);
       std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
+      int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
 
-      int n_angles = model_settings->getNumberOfAngles(this_timelapse);
       std::vector<SeismicStorage> seismic_data_angle;
 
       for (int i = 0 ; i < n_angles; i++) {
+
+        if(offset[i] < 0)
+          offset[i] = model_settings->getSegyOffset(this_timelapse);
 
         std::string filename = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(filename);
@@ -667,7 +670,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     if (n_wells > 0)
       LogKit::WriteHeader("Reading wells");
 
-    for (int i=0 ; i<n_wells; i++) {
+    for (int i=0 ; i < n_wells; i++) {
 
       std::string well_file_name = input_files->getWellFile(i);
       bool read_ok = false;
@@ -702,13 +705,6 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       facies_nr_wells_.push_back(facies_nr);
       facies_names_wells_.push_back(facies_names);
 
-      if (read_ok == true){
-        wells_.push_back(new_well);
-      }
-      else{
-        err_text += "Well format of file " + well_file_name + " not recognized.\n";
-      }
-
       new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(i));
       new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
       new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
@@ -717,11 +713,18 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
       CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox);
 
+      if (read_ok == true) {
+        wells_.push_back(new_well);
+      }
+      else {
+        err_text += "Well format of file " + well_file_name + " not recognized.\n";
+      }
+
       //H
       //Add in WellData::lookForSyntheticVsLog? (Updates useForFaciesProbabilities)
 
     }
-  }catch (NRLib::Exception & e) {
+  } catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
   }
 
@@ -759,59 +762,66 @@ void CommonData::CutWell(std::string           well_file_name,
   const NRLib::Surface<double> & top_surf = full_inversion_volume.GetTopSurface();
   const NRLib::Surface<double> & bot_surf = full_inversion_volume.GetBotSurface();
 
-  for (size_t i = 0; i < tvd_old.size(); i++) {
+  bool need_cutting = false;
+  if(tvd_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || tvd_old[tvd_old.size()-1] > bot_surf.GetZ(x_old[tvd_old.size()-1], y_old[tvd_old.size()-1]))
+    need_cutting = true;
 
-    if (tvd_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || tvd_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) {
+  if(need_cutting == true) {
 
-      tvd_new.push_back(tvd_old[i]);
-      x_new.push_back(x_old[i]);
-      y_new.push_back(y_old[i]);
+    for (size_t i = 0; i < tvd_old.size(); i++) {
 
-      if (well.HasContLog("Dt"))
-        dt_new.push_back(well.GetContLog("Dt")[i]);
-      if (well.HasContLog("Vp"))
-        vp_new.push_back(well.GetContLog("Vp")[i]);
-      if (well.HasContLog("Dts"))
-        dts_new.push_back(well.GetContLog("Dts")[i]);
-      if (well.HasContLog("Vs"))
-        vs_new.push_back(well.GetContLog("Vs")[i]);
-      if (well.HasContLog("Rho"))
-        rho_new.push_back(well.GetContLog("Rho")[i]);
-      if (well.HasDiscLog("Facies"))
-        facies_new.push_back(well.GetDiscLog("Facies")[i]);
+      if (tvd_old[i] > top_surf.GetZ(x_old[i], y_old[i]) || tvd_old[i] < bot_surf.GetZ(x_old[i], y_old[i])) {
+
+        tvd_new.push_back(tvd_old[i]);
+        x_new.push_back(x_old[i]);
+        y_new.push_back(y_old[i]);
+
+        if (well.HasContLog("Dt"))
+          dt_new.push_back(well.GetContLog("Dt")[i]);
+        if (well.HasContLog("Vp"))
+          vp_new.push_back(well.GetContLog("Vp")[i]);
+        if (well.HasContLog("Dts"))
+          dts_new.push_back(well.GetContLog("Dts")[i]);
+        if (well.HasContLog("Vs"))
+          vs_new.push_back(well.GetContLog("Vs")[i]);
+        if (well.HasContLog("Rho"))
+          rho_new.push_back(well.GetContLog("Rho")[i]);
+        if (well.HasDiscLog("Facies"))
+          facies_new.push_back(well.GetDiscLog("Facies")[i]);
+      }
     }
-  }
 
-  //Replace logs
-  well.RemoveContLog("TVD");
-  well.AddContLog("TVD", tvd_new);
-  well.RemoveContLog("X_pos");
-  well.AddContLog("X_pos", x_new);
-  well.RemoveContLog("Y_pos");
-  well.AddContLog("Y_pos", y_new);
-  if (well.HasContLog("Dt")) {
-    well.RemoveContLog("Dt");
-    well.AddContLog("Dt", dt_new);
-  }
-  if (well.HasContLog("Vp")) {
-    well.RemoveContLog("Vp");
-    well.AddContLog("Vp", vp_new);
-  }
-  if (well.HasContLog("Dts")) {
-    well.RemoveContLog("Dts");
-    well.AddContLog("Dts", dts_new);
-  }
-  if (well.HasContLog("Vs")) {
-    well.RemoveContLog("Vs");
-    well.AddContLog("Vs", vs_new);
-  }
-  if (well.HasContLog("Rho")) {
-    well.RemoveContLog("Rho");
-    well.AddContLog("Rho", rho_new);
-  }
-  if (well.HasDiscLog("Facies")) {
-    well.RemoveDiscLog("Facies");
-    well.AddDiscLog("Facies", facies_new);
+    //Replace logs
+    well.RemoveContLog("TVD");
+    well.AddContLog("TVD", tvd_new);
+    well.RemoveContLog("X_pos");
+    well.AddContLog("X_pos", x_new);
+    well.RemoveContLog("Y_pos");
+    well.AddContLog("Y_pos", y_new);
+    if (well.HasContLog("Dt")) {
+      well.RemoveContLog("Dt");
+      well.AddContLog("Dt", dt_new);
+    }
+    if (well.HasContLog("Vp")) {
+      well.RemoveContLog("Vp");
+      well.AddContLog("Vp", vp_new);
+    }
+    if (well.HasContLog("Dts")) {
+      well.RemoveContLog("Dts");
+      well.AddContLog("Dts", dts_new);
+    }
+    if (well.HasContLog("Vs")) {
+      well.RemoveContLog("Vs");
+      well.AddContLog("Vs", vs_new);
+    }
+    if (well.HasContLog("Rho")) {
+      well.RemoveContLog("Rho");
+      well.AddContLog("Rho", rho_new);
+    }
+    if (well.HasDiscLog("Facies")) {
+      well.RemoveDiscLog("Facies");
+      well.AddDiscLog("Facies", facies_new);
+    }
   }
 }
 
@@ -943,15 +953,15 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     log_names_from_user.push_back("FACIES");
   }
 
-  for (size_t i = 0; i<log_names_from_user.size(); i++){
+  for (size_t i = 0; i < log_names_from_user.size(); i++) {
     // If the well does not contain the log specified by the user, return an error message
-    if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])){
+    if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
       error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
     }
   }
 
   // RMS wells must have an x log
-  if (new_well.HasContLog("x")){
+  if (new_well.HasContLog("x")) {
     new_well.AddContLog("X_pos", new_well.GetContLog("x"));
     new_well.RemoveContLog("x");
   }else{
@@ -959,10 +969,11 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 
   // RMS wells must have a y log
-  if (new_well.HasContLog("y")){
+  if (new_well.HasContLog("y")) {
     new_well.AddContLog("Y_pos", new_well.GetContLog("y"));
     new_well.RemoveContLog("y");
-  }else{
+  }
+  else {
     error_text += "Could not find log 'y' in well file "+new_well.GetWellName()+".\n";
   }
 
@@ -987,16 +998,16 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   //if (new_well.HasContLog(log_names_from_user[0]))
 
   // Vp is always entry 1 in the log name list and entry 0 in inverse_velocity
-  if (new_well.HasContLog(log_names_from_user[1])){
+  if (new_well.HasContLog(log_names_from_user[1])) {
     std::vector<double> vp_temp = new_well.GetContLog(log_names_from_user[1]);
     std::vector<double> vp(vp_temp.size());
     if (inverse_velocity[0]){
-      for (unsigned int i=0; i<vp_temp.size(); i++){
+      for (unsigned int i=0; i<vp_temp.size(); i++) {
         vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
       }
     }
     else{
-      for (unsigned int i=0; i<vp_temp.size(); i++){
+      for (unsigned int i=0; i<vp_temp.size(); i++) {
         vp[i] = static_cast<double>(vp_temp[i]);
       }
     }
@@ -1005,32 +1016,32 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   }
 
   // Vs is always entry 3 in the log name list
-  if (new_well.HasContLog(log_names_from_user[3])){
+  if (new_well.HasContLog(log_names_from_user[3])) {
     std::vector<double> vs_temp = new_well.GetContLog(log_names_from_user[3]);
     std::vector<double> vs(vs_temp.size());
     if (inverse_velocity[1]){
-      for (unsigned int i=0; i<vs_temp.size(); i++){
+      for (unsigned int i=0; i<vs_temp.size(); i++) {
         vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
       }
     }
     else{
-      for (unsigned int i=0; i<vs_temp.size(); i++){
+      for (unsigned int i=0; i<vs_temp.size(); i++) {
         vs[i] = static_cast<double>(vs_temp[i]);
       }
     }
-    new_well.RemoveContLog(log_names_from_user[1]);
+    new_well.RemoveContLog(log_names_from_user[3]); //1
     new_well.AddContLog("Vs", vs);
   }
 
   // Rho is always entry 2 in the log name list
-  if (new_well.HasContLog(log_names_from_user[2])){
+  if (new_well.HasContLog(log_names_from_user[2])) {
     new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
-    new_well.RemoveContLog(log_names_from_user[3]);
+    new_well.RemoveContLog(log_names_from_user[2]); //3
   }
 
   // If defined, Facies is always entry 4 in the log name list
   if (facies_log_given){
-    if (new_well.HasDiscLog(log_names_from_user[4])){
+    if (new_well.HasDiscLog(log_names_from_user[4])) {
       new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
       new_well.RemoveDiscLog(log_names_from_user[4]);
     }
@@ -1334,7 +1345,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
   LogKit::WriteHeader("Setting up temporary wavelet");
 
   std::string err_text = "";
-  int n_timelapses = model_settings->getNumberOfTimeLapses();
+  int n_timelapses     = model_settings->getNumberOfTimeLapses();
 
   //3. Use Ricker - wavelet.
   //4. 1 wavelet per angle
@@ -1345,14 +1356,14 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
   for (int j = 0 ; j < n_angles; j++) {
     //Check all timelapses for this angle, choose the first one;
     int this_timelapse = 0;
-    int vintage_year = model_settings->getVintageYear(0);
-    int vintage_month = model_settings->getVintageMonth(0);
-    int vintage_day = model_settings->getVintageDay(0);
+    int vintage_year   = model_settings->getVintageYear(0);
+    int vintage_month  = model_settings->getVintageMonth(0);
+    int vintage_day    = model_settings->getVintageDay(0);
     for (int k = 1; k < n_timelapses; k++) {
       if (model_settings->getVintageYear(k) <= vintage_year && model_settings->getVintageMonth(k) <= vintage_month && model_settings->getVintageDay(k) <= vintage_day) {
-        vintage_year = model_settings->getVintageYear(k);
-        vintage_month = model_settings->getVintageMonth(k);
-        vintage_day = model_settings->getVintageDay(k);
+        vintage_year   = model_settings->getVintageYear(k);
+        vintage_month  = model_settings->getVintageMonth(k);
+        vintage_day    = model_settings->getVintageDay(k);
         this_timelapse = k;
       }
     }
@@ -1365,10 +1376,10 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
 
     //FFT to find peak-frequency.
     for (int k = 0; k < 100; k++) {
-      int n_trace = trace_data[k].size();
+      int n_trace     = trace_data[k].size();
       int n_trace_fft = ((n_trace / 2) + 1)*2;
 
-      fftw_real * seis_r = new fftw_real[n_trace_fft];
+      fftw_real * seis_r    = new fftw_real[n_trace_fft];
       fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
 
       for (int kk=0; kk < n_trace; kk++)
@@ -1394,16 +1405,16 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
       // delete seis_c;
     }
 
-    float mean_frequency = 0.0;
+    float mean_frequency   = 0.0;
     float mean_grid_height = 0.0;
     for (size_t k = 0; k < frequency_peaks.size(); k++) {
-      mean_frequency += frequency_peaks[k];
+      mean_frequency   += frequency_peaks[k];
       mean_grid_height += trace_length[k];
     }
-    mean_frequency /= frequency_peaks.size();
+    mean_frequency   /= frequency_peaks.size();
     mean_grid_height /= frequency_peaks.size(); //Will be 1 if SEGY is used.
 
-    mean_frequency /= mean_grid_height;
+    mean_frequency   /= mean_grid_height;
 
     int tmp_error = 0;
     Wavelet * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
@@ -1434,7 +1445,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
   std::string text = "Reading "+read_reason+" from file "+file_name+" ... ";
   LogKit::LogFormatted(LogKit::Low,text);
   std::string storage;
-  int index = 0;
+  int index   = 0;
   bool failed = false;
 
   while(failed == false && in_file >> storage) {
@@ -1539,8 +1550,8 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                  InputFiles    * input_files,
                                  std::string   & err_text_common) {
 
-  int n_timeLapses = model_settings->getNumberOfTimeLapses();
-  int error = 0;
+  int n_timeLapses     = model_settings->getNumberOfTimeLapses();
+  int error            = 0;
   std::string err_text = "";
 
   std::string err_text_tmp("");
@@ -1561,8 +1572,8 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     int n_angles = model_settings->getNumberOfAngles(i);
 
     std::vector<float> sn_ratio = model_settings->getSNRatio(i);
-    std::vector<float> angles = model_settings->getAngle(i);
-    use_local_noise_ = model_settings->getUseLocalNoise(i);
+    std::vector<float> angles   = model_settings->getAngle(i);
+    use_local_noise_            = model_settings->getUseLocalNoise(i);
 
     //Fra ModelAvoDynamic::processSeismic:
     std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
@@ -1604,8 +1615,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     }
 
     unsigned int n_wells = model_settings->getNumberOfWells();
-
-
 
     //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
     t_grad_x_.resize(n_wells);
@@ -1793,7 +1802,7 @@ CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
   //
   // Get wavelet estimation interval
   //
-  const std::string & topWEI = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
+  const std::string & topWEI  = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
   const std::string & baseWEI = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
 
   if (topWEI != "" && baseWEI != "") {
@@ -1906,7 +1915,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
       if (seismic_data->GetFileName() != "") {
       //if (seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
+        float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
@@ -2232,13 +2241,10 @@ CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double
     }
 
   int nData=0;
-  for (i=0; i < n_points; i++)
-  {
-    if (!surf->IsMissing(Y[i]))
-    {
+  for (i=0; i < n_points; i++) {
+    if (!surf->IsMissing(Y[i])) {
       nData++;
-      for (k=0;k<3;k++)
-      {
+      for (k=0; k < 3; k++) {
         for (l=0;l<3;l++)
           cov[k+l*3]+=Z[k + 3*i] * Z[l + 3*i];
 
@@ -2250,8 +2256,7 @@ CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double
   double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
                   + cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
 
-  if (det != 0)
-  {
+  if (det != 0) {
       invCov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
       invCov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
       invCov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
@@ -2265,15 +2270,13 @@ CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double
       z0 = baseDepth;
       gx = 0.0;
       gy = 0.0;
-      for (k=0;k<3;k++)
-      {
+      for (k=0; k < 3; k++) {
         z0 += invCov[k]*proj[k]; //NBNB check
         gx += invCov[3+k]*proj[k];
         gy += invCov[6+k]*proj[k];
       }
   }
-  else
-  {
+  else {
    gx = RMISSING;
    gy = RMISSING;
   }
@@ -2285,9 +2288,9 @@ CommonData::ComputeReferenceTimeGradient(const Surface       * t0_surf,
                                          NRLib::Grid2D<float> &ref_time_grad_y)
  {
    double radius = 50.0;
-   double ds = 12.5;
-   int nx = estimation_simbox_.getnx();
-   int ny = estimation_simbox_.getny();
+   double ds     = 12.5;
+   int nx        = estimation_simbox_.getnx();
+   int ny        = estimation_simbox_.getny();
    ref_time_grad_x.Resize(nx,ny);
    ref_time_grad_y.Resize(nx,ny);
    for (int i=0;i<nx;i++)
@@ -2308,8 +2311,8 @@ void
 CommonData::ResampleSurfaceToGrid2D(const Surface * surface,
                                     Grid2D        * outgrid)
 {
-  for (int i=0;i<estimation_simbox_.getnx();i++) {
-    for (int j=0;j<estimation_simbox_.getny();j++) {
+  for (int i=0; i < estimation_simbox_.getnx(); i++) {
+    for (int j=0; j < estimation_simbox_.getny(); j++) {
       double x, y, z;
       estimation_simbox_.getCoord(i, j, 0, x, y, z);
       (*outgrid)(i,j) = static_cast<float>(surface->GetZ(x,y));
@@ -2690,7 +2693,6 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
                                            Simbox                           & estimation_simbox,
                                            const std::vector<std::string>   & surf_file,
                                            std::string                      & err_text) {
-                                           //bool                             & failed)
   bool failed = false;
 
   const std::string & top_surface_file_name = surf_file[0];
@@ -2843,13 +2845,18 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         2, 2, z_max);
-      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, 2, model_settings->getRunFromPanel());
+      int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
+      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
+
+      int status = estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
-    catch(NRLib::Exception & e){
+    catch(NRLib::Exception & e) {
       err_text += e.what();
-      failed = true;
     }
   }
+
+
+
   delete top_surface;
   delete base_surface;
   delete top_surface_flat;
@@ -2861,7 +2868,6 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
                                               Simbox                          & estimation_simbox,
                                               const InputFiles                * input_files,
                                               std::string                     & err_text) {
-                                              //bool                            & failed){
 
   // Get interval surface data ------------------------------------------------------------------------------
 
@@ -2941,7 +2947,10 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         2, 2, z_max);
-      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, 2, model_settings->getRunFromPanel());
+      int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
+      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
+
+      int status = estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
     catch(NRLib::Exception & e){
       err_text += e.what();

@@ -121,7 +121,7 @@ Simbox::Simbox(const Simbox         * simbox,
   xlStepY_        = simbox->getXLStepY();
   SetSurfaces(top_surface, bot_surface);
 
-  if(simbox->CheckSurface(*single_corr_surface) != true){
+  if (simbox->CheckSurface(*single_corr_surface) != true) {
     err_text += "Error: Correlation surface does not cover volume.\n";
     failed = true;
   }
@@ -224,10 +224,10 @@ Simbox::Simbox(const Simbox         * simbox,
   nz_             = n_layers;
   inLine0_        = simbox->getIL0();
   crossLine0_     = simbox->getXL0();
-  ilStepX_      = simbox->getILStepX();
-  ilStepY_      = simbox->getILStepY();
-  xlStepX_      = simbox->getXLStepX();
-  xlStepY_      = simbox->getXLStepY();
+  ilStepX_        = simbox->getILStepX();
+  ilStepY_        = simbox->getILStepY();
+  xlStepX_        = simbox->getXLStepX();
+  xlStepY_        = simbox->getXLStepY();
   // HOW SHOULD THIS BE DONE?
   (void) top_surface;
   (void) base_surface;
