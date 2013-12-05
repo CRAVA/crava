@@ -332,7 +332,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
     //                 errText, failedSimbox);
 
     MultiIntervalGrid * multiple_interval_grid = commonData->GetMultipleIntervalGrid();
-    timeSimbox_ = multiple_interval_grid->GetIntervalSimboxN(i_interval);
+    //const Simbox * timeSimbox = multiple_interval_grid->GetIntervalSimbox(i_interval);
 
     //
     // FORWARD MODELLING
@@ -365,7 +365,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       priorFaciesProbCubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
       priorFaciesProbCubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
 
-      bool estimationMode = modelSettings->getEstimationMode();
+      //bool estimationMode = modelSettings->getEstimationMode();
 
       //H Dybdekonverting skal kjøres hvis det ikke er multiinterval? Evt. flytte loadVelocity (eller alt) til CommonData først ettersom det er en innlesning.
       timeDepthMapping_ = commonData->GetTimeDepthMapping();
@@ -461,7 +461,7 @@ ModelGeneral::~ModelGeneral(void)
     delete timeLine_;
 
   delete randomGen_;
-  delete timeSimbox_;
+  //delete timeSimbox_;
   delete timeSimboxConstThick_;
 
    if(!forwardModeling_)
@@ -489,6 +489,8 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            std::string             & errText,
                            bool                      nopadding)
 {
+  (void) parName;
+
   SegY * segy = NULL;
   bool failed = false;
   target = NULL;
@@ -693,6 +695,9 @@ ModelGeneral::readStormFile(const std::string   & fName,
                             bool                  scale,
                             bool                  nopadding)
 {
+  (void) scale;
+  (void) parName;
+
   StormContGrid * stormgrid = NULL;
   bool failed = false;
 

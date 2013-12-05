@@ -297,7 +297,7 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
     std::vector<double> y_pos = GetContLog().find("Y_pos")->second;
     std::vector<double> z_pos = GetContLog().find("TVD")->second;
 
-    for(int i=0; i < n_data_nonmissing_; i++) { //nd_
+    for(unsigned int i=0; i < n_data_nonmissing_; i++) { //nd_
 
       if(stormgrid.IsInside(x_pos[i], y_pos[i])) {
         insideArea = true;

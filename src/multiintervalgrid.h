@@ -43,6 +43,8 @@ public:
   const std::vector<double>                              & GetRelativeGridResolution() const     { return relative_grid_resolution_ ;}
   const std::vector<double>                              & GetDesiredGridResolution() const      { return desired_grid_resolution_  ;}
   const std::vector<double>                              & GetDzRel() const                      { return dz_rel_                   ;}
+  const std::vector<CravaTrend>                          & GetTrendCubes() const                 { return trend_cubes_              ;}
+  const CravaTrend                                       & GetTrendCube(int i) const             { return trend_cubes_[i]           ;}
 
   //const std::vector<std::vector<NRLib::Grid<double> > > & GetCovParametersIntervals() const      { return prior_cov_              ;}
   //const std::vector<NRLib::Grid<double> >               & GetCovParametersInterval(int i) const  { return prior_cov_[i]           ;}

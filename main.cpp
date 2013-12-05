@@ -220,19 +220,19 @@ int main(int argc, char** argv)
                                                                 modelSettings->getNYpad(),
                                                                 modelSettings->getNZpad());
       //korrelasjonsgrid (2m)
-      seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval),
+      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
                                                  modelSettings->getNXpad(),
                                                  modelSettings->getNYpad(),
                                                  modelSettings->getNZpad());
 
-      seismicParametersInterval.setCrCovParameters(common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[0],
-                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[1],
-                                                   common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2],
+      seismicParametersInterval.setCrCovParameters(common_data->GetCorrParametersInterval(i_interval)[0],
+                                                   common_data->GetCorrParametersInterval(i_interval)[1],
+                                                   common_data->GetCorrParametersInterval(i_interval)[2],
                                                    modelSettings->getNXpad(),
                                                    modelSettings->getNYpad(),
                                                    modelSettings->getNZpad());
 
-      seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
+      seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
 
       //ModelGeneral
       setupStaticModels(modelGeneral,

@@ -120,9 +120,9 @@ void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
   max = -std::numeric_limits<A>::infinity();
   min = +std::numeric_limits<A>::infinity();
 
-  for(int i = 0; i < ni_; i++) {
-    for(int j = 0; j < nj_; j++) {
-      for(int k = 0; k < nk_; k++) {
+  for(unsigned int i = 0; i < ni_; i++) {
+    for(unsigned int j = 0; j < nj_; j++) {
+      for(unsigned int k = 0; k < nk_; k++) {
         value = data_[GetIndex(i, j, k)];
         sum += value;
 
@@ -141,9 +141,9 @@ void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
 template<class A>
 void Grid<A>::LogTransform(A missing)
 {
-  for(int i = 0; i < ni_; i++) {
-    for(int j = 0; j < nj_; j++) {
-      for(int k = 0; k < nk_; k++) {
+  for(size_t i = 0; i < ni_; i++) {
+    for(size_t j = 0; j < nj_; j++) {
+      for(size_t k = 0; k < nk_; k++) {
         A value = data_[GetIndex(i, j, k)];
         if(value == missing || value <= 0.0) //First RMISSING
           data_[GetIndex(i, j, k)] = 0.0;

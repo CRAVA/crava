@@ -5,27 +5,28 @@
 #ifndef ANALYZELOG_H
 #define ANALYZELOG_H
 
-class  FFTGrid;
-class  Simbox;
-class  WellData;
-class  Background;
-class  ModelSettings;
-struct irapgrid;
+#include "src/simbox.h"
+#include "src/modelsettings.h"
+#include "src/welldata.h"
+#include "nrlib/grid/grid.hpp"
+
+class BlockedLogsCommon;
+class Background;
 
 class Analyzelog {
 public:
-  Analyzelog(std::vector<WellData *> wells,
-             Background            * background,
-             const Simbox          * simbox,
-             const ModelSettings   * modelSettings,
-             std::string           & errTxt);
+  Analyzelog(const std::vector<WellData *>                      & wells,
+             const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
+             const std::vector<std::vector<NRLib::Grid<double> > >        & background,
+             const Simbox                                       * simbox,
+             const ModelSettings                                * model_settings,
+             std::string                                        & errTxt);
 
-  Analyzelog(const std::vector<WellData *>                & wells,
-             std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
-             Background                                   * background,
-             const Simbox                                 * simbox,
-             const ModelSettings                          * modelSettings,
-             std::string                                  & errTxt);
+  Analyzelog(std::vector<WellData *>  & wells,
+             Background               * background,
+             const Simbox             * simbox,
+             const ModelSettings      * modelSettings,
+             std::string              & errTxt);
 
   ~Analyzelog(void);
 

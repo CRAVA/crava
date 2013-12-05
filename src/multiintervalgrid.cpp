@@ -518,7 +518,8 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
                                                       std::vector<NRLib::Grid<double> >          & vs_interval,
                                                       std::vector<NRLib::Grid<double> >          & rho_interval,
-                                                      const std::vector<Simbox>                 & interval_simboxes) const{
+                                                      const std::vector<Simbox>                 & interval_simboxes,
+                                                      std::vector<double>                       & relative_grid_resolution) const{
 
   for(size_t i=0; i<n_intervals_; i++) {
     int    nx        = interval_simboxes[i].getnx();
