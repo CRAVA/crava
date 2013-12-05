@@ -120,9 +120,6 @@
     <ClCompile Include="src\covgridseparated.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\crava.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\cravatrend.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1005,6 +1002,9 @@
     <ClCompile Include="src\modelgravitystatic.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\avoinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1038,9 +1038,6 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\covgridseparated.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\crava.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\cravatrend.h">
@@ -1695,6 +1692,9 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\modelgravitystatic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\avoinversion.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>

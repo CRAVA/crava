@@ -290,7 +290,7 @@
     <ClCompile Include="src\correlatedrocksamples.cpp" />
     <ClCompile Include="src\covgrid2d.cpp" />
     <ClCompile Include="src\covgridseparated.cpp" />
-    <ClCompile Include="src\crava.cpp">
+    <ClCompile Include="src\avoinversion.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1381,7 +1381,7 @@
     <ClInclude Include="src\correlatedrocksamples.h" />
     <ClInclude Include="src\covgrid2d.h" />
     <ClInclude Include="src\covgridseparated.h" />
-    <ClInclude Include="src\crava.h" />
+    <ClInclude Include="src\avoinversion.h" />
     <ClInclude Include="src\cravatrend.h" />
     <ClInclude Include="src\definitions.h" />
     <ClInclude Include="src\doinversion.h" />

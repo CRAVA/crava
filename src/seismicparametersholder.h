@@ -23,15 +23,15 @@ public:
   //void getMeanReferenceVector(std::vector<FFTGrid *> mu);
   //void getCovReferenceVector(std::vector<FFTGrid *> sigma);
 
-  FFTGrid                     * GetMuAlpha()                            { return muAlpha_        ;}
-  FFTGrid                     * GetMuBeta()                             { return muBeta_         ;}
-  FFTGrid                     * GetMuRho()                              { return muRho_          ;}
-  FFTGrid                     * GetCovAlpha()                           { return covAlpha_       ;}
-  FFTGrid                     * GetCovBeta()                            { return covBeta_        ;}
-  FFTGrid                     * GetCovRho()                             { return covRho_         ;}
-  FFTGrid                     * GetCrCovAlphaBeta()                     { return crCovAlphaBeta_ ;}
-  FFTGrid                     * GetCrCovAlphaRho()                      { return crCovAlphaRho_  ;}
-  FFTGrid                     * GetCrCovBetaRho()                       { return crCovBetaRho_   ;}
+  FFTGrid                     * GetMeanVp()                        { return meanVp_     ;}
+  FFTGrid                     * GetMeanVs()                        { return meanVs_     ;}
+  FFTGrid                     * GetMeanRho()                       { return meanRho_    ;}
+  FFTGrid                     * GetCovVp()                         { return covVp_      ;}
+  FFTGrid                     * GetCovVs()                         { return covVs_      ;}
+  FFTGrid                     * GetCovRho()                        { return covRho_     ;}
+  FFTGrid                     * GetCrCovVpVs()                     { return crCovVpVs_  ;}
+  FFTGrid                     * GetCrCovVpRho()                    { return crCovVpRho_ ;}
+  FFTGrid                     * GetCrCovVsRho()                    { return crCovVsRho_ ;}
 
   void                          invFFTAllGrids();
   void                          invFFTCovGrids();
@@ -41,11 +41,11 @@ public:
 
   void                          setPriorVar0(NRLib::Matrix priorVar0)   { priorVar0_ = priorVar0 ;}
 
-  void                          setBackgroundParameters(FFTGrid  * muAlpha,
-                                                        FFTGrid  * muBeta,
-                                                        FFTGrid  * muRho);
+  void                          setBackgroundParameters(FFTGrid  * meanVp,
+                                                        FFTGrid  * meanVs,
+                                                        FFTGrid  * meanRho);
 
-  void                          setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mu_parameters,
+  void                          setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mean_parameters,
                                                                 int                                       nx_pad,
                                                                 int                                       ny_pad,
                                                                 int                                       nz_pad);
@@ -62,9 +62,9 @@ public:
                                                    int                         ny_pad,
                                                    int                         nz_pad);
 
-  void                          copyBackgroundParameters(FFTGrid  * muAlpha,
-                                                         FFTGrid  * muBeta,
-                                                         FFTGrid  * muRho);
+  void                          copyBackgroundParameters(FFTGrid  * meanVp,
+                                                         FFTGrid  * meanVs,
+                                                         FFTGrid  * meanRho);
 
   void                          setCorrelationParameters(float                    ** priorVar0,
                                                          const std::vector<float>  & priorCorrT,
@@ -95,7 +95,7 @@ public:
                                                  const int                & minIntFq,
                                                  const int                & nzp) const;
 
-  fftw_real                   * extractParamCorrFromCovAlpha(int nzp) const;
+  fftw_real                   * extractParamCorrFromCovVp(int nzp) const;
 
   void                          printPriorVariances(void) const;
 
@@ -113,8 +113,8 @@ public:
                                                         const float              & dt) const;
 
   void                          writeFilePostVariances(const NRLib::Matrix      & postVar0,
-                                                       const std::vector<float> & postCovAlpha00,
-                                                       const std::vector<float> & postCovBeta00,
+                                                       const std::vector<float> & postCovVp00,
+                                                       const std::vector<float> & postCovVs00,
                                                        const std::vector<float> & postCovRho00) const;
 
   void                          writeFilePostCovGrids(Simbox const * simbox) const;
@@ -148,15 +148,15 @@ private:
                                                    const std::string        & subDir,
                                                    const std::string        & baseName) const;
 
-  FFTGrid * muAlpha_;
-  FFTGrid * muBeta_ ;
-  FFTGrid * muRho_  ;
-  FFTGrid * covAlpha_;
-  FFTGrid * covBeta_ ;
+  FFTGrid * meanVp_;
+  FFTGrid * meanVs_ ;
+  FFTGrid * meanRho_  ;
+  FFTGrid * covVp_;
+  FFTGrid * covVs_ ;
   FFTGrid * covRho_  ;
-  FFTGrid * crCovAlphaBeta_;
-  FFTGrid * crCovAlphaRho_ ;
-  FFTGrid * crCovBetaRho_  ;
+  FFTGrid * crCovVpVs_;
+  FFTGrid * crCovVpRho_ ;
+  FFTGrid * crCovVsRho_  ;
 
   NRLib::Matrix priorVar0_;
 

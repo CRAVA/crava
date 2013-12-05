@@ -28,16 +28,15 @@
 #include "rmswell.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
-//#include "nrlib/stormgrid/stormcontgrid.hpp"
-
 #include "nrlib/surface/surface.hpp"
+//#include "src/definitions.h"
 
 using namespace NRLib;
 
 Well::Well()
 {
   well_rmissing_ = -999.0;
-  well_imissing_  = -999;
+  well_imissing_ = -999;
 }
 
 
@@ -297,7 +296,7 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
     std::vector<double> y_pos = GetContLog().find("Y_pos")->second;
     std::vector<double> z_pos = GetContLog().find("TVD")->second;
 
-    for(int i=0; i < n_data_nonmissing_; i++) { //nd_
+    for(size_t i=0; i < n_data_nonmissing_; i++) { //nd_
 
       if(stormgrid.IsInside(x_pos[i], y_pos[i])) {
         insideArea = true;
@@ -329,3 +328,4 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
   }
   return(error);
 }
+

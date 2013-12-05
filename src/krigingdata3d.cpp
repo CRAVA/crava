@@ -10,9 +10,10 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/krigingdata3d.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/definitions.h"
+#include "src/blockedlogscommon.h"
 
 //---------------------------------------------------------------------
 KrigingData3D::KrigingData3D(int ntot)
@@ -23,9 +24,73 @@ KrigingData3D::KrigingData3D(int ntot)
 }
 
 //---------------------------------------------------------------------
-KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
-                             int                     nWells,
-                             int                     type)
+//KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
+//                             int                     nWells,
+//                             int                     type)
+//  : data_(NULL),
+//    nd_(0)
+//{
+//  //
+//  // Find total number of data
+//  //
+//  int ntot = 0;
+//  int maxBlocks = 0;
+//  for (int w = 0 ; w < nWells ; w++) {
+//    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+//    ntot += nBlocks;
+//    if (nBlocks > maxBlocks)
+//      maxBlocks = nBlocks;
+//  }
+//
+//  data_ = new CBWellPt * [ntot];
+//
+//  //
+//  // Fill with data
+//  //
+//  for (int w = 0 ; w < nWells ; w++) {
+//
+//    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+//    const int nBlocks = bl->getNumberOfBlocks();
+//
+//    const float * alpha;
+//    const float * beta;
+//    const float * rho;
+//    if (type == 1) {
+//      alpha = bl->getAlpha();
+//      beta  = bl->getBeta();
+//      rho   = bl->getRho();
+//    }
+//    else if (type == 2) {
+//      alpha = bl->getAlphaHighCutBackground();
+//      beta  = bl->getBetaHighCutBackground();
+//      rho   = bl->getRhoHighCutBackground();
+//    }
+//    else if (type == 3) {
+//      alpha = bl->getAlphaHighCutSeismic();
+//      beta  = bl->getBetaHighCutSeismic();
+//      rho   = bl->getRhoHighCutSeismic();
+//    }
+//    else if (type == 4) {
+//      alpha = bl->getAlphaSeismicResolution();
+//      beta  = bl->getBetaSeismicResolution();
+//      rho   = bl->getRhoSeismicResolution();
+//    }
+//    else {
+//      LogKit::LogFormatted(LogKit::Low,"ERROR: Undefined log type %d\n",type);
+//      exit(1);
+//    }
+//
+//    const int * ipos = bl->getIpos();
+//    const int * jpos = bl->getJpos();
+//    const int * kpos = bl->getKpos();
+//
+//    addData(alpha, beta, rho, ipos, jpos, kpos, nBlocks);
+//  }
+//  divide();
+//}
+
+KrigingData3D::KrigingData3D(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                             int                                        type)
   : data_(NULL),
     nd_(0)
 {
@@ -34,56 +99,93 @@ KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
   //
   int ntot = 0;
   int maxBlocks = 0;
-  for (int w = 0 ; w < nWells ; w++) {
-    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    int nBlocks = blocked_log->GetNumberOfBlocks();
     ntot += nBlocks;
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
+  //for (int w = 0 ; w < nWells ; w++) {
+  //  int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+  //  ntot += nBlocks;
+  //  if (nBlocks > maxBlocks)
+  //    maxBlocks = nBlocks;
+  //}
 
   data_ = new CBWellPt * [ntot];
 
   //
   // Fill with data
   //
-  for (int w = 0 ; w < nWells ; w++) {
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
 
-    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
-    const int nBlocks = bl->getNumberOfBlocks();
+  //for (int w = 0 ; w < nWells ; w++) {
 
-    const float * alpha;
-    const float * beta;
-    const float * rho;
+    //BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+    const int nBlocks = blocked_log->GetNumberOfBlocks();
+
+    //const float * alpha;
+    //const float * beta;
+    //const float * rho;
+
+    //H Get correct use with references here?
+    //std::vector<double> & alpha = blocked_log->GetVpBlocked();
+    //std::vector<double> & beta = blocked_log->GetVsBlocked();
+    //std::vector<double> & rho = blocked_log->GetRhoBlocked();
+    std::vector<double> alpha;
+    std::vector<double> beta;
+    std::vector<double> rho;
+
     if (type == 1) {
-      alpha = bl->getAlpha();
-      beta  = bl->getBeta();
-      rho   = bl->getRho();
+      alpha = blocked_log->GetVpBlocked();
+      beta  = blocked_log->GetVsBlocked();
+      rho   = blocked_log->GetRhoBlocked();
+      //alpha = bl->getAlpha();
+      //beta  = bl->getBeta();
+      //rho   = bl->getRho();
     }
     else if (type == 2) {
-      alpha = bl->getAlphaHighCutBackground();
-      beta  = bl->getBetaHighCutBackground();
-      rho   = bl->getRhoHighCutBackground();
+      alpha = blocked_log->GetVpHighCutBackground();
+      beta  = blocked_log->GetVsHighCutBackground();
+      rho   = blocked_log->GetRhoHighCutBackground();
+      //alpha = bl->getAlphaHighCutBackground();
+      //beta  = bl->getBetaHighCutBackground();
+      //rho   = bl->getRhoHighCutBackground();
     }
     else if (type == 3) {
-      alpha = bl->getAlphaHighCutSeismic();
-      beta  = bl->getBetaHighCutSeismic();
-      rho   = bl->getRhoHighCutSeismic();
+      alpha = blocked_log->GetVpHighCutSeismic();
+      beta  = blocked_log->GetVsHighCutSeismic();
+      rho   = blocked_log->GetRhoHighCutSeismic();
+      //alpha = bl->getAlphaHighCutSeismic();
+      //beta  = bl->getBetaHighCutSeismic();
+      //rho   = bl->getRhoHighCutSeismic();
     }
     else if (type == 4) {
-      alpha = bl->getAlphaSeismicResolution();
-      beta  = bl->getBetaSeismicResolution();
-      rho   = bl->getRhoSeismicResolution();
+      alpha = blocked_log->GetVpSeismicResolution();
+      beta  = blocked_log->GetVsSeismicResolution();
+      rho   = blocked_log->GetRhoSeismicResolution();
+      //alpha = bl->getAlphaSeismicResolution();
+      //beta  = bl->getBetaSeismicResolution();
+      //rho   = bl->getRhoSeismicResolution();
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"ERROR: Undefined log type %d\n",type);
       exit(1);
     }
+    const std::vector<int> ipos = blocked_log->GetIposVector();
+    const std::vector<int> jpos = blocked_log->GetJposVector();
+    const std::vector<int> kpos = blocked_log->GetKposVector();
 
-    const int * ipos = bl->getIpos();
-    const int * jpos = bl->getJpos();
-    const int * kpos = bl->getKpos();
+    //const int * ipos = bl->getIpos();
+    //const int * jpos = bl->getJpos();
+    //const int * kpos = bl->getKpos();
 
-    addData(alpha, beta, rho, ipos, jpos, kpos, nBlocks);
+    addData(&alpha[0], &beta[0], &rho[0], &ipos[0], &jpos[0], &kpos[0], nBlocks);
   }
   divide();
 }
@@ -152,6 +254,7 @@ KrigingData3D::addData(const float * alpha,
     }
   }
 }
+
 
 //---------------------------------------------------------------------
 void

@@ -10,9 +10,9 @@
 class ModelGravityStatic
 {
 public:
-  ModelGravityStatic(ModelSettings        *& modelSettings,
-                     ModelGeneral         *& modelGeneral,
-                     const InputFiles      * inputFiles);
+  //ModelGravityStatic(ModelSettings        *& modelSettings,
+  //                   ModelGeneral         *& modelGeneral,
+  //                   const InputFiles      * inputFiles);
 
   ModelGravityStatic(ModelSettings      *& modelSettings,
                      CommonData          * common_data,

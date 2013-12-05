@@ -16,7 +16,7 @@
 
 class Simbox;
 class FFTGrid;
-class WellData;
+//class WellData;
 class ModelSettings;
 class Wavelet1D;
 
@@ -171,6 +171,7 @@ public:
  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
  void           nullOutsideFrequencyBand(float loCut ,float hiCut );
  float          findNorm() const;
+ void           SetReflectionCoeffs(const float * reflCoef);
 
 protected:
   float          getTheta()          const {return theta_;}

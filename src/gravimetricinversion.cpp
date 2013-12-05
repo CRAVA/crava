@@ -43,9 +43,9 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
 //  Simbox * upscaledSimbox = modelGravityStatic->GetUpscaledSimbox();
   lag_index_              = modelGravityStatic->GetLagIndex();
 
-  int nxp               = seismicParameters.GetMuRho()->getNxp();
-  int nyp               = seismicParameters.GetMuRho()->getNyp();
-  int nzp               = seismicParameters.GetMuRho()->getNzp();
+  int nxp               = seismicParameters.GetMeanRho()->getNxp();
+  int nyp               = seismicParameters.GetMeanRho()->getNyp();
+  int nzp               = seismicParameters.GetMeanRho()->getNzp();
 
   int nx_upscaled       = modelGravityStatic->GetNx_upscaled();
   int ny_upscaled       = modelGravityStatic->GetNy_upscaled();
@@ -80,7 +80,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   upscaling_kernel_abs->realAbs();
 
   // Find distribution of rho_current
-  FFTGrid * mean_rho_current  = new FFTGrid(seismicParameters.GetMuRho());    // At this stage we are on log scale, \mu_{log rho^c}
+  FFTGrid * mean_rho_current  = new FFTGrid(seismicParameters.GetMeanRho());    // At this stage we are on log scale, \mu_{log rho^c}
   FFTGrid * cov_rho_current   = new FFTGrid(seismicParameters.GetCovRho());   // at this stage: on log scale
 
  // ParameterOutput::writeToFile(modelGeneral->getTimeSimbox(),modelGeneral, modelSettings, meanRhoCurrent, "MeanRhoCurrentBeforeExp", "hei");

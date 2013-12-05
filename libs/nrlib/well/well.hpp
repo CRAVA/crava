@@ -96,7 +96,7 @@ namespace NRLib {
     /// Return true if n is missing
     bool IsMissing(int n) const;
     /// Check if deviated
-    bool IsDeviated() { return is_deviated_; }
+    bool IsDeviated() const { return is_deviated_; }
     /// Return cont. missing value
     double GetContMissing() const { return(well_rmissing_); }
     /// Return number of time data
@@ -139,9 +139,19 @@ namespace NRLib {
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
-    void SetUseForBackgroundTrend(int use_for_background_trend) {use_for_background_trend_ = use_for_background_trend ;}
+    void SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
+    void SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_            = use_for_filtering            ;}
+    void SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
+    void SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_   = use_for_wavelet_estimation   ;}
+    void SetRealVsLog(int real_vs_log)                                  { real_vs_log_                  = real_vs_log                  ;}
 
-    bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
+    int GetUseForBackgroundTrend(void)     const { return use_for_background_trend_     ;}
+    int GetUseForFiltering(void)           const { return use_for_filtering_            ;}
+    int GetUseForFaciesProbabilities(void) const { return use_for_facies_probabilities_ ;}
+    int GetUseForWaveletEstimation(void)   const { return use_for_wavelet_estimation_   ;}
+    int GetRealVsLog(void)                 const { return real_vs_log_                  ;}
+
+    //bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
 
     int CheckStormgrid(StormContGrid & stormgrid) const;
 
@@ -172,7 +182,11 @@ namespace NRLib {
     bool                        has_facies_log_;
     std::map<int, std::string>  facies_map_;
 
-    int                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings.
+    int                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
+    int                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
+    int                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
+    int                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
+    int                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
 
     // Number of data excluding WELLMISSING values
     //unsigned int              n_data_nonmissing_;
