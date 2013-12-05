@@ -141,9 +141,9 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 
     //Set up errCorr here
-    int nx  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNI();
-    int ny  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNJ();
-    int nz  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNK();
+    int nx  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNI();
+    int ny  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNJ();
+    int nz  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNK();
     int nxp = model_settings->getNXpad();
     int nyp = model_settings->getNYpad();
     int nzp = model_settings->getNZpad();

@@ -1001,14 +1001,20 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   if (new_well.HasContLog(log_names_from_user[1])) {
     std::vector<double> vp_temp = new_well.GetContLog(log_names_from_user[1]);
     std::vector<double> vp(vp_temp.size());
-    if (inverse_velocity[0]){
+    if (inverse_velocity[0]) {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
-        vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
+        if(vp_temp[i] != WELLMISSING) //H Added check if vp-log had missing. Later it is checked against RMISSING
+          vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
+        else
+          vp[i] = RMISSING;
       }
     }
-    else{
+    else {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
-        vp[i] = static_cast<double>(vp_temp[i]);
+        if(vp_temp[i] != WELLMISSING)
+          vp[i] = static_cast<double>(vp_temp[i]);
+        else
+          vp[i] = RMISSING;
       }
     }
     new_well.RemoveContLog(log_names_from_user[1]);
@@ -1021,12 +1027,18 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     std::vector<double> vs(vs_temp.size());
     if (inverse_velocity[1]){
       for (unsigned int i=0; i<vs_temp.size(); i++) {
-        vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
+        if(vs_temp[i] != WELLMISSING)
+          vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
+        else
+          vs[i] = RMISSING;
       }
     }
-    else{
+    else {
       for (unsigned int i=0; i<vs_temp.size(); i++) {
-        vs[i] = static_cast<double>(vs_temp[i]);
+        if(vs_temp[i] != WELLMISSING)
+          vs[i] = static_cast<double>(vs_temp[i]);
+        else
+          vs[i] = RMISSING;
       }
     }
     new_well.RemoveContLog(log_names_from_user[3]); //1
@@ -5701,7 +5713,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
-          multiple_interval_grid_->AddParametersForInterval(0, parameters);
+          multiple_interval_grid_->AddBackgroundParametersForInterval(0, parameters);
           multiple_interval_grid_->SetBackgroundVsVpRatio(0, vs_vp_ratio);
         }
         else { //Multiple intervals, not multizone background
@@ -5711,7 +5723,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           Background(parameters, wells_, multiple_interval_grid_, model_settings, err_text);
 
           for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
-            multiple_interval_grid_->AddParametersForInterval(i, parameters[i]);
+            multiple_interval_grid_->AddBackgroundParametersForInterval(i, parameters[i]);
             vs_vp_ratios[i] = FindMeanVsVp(parameters[i][0], parameters[i][1]);
           }
 
@@ -5757,7 +5769,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                         multiple_interval_grid_->GetTrendCube(i_interval));
         double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
-        multiple_interval_grid_->AddParametersForInterval(i_interval, parameters);
+        multiple_interval_grid_->AddBackgroundParametersForInterval(i_interval, parameters);
         multiple_interval_grid_->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
 
       }
@@ -5925,7 +5937,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
     std::vector<double> vs_vp_ratios;
     for (int i = 0; i < n_intervals; i++) {
      for (int j = 0; j < 3; j++) {
-       multiple_interval_grid_->AddParameterForInterval(i, j, parameters[j][i]);
+       multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, parameters[j][i]);
      }
      vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
     }
