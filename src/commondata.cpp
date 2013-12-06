@@ -1578,9 +1578,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
   for (int i = 0; i < n_timeLapses; i++) {
 
-    //Wavelet ** wavelet; ///< Wavelet for angle
-    //std::vector<Wavelet *> wavelet;
-
     int n_angles = model_settings->getNumberOfAngles(i);
 
     std::vector<float> sn_ratio = model_settings->getSNRatio(i);
@@ -1614,7 +1611,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     local_scale.resize(n_angles);
     bool has_3D_wavelet = false;
 
-    for (int j=0; j <n_angles; j++) {
+    for (int j=0; j < n_angles; j++) {
 
       local_noise_scale[j] = NULL;
       local_shift[j] = NULL;
@@ -1655,7 +1652,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
           //Correlation direction from ModelGeneral::makeTimeSimboxes
           Surface * correlation_direction = NULL;
           try {
-            Surface tmp_surf(input_files->getCorrDirFile()); ///H can be given as top and base?
+            Surface tmp_surf(input_files->getCorrDirFile()); //H can be given as top and base?
             if (estimation_simbox_.CheckSurface(tmp_surf) == true)
               correlation_direction = new Surface(tmp_surf);
             else {
@@ -1714,7 +1711,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     // check if local noise is set for some angles.
     bool local_noise_set = false;
-    //std::vector<float> angles = model_settings->getAngle(i);
+    std::vector<std::vector<double> > synt_seis_angles(n_angles);
 
     for (int j = 0; j < n_angles; j++) {
       seismic_data_[i][j];
@@ -1730,6 +1727,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   mapped_blocked_logs_,
                                   wavelet_estim_interval,
                                   *reflection_matrix_[i],
+                                  synt_seis_angles[j],
                                   err_text,
                                   wavelet[j],
                                   local_noise_scale[j],
@@ -1776,13 +1774,16 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                             1.0);
     }
 
-    wavelets_[i] = wavelet;
-    local_noise_scale_[i] = local_noise_scale;
-    local_shift_[i] = local_shift;
-    local_scale_[i] = local_scale;
+    wavelets_[i]              = wavelet;
+    local_noise_scale_[i]     = local_noise_scale;
+    local_shift_[i]           = local_shift;
+    local_scale_[i]           = local_scale;
     global_noise_estimate_[i] = sn_ratio;
-    sn_ratio_[i] = sn_ratio;
+    sn_ratio_[i]              = sn_ratio;
+    synt_seis_[i]             = synt_seis_angles;
   } //timelapse
+
+
 
   Timings::setTimeWavelets(wall,cpu);
 
@@ -1853,6 +1854,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              const float                              * reflection_matrix,
+                             std::vector<double>                      & synt_seis,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
                              Grid2D                                  *& local_noise_scale, //local noise estimates?
@@ -1894,7 +1896,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             wavelet_estim_interval,
                             model_settings,
                             reflection_matrix,
-                            //*reflection_matrix_[i_timelapse],
+                            synt_seis,
                             j_angle,
                             error,
                             err_text);
@@ -1903,7 +1905,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     if (use_ricker_wavelet)
         wavelet = new Wavelet1D(model_settings,
                                 reflection_matrix,
-                                //*reflection_matrix_[i_timelapse],
                                 angle,
                                 model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
                                 error);
@@ -1919,7 +1920,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                                 file_format,
                                 model_settings,
                                 reflection_matrix,
-                                //*reflection_matrix_[i_timelapse],
                                 angle,
                                 error,
                                 err_text);
@@ -1979,7 +1979,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                                                                    estimate_wavelet);
       if (model_settings->getEstimateSNRatio(i_timelapse,j_angle))
         sn_ratio = SNRatio_tmp;
-        //SNRatio_[i_timelapse] = SNRatio;
     }
 
     if (error == 0) {
@@ -2075,7 +2074,6 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                             mapped_blocked_logs,
                             &estimation_simbox_,
                             reflection_matrix,
-                            //*reflection_matrix_[i_timelapse],
                             j_angle,
                             error,
                             err_text);

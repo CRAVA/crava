@@ -80,7 +80,8 @@ public:
   std::vector<std::vector<float> >      & GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
   //Vario                                 * GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
 
-  std::vector<Wavelet *>                & GetWavelet(int time_lapse)                    { return wavelets_.find(time_lapse)->second          ;}
+  std::vector<Wavelet *>                  & GetWavelet(int time_lapse)                  { return wavelets_.find(time_lapse)->second          ;}
+  const std::vector<std::vector<double> > & GetSyntSeis(int time_lapse)                 { return synt_seis_.find(time_lapse)->second         ;}
 
   const std::vector<std::vector<double> > & GetTGradX()                           const { return t_grad_x_                                   ;}
   const std::vector<std::vector<double> > & GetTGradY()                           const { return t_grad_y_                                   ;}
@@ -306,6 +307,7 @@ private:
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                        const std::vector<Surface *>             & waveletEstimInterval,
                        const float                              * reflection_matrix,
+                       std::vector<double>                      & synt_seic,
                        std::string                              & err_text,
                        Wavelet                                 *& wavelet,
                        Grid2D                                  *& local_noise_scale,
@@ -753,14 +755,14 @@ private:
   std::map<int, float **>                       reflection_matrix_; //Map timelapse
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
-  //std::map<int, Wavelet**>                      wavelets_;  //Map time_lapse
-  std::map<int, std::vector<Wavelet *> >        wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >         local_noise_scale_;
-  std::map<int, std::vector<Grid2D *> >         local_shift_;
-  std::map<int, std::vector<Grid2D *> >         local_scale_;
-  std::map<int, std::vector<float> >            global_noise_estimate_;
-  std::map<int, std::vector<float> >            sn_ratio_;
-  bool                                          use_local_noise_;
+  std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Grid2D *> >              local_noise_scale_;
+  std::map<int, std::vector<Grid2D *> >              local_shift_;
+  std::map<int, std::vector<Grid2D *> >              local_scale_;
+  std::map<int, std::vector<float> >                 global_noise_estimate_;
+  std::map<int, std::vector<float> >                 sn_ratio_;
+  bool                                               use_local_noise_;
+  std::map<int, std::vector<std::vector<double> > >  synt_seis_; //Map time_lapse, vector angles
 
   std::vector<std::vector<double> >             t_grad_x_;
   std::vector<std::vector<double> >             t_grad_y_;

@@ -280,7 +280,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // Temporary placement.
     //
 
-    //H Writing of wells?
+    //H Writing of wells? Why is this done for each timelapse?
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
       modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }

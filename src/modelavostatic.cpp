@@ -561,8 +561,6 @@ void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *
 
 void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     std::vector<FFTGrid *>                     seis_cube,
-                                    //FFTGrid                                 ** seis_cube,
-                                    //const ModelSettings                      * model_settings,
                                     int                                        n_angles)
 {
   for (int i_angle = 0; i_angle < n_angles; i_angle++) {

@@ -2155,13 +2155,13 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 
 }
 
-void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>   & blocked_log,
-                                                std::vector<double>   & z_pos,
-                                                int                     n_blocks,
-                                                std::vector<double>   & vertical_trend,
-                                                double                  z0,
-                                                double                  dzVt,
-                                                int                     nz)
+void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
+                                                std::vector<double>       & z_pos,
+                                                int                         n_blocks,
+                                                const std::vector<double> & vertical_trend,
+                                                double                      z0,
+                                                double                      dzVt,
+                                                int                         nz)
 {
   //
   // Initialise as undefined
@@ -2208,13 +2208,16 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>   & blocked_
   }
 }
 
-void  BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>    & vertical_trend,
-                                                 double                   z0,              // z-value of center in top layer
-                                                 double                   dz,              // dz in vertical trend
-                                                 int                      nz,              // layers in vertical trend
-                                                 std::string              type,
-                                                 int                      i_angle)
+void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double> & vertical_trend,
+                                                 double                      z0,              // z-value of center in top layer
+                                                 double                      dz,              // dz in vertical trend
+                                                 int                         nz,              // layers in vertical trend
+                                                 std::string                 type,
+                                                 int                         i_angle,
+                                                 int                         n_angles)
 {
+  n_angles_ = n_angles;
+
   if (type != "WELL_SYNTHETIC_SEISMIC")
   {
     std::vector<double> blocked_log(n_blocks_);
@@ -2242,7 +2245,7 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>    & vertic
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
     if (well_synt_seismic_data_.size() == 0)
     {
-      well_synt_seismic_data_.resize(n_angles_);
+      well_synt_seismic_data_.resize(n_angles_);  //n_angles_ set in CommonData before wavelet is estimated
       for (int i=0; i<n_angles_; i++)
       {
         well_synt_seismic_data_[i].resize(n_blocks_);
@@ -2693,33 +2696,21 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
 
   if (type == "REFLECTION_COEFFICIENT") {
     cpp_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
-    //if (cpp_ == NULL)
-    //  cpp_ = new float * [n_angles_];
-    //cpp_[i_angle] = blocked_log;
   }
   else if (type == "SEISMIC_DATA") {
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
-    //if (real_seismic_data_ == NULL)
-    //  real_seismic_data_ = new float * [n_angles_];
-    //real_seismic_data_[i_angle] = blocked_log;
   }
   else if (type == "FACIES_PROB") {
     facies_prob_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
-    //if (facies_prob_ == NULL)
-    //  facies_prob_ = new float * [n_facies];
-    //facies_prob_[i_angle] = blocked_log;
   }
   else if (type == "ALPHA_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-    //alpha_predicted_ = blocked_log;
   }
   else if (type == "BETA_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
-    //beta_predicted_ = blocked_log;
   }
   else if (type == "RHO_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
-    //rho_predicted_ = blocked_log;
   }
   else {
     LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
@@ -3210,7 +3201,6 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_coef,
                                                  int                     n_angles,
                                                  std::vector<Wavelet *> & wavelet,
-                                                 //Wavelet **              wavelet,
                                                  int                     nz,
                                                  int                     nzp,
                                                  const Simbox          * simbox) {
@@ -3278,7 +3268,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
     for (j=start; j < start+length; j++)
       synt_seis[j] = synt_seis_r[j];
 
-    SetLogFromVerticalTrend(synt_seis, z_pos_blocked_[0], dz_, nz, "ACTUAL_SYNTHETIC_SEISMIC", i);
+    SetLogFromVerticalTrend(synt_seis, z_pos_blocked_[0], dz_, nz, "ACTUAL_SYNTHETIC_SEISMIC", i, n_angles);
 
     //localWavelet->fft1DInPlace();
     delete local_wavelet;

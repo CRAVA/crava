@@ -19,10 +19,8 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
-//#include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet1D.h"
-//#include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
@@ -43,6 +41,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
                      const float                                      * reflCoef,
+                     std::vector<double>                              & synt_seis,
                      int                                                iAngle,
                      int                                              & errCode,
                      std::string                                      & errTxt)
@@ -145,7 +144,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       //
       std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
       blocked_log->GetBlockedGrid(seismic_data, simbox, seisLog);
-      //blocked_logs[w]->GetBlockedGrid(simbox, seismic_data, &seisLog[0]);
+
       double maxAmp = 0.0;
       for (int i = 0 ; i < blocked_log->GetNumberOfBlocks(); i++) {
         maxAmp = std::max(maxAmp, std::abs(seisLog[i]));
@@ -208,7 +207,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         Utils::fftInv(cpp_c[w], cpp_r[w], nzp_);
         Utils::fftInv(seis_c[w], seis_r[w], nzp_);
         wellWeight[w] = length*dzWell[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with
-                                                                       // large reflection coefficients
+                                                                           // large reflection coefficients
         z0[w] = static_cast<float> (blocked_log->GetZpos()[0]);
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
@@ -273,13 +272,13 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
           wellWavelets[w][i] = 0;
       }
     }
+    //int w = 0;
+    //for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    //  std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    //  BlockedLogsCommon * blocked_log = iter->second;
 
-    int w = 0;
-    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
-      BlockedLogsCommon * blocked_log = iter->second;
+    for(int w = 0; w < nWells; w++) { // gets syntetic seismic with estimated wavelet
 
-    //for (int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
       fileName = "waveletShift";
@@ -295,16 +294,16 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
 
-      std::vector<double> synt_seis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+      synt_seis.resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
       if (wellWeight[w] > 0) {
-        for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
+        for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
           synt_seis[i] = synt_seis_r[w][i];
-        //wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
-        //                                                             "WELL_SYNTHETIC_SEISMIC", iAngle);
-        blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_,"WELL_SYNTHETIC_SEISMIC", iAngle);
+
+        //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic
+        //blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
 
       }
-      w++;
+      //w++;
     }
 
     float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
@@ -330,13 +329,13 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
     norm_ = findNorm();
 
-    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
+    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmpz_
     fftw_real * trueAmp = rAmp_;
     float       truedDz = dz_;
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
-    w = 0;
+    int w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;

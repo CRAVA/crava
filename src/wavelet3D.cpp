@@ -95,7 +95,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 
-      //BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
       const std::vector<int> iPos = blocked_log->GetIposVector();
       const std::vector<int> jPos = blocked_log->GetJposVector();
 
@@ -186,7 +185,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
             std::vector<double> seis_log(nBlocks);
             blocked_log->GetBlockedGrid(seismic_data, simBox, seis_log, xTr, yTr);
-            //bl->getBlockedGrid(&seisCube[0], &seisLog[0], xTr, yTr);
             std::vector<double> seis_data(nz_);
             blocked_log->GetVerticalTrend(seis_log, seis_data);
             //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
@@ -291,14 +289,11 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
-  //for(unsigned int w=0; w<nWells; w++) {
   w = 0;
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //if (wells[w]->getUseForWaveletEstimation() &&
-    //if(modelSettings->getIndicatorWavelet(w) > 0 &&
     if(blocked_log->GetUseForWaveletEstimation() &&
        ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
     {

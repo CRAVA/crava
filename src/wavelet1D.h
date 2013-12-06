@@ -18,18 +18,16 @@ class Wavelet1D : public Wavelet {
 public:
 //Constructors and destructor
   Wavelet1D();
-  Wavelet1D(const Simbox                     * simbox,
-            const SeismicStorage             * seismic_data,
+  Wavelet1D(const Simbox                                     * simbox,
+            const SeismicStorage                             * seismic_data,
             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-            //const std::vector<BlockedLogsCommon *> &  blocked_logs, //Const?
-            //const FFTGrid                * seisCube,
-            //std::vector<WellData *>        wells,
-            const std::vector<Surface *>     & estimInterval,
-            const ModelSettings              * modelSettings,
-            const float                      * reflCoef,
-            int                                iAngle,
-            int                              & errCode,
-            std::string                      & errTxt);
+            const std::vector<Surface *>                     & estimInterval,
+            const ModelSettings                              * modelSettings,
+            const float                                      * reflCoef,
+            std::vector<double>                              & synt_seis,
+            int                                                iAngle,
+            int                                              & errCode,
+            std::string                                      & errTxt);
 
   Wavelet1D(const std::string & fileName,
             int                 fileFormat,

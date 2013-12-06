@@ -557,11 +557,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //seisCube[i]->writeCravaFile
 
   //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
+  //Or should this have been set in CommonData::ReadWellData?
   if (model_general->getMultiInterval() == false) {
     model_avo_static->addSeismicLogs(model_general->getBlockedWells(),
                                      seis_cubes_,
                                      number_of_angles_);
   }
+
+  //Set synthetic seismic here (moved from wavelet1D)
 
 
   //Get Vp/Vs
@@ -631,6 +634,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //local_scale
   //global_noise_estimate
   //sn_ratio
+  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = common_data->GetBlockedLogs();
 
   for (int i = 0; i < number_of_angles_; i++) {
 
@@ -655,7 +659,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
         sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
                                                                      &seismic_data[i],
-                                                                     common_data->GetBlockedLogs(),
+                                                                     mapped_blocked_logs,
                                                                      model_settings,
                                                                      err_text,
                                                                      error,
@@ -671,6 +675,24 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                      false,  // doEstimateLocalShift
                                                                      false,  // doEstimateLocalScale
                                                                      false); // doEstimateWavelet
+
+        //Add in synthetic sesmic (moved from wavelet1D.cpp)
+        int w = 0;
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+
+          const std::vector<double> & synt_seis = common_data->GetSyntSeis(this_timelapse_)[i];
+
+          float z0      = blocked_log->GetZpos()[0];
+          float dz      = simbox->getdz();
+          int   nz      = synt_seis.size(); //simbox->getnz();
+          float dz_well = simbox->getRelThick(blocked_log->GetIposVector()[0], blocked_log->GetJposVector()[0]) * dz;
+
+          blocked_log->SetLogFromVerticalTrend(synt_seis, z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, number_of_angles_);
+
+          w++;
+        }
       }
       else { //3D wavelet
 
@@ -681,7 +703,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
         sn_ratio_new = wavelets_[i]->calculateSNRatio(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
                                                       &seismic_data[i],
-                                                      common_data->GetBlockedLogs(),
+                                                      mapped_blocked_logs,
                                                       model_settings,
                                                       err_text,
                                                       error,
