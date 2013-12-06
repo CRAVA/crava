@@ -9,6 +9,7 @@
 #include "src/rockphysicsinversion4d.h"
 #include <string>
 #include "src/vario.h"
+#include "src/fftgrid.h"
 
 State4D::State4D()
 {
@@ -16,6 +17,20 @@ State4D::State4D()
 
 State4D::~State4D()
 {
+  for (int i = 0; i < 3; i++)
+    delete mu_static_[i];
+
+  for (int i = 0; i < 3; i++)
+    delete mu_dynamic_[i];
+
+  for (int i = 0; i < 6; i++)
+    delete sigma_static_static_[i];
+
+  for (int i = 0; i < 6; i++)
+    delete sigma_dynamic_dynamic_[i];
+
+  for (int i = 0; i < 9; i++)
+    delete sigma_static_dynamic_[i];
 }
 
 void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
@@ -34,6 +49,32 @@ void State4D::setStaticMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
   mu_static_[0] = vp;
   mu_static_[1] = vs;
   mu_static_[2] = rho;
+}
+
+void
+State4D::updateStaticMu(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
+{
+  for (int i = 0; i < 3; i++) {
+    if (mu_static_[i] != NULL)
+      delete mu_static_[i];
+  }
+
+  mu_static_[0] = new FFTGrid(vp);
+  mu_static_[1] = new FFTGrid(vs);
+  mu_static_[2] = new FFTGrid(rho);
+}
+
+void
+State4D::updateDynamicMu(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
+{
+  for (int i = 0; i < 3; i++) {
+    if (mu_dynamic_[i] != NULL)
+      delete mu_dynamic_[i];
+  }
+
+  mu_dynamic_[0] = new FFTGrid(vp);
+  mu_dynamic_[1] = new FFTGrid(vs);
+  mu_dynamic_[2] = new FFTGrid(rho);
 }
 
 void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
@@ -73,18 +114,6 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
   sigma_static_dynamic_[6] = rhovp;
   sigma_static_dynamic_[7] = rhovs;
   sigma_static_dynamic_[8] = rhorho;
-}
-
-void State4D::deleteCovariances()
-{
-  for(int i=0;i<6;i++)
-    delete sigma_static_static_[i];
-
-  for(int i=0;i<6;i++)
-    delete sigma_dynamic_dynamic_[i];
-
-  for(int i=0;i<9;i++)
-    delete sigma_static_dynamic_[i];
 }
 
 
@@ -478,7 +507,7 @@ void State4D::split(SeismicParametersHolder & current_state )
     }
   }
 
-  printf("\n\n #of Shortcuts in split = %d, this is  %f of 100 percent \n",counter, double(counter*100.0)/double(cnxp*nyp*nzp));
+  LogKit::LogFormatted(LogKit::Low, "\nNumber of shortcuts in split = "+NRLib::ToString(counter)+". This is "+NRLib::ToString(double(counter*100.0)/double(cnxp*nyp*nzp))+" of 100 percent \n");
 
   for(int i = 0; i<3; i++)
   {
@@ -1096,6 +1125,8 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
     prediction[i] = rockPhysicsInv->makePredictions(mu_static_, mu_dynamic_ );
   }
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
+
+  delete rockPhysicsInv;
 
   return prediction;
 }

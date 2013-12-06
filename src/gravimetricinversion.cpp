@@ -38,7 +38,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  State4D state4d         = modelGeneral->getState4D();
+  const State4D & state4d = modelGeneral->getState4D();
   lag_index_              = modelGravityStatic->GetLagIndex();
 
   int nxp               = seismicParameters.GetMuRho()->getNxp();

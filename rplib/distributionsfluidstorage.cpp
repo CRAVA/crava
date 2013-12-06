@@ -364,7 +364,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
         tmpErrTxt += "Bulk modulus need to be given in kPa\n";
 
       if(i >= n_vintages_bulk_density)
-        corr_bulk_density.push_back(corr_bulk_density[i-1]);
+        corr_bulk_density[i] = corr_bulk_density[i-1];
     }
   }
 

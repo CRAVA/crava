@@ -510,13 +510,13 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
         tmpErrTxt += "Shear modulus need to be given in kPa\n";
 
       if(i >= n_vintages_bulk_shear)
-        corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
+        corr_bulk_shear[i] = corr_bulk_shear[i-1];
 
       if(i >= n_vintages_bulk_density)
-        corr_bulk_density.push_back(corr_bulk_density[i-1]);
+        corr_bulk_density[i] = corr_bulk_density[i-1];
 
       if(i >= n_vintages_shear_density)
-        corr_shear_density.push_back(corr_shear_density[i-1]);
+        corr_shear_density[i] = corr_shear_density[i-1];
     }
 
     for(int i=0; i<n_vintages; i++) {
