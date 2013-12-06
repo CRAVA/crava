@@ -118,9 +118,8 @@ RockPhysicsInversion4D::allocatePredictionTables( )
     for (int j=0; j<nf_[0]; j++){
       meanRockPrediction_(i,j) = new FFTGrid(nf_[1], nf_[2], nf_[3], nf_[1], nf_[2], nf_[3]);
       meanRockPrediction_(i,j)->setType(FFTGrid::PARAMETER);
-      meanRockPrediction_(i,j)->createRealGrid(false);
       meanRockPrediction_(i,j)->setAccessMode(FFTGrid::WRITE);
-      meanRockPrediction_(i,j)->fillInConstant(0.0);
+      meanRockPrediction_(i,j)->fillInConstant(0.0, false);
       meanRockPrediction_(i,j)->endAccess();
     }
   }
@@ -140,7 +139,7 @@ RockPhysicsInversion4D::ClearContentInPredictionTable( )
 
 FFTGrid *
 RockPhysicsInversion4D::makePredictions(std::vector<FFTGrid *> mu_static_,
-                         std::vector<FFTGrid *> mu_dynamic_ )
+                                        std::vector<FFTGrid *> mu_dynamic_ )
 {
   int nx,ny,nz,rnxp,nxp,nyp,nzp;
   nx=mu_static_[0]->getNx();
@@ -480,17 +479,18 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
   int cnfp=nfp_/2+1;
   int rnfp=2*cnfp;
 
-  fftw_real*    rTemp= static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnfp));
-  fftw_complex* cTemp  = reinterpret_cast<fftw_complex*>(rTemp);
+  fftw_real*    rTemp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnfp));
+  fftw_complex* cTemp = reinterpret_cast<fftw_complex*>(rTemp);
 
   double minDivisor = 1e-3;
 
   LogKit::LogFormatted(LogKit::Low,"\n Smoothing direction 1 of 4\n");
   float monitorSize = std::max(1.0f, static_cast<float>(nf_[0]*nf_[1]*nf_[2]*nf_[3])*0.02f);
   float nextMonitor = monitorSize;
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-  printf("\n  ^");
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
 
   // divide and smooth direction1
   for(int i1=0;i1<nf_[1];i1++)
@@ -519,7 +519,7 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
           SetGridValue(tableInd,i0,i1,i2,i3, rTemp[i0]);
           if ( i1*nf_[2]*nf_[3]*nf_[0] +i2*nf_[3]*nf_[0]+ i3*nf_[0] + i0 + 1 >= static_cast<int>(nextMonitor)) {
             nextMonitor += monitorSize;
-            printf("^");
+            std::cout << "^";
           }
         }
       }
@@ -527,9 +527,10 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
   LogKit::LogFormatted(LogKit::Low,"\n\n Smoothing direction 2 of 4\n");
   monitorSize = std::max(1.0f, static_cast<float>(nf_[0]*nf_[1]*nf_[2]*nf_[3])*0.02f);
   nextMonitor = monitorSize;
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-  printf("\n  ^");
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
 
   // divide and smoothdirection2
   for(int i0=0;i0<nf_[0];i0++)
@@ -558,7 +559,7 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
           SetGridValue(tableInd,i0,i1,i2,i3, rTemp[i1]);
           if ( i0*nf_[2]*nf_[3]*nf_[1] +i2*nf_[3]*nf_[1]+ i3*nf_[1] + i1 + 1 >= static_cast<int>(nextMonitor)) {
             nextMonitor += monitorSize;
-            printf("^");
+            std::cout << "^";
           }
         }
       }
@@ -566,9 +567,10 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
   LogKit::LogFormatted(LogKit::Low,"\n\n Smoothing direction 3 of 4\n");
   monitorSize = std::max(1.0f, static_cast<float>(nf_[0]*nf_[1]*nf_[2]*nf_[3])*0.02f);
   nextMonitor = monitorSize;
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-  printf("\n  ^");
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
 
   //  divide and smoothdirection 3
   for(int i0=0;i0<nf_[0];i0++)
@@ -598,7 +600,7 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
           SetGridValue(tableInd,i0,i1,i2,i3, rTemp[i2]);
           if ( i0*nf_[1]*nf_[3]*nf_[2] +i1*nf_[3]*nf_[2]+ i3*nf_[2] + i2 + 1 >= static_cast<int>(nextMonitor)) {
             nextMonitor += monitorSize;
-            printf("^");
+            std::cout << "^";
           }
         }
       }
@@ -606,9 +608,10 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
   LogKit::LogFormatted(LogKit::Low,"\n Smoothing last direction \n");
   monitorSize = std::max(1.0f, static_cast<float>(nf_[0]*nf_[1]*nf_[2]*nf_[3])*0.02f);
   nextMonitor = monitorSize;
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-  printf("\n  ^");
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
  //  divide and smoothdirection 4
    for(int i0=0;i0<nf_[0];i0++)
     for(int i1=0;i1<nf_[1];i1++)
@@ -636,7 +639,7 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
           SetGridValue(tableInd,i0,i1,i2,i3, rTemp[i3]);
           if ( i0*nf_[1]*nf_[2]*nf_[3] +i1*nf_[2]*nf_[3]+ i2*nf_[3] + i3 + 1 >= static_cast<int>(nextMonitor)) {
             nextMonitor += monitorSize;
-            printf("^");
+            std::cout << "^";
           }
         }
       }
@@ -644,6 +647,8 @@ RockPhysicsInversion4D::DivideAndSmoothTable(int tableInd,std::vector<std::vecto
   for (int j=0; j<nf_[0]; j++){
       meanRockPrediction_(tableInd,j)->endAccess();
   }
+
+  fftw_free(rTemp);
 
 }
 

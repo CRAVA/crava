@@ -20,8 +20,6 @@ SeismicParametersHolder::SeismicParametersHolder(void)
   crCovAlphaBeta_ = NULL;
   crCovAlphaRho_  = NULL;
   crCovBetaRho_   = NULL;
-
-  priorVar0_.resize(3,3);
 }
 
 //--------------------------------------------------------------------
@@ -86,7 +84,7 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muAlpha,
   muRho_  = new FFTGrid(muRho);
 }
 
-
+//--------------------------------------------------------------------
 
 void
 SeismicParametersHolder::setCorrelationParameters(float                    ** priorVar0,

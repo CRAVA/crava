@@ -255,7 +255,7 @@ void
 CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt)
 {
 
-  NRLib::Matrix corr_matrix(3,3);
+  NRLib::Matrix corr_matrix(3, 3, 0);
   for(int i=0; i<3; i++)
     corr_matrix(i,i) = 1;
 
@@ -266,8 +266,8 @@ CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std
   corr_matrix(1,2) = corr12;
   corr_matrix(2,1) = corr12;
 
-  NRLib::Vector eigen_values(3);
-  NRLib::Matrix eigen_vectors(3,3);
+  NRLib::Vector eigen_values(3, 0);
+  NRLib::Matrix eigen_vectors(3, 3, 0);
   NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
 
   bool pos_def = true;

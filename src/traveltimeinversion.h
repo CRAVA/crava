@@ -334,17 +334,22 @@ private:
                                                      const Simbox              * simbox,
                                                      Surface                   & base_surface) const;
 
-  void                          resampleState4D(const NRLib::Grid<double> & resample_grid,
-                                                const Simbox              * old_simbox,
-                                                State4D                   & state_4d) const;
+  void                          resampleState4D(const NRLib::Grid<double> &  resample_grid,
+                                                const Simbox              *  old_simbox,
+                                                FFTGrid                   *& mu_vp_static,
+                                                FFTGrid                   *& mu_vs_static,
+                                                FFTGrid                   *& mu_rho_static,
+                                                FFTGrid                   *& mu_vp_dynamic,
+                                                FFTGrid                   *& mu_vs_dynamic,
+                                                FFTGrid                   *& mu_rho_dynamic) const;
 
   void                          resampleSeismicParameters(const NRLib::Grid<double> & resample_grid,
                                                           const Simbox              * new_simbox,
                                                           SeismicParametersHolder   & seismic_parameters) const;
 
-  void                          resampleFFTGrid(const NRLib::Grid<double> & resample_grid,
-                                                const Simbox              * old_simbox,
-                                                FFTGrid                   * grid) const;
+  void                          resampleFFTGrid(const NRLib::Grid<double> &  resample_grid,
+                                                const Simbox              *  old_simbox,
+                                                FFTGrid                   *& grid) const;
 
   void                          generateTimeDepthMapping(FFTGrid       * post_mu_log_vp_above,
                                                          FFTGrid       * post_cov_log_vp_above,
