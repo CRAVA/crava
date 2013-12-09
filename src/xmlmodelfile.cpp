@@ -49,7 +49,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   }
   catch (NRLib::IOError e) {
     LogKit::LogMessage(LogKit::Error,"\nERROR: "+std::string(e.what()));
-    exit(1);
+    failed_ = true;
   }
 
   //Remove all comments, since this convention is outside xml.
