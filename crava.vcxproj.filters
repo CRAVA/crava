@@ -999,6 +999,12 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="rplib\table_rho.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1675,6 +1681,12 @@
     </ClInclude>
     <ClInclude Include="src\rmstrace.h">
       <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp.h">
+      <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
