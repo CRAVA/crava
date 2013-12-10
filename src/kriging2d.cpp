@@ -29,7 +29,7 @@ void Kriging2D::krigSurface(Grid2D              & trend,
   int nx = static_cast<int>(trend.GetNI());
   int ny = static_cast<int>(trend.GetNJ());
 
-  if (md > 0 && md < nx*ny) {
+  if (md > 0 && md <= nx*ny) {
 
     NRLib::SymmetricMatrix K(md);
     NRLib::Vector residual(md);
@@ -41,17 +41,31 @@ void Kriging2D::krigSurface(Grid2D              & trend,
     fillKrigingMatrix(K, cov, indexi, indexj);
 
     NRLib::CholeskySolve(K, residual, x);
+    Grid2D              filled(nx,ny,0);
+
+    for(int i=0;i<md;i++){
+      if (getResiduals) {  // Only get the residuals
+        trend(indexi[i],indexj[i]) = residual(i);
+        filled(indexi[i],indexj[i])=1.0;
+      }
+      else {
+        trend(indexi[i],indexj[i]) += residual(i);
+        filled(indexi[i],indexj[i])=1.0;
+      }
+    }
 
     for (int i = 0 ; i < nx ; i++) {
       for (int j = 0 ; j < ny ; j++) {
+        if(!(filled(i,j) > 0.0)) // if this is not a datapoint
+        {
+          fillKrigingVector(k, cov, indexi, indexj, i, j);
 
-        fillKrigingVector(k, cov, indexi, indexj, i, j);
-
-        if (getResiduals) {  // Only get the residuals
-          trend(i,j) = k * x;
-        }
-        else {
-          trend(i,j) += k * x;
+          if (getResiduals) {  // Only get the residuals
+            trend(i,j) = k * x;
+          }
+          else {
+            trend(i,j) += k * x;
+          }
         }
       }
     }

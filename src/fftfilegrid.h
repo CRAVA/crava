@@ -29,15 +29,18 @@ public:
   int          SetNextComplex(std::complex<double> & value);
   int          setNextComplex(fftw_complex);
   int          setNextReal(float);
+  float        getFirstRealValue();
   int          square();
   int          expTransf();
   int          logTransf();
   void         multiplyByScalar(float scalar);
   int          collapseAndAdd(float*);
   void         add(FFTGrid* fftGrid);
+  void         addScalar(float scalar);
   void         subtract(FFTGrid* fftGrid);
   void         changeSign();
   void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
+  void         conjugate();
   void         fillInComplexNoise(RandomGen * ranGen);
   void         fftInPlace();
   void         invFFTInPlace();

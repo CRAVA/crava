@@ -680,19 +680,24 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addDefaultWaveletEstIntFileBase();
   }
 
-  inputFiles_->clearTimeLapseTravelTime();
-  if(parseTravelTime(root, errTxt) == false) {
-    inputFiles_->addTravelTimeHorizon("");
-    inputFiles_->addRmsVelocity("");
-    modelSettings_->addTimeLapseTravelTime(false);
+  modelSettings_->clearTimeLapseTravelTime();
+  inputFiles_   ->clearTimeLapseTravelTime();
+  if (parseTravelTime(root, errTxt) == false) {
+    modelSettings_->addTimeLapseTravelTimeGiven(false);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
+    modelSettings_->addTravelTimeHorizonName("");
+    modelSettings_->addTravelTimeHorizonSD(RMISSING);
+    modelSettings_->addLateralTravelTimeErrorCorr(NULL);
+    inputFiles_   ->addRmsVelocity("");
+    inputFiles_   ->addTravelTimeHorizon("");
   }
-  inputFiles_->addTimeLapseTravelTime();
+  modelSettings_->addTimeLapseTravelTime();
+  inputFiles_   ->addTimeLapseTravelTime();
 
   if(parseTimeGradientSettings(root,errTxt) == false)
     modelSettings_->addDefaultTimeGradientSettings();
 
   if(parseGravimetry(root, errTxt) == false) {
-    inputFiles_->addGravimetricObservationLocations("");
     inputFiles_->addGravimetricData("");
     modelSettings_->addTimeLapseGravimetry(false);
   }
@@ -823,7 +828,6 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-format");
   legalCommands.push_back("type");
 
-
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
     inputFiles_->addSeismicFile(value);
@@ -881,19 +885,20 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->addStretchFactor(1.0);
   std::string value;
-  bool estimate = false;
-  float peakFrequency;
-  if(parseFileName(root, "file-name", value, errTxt) == true) {
+  bool        estimate = false;
+  float       peakFrequency;
+
+  if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(false);
     modelSettings_->addRickerPeakFrequency(RMISSING);
   }
-  else if(parseValue(root, "ricker", peakFrequency, errTxt) == true){
+  else if (parseValue(root, "ricker", peakFrequency, errTxt) == true){
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
-    modelSettings_->addRickerPeakFrequency(peakFrequency);
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
+    modelSettings_->addRickerPeakFrequency(peakFrequency);
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
@@ -1128,26 +1133,45 @@ bool
 XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("travel-time");
-  if(root == 0)
+  if (root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("rms-velocities");
-  legalCommands.push_back("horizon-file");
+  legalCommands.push_back("rms-data");
+  legalCommands.push_back("horizon");
+  legalCommands.push_back("lateral-correlation-stationary-data");
 
-  if(parseRMSVelocities(root, errTxt) == false)
-    errTxt += "<travel-time><rms-velocities> needs to be given\n";
-
-  std::string horizon;
-  int n_horizons = 0;
-  while(parseFileName(root, "horizon-file", horizon, errTxt, true) == true) {
-    inputFiles_->addTravelTimeHorizon(horizon);
-    n_horizons++;
+  bool rms_given = false;
+  if (parseRMSVelocities(root, errTxt) == true)
+    rms_given = true;
+  else {
+    inputFiles_->addRmsVelocity("");
+    modelSettings_->addRMSStandardDeviation(RMISSING);
   }
-  if(n_horizons == 0)
-    inputFiles_->addTravelTimeHorizon("");
 
-  modelSettings_->addTimeLapseTravelTime(true);
+  int n_horizons = 0;
+  while (parseHorizonData(root, errTxt) == true)
+    n_horizons++;
+
+  if (n_horizons == 0) {
+    inputFiles_->addTravelTimeHorizon("");
+    modelSettings_->addTravelTimeHorizonName("");
+    modelSettings_->addTravelTimeHorizonSD(RMISSING);
+  }
+
+  if (rms_given == false && n_horizons == 0)
+    errTxt += "At least one of <rms-data> and <horizon> needs to be given in <survey><travel-time>\n";
+  else
+    modelSettings_->addTimeLapseTravelTimeGiven(true);
+
+  Vario * vario = NULL;
+  if (parseVariogram(root, "lateral-correlation-stationary-data", vario, errTxt) == true) {
+    if (vario != NULL)
+      modelSettings_->addLateralTravelTimeErrorCorr(vario);
+  }
+  else
+    modelSettings_->addDefaultLateralTravelTimeErrorCorr();
+
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1156,20 +1180,62 @@ XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  TiXmlNode * root = node->FirstChildElement("rms-data");
   if(root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
+  legalCommands.push_back("standard-deviation");
 
   std::string rms_file;
   if(parseFileName(root, "file-name", rms_file, errTxt) == true)
     inputFiles_->addRmsVelocity(rms_file);
   else
-    errTxt += "<travel-time><rms-velocities><file-name> needs to be given\n";
+    errTxt += "<travel-time><rms-data><file-name> needs to be given\n";
+
+  double value;
+  if(parseValue(root, "standard-deviation", value, errTxt) == true)
+    modelSettings_->addRMSStandardDeviation(value);
+  else
+    errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 
   checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseHorizonData(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("horizon");
+  if (root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("horizon-name");
+  legalCommands.push_back("standard-deviation");
+
+  std::string file_name;
+  if (parseFileName(root, "file-name", file_name, errTxt, true) == true)
+    inputFiles_->addTravelTimeHorizon(file_name);
+  else
+    errTxt += "<travel-time><horizon><file-name> needs to be given\n";
+
+  std::string horizon_name;
+  if (parseValue(root, "horizon-name", horizon_name, errTxt) == true)
+    modelSettings_->addTravelTimeHorizonName(horizon_name);
+  else
+    errTxt += "<travel-time><horizon><horizon-name> needs to be given\n";
+
+  double value;
+  if(parseValue(root, "standard-deviation", value, errTxt) == true)
+    modelSettings_->addTravelTimeHorizonSD(value);
+  else
+    errTxt += "<standard-deviation> needs to be given in <travel-time><horizon>\n";
+
+
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -1208,14 +1274,7 @@ XmlModelFile::parseGravimetry(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("locations-file");
   legalCommands.push_back("data-file");
-
-  std::string locations_file;
-  if(parseFileName(root, "locations-file", locations_file, errTxt) == true)
-    inputFiles_->addGravimetricObservationLocations(locations_file);
-  else
-    errTxt += "<gravimetry><locations-file> needs to be given\n";
 
   std::string data_file;
   if(parseFileName(root, "data-file", data_file, errTxt) == true)
@@ -1287,6 +1346,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("earth-model");
   legalCommands.push_back("local-wavelet");
   legalCommands.push_back("rock-physics");
+  legalCommands.push_back("rms-velocities");
 
   parseBackground(root, errTxt);
   parseEarthModel(root,errTxt);
@@ -1321,6 +1381,8 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
 
   parseFaciesProbabilities(root, errTxt);
   parseRockPhysics(root, errTxt);
+
+  parsePriorRMSVelocities(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1872,6 +1934,113 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rms-velocities");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("above-reservoir");
+  legalCommands.push_back("below-reservoir");
+
+  modelSettings_->setRMSPriorGiven(true);
+
+  if(parseAboveReservoir(root, errTxt) == false)
+    errTxt += "<above-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  if(parseBelowReservoir(root, errTxt) == false)
+    errTxt += "<below-reservoir> needs to be given in <prior-model><rms-velocities>\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseAboveReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("above-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-top");
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
+  legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-top", mean, errTxt) == false)
+    errTxt += "<mean-vp-top> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpTop(mean);
+
+
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpAbove(variance);
+
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeAbove(range);
+
+
+  int n_layers;
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><above-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersAbove(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBelowReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("below-reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean-vp-base");
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("temporal-correlation-range");
+  legalCommands.push_back("n-layers");
+
+  double mean;
+  if(parseValue(root, "mean-vp-base", mean, errTxt) == false)
+    errTxt += "<mean-vp-base> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSMeanVpBase(mean);
+
+  double variance;
+  if(parseValue(root, "variance-vp", variance, errTxt) == false)
+    errTxt += "<variance-vp> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSVarianceVpBelow(variance);
+
+  double range;
+  if(parseValue(root, "temporal-correlation-range", range, errTxt) == false)
+    errTxt += "<temporal-correlation-range> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSTemporalCorrelationRangeBelow(range);
+
+  int n_layers;
+  if(parseValue(root, "n-layers", n_layers, errTxt) == false)
+    errTxt += "<n-layers> needs to be given in <prior-model><rms-velocities><below-reservoir>\n";
+  else
+    modelSettings_->setRMSnLayersBelow(n_layers);
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -5910,8 +6079,16 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
+  int numberGravityFiles = 0;
+  for(int i = 0; i<modelSettings_->getNumberOfVintages(); i++){
+    if(modelSettings_->getGravityTimeLapse(i))
+      numberGravityFiles++;
+  }
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)   // Not necessarily on first vintage
     errTxt += "Seismic data are needed for inversion.\n";
+
+  if(numberGravityFiles == 1)
+    errTxt += "Need at least two gravity data files for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
     bool okWithoutWells = true;
@@ -5989,7 +6166,37 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
                         "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
 
+  /// Travel time inversion consistency
+  if(modelSettings_->getTravelTimeTimeLapse(0) == true) {
+    if (inputFiles_->getRmsVelocities(0) != "" && modelSettings_->getRMSPriorGiven() == false)
+      errTxt += "<rms-velocities> need to be given in <prior-model> when RMS data are given in <survey><travel-time>\n";
+
+    std::vector<std::string> firstTravelTimeHorizons = modelSettings_->getTimeLapseTravelTimeHorizons(0);
+    if (firstTravelTimeHorizons.size() > 0) {
+      for (int i = 1; i < static_cast<int>(modelSettings_->getNumberOfTimeLapses()); ++i) {
+        std::vector<std::string> currentTravelTimeHorizons = modelSettings_->getTimeLapseTravelTimeHorizons(i);
+        for (size_t j = 0; j < currentTravelTimeHorizons.size(); ++j) {
+          bool found = false;
+          for (size_t k = 0; k < firstTravelTimeHorizons.size(); ++k) {
+            if (currentTravelTimeHorizons[j] == firstTravelTimeHorizons[k]) {
+              found = true;
+              break;
+            }
+          }
+          if (found == false) {
+            errTxt += "The travel time horizon name \""+currentTravelTimeHorizons[j]+"\" for vintage "+NRLib::ToString(modelSettings_->getVintageYear(i))+"\n";
+            errTxt += " in <travel-time><horizon><horizon-name> does not correspond to the horizon names given for the first time lapse.\n";
+          }
+        }
+      }
+      std::vector<double> horizon_standard_deviation = modelSettings_->getTimeLapseTravelTimeHorizonSD(0);
+      for (size_t j = 0; j < horizon_standard_deviation.size(); ++j) {
+        if (horizon_standard_deviation[j] != 0)
+          errTxt += "The standard deviations for the travel time horizon for the first time lapse need to be zero\n";
+      }
+    }
   }
+}
 
 void
 XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
@@ -6237,8 +6444,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
       errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
   }
   for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
-    if(modelSettings_->getNumberOfAngles(i) == 0)
-      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getNumberOfAngles(i) == 0 && (modelSettings_->getGravityTimeLapse(i) == false))
+      errTxt += "Need at least one <angle-gather> or <gravity> in <survey>.\n";
     if(modelSettings_->getVintageYear(i) == RMISSING)
       errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
   }

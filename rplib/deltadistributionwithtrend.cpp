@@ -68,3 +68,18 @@ DeltaDistributionWithTrend::GetQuantileValue(double /*u*/, double s1, double s2)
   return(y);
 
 }
+
+double
+DeltaDistributionWithTrend::GetMeanValue(double s1, double s2)
+{
+  double dummy = 0.0;
+  return(mean_->GetValue(s1, s2, dummy));
+}
+double
+DeltaDistributionWithTrend::GetVarianceValue(double /*s1*/, double /*s2*/)
+{
+  return(0.0);
+}
+
+
+

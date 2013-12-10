@@ -151,13 +151,11 @@ ModelAVOStatic::blockLogs(std::vector<WellData *> & wells,
                           Simbox                  * timeSimboxConstThick,
                           ModelSettings          *& modelSettings)
 {
-  int     nWells         = modelSettings->getNumberOfWells();
+  int nWells = modelSettings->getNumberOfWells();
 
-  if(nWells > 0) {
+  if (nWells > 0) {
     for (int i=0 ; i<nWells ; i++)
     {
-      wells[i]->findMeanVsVp(waveletEstimInterval_);
-
       wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel()) );
       wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick) );
       if (timeBGSimbox==NULL)

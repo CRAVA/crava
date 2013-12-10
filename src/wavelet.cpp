@@ -477,7 +477,7 @@ void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f) {
-    LogKit::LogFormatted(LogKit::Low,"  Scaling wavelet with factor         : %.3e\n",scale);
+    LogKit::LogFormatted(LogKit::Low,"\n  Scaling wavelet with factor : %.3f\n",scale);
     for(int i=0; i < rnzp_ ; i++)
       if(rAmp_[i] != RMISSING)
         rAmp_[i]=rAmp_[i]*scale;
@@ -816,7 +816,7 @@ Wavelet::findNormWithinFrequencyBand(float loCut ,float hiCut ) const
 
   assert(!isReal_);
 
-  float dOmega = 1.0/(nzp_*dz_*0.001);
+  float dOmega = 1.0f/(nzp_*dz_*0.001f);
   int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
   int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
 
@@ -839,7 +839,7 @@ Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut )
   // for consistency we use the norm in real (time) domain
   assert(!isReal_);
 
-  float dOmega = 1.0/(nzp_*dz_*0.001);
+  float dOmega = 1.0f/(nzp_*dz_*0.001f);
   int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
   int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
 
@@ -857,7 +857,7 @@ Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut )
     cAmp_[i].im=0;
   }
 
-  float norm2=0;
+  double norm2=0;
   for(int i=loI;i<hiI;i++)
     norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
   if(loI==0)

@@ -38,6 +38,8 @@ class BetaEndMassDistributionWithTrend : public DistributionWithTrend {
 
    virtual double                     ReSample(double s1, double s2);
    virtual double                     GetQuantileValue(double u, double s1, double s2);
+   virtual double                     GetMeanValue(double s1, double s2);
+   virtual double                     GetVarianceValue(double s1, double s2);
 
 private:
   NRLib::Grid2D<NRLib::Distribution<double> *> * beta_endmass_distribution_;

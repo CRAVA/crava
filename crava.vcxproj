@@ -317,6 +317,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp" />
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
     <ClCompile Include="src\io.cpp" />
@@ -332,8 +333,11 @@
     <ClCompile Include="src\modelavodynamic.cpp" />
     <ClCompile Include="src\modelavostatic.cpp" />
     <ClCompile Include="src\modelgeneral.cpp" />
+    <ClCompile Include="src\modelgravitydynamic.cpp" />
+    <ClCompile Include="src\modelgravitystatic.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
+    <ClCompile Include="src\modeltraveltimestatic.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
     <ClCompile Include="src\posteriorelasticpdf.cpp" />
     <ClCompile Include="src\posteriorelasticpdf2d.cpp" />
@@ -356,6 +360,7 @@
     <ClCompile Include="src\timeevolution.cpp" />
     <ClCompile Include="src\timeline.cpp" />
     <ClCompile Include="src\timings.cpp" />
+    <ClCompile Include="src\traveltimeinversion.cpp" />
     <ClCompile Include="src\vario.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1369,7 +1374,11 @@
     <ClInclude Include="rplib\table_vp2.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
+    <ClInclude Include="src\modeltraveltimestatic.h" />
     <ClInclude Include="src\rmstrace.h" />
+    <ClInclude Include="src\gravimetricinversion.h" />
+    <ClInclude Include="src\modelgravitydynamic.h" />
+    <ClInclude Include="src\modelgravitystatic.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
@@ -1414,6 +1423,7 @@
     <ClInclude Include="src\timeevolution.h" />
     <ClInclude Include="src\timeline.h" />
     <ClInclude Include="src\timings.h" />
+    <ClInclude Include="src\traveltimeinversion.h" />
     <ClInclude Include="src\vario.h" />
     <ClInclude Include="src\wavelet.h" />
     <ClInclude Include="src\wavelet1D.h" />

@@ -6,6 +6,9 @@
 class ModelSettings;
 class ModelAVODynamic;
 class ModelAVOStatic;
+class ModelTravelTimeStatic;
+class ModelGravityStatic;
+class ModelGravityDynamic;
 class ModelGeneral;
 class InputFiles;
 class Simbox;
@@ -13,6 +16,8 @@ class SeismicParametersHolder;
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
+                       ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
@@ -33,12 +38,19 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              SeismicParametersHolder & seismicParameters,
                              int                       sortedVintage);
 
-bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
-                                    const ModelGeneral            * modelGeneral,
-                                    const InputFiles              * inputFiles,
-                                    const int                     & vintage,
-                                    SeismicParametersHolder       & seismicParameters);
+bool doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
+                                    ModelGeneral            * modelGeneral,
+                                    ModelTravelTimeStatic   * modelTravelTimeStatic,
+                                    const InputFiles        * inputFiles,
+                                    const int               & vintage,
+                                    SeismicParametersHolder & seismicParameters);
 
+bool doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
+                                     ModelGeneral            * modelGeneral,
+                                     ModelGravityStatic      * modelGravityStatic,
+                                     InputFiles              * inputFiles,
+                                     int                     & vintage,
+                                     SeismicParametersHolder & seismicParameters);
 
 #endif
 

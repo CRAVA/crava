@@ -1,4 +1,4 @@
-// $Id: trend.hpp 1137 2013-01-22 11:39:15Z anner $
+// $Id: trend.hpp 1218 2013-11-15 10:35:04Z gudmundh $
 #ifndef NRLIB_TREND_HPP
 #define NRLIB_TREND_HPP
 
@@ -7,6 +7,7 @@
 #include "../grid/grid2d.hpp"
 #include "../volume/volume.hpp"
 #include "../geometry/point.hpp"
+#include "../iotools/fileio.hpp"
 
 namespace NRLib {
 class Trend {
@@ -16,6 +17,7 @@ public:
   virtual ~Trend();
 
   virtual Trend           * Clone()                                                                                const = 0;
+  virtual void              AddConstant(double /*c*/)                                                                    = 0;
   virtual double            GetValue(double /*s1*/, double /*s2*/, double /*s3*/)                                  const = 0;
   virtual double            GetValue(double /*s1*/, double /*s2*/, double /*s3*/, const NRLib::Volume &/*volume*/) const = 0;
   virtual std::vector<double> GetIncrement()                                                                       const = 0;
@@ -38,6 +40,7 @@ public:
   virtual ~TrendConstant();
 
   virtual Trend           * Clone()                                                                                const { return new TrendConstant(*this) ;}
+  virtual void              AddConstant(double c)                                                                  {trend_+=c; }
   virtual double            GetValue(double /*s1*/, double /*s2*/, double /*s3*/)                                  const { return trend_                   ;}
   virtual double            GetValue(double /*s1*/, double /*s2*/, double /*s3*/, const NRLib::Volume &/*volume*/) const { return trend_                   ;}
   virtual double            GetValue()                                                                             const { return trend_                   ;}
@@ -58,8 +61,8 @@ private:
 
 class Trend1D : public Trend {
 public:
-  Trend1D(const std::vector<double> trend, int reference = 1);
-  Trend1D(const std::vector<double> trend, int reference, double dz);
+  Trend1D(const std::vector<double> & trend, int reference = 1);
+  Trend1D(const std::vector<double> & trend, int reference, double dz);
   Trend1D(const std::string &filename, int reference = 1);
   Trend1D(const Trend1D & trend);
   Trend1D();
@@ -67,7 +70,8 @@ public:
   virtual ~Trend1D();
 
   virtual Trend           * Clone()                                                                               const { return new Trend1D(*this) ;}
-  virtual double            GetTrendElement(int i, int j, int k)                                          const { if(reference_ == 1) return trend_[i];
+  virtual void              AddConstant(double c);
+  virtual double            GetTrendElement(int i, int j, int k)                                                  const { if(reference_ == 1) return trend_[i];
                                                                                                                   else if (reference_ == 2) return trend_[j];
                                                                                                                   else return trend_[k];   }
   virtual int               GetReference(void)                                                                    const { return reference_         ;}
@@ -78,7 +82,7 @@ public:
   virtual int               GetTrendDimension(void)                                                               const;
   virtual double            GetValue(double s1,
                                      double s2,
-                                     double s3)                                                               const;
+                                     double s3)                                                                   const;
   virtual double            GetValue(double s1,
                                      double s2,
                                      double s3,
@@ -98,8 +102,8 @@ private:
 
 class Trend2D : public Trend {
 public:
-  Trend2D(const NRLib::Grid2D<double> trend, int reference1 = 2, int reference2 = 3);
-  Trend2D(const NRLib::Grid2D<double> trend, int reference1, int reference2, double dz1, double dz2);
+  Trend2D(const NRLib::Grid2D<double> & trend, int reference1 = 2, int reference2 = 3);
+  Trend2D(const NRLib::Grid2D<double> & trend, int reference1, int reference2, double dz1, double dz2);
   Trend2D(const std::string &filename, int reference1 = 2, int reference2 = 3);
   Trend2D(const Trend2D & trend);
   Trend2D();
@@ -107,6 +111,7 @@ public:
   virtual ~Trend2D();
 
   virtual Trend          * Clone()                                              const { return new Trend2D(*this) ;}
+  virtual void             AddConstant(double c);
   virtual double           GetTrendElement(int i, int j, int k)                 const;
   virtual int              GetReference(void)                                   const { return reference1_        ;}
   virtual NRLib::Point     DrawPoint(const NRLib::Volume & /*volume*/)          const { return Point(0,0,0)       ;}
@@ -139,13 +144,16 @@ private:
 class Trend3D : public Trend {
 public:
   Trend3D(NRLib::Grid<double> & values);
-  Trend3D(const std::string   & file_name);
+  Trend3D(const std::string   & file_name,
+          bool                  binary = false,
+          Endianess             file_format = END_LITTLE_ENDIAN);
   Trend3D(const Trend3D & trend);
   Trend3D();
 
   virtual ~Trend3D();
 
   virtual Trend          * Clone()                                              const { return new Trend3D(*this) ;}
+  virtual void             AddConstant(double c);
   virtual double           GetTrendElement(int i, int j, int k)                 const { return trend_(i,j,k)      ;}
   virtual int              GetReference(void)                                   const { return(0)                 ;}
 

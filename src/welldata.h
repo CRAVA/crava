@@ -60,7 +60,7 @@ public:
   int                 getFaciesNr(int i)                 const { return faciesNr_[i]               ;}
   std::string         getFaciesName(int i)               const { return faciesNames_[i]            ;}
   void                getMinMaxFnr(int &min, int &max) const;
-  void                findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval);
+  void                findMeanVsVp(void);
 
   BlockedLogs       * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_  ;}
   BlockedLogs       * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;}

@@ -1,18 +1,25 @@
 #include <time.h>
 
 #include "src/crava.h"
+#include "src/traveltimeinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
+#include "src/modeltraveltimestatic.h"
 #include "src/modeltraveltimedynamic.h"
+#include "src/modelgravitystatic.h"
+#include "src/modelgravitydynamic.h"
 #include "src/inputfiles.h"
 #include "src/modelgeneral.h"
 #include "src/seismicparametersholder.h"
 #include "src/simbox.h"
+#include "src/gravimetricinversion.h"
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
+                       ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
@@ -29,6 +36,13 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                        timeBGSimbox,
                                        modelGeneral->getTimeSimboxConstThick(),
                                        modelGeneral->getWells());
+
+  modelTravelTimeStatic = new ModelTravelTimeStatic(modelSettings,
+                                                    inputFiles,
+                                                    modelGeneral->getTimeSimbox());
+
+  // Add some logic to decide if modelGravityStatic should be created. To be done later.
+  modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
 }
 
 
@@ -102,7 +116,6 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
   if(failedLoadingModel == false) {
-
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     delete crava;
@@ -111,27 +124,72 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
+  modelGeneral->updateState4D(seismicParameters);
 
   return(failedLoadingModel);
 }
 
 bool
-doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
-                               const ModelGeneral            * modelGeneral,
-                               const InputFiles              * inputFiles,
-                               const int                     & vintage,
-                               SeismicParametersHolder       & /*seismicParameters*/)
+doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
+                               ModelGeneral            * modelGeneral,
+                               ModelTravelTimeStatic   * modelTravelTimeStatic,
+                               const InputFiles        * inputFiles,
+                               const int               & vintage,
+                               SeismicParametersHolder & seismicParameters)
 {
   ModelTravelTimeDynamic * modelTravelTimeDynamic = NULL;
 
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
-                                                      modelGeneral,
                                                       inputFiles,
+                                                      modelTravelTimeStatic,
+                                                      modelGeneral->getTimeSimbox(),
                                                       vintage);
 
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
 
+  if(failedLoadingModel == false) {
+    TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
+                                                                          modelTravelTimeStatic,
+                                                                          modelTravelTimeDynamic,
+                                                                          seismicParameters);
+
+    delete travel_time_inversion;
+  }
+
   delete modelTravelTimeDynamic;
+  return(failedLoadingModel);
+}
+
+bool
+doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
+                                ModelGeneral            * modelGeneral,
+                                ModelGravityStatic      * modelGravityStatic,
+                                InputFiles              * inputFiles,
+                                int                     & vintage,
+                                SeismicParametersHolder & seismicParameters)
+{
+  ModelGravityDynamic * modelGravityDynamic = NULL;
+
+  modelGravityDynamic = new ModelGravityDynamic(modelSettings,
+                                                modelGeneral,
+                                                modelGravityStatic,
+                                                inputFiles,
+                                                vintage,
+                                                seismicParameters);
+
+  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->GetFailed();
+
+   if(failedLoadingModel == false) {
+
+    GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
+                                                                           modelGravityStatic,
+                                                                           modelGravityDynamic,
+                                                                           seismicParameters);
+
+    delete gravimetricInversion;
+  }
+
+  delete modelGravityDynamic;
 
   return(failedLoadingModel);
 }

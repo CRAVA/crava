@@ -47,6 +47,8 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 #include "src/timeline.h"
+#include "src/modeltraveltimestatic.h"
+#include "src/modelgravitystatic.h"
 
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
@@ -160,7 +162,7 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_Low);
   LogKit::StartBuffering();
 
-  Program program( 2,                     // Major version
+  Program program( 4,                     // Major version
                    0,                     // Minor version
                    0,                     // Patch number for bug fixes
                    //"",                  // Use empty string "" for release versions
@@ -176,11 +178,14 @@ int main(int argc, char** argv)
   try
   {
     XmlModelFile modelFile(argv[1]);
-    InputFiles     * inputFiles     = modelFile.getInputFiles();
-    ModelSettings  * modelSettings  = modelFile.getModelSettings();
-    ModelGeneral   * modelGeneral   = NULL;
-    ModelAVOStatic * modelAVOstatic = NULL;
+    InputFiles            * inputFiles            = modelFile.getInputFiles();
+    ModelSettings         * modelSettings         = modelFile.getModelSettings();
+    ModelGeneral          * modelGeneral          = NULL;
+    ModelAVOStatic        * modelAVOstatic        = NULL;
+    ModelTravelTimeStatic * modelTravelTimeStatic = NULL;
+    ModelGravityStatic    * modelGravityStatic    = NULL;
     NRLib::Random::Initialize();
+
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
@@ -203,16 +208,22 @@ int main(int argc, char** argv)
 
     setupStaticModels(modelGeneral,
                       modelAVOstatic,
+                      modelTravelTimeStatic,
+                      modelGravityStatic,
                       modelSettings,
                       inputFiles,
                       seismicParameters,
                       timeBGSimbox);
 
     if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
-       modelAVOstatic == NULL || modelAVOstatic->getFailed())
-      return(1);
+       modelAVOstatic == NULL || modelAVOstatic->getFailed() ||
+       modelTravelTimeStatic->getFailed()                    ||
+       modelGravityStatic->GetFailed()) {
 
-    if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+         return(1);
+    }
+
+    if(modelGeneral->getTimeLine() == NULL) { //Forward modelling.
       bool failed = doFirstAVOInversion(modelSettings,
                                         modelGeneral,
                                         modelAVOstatic,
@@ -224,43 +235,57 @@ int main(int argc, char** argv)
         return(1);
     }
     else {
-      int  eventType;
-      int  eventIndex;
-      double  oldTime;
-      bool failedFirst = false;
-      modelGeneral->getTimeLine()->ReSet();
-      modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-      switch(eventType) {
+      int        eventType;
+      int        vintage;
+      double     oldTime;
+      bool       failedFirst = false;
+      TimeLine * time_line   = modelGeneral->getTimeLine();
+
+      time_line->ReSet();
+      time_line->GetNextEvent(eventType, vintage, oldTime);
+
+      // First inversion
+      switch (eventType) {
 
       case TimeLine::AVO :
-        // In case of 4D inversion
-        if(modelSettings->getDo4DInversion()){
-          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-
+        if (modelSettings->getDo4DInversion()){ // In case of 4D inversion
+          failedFirst = doTimeLapseAVOInversion(modelSettings,
+                                                modelGeneral,
+                                                modelAVOstatic,
+                                                inputFiles,
+                                                seismicParameters,
+                                                vintage);
         }
-        // In case of 3D inversion
-        else{
+        else  // In case of 3D inversion
           failedFirst = doFirstAVOInversion(modelSettings,
                                             modelGeneral,
                                             modelAVOstatic,
                                             seismicParameters,
                                             inputFiles,
-                                            eventIndex,
+                                            vintage,
                                             timeBGSimbox);
-        }
         break;
 
       case TimeLine::TRAVEL_TIME :
         failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
                                                      modelGeneral,
+                                                     modelTravelTimeStatic,
                                                      inputFiles,
-                                                     eventIndex,
+                                                     vintage,
                                                      seismicParameters);
         break;
 
       case TimeLine::GRAVITY :
-        errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+        failedFirst = doTimeLapseGravimetricInversion(modelSettings,
+                                                      modelGeneral,
+                                                      modelGravityStatic,
+                                                      inputFiles,
+                                                      vintage,
+                                                      seismicParameters);
+
+        errTxt += "Warning Gravimetric under construction\n";
         break;
+
       default :
         errTxt += "Error: Unknown inverstion type.\n";
         break;
@@ -272,52 +297,74 @@ int main(int argc, char** argv)
       delete timeBGSimbox;
 
       double time;
-      int time_index = 0;
-      while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-        modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
-        time_index++;
+
+      // Time lapse inversions
+      while (time_line->GetNextEvent(eventType, vintage, time) == true) {
+
+        modelGeneral->advanceTime(vintage - 1,
+                                  time,
+                                  seismicParameters,
+                                  modelSettings);
+
         bool failed;
+
         switch(eventType) {
+
         case TimeLine::AVO :
-          failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          failed = doTimeLapseAVOInversion(modelSettings,
+                                           modelGeneral,
+                                           modelAVOstatic,
+                                           inputFiles,
+                                           seismicParameters,
+                                           vintage);
           break;
+
         case TimeLine::TRAVEL_TIME :
           failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                   modelGeneral,
+                                                  modelTravelTimeStatic,
                                                   inputFiles,
-                                                  eventIndex,
+                                                  vintage,
                                                   seismicParameters);
           break;
+
         case TimeLine::GRAVITY :
-          failed = true;
+          failed = doTimeLapseGravimetricInversion(modelSettings,
+                                                   modelGeneral,
+                                                   modelGravityStatic,
+                                                   inputFiles,
+                                                   vintage,
+                                                   seismicParameters);
           break;
+
         default :
           failed = true;
           break;
         }
-        if(failed)
+
+        if (failed)
           return(1);
       }
     }
 
-    if(modelSettings->getDo4DInversion())
-    {
+    if (modelSettings->getDo4DInversion()) {
+
       bool failed;
-      if(modelSettings->getDo4DRockPhysicsInversion())
-      {
+      if (modelSettings->getDo4DRockPhysicsInversion()) {
 
         failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
 
-        if(failed)
+        if (failed)
           return(1);
       }
     }
 
     if (modelSettings->getDoInversion() && FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids()) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
-      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
-      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
-      TaskList::addTask("The memory usage estimate failed. Please send your XML-model file and\nthe logFile.txt to the CRAVA developers.");
+      //NBNB-PAL: Memory check is bogus at the moment. Include again when 4.0 release is fixed.")
+      //LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
+      //LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
+      //LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
+      //TaskList::addTask("The memory usage estimate failed. Please send your XML-model file and the logFile.txt\n    to the CRAVA developers.");
     }
 
     Timings::setTimeTotal(wall,cpu);
@@ -329,13 +376,14 @@ int main(int argc, char** argv)
     delete modelGeneral;
     delete modelSettings;
     delete inputFiles;
+    delete modelTravelTimeStatic;
+    delete modelGravityStatic;
 
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
   }
-  catch (std::bad_alloc& ba)
-  {
+  catch (std::bad_alloc& ba) {
     std::cerr << "Out of memory: " << ba.what() << std::endl;
     std::string error_message = std::string("Out of memory: ") + ba.what() + "\n";
     LogKit::LogMessage(LogKit::Error, error_message);

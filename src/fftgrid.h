@@ -31,24 +31,22 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(const SegY              * segy,
-                                      const Simbox            * simbox,
-                                      const std::string       & parName,
-                                      bool                      nopadding = false ); // No mode
-  void                 fillInSeismicDataFromSegY(const SegY   * segy,
-                                                 const Simbox * timeSimbox,
-                                                 const Simbox * timeCutSimbox,
-                                                 float         smooth_length,
-                                                 int          & missingTracesSimbox,
-                                                 int          & missingTracesPadding,
-                                                 int          & deadTracesSimbox,
-                                                 std::string  & errTxt);
+  void                 fillInData(const Simbox  * timeSimbox,
+                                  StormContGrid * grid,
+                                  const SegY   *  segy,
+                                  float           smooth_length,
+                                  int           & missingTracesSimbox,
+                                  int           & missingTracesPadding,
+                                  int           & deadTracesSimbox,
+                                  std::string   & errTxt,
+                                  bool            scale = false,
+                                  bool            is_segy = true);
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                              float                z0_data,
-                                              float                zn_data,
+                                              //float                z0_data,
+                                              //float                zn_data,
                                               float                dz_data,
-                                              float                smooth_length,
-                                              std::string        & errTxt);
+                                              float                smooth_length);
+                                              //std::string        & errTxt);
   void                 resampleTrace(const std::vector<float> & data_trace,
                                      const rfftwnd_plan       & fftplan1,
                                      const rfftwnd_plan       & fftplan2,
@@ -83,13 +81,16 @@ public:
                                              float                z0_data,
                                              float                dz_fine,
                                              int                  n_fine);
+  void                 interpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+                                                float                      z0_grid,
+                                                float                      dz_grid,
+                                                const std::vector<float> & trend_long,
+                                                float                      z0_data,
+                                                float                      dz_fine,
+                                                int                        n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  int                  fillInFromStorm(const Simbox      * actSimBox,
-                                       StormContGrid     * grid,
-                                       const std::string & parName,
-                                       bool                scale = false,
-                                       bool                nopadding = false);    // No mode
+
   void                 fillInConstant(float value, bool add = true);              // No mode
 
   void                 fillInErrCorr(const Surface * priorCorrXY,
@@ -125,6 +126,7 @@ public:
   virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);
   fftw_complex         getFirstComplexValue();
+  float                getFirstRealValue();                     // No mode/randomaccess
   virtual int          square();                                // No mode/randomaccess
   virtual int          expTransf();                             // No mode/randomaccess
   virtual int          logTransf();                             // No mode/randomaccess
@@ -135,9 +137,11 @@ public:
 
 
   virtual void         add(FFTGrid* fftGrid);                   // No mode/randomaccess
-  virtual void         subtract(FFTGrid* fftGrid);                   // No mode/randomaccess
+  virtual void         addScalar(float scalar);                 // No mode/randomaccess, only for real grids
+  virtual void         subtract(FFTGrid* fftGrid);              // No mode/randomaccess
   virtual void         changeSign();                   // No mode/randomaccess
   virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
+  virtual void         conjugate();                             // No mode/randomaccess
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
   int                  getCounterForGet() const {return(counterForGet_);}
   int                  getCounterForSet() const {return(counterForSet_);}
@@ -247,7 +251,7 @@ protected:
   void                 extrapolateSeismic(int imin, int imax, int jmin, int jmax);
 
   /// Called from writeResampledStormCube
-  void                 writeSegyFromStorm(StormContGrid *data, std::string fileName);
+  void                 writeSegyFromStorm(Simbox * simbox, StormContGrid *data, std::string fileName);
   void                 makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName);
 
   int                  cubetype_;          // see enum gridtypes above

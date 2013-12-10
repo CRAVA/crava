@@ -397,22 +397,17 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            modelSettings->getFileGrid());
     target->setType(gridType);
 
-    if (gridType == FFTGrid::DATA) {
-      target->fillInSeismicDataFromSegY(segy,
-                                        timeSimbox,
-                                        timeCutSimbox,
-                                        modelSettings->getSmoothLength(),
-                                        missingTracesSimbox,
-                                        missingTracesPadding,
-                                        deadTracesSimbox,
-                                        errText);
-    }
-    else {
-      missingTracesSimbox = target->fillInFromSegY(segy,
-                                                   timeSimbox,
-                                                   parName,
-                                                   nopadding);
-    }
+    StormContGrid * stormgrid_tmp = NULL;
+    target->fillInData(timeSimbox,
+                       stormgrid_tmp,
+                       segy,
+                       modelSettings->getSmoothLength(),
+                       missingTracesSimbox,
+                       missingTracesPadding,
+                       deadTracesSimbox,
+                       errText);
+    if (stormgrid_tmp != NULL)
+     delete stormgrid_tmp;
 
     if (missingTracesSimbox > 0) {
       if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
@@ -537,7 +532,9 @@ ModelGeneral::readStormFile(const std::string   & fName,
     zpad = timeSimbox->getnz();
   }
 
-  int outsideTraces = 0;
+  int missingTracesSimbox  = 0;
+  int missingTracesPadding = 0;
+  int deadTracesSimbox     = 0;
   if(failed == false)
   {
     target = createFFTGrid(timeSimbox->getnx(),
@@ -550,7 +547,19 @@ ModelGeneral::readStormFile(const std::string   & fName,
     target->setType(gridType);
 
     try {
-      outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale, nopadding);
+      SegY * segy_tmp = NULL;
+      target->fillInData(timeSimbox,
+                         stormgrid,
+                         segy_tmp,
+                         modelSettings->getSmoothLength(),
+                         missingTracesSimbox,
+                         missingTracesPadding,
+                         deadTracesSimbox, //Not used for storm-files
+                         errText,
+                         scale,
+                         false);
+      if (segy_tmp != NULL)
+       delete segy_tmp;
     }
     catch (NRLib::Exception & e) {
       errText += std::string(e.what());
@@ -560,21 +569,33 @@ ModelGeneral::readStormFile(const std::string   & fName,
   if (stormgrid != NULL)
     delete stormgrid;
 
-  if(outsideTraces > 0) {
-    if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
-      errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
+  if (missingTracesSimbox > 0) {
+    if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
+      errText += "Error: Data in file "+fName+" was completely outside the inversion area.\n";
       failed = true;
     }
     else {
       if(gridType == FFTGrid::PARAMETER) {
-        errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
+        errText += "Grid in file "+fName+" does not cover the inversion area.\n";
       }
       else {
-        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(outsideTraces)
-                           + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
-        TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
-     }
+        LogKit::LogMessage(LogKit::Warning, "WARNING: "+NRLib::ToString(missingTracesSimbox)
+                           +" grid columns are outside the area defined by the seismic data.\n");
+        std::string text;
+        text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
+        text += "   the seismic data specified in file \'"+fName+"\'.";
+        TaskList::addTask(text);
+      }
     }
+  }
+  if (missingTracesPadding > 0) {
+    int nx     = timeSimbox->getnx();
+    int ny     = timeSimbox->getny();
+    int nxpad  = xpad - nx;
+    int nypad  = ypad - ny;
+    int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+    LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
+                       +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
   }
 }
 
@@ -641,18 +662,32 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
-    std::string tmpErrText;
+    std::string    tmpErrText;
     SegyGeometry * geometry;
+    int            fileType;
     getGeometryFromGridOnFile(gridFile,
                               modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                               geometry,
+                              fileType,
                               tmpErrText);
 
     modelSettings->setSeismicDataAreaParameters(geometry);
-    if(geometry != NULL) {
+    if (geometry != NULL) {
       geometry->WriteGeometry();
 
-      if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
+      if (fileType == IO::CRAVA) {
+        if (modelSettings->getAreaILXL().size() > 0) {
+          std::string text;
+          text += "\nWARNING: The inversion area has been specified in the XML model file using IL-XL";
+          text += "\n         values. This is not a legal option when the area is taken from a seismic";
+          text += "\n         data file given in CRAVA internal format. Specifications are ignored ...\n";
+          LogKit::LogFormatted(LogKit::Warning,text);
+          text  = "Check area specification: You cannot specify inversion area using IL-XL values\n";
+          text += "   when area is also taken from a seismic data file in CRAVA internal format.";
+          TaskList::addTask(text);
+        }
+      }
+      else if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
         SegyGeometry * fullGeometry = geometry;
 
         std::vector<int> areaILXL;
@@ -722,7 +757,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       else {
         geometry->WriteILXL();
       }
-      if(!failed) {
+      if (!failed) {
         modelSettings->setAreaParameters(geometry);
         ILXLGeometry = geometry;
       }
@@ -732,12 +767,12 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       failed = true;
     }
   }
-  if(!failed)
+  if (!failed)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters();
     failed = timeSimbox->setArea(areaParams, errText);
 
-    if(failed)
+    if (failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
@@ -763,7 +798,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
     }
 
-    if(!failed)
+    if (!failed)
     {
       //
       // Set IL/XL information in geometry
@@ -773,15 +808,17 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       //   a) For speed
       //   b) Grid data may not be available.
       if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
-        if(ILXLGeometry == NULL) {
+        if (ILXLGeometry == NULL) {
           int gridType = IO::findGridType(gridFile);
           bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
           if (ilxl_info_available) {
             LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
             std::string tmpErrText;
+            int         fileType;
             getGeometryFromGridOnFile(gridFile,
                                       modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                                       ILXLGeometry,
+                                      fileType,
                                       tmpErrText);
             if(ILXLGeometry == NULL) {
               errText += tmpErrText;
@@ -2221,13 +2258,11 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
         LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
       }
-        std::vector<float> angle = modelSettings->getAngle(i);
-        std::vector<float> SNRatio = modelSettings->getSNRatio(i);
-        std::vector<bool>  estimateWavelet = modelSettings->getEstimateWavelet(i);
-        std::vector<bool>  matchEnergies = modelSettings->getMatchEnergies(i);
-
-
-
+        std::vector<float> angle            = modelSettings->getAngle(i);
+        std::vector<float> SNRatio          = modelSettings->getSNRatio(i);
+        std::vector<bool>  estimateWavelet  = modelSettings->getEstimateWavelet(i);
+        std::vector<bool>  useRickerWavelet = modelSettings->getUseRickerWavelet(i);
+        std::vector<bool>  matchEnergies    = modelSettings->getMatchEnergies(i);
 
         for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
         {
@@ -2252,8 +2287,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
             }
           }
           LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+inputFiles->getSeismicFile(i,j)+"\n");
+
           if (estimateWavelet[j])
             LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
+          else if (useRickerWavelet[j]) {
+            LogKit::LogFormatted(LogKit::Low,"  Ricker wavelet with peak frequency       : %10.1f\n",modelSettings->getRickerPeakFrequency(i,j));
+          }
           else
             LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i,j)+"\n");
           if (modelSettings->getEstimateLocalShift(i,j))
@@ -2317,7 +2356,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                      bool              & failed)
 {
   FFTGrid * velocity = NULL;
-  if(timeCutSimbox != NULL)
+  if (timeCutSimbox != NULL)
     loadVelocity(velocity, timeCutSimbox, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
@@ -2326,11 +2365,11 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
 
-  if(!failed)
+  if (!failed)
   {
     timeDepthMapping_ = new GridMapping();
     timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
-    if(velocity != NULL)
+    if (velocity != NULL)
     {
       velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
@@ -2340,7 +2379,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       velocity->endAccess();
 
-      if((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+      if ((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
         float       offset    = modelSettings->getSegyOffset(0);//Only allow one segy offset for time lapse data
@@ -2360,9 +2399,9 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                         modelSettings->getOutputGridFormat(),
                                         failed,
                                         errText);
-
     }
   }
+
   if(velocity != NULL)
     delete velocity;
 }
@@ -2392,6 +2431,9 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
     const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
     const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
     const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
+    const std::vector<std::vector<double> >   dummy_s1;
+    const std::vector<std::vector<double> >   dummy_s2;
+    const int                                 dummy_output_other = -999;
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2400,7 +2442,15 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++)
-        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path,
+                                                                   trend_cube_parameters,
+                                                                   trend_cube_sampling,
+                                                                   dummy_blocked_logs,
+                                                                   dummy_s1,
+                                                                   dummy_s2,
+                                                                   dummy_output_other,
+                                                                   "dummy",
+                                                                   errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2461,7 +2511,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
-
+            int output_other = modelSettings->getOtherOutputFlag();
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2477,6 +2527,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
                                                                                        fluid_storage,
+                                                                                       output_other,
                                                                                        rockErrTxt);
 
             if(rockErrTxt == "") {
@@ -2629,26 +2680,29 @@ void ModelGeneral::printExpectationAndCovariance(const std::vector<double>   & e
 }
 
 void
-ModelGeneral::loadVelocity(FFTGrid           *& velocity,
-                           const Simbox       * timeSimbox,
-                           const Simbox       * timeCutSimbox,
-                           const ModelSettings * modelSettings,
-                           const std::string  & velocityField,
-                           bool               & velocityFromInversion,
-                           std::string        & errText,
-                           bool               & failed)
+ModelGeneral::loadVelocity(FFTGrid             *& velocity,
+                           const Simbox         * timeSimbox,
+                           const Simbox         * timeCutSimbox,
+                           const ModelSettings  * modelSettings,
+                           const std::string    & velocityField,
+                           bool                 & velocityFromInversion,
+                           std::string          & errText,
+                           bool                 & failed)
 {
-  LogKit::WriteHeader("Setup time-to-depth relationship");
-
-  if(modelSettings->getVelocityFromInversion() == true)
+  if (modelSettings->getVelocityFromInversion())
   {
     velocityFromInversion = true;
     velocity = NULL;
   }
-  else if(velocityField == "")
+  else if (velocityField == "") {
     velocity = NULL;
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Using index mapping between time and depth grids.");
+  }
   else
   {
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"Mapping between time and depth grids using velocity field \'"+velocityField+"\'");
     const SegyGeometry      * dummy1 = NULL;
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
@@ -2685,7 +2739,7 @@ ModelGeneral::loadVelocity(FFTGrid           *& velocity,
         for (int j = 0; j < nyp; j++)
           for (int i = 0; i < rnxp; i++) {
             if(i < nx && j < ny && k < nz) {
-              float value = velocity->getNextReal();
+              float value = velocity->getRealValue(i, j, k);
               if (value < logMin && value != RMISSING) {
                 tooLow++;
               }
@@ -2782,19 +2836,20 @@ ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void
-ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
-                                        const TraceHeaderFormat * thf,
-                                        SegyGeometry           *& geometry,
-                                        std::string             & errText)
+ModelGeneral::getGeometryFromGridOnFile(const std::string          gridFile,
+                                        const TraceHeaderFormat  * thf,
+                                        SegyGeometry            *& geometry,
+                                        int                      & fileType,
+                                        std::string              & errText)
 {
   geometry = NULL;
 
-  if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
-    int fileType = IO::findGridType(gridFile);
-    if(fileType == IO::CRAVA) {
+  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+    fileType = IO::findGridType(gridFile);
+    if (fileType == IO::CRAVA) {
       geometry = geometryFromCravaFile(gridFile);
     }
-    else if(fileType == IO::SEGY) {
+    else if (fileType == IO::SEGY) {
       try
       {
         geometry = SegY::FindGridGeometry(gridFile, thf);
@@ -2804,9 +2859,9 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
         errText = e.what();
       }
     }
-    else if(fileType == IO::STORM)
+    else if (fileType == IO::STORM)
       geometry = geometryFromStormFile(gridFile, errText);
-    else if(fileType==IO::SGRI) {
+    else if (fileType==IO::SGRI) {
       bool scale = true;
       geometry = geometryFromStormFile(gridFile, errText, scale);
     }
@@ -3428,7 +3483,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validIndex[i] = true;
             wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
             wells[i]->filterLogs();
-            //wells[i]->findMeanVsVp(waveletEstimInterval_);
+            wells[i]->findMeanVsVp();
             wells[i]->lookForSyntheticVsLog(rankCorr[i]);
             wells[i]->calculateDeviation(devAngle[i], timeSimbox);
 
@@ -3437,6 +3492,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             validWells[count] = i;
             count++;
           }
+          wells[i]->findILXLAtStartPosition();
         }
       }
       //
@@ -4718,33 +4774,94 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   state4d_.FFT();
 }
 
+
 void
-ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings)
+ModelGeneral::advanceTime(const int               & previous_vintage,
+                          const double            & time_change,
+                          SeismicParametersHolder & seismicParameters,
+                          ModelSettings           * modelSettings)
 {
-  bool debug=false;
-  if(debug) dump4Dparameters(modelSettings, "_prior", time_step);  // note this prior should be equal to
-                                                                    // next_prior in previous step
-  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
-  state4d_.split(seismicParameters);
-  if(debug) dump4Dparameters(modelSettings, "_posterior", time_step);
-  state4d_.evolve(time_step, timeEvolution_); //NBNB grad I grad J
-  //if(debug) dump4Dparameters(modelSettings, "_next_prior", time_step+1);
-  state4d_.merge(seismicParameters);
-  if(debug) dumpSeismicParameters(modelSettings,"_next_prior", time_step+1,seismicParameters);
+  if(time_change > 0) { // Only evolve and merge at positive time change
+
+    bool debug = true;
+
+    if (debug == true)
+      dump4Dparameters(modelSettings,
+                       "_BeforeEvolve_",
+                       previous_vintage);
+
+    state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
+
+    if (debug == true)
+      dump4Dparameters(modelSettings,
+                       "_AfterEvolve_",
+                       previous_vintage+1);
+
+    state4d_.merge(seismicParameters);
+
+
+    if (debug == true)
+      dumpSeismicParameters(modelSettings,
+                            "_next_prior",
+                            previous_vintage + 1,
+                            seismicParameters);
+  }
+
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
+}
+
+void
+ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
+{
+  if (timeSimbox_ != NULL)
+    delete timeSimbox_;
+
+  timeSimbox_ = new Simbox(new_timeSimbox);
+}
+
+void
+ModelGeneral::setTimeDepthMapping(GridMapping * new_timeDepthMapping)
+{
+  if (timeDepthMapping_ != NULL)
+    delete timeDepthMapping_;
+
+  timeDepthMapping_ = new_timeDepthMapping;
+}
+
+void
+ModelGeneral::mergeState4D(SeismicParametersHolder &  seismicParameters)
+{
+  state4d_.merge(seismicParameters);
 }
 
 
 void
-ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)
+ModelGeneral::updateState4D(SeismicParametersHolder &  seismicParameters)
 {
-  bool debug=true;
-  int time_step=timeEvolution_.GetNTimSteps()-1;
-  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
-
   state4d_.split(seismicParameters);
-  dump4Dparameters(modelSettings, "_posterior", time_step);
+}
 
+void
+ModelGeneral::updateState4DWithSingleParameter(FFTGrid * EPost,
+                                               FFTGrid * CovPost,
+                                               int       parameterNumber)
+{
+  state4d_.updateWithSingleParameter(EPost,
+                                     CovPost,
+                                     parameterNumber);
+}
+
+void
+ModelGeneral::updateState4DMu(FFTGrid * mu_vp_static,
+                              FFTGrid * mu_vs_static,
+                              FFTGrid * mu_rho_static,
+                              FFTGrid * mu_vp_dynamic,
+                              FFTGrid * mu_vs_dynamic,
+                              FFTGrid * mu_rho_dynamic)
+{
+  state4d_.updateStaticMu(mu_vp_static, mu_vs_static, mu_rho_static);
+
+  state4d_.updateDynamicMu(mu_vp_dynamic, mu_vs_dynamic, mu_rho_dynamic);
 }
 
 bool
@@ -4772,6 +4889,9 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
      fileName= outPre + labels[i];
      ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, labels[i]);
   }
+
+  for (size_t i = 0; i < predictions.size(); i++)
+    delete predictions[i];
 
   return 0;
 }
@@ -4942,3 +5062,4 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
     for(int j =0;j<nyp;j++)
        (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 }
+

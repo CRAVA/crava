@@ -999,6 +999,21 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\traveltimeinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modeltraveltimestatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
     <ClCompile Include="rplib\table_rho.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
@@ -1670,6 +1685,9 @@
     <ClInclude Include="rplib\table_rho1.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
     <ClInclude Include="rplib\table_rho2.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
@@ -1682,10 +1700,22 @@
     <ClInclude Include="src\rmstrace.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="rplib\table_rho.h">
-      <Filter>Header Files\rplib\fluid</Filter>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\traveltimeinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modeltraveltimestatic.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="rplib\table_vp.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
   </ItemGroup>

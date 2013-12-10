@@ -53,6 +53,7 @@ private:
   bool parseWavelet3D(TiXmlNode * node, std::string & errTxt);
   bool parseTravelTime(TiXmlNode * node, std::string & errTxt);
   bool parseRMSVelocities(TiXmlNode * node, std::string & errTxt);
+  bool parseHorizonData(TiXmlNode * node, std::string & errTxt);
   bool parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
   bool parseGravimetry(TiXmlNode * node, std::string & errTxt);
   bool parseVintage(TiXmlNode * node, std::string & errTxt);
@@ -74,6 +75,9 @@ private:
   bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt);
   bool    parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt);
+  bool parseAboveReservoir(TiXmlNode * node, std::string & errTxt);
+  bool parseBelowReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parseRock(TiXmlNode * node, std::string & label, std::string & errTxt);
   bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);

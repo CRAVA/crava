@@ -1622,34 +1622,6 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsection{\hbracket{travel-time}}\newkw{travel-time}
- \slist
-   \item \Description Travel time data
-   \item \Argument The standard deviation and the minimum distance
-   \item \Default
- \elist
-
-\subsubsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
- \slist
-   \item \Description Elements controlling the RMS velocities $U^2$
-   \item \Argument 
-   \item \Default 
- \elist
-
-\paragraph{\hbracket{file-name}}\rnewkw{file-name}{rms-velocities-file-name}
- \slist
-   \item \Description File name for the RMS velocities
-   \item \Argument
-   \item \Default
- \elist
-
-\subsubsection{\hbracket{horizon-file}}\newkw{horizon-file}
- \slist
-   \item \Description Repeated command, one for each horizon file. File name of the horizon file corresponding a the zone log of a well
-   \item \Argument File name
-   \item \Default 
- \elist
-
 \subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}
  \slist
    \item \Description The prior standard deviation of the gradients are given, as well as the minimum distance for where gradient lines should not cross each other
@@ -1671,18 +1643,75 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 1 ms/m
  \elist
 
+\subsection{\hbracket{travel-time}}\newkw{travel-time}
+ \slist
+   \item \Description Travel time data
+   \item \Argument Elements controlling travel time data
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{rms-data}}\newkw{rms-data}
+ \slist
+   \item \Description Elements controlling the RMS velocities
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{rms-velocities-file-name}
+ \slist
+   \item \Description File name for the RMS velocities
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{standard-deviation}}\newkw{standard-deviation}
+ \slist
+   \item \Description Standard deviation of the RMS data
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{horizon}}\newkw{horizon}
+ \slist
+   \item \Description Repeated command, one for each horizon file.
+   \item \Argument Elements controlling the horizon data
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{horizon-velocities-file-name}
+ \slist
+   \item \Description File name for the travel time horizon
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{horizon-name}}\newkw{horizon-name}
+ \slist
+   \item \Description Horizon name used to identify the travel time horizon in different time lapses
+   \item \Argument
+   \item \Default
+ \elist
+
+
+\paragraph{\hbracket{standard-deviation}}\rnewkw{standard-deviation}{horizon-standard-deviation}
+ \slist
+   \item \Description Standard deviation of the travel time horizon
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{lateral-correlation-stationary-data}}\newkw{lateral-correlation-stationary-data}
+ \slist
+   \item \Description 2D variogram for the lateral correlation in the stationary data calculated in the travel time inversion.
+   \item \Argument 2D variogram, see \autoref{sec:variogram}.
+   \item \Default General exponential variogram with angle=0, range=50, subrange=50 and power=1.
+ \elist
+
 \subsection{\hbracket{gravimetry}\newkw{gravimetry}}
  \slist
 \item \Description Elements controlling gravimetric data
    \item \Argument
    \item \Default
- \elist
-
-\subsubsection{\hbracket{locations-file}}\newkw{locations-file}
- \slist
-   \item \Description File name for the gravimetric observation locations
-   \item \Argument 
-   \item \Default 
  \elist
 
 \subsubsection{\hbracket{data-file}}\newkw{data-file}
@@ -2284,7 +2313,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  
  \subsection{\hbracket{temporal-correlation-range}}\newkw{temporal-correlation-range}
   \slist
-    \item \Description Parameter for exponential variogram for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
+    \item \Description Range (ms) in exponential variogram used for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
     \item \Argument Value
     \item \Default
  \elist
@@ -3831,6 +3860,83 @@ the <label> keyword. The <label> keyword needs to be followed by a keyword speci
    \item \Default 'no'
  \elist
 
+\subsection{\hbracket{rms-velocities}}\newkw{rms-velocities}
+ \slist
+   \item \Description Prior information for the RMS data
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{above-reservoir}}\newkw{above-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data above the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{mean-vp-top}}\newkw{mean-vp-top}
+ \slist
+   \item \Description Expected value of $V_p$ at the top of the zone above the reservoir, that is, at sea level. A linear trend will be made between this value and the background value at the top of the reservoir. 
+   \item \Argument Value (m/s)
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{variance-vp}}\newkw{variance-vp}
+ \slist
+   \item \Description Variance for $V_p$ in the zone above the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-above}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation above the reservoir. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\newkw{n-layers}
+ \slist
+   \item \Description Number of layers to be used from t=0 at the surface to the top of the reservoir
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{below-reservoir}}\newkw{below-reservoir}
+ \slist
+   \item \Description Prior information for the RMS data below the reservoir
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{mean-vp-base}}\newkw{mean-vp-base}
+ \slist
+   \item \Description Expected value of $V_p$ at the base of the zone below the reservoir. A linear trend will be made between this value and the background value at the base of the reservoir. 
+   \item \Argument Value (m/s)
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{variance-vp}}\rnewkw{variance-vp}{variance-vp-below}
+ \slist
+   \item \Description Variance for $V_p$ in the zone below the reservoir
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{temporal-correlation-range}}\rnewkw{temporal-correlation-range}{temporal-correlation-range-below}
+ \slist
+   \item \Description Range (ms) in exponential variogram used for temporal correlation below the reservoir. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{n-layers}}\rnewkw{n-layers}{n-layers-below}
+ \slist
+   \item \Description Number of layers to be used from the base of the reservoir to the deepest observed time for the RMS velocities in \kw{rms-data}
+   \item \Argument Integer
+   \item \Default
+ \elist
+
 \section{Value assignments}\newkw{value-assignments}
 \label{sec:valueassignment}
 All the properties and function parameters can use previously assigned values in \kw{reservoir}, or be assigned values directly in \kw{predefinitions}. The possible types of value assignments are value, trend or distribution. Variables defined in \kw{reservoir} can also be used by the \kw{reservoir-variable} keyword.
@@ -3905,7 +4011,7 @@ All the properties and function parameters can use previously assigned values in
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{estimate}}\newkw{estimate}
+\subsection{\hbracket{estimate}}\newkw{estimate}
  \slist
    \item \Description Estimate a constant value from well data. The wells used in the estimation are given by \kw{use-for-rock-physics}.
    \item \Argument 'yes' or 'no'

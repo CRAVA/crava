@@ -3,11 +3,13 @@
 #include "src/timeevolution.h"
 #include "src/simbox.h"
 #include "lib/lib_matr.h"
+#include "nrlib/iotools/logkit.hpp"
 #include "src/correlatedrocksamples.h"
 #include "rplib/distributionsrock.h"
 #include "src/rockphysicsinversion4d.h"
 #include <string>
 #include "src/vario.h"
+#include "src/fftgrid.h"
 
 State4D::State4D()
 {
@@ -15,6 +17,20 @@ State4D::State4D()
 
 State4D::~State4D()
 {
+  for (int i = 0; i < 3; i++)
+    delete mu_static_[i];
+
+  for (int i = 0; i < 3; i++)
+    delete mu_dynamic_[i];
+
+  for (int i = 0; i < 6; i++)
+    delete sigma_static_static_[i];
+
+  for (int i = 0; i < 6; i++)
+    delete sigma_dynamic_dynamic_[i];
+
+  for (int i = 0; i < 9; i++)
+    delete sigma_static_dynamic_[i];
 }
 
 void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
@@ -33,6 +49,32 @@ void State4D::setStaticMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
   mu_static_[0] = vp;
   mu_static_[1] = vs;
   mu_static_[2] = rho;
+}
+
+void
+State4D::updateStaticMu(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
+{
+  for (int i = 0; i < 3; i++) {
+    if (mu_static_[i] != NULL)
+      delete mu_static_[i];
+  }
+
+  mu_static_[0] = new FFTGrid(vp);
+  mu_static_[1] = new FFTGrid(vs);
+  mu_static_[2] = new FFTGrid(rho);
+}
+
+void
+State4D::updateDynamicMu(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
+{
+  for (int i = 0; i < 3; i++) {
+    if (mu_dynamic_[i] != NULL)
+      delete mu_dynamic_[i];
+  }
+
+  mu_dynamic_[0] = new FFTGrid(vp);
+  mu_dynamic_[1] = new FFTGrid(vs);
+  mu_dynamic_[2] = new FFTGrid(rho);
 }
 
 void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
@@ -74,22 +116,10 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
   sigma_static_dynamic_[8] = rhorho;
 }
 
-void State4D::deleteCovariances()
-{
-  for(int i=0;i<6;i++)
-    delete sigma_static_static_[i];
-
-  for(int i=0;i<6;i++)
-    delete sigma_dynamic_dynamic_[i];
-
-  for(int i=0;i<9;i++)
-    delete sigma_static_dynamic_[i];
-}
-
 
 void State4D::merge(SeismicParametersHolder & current_state )
 {
-  LogKit::WriteHeader("Merging  static and dynamic part into the distribution of the current state");
+  LogKit::LogFormatted(LogKit::Low, "\nMerging static and dynamic part into the distribution of the current state...\n");
   // We assume FFT transformed grids
   assert(allGridsAreTransformed());
 
@@ -251,7 +281,7 @@ void State4D::mergeCov(std::vector<FFTGrid * > & sigma)
 void State4D::split(SeismicParametersHolder & current_state )
 {
 
-  LogKit::WriteHeader("Splitting inversion result into static and dynamic part");
+  LogKit::LogFormatted(LogKit::Low, "\nSplitting inversion result into static and dynamic part...\n");
   // initializing
   assert(allGridsAreTransformed());
 
@@ -372,9 +402,12 @@ void State4D::split(SeismicParametersHolder & current_state )
          sigmaCurrentPosterior[1][2]=sigma[4]->getNextComplex();
          sigmaCurrentPosterior[2][2]=sigma[5]->getNextComplex();
          // compleating matrixes
-         sigmaCurrentPosterior[1][0]=sigmaCurrentPosterior[0][1];
-         sigmaCurrentPosterior[2][0]=sigmaCurrentPosterior[0][2];
-         sigmaCurrentPosterior[2][1]=sigmaCurrentPosterior[1][2];
+         sigmaCurrentPosterior[1][0].re =  sigmaCurrentPosterior[0][1].re;
+         sigmaCurrentPosterior[1][0].im = -sigmaCurrentPosterior[0][1].im;
+         sigmaCurrentPosterior[2][0].re =  sigmaCurrentPosterior[0][2].re;
+         sigmaCurrentPosterior[2][0].im = -sigmaCurrentPosterior[0][2].im;
+         sigmaCurrentPosterior[2][1].re =  sigmaCurrentPosterior[1][2].re;
+         sigmaCurrentPosterior[2][1].im = -sigmaCurrentPosterior[1][2].im;
 
          for(int l=0;l<6;l++)
            for(int m=l+1;m<6;m++)
@@ -403,6 +436,7 @@ void State4D::split(SeismicParametersHolder & current_state )
         // solving the matrixequations see NR-Note: SAND/04/2012 page 6.
 
         // computing: sandwich= inv(sigmaCurrentPrior)*sigmaCurrentVsFullPrior=inv(sigmaCurrentPrior)*adjoint(sigmaFullVsCurrentPrior);
+
          lib_matrCopyCpx(sigmaCurrentPrior, 3, 3, sigmaCurrentPriorChol);
          lib_matrAdjoint(sigmaFullVsCurrentPrior, 6, 3,sandwich); // here sandwich = adjoint(sigmaFullVsCurrentPrior);
 
@@ -473,7 +507,7 @@ void State4D::split(SeismicParametersHolder & current_state )
     }
   }
 
-  printf("\n\n #of Shortcuts in split = %d, this is  %f of 100 percent \n",counter, double(counter*100.0)/double(cnxp*nyp*nzp));
+  LogKit::LogFormatted(LogKit::Low, "\nNumber of shortcuts in split = "+NRLib::ToString(counter)+". This is "+NRLib::ToString(double(counter*100.0)/double(cnxp*nyp*nzp))+" of 100 percent \n");
 
   for(int i = 0; i<3; i++)
   {
@@ -524,9 +558,209 @@ void State4D::split(SeismicParametersHolder & current_state )
   delete [] sigmaCurrentPosterior;
 }
 
+void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
+{
+  // parameterNumber: 0 = VpStatic, 1=VsStatic 2 = RhoStatic, 3 = VpDynamic, 4=VsDynamic 5 = RhoDynamic
+  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...\n");
+  // initializing
+  assert(allGridsAreTransformed());
+  for(int i = 0; i<3; i++){
+    mu_static_[i]->setAccessMode(FFTGrid::READANDWRITE);
+    mu_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+  }
+
+  assert(Epost->getIsTransformed());
+  Epost->setAccessMode(FFTGrid::READ);
+
+  for(int i = 0; i<6; i++)
+  {
+    sigma_static_static_[i]->setAccessMode(FFTGrid::READANDWRITE);
+    sigma_dynamic_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+  }
+
+  assert(CovPost->getIsTransformed());
+  CovPost->setAccessMode(FFTGrid::READ);
+
+
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->setAccessMode(FFTGrid::READANDWRITE);
+
+  int nzp = Epost->getNzp();
+  int nyp = Epost->getNyp();
+  int cnxp = Epost->getCNxp();
+
+  fftw_complex*  muFullPrior=new fftw_complex[6];
+  fftw_complex*  muFullPosterior=new fftw_complex[6];
+  fftw_complex   muCurrentPrior;
+  fftw_complex   muCurrentPosterior;
+  double   sigmaCurrentPrior ;
+  double   sigmaCurrentPosterior ;
+
+  fftw_complex** sigmaFullPrior          = new fftw_complex*[6];
+  fftw_complex** sigmaFullPosterior      = new fftw_complex*[6];
+  fftw_complex*  sigmaFullVsCurrentPrior = new fftw_complex[6];
+
+  for(int i=0;i<6;i++)
+  {
+    sigmaFullPrior[i]          = new fftw_complex[6];
+    sigmaFullPosterior[i]      = new fftw_complex[6];
+  }
+
+  for (int k = 0; k < nzp; k++) {
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
+         // reading from grids
+         muFullPrior[0] = mu_static_[0]->getNextComplex();
+         muFullPrior[1] = mu_static_[1]->getNextComplex();
+         muFullPrior[2] = mu_static_[2]->getNextComplex();
+         muFullPrior[3] = mu_dynamic_[0]->getNextComplex();
+         muFullPrior[4] = mu_dynamic_[1]->getNextComplex();
+         muFullPrior[5] = mu_dynamic_[2]->getNextComplex();
+
+         sigmaFullPrior[0][0] = sigma_static_static_[0]->getNextComplex();
+         sigmaFullPrior[0][1] = sigma_static_static_[1]->getNextComplex();
+         sigmaFullPrior[0][2] = sigma_static_static_[2]->getNextComplex();
+         sigmaFullPrior[0][3] = sigma_static_dynamic_[0]->getNextComplex();
+         sigmaFullPrior[0][4] = sigma_static_dynamic_[1]->getNextComplex();
+         sigmaFullPrior[0][5] = sigma_static_dynamic_[2]->getNextComplex();
+         sigmaFullPrior[1][1] = sigma_static_static_[3]->getNextComplex();
+         sigmaFullPrior[1][2] = sigma_static_static_[4]->getNextComplex();
+         sigmaFullPrior[1][3] = sigma_static_dynamic_[3]->getNextComplex();
+         sigmaFullPrior[1][4] = sigma_static_dynamic_[4]->getNextComplex();
+         sigmaFullPrior[1][5] = sigma_static_dynamic_[5]->getNextComplex();
+         sigmaFullPrior[2][2] = sigma_static_static_[5]->getNextComplex();
+         sigmaFullPrior[2][3] = sigma_static_dynamic_[6]->getNextComplex();
+         sigmaFullPrior[2][4] = sigma_static_dynamic_[7]->getNextComplex();
+         sigmaFullPrior[2][5] = sigma_static_dynamic_[8]->getNextComplex();
+         sigmaFullPrior[3][3] = sigma_dynamic_dynamic_[0]->getNextComplex();
+         sigmaFullPrior[3][4] = sigma_dynamic_dynamic_[1]->getNextComplex();
+         sigmaFullPrior[3][5] = sigma_dynamic_dynamic_[2]->getNextComplex();
+         sigmaFullPrior[4][4] = sigma_dynamic_dynamic_[3]->getNextComplex();
+         sigmaFullPrior[4][5] = sigma_dynamic_dynamic_[4]->getNextComplex();
+         sigmaFullPrior[5][5] = sigma_dynamic_dynamic_[5]->getNextComplex();
+
+         // compleating matrixes
+         for(int l=0;l<6;l++)
+           for(int m=l+1;m<6;m++)
+           {
+             sigmaFullPrior[m][l].re = sigmaFullPrior[l][m].re;
+             sigmaFullPrior[m][l].im = -sigmaFullPrior[l][m].im;
+           }
+
+         // getting Prior for Parameter
+          muCurrentPrior=muFullPrior[parameterNumber];
+          sigmaCurrentPrior = static_cast<double>(sigmaFullPrior[parameterNumber][parameterNumber].re);
+         // getting posterior for Parameter
+         muCurrentPosterior = Epost->getNextComplex();
+         sigmaCurrentPosterior=static_cast<double>(CovPost->getNextComplex().re);
+
+         // getting correlation between Parameter and others
+         for(int l=0;l<6;l++){
+             sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
+         }
+
+         if( (sigmaCurrentPosterior >0.0) & (sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
+           // This is the computations
+           double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
+
+           fftw_complex d;
+           d.re =  muCurrentPrior.re + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.re -  muCurrentPrior.re)));
+           d.im =  muCurrentPrior.im + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.im -  muCurrentPrior.im)));
+
+           for(int l=0;l<6;l++)
+           {
+              muFullPosterior[l].re =  muFullPrior[l].re + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re))/sigmaD);
+              muFullPosterior[l].re+=                    - static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im))/sigmaD);
+
+              muFullPosterior[l].im = muFullPrior[l].im + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im))/sigmaD);
+              muFullPosterior[l].im +=                    static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re))/sigmaD);
+           }
+
+           for(int l=0;l<6;l++)
+             for(int m=0;m<6;m++)
+             {
+                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - static_cast<float>(static_cast<double>(( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im))/sigmaD);
+                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - static_cast<float>(static_cast<double>((-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re))/sigmaD);
+             }
+         }else
+         {
+           lib_matrCopyCpx(sigmaFullPrior, 6, 6, sigmaFullPosterior);
+
+           for(int l=0;l<6;l++)
+              muFullPosterior[l]= muFullPrior[l];
+         }
+
+        // writing to grids
+         sigma_static_static_[0]->setNextComplex(  sigmaFullPosterior[0][0]);
+         sigma_static_static_[1]->setNextComplex(  sigmaFullPosterior[0][1]);
+         sigma_static_static_[2]->setNextComplex(  sigmaFullPosterior[0][2]);
+         sigma_static_dynamic_[0]->setNextComplex( sigmaFullPosterior[0][3]);
+         sigma_static_dynamic_[1]->setNextComplex( sigmaFullPosterior[0][4]);
+         sigma_static_dynamic_[2]->setNextComplex( sigmaFullPosterior[0][5]);
+         sigma_static_static_[3]->setNextComplex(  sigmaFullPosterior[1][1]);
+         sigma_static_static_[4]->setNextComplex(  sigmaFullPosterior[1][2]);
+         sigma_static_dynamic_[3]->setNextComplex( sigmaFullPosterior[1][3]);
+         sigma_static_dynamic_[4]->setNextComplex( sigmaFullPosterior[1][4]);
+         sigma_static_dynamic_[5]->setNextComplex( sigmaFullPosterior[1][5]);
+         sigma_static_static_[5]->setNextComplex(  sigmaFullPosterior[2][2]);
+         sigma_static_dynamic_[6]->setNextComplex( sigmaFullPosterior[2][3]);
+         sigma_static_dynamic_[7]->setNextComplex( sigmaFullPosterior[2][4]);
+         sigma_static_dynamic_[8]->setNextComplex( sigmaFullPosterior[2][5]);
+         sigma_dynamic_dynamic_[0]->setNextComplex(sigmaFullPosterior[3][3]);
+         sigma_dynamic_dynamic_[1]->setNextComplex(sigmaFullPosterior[3][4]);
+         sigma_dynamic_dynamic_[2]->setNextComplex(sigmaFullPosterior[3][5]);
+         sigma_dynamic_dynamic_[3]->setNextComplex(sigmaFullPosterior[4][4]);
+         sigma_dynamic_dynamic_[4]->setNextComplex(sigmaFullPosterior[4][5]);
+         sigma_dynamic_dynamic_[5]->setNextComplex(sigmaFullPosterior[5][5]);
+
+         mu_static_[0]->setNextComplex( muFullPosterior[0]);
+         mu_static_[1]->setNextComplex( muFullPosterior[1]);
+         mu_static_[2]->setNextComplex( muFullPosterior[2]);
+         mu_dynamic_[0]->setNextComplex(muFullPosterior[3]);
+         mu_dynamic_[1]->setNextComplex(muFullPosterior[4]);
+         mu_dynamic_[2]->setNextComplex(muFullPosterior[5]);
+      }
+    }
+  }
+
+  Epost->endAccess();
+  CovPost->endAccess();
+
+  for(int i = 0; i<3; i++)
+  {
+    mu_static_[i]->endAccess();
+    mu_dynamic_[i]->endAccess();
+  }
+  for(int i = 0; i<6; i++)
+  {
+    sigma_static_static_[i]->endAccess();
+    sigma_dynamic_dynamic_[i]->endAccess();
+  }
+
+  for(int i = 0; i<9; i++)
+    sigma_static_dynamic_[i]->endAccess();
+
+
+  for(int i=0;i<6;i++)
+  {
+    delete [] sigmaFullPrior[i];
+    delete [] sigmaFullPosterior[i];
+  }
+
+  delete [] muFullPrior;
+  delete [] muFullPosterior;
+
+  delete [] sigmaFullPrior;
+  delete [] sigmaFullPosterior;
+  delete [] sigmaFullVsCurrentPrior;
+
+}
+
+
+
 void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
 {
-  LogKit::WriteHeader("Evolving distribution of dynamic part");
+  LogKit::LogFormatted(LogKit::Low, "\nEvolving distribution of dynamic part...\n");
   // Evolution matrix and correction terms from TimeEvolution class
   const NRLib::Matrix evolution_matrix     = timeEvolution.getEvolutionMatrix(time_step);
   const NRLib::Vector mean_correction_term = timeEvolution.getMeanCorrectionTerm(time_step);
@@ -609,9 +843,9 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
    timeIncSpatialCorr.createGrid();
    // NBNB this isa quick fix
    if(time_step==0)
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,50.0,0.0f,0.0f); // longer vertical range in first go
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // longer vertical range in first go
    else
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,5.0,0.0f,0.0f); //
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); //
    //NBNB OK  this correlation should come from interface and be more like:
    /* timeIncSpatialCorr.fillInParamCorr(timeEvolution.getPriorCorrXY(time_step),
                                     timeEvolution.getPriorcircCorrT(timeStep),
@@ -664,12 +898,13 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
             counter++;
 
             //Enforcing symmetry of overall matrix.
+            // (Hermitian symmetry Hence  - for imaginary part)
             if (d1 != d2) {
               sigma_real(d2, d1) = sigma_real(d1, d2);
-              sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+              sigma_imag(d2 ,d1) = -sigma_imag(d1, d2);
 
               sigma_real(d2+3, d1+3) = sigma_real(d1+3, d2+3);
-              sigma_imag(d2+3 ,d1+3) = sigma_imag(d1+3, d2+3);
+              sigma_imag(d2+3 ,d1+3) = -sigma_imag(d1+3, d2+3);
             }
           }
         }
@@ -682,9 +917,9 @@ void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
             sigma_imag(d1, d2) = get_value.im;
             counter++;
 
-            //Enforcing symmetry of overall matrix.
+            //Enforcing symmetry of overall matrix. (Hermitian symmetry Hence  - for imaginary part)
             sigma_real(d2, d1) = sigma_real(d1, d2);
-            sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+            sigma_imag(d2 ,d1) = -sigma_imag(d1, d2);
           }
         }
         // Evolve values.
@@ -816,7 +1051,7 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   // Note rockSample contains rock sample for all time steps.
   int nSim=10000; // NBNB OK 10000->1000 for speed during debug
 
-  LogKit::LogFormatted(LogKit::Low,"\nSampling rockphysics distribution...");
+  LogKit::LogFormatted(LogKit::Low,"\nSampling rock physics distribution...");
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
 
@@ -865,6 +1100,7 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   NRLib::Matrix fullPriorCov     = timeEvolution.computePriorCovStaticAndDynamicLastTimeStep();
   NRLib::Matrix fullPosteriorCov = GetFullCov();
 
+
   if(debug)
   {
     NRLib::WriteMatrixToFile("priorCov.dat", fullPriorCov );
@@ -889,6 +1125,8 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
     prediction[i] = rockPhysicsInv->makePredictions(mu_static_, mu_dynamic_ );
   }
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
+
+  delete rockPhysicsInv;
 
   return prediction;
 }
