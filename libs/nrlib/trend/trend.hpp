@@ -1,4 +1,4 @@
-// $Id: trend.hpp 1218 2013-11-15 10:35:04Z gudmundh $
+// $Id: trend.hpp 1223 2013-12-12 09:00:09Z ulvmoen $
 #ifndef NRLIB_TREND_HPP
 #define NRLIB_TREND_HPP
 

@@ -1,4 +1,4 @@
-// $Id: trend.cpp 1218 2013-11-15 10:35:04Z gudmundh $
+// $Id: trend.cpp 1223 2013-12-12 09:00:09Z ulvmoen $
 #include "trend.hpp"
 #include "trendkit.hpp"
 #include "../exception/exception.hpp"
@@ -612,6 +612,7 @@ Trend3D::AddConstant(double c)
 double
 Trend3D::GetValue(double /*s1*/, double /*s2*/, double /*s3*/) const
 {
+  assert(false); // not implemented yet.
   return 0;
 
 }
@@ -623,10 +624,11 @@ Trend3D::GetValue(double                s1,
                   double                s3,
                   const NRLib::Volume & volume) const {
   //Linear interpolation method
-   double s1rel, s2rel, s3rel;
-   s1rel = s1/volume.GetLX();
-   s2rel = s2/volume.GetLY();
-   s3rel = s3/volume.GetLZ();
+ //  double s1rel, s2rel, s3rel;
+ //  s1rel = s1/volume.GetLX();
+ //  s2rel = s2/volume.GetLY();
+  // s3rel = s3/volume.GetLZ();
+   assert(false); // not implemented yet.
    return 0;
 }
 

@@ -1,4 +1,4 @@
-// $Id: trendkit.cpp 1219 2013-11-15 10:52:48Z gudmundh $
+// $Id: trendkit.cpp 1223 2013-12-12 09:00:09Z ulvmoen $
 #include "trendkit.hpp"
 #include "../iotools/logkit.hpp"
 #include "../iotools/fileio.hpp"
