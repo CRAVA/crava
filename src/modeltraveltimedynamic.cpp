@@ -157,16 +157,11 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
                                     const Simbox      * timeSimbox,
                                     std::string       & errTxt)
 {
-
-  int error = 0;
-
   std::ifstream file;
   NRLib::OpenRead(file, fileName);
 
-  if (file == 0) {
-    error = 1;
+  if (file == 0)
     errTxt += "Could not open RMS data file "+fileName+" for reading.\n";
-  }
 
 
   int line = 0;
@@ -263,7 +258,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
       }
 
     }
-    catch (NRLib::IOError e) {
+    catch (NRLib::IOError & e) {
       std::string text;
       text += std::string("\nERROR: Reading of RMS data \'") + fileName + "\' failed.\n";
       text += std::string("\nERROR message is \'") + e.what() + "\'";

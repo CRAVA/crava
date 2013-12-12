@@ -768,7 +768,8 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
 
 
-void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
+void State4D::evolve(int                   time_step,
+                     const TimeEvolution & timeEvolution )
 {
   LogKit::LogFormatted(LogKit::Low, "\nEvolving distribution of dynamic part...\n");
   // Evolution matrix and correction terms from TimeEvolution class
