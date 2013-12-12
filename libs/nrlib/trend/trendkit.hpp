@@ -257,10 +257,6 @@ namespace NRLib {
                                                  std::vector<std::vector<double> > & w0,
                                                  bool                              & complete_surface);
 
-  void                   SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
-                                                              const std::vector<int> & count,
-                                                              const int              & iWells);
-
   void                   ReadTrend2DPlainAscii(const std::string     & file_name,
                                                std::string           & /*errText*/,
                                                NRLib::Grid2D<double> & trend2d);

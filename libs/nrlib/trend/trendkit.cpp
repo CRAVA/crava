@@ -291,7 +291,7 @@ void EstimateTrend1D(const std::vector<double> & x,
   if (x_binned.size() < effective_sample_size) {
     effective_sample_size = x_binned.size();
     LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
-    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model in the estimation of 1D trend.\n");
   }
 
   // local linear regression with varying bandwidth
@@ -311,9 +311,9 @@ void EstimateTrend1D(const std::vector<double> & x,
     nr_iterations = nr_iterations + 1;
 
     if (nr_iterations > 1e4) {
-      errTxt +=  "Error: Unable to compute complete trend (type 2).\n";
+      errTxt +=  "Error: Unable to estimate complete 1D trend.\n";
       errTxt +=  "       The interpolated region is too large compared to the support of the data.\n";
-      errTxt +=  "       Reduce the size of the estiamted region or use a low dimensional method.\n";
+      errTxt +=  "       Reduce the size of the estimated region or estimate a constant value.\n";
       break;
     }
   }
@@ -385,9 +385,9 @@ bool CheckConfigurations1D(const std::vector<double> & x,
   }
   else {
     if (x0_min < x_min - x_upp && x_max + x_upp < x0_max) {
-      errTxt += "Error: Unable to compute complete trend (type 1).\n";
+      errTxt += "Error: Unable to estimate complete 1D trend.\n";
       errTxt += "       The interpolated region is too large compared to the support of the data.\n";
-      errTxt += "       Reduce the size of the estiamted region or use a low dimensional method.\n";
+      errTxt += "       Reduce the size of the estimated region or estimate a constant value.\n";
       return(false);
     }
     else {
@@ -1010,9 +1010,6 @@ double CalculateVariance(const std::vector<double> & x)
       sum_x  = sum_x  + x[i];
       sum_x2 = sum_x2 + x[i]*x[i];
       n      = n + 1;
-    }
-    else {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : Removed missing values in variance estimation.\n");
     }
   }
   double var_x  = sum_x2/(n - 1) - sum_x*sum_x/(n*(n - 1));
@@ -1680,232 +1677,6 @@ void KernelSmoother2DSurface(const std::vector<double>         & x,
           z0[i][j]         = RMISSING;
           complete_surface = false;
         }
-      }
-    }
-  }
-}
-//-------------------------------------------------------------------------------
-void
-SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
-                                     const std::vector<int> & count,
-                                     const int              & iWells)
-{
-  // Copied from Background
-
-  //
-  // 1. Center-parts of scatter plots
-  //
-  // In the center parts of the scatter plots the average value should be
-  // accepted as a trend value if the number of data points behind each
-  // average is fraction * iWells, where fraction is the acceptance
-  // fraction, typically larger than one.
-  //
-  // Sometimes we have only one, two, or three wells available. In the
-  // case of two and three wells, the logs for these may differ considerably,
-  // in which case the trend need to be stabilised by requiring a minimum
-  // number of data points behind each trend value. The denser the log is
-  // sampled, the more prone it is to numerical instabilities. This
-  // minimum value is therefore linked to the sampling density 'dz'.
-  //
-  // Finally, we must require a definite minimum number of data points
-  // that should be behind each trend value.
-  //
-  // nDataMin = max(min_req_points, max(min_time_sample, fraction * iWells))
-  //
-  // 2. End-parts of scatter plot
-  //
-  // If the blocked wells do not contain any values for the lower layers of
-  // the simbox, the end part of the scatter plot needs special attention.
-  //
-  // We must possibly require a larger min_req_points to avoid an
-  // "arbitrary" end behaviour.
-  //
-
-  float fraction   = 5.0f;                      // Require minimum 5*iWells
-  int   nTimeLimit = static_cast<int>(50.0/4); // The smaller sampling density, the more values are needed.
-  int   nLowLimit  = 10;                        // Require minimum 10
-  int   nDataMin   = std::max(nLowLimit, std::max(nTimeLimit, int(fraction * iWells)));
-  int   nz         = static_cast<int>(trend.size());
-  float min_value  = 1300.0f;
-  float max_value  = 7000.0f;
-
-  bool  use_weights = true;
-  bool  errorMid    = false;
-  bool  errorHead   = false;
-  bool  errorTrail  = false;
-
-  //
-  // Copy the average values (stored in array 'trend') to the array 'mean'.
-  //
-  std::vector<double> mean = trend;
-
-  //
-  // Find first non-missing value
-  //
-  int firstNonmissing = 0;
-  for (int k = 0 ; k < nz ; k++) {
-    if (trend[k] > 0.0f) {
-      firstNonmissing = k;
-      break;
-    }
-  }
-
-  //
-  // Find last non-missing value
-  //
-  int lastNonmissing = nz - 1;
-  for (int k = nz - 1 ; k > 0 ; k--) {
-    if (trend[k] > 0.0f) {
-      lastNonmissing = k;
-      break;
-    }
-  }
-
-  std::vector<double> x(nz);  // Time indices
-  std::vector<double> y(nz);  // Log values
-  std::vector<double> w(nz);  // Weights (number of data behind each avg.)
-
-  for (int k = 0 ; k < nz ; k++) {
-    int nCurDataMin = nDataMin;
-    if (k < firstNonmissing || k > lastNonmissing) {
-      nCurDataMin *= 2;
-    }
-
-    int n = 0;
-    int nData = 0;
-    //
-    // 1. Add current data point to local data set if present.
-    //
-    if (count[k] > 0) {
-      w[0]   = static_cast<double>(count[k]);
-      x[0]   = static_cast<double>(k);
-      y[0]   = trend[k];
-      nData += count[k];
-      n++;
-    }
-
-    //
-    // 2. Add local data points to get 'nCurDataMin' points behind each trend
-    //    value. Note that the bandwidth varies
-    //
-    int i = 0;
-    while (nData < nCurDataMin) {
-      i++;
-      if (k - i >= 0 && count[k - i] > 0) {
-        w[n]   = static_cast<double>(count[k - i]);
-        x[n]   = static_cast<double>(k - i);
-        y[n]   = mean [k - i];
-        nData += count[k - i];
-        n++;
-      }
-      if (k + i < nz  && count[k + i] > 0) {
-        w[n]   = static_cast<double>(count[k + i]);
-        x[n]   = static_cast<double>(k + i);
-        y[n]   = mean [k + i];
-        nData += count[k + i];
-        n++;
-      }
-      if (k-i < 0 && k+i >= nz) { // We will never find enough data
-        break;
-      }
-    }
-
-    //
-    // Calculate normalised weights
-    //
-    if (use_weights)
-      for (i = 0 ; i < n ; i++)
-        w[i] /= nData;
-    else
-      for (i = 0 ; i < n ; i++)
-        w[i] = 1.0f/n;
-
-    //
-    // We need at least two points to make a line.
-    //
-    if (n > 1) {
-      //
-      // Estimate local regression line: y = bx + a
-      //
-      double Sx  = x[0]*w[0];
-      double Sy  = y[0]*w[0];
-      double Sxx = x[0]*w[0]*x[0];
-      double Sxy = x[0]*w[0]*y[0];
-      for (i = 1 ; i < n ; i++) {
-        Sx  += x[i]*w[i];
-        Sy  += y[i]*w[i];
-        Sxx += x[i]*w[i]*x[i];
-        Sxy += x[i]*w[i]*y[i];
-      }
-      double b = (Sxy - Sx*Sy)/(Sxx - Sx*Sx);
-      double a = (Sy - b*Sx);
-      //
-      // Estimate value of regression line at requested point.
-      //
-      double value = a + b*static_cast<double>(k);
-      if (value < min_value || value > max_value) {
-        if (k < firstNonmissing)
-          errorHead = true;
-        else if (k > lastNonmissing)
-          errorTrail = true;
-        else {
-          errorMid   = true;
-          break;
-        }
-      }
-      trend[k] = value;
-    }
-    else {
-      trend[k] = y[0];
-    }
-  }
-
-  if (errorMid) {
-    // Big problem ...
-    LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend using local linear\n");
-    LogKit::LogFormatted(LogKit::Low,"          regression failed - trying global mean instead. Possible causes: \n");
-    LogKit::LogFormatted(LogKit::Low,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
-    LogKit::LogFormatted(LogKit::Low,"          2) There are too many layers in grid compared to well logs available.\n");
-    double sum = 0.0f;
-    int nData = 0;
-    for (int k = 0 ; k < nz ; k++) {
-      if (count[k] > 0) {
-        if (use_weights) {
-          sum   += mean[k]*count[k];
-          nData += count[k];
-        }
-        else {
-          sum += mean[k];
-          nData += 1;
-        }
-      }
-    }
-    double global_mean = sum/nData;
-    for (int k = 0 ; k < nz ; k++) {
-      trend[k] = global_mean;
-    }
-    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean: %.2f\n\n",global_mean);
-  }
-
-  else {
-    if (errorHead) {
-      // Fix first part of trend containing missing-values.
-      double firstValue = trend[firstNonmissing];
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend using local linear\n");
-      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(firstValue),firstNonmissing);
-      for (int k = 0 ; k < firstNonmissing ; k++) {
-        trend[k] = firstValue;
-      }
-    }
-    if (errorTrail) {
-      // Fix last part of trend containing missing-values.
-      double lastValue = trend[lastNonmissing];
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend using local linear\n");
-      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(lastValue),lastNonmissing);
-      for (int k = lastNonmissing + 1 ; k < nz ; k++) {
-        trend[k] = lastValue;
       }
     }
   }

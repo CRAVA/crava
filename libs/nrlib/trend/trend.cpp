@@ -156,6 +156,23 @@ Trend1D::AddConstant(double c)
     trend_[i]+=c;
 
 }
+
+double
+Trend1D::GetTrendElement(int i, int j, int k) const
+{
+  double value = 0;
+  if (reference_ == 1)
+    value = trend_[i];
+
+  else if (reference_ == 2)
+    value = trend_[j];
+
+  else
+    value = trend_[k];
+
+  return value;
+}
+
 double
 Trend1D::GetValue(double s1, double s2, double s3) const {
   //Linear interpolation method

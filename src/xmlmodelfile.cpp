@@ -3406,7 +3406,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
 
   std::vector<DistributionWithTrendStorage *> vs;
   if(parseDistributionWithTrend(root, "vs", vs, dummy, false, errTxt, true) == false && use_vp == true)
-    errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
+    errTxt +="Both <vp> and <vs> need to be given in <tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> bulk_modulus;
   if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
@@ -3414,16 +3414,16 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
 
   std::vector<DistributionWithTrendStorage *> shear_modulus;
   if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, false, errTxt, true) == false && use_modulus == true)
-    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
+    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <tabulated>\n";
 
   if(use_vp == true && use_modulus == true)
-    errTxt += "Both <vp> and <bulk-modulus> can not be used in <solid><tabulated>\n";
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <tabulated>\n";
   else if(use_vp == false && use_modulus == false)
-    errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> density;
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
-    errTxt += "<density> needs to be specified in <solid><tabulated>\n";
+    errTxt += "<density> needs to be specified in <tabulated>\n";
 
   if(use_vp) {
     std::vector<DistributionWithTrendStorage *> correlation_vp_vs;
@@ -4253,13 +4253,13 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
 
   if(from_file == true) {
     if(estimate > 0)
-      errTxt += "Both <file-name> and <tvd> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
+      errTxt += "Both <file-name> and <twt> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
   }
   else {
     if(estimate == 0)
-      errTxt += "One of <file-name>, <tvd> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
+      errTxt += "One of <file-name>, <twt> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
     else if(estimate > 1)
-      errTxt += "Both <tvd> and <stratigraphic-depth> can not be given in <trend-cube>\n";
+      errTxt += "Both <twt> and <stratigraphic-depth> can not be given in <trend-cube>\n";
   }
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
