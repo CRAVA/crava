@@ -1,4 +1,4 @@
-// $Id: trendstorage.cpp 1218 2013-11-15 10:35:04Z gudmundh $
+// $Id: trendstorage.cpp 1223 2013-12-12 09:00:09Z ulvmoen $
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"
@@ -55,22 +55,21 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
 {
   Trend * trend = NULL;
 
-  if (type == TrendStorage::MEAN) {
-    double mean = 0.0;
+  double estimated_constant = 0.0;
 
-    if(estimate_ == true) {
+  if (estimate_ == false)
+    estimated_constant = mean_value_;
+
+  else {
+    if (type == TrendStorage::MEAN) {
+      double mean = 0.0;
       EstimateConstantTrend(blocked_logs, mean);
-    } else {
-      mean = mean_value_;
+      estimated_constant = mean;
     }
 
-    trend = new TrendConstant(mean);
-  }
+    else if (type == TrendStorage::VAR) {
+      double var = 0.0;
 
-  if (type == TrendStorage::VAR) {
-    double var = 0.0;
-
-    if(estimate_ == true) {
       if (typeid(*mean_trend) == typeid(NRLib::TrendConstant)) {
 
         /* --- trend --- */
@@ -95,86 +94,64 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
         }
         else {
           var = RMISSING;
-          errTxt +=  "Error: Unable to compute global variance.\n";
+          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
         }
       }
       else if (typeid(*mean_trend) == typeid(NRLib::Trend1D)) {
-        if (mean_trend->GetReference() == 1) {
-          std::vector<double> x;
-          std::vector<double> z;
 
-          PreprocessData1D(s1,
-                           blocked_logs,
-                           trend_cube_sampling[0],
-                           x,
-                           z);
+        int mean_reference = mean_trend->GetReference();
 
-          /* --- trend --- */
-          std::vector<double> trend_cube_trend(trend_cube_sampling[0].size(), 0.0);
+        std::vector<std::vector<double> >  s;
+        if (mean_reference == 1)
+          s = s1;
+        else
+          s = s2;
+
+        std::vector<double> x;
+        std::vector<double> z;
+        PreprocessData1D(s,
+                         blocked_logs,
+                         trend_cube_sampling[mean_reference - 1],
+                         x,
+                         z);
+
+        /* --- trend --- */
+        std::vector<double> trend_cube_trend(trend_cube_sampling[mean_reference - 1].size(), 0.0);
+        int k_dummy = 0;
+
+        if (mean_reference == 1) {
           int j_dummy = 0;
-          int k_dummy = 0;
 
-          for (size_t i = 0; i < trend_cube_trend.size(); i++) {
+          for (size_t i = 0; i < trend_cube_trend.size(); i++)
             trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
-          }
-
-          std::vector<double> z_mean;
-          LinearInterpolation(trend_cube_sampling[0], trend_cube_trend, x, z_mean);
-
-          /* --- variance --- */
-          int                 z_n   = 0;
-          for (size_t i = 0; i < z.size(); i++) {
-            if (z_mean[i] != RMISSING && z[i] != RMISSING) {
-              var = var + (z[i] - z_mean[i])*(z[i] - z_mean[i]);
-              z_n++;
-            }
-          }
-          if (z_n > 0) {
-            var = var/(z_n - 1);
-          }
-          else {
-            var = RMISSING;
-            errTxt +=  "Error: Unable to compute global variance.\n";
-          }
-        } else if (mean_trend->GetReference() == 2) {
-          std::vector<double> y;
-          std::vector<double> z;
-
-          PreprocessData1D(s2,
-                           blocked_logs,
-                           trend_cube_sampling[1],
-                           y,
-                           z);
-
-          /* --- trend --- */
-          std::vector<double> trend_cube_trend(trend_cube_sampling[1].size(), 0.0);
+        }
+        else {
           int i_dummy = 0;
-          int k_dummy = 0;
 
-          for (size_t j = 0; j < trend_cube_trend.size(); j++) {
+          for (size_t j = 0; j < trend_cube_trend.size(); j++)
             trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
-          }
+        }
 
-          std::vector<double> z_mean;
-          LinearInterpolation(trend_cube_sampling[1], trend_cube_trend, y, z_mean);
 
-          /* --- variance --- */
-          int                 z_n   = 0;
-          for (size_t i = 0; i < z.size(); i++) {
-            if (z_mean[i] != RMISSING && z[i] != RMISSING) {
-              var = var + (z[i] - z_mean[i])*(z[i] - z_mean[i]);
-              z_n++;
-            }
-          }
-          if (z_n > 0) {
-            var = var/(z_n - 1);
-          }
-          else {
-            var = RMISSING;
-            errTxt +=  "Error: Unable to compute global variance.\n";
+        std::vector<double> z_mean;
+        LinearInterpolation(trend_cube_sampling[mean_reference - 1], trend_cube_trend, x, z_mean);
+
+        /* --- variance --- */
+        int                 z_n   = 0;
+        for (size_t i = 0; i < z.size(); i++) {
+          if (z_mean[i] != RMISSING && z[i] != RMISSING) {
+            var = var + (z[i] - z_mean[i])*(z[i] - z_mean[i]);
+            z_n++;
           }
         }
+        if (z_n > 0)
+          var = var/(z_n - 1);
+        else {
+          var = RMISSING;
+          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
+        }
       }
+
       else if (typeid(*mean_trend) == typeid(NRLib::Trend2D)) {
         size_t trend_cube_n1 = trend_cube_sampling[0].size();
         size_t trend_cube_n2 = trend_cube_sampling[1].size();
@@ -183,9 +160,8 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
         std::vector<std::vector<double> > trend_cube_trend_2D(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
         int k_dummy = 0;
         for (size_t i = 0; i < trend_cube_n1; i++) {
-          for (size_t j = 0; j < trend_cube_n2; j++) {
+          for (size_t j = 0; j < trend_cube_n2; j++)
             trend_cube_trend_2D[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
-          }
         }
 
         /* preprocess and variance */
@@ -209,19 +185,20 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
             z_n++;
           }
         }
-        if (z_n > 0) {
+        if (z_n > 0)
           var = var/(z_n - 1);
-        }
         else {
           var = RMISSING;
-          errTxt +=  "Error: Unable to compute global variance.\n";
+          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
         }
       }
-    } else {
-      var = mean_value_;
+      estimated_constant = var;
     }
-    trend = new TrendConstant(var);
   }
+
+  if (errTxt == "")
+    trend = new TrendConstant(estimated_constant);
+
   return trend;
 }
 
@@ -272,7 +249,7 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
 
   if(reference == 0) {
     errTxt += "The reference parameter of the 1D trend in "+file_name_+" \n"
-      "is not the same as the parameter names of the trend cubes\n";
+              " is not the same as the parameter names of the trend cubes\n";
     return(0);
   }
 
@@ -330,7 +307,8 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
                           errTxt);
         }
       }
-      trend = new Trend1D(trend_estimate, reference, increment);
+      if (errTxt == "")
+        trend = new Trend1D(trend_estimate, reference, increment);
     }
 
     if (type == TrendStorage::VAR) {
@@ -470,7 +448,8 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
           }
         }
       }
-      trend = new Trend1D(variance_estimate, reference, increment);
+      if (errTxt == "")
+        trend = new Trend1D(variance_estimate, reference, increment);
     }
   }
   else {

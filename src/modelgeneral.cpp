@@ -4429,10 +4429,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
           }
           LogKit::LogFormatted(LogKit::Medium,"\n");
 
-          for (int w = 0 ; w < nWells ; w++)
-            delete [] faciesCount[w];
-          delete [] faciesCount;
-
           //
           // Make prior facies probabilities
           //
@@ -4446,7 +4442,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
               nData[faciesLog[i]]++;
             }
           }
-          delete [] faciesLog;
 
           for(int i=0 ; i<nFacies ; i++)
             sum += nData[i];
@@ -4478,6 +4473,12 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
 
           TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
         }
+
+        for (int w = 0 ; w < nWells ; w++)
+          delete [] faciesCount[w];
+        delete [] faciesCount;
+
+        delete [] faciesLog;
       }
       else
       {

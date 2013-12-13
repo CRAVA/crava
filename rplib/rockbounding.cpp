@@ -22,6 +22,11 @@ RockBounding::RockBounding(const Rock          * upper_rock,
 RockBounding::RockBounding()
 : Rock()
 {
+  porosity_   = 0;
+  K_weight_   = 0;
+  G_weight_   = 0;
+  upper_rock_ = NULL;
+  lower_rock_ = NULL;
 }
 
 RockBounding::RockBounding(const RockBounding & old_rock)

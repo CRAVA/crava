@@ -446,9 +446,6 @@ void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> 
       }
     }
   }
-  if (removed_missing) {
-    LogKit::LogFormatted(LogKit::High,"\nWARNING : Removed missing values in correlation estimation.\n");
-  }
 }
 // ----------------------------------------------------------------------------------------- //
 double EstimateSpearmanCorrelation(const std::vector<double> & x,
@@ -499,9 +496,6 @@ double EstimateSpearmanCorrelation(const std::vector<double> & x,
     }
   }
 
-  if (removed_missing) {
-    LogKit::LogFormatted(LogKit::High,"\nWARNING : Removed missing values in correlation estimation.\n");
-  }
 
   // rank observations needed to calcualte Spearman correlation
   std::sort(x_order_tmp.begin(), x_order_tmp.end());

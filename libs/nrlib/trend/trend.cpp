@@ -1,4 +1,4 @@
-// $Id: trend.cpp 1218 2013-11-15 10:35:04Z gudmundh $
+// $Id: trend.cpp 1224 2013-12-12 09:16:42Z ulvmoen $
 #include "trend.hpp"
 #include "trendkit.hpp"
 #include "../exception/exception.hpp"
@@ -156,6 +156,23 @@ Trend1D::AddConstant(double c)
     trend_[i]+=c;
 
 }
+
+double
+Trend1D::GetTrendElement(int i, int j, int k) const
+{
+  double value = 0;
+  if (reference_ == 1)
+    value = trend_[i];
+
+  else if (reference_ == 2)
+    value = trend_[j];
+
+  else
+    value = trend_[k];
+
+  return value;
+}
+
 double
 Trend1D::GetValue(double s1, double s2, double s3) const {
   //Linear interpolation method
@@ -595,21 +612,23 @@ Trend3D::AddConstant(double c)
 double
 Trend3D::GetValue(double /*s1*/, double /*s2*/, double /*s3*/) const
 {
+  assert(false); // not implemented yet.
   return 0;
 
 }
 
 
 double
-Trend3D::GetValue(double                s1,
-                  double                s2,
-                  double                s3,
-                  const NRLib::Volume & volume) const {
+Trend3D::GetValue(double                /*s1*/,
+                  double                /*s2*/,
+                  double                /*s3*/,
+                  const NRLib::Volume & /*volume*/) const {
   //Linear interpolation method
-   double s1rel, s2rel, s3rel;
-   s1rel = s1/volume.GetLX();
-   s2rel = s2/volume.GetLY();
-   s3rel = s3/volume.GetLZ();
+ //  double s1rel, s2rel, s3rel;
+ //  s1rel = s1/volume.GetLX();
+ //  s2rel = s2/volume.GetLY();
+  // s3rel = s3/volume.GetLZ();
+   assert(false); // not implemented yet.
    return 0;
 }
 

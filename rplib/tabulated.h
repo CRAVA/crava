@@ -47,7 +47,9 @@ public:
   ~Tabulated();
 
   std::vector<double> GenerateSample(std::vector<double> & u, double s1, double s2);
-  std::vector<double> GetQuantileValues(const std::vector<double> u, double s1, double s2);
+  std::vector<double> GetQuantileValues(const std::vector<double> & u,
+                                        double                      s1,
+                                        double                      s2);
 
 private:
 
@@ -55,7 +57,7 @@ private:
 
 
 
-  std::vector<DistributionWithTrend *>   elastic_variables_;
+  std::vector<DistributionWithTrend *>         elastic_variables_;
 
   int                                          n_variables_;
 

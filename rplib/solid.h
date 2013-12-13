@@ -7,15 +7,16 @@
 class Solid {
 public:
 
-                             Solid(){}
-  virtual                    ~Solid() {}
+  Solid();
+
+  virtual                    ~Solid();
 
   virtual Solid *            Clone()                                                  const = 0;
 
-  void                       GetElasticParams(double & k, double & mu, double & rho)  const
-                             {
-                                   k = k_; mu  = mu_; rho = rho_;
-                             }
+  void                       GetElasticParams(double & k,
+                                              double & mu,
+                                              double & rho) const;
+
 
   const std::vector<double>& GetU()                                                   const { return u_; }
 

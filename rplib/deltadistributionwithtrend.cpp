@@ -10,6 +10,8 @@
 DeltaDistributionWithTrend::DeltaDistributionWithTrend()
 : DistributionWithTrend()
 {
+  dirac_ = NULL;
+  mean_  = NULL;
 }
 
 DeltaDistributionWithTrend::DeltaDistributionWithTrend(const NRLib::Trend * mean,

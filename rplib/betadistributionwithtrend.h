@@ -5,8 +5,6 @@
 
 namespace NRLib {
   class Trend;
-  template <typename T>
-  class Grid2D;
 }
 
 class BetaDistributionWithTrend : public DistributionWithTrend {

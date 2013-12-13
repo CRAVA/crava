@@ -12,6 +12,13 @@
 BetaDistributionWithTrend::BetaDistributionWithTrend()
 : DistributionWithTrend()
 {
+  beta_distribution_ = NULL;
+  mean_              = NULL;
+  var_               = NULL;
+  ni_                = 0;
+  nj_                = 0;
+  n_samples_mean_    = 0;
+  n_samples_var_     = 0;
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,

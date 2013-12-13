@@ -29,6 +29,7 @@ public:
   inline static  std::string    PathToVelocity(void)               { return std::string("velocity/")                ;}
   inline static  std::string    PathToCorrelations(void)           { return std::string("correlations/")            ;}
   inline static  std::string    PathToInversionResults(void)       { return std::string("inversionresults/")        ;}
+  inline static  std::string    PathToRockPhysics()                { return std::string("rock_physics/")            ;}
   inline static  std::string    PathToTmpFiles(void)               { return std::string("")                         ;}
   inline static  std::string    PathToDebug(void)                  { return std::string("")                         ;}
 
@@ -99,6 +100,7 @@ public:
   inline static  std::string    SuffixSegy(void)                   { return std::string(".segy")                    ;}
   inline static  std::string    SuffixSgriHeader(void)             { return std::string(".Sgrh")                    ;}
   inline static  std::string    SuffixSgri(void)                   { return std::string(".Sgri")                    ;}
+  inline static  std::string    Suffix1DTrend()                    { return std::string(".1DTrend")                 ;}
 
   static         int            findGridType(const std::string & fileName);
 

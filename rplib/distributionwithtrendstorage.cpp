@@ -105,9 +105,11 @@ DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::stri
                                                      errTxt);
 
     // write mean and variance surface to file
-    if (estimate_ && output_other & IO::ROCK_PHYSICS_TRENDS) {
-      WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
     }
+
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
@@ -212,9 +214,11 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
                                                                errTxt);
 
     // write mean and variance surface to file
-    if (estimate_ && output_other & IO::ROCK_PHYSICS_TRENDS) {
-      WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
-      WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
     }
 
     int share_level = DistributionWithTrend::None;
@@ -328,9 +332,11 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
                                                               errTxt);
 
     // write mean and variance surface to file
-    if (estimate_ && output_other & IO::ROCK_PHYSICS_TRENDS) {
-      WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
-      WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
     }
 
     CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
@@ -540,9 +546,11 @@ BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std
                                                               errTxt);
 
     // write mean and variance surface to file
-    if (estimate_ && output_other & IO::ROCK_PHYSICS_TRENDS) {
-      WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
-      WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
     }
 
     BetaDistributionWithTrendStorage::CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
@@ -580,24 +588,28 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
     std::vector<double> s_tmp;
 
     if (0 < s_ref && s_ref < 3) {
-      if (s_ref == 1) {
+      if (s_ref == 1)
         s_tmp = trend_cube_sampling[0];
-      } else if (s_ref == 2) {
+      else if (s_ref == 2)
         s_tmp = trend_cube_sampling[1];
-      }
+
 
       std::vector<double> trend_vector(s_tmp.size(), RMISSING);
 
       int j_dummy = -999;
       int k_dummy = -999;
       for (size_t i = 0; i < s_tmp.size(); i++) {
-        trend_vector[i] = trend->GetTrendElement(i, j_dummy, k_dummy);
+        if (s_ref == 1)
+          trend_vector[i] = trend->GetTrendElement(i, j_dummy, k_dummy);
+        else
+          trend_vector[i] = trend->GetTrendElement(j_dummy, i, k_dummy);
       }
-      NRLib::WriteTrend1D("background/ " + filename + ".1DTrend", s_tmp, trend_vector);
-    } else {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : Invalid direction specified in 1D trend. Can not write to file. \n");
+      std::string full_fileName = IO::makeFullFileName(IO::PathToRockPhysics(), filename + IO::Suffix1DTrend());
+      NRLib::WriteTrend1D(full_fileName, s_tmp, trend_vector);
     }
-  } else if (typeid(*trend)  == typeid(NRLib::Trend2D)) {
+  }
+
+  else if (typeid(*trend)  == typeid(NRLib::Trend2D)) {
 
     std::vector<double> s1_tmp   = trend_cube_sampling[0];
     std::vector<double> s2_tmp   = trend_cube_sampling[1];
@@ -612,6 +624,8 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
     }
 
     NRLib::RegularSurface<double> trend_surface(s1_tmp.front(), s2_tmp.front(), s1_tmp.back() - s1_tmp.front(), s2_tmp.back() - s2_tmp.front(), trend_grid2D);
-    trend_surface.WriteToFile("background/" + filename + ".storm");
+
+    std::string full_fileName = IO::makeFullFileName(IO::PathToRockPhysics(), filename + IO::SuffixStormBinary()); //Should be able to specify suffix from model file
+    trend_surface.WriteToFile(full_fileName);
   }
 }

@@ -435,7 +435,7 @@ void DistributionsRock::InterpolateExpectation(std::vector<double>              
   //
   // Find values in cell corners
   //
-  double v00 = 0.0;
+  double v00;
   double v10 = 0.0;
   double v01 = 0.0;
   double v11 = 0.0;
@@ -532,7 +532,7 @@ void DistributionsRock::InterpolateCovariance(NRLib::Grid2D<double>             
   //
   // Find values in cell corners
   //
-  double v00 = 0.0;
+  double v00;
   double v10 = 0.0;
   double v01 = 0.0;
   double v11 = 0.0;
