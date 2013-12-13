@@ -101,9 +101,9 @@
 //
 //  {
 //    int debugLevel = model_settings->getLogLevel();
-//    if(model_settings->getDebugLevel() == 1)
+//    if (model_settings->getDebugLevel() == 1)
 //      debugLevel = LogKit::L_DebugLow;
-//    else if(model_settings->getDebugLevel() == 2)
+//    else if (model_settings->getDebugLevel() == 2)
 //      debugLevel = LogKit::L_DebugHigh;
 //
 //    LogKit::SetScreenLog(debugLevel);
@@ -111,25 +111,25 @@
 //    std::string logFileName = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
 //    LogKit::SetFileLog(logFileName,model_settings->getLogLevel());
 //
-//    if(model_settings->getDebugFlag() > 0)
+//    if (model_settings->getDebugFlag() > 0)
 //    {
 //      std::string fName = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
 //      LogKit::SetFileLog(fName, debugLevel);
 //    }
 //
-//    if(model_settings->getErrorFileFlag() == true)
+//    if (model_settings->getErrorFileFlag() == true)
 //    {
 //      std::string fName = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
 //      LogKit::SetFileLog(fName, LogKit::Error);
 //    }
 //    LogKit::EndBuffering();
 //
-//    if(input_files->getSeedFile() == "")
+//    if (input_files->getSeedFile() == "")
 //      random_gen_ = new RandomGen(model_settings->getSeed());
 //    else
 //      random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 //
-//    if(model_settings->getNumberOfSimulations() == 0)
+//    if (model_settings->getNumberOfSimulations() == 0)
 //      model_settings->setWritePrediction(true); //write predicted grids.
 //
 //    printSettings(model_settings, input_files);
@@ -145,7 +145,7 @@
 //                     correlationDirection_, model_settings, input_files,
 //                     errText, failedSimbox);
 //
-//    if(!failedSimbox)
+//    if (!failedSimbox)
 //    {
 //      //
 //      // FORWARD MODELLING
@@ -158,7 +158,7 @@
 //        //
 //        // INVERSION/ESTIMATION
 //        //
-//        if(timeCutSimbox!=NULL)  {
+//        if (timeCutSimbox!=NULL)  {
 //          timeCutMapping_ = new GridMapping();
 //          timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
 //        }
@@ -167,7 +167,7 @@
 //
 //        bool estimationMode = model_settings->getEstimationMode();
 //
-//        if(estimationMode == false && model_settings->getDoDepthConversion() == true)
+//        if (estimationMode == false && model_settings->getDoDepthConversion() == true)
 //        {
 //          processDepthConversion(timeCutSimbox, simbox_, model_settings,
 //                                 input_files, errText, failedDepthConv);
@@ -175,28 +175,28 @@
 //
 //        processWells(wells_, simbox_, model_settings, input_files, errText, failedWells);
 //
-//        if(failedDepthConv == false)
+//        if (failedDepthConv == false)
 //          processRockPhysics(simbox_, timeCutSimbox, model_settings, failedRockPhysics, errText, input_files);
 //
 //        //Set up timeline.
 //        time_line_ = new TimeLine();
 //        //Activate below when gravity data are ready.
 //        //Do gravity first.
-//        //for(int i=0;i<model_settings->getNumberOfGravityData();i++) {
+//        //for (int i=0;i<model_settings->getNumberOfGravityData();i++) {
 //        //  int time = computeTime(model_settings->getGravityYear[i],
 //        //                         model_settings->getGravityMonth[i],
 //        //                         model_settings->getGravityDay[i]);
 //        //  time_line_->AddEvent(time, TimeLine::GRAVITY, i);
 //
 //        bool firstGravimetricEvent = true;
-//        for(int i=0;i<model_settings->getNumberOfVintages();i++) {
+//        for (int i=0;i<model_settings->getNumberOfVintages();i++) {
 //          //Vintages may have both travel time and AVO
 //          int time = computeTime(model_settings->getVintageYear(i),
 //                                 model_settings->getVintageMonth(i),
 //                                 model_settings->getVintageDay(i));
 //           // Do gravity first
-//           if(model_settings->getGravityTimeLapse(i)){
-//             if(firstGravimetricEvent){
+//           if (model_settings->getGravityTimeLapse(i)){
+//             if (firstGravimetricEvent){
 //               // Do not save first gravity event in timeline
 //               firstGravimetricEvent = false;
 //             }
@@ -206,13 +206,13 @@
 //          }
 //          //Activate below when travel time is ready.
 //          //Travel time ebefore AVO for same vintage.
-//          //if(travel time for this vintage)
+//          //if (travel time for this vintage)
 //          //time_line_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
-//          if(model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
+//          if (model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
 //            time_line_->AddEvent(time, TimeLine::AVO, i);
 //        }
 //
-//        if(model_settings->getDo4DInversion() && failedRockPhysics == false){
+//        if (model_settings->getDo4DInversion() && failedRockPhysics == false){
 //
 //          setFaciesNamesFromRockPhysics();
 //
@@ -242,7 +242,7 @@
 //  failed_details_.push_back(failedBackground);
 //  failed_details_.push_back(failedRockPhysics);
 //
-//  if(timeCutSimbox != NULL)
+//  if (timeCutSimbox != NULL)
 //    delete timeCutSimbox;
 //}
 
@@ -261,9 +261,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
 
   {
     int debug_level = model_settings->getLogLevel();
-    if(model_settings->getDebugLevel() == 1)
+    if (model_settings->getDebugLevel() == 1)
       debug_level = LogKit::L_DebugLow;
-    else if(model_settings->getDebugLevel() == 2)
+    else if (model_settings->getDebugLevel() == 2)
       debug_level = LogKit::L_DebugHigh;
 
     LogKit::SetScreenLog(debug_level);
@@ -271,23 +271,23 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
     std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
     LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
 
-    if(model_settings->getDebugFlag() > 0) {
+    if (model_settings->getDebugFlag() > 0) {
       std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
       LogKit::SetFileLog(f_name, debug_level);
     }
 
-    if(model_settings->getErrorFileFlag() == true) {
+    if (model_settings->getErrorFileFlag() == true) {
       std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
       LogKit::SetFileLog(f_name, LogKit::Error);
     }
     LogKit::EndBuffering();
 
-    if(input_files->getSeedFile() == "")
+    if (input_files->getSeedFile() == "")
       random_gen_ = new RandomGen(model_settings->getSeed());
     else
       random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 
-    if(model_settings->getNumberOfSimulations() == 0)
+    if (model_settings->getNumberOfSimulations() == 0)
       model_settings->setWritePrediction(true); //write predicted grids.
 
     printSettings(model_settings, input_files);
@@ -314,7 +314,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //
       // INVERSION/ESTIMATION
       //
-      if(model_settings->getIntervalNames().size() > 0)
+      if (model_settings->getIntervalNames().size() > 0)
         multi_interval_ = true;
 
       //checkAvailableMemory(simbox_, model_settings, input_files);
@@ -324,17 +324,19 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       facies_labels_ = common_data->GetFaciesLabels();
 
       //Priorfacies
-      prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
+      if (common_data->GetPriorFacies().size() > 0) {
+        prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
 
-      prior_facies_prob_cubes_.resize(3);
-      prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
-      prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
-      prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
+        prior_facies_prob_cubes_.resize(3);
+        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
+        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
+        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
+      }
 
       bool estimation_mode = model_settings->getEstimationMode();
 
       //TimeDepthMapping if intervals isn't used.
-      if(common_data->GetMultipleIntervalGrid()->GetNIntervals() == 1) {
+      if (common_data->GetMultipleIntervalGrid()->GetNIntervals() == 1) {
         time_depth_mapping_      = common_data->GetTimeDepthMapping();
         velocity_from_inversion_ = common_data->GetVelocityFromInversion(); //Needed?
       }
@@ -342,15 +344,16 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //Replace wells with blocked_logs
       blocked_logs_ = common_data->GetBlockedLogs();
 
-      trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
+      if(multiple_interval_grid->GetTrendCubes().size() > 0)
+        trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
 
       rock_distributions_  = common_data->GetDistributionsRock();
-      reservoir_variables_ = common_data->GetReservoirVariablesInterval(i_interval); //H Not per interval?
+      reservoir_variables_ = common_data->GetReservoirVariables();
 
       //Set up timeline
       time_line_ = common_data->GetTimeLine();
 
-      if(model_settings->getDo4DInversion()) {
+      if (model_settings->getDo4DInversion()) {
 
         //setFaciesNamesFromRockPhysics();
         NRLib::Vector initial_mean(6);
@@ -370,38 +373,38 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
 
 ModelGeneral::~ModelGeneral(void)
 {
-  if(time_depth_mapping_!=NULL)
+  if (time_depth_mapping_!=NULL)
     delete time_depth_mapping_;
 
-  //if(timeCutMapping_!=NULL)
+  //if (timeCutMapping_!=NULL)
   //  delete timeCutMapping_;
 
-  //if(correlationDirection_ !=NULL)
+  //if (correlationDirection_ !=NULL)
   //  delete correlationDirection_;
 
-  for(std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+  for (std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     std::vector<DistributionsRock *> rock = it->second;
-    for(size_t i=0; i<rock.size(); i++)
+    for (size_t i=0; i<rock.size(); i++)
       delete rock[i];
   }
 
-  for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+  for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
     std::vector<DistributionWithTrend *> variable = it->second;
-    for(size_t i=0; i<variable.size(); i++)
+    for (size_t i=0; i<variable.size(); i++)
       delete variable[i];
   }
 
-  if(time_line_ != NULL)
+  if (time_line_ != NULL)
     delete time_line_;
 
   delete random_gen_;
   delete simbox_;
   //delete timeSimboxConstThick_;
 
-  // if(!forwardModeling_)
+  // if (!forwardModeling_)
   //{
-  //  for(int i=0 ; i<numberOfWells_ ; i++)
-  //    if(wells_[i] != NULL)
+  //  for (int i=0 ; i<numberOfWells_ ; i++)
+  //    if (wells_[i] != NULL)
   //      delete wells_[i];
   //}
 
@@ -433,7 +436,7 @@ ModelGeneral::~ModelGeneral(void)
 //    // Currently we have only one optional TraceHeaderFormat, but this can
 //    // be augmented to a list with several formats ...
 //    //
-//    if(format == NULL) { //Unknown format
+//    if (format == NULL) { //Unknown format
 //      std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
 //      if (model_settings->getTraceHeaderFormat() != NULL)
 //      {
@@ -494,7 +497,7 @@ ModelGeneral::~ModelGeneral(void)
 //      geometry = new SegyGeometry(geo);
 //
 //    int xpad, ypad, zpad;
-//    if(nopadding)
+//    if (nopadding)
 //    {
 //      xpad = timeSimbox->getnx();
 //      ypad = timeSimbox->getny();
@@ -532,12 +535,12 @@ ModelGeneral::~ModelGeneral(void)
 //    }
 //
 //    if (missingTracesSimbox > 0) {
-//      if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
+//      if (missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
 //        errText += "Error: Data in file "+fileName+" was completely outside the inversion area.\n";
 //        failed = true;
 //      }
 //      else {
-//        if(gridType == FFTGrid::PARAMETER) {
+//        if (gridType == FFTGrid::PARAMETER) {
 //          errText += "Grid in file "+fileName+" does not cover the inversion area.\n";
 //        }
 //        else {
@@ -641,7 +644,7 @@ ModelGeneral::~ModelGeneral(void)
 //    failed = true;
 //  }
 //  int xpad, ypad, zpad;
-//  if(nopadding==false)
+//  if (nopadding==false)
 //  {
 //    xpad = model_settings->getNXpad();
 //    ypad = model_settings->getNYpad();
@@ -655,7 +658,7 @@ ModelGeneral::~ModelGeneral(void)
 //  }
 //
 //  int outsideTraces = 0;
-//  if(failed == false)
+//  if (failed == false)
 //  {
 //    target = createFFTGrid(timeSimbox->getnx(),
 //                           timeSimbox->getny(),
@@ -677,13 +680,13 @@ ModelGeneral::~ModelGeneral(void)
 //  if (stormgrid != NULL)
 //    delete stormgrid;
 //
-//  if(outsideTraces > 0) {
-//    if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
+//  if (outsideTraces > 0) {
+//    if (outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
 //      errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
 //      failed = true;
 //    }
 //    else {
-//      if(gridType == FFTGrid::PARAMETER) {
+//      if (gridType == FFTGrid::PARAMETER) {
 //        errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
 //      }
 //      else {
@@ -725,7 +728,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                                (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
 //                                (model_settings->getOutputGridFormat() & IO::SEGY) > 0);
 //
-//  if(model_settings->getForwardModeling())
+//  if (model_settings->getForwardModeling())
 //    gridFile = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
 //  else {
 //    if (model_settings->getEstimationMode() == false || estimationModeNeedILXL)
@@ -744,7 +747,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //    LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
 //    areaType = "Model file";
 //  }
-//  else if(areaSpecification == ModelSettings::AREA_FROM_SURFACE)
+//  else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE)
 //  {
 //    LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
 //    areaType = "Surface";
@@ -752,7 +755,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //    SegyGeometry geometry(surf);
 //    model_settings->setAreaParameters(&geometry);
 //  }
-//  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA         ||
+//  else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA         ||
 //          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
 //          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
 //  {
@@ -766,7 +769,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                              tmpErrText);
 //
 //    model_settings->setSeismicDataAreaParameters(geometry);
-//    if(geometry != NULL) {
+//    if (geometry != NULL) {
 //      geometry->WriteGeometry();
 //
 //      if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
@@ -807,8 +810,8 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //            geometry = fullGeometry->GetILXLSubGeometry(areaILXL, interpolated, aligned);
 //
 //            std::string text;
-//            if(interpolated == true) {
-//              if(aligned == true) {
+//            if (interpolated == true) {
+//              if (aligned == true) {
 //                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
 //                text += "   of those found in the seismic data. Furthermore, the distance between first\n";
 //                text += "   and last XL and/or IL does not match the step size.\n";
@@ -820,7 +823,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                TaskList::addTask(text);
 //              }
 //            }
-//            else if(aligned == true) {
+//            else if (aligned == true) {
 //              text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
 //              text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
 //              text += "   of steps away from the start.\n";
@@ -839,7 +842,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //      else {
 //        geometry->WriteILXL();
 //      }
-//      if(!failed) {
+//      if (!failed) {
 //        model_settings->setAreaParameters(geometry);
 //        ILXLGeometry = geometry;
 //      }
@@ -849,12 +852,12 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //      failed = true;
 //    }
 //  }
-//  if(!failed)
+//  if (!failed)
 //  {
 //    const SegyGeometry * areaParams = model_settings->getAreaParameters();
 //    failed = timeSimbox->setArea(areaParams, errText);
 //
-//    if(failed)
+//    if (failed)
 //    {
 //      writeAreas(areaParams,timeSimbox,areaType);
 //      errText += "The specified AREA extends outside the surface(s).\n";
@@ -880,7 +883,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //        +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
 //    }
 //
-//    if(!failed)
+//    if (!failed)
 //    {
 //      //
 //      // Set IL/XL information in geometry
@@ -890,7 +893,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //      //   a) For speed
 //      //   b) Grid data may not be available.
 //      if (model_settings->getEstimationMode() == false || estimationModeNeedILXL == true) {
-//        if(ILXLGeometry == NULL) {
+//        if (ILXLGeometry == NULL) {
 //          int gridType = IO::findGridType(gridFile);
 //          bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
 //          if (ilxl_info_available) {
@@ -900,7 +903,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                                      model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
 //                                      ILXLGeometry,
 //                                      tmpErrText);
-//            if(ILXLGeometry == NULL) {
+//            if (ILXLGeometry == NULL) {
 //              errText += tmpErrText;
 //              failed = true;
 //            }
@@ -909,8 +912,8 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //            LogKit::LogFormatted(LogKit::High,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+gridFile+"\'\n");
 //          }
 //        }
-//        if(ILXLGeometry != NULL) {
-//          if(timeSimbox->isAligned(ILXLGeometry))
+//        if (ILXLGeometry != NULL) {
+//          if (timeSimbox->isAligned(ILXLGeometry))
 //            timeSimbox->setILXL(ILXLGeometry);
 //          delete ILXLGeometry;
 //        }
@@ -929,9 +932,9 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                        errText,
 //                        failed);
 //
-//      if(!failed)
+//      if (!failed)
 //      {
-//        if(model_settings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
+//        if (model_settings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
 //        {
 //          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 //          TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
@@ -949,19 +952,19 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //          errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
 //        }
 //
-//        if(status == Simbox::BOXOK)
+//        if (status == Simbox::BOXOK)
 //        {
 //          logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
 //          //
 //          // Make extended time simbox
 //          //
-//          if(input_files->getCorrDirFile() != "") {
+//          if (input_files->getCorrDirFile() != "") {
 //            //
 //            // Get correlation direction
 //            //
 //            try {
 //              Surface tmpSurf(input_files->getCorrDirFile());
-//              if(timeSimbox->CheckSurface(tmpSurf) == true)
+//              if (timeSimbox->CheckSurface(tmpSurf) == true)
 //                correlationDirection = new Surface(tmpSurf);
 //              else {
 //                errText += "Error: Correlation surface does not cover volume.\n";
@@ -973,7 +976,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //              failed = true;
 //            }
 //
-//            if(failed == false && model_settings->getForwardModeling() == false) {
+//            if (failed == false && model_settings->getForwardModeling() == false) {
 //              //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
 //              setupExtendedTimeSimbox(timeSimbox, correlationDirection,
 //                                      timeCutSimbox,
@@ -986,7 +989,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //
 //            status = timeSimbox->calculateDz(model_settings->getLzLimit(),errText);
 //
-//            if(status == Simbox::BOXOK)
+//            if (status == Simbox::BOXOK)
 //              logIntervalInformation(timeSimbox, "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
 //            else
 //            {
@@ -994,13 +997,13 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //              failed = true;
 //            }
 //
-//            if(model_settings->getForwardModeling() == false && failed == false) {
+//            if (model_settings->getForwardModeling() == false && failed == false) {
 //              setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox,
 //                                            model_settings->getOutputGridFormat(),
 //                                            model_settings->getOutputGridDomain(),
 //                                            model_settings->getOtherOutputFlag());
 //              status = timeBGSimbox->calculateDz(model_settings->getLzLimit(),errText);
-//              if(status == Simbox::BOXOK)
+//              if (status == Simbox::BOXOK)
 //                logIntervalInformation(timeBGSimbox, "Time interval used for background modelling:","Two-way-time");
 //              else
 //              {
@@ -1010,12 +1013,12 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //            }
 //          }
 //
-//          if(failed == false) {
+//          if (failed == false) {
 //            estimateXYPaddingSizes(timeSimbox, model_settings);
 //
 //            unsigned long long int gridsize = static_cast<unsigned long long int>(model_settings->getNXpad())*model_settings->getNYpad()*model_settings->getNZpad();
 //
-//            if(gridsize > std::numeric_limits<unsigned int>::max()) {
+//            if (gridsize > std::numeric_limits<unsigned int>::max()) {
 //              float fsize = 4.0f*static_cast<float>(gridsize)/static_cast<float>(1024*1024*1024);
 //              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
 //              errText += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
@@ -1039,7 +1042,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //          Surface tsurf(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
 //          timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 //
-//          if((model_settings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (model_settings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
+//          if ((model_settings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (model_settings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
 //            std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
 //            std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
 //            timeSimboxConstThick->writeTopBotGrids(topSurf,
@@ -1048,7 +1051,7 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                                                   model_settings->getOutputGridFormat());
 //          }
 //
-//          if(timeSimbox->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
+//          if (timeSimbox->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
 //            errText += "dz is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
 //            failed = true;
 //          }
@@ -1137,8 +1140,8 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
     failed = true;
   }
 
-  if(!failed) {
-    if(parallelSurfaces) { //Only one reference surface
+  if (!failed) {
+    if (parallelSurfaces) { //Only one reference surface
       simbox->setDepth(*z0Grid, dTop, lz, dz, model_settings->getRunFromPanel());
     }
     else {
@@ -1164,7 +1167,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
         errText += e.what();
         failed = true;
       }
-      if(!failed) {
+      if (!failed) {
         try {
           simbox->setDepth(*z0Grid, *z1Grid, nz, model_settings->getRunFromPanel());
         }
@@ -1177,7 +1180,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       }
     }
     if (!failed) {
-      if((outputDomain & IO::TIMEDOMAIN) > 0) {
+      if ((outputDomain & IO::TIMEDOMAIN) > 0) {
         std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
         simbox->setTopBotName(topSurf,baseSurf,outputFormat);
@@ -1194,7 +1197,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
                                      IO::PathToInversionResults(),
                                      outputFormat);
         }
-        if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
+        if ((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
           if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
               (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
               (estimationMode && generateBackground)) {
@@ -1240,28 +1243,28 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 //  timeCutSimbox = new Simbox(timeSimbox);
 //  NRLib::Vector corrPlanePars = findPlane(corrSurf);
 //  Surface * meanSurf;
-//  if(corrSurf->GetNI() > 2)
+//  if (corrSurf->GetNI() > 2)
 //    meanSurf = new Surface(*corrSurf);
 //  else {
 //    meanSurf = new Surface(dynamic_cast<const Surface &>(timeSimbox->GetTopSurface()));
-//    if(meanSurf->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
+//    if (meanSurf->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
 //      double minX = meanSurf->GetXMin();
 //      double maxX = meanSurf->GetXMax();
 //      double minY = meanSurf->GetYMin();
 //      double maxY = meanSurf->GetYMax();
-//      if(minX > corrSurf->GetXMin())
+//      if (minX > corrSurf->GetXMin())
 //        minX = corrSurf->GetXMin();
-//      if(maxX < corrSurf->GetXMax())
+//      if (maxX < corrSurf->GetXMax())
 //        maxX = corrSurf->GetXMax();
-//      if(minY > corrSurf->GetYMin())
+//      if (minY > corrSurf->GetYMin())
 //        minY = corrSurf->GetYMin();
-//      if(maxY < corrSurf->GetYMax())
+//      if (maxY < corrSurf->GetYMax())
 //        maxY = corrSurf->GetYMax();
 //      corrSurf->SetDimensions(minX, minY, maxX-minX, maxY-minY);
 //    }
 //  }
 //  int i;
-//  for(i=0;i<static_cast<int>(meanSurf->GetN());i++)
+//  for (i=0;i<static_cast<int>(meanSurf->GetN());i++)
 //    (*meanSurf)(i) = 0;
 //
 //  meanSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
@@ -1311,7 +1314,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 //
 //  timeSimbox->setDepth(topSurf, botSurf, nz);
 //
-//  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+//  if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
 //    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
 //    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
 //    timeSimbox->writeTopBotGrids(topSurf,
@@ -1389,7 +1392,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 //  timeBGSimbox = new Simbox(timeSimbox);
 //  timeBGSimbox->setDepth(topSurf, botSurf, nz);
 //
-//  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+//  if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
 //    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
 //    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
 //    timeBGSimbox->writeTopBotGrids(topSurf,
@@ -1410,11 +1413,11 @@ ModelGeneral::findPlane(Surface * surf)
 
   int nData = 0;
 
-  for(int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+  for (int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
     double x, y, z;
     surf->GetXY(i, x, y);
     z = (*surf)(i);
-    if(!surf->IsMissing(z)) {
+    if (!surf->IsMissing(z)) {
       nData++;
       A(0,1) += x;
       A(0,2) += y;
@@ -1440,7 +1443,7 @@ ModelGeneral::createPlaneSurface(const NRLib::Vector & planeParams,
                                  Surface             * templateSurf)
 {
   Surface * result = new Surface(*templateSurf);
-  for(int i=0;i<static_cast<int>(result->GetN());i++) {
+  for (int i=0;i<static_cast<int>(result->GetN());i++) {
     double x,y;
     result->GetXY(i,x,y);
     (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
@@ -1558,10 +1561,10 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
 //{
 //  int fileType = IO::findGridType(fileName);
 //
-//  if(fileType == IO::CRAVA)
+//  if (fileType == IO::CRAVA)
 //  {
 //    int nxPad, nyPad, nzPad;
-//    if(nopadding)
+//    if (nopadding)
 //    {
 //      nxPad = timeSimbox->getnx();
 //      nyPad = timeSimbox->getny();
@@ -1585,12 +1588,12 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
 //    grid->setType(gridType);
 //    grid->readCravaFile(fileName, errText, nopadding);
 //  }
-//  else if(fileType == IO::SEGY)
+//  else if (fileType == IO::SEGY)
 //    readSegyFile(fileName, grid, timeSimbox, timeCutSimbox, model_settings, geometry,
 //                 gridType, parName, offset, format, errText, nopadding);
-//  else if(fileType == IO::STORM)
+//  else if (fileType == IO::STORM)
 //    readStormFile(fileName, grid, gridType, parName, timeSimbox, model_settings, errText, false, nopadding);
-//  else if(fileType == IO::SGRI)
+//  else if (fileType == IO::SGRI)
 //    readStormFile(fileName, grid, gridType, parName, timeSimbox, model_settings, errText, true, nopadding);
 //  else
 //  {
@@ -1606,7 +1609,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
   LogKit::WriteHeader("Model settings");
 
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
-  if(model_settings->getForwardModeling()==true)
+  if (model_settings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
   else if (model_settings->getEstimationMode()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
@@ -1616,7 +1619,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
   else
   {
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : simulation\n");
-    if(input_files->getSeedFile()=="") {
+    if (input_files->getSeedFile()=="") {
       if (model_settings->getSeed() == 0)
         LogKit::LogFormatted(LogKit::Low,"  Seed                                     :          0 (default seed)\n");
       else
@@ -1628,7 +1631,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 
     LogKit::LogFormatted(LogKit::Low,"  Number of realisations                   : %10d\n",model_settings->getNumberOfSimulations());
   }
-  if(model_settings->getForwardModeling()==false)
+  if (model_settings->getForwardModeling()==false)
   {
     LogKit::LogFormatted(LogKit::Low,"  Kriging                                  : %10s\n",(model_settings->getKrigingParameter()>0 ? "yes" : "no"));
     LogKit::LogFormatted(LogKit::Low,"  Facies probabilities                     : %10s\n",(model_settings->getEstimateFaciesProb() ? "yes" : "no"));
@@ -1818,12 +1821,12 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
     if (log_names.size() > 0)
     {
       LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n",  log_names[0].c_str());
-      if(NRLib::Uppercase(log_names[1])=="VP" ||
+      if (NRLib::Uppercase(log_names[1])=="VP" ||
          NRLib::Uppercase(log_names[1])=="LFP_VP")
         LogKit::LogFormatted(LogKit::Low,"  p-wave velocity                          : %10s\n",log_names[1].c_str());
       else
         LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n",log_names[1].c_str());
-      if(NRLib::Uppercase(log_names[3])=="VS" ||
+      if (NRLib::Uppercase(log_names[3])=="VS" ||
          NRLib::Uppercase(log_names[3])=="LFP_VS")
         LogKit::LogFormatted(LogKit::Low,"  s-wave velocity                          : %10s\n",log_names[3].c_str());
       else
@@ -1850,7 +1853,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
     bool generate_background  = model_settings->getGenerateBackground();
     bool estimate_facies_prob = model_settings->getFaciesLogGiven();
     bool estimate_wavelet     = false;
-    for(int i=0; i < model_settings->getNumberOfTimeLapses(); i++){
+    for (int i=0; i < model_settings->getNumberOfTimeLapses(); i++){
       std::vector<bool> estimate_wavelet_all_traces = model_settings->getEstimateWavelet(i);
       for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
         estimate_wavelet = estimate_wavelet || estimate_wavelet_all_traces[j];
@@ -1898,7 +1901,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
       for (int i = 0; i < model_settings->getNumberOfWells(); i++)
       {
         int n_move_angles = model_settings->getNumberOfWellAngles(i);
-        if( n_move_angles > 0 )
+        if ( n_move_angles > 0 )
         {
           LogKit::LogFormatted(LogKit::Low," %2d %46.1f %10.1f\n",i+1,(model_settings->getWellMoveAngle(i,0)*180/M_PI),model_settings->getWellMoveWeight(i,0));
           for (int j=1; j < n_move_angles; j++)
@@ -1914,13 +1917,13 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
   //
   std::string grid_file;
   int area_specification = model_settings->getAreaSpecification();
-  if(model_settings->getForwardModeling()) {
+  if (model_settings->getForwardModeling()) {
     LogKit::LogFormatted(LogKit::Low,"\nSeismic area:\n");
     grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
   }
   else {
     LogKit::LogFormatted(LogKit::Low,"\nInversion area");
-    if(area_specification == ModelSettings::AREA_FROM_GRID_DATA ||
+    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA ||
        area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
        area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
       grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
@@ -1929,7 +1932,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
     const std::vector<int> & area_ILXL = model_settings->getAreaILXL();
     LogKit::LogFormatted(LogKit::Low," taken from grid\n");
     LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
-    if(area_ILXL.size() > 0) {
+    if (area_ILXL.size() > 0) {
       if (area_ILXL[0] != IMISSING)
         LogKit::LogFormatted(LogKit::Low,"  In-line start                            : %10d\n", area_ILXL[0]);
       if (area_ILXL[1] != IMISSING)
@@ -2075,7 +2078,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    if(model_settings->getMultizoneBackground() == true) {
+    if (model_settings->getMultizoneBackground() == true) {
       std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
       std::vector<int> erosion               = model_settings->getErosionPriority();
       std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
@@ -2084,23 +2087,23 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
       LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
       LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
       LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-      for(int i=0; i<nZones; i++) {
+      for (int i=0; i<nZones; i++) {
         LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
         LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
         LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
         LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-        if(structure[i+1] == ModelSettings::TOP)
+        if (structure[i+1] == ModelSettings::TOP)
           LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-        else if(structure[i+1] == ModelSettings::BASE)
+        else if (structure[i+1] == ModelSettings::BASE)
           LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-        else if(structure[i+1] == ModelSettings::COMPACTION)
+        else if (structure[i+1] == ModelSettings::COMPACTION)
           LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
       }
     }
   }
   else
   {
-    if(model_settings->getForwardModeling()==true)
+    if (model_settings->getForwardModeling()==true)
       LogKit::LogFormatted(LogKit::Low,"\nEarth model:\n");
     else
       LogKit::LogFormatted(LogKit::Low,"\nBackground model:\n");
@@ -2213,12 +2216,12 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
         // Can not be written when FACIES_FROM_WELLS as this information not is extracted yet
     {
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
-      if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
       {
         typedef std::map<std::string,float> mapType;
         mapType myMap = model_settings->getPriorFaciesProb();
 
-        for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
           LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
       }
       else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
@@ -2226,12 +2229,12 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
         typedef std::map<std::string,std::string> mapType;
         mapType myMap = input_files->getPriorFaciesProbFile();
 
-        for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
           LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10s\n",(i->first).c_str(),(i->second).c_str());
       }
     }
 
-    if(model_settings->getFaciesProbFromRockPhysics()) {
+    if (model_settings->getFaciesProbFromRockPhysics()) {
       LogKit::LogFormatted(LogKit::Low,"\nRock physics:\n");
       {
         const std::map<std::string, DistributionsRockStorage *>& rock_storage = model_settings->getRockStorage();
@@ -2266,14 +2269,14 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
       {
          std::vector<std::string> trend_param = model_settings->getTrendCubeParameters();
          std::vector<int>         cube_type   = model_settings->getTrendCubeType();
-         if(trend_param.size() > 0) {
+         if (trend_param.size() > 0) {
            LogKit::LogFormatted(LogKit::Low,"  \nTrend cubes:\n");
-           for(size_t i=0; i<trend_param.size(); i++) {
-             if(cube_type[i] == ModelSettings::CUBE_FROM_FILE)
+           for (size_t i=0; i<trend_param.size(); i++) {
+             if (cube_type[i] == ModelSettings::CUBE_FROM_FILE)
                LogKit::LogFormatted(LogKit::Low,"   From file                               : %10s\n", (trend_param[i]).c_str());
-             else if(cube_type[i] == ModelSettings::STRATIGRAPHIC_DEPTH)
+             else if (cube_type[i] == ModelSettings::STRATIGRAPHIC_DEPTH)
                LogKit::LogFormatted(LogKit::Low,"   Stratigraphic                           : %10s\n", (trend_param[i]).c_str());
-             else if(cube_type[i] == ModelSettings::TWT)
+             else if (cube_type[i] == ModelSettings::TWT)
                LogKit::LogFormatted(LogKit::Low,"   TWT                                     : %10s\n", (trend_param[i]).c_str());
            }
          }
@@ -2297,13 +2300,13 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
         LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
 
       for (int i=0; i<model_settings->getNumberOfTimeLapses(); i++){
-        if(model_settings->getDo4DInversion())
+        if (model_settings->getDo4DInversion())
           LogKit::LogFormatted(LogKit::Low,"\nVintage:\n");
-        if(model_settings->getVintageMonth(i)==IMISSING && model_settings->getVintageYear(i) != IMISSING)
+        if (model_settings->getVintageMonth(i)==IMISSING && model_settings->getVintageYear(i) != IMISSING)
           LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d\n", i+1, model_settings->getVintageYear(i));
-        else if(model_settings->getVintageDay(i)==IMISSING && model_settings->getVintageMonth(i) != IMISSING && model_settings->getVintageYear(i) != IMISSING)
+        else if (model_settings->getVintageDay(i)==IMISSING && model_settings->getVintageMonth(i) != IMISSING && model_settings->getVintageYear(i) != IMISSING)
           LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i));
-        else if(model_settings->getVintageDay(i)!=IMISSING && model_settings->getVintageMonth(i)!=IMISSING && model_settings->getVintageYear(i) != IMISSING)
+        else if (model_settings->getVintageDay(i)!=IMISSING && model_settings->getVintageMonth(i)!=IMISSING && model_settings->getVintageYear(i) != IMISSING)
           LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i), model_settings->getVintageDay(i));
 
       corr  = model_settings->getAngularCorr(i);
@@ -2432,7 +2435,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                                     bool              & failed)
 //{
 //  FFTGrid * velocity = NULL;
-//  if(timeCutSimbox != NULL)
+//  if (timeCutSimbox != NULL)
 //    loadVelocity(velocity, timeCutSimbox, timeCutSimbox, model_settings,
 //                 input_files->getVelocityField(), velocityFromInversion_,
 //                 errText, failed);
@@ -2441,11 +2444,11 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                 input_files->getVelocityField(), velocityFromInversion_,
 //                 errText, failed);
 //
-//  if(!failed)
+//  if (!failed)
 //  {
 //    timeDepthMapping_ = new GridMapping();
 //    timeDepthMapping_->setDepthSurfaces(input_files->getDepthSurfFiles(), failed, errText);
-//    if(velocity != NULL)
+//    if (velocity != NULL)
 //    {
 //      velocity->setAccessMode(FFTGrid::RANDOMACCESS);
 //      timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
@@ -2455,7 +2458,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //      timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
 //      velocity->endAccess();
 //
-//      if((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+//      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
 //        std::string baseName  = IO::FileTimeToDepthVelocity();
 //        std::string sgriLabel = std::string("Time-to-depth velocity");
 //        float       offset    = model_settings->getSegyOffset(0);//Only allow one segy offset for time lapse data
@@ -2478,7 +2481,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //
 //    }
 //  }
-//  if(velocity != NULL)
+//  if (velocity != NULL)
 //    delete velocity;
 //}
 
@@ -2489,7 +2492,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                                      std::string                  & errTxt,
 //                                      const InputFiles             * input_files)
 //{
-//  if(model_settings->getFaciesProbFromRockPhysics()){
+//  if (model_settings->getFaciesProbFromRockPhysics()){
 //
 //    LogKit::WriteHeader("Processing Rock Physics");
 //
@@ -2507,19 +2510,19 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //    const std::vector<std::vector<double> >& trend_cube_sampling                = trend_cubes_.GetTrendCubeSampling();
 //
 //    const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = model_settings->getReservoirVariable();
-//    for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+//    for (std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 //
 //      std::vector<DistributionWithTrendStorage *> storage = it->second;
 //      std::vector<DistributionWithTrend *> dist_vector(storage.size());
 //
-//      for(size_t i=0; i<storage.size(); i++) {
+//      for (size_t i=0; i<storage.size(); i++) {
 //        dist_vector[i]                = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 //      }
 //
 //      reservoir_variables_[it->first] = dist_vector;
 //    }
 //
-//    if(errTxt == "") {
+//    if (errTxt == "") {
 //
 //      float alpha_min     = model_settings->getAlphaMin();
 //      float alpha_max     = model_settings->getAlphaMax();
@@ -2541,13 +2544,13 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //
 //      // Map out reservoir variables for using in rocks to access resampling trigger.
 //      std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(0);
-//      if(reservoir_variables_.size() > 0) {
+//      if (reservoir_variables_.size() > 0) {
 //        size_t nVintages = reservoir_variables_.begin()->second.size();
 //        res_var_vintage.resize(nVintages);
-//        for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
+//        for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
 //          var_it != reservoir_variables_.end();var_it++)
 //        {
-//          for(size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
+//          for (size_t vin_index=0;vin_index < var_it->second.size();vin_index++)
 //            res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
 //        }
 //      }
@@ -2557,20 +2560,20 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //      std::map<std::string, std::string> facies_cubes   = input_files->getPriorFaciesProbFile();
 //      std::vector<std::string> all_facies_names         = facies_names_;
 //
-//      for(std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
+//      for (std::map<std::string, float>::iterator it_prob = facies_probabilities.begin(); it_prob != facies_probabilities.end(); it_prob++)
 //        all_facies_names.push_back(it_prob->first);
-//      for(std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
+//      for (std::map<std::string, std::string>::iterator it_cube = facies_cubes.begin(); it_cube != facies_cubes.end(); it_cube++)
 //        all_facies_names.push_back(it_cube->first);
 //
 //      std::sort(all_facies_names.begin(), all_facies_names.end());
 //
 //      std::string prev_facies = "";
-//      for(size_t it=0; it<all_facies_names.size(); it++) {
-//        if(all_facies_names[it] != prev_facies) {
+//      for (size_t it=0; it<all_facies_names.size(); it++) {
+//        if (all_facies_names[it] != prev_facies) {
 //          prev_facies = all_facies_names[it];
 //
 //          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
-//          if(iter != rock_storage.end()) {
+//          if (iter != rock_storage.end()) {
 //
 //            std::string rockErrTxt = "";
 //
@@ -2588,14 +2591,14 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                                                                                       fluid_storage,
 //                                                                                       rockErrTxt);
 //
-//            if(rockErrTxt == "") {
+//            if (rockErrTxt == "") {
 //
 //              int n_vintages = static_cast<int>(rock.size());
-//              if(n_vintages > 1)
+//              if (n_vintages > 1)
 //                LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
 //
-//              for(int i=0; i<n_vintages; i++) {
-//                if(n_vintages > 1)
+//              for (int i=0; i<n_vintages; i++) {
+//                if (n_vintages > 1)
 //                  LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", i+1);
 //
 //                //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
@@ -2603,8 +2606,8 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //
 //                std::vector<bool> has_trends = rock[i]->HasTrend();
 //                bool              has_trend = false;
-//                for(size_t j=0; j<has_trends.size(); j++) {
-//                  if(has_trends[j] == true) {
+//                for (size_t j=0; j<has_trends.size(); j++) {
+//                  if (has_trends[j] == true) {
 //                    has_trend = true;
 //                    break;
 //                  }
@@ -2621,7 +2624,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                  tmpErrTxt += "Vp should be in the interval ("+NRLib::ToString(alpha_min)+", "+NRLib::ToString(alpha_max)+") m/s\n";
 //                }
 //                if (std::exp(expectation[1]) < beta_min  || std::exp(expectation[1]) > beta_max) {
-//                  if(typeid(*(storage)) == typeid(ReussRockStorage))
+//                  if (typeid(*(storage)) == typeid(ReussRockStorage))
 //                    tmpErrTxt += "Vs value of 0 detected. Note that the Reuss model gives Vs=0; hence it can not be used to model a facies\n";
 //                  else
 //                    tmpErrTxt += "Vs value of "+NRLib::ToString(std::exp(expectation[1]))+" detected: ";
@@ -2632,7 +2635,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                  tmpErrTxt += "Rho should be in the interval ("+NRLib::ToString(rho_min)+", "+NRLib::ToString(rho_max)+") g/cm^3\n";
 //                }
 //
-//                if(tmpErrTxt != "") {
+//                if (tmpErrTxt != "") {
 //                  errTxt += "\nToo high or low seismic properties calculated for rock '"+iter->first+"':\n";
 //                  errTxt += tmpErrTxt;
 //                }
@@ -2651,7 +2654,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                  varErrTxt += "Var(log Rho) should be in the interval ("+NRLib::ToString(var_rho_min)+", "+NRLib::ToString(var_rho_max)+")\n";
 //                }
 //
-//                if(varErrTxt != "") {
+//                if (varErrTxt != "") {
 //                  errTxt += "\nToo high or low variance of seismic properties calculated for rock '"+iter->first+"':\n";
 //                  errTxt += varErrTxt;
 //                }
@@ -2678,7 +2681,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                  errTxt += "  The variabels in the rock model are probably linearly dependent\n";
 //                }
 //
-//                if(varErrTxt != "" || tmpErrTxt != "")
+//                if (varErrTxt != "" || tmpErrTxt != "")
 //                  break;
 //
 //              }
@@ -2695,7 +2698,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //      }
 //    }
 //
-//    if(errTxt != "")
+//    if (errTxt != "")
 //      failed = true;
 //  }
 //}
@@ -2704,7 +2707,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //                                                 const NRLib::Grid2D<double> & covariance,
 //                                                 const bool                  & has_trend) const
 //{
-//  if(has_trend == true)
+//  if (has_trend == true)
 //      LogKit::LogFormatted(LogKit::Low,"\nMean expectation and covariance estimated over all trend values:\n");
 //  else
 //    LogKit::LogFormatted(LogKit::Low,"\nEstimated expectation and covariance:\n");
@@ -2744,12 +2747,12 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //{
 //  LogKit::WriteHeader("Setup time-to-depth relationship");
 //
-//  if(model_settings->getVelocityFromInversion() == true)
+//  if (model_settings->getVelocityFromInversion() == true)
 //  {
 //    velocityFromInversion = true;
 //    velocity = NULL;
 //  }
-//  else if(velocityField == "")
+//  else if (velocityField == "")
 //    velocity = NULL;
 //  else
 //  {
@@ -2788,7 +2791,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //      for (int k = 0; k < nzp; k++)
 //        for (int j = 0; j < nyp; j++)
 //          for (int i = 0; i < rnxp; i++) {
-//            if(i < nx && j < ny && k < nz) {
+//            if (i < nx && j < ny && k < nz) {
 //              float value = velocity->getNextReal();
 //              if (value < logMin && value != RMISSING) {
 //                tooLow++;
@@ -2893,12 +2896,12 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
 {
   geometry = NULL;
 
-  if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
     int fileType = IO::findGridType(gridFile);
-    if(fileType == IO::CRAVA) {
+    if (fileType == IO::CRAVA) {
       geometry = geometryFromCravaFile(gridFile);
     }
-    else if(fileType == IO::SEGY) {
+    else if (fileType == IO::SEGY) {
       try
       {
         geometry = SegY::FindGridGeometry(gridFile, thf);
@@ -2908,9 +2911,9 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
         errText = e.what();
       }
     }
-    else if(fileType == IO::STORM)
+    else if (fileType == IO::STORM)
       geometry = geometryFromStormFile(gridFile, errText);
-    else if(fileType==IO::SGRI) {
+    else if (fileType==IO::SGRI) {
       bool scale = true;
       geometry = geometryFromStormFile(gridFile, errText, scale);
     }
@@ -2963,7 +2966,7 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
   StormContGrid * stormgrid = NULL;
   std::string     tmpErrText;
   float scalehor;
-  if(scale==false)
+  if (scale==false)
   {
     scalehor = 1.0;
   }
@@ -3016,7 +3019,7 @@ ModelGeneral::getRockDistributionTime0() const
 {
   std::map<std::string, DistributionsRock *> rock_dist_t0;
 
-  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     std::string name = it->first;
     std::vector<DistributionsRock *> rock_dist = it->second;
     rock_dist_t0[name] = rock_dist[0];
@@ -3030,7 +3033,7 @@ ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, b
 {
   FFTGrid* fftGrid;
 
-  if(fileGrid)
+  if (fileGrid)
     fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
   else
     fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
@@ -3041,12 +3044,12 @@ ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, b
 int
 ModelGeneral::computeTime(int year, int month, int day) const
 {
-  if(year == IMISSING)
+  if (year == IMISSING)
     return(0);
 
   int deltaYear = year-1900; //Ok baseyear.
   int time = 365*deltaYear+deltaYear/4; //Leap years.
-  if(month == IMISSING)
+  if (month == IMISSING)
     time += 182;
   else {
     std::vector<int> accDays(12,0);
@@ -3064,7 +3067,7 @@ ModelGeneral::computeTime(int year, int month, int day) const
 
     time += accDays[month];
 
-    if(day == IMISSING)
+    if (day == IMISSING)
       time += 15;
     else
       time += day;
@@ -3122,7 +3125,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
         // set expectation equal to something at right scale
         // (top value for closest edge)
         // NBNB OK Can be made better linear interoplation between first and last value in i an j direction as well
-        if(i >= nx || j >= ny) {
+        if (i >= nx || j >= ny) {
           int indexI;
           int indexJ;
           indexI = i > (nx+nxp)/2 ? 0   : nx-1;
@@ -3139,7 +3142,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
         }
 
         // If outside in z-direction, use linear interpolation between top and base values of the expectations
-        else if(k >= nz) {
+        else if (k >= nz) {
           double t  = double(nzp-k+1)/(nzp-nz+1);
           double vpVal =  topVp(i,j)*t  + baseVp(i,j)*(1-t);
           double vsVal =  topVs(i,j)*t  + baseVs(i,j)*(1-t);
@@ -3158,11 +3161,11 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
 
           std::vector<std::vector<double> > expectation_m(number_of_facies);
-          for(size_t f = 0; f < number_of_facies; f++)
+          for (size_t f = 0; f < number_of_facies; f++)
             expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
 
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
-          for(size_t f = 0; f < number_of_facies; f++){
+          for (size_t f = 0; f < number_of_facies; f++){
             expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
             expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
             expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
@@ -3174,12 +3177,12 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           rho.setNextReal(expectations[2]);
 
           // Store top and base values of the expectations for later use in interpolation in the padded region.
-          if(k==0) {
+          if (k==0) {
             topVp(i,j)  = expectations[0];
             topVs(i,j)  = expectations[1];
             topRho(i,j) = expectations[2];
           }
-          else if(k==nz-1) {
+          else if (k==nz-1) {
             baseVp(i,j)  = expectations[0];
             baseVs(i,j)  = expectations[1];
             baseRho(i,j) = expectations[2];
@@ -3211,16 +3214,16 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
   LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
 
   bool has_trend = false;
-  for(size_t i=0; i<rock_distribution.size(); i++) {
+  for (size_t i=0; i<rock_distribution.size(); i++) {
     std::vector<bool> rock_has_trend = rock_distribution[i]->HasTrend();
 
-    for(int j=0; j<2; j++) {
-      if(rock_has_trend[j] == true)
+    for (int j=0; j<2; j++) {
+      if (rock_has_trend[j] == true)
         has_trend = true;
     }
   }
 
-  if(has_trend == true) {
+  if (has_trend == true) {
 
     std::vector<int> trend_cube_size = trend_cubes_.GetSizeTrendCubes();
 
@@ -3247,7 +3250,7 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
       for (int j = 0; j < ny; j++) {
         for (int i = 0; i < nx; i++) {
 
-          if( ( (i+1)*(j+1)*(k+1) ) % modulus == 0) {
+          if ( ( (i+1)*(j+1)*(k+1) ) % modulus == 0) {
 
             std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
 
@@ -3259,8 +3262,8 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
                                                sigma_sum);
 
 
-            for(size_t a=0; a<3; a++){
-              for(size_t b=0; b<3; b++)
+            for (size_t a=0; a<3; a++){
+              for (size_t b=0; b<3; b++)
                 sumVariance(a,b) += sigma_sum(a,b);
             }
 
@@ -3317,12 +3320,12 @@ ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<Distributions
 
   std::vector<std::vector<double> > expectation_m(number_of_facies);
 
-  for(int f = 0; f < number_of_facies; f++)
+  for (int f = 0; f < number_of_facies; f++)
     expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
 
   // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
   std::vector<float> expectations(3, 0);
-  for(int f = 0; f < number_of_facies; f++){
+  for (int f = 0; f < number_of_facies; f++){
     expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
     expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
     expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
@@ -3337,12 +3340,12 @@ ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<Distributions
   //
   // For all facies: Summing up expected value of variances and variance of expected values
 
-  for(int f = 0; f < number_of_facies; f++) {
+  for (int f = 0; f < number_of_facies; f++) {
     NRLib::Grid2D<double> sigma = rock_distribution[f]->GetLogCovariance(trend_position);
 
     // For all elements in the 3x3 matrix of the combined variance
-    for(size_t a=0; a<3; a++) {
-      for(size_t b=0; b<3; b++) {
+    for (size_t a=0; a<3; a++) {
+      for (size_t b=0; b<3; b++) {
         double sigma_weigth = probability[f] * (sigma(a,b) + (expectation_m[f][a] - expectations[a])*(expectation_m[f][b] - expectations[b]));
         sigma_sum(a,b)     += sigma_weigth;
       }
@@ -3435,7 +3438,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //{
 //  int     nWells         = model_settings->getNumberOfWells();
 //
-//  if(nWells > 0) {
+//  if (nWells > 0) {
 //
 //    double wall=0.0, cpu=0.0;
 //    TimeKit::getTime(wall,cpu);
@@ -3448,7 +3451,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //
 //    std::string tmpErrText("");
 //    wells.resize(nWells);
-//    for(int i=0 ; i<nWells ; i++) {
+//    for (int i=0 ; i<nWells ; i++) {
 //      wells[i] = new WellData(input_files->getWellFile(i),
 //        model_settings->getLogNames(),
 //        model_settings->getInverseVelocity(),
@@ -3459,7 +3462,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //        model_settings->getIndicatorBGTrend(i),
 //        model_settings->getIndicatorRealVs(i),
 //        faciesLogGiven);
-//      if(wells[i]->checkError(tmpErrText) != 0) {
+//      if (wells[i]->checkError(tmpErrText) != 0) {
 //        errText += tmpErrText;
 //        error = 1;
 //      }
@@ -3467,7 +3470,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //
 //
 //    if (error == 0) {
-//      if(model_settings->getFaciesLogGiven()) {
+//      if (model_settings->getFaciesLogGiven()) {
 //        setFaciesNamesFromWells(wells, model_settings, tmpErrText, error);
 //        nFacies = static_cast<int>(facies_names_.size()); // nFacies is set in setFaciesNames()
 //      }
@@ -3484,7 +3487,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      float * devAngle      = new float[nWells];
 //      int  ** faciesCount   = NULL;
 //
-//      if(nFacies > 0) {
+//      if (nFacies > 0) {
 //        faciesCount = new int * [nWells];
 //        for (int i = 0 ; i < nWells ; i++)
 //          faciesCount[i] = new int[nFacies];
@@ -3500,31 +3503,31 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      {
 //        bool skip = false;
 //        LogKit::LogFormatted(LogKit::Low,wells[i]->getWellname()+" : \n");
-//        if(wells[i]!=NULL) {
-//          if(wells[i]->checkSimbox(timeSimbox) == 1) {
+//        if (wells[i]!=NULL) {
+//          if (wells[i]->checkSimbox(timeSimbox) == 1) {
 //            skip = true;
 //            nohit++;
 //            TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
 //          }
-//          if(wells[i]->getNd() == 0) {
+//          if (wells[i]->getNd() == 0) {
 //            LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
 //            skip = true;
 //            empty++;
 //            TaskList::addTask("Check the log entries in well "+wells[i]->getWellname()+".");
 //          }
-//          if(wells[i]->isFaciesOk()==0) {
+//          if (wells[i]->isFaciesOk()==0) {
 //            LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
 //            skip = true;
 //            facieslognotok++;
 //            TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
 //          }
-//          if(wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
+//          if (wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
 //            LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
 //            skip = true;
 //            upwards++;
 //            TaskList::addTask("Check the TWT log in well "+wells[i]->getWellname()+".\n       The well is moving too much upwards, and the well is ignored");
 //          }
-//          if(skip)
+//          if (skip)
 //            validIndex[i] = false;
 //          else {
 //            validIndex[i] = true;
@@ -3548,7 +3551,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      LogKit::LogFormatted(LogKit::Low,"                                      Invalid                                    \n");
 //      LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
 //      LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
-//      for(int i=0 ; i<nWells ; i++) {
+//      for (int i=0 ; i<nWells ; i++) {
 //        if (validIndex[i])
 //          LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
 //          wells[i]->getWellname().c_str(),
@@ -3568,7 +3571,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      //
 //      // Print facies count for each well
 //      //
-//      if(nFacies > 0) {
+//      if (nFacies > 0) {
 //        //
 //        // Probabilities
 //        //
@@ -3641,12 +3644,12 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      //
 //      // Remove invalid wells
 //      //
-//      for(int i=0 ; i<nWells ; i++)
+//      for (int i=0 ; i<nWells ; i++)
 //        if (!validIndex[i])
 //          delete wells[i];
-//      for(int i=0 ; i<count ; i++)
+//      for (int i=0 ; i<count ; i++)
 //        wells[i] = wells[validWells[i]];
-//      for(int i=count ; i<nWells ; i++)
+//      for (int i=count ; i<nWells ; i++)
 //        wells[i] = NULL;
 //      nWells = count;
 //      model_settings->setNumberOfWells(nWells);
@@ -3664,9 +3667,9 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
 //      if (empty>0)
 //        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
-//      if(facieslognotok>0)
+//      if (facieslognotok>0)
 //        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
-//      if(upwards>0)
+//      if (upwards>0)
 //        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n",upwards);
 //      if (nWells==0 && model_settings->getNoWellNedded()==false) {
 //        LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
@@ -3681,14 +3684,14 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //        error = 1;
 //      }
 //
-//      if(nFacies > 0) {
+//      if (nFacies > 0) {
 //        int fc;
-//        for(int i = 0; i < nFacies; i++){
+//        for (int i = 0; i < nFacies; i++){
 //          fc = 0;
-//          for(int j = 0; j < nWells; j++){
+//          for (int j = 0; j < nWells; j++){
 //            fc+=faciesCount[j][i];
 //          }
-//          if(fc == 0){
+//          if (fc == 0){
 //            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",facies_names_[i].c_str() );
 //            TaskList::addTask("In order to estimate prior facies probability for facies "+ facies_names_[i] + " add wells which contain observations of this facies.\n");
 //          }
@@ -3715,10 +3718,10 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //  int globalmax = 0;
 //  bool first = true;
 //  for (int w = 0; w < model_settings->getNumberOfWells(); w++) {
-//    if(wells[w]->isFaciesLogDefined())
+//    if (wells[w]->isFaciesLogDefined())
 //    {
 //      wells[w]->getMinMaxFnr(min,max);
-//      if(first==true)
+//      if (first==true)
 //      {
 //        globalmin = min;
 //        globalmax = max;
@@ -3726,9 +3729,9 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      }
 //      else
 //      {
-//        if(min<globalmin)
+//        if (min<globalmin)
 //          globalmin = min;
-//        if(max>globalmax)
+//        if (max>globalmax)
 //          globalmax = max;
 //      }
 //    }
@@ -3737,19 +3740,19 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //  int nnames = globalmax - globalmin + 1;
 //  std::vector<std::string> names(nnames);
 //
-//  for(int w=0 ; w<model_settings->getNumberOfWells() ; w++)
+//  for (int w=0 ; w<model_settings->getNumberOfWells() ; w++)
 //  {
-//    if(wells[w]->isFaciesLogDefined())
+//    if (wells[w]->isFaciesLogDefined())
 //    {
-//      for(int i=0 ; i < wells[w]->getNFacies() ; i++)
+//      for (int i=0 ; i < wells[w]->getNFacies() ; i++)
 //      {
 //        std::string name = wells[w]->getFaciesName(i);
 //        int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
 //
-//        if(names[fnr] == "") {
+//        if (names[fnr] == "") {
 //          names[fnr] = name;
 //        }
-//        else if(names[fnr] != name)
+//        else if (names[fnr] != name)
 //        {
 //          tmpErrText += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
 //          error++;
@@ -3760,17 +3763,17 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //
 //  LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
 //  LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
-//  for(int i=0 ; i<nnames ; i++)
-//    if(names[i] != "")
+//  for (int i=0 ; i<nnames ; i++)
+//    if (names[i] != "")
 //      LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
 //
 //  int nFacies = 0;
-//  for(int i=0 ; i<nnames ; i++)
-//    if(names[i] != "")
+//  for (int i=0 ; i<nnames ; i++)
+//    if (names[i] != "")
 //      nFacies++;
 //
-//  for(int i=0 ; i<nnames ; i++) {
-//    if(names[i] != "") {
+//  for (int i=0 ; i<nnames ; i++) {
+//    if (names[i] != "") {
 //      faciesLabels_.push_back(globalmin + i);
 //      facies_names_.push_back(names[i]);
 //    }
@@ -3810,23 +3813,23 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 //
 //  for (w = 0 ; w < nWells ; w++) {
-//    if( wells_[w]->isDeviated()==true )
+//    if ( wells_[w]->isDeviated()==true )
 //      continue;
 //
 //    BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
 //    nMoveAngles = model_settings->getNumberOfWellAngles(w);
 //
-//    if( nMoveAngles==0 )
+//    if ( nMoveAngles==0 )
 //      continue;
 //
-//    for( i=0; i<nAngles; i++ )
+//    for ( i=0; i<nAngles; i++ )
 //      angleWeight[i] = 0;
 //
-//    for( i=0; i<nMoveAngles; i++ ){
+//    for ( i=0; i<nMoveAngles; i++ ){
 //      moveAngle   = model_settings->getWellMoveAngle(w,i);
 //
-//      for( j=0; j<nAngles; j++ ){
-//        if( moveAngle == seismicAngle[j]){
+//      for ( j=0; j<nAngles; j++ ){
+//        if ( moveAngle == seismicAngle[j]){
 //          angleWeight[j] = model_settings->getWellMoveWeight(w,i);
 //          break;
 //        }
@@ -3834,9 +3837,9 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //    }
 //
 //    sum = 0;
-//    for( i=0; i<nAngles; i++ )
+//    for ( i=0; i<nAngles; i++ )
 //      sum += angleWeight[i];
-//    if( sum == 0 )
+//    if ( sum == 0 )
 //      continue;
 //
 //    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
@@ -3856,7 +3859,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //   for (w = 0 ; w < nWells ; w++){
 //     nMoveAngles = model_settings->getNumberOfWellAngles(w);
 //
-//    if( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
+//    if ( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
 //    {
 //      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
 //          wells_[w]->getWellname().c_str());
@@ -3899,10 +3902,10 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //    float ** paramCorr = NULL;
 //    bool failedParamCorr = false;
 //    std::string tmpErrText("");
-//    if(!estimateParamCov) {
+//    if (!estimateParamCov) {
 //      paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
 //      validateCorrelationMatrix(paramCorr, model_settings, tmpErrText);
-//      if(paramCorr == NULL || tmpErrText != "") {
+//      if (paramCorr == NULL || tmpErrText != "") {
 //        errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
 //        errText += tmpErrText;
 //        failedParamCorr = true;
@@ -3911,7 +3914,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //    else if (model_settings->getFaciesProbFromRockPhysics() == true) {
 //      estimateParamCov = false;
 //      paramCorr = new float * [3];
-//      for(int i=0;i<3;i++) {
+//      for (int i=0;i<3;i++) {
 //        paramCorr[i] = new float[3];
 //      }
 //
@@ -3921,9 +3924,9 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      typedef std::map<std::string, DistributionsRock *> rfMapType;
 //      rfMapType rfMap = getRockDistributionTime0();
 //
-//      for(int i=0; i<n_facies; i++) {
+//      for (int i=0; i<n_facies; i++) {
 //        rfMapType::iterator iter = rfMap.find(facies_names_[i]);
-//        if(iter != rfMap.end())
+//        if (iter != rfMap.end())
 //          rock_distribution[i] = iter->second;
 //      }
 //
@@ -3934,8 +3937,8 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //                                          errText);
 //
 //
-//      for(int i=0; i<3; i++) {
-//        for(int j=0; j<3; j++)
+//      for (int i=0; i<3; i++) {
+//        for (int j=0; j<3; j++)
 //          paramCorr[i][j] = static_cast<float>(param_corr(i,j));
 //      }
 //
@@ -3952,14 +3955,14 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //    //
 //    priorCorrXY_ = findCorrXYGrid(timeSimbox, model_settings);
 //
-//    if(model_settings->getLateralCorr()==NULL) // NBNB-PAL: this will never be true (default lateral corr)
+//    if (model_settings->getLateralCorr()==NULL) // NBNB-PAL: this will never be true (default lateral corr)
 //    {
 //      int timelapse = 0; // Setting timelapse = 0 as this is the generation of prior model
 //      estimateCorrXYFromSeismic(priorCorrXY_, seisCube, model_settings->getNumberOfAngles(timelapse));
 //    }
 //
 //    int nCorrT = model_settings->getNZpad();
-//    if((nCorrT % 2) == 0)
+//    if ((nCorrT % 2) == 0)
 //      nCorrT = nCorrT/2+1;
 //    else
 //      nCorrT = nCorrT/2;
@@ -3967,13 +3970,13 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //    std::vector<float> corrT;
 //
 //    bool failedTempCorr = false;
-//    if(!estimateTempCorr)
+//    if (!estimateTempCorr)
 //    {
-//      if(model_settings->getUseVerticalVariogram() == true) {
+//      if (model_settings->getUseVerticalVariogram() == true) {
 //        corrT.resize(nCorrT+1);
 //        float tempCorrRange = model_settings->getTemporalCorrelationRange();
 //        float dz = static_cast<float>(timeSimbox->getdz());
-//        for(int i=0; i<=nCorrT; i++){
+//        for (int i=0; i<=nCorrT; i++){
 //          //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
 //          corrT[i] = exp(-3*dz*i/tempCorrRange);
 //        }
@@ -3981,7 +3984,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      else{
 //        std::string tmpErrText("");
 //        float ** corrMat = ModelAVODynamic::readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
-//        if(corrMat == NULL)
+//        if (corrMat == NULL)
 //        {
 //          errText += "Reading of file '"+corrTFile+"' for temporal correlation failed\n";
 //          errText += tmpErrText;
@@ -3990,7 +3993,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //        corrT.resize(nCorrT);
 //        if (!failedTempCorr)
 //        {
-//          for(int i=0;i<nCorrT;i++)
+//          for (int i=0;i<nCorrT;i++)
 //            corrT[i] = corrMat[0][i+1];
 //          delete [] corrMat[0];
 //          delete [] corrMat;
@@ -4012,7 +4015,7 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //        failedParamCorr = true;
 //      }
 //
-//      if(estimateParamCov)
+//      if (estimateParamCov)
 //        paramCorr = analyze->getVar0();
 //      else
 //        delete [] analyze->getVar0();
@@ -4020,18 +4023,18 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //      pointVar0 = analyze->getPointVar0();
 //
 //      float * estCorrT = analyze->getCorrT();
-//      if(estimateTempCorr) {
+//      if (estimateTempCorr) {
 //        corrT.resize(nCorrT);
 //        int nEst = analyze->getNumberOfLags();
 //        int i, max = nEst;
-//        if(max > nCorrT)
+//        if (max > nCorrT)
 //          max = nCorrT;
-//        for(i=0;i<max;i++)
+//        for (i=0;i<max;i++)
 //          corrT[i] = estCorrT[i];
-//        if(i<nCorrT) {
+//        if (i<nCorrT) {
 //          LogKit::LogFormatted(LogKit::High,
 //            "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, nCorrT);
-//          for(;i<nCorrT;i++)
+//          for (;i<nCorrT;i++)
 //            corrT[i] = 0.0f;
 //        }
 //      }
@@ -4074,17 +4077,17 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //                                                 nyPad,
 //                                                 nzPad);
 //
-//      for(int i=0; i<3; i++)
+//      for (int i=0; i<3; i++)
 //        delete [] paramCorr[i];
 //      delete [] paramCorr;
 //
-//      if(printResult)
+//      if (printResult)
 //        seismicParameters.writeFilePriorVariances(model_settings, corrT, priorCorrXY_, dt);
 //      seismicParameters.printPriorVariances();
 //    }
 //
 //
-//    if(failedTempCorr == true || failedParamCorr == true)
+//    if (failedTempCorr == true || failedParamCorr == true)
 //    {
 //      errText += "Could not construct prior covariance. Unknown why...\n";
 //      failed = true;
@@ -4176,14 +4179,14 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
 //
 //  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
 //
-//  if(model_settings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
+//  if (model_settings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
 //  {
 //    int refi,refj;
-//    for(int j=0;j<ny;j++)
+//    for (int j=0;j<ny;j++)
 //    {
-//      for(int i=0;i<nx;i++)
+//      for (int i=0;i<nx;i++)
 //      {
-//        if(i<(nx/2+1))
+//        if (i<(nx/2+1))
 //        {
 //          refi = i;
 //        }
@@ -4191,7 +4194,7 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
 //        {
 //          refi = i-nx;
 //        }
-//        if(j< (ny/2+1))
+//        if (j< (ny/2+1))
 //        {
 //          refj = j;
 //        }
@@ -4217,12 +4220,12 @@ ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,
   int n = static_cast<int>(corrXY->GetNI()*corrXY->GetNJ());
   grid = new float[n];
 
-  for(int i=0 ; i<n ; i++)
+  for (int i=0 ; i<n ; i++)
     grid[i] = 0.0;
 
-  for(int i=0 ; i<numberOfAngles ; i++)
+  for (int i=0 ; i<numberOfAngles ; i++)
   {
-    if(seisCube[i]->isFile())
+    if (seisCube[i]->isFile())
       transf = new FFTFileGrid(static_cast<FFTFileGrid *>(seisCube[i])); //move new out of loop? Copy grid instead
     else
       transf = new FFTGrid(seisCube[i]); //move new out of loop? Copy grid instead
@@ -4236,7 +4239,7 @@ ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,
     delete transf;
   }
   float sill = grid[0];
-  for(int i=0;i<n;i++)
+  for (int i=0;i<n;i++)
     (*corrXY)(i) = grid[i]/sill;
   delete [] grid;
 }
@@ -4248,23 +4251,23 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
   int nFacies = static_cast<int>(facies_names_.size());
 
   // Compare names in wells with names given in rock physics prior model
-  if(rock_distributions_.size() > 0) {
+  if (rock_distributions_.size() > 0) {
     int nRocks  = static_cast<int>(rock_distributions_.size());
-    if(nRocks > nFacies)
+    if (nRocks > nFacies)
       tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
-    for(int i=0; i<nFacies; i++) {
-      if(rock_distributions_.find(facies_names_[i]) == rock_distributions_.end())
+    for (int i=0; i<nFacies; i++) {
+      if (rock_distributions_.find(facies_names_[i]) == rock_distributions_.end())
         tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
     }
   }
 
   // Compare names in wells with names given in .xml-file
-  if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
   {
     typedef std::map<std::string,float> mapType;
     mapType myMap = model_settings->getPriorFaciesProb();
 
-    for(int i=0;i<nFacies;i++)
+    for (int i=0;i<nFacies;i++)
     {
       mapType::iterator iter = myMap.find(facies_names_[i]);
       if (iter==myMap.end())
@@ -4273,12 +4276,12 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
   }
 
   // Compare names in wells with names given as input in proability cubes
-  else if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+  else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
   {
     typedef std::map<std::string,std::string> mapType;
     mapType myMap = input_files->getPriorFaciesProbFile();
 
-    for(int i=0;i<nFacies;i++)
+    for (int i=0;i<nFacies;i++)
     {
       mapType::iterator iter = myMap.find(facies_names_[i]);
       if (iter==myMap.end())
@@ -4293,7 +4296,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //  typedef std::map<std::string, DistributionsRock *> mapType;
 //
 //  int i = 0;
-//  for(std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+//  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
 //    facies_names_.push_back(it->first);
 //    faciesLabels_.push_back(i);
 //    i++;
@@ -4314,7 +4317,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //  {
 //    LogKit::WriteHeader("Prior Facies Probabilities");
 //
-//    if(facies_names_.size() == 0)
+//    if (facies_names_.size() == 0)
 //      setFaciesNamesFromRockPhysics();
 //
 //    std::string tmpErrText = "";
@@ -4326,7 +4329,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //    int nFacies = static_cast<int>(facies_names_.size());
 //
-//    if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
+//    if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
 //    {
 //      if (nFacies > 0)
 //      {
@@ -4356,7 +4359,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //        for (int w = 0 ; w < nWells ; w++)
 //        {
-//          if(wells[w]->getNFacies() > 0) // Well has facies log
+//          if (wells[w]->getNFacies() > 0) // Well has facies log
 //          {
 //            //
 //            // Note that we use timeSimbox to calculate prior facies probabilities
@@ -4390,16 +4393,16 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //            bl->getVerticalTrend(blFaciesLog,vtFacies);
 //            delete [] blFaciesLog;
 //
-//            for(int i=0 ; i<nz ; i++)
+//            for (int i=0 ; i<nz ; i++)
 //            {
 //              int facies;
-//              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING)
+//              if (vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING)
 //                facies = vtFacies[i];
 //              else
 //                facies = IMISSING;
 //
 //              faciesLog[w*nz + i] = facies;
-//              if(facies != IMISSING)
+//              if (facies != IMISSING)
 //                faciesCount[w][facies]++;
 //            }
 //            nUsedWells++;
@@ -4424,7 +4427,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //          LogKit::LogFormatted(LogKit::Low,"\n");
 //          for (int w = 0 ; w < nWells ; w++)
 //          {
-//            if(wells[w]->getNFacies() > 0) // Well has facies log
+//            if (wells[w]->getNFacies() > 0) // Well has facies log
 //            {
 //              float tot = 0.0;
 //              for (int i = 0 ; i < nFacies ; i++) {
@@ -4454,7 +4457,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //          LogKit::LogFormatted(LogKit::Medium,"\n");
 //          for (int w = 0 ; w < nWells ; w++)
 //          {
-//            if(wells[w]->getNFacies() > 0)
+//            if (wells[w]->getNFacies() > 0)
 //            {
 //              float tot = 0.0;
 //              for (int i = 0 ; i < nFacies ; i++)
@@ -4477,17 +4480,17 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //          //
 //          float sum = 0.0f;
 //          int * nData = new int[nFacies];
-//          for(int i=0 ; i<nFacies ; i++)
+//          for (int i=0 ; i<nFacies ; i++)
 //            nData[i] = 0;
 //
-//          for(int i=0 ; i<ndata ; i++) {
-//            if(faciesLog[i] != IMISSING) {
+//          for (int i=0 ; i<ndata ; i++) {
+//            if (faciesLog[i] != IMISSING) {
 //              nData[faciesLog[i]]++;
 //            }
 //          }
 //          delete [] faciesLog;
 //
-//          for(int i=0 ; i<nFacies ; i++)
+//          for (int i=0 ; i<nFacies ; i++)
 //            sum += nData[i];
 //
 //          if (sum > 0) {
@@ -4495,7 +4498,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //            LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
 //            LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
 //            priorFacies_.resize(nFacies);
-//            for(int i=0 ; i<nFacies ; i++) {
+//            for (int i=0 ; i<nFacies ; i++) {
 //              priorFacies_[i] = float(nData[i])/sum;
 //              LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names_[i].c_str(),priorFacies_[i]);
 //            }
@@ -4527,16 +4530,16 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //        TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
 //      }
 //    }
-//    else if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+//    else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
 //    {
 //      priorFacies_.resize(nFacies);
 //      typedef std::map<std::string,float> mapType;
 //      mapType myMap = model_settings->getPriorFaciesProb();
 //
-//      for(int i=0;i<nFacies;i++)
+//      for (int i=0;i<nFacies;i++)
 //      {
 //        mapType::iterator iter = myMap.find(facies_names_[i]);
-//        if(iter!=myMap.end())
+//        if (iter!=myMap.end())
 //          priorFacies_[i] = iter->second;
 //        else
 //        {
@@ -4547,12 +4550,12 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //      }
 //      LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
 //      LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-//      for(int i=0 ; i<nFacies ; i++) {
+//      for (int i=0 ; i<nFacies ; i++) {
 //        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names_[i].c_str(),priorFacies_[i]);
 //      }
 //
 //    }
-//    else if(model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+//    else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
 //    {
 //      readPriorFaciesProbCubes(input_files,
 //                               model_settings,
@@ -4567,12 +4570,12 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //       LogKit::LogFormatted(LogKit::Low,"Facies         Probability in file\n");
 //       LogKit::LogFormatted(LogKit::Low,"----------------------------------\n");
-//       for(mapType::iterator it=myMap.begin();it!=myMap.end();it++)
+//       for (mapType::iterator it=myMap.begin();it!=myMap.end();it++)
 //         LogKit::LogFormatted(LogKit::Low,"%-15s %10s\n",(it->first).c_str(),(it->second).c_str());
 //
 //    }
 //  }
-//  if(errTxt != "")
+//  if (errTxt != "")
 //    failed = true;
 //}
 
@@ -4590,11 +4593,11 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //  typedef std::map<std::string,std::string> mapType;
 //  mapType myMap = input_files->getPriorFaciesProbFile();
-//  for(int i=0;i<nFacies;i++)
+//  for (int i=0;i<nFacies;i++)
 //  {
 //    mapType::iterator iter = myMap.find(facies_names_[i]);
 //
-//    if(iter!=myMap.end())
+//    if (iter!=myMap.end())
 //    {
 //      const std::string & faciesProbFile = iter->second;
 //      const SegyGeometry      * dummy1 = NULL;
@@ -4613,7 +4616,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //                                     model_settings,
 //                                     errorText,
 //                                     true);
-//      if(errorText != "")
+//      if (errorText != "")
 //      {
 //        errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
 //                     +facies_names_[i]+"\' failed\n";
@@ -4655,9 +4658,9 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //  typedef std::map<std::string,float> mapType;
 //  mapType myMap = model_settings->getPriorFaciesProb();
 //
-//  for(int i=0;i<n_facies;i++) {
+//  for (int i=0;i<n_facies;i++) {
 //    mapType::iterator iter = myMap.find(facies_names_[i]);
-//    if(iter!=myMap.end())
+//    if (iter!=myMap.end())
 //      priorProbability[i] = static_cast<float>(iter->second);
 //  }
 //
@@ -4665,9 +4668,9 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //  typedef std::map<std::string, DistributionsRock *> rfMapType;
 //  rfMapType rfMap = getRockDistributionTime0();
 //
-//  for(int i=0; i<n_facies; i++) {
+//  for (int i=0; i<n_facies; i++) {
 //    rfMapType::iterator iter = rfMap.find(facies_names_[i]);
-//    if(iter != rfMap.end())
+//    if (iter != rfMap.end())
 //      rock_distribution[i] = iter->second;
 //  }
 //
@@ -4702,7 +4705,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //  complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad,initialMean,initialCov);
 //
-//  if(tmpError != "") {
+//  if (tmpError != "") {
 //    errText += tmpError;
 //    failedRockPhysics4DBackground = true;
 //  }
@@ -4839,15 +4842,15 @@ void
 ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* model_settings)
 {
   bool debug=false;
-  if(debug) dump4Dparameters(model_settings, "_prior", time_step);  // note this prior should be equal to
+  if (debug) dump4Dparameters(model_settings, "_prior", time_step);  // note this prior should be equal to
                                                                     // next_prior in previous step
-  if(debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
+  if (debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
   state4d_.split(seismicParameters);
-  if(debug) dump4Dparameters(model_settings, "_posterior", time_step);
+  if (debug) dump4Dparameters(model_settings, "_posterior", time_step);
   state4d_.evolve(time_step, time_evolution_); //NBNB grad I grad J
-  //if(debug) dump4Dparameters(model_settings, "_next_prior", time_step+1);
+  //if (debug) dump4Dparameters(model_settings, "_next_prior", time_step+1);
   state4d_.merge(seismicParameters);
-  if(debug) dumpSeismicParameters(model_settings,"_next_prior", time_step+1,seismicParameters);
+  if (debug) dumpSeismicParameters(model_settings,"_next_prior", time_step+1,seismicParameters);
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
 
@@ -4857,7 +4860,7 @@ ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seism
 {
   bool debug=true;
   int time_step=time_evolution_.GetNTimSteps()-1;
-  if(debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
+  if (debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
 
   state4d_.split(seismicParameters);
   dump4Dparameters(model_settings, "_posterior", time_step);
@@ -4875,7 +4878,7 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* model_settings)
 
   int i=0;
 
-  for(std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++)
+  for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++)
   {
     labels[i] = it->first;
     i++;
@@ -4883,7 +4886,7 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* model_settings)
 
   std::string  outPre =  "mu_";
 
-  for(int i=0;i<nParamOut;i++)
+  for (int i=0;i<nParamOut;i++)
   {
      std::string fileName;
      fileName= outPre + labels[i];
@@ -4903,7 +4906,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* model_settings, std::string i
   std::stringstream tag;
   bool transformHere=false;
 
-  if(current_state.GetMeanVp()->getIsTransformed())
+  if (current_state.GetMeanVp()->getIsTransformed())
   {
     transformHere=true;
     current_state.invFFTAllGrids();
@@ -4933,7 +4936,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* model_settings, std::string i
   tag.str(std::string());tag.clear();label = "cov_rho_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(simbox_,this, model_settings, current_state.GetCovRho() , fileName,  tag.str(),true);
   // */
-  if(transformHere)
+  if (transformHere)
     current_state.FFTAllGrids();
 }
 
@@ -5031,8 +5034,8 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
   helper.createRealGrid();
   helper.setType(FFTGrid::COVARIANCE);
 
-  for(int i =0;i<nxp;i++)
-    for(int j =0;j<nyp;j++)
+  for (int i =0;i<nxp;i++)
+    for (int j =0;j<nyp;j++)
     {
       float value = float((*corrXY)(i+j*nxp));
       helper.setRealValue(i,j,0,value);
@@ -5040,8 +5043,8 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
 
   helper.fftInPlace();
   int cnxp =helper.getCNxp();
-  for(int i =0;i<cnxp;i++)
-    for(int j =0;j<nyp;j++)
+  for (int i =0;i<cnxp;i++)
+    for (int j =0;j<nyp;j++)
     {
       fftw_complex value;
       value=helper.getComplexValue(i,j,0);
@@ -5055,7 +5058,7 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
 
   printf("\nFix in latteral correlation in CRAVA results in a variance increase of %f %% (of 100%%) \n",(scale-1.0)*100);
 
-  for(int i =0;i<nxp;i++)
-    for(int j =0;j<nyp;j++)
+  for (int i =0;i<nxp;i++)
+    for (int j =0;j<nyp;j++)
        (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 }

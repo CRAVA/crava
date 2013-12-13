@@ -158,7 +158,8 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     float corr_grad_J = 0.0f;
     //commonData::GetCorrGradIJ(timeSimbox, corrGradI, corrGradJ);  //H COMES LATER
 
-    err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+    //H Commenting out for debugging
+    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
     checkAvailableMemory(simbox, model_settings, input_files);
 

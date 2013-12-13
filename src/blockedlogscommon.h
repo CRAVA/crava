@@ -17,21 +17,21 @@ class BlockedLogsCommon{
 public:
   BlockedLogsCommon();
 
-  BlockedLogsCommon(NRLib::Well     * well_data,
-                    const Simbox    * const estimation_simbox,
-                    bool              interpolate,
-                    //bool            & failed,
-                    std::string     & err_text,
-                    float             max_hz_background = 0.0,
-                    float             max_hz_seismic = 0.0);
+  //BlockedLogsCommon(NRLib::Well     * well_data,
+  //                  const Simbox    * const estimation_simbox,
+  //                  bool              interpolate,
+  //                  std::string     & err_text,
+  //                  float             max_hz_background = 0.0,
+  //                  float             max_hz_seismic = 0.0);
 
-  BlockedLogsCommon(const NRLib::Well                * well_data,
+  BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
                     bool                               interpolate,
-                    //bool                             & failed,
-                    std::string                      & err_text);
+                    std::string                      & err_text,
+                    float                              max_hz_background = 0.0,
+                    float                              max_hz_seismic = 0.0);
 
   BlockedLogsCommon(const NRLib::Well   * well_data,
                     const StormContGrid & stormgrid,
@@ -131,10 +131,10 @@ public:
                                                         int                      i_offset = 0,
                                                         int                      j_offset = 0);
 
-  //void                                   GetBlockedGrid(const FFTGrid       * grid,
-  //                                                      std::vector<double> & blocked_log,
-  //                                                      int                   i_offset = 0,
-  //                                                      int                   j_offset = 0);
+  void                                   GetBlockedGrid(const FFTGrid       * grid,
+                                                        std::vector<double> & blocked_log,
+                                                        int                   i_offset = 0,
+                                                        int                   j_offset = 0);
 
   void                                   GetBlockedGrid(const NRLib::Grid<double> & grid,
                                                         std::vector<double>       & blocked_log,

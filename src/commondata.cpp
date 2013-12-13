@@ -138,9 +138,9 @@ CommonData::CommonData(ModelSettings  * model_settings,
   }
 
   // 13. Setup of prior correlation
-  if (read_wells_ && setup_multigrid_ && read_seismic_)
-    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, multiple_interval_grid_->GetIntervalSimboxes(), multiple_interval_grid_->GetIntervalSimboxes(),
-                                                     model_settings->getPriorFaciesProbIntervals(), multiple_interval_grid_->GetTrendCubes(), seismic_data_, err_text);
+  //if (read_wells_ && setup_multigrid_ && read_seismic_) //H For debugging
+  //  setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, multiple_interval_grid_->GetIntervalSimboxes(), multiple_interval_grid_->GetIntervalSimboxes(),
+  //                                                   model_settings->getPriorFaciesProbIntervals(), multiple_interval_grid_->GetTrendCubes(), seismic_data_, err_text);
 
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
@@ -149,7 +149,7 @@ CommonData::CommonData(ModelSettings  * model_settings,
   setup_gravity_inversion_ = SetupGravityInversion(model_settings, input_files, err_text);
 
   // 16. Data for Travel time Inversion
-  setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
+  //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
   // 17. Depth Conversion
   if (multiple_interval_grid_->GetNIntervals() == 1)
@@ -519,6 +519,9 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
             seismic_data_angle.push_back(seismicdata_tmp);
           }
         } //STORM / SGRI
+        else if(file_type == IO::CRAVA) {
+
+        }
         else {
           err_text += "Error when reading file " + filename +". File type not recognized.\n";
         }
@@ -604,16 +607,16 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
   //float z0 = offset + 0.5f*dz;
   //float zn = z0 + (segy->GetNz() - 1)*dz;
 
-  float storm_top = stormgrid->GetTopZMin(stormgrid->GetNI(), stormgrid->GetNJ());
-  float storm_bot = stormgrid->GetBotZMax(stormgrid->GetNI(), stormgrid->GetNJ());
+  double storm_top = stormgrid->GetTopZMin(stormgrid->GetNI(), stormgrid->GetNJ());
+  double storm_bot = stormgrid->GetBotZMax(stormgrid->GetNI(), stormgrid->GetNJ());
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(simbox.getTopZMin());
-  float bot_grid = static_cast<float>(simbox.getBotZMax());
+  double top_grid = simbox.getTopZMin();
+  double bot_grid = simbox.getBotZMax();
 
   // Find guard zone
-  float top_guard = top_grid - guard_zone;
-  float bot_guard = bot_grid + guard_zone;
+  double top_guard = top_grid - guard_zone;
+  double bot_guard = bot_grid + guard_zone;
 
   if (top_guard < storm_top) {
     err_text += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
@@ -1714,7 +1717,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     std::vector<std::vector<double> > synt_seis_angles(n_angles);
 
     for (int j = 0; j < n_angles; j++) {
-      seismic_data_[i][j];
 
       float angle = float(angles[i]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
@@ -1863,7 +1865,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              unsigned int                               i_timelapse,
                              unsigned int                               j_angle,
                              const float                                angle,
-                             float                                      sn_ratio,
+                             float                                    & sn_ratio,
                              bool                                       estimate_wavelet,
                              bool                                       use_ricker_wavelet,
                              bool                                       use_local_noise)
@@ -1957,8 +1959,24 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
 
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
+
+      //H
+      std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
+      int w = 0;
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
+        blocked_log->GetBlockedGrid(seismic_data, &estimation_simbox_, seis_logs[w]);
+
+        w++;
+      }
+
+
       float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
-                                                                   seismic_data,
+                                                                   seis_logs,
+                                                                   //seismic_data,
                                                                    mapped_blocked_logs,
                                                                    model_settings,
                                                                    err_text,
@@ -2090,7 +2108,6 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                               file_format,
                               model_settings,
                               reflection_matrix,
-                              //*reflection_matrix_[i_timelapse],
                               angle,
                               error,
                               err_text,
@@ -3414,11 +3431,11 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
 
   //
-  reservoir_variables_.resize(n_trend_cubes);
+  //reservoir_variables_.resize(n_trend_cubes);
   //rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
-  for (int i=0; i<n_trend_cubes; i++){ // the number of trend cubes is the same as the number of intervals
+  for (int i=0; i < n_trend_cubes; i++) { // the number of trend cubes is the same as the number of intervals
     trend_cube_sampling[i]                                                                     = trend_cubes[i].GetTrendCubeSampling();
     for (std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
@@ -3429,7 +3446,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
         dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
       }
 
-      reservoir_variables_[i][it->first]  = dist_vector;
+      reservoir_variables_[it->first]  = dist_vector; //H Removed intervals for reservoir_variables_ -> Still use trend_cube_sampling per interval/trend_cube?
     }
   }
 
@@ -3467,19 +3484,19 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     const std::map<std::string, DistributionsRockStorage    *>  rock_storage     = model_settings->getRockStorage();
 
     // Map reservoir variables for use in rocks to access resampling trigger.
-    std::vector<std::vector<std::vector<DistributionWithTrend *> > > res_var_vintage(n_trend_cubes_);
-    for (int i=0; i<n_trend_cubes_; i++){
-      if (reservoir_variables_[i].size() > 0) {
-        size_t n_vintages = reservoir_variables_[i].begin()->second.size();
-        res_var_vintage[i].resize(n_vintages);
-        for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_[i].begin();
-          var_it != reservoir_variables_[i].end();var_it++)
+    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage;
+    //for (int i=0; i<n_trend_cubes_; i++){
+      if (reservoir_variables_.size() > 0) {
+        size_t n_vintages = reservoir_variables_.begin()->second.size();
+        res_var_vintage.resize(n_vintages);
+        for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables_.begin();
+          var_it != reservoir_variables_.end();var_it++)
         {
           for (size_t vin_index=0; vin_index < var_it->second.size();vin_index++)
-            res_var_vintage[i][vin_index].push_back((var_it->second)[vin_index]);
+            res_var_vintage[vin_index].push_back((var_it->second)[vin_index]);
         }
       }
-    }
+    //}
 
     // Facies names
     std::map<std::string, std::map<std::string, float> > prior_facies_prob_interval = model_settings->getPriorFaciesProbIntervals();
@@ -4483,7 +4500,6 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
-                 //err_text,
                  grid_type);
       if (stormgrid_tmp != NULL)
        delete stormgrid_tmp;
@@ -5425,7 +5441,7 @@ void CommonData::SetTrace(const std::vector<float> & trace,
                           size_t                     j)
 {
   for (int k = 0; k < grid->getNzp(); k++) {
-    grid->setRealValue(i, j, k, trace[i], true);
+    grid->setRealValue(i, j, k, trace[k], true);
   }
 }
 
@@ -5692,12 +5708,46 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         for (size_t i = 0; i < wells_.size(); i++) {
           BlockedLogsCommon * bl_bg = NULL;
 
+          // Get all continuous and discrete logs
+          std::vector<std::string> cont_logs_to_be_blocked;
+          std::vector<std::string> disc_logs_to_be_blocked;
+
+          const std::map<std::string,std::vector<double> > cont_logs = wells_[i].GetContLog();
+          const std::map<std::string,std::vector<int> >    disc_logs = wells_[i].GetDiscLog();
+
+          for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+            cont_logs_to_be_blocked.push_back(it->first);
+          }
+          for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+            disc_logs_to_be_blocked.push_back(it->first);
+          }
+
           if (bg_simbox == NULL)
-            bl_bg = new BlockedLogsCommon(&wells_[i], &estimation_simbox_, false, err_text, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
+            bl_bg = new BlockedLogsCommon(&wells_[i],
+                                          cont_logs_to_be_blocked,
+                                          disc_logs_to_be_blocked,
+                                          &estimation_simbox_,
+                                          false,
+                                          err_text,
+                                          model_settings->getMaxHzBackground(),
+                                          model_settings->getMaxHzSeismic());
+            //bl_bg = new BlockedLogsCommon(&wells_[i], &estimation_simbox_, false, err_text, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
           else
-            bl_bg = new BlockedLogsCommon(&wells_[i], bg_simbox, false, err_text, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
+            bl_bg = new BlockedLogsCommon(&wells_[i],
+                                          cont_logs_to_be_blocked,
+                                          disc_logs_to_be_blocked,
+                                          bg_simbox,
+                                          false,
+                                          err_text,
+                                          model_settings->getMaxHzBackground(),
+                                          model_settings->getMaxHzSeismic());
+            //bl_bg = new BlockedLogsCommon(&wells_[i], bg_simbox, false, err_text, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
 
           mapped_bg_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells_[i].GetWellName(), bl_bg));
+
+          if (bl_bg != NULL)
+            delete bl_bg;
+
         }
 
 
@@ -5727,9 +5777,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           multiple_interval_grid_->SetBackgroundVsVpRatios(vs_vp_ratios);
         }
-
-        if (bl_bg != NULL)
-          delete bl_bg;
       }
     }
     else {
@@ -7426,7 +7473,8 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
   std::string err_text = "";
 
   bool failed_surfaces = false;
-  int n_timelapses = model_settings->getNumberOfTimeLapses();
+  int n_timelapses     = model_settings->getNumberOfTimeLapses();
+  horizons_.resize(n_timelapses);
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall, cpu);

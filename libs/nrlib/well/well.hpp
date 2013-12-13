@@ -135,7 +135,7 @@ namespace NRLib {
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
     /// Set number of non-missing data
-    void SetNumberOfNonMissingData(int n_data_nonmissing)  {n_data_nonmissing_ = n_data_nonmissing ;}
+    void SetNumberOfNonMissingData(int n_data_nonmissing) {n_data_nonmissing_ = n_data_nonmissing ;}
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 

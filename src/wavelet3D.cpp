@@ -87,7 +87,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   std::vector<float>                   dzWell(nWells, 0.0);
 
   int w = 0;
-  //for (unsigned int w=0; w<nWells; w++) {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
@@ -187,7 +186,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
             blocked_log->GetBlockedGrid(seismic_data, simBox, seis_log, xTr, yTr);
             std::vector<double> seis_data(nz_);
             blocked_log->GetVerticalTrend(seis_log, seis_data);
-            //bl->getVerticalTrend(&seisLog[0], &seisData[0]);
             for (unsigned int b=0; b<nBlocks; b++) {
               //int xIndex      = iPos[b] + xTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
               //int yIndex      = jPos[b] + yTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
@@ -197,7 +195,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
             }
             std::vector<double> z_pos_trace(nz_);
             blocked_log->GetVerticalTrend(z_log, z_pos_trace);
-            //bl->getVerticalTrend(&zLog[0], &zPosTrace[0]);
             for (int t=start; t < start+length; t++) {
               if (seis_data[t] != RMISSING) {
                 dVec.push_back(static_cast<float>(seis_data[t]));
@@ -736,7 +733,6 @@ Wavelet3D::calculateSNRatio(const Simbox                                     * s
   LogKit::LogFormatted(LogKit::Low,"  -------------------------------------------------------\n");
 
   w = 0;
-  //for(unsigned int w=0; w<nWells; w++) {
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     const BlockedLogsCommon * blocked_log = iter->second;
@@ -795,9 +791,7 @@ Wavelet3D::calculateSNRatio(const Simbox                                     * s
 void
 Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
                               BlockedLogsCommon            * blocked_log,
-                              //BlockedLogs                  * bl,
                               const SeismicStorage         * seismic_data,
-                              //const FFTGrid                * seisCube,
                               const Simbox                 * simBox,
                               const std::vector<double>    & az,
                               const std::vector<double>    & bz,
@@ -805,7 +799,6 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
 {
   std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
   blocked_log->GetBlockedGrid(seismic_data, simBox, seisLog);
-  //bl->getBlockedGrid(seisCube, &seisLog[0]);
   std::vector<double> seis_data(nz_);
   blocked_log->GetVerticalTrend(seisLog, seis_data);
 
@@ -910,7 +903,6 @@ Wavelet3D::adjustCpp(BlockedLogsCommon         * blocked_log,
 {
   std::vector<fftw_real> cpp(rnzp_);
   blocked_log->FillInCpp(coeff_, start, length, &cpp[0], nzp_);
-  //bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
 
   std::vector<fftw_real> cppAdj(length, 0.0);
   std::vector<float>     alpha1_vec(length, 0.0);

@@ -8,7 +8,6 @@
 #include <math.h>
 #include <string>
 
-//#include "src/commondata.h"
 #include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
 #include "src/simbox.h"
@@ -36,11 +35,11 @@ public:
                              UNKNOWN};
 
   //GET FUNCTIONS
-  std::string     GetFileName()    const { return file_name_ ; }
-  int             GetSeismicType() const { return seismic_type_ ; }
-  float           GetAngle()       const { return angle_; }
-  NRLib::SegY *   GetSegY()        const { return segy_; }
-  StormContGrid * GetStorm()       const { return storm_grid_; }
+  std::string     GetFileName()    const { return file_name_    ;}
+  int             GetSeismicType() const { return seismic_type_ ;}
+  float           GetAngle()       const { return angle_        ;}
+  NRLib::SegY *   GetSegY()        const { return segy_         ;}
+  StormContGrid * GetStorm()       const { return storm_grid_   ;}
 
   void            GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
                                      std::vector<float>               & trace_length,
@@ -62,11 +61,11 @@ public:
   int GetNz() const;
 
   //SET FUNCTIONS
-  void            SetFileName(std::string file_name)      { file_name_ = file_name ; }
+  void            SetFileName(std::string file_name)      { file_name_    = file_name ; }
   void            SetSeismicType(int seismic_type)        { seismic_type_ = seismic_type ;}
-  void            SetAngle(float angle)                   { angle_ = angle ;}
-  void            SetSegY(NRLib::SegY * segy)             { segy_ = segy ;}
-  void            SetStorm(StormContGrid * stormgrid)     { storm_grid_ = stormgrid ;}
+  void            SetAngle(float angle)                   { angle_        = angle ;}
+  void            SetSegY(NRLib::SegY * segy)             { segy_         = segy ;}
+  void            SetStorm(StormContGrid * stormgrid)     { storm_grid_   = stormgrid ;}
 
 
 
@@ -75,7 +74,7 @@ private:
   float         angle_;
   int           seismic_type_; /// Se seismicTypes above
 
-  NRLib::SegY * segy_;
+  NRLib::SegY   * segy_;
   StormContGrid * storm_grid_;
 
 };

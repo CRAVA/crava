@@ -45,8 +45,8 @@ public:
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
   MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
 
-  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()               const { return rock_distributions_ ;}
-  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariablesInterval(int i) const { return reservoir_variables_[i] ;}
+  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()  const { return rock_distributions_  ;}
+  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables() const { return reservoir_variables_ ;}
 
   TimeLine                               * GetTimeLine()                        { return time_line_       ;}
   const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
@@ -316,7 +316,7 @@ private:
                        unsigned int                               i_timelapse,
                        unsigned int                               j_angle,
                        const float                                angle,
-                       float                                      sn_ratio,
+                       float                                    & sn_ratio,
                        bool                                       estimate_wavlet,
                        bool                                       use_ricker_wavelet,
                        bool                                       use_local_noise);
@@ -736,9 +736,8 @@ private:
   int                                           n_trend_cubes_;
   //std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
-  std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
-  std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
-  //H: Remove intervals for reservoir_variables_ too?
+  std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
+  std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
   // prior facies
   std::vector<std::vector<float> >               prior_facies_;                  ///< Prior facies probabilities

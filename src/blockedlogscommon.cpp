@@ -5,58 +5,108 @@
 
 #include "src/blockedlogscommon.h"
 #include "src/simbox.h"
-#include "fftw.h"
 #include "lib/utils.h"
-//#include "src/fftgrid.h"
 #include "nrlib/flens/nrlib_flens.hpp"
-//#include "src/seismicstorage.h"
 
-//#include "src/wavelet.h"
 #include "src/wavelet1D.h"
 
-#include "fftw.h"
-#include "rfftw.h"
+//#include "fftw.h"
+//#include "rfftw.h"
 
-BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
-                                     const Simbox    * const estimation_simbox,
-                                     bool              interpolate,
-                                     //bool            & failed,
-                                     std::string     & err_text,
-                                     float             max_hz_background,
-                                     float             max_hz_seismic) {
+//BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data, //Merged with constructor below.
+//                                     const Simbox    * const estimation_simbox,
+//                                     bool              interpolate,
+//                                     std::string     & err_text,
+//                                     float             max_hz_background,
+//                                     float             max_hz_seismic) {
+//  n_angles_                     = 0;
+//  well_name_                    = well_data->GetWellName();
+//  n_layers_                     = estimation_simbox->getnz();
+//  n_blocks_                     = 0;
+//  interpolate_                  = interpolate;
+//  is_deviated_                  = well_data->IsDeviated();
+//  use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
+//  real_vs_log_                  = well_data->GetRealVsLog();
+//  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+//  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+//  use_for_filtering_            = well_data->GetUseForFiltering();
+//  facies_log_defined_           = false;
+//
+//  // Get all continuous and discrete logs
+//  std::vector<std::string> cont_logs_to_be_blocked;
+//  std::vector<std::string> disc_logs_to_be_blocked;
+//
+//  const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
+//  const std::map<std::string,std::vector<int> >    disc_logs = well_data->GetDiscLog();
+//
+//  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+//    cont_logs_to_be_blocked.push_back(it->first);
+//  }
+//  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+//    disc_logs_to_be_blocked.push_back(it->first);
+//  }
+//
+//  // FACIES
+//  if (well_data->HasFaciesLog()) {
+//    facies_log_defined_ = true;
+//    facies_map_ = well_data->GetFaciesMap();
+//  }
+//  bool failed = false;
+//
+//  // Remove missing values
+//  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
+//                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+//                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+//
+//  well_data->SetNumberOfNonMissingData(n_data_);
+//
+//  if (failed)
+//    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+//
+//  if (max_hz_background != 0.0 || max_hz_seismic != 0.0)
+//    FilterLogs(max_hz_background, max_hz_seismic);
+//
+//  if (!failed)
+//    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+//              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
+//
+//  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
+//  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
+//
+//}
+
+BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_data,
+                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
+                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
+                                     const Simbox                     * const estimation_simbox,
+                                     bool                               interpolate,
+                                     std::string                      & err_text,
+                                     float                              max_hz_background,
+                                     float                              max_hz_seismic) {
+
   n_angles_                     = 0;
   well_name_                    = well_data->GetWellName();
   n_layers_                     = estimation_simbox->getnz();
   n_blocks_                     = 0;
   interpolate_                  = interpolate;
+  bool failed                   = false;
   is_deviated_                  = well_data->IsDeviated();
   use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
   real_vs_log_                  = well_data->GetRealVsLog();
   use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
   use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
   use_for_filtering_            = well_data->GetUseForFiltering();
+  well_name_                    = well_data->GetWellName();
   facies_log_defined_           = false;
 
-  // Get all continuous and discrete logs
-  std::vector<std::string> cont_logs_to_be_blocked;
-  std::vector<std::string> disc_logs_to_be_blocked;
-  const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
-  const std::map<std::string,std::vector<int> > disc_logs = well_data->GetDiscLog();
-  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
-    cont_logs_to_be_blocked.push_back(it->first);
-  }
-  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
-    disc_logs_to_be_blocked.push_back(it->first);
-  }
-
   // FACIES
-  if (well_data->HasFaciesLog()){
+  if (well_data->HasFaciesLog()) {
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
-  bool failed = false;
 
-  // Remove missing values
+  // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
+  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
@@ -71,58 +121,11 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
 
   if (!failed)
     BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
-
-  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
-
-
-}
-
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
-                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
-                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
-                                     const Simbox                     * const estimation_simbox,
-                                     bool                               interpolate,
-                                     //bool                             & failed,
-                                     std::string                      & err_text){
-  n_angles_                     = 0;
-  well_name_                    = well_data->GetWellName();
-  n_layers_                     = estimation_simbox->getnz();
-  n_blocks_                     = 0;
-  interpolate_                  = interpolate;
-  bool failed                   = false;
-  is_deviated_                  = well_data->IsDeviated();
-  use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-  real_vs_log_                  = well_data->GetRealVsLog();
-  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
-  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
-  use_for_filtering_            = well_data->GetUseForFiltering();
-  facies_log_defined_           = false;
-
-  // FACIES
-  if (well_data->HasFaciesLog()){
-    facies_log_defined_ = true;
-    facies_map_ = well_data->GetFaciesMap();
-  }
-
-  // Get well name
-  well_name_ = well_data->GetWellName();
-
-  // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
-  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
-  if (failed)
-    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
-
-  if (!failed)
-    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
               discrete_logs_blocked_, n_data_, interpolate, facies_map_, facies_log_defined_, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
+
 }
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
@@ -133,42 +136,47 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   last_M_(IMISSING)
 {
 
-  bool failed;
-  std::string err_text;
-  is_deviated_ = well_data->IsDeviated();
+  bool failed                   = false;
+  std::string err_text          = "";
+  is_deviated_                  = well_data->IsDeviated();
   use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-  real_vs_log_ = well_data->GetRealVsLog();
-  use_for_wavelet_estimation_ = well_data->GetUseForWaveletEstimation();
-  use_for_background_trend_ = well_data->GetUseForBackgroundTrend();
-  use_for_filtering_ = well_data->GetUseForFiltering();
+  real_vs_log_                  = well_data->GetRealVsLog();
+  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+  use_for_filtering_            = well_data->GetUseForFiltering();
+  facies_log_defined_           = false;
+  n_layers_                     = static_cast<int>(stormgrid.GetNK());
+  dz_                           = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
 
-  n_layers_ = static_cast<int>(stormgrid.GetNK());
-  dz_      = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
-
-  //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
+  // FACIES
+  if (well_data->HasFaciesLog()) {
+    facies_log_defined_ = true;
+    facies_map_ = well_data->GetFaciesMap();
+  }
 
   // Get all continuous and discrete logs
   std::vector<std::string> cont_logs_to_be_blocked;
   std::vector<std::string> disc_logs_to_be_blocked;
+
   const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
-  const std::map<std::string,std::vector<int> > disc_logs = well_data->GetDiscLog();
-  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++){
+  const std::map<std::string,std::vector<int> >    disc_logs = well_data->GetDiscLog();
+
+  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
     cont_logs_to_be_blocked.push_back(it->first);
   }
-  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++){
+  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
     disc_logs_to_be_blocked.push_back(it->first);
   }
 
+  //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
   RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
                          facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
-  //
   std::vector<int> b_ind(n_data_); //GetNData->getNd()); // Gives which block each well log entry contributes to
 
   FindSizeAndBlockPointers(stormgrid, b_ind);
   FindBlockIJK(stormgrid, b_ind);
-
 
   for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked_.begin(); it!=continuous_logs_unblocked_.end(); it++){
     std::vector<double> temp_vector_blocked;
@@ -385,19 +393,17 @@ void
 BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
                                             std::vector<int>     & b_ind)
 {
-  //int            dummy;
-  int            missing = 99999;
-  //const int      nd = well.GetNumberOfNonMissingData();//->getNd();
-  int nd = n_data_;
+  int missing = 99999;
+  int nd      = n_data_;
 
-  const std::vector<double> & x = GetXpos();
-  const std::vector<double> & y = GetYpos();
-  const std::vector<double> & z = GetZpos();
+  const std::vector<double> & x = x_pos_unblocked_; //H Changed from GetXpos();
+  const std::vector<double> & y = y_pos_unblocked_;
+  const std::vector<double> & z = z_pos_unblocked_;
 
   //
   // Find first cell in StormContGrid that the well hits
   //
-  bool   inside = false;
+  bool   inside  = false;
   size_t first_I = missing;
   size_t first_J = missing;
   size_t first_K = missing;
@@ -417,7 +423,7 @@ BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
   //
   // Find last cell in StormContGrid that the well hits
   //
-  inside       = false;
+  inside        = false;
   size_t last_I = missing;
   size_t last_J = missing;
   size_t last_K = missing;
@@ -566,14 +572,9 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid    & stormgrid,
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  //ipos_ = new int[nBlocks_];
-  //jpos_ = new int[nBlocks_];
-  //kpos_ = new int[nBlocks_];
-
-  //int   dummy;
-  const std::vector<double> & x = GetXpos();
-  const std::vector<double> & y = GetYpos();
-  const std::vector<double> & z = GetZpos();
+  const std::vector<double> & x = x_pos_unblocked_; //GetXpos();
+  const std::vector<double> & y = y_pos_unblocked_;
+  const std::vector<double> & z = z_pos_unblocked_;
 
   //
   // Set IJK for virtual part of well in upper part of stormgrid
@@ -1907,10 +1908,10 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
                                   int           start,
                                   int           length,
                                   fftw_real   * cpp_r,
-                                  int           nzp){
+                                  int           nzp) {
   int i;
 
-  for (i=0;i<nzp;i++)
+  for (i=0; i < nzp; i++)
     cpp_r[i]=0;
 
   std::vector<double> vp_vert(n_layers_);
@@ -1921,15 +1922,9 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
-  std::vector<double> HTEMP;
-
-  for (i=start;i < start+length-1;i++)
-  {
+  for (i = start; i < start+length-1; i++) {
     double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
     double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]), coeff);
-
-    HTEMP.push_back(ei2-ei1);
-
     cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
@@ -2113,16 +2108,15 @@ void BlockedLogsCommon::GetBlockedGrid(const SeismicStorage   * grid,
 }
 
 //------------------------------------------------------------------------------
-//void BlockedLogsCommon::GetBlockedGrid(const FFTGrid       * grid,
-//                                       std::vector<double> & blocked_log,
-//                                       int                   i_offset,
-//                                       int                   j_offset) {
-//  for (int m = 0 ; m < n_blocks_ ; m++) {
-//    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
-//    blocked_log[m] = grid->getRealValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
-//
-//  }
-//}
+void BlockedLogsCommon::GetBlockedGrid(const FFTGrid       * grid,
+                                       std::vector<double> & blocked_log,
+                                       int                   i_offset,
+                                       int                   j_offset) {
+  for (int m = 0 ; m < n_blocks_ ; m++) {
+    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
+    blocked_log[m] = grid->getRealValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
+  }
+}
 
 void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> & grid,
                                        std::vector<double>       & blocked_log,
@@ -2321,9 +2315,9 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   std::vector<double> vs_seismic_resolution(n_data_, RMISSING);
   std::vector<double> rho_seismic_resolution(n_data_, RMISSING);
 
-  const std::vector<double> & vp = GetVpBlocked();
-  const std::vector<double> & vs = GetVsBlocked();
-  const std::vector<double> & rho = GetRhoBlocked();
+  const std::vector<double> & vp_unblocked  = GetVpUnblocked();
+  const std::vector<double> & vs_unblocked  = GetVsUnblocked();
+  const std::vector<double> & rho_unblocked = GetRhoUnblocked();
 
 
   //
@@ -2331,47 +2325,47 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   //
   bool filtered = ResampleTime(time_resampled, n_data_, dt); //False if well not monotonous in time.
 
-  if (filtered) {
+  if (filtered) { //H Changed all to unblocked (Filterlogs is run in ModelGeneral::processWell which is run before ModelAVOStatic::Blocklogs)
     //
     // Vp
     //
-    ResampleLog(vp_resampled, vp, z_pos_blocked_, time_resampled, n_data_, dt);         // May generate missing values
+    ResampleLog(vp_resampled, vp_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);         // May generate missing values
     InterpolateLog(vp_interpolated, vp_resampled, n_data_);                     // Interpolate missing values
 
     ApplyFilter(vp_filtered, vp_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(vp_background_resolution, vp_resampled, n_data_);
 
     ApplyFilter(vp_filtered, vp_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(vp_seismic_resolution, vp_resampled, n_data_);
 
     //
     // Vs
     //
-    ResampleLog(vs_resampled, vs, z_pos_blocked_, time_resampled, n_data_, dt);
+    ResampleLog(vs_resampled, vs_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);
     InterpolateLog(vs_interpolated, vs_resampled, n_data_);
 
     ApplyFilter(vs_filtered, vs_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(vs_background_resolution, vs_resampled, n_data_);
 
     ApplyFilter(vs_filtered, vs_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(vs_seismic_resolution, vs_resampled, n_data_);
 
     //
     // Rho
     //
-    ResampleLog(rho_resampled, rho, z_pos_blocked_, time_resampled, n_data_, dt);
+    ResampleLog(rho_resampled, rho_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);
     InterpolateLog(rho_interpolated, rho_resampled, n_data_);
 
     ApplyFilter(rho_filtered, rho_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(rho_background_resolution, rho_resampled, n_data_);
 
     ApplyFilter(rho_filtered, rho_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_blocked_, n_data_, dt);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
     InterpolateLog(rho_seismic_resolution, rho_resampled, n_data_);
   }
 
@@ -2420,11 +2414,11 @@ bool BlockedLogsCommon::ResampleTime(std::vector<double> & time_resampled,
                                      int                   nd,
                                      double              & dt) {
   //Only resample if monotonous increasing in time.
-  double time_begin = z_pos_blocked_[0];
-  double time_end   = z_pos_blocked_[nd - 1];
+  double time_begin = z_pos_unblocked_[0]; //H Changed to unblocked
+  double time_end   = z_pos_unblocked_[nd - 1];
   bool   monotonous = true;
   for (int i = 1 ; (i < nd && monotonous == true); i++)
-    if (z_pos_blocked_[i] < z_pos_blocked_[i-1])
+    if (z_pos_unblocked_[i] < z_pos_unblocked_[i-1])
       monotonous = false;
 
   if (monotonous == false)
@@ -2434,14 +2428,12 @@ bool BlockedLogsCommon::ResampleTime(std::vector<double> & time_resampled,
   // Make new time scale with constant sampling density
   //
 
-  if (time_begin != RMISSING && time_end != RMISSING)
-  {
+  if (time_begin != RMISSING && time_end != RMISSING) {
     dt = (time_end - time_begin)/(nd - 1);            // average sampling density
     for (int i = 0 ; i < nd ; i++)
       time_resampled[i] = time_begin + i*dt;
   }
-  else
-  {
+  else {
     LogKit::LogFormatted(LogKit::Warning,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
     LogKit::LogFormatted(LogKit::Warning,"         time[first] = %12.2f\n",time_begin);
     LogKit::LogFormatted(LogKit::Warning,"         time[last]  = %12.2f\n",time_end);
@@ -2685,7 +2677,7 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
                                         std::string  type)
 {
   std::vector<double> blocked_log(n_blocks_);
-  int n_facies = facies_blocked_.size();
+  //int n_facies = facies_blocked_.size();
 
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
     blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);
@@ -3212,11 +3204,6 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
 
   int    cnzp = nzp/2+1;
   int    rnzp = 2*cnzp;
-
-  //float  * synt_seis  = new float[nz];
-  //float  * alpha_vert = new float[nLayers_];
-  //float  * beta_vert  = new float[nLayers_];
-  //float  * rho_vert   = new float[nLayers_];
 
   std::vector<double> synt_seis(nz);
   std::vector<double> vp_vert(n_layers_);

@@ -24,7 +24,6 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-//#include "src/welldata.h"
 #include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
@@ -447,16 +446,16 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   int nyp = model_settings->getNYpad();
   int nzp = model_settings->getNZpad();
 
+  SegY          * segy  = NULL;
+  StormContGrid * storm = NULL;
+
   for (int i = 0; i < number_of_angles_; i++) {
 
     seis_cubes_[i] = ModelAVOStatic::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
-
+    seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::PARAMETER);
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-
-    SegY          * segy;
-    StormContGrid * storm;
 
     bool is_segy = false;
     if (seismic_type == 0) { //SEGY
@@ -470,9 +469,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     if (seismic_type == 2) //SGRI
       scale = true;
 
-    int missing_traces_simbox;
-    int missing_traces_padding;
-    int dead_traces_simbox;
+    int missing_traces_simbox  = 0;
+    int missing_traces_padding = 0;
+    int dead_traces_simbox     = 0;
 
     NRLib::Grid<double> grid_tmp;
     common_data->FillInData(grid_tmp,
@@ -487,11 +486,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             seis_cubes_[i]->getType(),
                             scale,
                             is_segy);
-
-    if (segy != NULL)
-      delete segy;
-    if (storm != NULL)
-      delete storm;
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
@@ -533,8 +527,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                              segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
                              segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
 
-        if (segy != NULL)
-          delete segy;
       }
       else {
 
@@ -545,8 +537,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                              storm->GetLX(),   storm->GetLY(), geo_angle,
                              storm->GetDX(),   storm->GetDY());
 
-        if (storm != NULL)
-          delete storm;
       }
 
     }
@@ -563,9 +553,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                      seis_cubes_,
                                      number_of_angles_);
   }
-
-  //Set synthetic seismic here (moved from wavelet1D)
-
 
   //Get Vp/Vs
   double vpvs = 0.0;
@@ -588,6 +575,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     vpvs = 1 / vsvp;
   }
 
+  std::string interval_text = "";
+  if(common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
+    interval_text = "for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval) + " ";
+
   //Reflection matrix: From file or global vp/vs: do not change per interval
   if (common_data->GetRefMatFromFileGlobalVpVs() == true) {
     reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(this_timelapse_);
@@ -595,17 +586,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   else {  //Vp/Vs set temporary to 2 in CommonData: update reflection matrix per interval.
 
     if (model_settings->getVpVsRatioIntervals().size() > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
-                                        +"with Vp/Vs ratio specified in model file.\n");
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp/Vs ratio specified in model file.\n");
 
       common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
-
     }
     else if (model_settings->getVpVsRatioFromWells()) {
-      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
-                                       + " with Vp and Vs from wells\n");
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from wells\n");
       if (n_well_points < 10)
-        LogKit::LogFormatted(LogKit::Warning," Less than 10 total well-points was inside interval. For this interval the vp-vs ratio will be taken from the background model.");
+        LogKit::LogFormatted(LogKit::Warning," Less than 10 total well-points was inside the interval. Vp-vs ratio will be taken from the background model.");
 
       common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
     }
@@ -613,12 +601,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       //H Vp/Vs from rock-physics: Get it from background model generated by rock-physics?
       if (model_settings->getGenerateBackgroundFromRockPhysics()) {
-        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
-                                          +" with Vp and Vs from the Rock Physics model.\n");
+        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from the Rock Physics model.\n");
       }
       else {
-       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval)
-                                        +" with Vp and Vs from the background model.\n");
+       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from the background model.\n");
       }
       common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
     }
@@ -653,12 +639,25 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
       wavelets_[i]->SetReflectionCoeffs(*reflection_matrix_);
 
-      LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval) +
-                                        + " and angle number " + NRLib::ToString(i) + ".\n");
+      LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
+
+        //H
+        std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
+        int w = 0;
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+
+          seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
+          blocked_log->GetBlockedGrid(seis_cubes_[i], seis_logs[w]);
+          w++;
+        }
+
         sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
-                                                                     &seismic_data[i],
+                                                                     seis_logs,
+                                                                     //&seismic_data[i],
                                                                      mapped_blocked_logs,
                                                                      model_settings,
                                                                      err_text,
@@ -677,7 +676,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                      false); // doEstimateWavelet
 
         //Add in synthetic sesmic (moved from wavelet1D.cpp)
-        int w = 0;
+        w = 0;
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
           BlockedLogsCommon * blocked_log = iter->second;
@@ -750,11 +749,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
 
   //nx  = seismicParameters.GetMeanVp()->getNx(); //H Not use simbox?
-  //ny  = seismicParameters.GetMeanVp()->getNy();
-  //nz  = seismicParameters.GetMeanVp()->getNz();
-  //nxp = seismicParameters.GetMeanVp()->getNxp();
-  //nyp = seismicParameters.GetMeanVp()->getNyp();
-  //nzp = seismicParameters.GetMeanVp()->getNzp();
 
   fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
@@ -828,6 +822,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     theo_sn_ratio_[l] = signal_variance_[l]/error_variance_[l];
   }
+
+  if (segy != NULL)
+    delete segy;
+  if (storm != NULL)
+    delete storm;
 
   delete [] param_var;
   delete [] wd_corr_mvar;
@@ -1228,7 +1227,6 @@ ModelAVODynamic::~ModelAVODynamic(void)
   //}
   for (int i=0;i<number_of_angles_;i++)
     delete seis_cubes_[i];
-
 }
 
 void

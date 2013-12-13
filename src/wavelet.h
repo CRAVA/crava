@@ -129,7 +129,8 @@ public:
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
-                                                const SeismicStorage  * /*seismic_data*/,
+                                                //const SeismicStorage  * /*seismic_data*/,
+                                                const std::vector<std::vector<double> >          & /*seis_logs*/,
                                                 //const std::vector<BlockedLogsCommon *>  /*blocked_logs_common*/,
                                                 const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                                 //const FFTGrid         * /*seisCube*/,
