@@ -8,12 +8,13 @@
 class Fluid {
 public:
 
-                              Fluid() {}
-  virtual                     ~Fluid() {}
+  Fluid();
+  virtual                     ~Fluid();
 
   virtual Fluid            *  Clone()                                                               const = 0;
 
-  void                        GetElasticParams(double& k, double& rho) const { k = k_; rho = rho_; }
+  void                        GetElasticParams(double & k,
+                                               double & rho) const;
 
   const std::vector<double>&  GetU()                                                                const { return u_; }
 

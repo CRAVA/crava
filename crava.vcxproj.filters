@@ -1020,6 +1020,15 @@
     <ClCompile Include="rplib\table_vp.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
+    <ClCompile Include="rplib\solid.cpp">
+      <Filter>Source Files\rplib\solid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\fluid.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\dryrock.cpp">
+      <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">

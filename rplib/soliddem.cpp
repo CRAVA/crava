@@ -23,9 +23,11 @@ SolidDEM::SolidDEM(const Solid                         * solid,
 
 }
 
-SolidDEM::SolidDEM() : Solid()
+SolidDEM::SolidDEM()
+: Solid(),
+  solid_inc_(0)
 {
-  rho_ = k_ = mu_ = 0;
+  solid_ = NULL;
 }
 
 SolidDEM::~SolidDEM()
