@@ -404,8 +404,6 @@ void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> 
   size_t nx            = blocked_logs_x.size();
   size_t ny            = blocked_logs_y.size();
 
-  bool removed_missing  = false;
-
   // retriev observations from wells
   if (nx != ny || nx == 0) {
     errTxt += "Error: Incompatible dimensions in EstimateSpearmanCorrelation(...).\n";
@@ -431,9 +429,7 @@ void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> 
           double y_mean_j     = distribution_with_trend_y->GetMeanValue(s1_j, s2_j);
           double y_variance_j = distribution_with_trend_y->GetVarianceValue(s1_j, s2_j);
 
-          if (x_log_j == RMISSING || x_mean_j == RMISSING || x_variance_j == RMISSING || y_log_j == RMISSING || y_mean_j == RMISSING || y_variance_j == RMISSING) {
-            removed_missing = true;
-          } else {
+          if (x_log_j != RMISSING && x_mean_j != RMISSING && x_variance_j != RMISSING && y_log_j != RMISSING && y_mean_j != RMISSING && y_variance_j != RMISSING) {
             x.push_back(std::exp(x_log_j));
             x_mean.push_back(x_mean_j);
             x_variance.push_back(x_variance_j);

@@ -289,7 +289,7 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
 {
   // Dynamic as timeSimbox changes in different time lapses
 
-  int n_rms_traces = rms_traces_.size();
+  int n_rms_traces = static_cast<int>(rms_traces_.size());
 
   double max_time = 0;
 

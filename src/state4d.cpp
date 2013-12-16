@@ -1052,7 +1052,9 @@ State4D::iFFTCov()
 
 
 std::vector<FFTGrid*>
-State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<DistributionsRock *> rock_distributions,  TimeEvolution timeEvolution)
+State4D::doRockPhysicsInversion(TimeLine                               & time_line,
+                                const std::vector<DistributionsRock *>   rock_distributions,
+                                TimeEvolution                          & timeEvolution)
 {
   LogKit::WriteHeader("Start 4D rock physics inversion");
   bool debug=true; // triggers printouts
@@ -1066,9 +1068,9 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
 
-  int nTimeSteps=rockSample.size();
+  int nTimeSteps = static_cast<int>(rockSample.size());
   //nSim=rockSample[0].size();
-  int nParam=rockSample[0][0].size();
+  int nParam = static_cast<int>(rockSample[0][0].size());
   int nM = 3;  // number of seismic parameters.
   int nRockProperties = nParam-nM; // number of rock parameters
 

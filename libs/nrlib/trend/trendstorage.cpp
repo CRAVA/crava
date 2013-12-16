@@ -1,4 +1,4 @@
-// $Id: trendstorage.cpp 1223 2013-12-12 09:00:09Z ulvmoen $
+// $Id: trendstorage.cpp 1225 2013-12-16 08:40:07Z ulvmoen $
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"
@@ -122,13 +122,13 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
         if (mean_reference == 1) {
           int j_dummy = 0;
 
-          for (size_t i = 0; i < trend_cube_trend.size(); i++)
+          for (int i = 0; i < static_cast<int>(trend_cube_trend.size()); ++i)
             trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
         }
         else {
           int i_dummy = 0;
 
-          for (size_t j = 0; j < trend_cube_trend.size(); j++)
+          for (int j = 0; j < static_cast<int>(trend_cube_trend.size()); ++j)
             trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
         }
 
@@ -159,8 +159,8 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
         /* -- obtain trend surface -- */
         std::vector<std::vector<double> > trend_cube_trend_2D(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
         int k_dummy = 0;
-        for (size_t i = 0; i < trend_cube_n1; i++) {
-          for (size_t j = 0; j < trend_cube_n2; j++)
+        for (int i = 0; i < static_cast<int>(trend_cube_n1); ++i) {
+          for (int j = 0; j < static_cast<int>(trend_cube_n2); ++j)
             trend_cube_trend_2D[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
         }
 
@@ -321,7 +321,7 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
           int j_dummy = 0;
           int k_dummy = 0;
 
-          for (size_t i = 0; i < trend_cube_trend.size(); i++) {
+          for (int i = 0; i < static_cast<int>(trend_cube_trend.size()); ++i) {
             trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
           }
           /* ------------------ */
@@ -354,7 +354,7 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
           int i_dummy = 0;
           int k_dummy = 0;
 
-          for (size_t j = 0; j < trend_cube_trend.size(); j++) {
+          for (int j = 0; j < static_cast<int>(trend_cube_trend.size()); ++j) {
             trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
           }
           /* ------------------ */
@@ -388,8 +388,8 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
         /* -- obtain trend surface -- */
         std::vector<std::vector<double> > trend_cube_trend_2D(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
         int k_dummy = 0;
-        for (size_t i = 0; i < trend_cube_n1; i++) {
-          for (size_t j = 0; j < trend_cube_n2; j++) {
+        for (int i = 0; i < static_cast<int>(trend_cube_n1); ++i) {
+          for (int j = 0; j < static_cast<int>(trend_cube_n2); ++j) {
             trend_cube_trend_2D[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
           }
         }
@@ -605,8 +605,8 @@ Trend2DStorage::GenerateTrend(const std::string                       & path,
         /* -- obtain trend surface -- */
         std::vector<std::vector<double> > trend_cube_trend(trend_cube_n1, std::vector<double>(trend_cube_n2, RMISSING));
         int k_dummy = 0;
-        for (size_t i = 0; i < trend_cube_n1; i++) {
-          for (size_t j = 0; j < trend_cube_n2; j++) {
+        for (int i = 0; i < static_cast<int>(trend_cube_n1); ++i) {
+          for (int j = 0; j < static_cast<int>(trend_cube_n2); ++j) {
             trend_cube_trend[i][j] = mean_trend->GetTrendElement(i, j, k_dummy);
           }
         }

@@ -29,6 +29,8 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
@@ -139,6 +141,9 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -244,11 +249,16 @@ NormalDistributionWithTrendStorage::CloneMean() const
 //--------------------------------------------------------------//
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
-: is_shared_(false),
+: lower_limit_(0),
+  upper_limit_(0),
+  is_shared_(false),
   vintage_year_(1),
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -453,11 +463,18 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
 //--------------------------------------------------------------//
 
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage()
-: is_shared_(false),
+: lower_limit_(0),
+  upper_limit_(0),
+  lower_probability_(0),
+  upper_probability_(0),
+  is_shared_(false),
   vintage_year_(1),
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -598,7 +615,7 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
 
       int j_dummy = -999;
       int k_dummy = -999;
-      for (size_t i = 0; i < s_tmp.size(); i++) {
+      for (int i = 0; i < static_cast<int>(s_tmp.size()); ++i) {
         if (s_ref == 1)
           trend_vector[i] = trend->GetTrendElement(i, j_dummy, k_dummy);
         else
@@ -617,8 +634,8 @@ void DistributionWithTrendStorage::WriteTrendToFile(const std::string           
     NRLib::Grid2D<double> trend_grid2D(s1_tmp.size(), s2_tmp.size(), RMISSING);
 
     int k_dummy = -999;
-    for (size_t i = 0; i < s1_tmp.size(); i++) {
-      for (size_t j = 0; j < s2_tmp.size(); j++) {
+    for (int i = 0; i < static_cast<int>(s1_tmp.size()); ++i) {
+      for (int j = 0; j < static_cast<int>(s2_tmp.size()); ++j) {
         trend_grid2D(i, j) = trend->GetTrendElement(i, j, k_dummy);
       }
     }
