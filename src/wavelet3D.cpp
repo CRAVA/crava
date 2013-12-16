@@ -53,7 +53,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
 
-  //theta_      = seisCube->getTheta();;
   theta_      = seismic_data->GetAngle();
   norm_       = RMISSING;
   cz_         = 0;
@@ -70,8 +69,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   dz_         = static_cast<float>(simBox->getdz());
 
   //nzp_        = seisCube->getNzp();
-  std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
+  //nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+  nzp_        = seismic_data->GetNz();
 
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;

@@ -12,6 +12,8 @@
 #include "src/definitions.h"
 #include "src/simbox.h"
 
+class FFTGrid;
+
 class SeismicStorage
 {
 public:
@@ -22,16 +24,22 @@ public:
                  float         angle,
                  NRLib::SegY * segy);
 
-  SeismicStorage(std::string   filename,
-                 int           seismic_type,
-                 float         angle,
+  SeismicStorage(std::string     filename,
+                 int             seismic_type,
+                 float           angle,
                  StormContGrid * storm_grid);
+
+  SeismicStorage(std::string     file_name,
+                 int             seismic_type,
+                 float           angle,
+                 FFTGrid       * fft_grid);
 
   ~SeismicStorage();
 
   enum          seismicTypes{SEGY,
                              STORM,
                              SGRI,
+                             FFTGRID, //When reading from crava-format
                              UNKNOWN};
 
   //GET FUNCTIONS
@@ -40,12 +48,13 @@ public:
   float           GetAngle()       const { return angle_        ;}
   NRLib::SegY *   GetSegY()        const { return segy_         ;}
   StormContGrid * GetStorm()       const { return storm_grid_   ;}
+  FFTGrid       * GetFFTGrid()     const { return fft_grid_     ;}
 
   void            GetSparseTraceData(std::vector<std::vector<float> > & trace_data,
                                      std::vector<float>               & trace_length,
                                      int                                n);
 
-  std::vector<float> GetTraceData(int index) const;
+  //std::vector<float> GetTraceData(int index) const;
 
   std::vector<float> GetRealTrace(const Simbox * estimation_simbox,
                                   int i,
@@ -76,6 +85,7 @@ private:
 
   NRLib::SegY   * segy_;
   StormContGrid * storm_grid_;
+  FFTGrid       * fft_grid_;
 
 };
 

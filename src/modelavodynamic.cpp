@@ -24,7 +24,6 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -456,14 +455,21 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->setType(FFTGrid::PARAMETER);
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+    bool is_segy     = false;
+    bool is_storm    = false;
+    FFTGrid          * fft_grid_old;
 
-    bool is_segy = false;
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
       is_segy = true;
     }
-    else
-      storm = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
+    else if (seismic_type == 4) { //FFTGrid
+      fft_grid_old = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
+    }
+    else { //STORM / SGRI
+      storm    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
+      is_storm = true;
+    }
 
     bool scale = false;
     if (seismic_type == 2) //SGRI
@@ -479,13 +485,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             simbox,
                             storm,
                             segy,
+                            fft_grid_old,
                             model_settings->getSmoothLength(),
                             missing_traces_simbox,
                             missing_traces_padding,
                             dead_traces_simbox,
                             seis_cubes_[i]->getType(),
                             scale,
-                            is_segy);
+                            is_segy,
+                            is_storm);
+
+    if (fft_grid_old != NULL)
+      delete fft_grid_old;
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox

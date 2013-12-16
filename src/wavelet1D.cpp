@@ -65,8 +65,10 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   isReal_     = true;
   formats_    = modelSettings->getWaveletFormatFlag();
 
-  std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length? //segy->FindNumberOfSamplesInLongestTrace()?
+  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
+  //nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+  nzp_        = seismic_data->GetNz();
+
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 
@@ -647,9 +649,10 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
   int nz              = simbox->getnz();
 
   //int nzp             = seisCube->getNzp();
-  std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  int nzp = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
+  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
+  //int nzp = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
 
+  int nzp             = seismic_data->GetNz();
   int rnzp            = 2*(nzp/2+1);
 
   fftw_real ** cpp_r  = new fftw_real*[nWells];

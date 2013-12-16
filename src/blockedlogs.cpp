@@ -1981,7 +1981,7 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
   for(l = 0; l < nAngles; l++){
     for(j = -yEx; j <= yEx; j++){
       for(i = -xEx; i <= xEx; i++){
-        seisTrace = seisCube[l]->getRealTrace(i0, j0); //trace2
+        seisTrace = seisCube[l]->getRealTrace2(i0, j0);
 
         smoothTrace(seisTrace);
         //if(j == 0 ){
@@ -1993,7 +1993,7 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
         ztopW =  timeSimbox->getTop(i0,j0);
         findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
 
-        seisTrace = seisCube[l]->getRealTrace(i0+i, j0+j); //trace2
+        seisTrace = seisCube[l]->getRealTrace2(i0+i, j0+j);
         smoothTrace(seisTrace);
         if(i==0){
           for(size_t s = 0; s < seisTrace.size(); s++)
@@ -2013,13 +2013,13 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
             zShift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = computeShift(zPeak,zPeakWell,zpos_[k]);
           else{
             //well has changed lateral position and we adapt to the new well position
-            seisTrace = seisCube[l]->getRealTrace(ipos_[k],jpos_[k]); //Trace2
+            seisTrace = seisCube[l]->getRealTrace2(ipos_[k],jpos_[k]);
             smoothTrace(seisTrace);
             dzW = timeSimbox->getdz(ipos_[k],jpos_[k]);
             ztopW = timeSimbox->getTop(ipos_[k],jpos_[k]);
             findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
 
-            seisTrace = seisCube[l]->getRealTrace(ipos_[k]+i, jpos_[k]+j); //Trace2
+            seisTrace = seisCube[l]->getRealTrace2(ipos_[k]+i, jpos_[k]+j);
             smoothTrace(seisTrace);
             dz = timeSimbox->getdz(ipos_[k]+i, jpos_[k]+j);
             ztop = timeSimbox->getTop(ipos_[k]+i, jpos_[k]+j);

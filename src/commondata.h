@@ -99,18 +99,19 @@ public:
                                      int                    this_time_lapse);
 
   void FillInData(NRLib::Grid<double> & grid,
-                  FFTGrid             * fft_grid,
+                  FFTGrid             * fft_grid_new,
                   const Simbox        & simbox,
                   StormContGrid       * storm_grid,
                   const SegY          * segy,
+                  FFTGrid             * fft_grid_old,
                   float                 smooth_length,
                   int                 & missing_traces_simbox,
                   int                 & missing_traces_padding,
                   int                 & dead_traces_simbox,
-                  //std::string         & err_text,
                   int                   grid_type,
-                  bool                  scale = false,
-                  bool                  is_segy = true);
+                  bool                  scale    = false,
+                  bool                  is_segy  = true,
+                  bool                  is_storm = false);
 
 private:
 
@@ -452,6 +453,10 @@ private:
                      const std::string   & file_name,
                      std::string         & err_text);
 
+  void GetZPaddingFromCravaFile(const std::string & file_name,
+                                std::string       & err_text,
+                                int               & nz_pad);
+
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<double> > & interval_grids,
                     const std::vector<Simbox>         & interval_simboxes,
@@ -691,6 +696,8 @@ private:
   bool estimateWaveletShape();
 
   int ComputeTime(int year, int month, int day) const;
+
+  FFTGrid * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid);
 
   // CLASS VARIABLES ---------------------------------------------------
 

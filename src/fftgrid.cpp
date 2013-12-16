@@ -1644,7 +1644,7 @@ FFTGrid::getRealTrace(float * value, int i, int j)
 }
 
 std::vector<float>
-FFTGrid::getRealTrace(int i, int j) const
+FFTGrid::getRealTrace2(int i, int j) const
 {
   std::vector<float> value;
   for(int k = 0; k < nz_; k++)

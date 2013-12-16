@@ -307,7 +307,6 @@ int main(int argc, char** argv)
                                              modelAVOstatic,
                                              common_data,
                                              seismicParametersInterval,
-                                             //inputFiles,
                                              eventIndex,
                                              i_interval);
             break;
