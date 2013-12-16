@@ -23,8 +23,6 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-//#include "src/welldata.h"
-#include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -158,7 +156,8 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     float corr_grad_J = 0.0f;
     //commonData::GetCorrGradIJ(timeSimbox, corrGradI, corrGradJ);  //H COMES LATER
 
-    err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+    //H Commenting out for debugging
+    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
     checkAvailableMemory(simbox, model_settings, input_files);
 
@@ -561,8 +560,6 @@ void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *
 
 void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     std::vector<FFTGrid *>                     seis_cube,
-                                    //FFTGrid                                 ** seis_cube,
-                                    //const ModelSettings                      * model_settings,
                                     int                                        n_angles)
 {
   for (int i_angle = 0; i_angle < n_angles; i_angle++) {

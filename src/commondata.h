@@ -45,8 +45,8 @@ public:
   const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
   MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
 
-  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()               const { return rock_distributions_ ;}
-  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariablesInterval(int i) const { return reservoir_variables_[i] ;}
+  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()  const { return rock_distributions_  ;}
+  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables() const { return reservoir_variables_ ;}
 
   TimeLine                               * GetTimeLine()                        { return time_line_       ;}
   const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
@@ -80,7 +80,8 @@ public:
   std::vector<std::vector<float> >      & GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
   //Vario                                 * GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
 
-  std::vector<Wavelet *>                & GetWavelet(int time_lapse)                    { return wavelets_.find(time_lapse)->second          ;}
+  std::vector<Wavelet *>                  & GetWavelet(int time_lapse)                  { return wavelets_.find(time_lapse)->second          ;}
+  const std::vector<std::vector<double> > & GetSyntSeis(int time_lapse)                 { return synt_seis_.find(time_lapse)->second         ;}
 
   const std::vector<std::vector<double> > & GetTGradX()                           const { return t_grad_x_                                   ;}
   const std::vector<std::vector<double> > & GetTGradY()                           const { return t_grad_y_                                   ;}
@@ -98,18 +99,19 @@ public:
                                      int                    this_time_lapse);
 
   void FillInData(NRLib::Grid<double> & grid,
-                  FFTGrid             * fft_grid,
+                  FFTGrid             * fft_grid_new,
                   const Simbox        & simbox,
                   StormContGrid       * storm_grid,
                   const SegY          * segy,
+                  FFTGrid             * fft_grid_old,
                   float                 smooth_length,
                   int                 & missing_traces_simbox,
                   int                 & missing_traces_padding,
                   int                 & dead_traces_simbox,
-                  //std::string         & err_text,
                   int                   grid_type,
-                  bool                  scale = false,
-                  bool                  is_segy = true);
+                  bool                  scale    = false,
+                  bool                  is_segy  = true,
+                  bool                  is_storm = false);
 
 private:
 
@@ -306,6 +308,7 @@ private:
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                        const std::vector<Surface *>             & waveletEstimInterval,
                        const float                              * reflection_matrix,
+                       std::vector<double>                      & synt_seic,
                        std::string                              & err_text,
                        Wavelet                                 *& wavelet,
                        Grid2D                                  *& local_noise_scale,
@@ -314,7 +317,7 @@ private:
                        unsigned int                               i_timelapse,
                        unsigned int                               j_angle,
                        const float                                angle,
-                       float                                      sn_ratio,
+                       float                                    & sn_ratio,
                        bool                                       estimate_wavlet,
                        bool                                       use_ricker_wavelet,
                        bool                                       use_local_noise);
@@ -449,6 +452,10 @@ private:
   void ReadCravaFile(NRLib::Grid<double> & grid,
                      const std::string   & file_name,
                      std::string         & err_text);
+
+  void GetZPaddingFromCravaFile(const std::string & file_name,
+                                std::string       & err_text,
+                                int               & nz_pad);
 
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<double> > & interval_grids,
@@ -690,6 +697,8 @@ private:
 
   int ComputeTime(int year, int month, int day) const;
 
+  FFTGrid * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid);
+
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
@@ -734,9 +743,8 @@ private:
   int                                           n_trend_cubes_;
   //std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
-  std::map<std::string, std::vector<DistributionsRock *> >                    rock_distributions_;     ///< Rocks used in rock physics model, one map for each interval
-  std::vector<std::map<std::string, std::vector<DistributionWithTrend *> > >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model; one map for each interval
-  //H: Remove intervals for reservoir_variables_ too?
+  std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
+  std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
   // prior facies
   std::vector<std::vector<float> >               prior_facies_;                  ///< Prior facies probabilities
@@ -753,14 +761,14 @@ private:
   std::map<int, float **>                       reflection_matrix_; //Map timelapse
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
-  //std::map<int, Wavelet**>                      wavelets_;  //Map time_lapse
-  std::map<int, std::vector<Wavelet *> >        wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >         local_noise_scale_;
-  std::map<int, std::vector<Grid2D *> >         local_shift_;
-  std::map<int, std::vector<Grid2D *> >         local_scale_;
-  std::map<int, std::vector<float> >            global_noise_estimate_;
-  std::map<int, std::vector<float> >            sn_ratio_;
-  bool                                          use_local_noise_;
+  std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Grid2D *> >              local_noise_scale_;
+  std::map<int, std::vector<Grid2D *> >              local_shift_;
+  std::map<int, std::vector<Grid2D *> >              local_scale_;
+  std::map<int, std::vector<float> >                 global_noise_estimate_;
+  std::map<int, std::vector<float> >                 sn_ratio_;
+  bool                                               use_local_noise_;
+  std::map<int, std::vector<std::vector<double> > >  synt_seis_; //Map time_lapse, vector angles
 
   std::vector<std::vector<double> >             t_grad_x_;
   std::vector<std::vector<double> >             t_grad_y_;

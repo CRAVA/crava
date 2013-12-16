@@ -17,21 +17,21 @@ class BlockedLogsCommon{
 public:
   BlockedLogsCommon();
 
-  BlockedLogsCommon(NRLib::Well     * well_data,
-                    const Simbox    * const estimation_simbox,
-                    bool              interpolate,
-                    //bool            & failed,
-                    std::string     & err_text,
-                    float             max_hz_background = 0.0,
-                    float             max_hz_seismic = 0.0);
+  //BlockedLogsCommon(NRLib::Well     * well_data,
+  //                  const Simbox    * const estimation_simbox,
+  //                  bool              interpolate,
+  //                  std::string     & err_text,
+  //                  float             max_hz_background = 0.0,
+  //                  float             max_hz_seismic = 0.0);
 
-  BlockedLogsCommon(const NRLib::Well                * well_data,
+  BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
                     bool                               interpolate,
-                    //bool                             & failed,
-                    std::string                      & err_text);
+                    std::string                      & err_text,
+                    float                              max_hz_background = 0.0,
+                    float                              max_hz_seismic = 0.0);
 
   BlockedLogsCommon(const NRLib::Well   * well_data,
                     const StormContGrid & stormgrid,
@@ -131,10 +131,10 @@ public:
                                                         int                      i_offset = 0,
                                                         int                      j_offset = 0);
 
-  //void                                   GetBlockedGrid(const FFTGrid       * grid,
-  //                                                      std::vector<double> & blocked_log,
-  //                                                      int                   i_offset = 0,
-  //                                                      int                   j_offset = 0);
+  void                                   GetBlockedGrid(const FFTGrid       * grid,
+                                                        std::vector<double> & blocked_log,
+                                                        int                   i_offset = 0,
+                                                        int                   j_offset = 0);
 
   void                                   GetBlockedGrid(const NRLib::Grid<double> & grid,
                                                         std::vector<double>       & blocked_log,
@@ -150,6 +150,8 @@ public:
   void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_ = use_for_background_trend         ;}
   void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_ = use_for_filtering                       ;}
   void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_ = use_for_wavelet_estimation     ;}
+
+  void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
 
 
   // FUNCTIONS -----------------------------------
@@ -178,12 +180,13 @@ public:
                                                    fftw_real   * cpp_r,
                                                    int           nzp);
 
-  void                                   SetLogFromVerticalTrend(std::vector<double>   & vertical_trend,
-                                                                 double                  z0,              // z-value of center in top layer
-                                                                 double                  dz,              // dz in vertical trend
-                                                                 int                     nz,              // layers in vertical trend
-                                                                 std::string             type,
-                                                                 int                     i_angle);
+  void                                   SetLogFromVerticalTrend(const std::vector<double> & vertical_trend,
+                                                                 double                      z0,              // z-value of center in top layer
+                                                                 double                      dz,              // dz in vertical trend
+                                                                 int                         nz,              // layers in vertical trend
+                                                                 std::string                 type,
+                                                                 int                         i_angle,
+                                                                 int                         n_angles);
 
   void                                   FillInSeismic(std::vector<double> & seismic_data,
                                                        int                   start,
@@ -263,13 +266,13 @@ private:
 
   // FUNCTIONS------------------------------------
 
-  void                  SetLogFromVerticalTrend(std::vector<double>   & blocked_log,
-                                                std::vector<double>   & z_pos,
-                                                int                     n_blocks,
-                                                std::vector<double>   & vertical_trend,
-                                                double                  z0,
-                                                double                  dzVt,
-                                                int                     nz);
+  void                  SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
+                                                std::vector<double>       & z_pos,
+                                                int                         n_blocks,
+                                                const std::vector<double> & vertical_trend,
+                                                double                      z0,
+                                                double                      dzVt,
+                                                int                         nz);
 
   void         InterpolateTrend(const double   * blocked_log,
                                 double         * trend);

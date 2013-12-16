@@ -31,7 +31,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   trend_cubes_.resize(n_intervals_);
 
   // if there are multiple intervals (there can potentially be 1 interval as well)
-  if (interval_names_.size() > 0){
+  if (interval_names_.size() > 0) {
     multiple_interval_setting_ = true;
     desired_grid_resolution_.resize(interval_names_.size());
     relative_grid_resolution_.resize(interval_names_.size());
@@ -41,9 +41,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     surfaces.resize(n_intervals_+1); //Store surfaces.
     erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
+    background_parameters_.resize(n_intervals_);
+    background_vs_vp_ratios_.resize(n_intervals_);
   }
   // if there is only one interval
-  else{
+  else {
     multiple_interval_setting_ = false;
     desired_grid_resolution_.resize(1);
     relative_grid_resolution_.resize(1);
@@ -52,6 +54,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     LogKit::WriteHeader("Setting up Grid");
     surfaces.resize(1);
     interval_simboxes_.resize(1);
+    background_parameters_.resize(1);
+    background_vs_vp_ratios_.resize(1);
   }
 
   // 1. ERODE SURFACES AND SET SURFACES OF SIMBOXES -----------------------------------------
@@ -240,7 +244,15 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   Surface top_surface = eroded_surfaces_[0];
   Surface base_surface = eroded_surfaces_[1];
   interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+
+    const SegyGeometry * area_params = model_settings->getAreaParameters();
+    failed = interval_simbox.setArea(area_params, err_text);
+
   interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+
+  EstimateXYPaddingSizes(&interval_simbox, model_settings);
+
+
 
 
 
