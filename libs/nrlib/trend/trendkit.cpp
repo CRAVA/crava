@@ -1,4 +1,4 @@
-// $Id: trendkit.cpp 1223 2013-12-12 09:00:09Z ulvmoen $
+// $Id: trendkit.cpp 1225 2013-12-16 08:40:07Z ulvmoen $
 #include "trendkit.hpp"
 #include "../iotools/logkit.hpp"
 #include "../iotools/fileio.hpp"
@@ -1555,7 +1555,7 @@ void EstimateVariance2D(const std::vector<double>               & x,
     double effective_sample_size = CalculateEffectiveSampleSize2D(x_binned, y_binned, bandwidth_x, bandwidth_y);
 
     if (x_binned.size() < effective_sample_size) {
-      effective_sample_size = x_binned.size();
+      effective_sample_size = static_cast<double>(x_binned.size());
       LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
       LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
     }

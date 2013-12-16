@@ -409,7 +409,7 @@ RockPhysicsInversion4D::MakeSmoothingFilter(double posteriorVariance,double  df)
 void
 RockPhysicsInversion4D::fillInTable( std::vector<std::vector<double> >  mSamp,std::vector<double>   rSamp,int tableInd)
 {
-  int nSamp = mSamp[0].size();
+  int nSamp = static_cast<int>(mSamp[0].size());
 
     for (int j=0; j<nf_[0]; j++){
       meanRockPrediction_(tableInd,j)->setAccessMode(FFTGrid::RANDOMACCESS);

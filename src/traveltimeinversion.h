@@ -181,11 +181,6 @@ private:
                                                                       std::vector<double>         & mu_vp_square,
                                                                       NRLib::Grid2D<double>       & variance_vp_square) const;
 
-  void                          calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                                    const NRLib::Grid2D<double> & variance_log_vp,
-                                                                    std::vector<double>         & mu_vp,
-                                                                    NRLib::Grid2D<double>       & variance_vp) const;
-
   void                          calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                           const NRLib::Grid2D<double> & variance_log_vp,
                                                                           std::vector<double>         & mu_vp_minus,

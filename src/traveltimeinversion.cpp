@@ -663,9 +663,10 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
   std::vector<double> time_P0(n_horizons);
   std::vector<double> push_down(n_horizons);
   double              top  = 0;
-  double              base = 0;
 
   for (int k = 0; k < n_horizons; ++k) {
+
+    double base = 0;
 
     time_P0[k]   = initial_horizons[k].GetZ(x, y);
     push_down[k] = push_down_horizons[k].GetZ(x, y);
@@ -1423,31 +1424,6 @@ TravelTimeInversion::calculateSecondCentralMomentLogNormal(const std::vector<dou
   calculateCentralMomentLogNormal(mu, variance, mu_vp_square, variance_vp_square);
 }
 
-//-----------------------------------------------------------------------------------------//
-
-void
-TravelTimeInversion::calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                         const NRLib::Grid2D<double> & variance_log_vp,
-                                                         std::vector<double>         & mu_vp,
-                                                         NRLib::Grid2D<double>       & variance_vp) const
-{
-  int n_layers = static_cast<int>(mu_log_vp.size());
-
-  std::vector<double> mu(n_layers);
-  for (int i = 0; i < n_layers; i++)
-    mu[i] = mu_log_vp[i] / 2;
-
-  NRLib::Grid2D<double> variance(n_layers, n_layers);
-  for (int i = 0; i < n_layers; i++) {
-    for (int j = 0; j <n_layers; j++)
-      variance(i, j) = variance_log_vp(i, j) / 4;
-  }
-
-  mu_vp.resize(n_layers);
-  variance_vp.Resize(n_layers, n_layers);
-
-  calculateCentralMomentLogNormal(mu, variance, mu_vp, variance_vp);
-}
 //-----------------------------------------------------------------------------------------//
 void
 TravelTimeInversion::calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
@@ -2354,9 +2330,9 @@ TravelTimeInversion::calculateDistanceGrid(const Simbox              * simbox,
                                            const NRLib::Grid<double> & divided_grid,
                                            NRLib::Grid<double>       & distance) const
 {
-  int nx  = divided_grid.GetNI();
-  int ny  = divided_grid.GetNJ();
-  int nz  = divided_grid.GetNK();
+  int nx  = static_cast<int>(divided_grid.GetNI());
+  int ny  = static_cast<int>(divided_grid.GetNJ());
+  int nz  = static_cast<int>(divided_grid.GetNK());
 
   distance.Resize(nx, ny, nz);
 
