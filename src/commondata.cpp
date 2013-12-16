@@ -544,6 +544,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           std::string par_name = "Seismic data angle stack "+angle;
           LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
 
+          grid->setAccessMode(FFTGrid::RANDOMACCESS);
           grid->readCravaFile(file_name, err_text);
 
           SeismicStorage seismicdata(file_name, SeismicStorage::FFTGRID, angles[i], grid);
