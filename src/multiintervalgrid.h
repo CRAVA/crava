@@ -56,9 +56,7 @@ public:
 
   const std::vector<std::vector<NRLib::Grid<double> > > & GetPriorFaciesProbCubes()              const { return prior_facies_prob_cubes_    ;}
   const std::vector<NRLib::Grid<double> >               & GetPriorFaciesProbCubesInterval(int i) const { return prior_facies_prob_cubes_[i] ;}
-  const std::vector<CravaTrend>                         & GetTrendCubes()                        const { return trend_cubes_                ;}
-  const CravaTrend                                      & GetTrendCube(int i)                    const { return trend_cubes_[i]             ;}
-
+  double                                                  GetBackgroundVsVpRatioInterval(int i_interval) const { return background_vs_vp_ratios_[i_interval];}
 
   // SET FUNCTIONS
   void AddBackgroundParametersForInterval(int i, std::vector<NRLib::Grid<double> > parameters)   { background_parameters_[i]    = parameters ;}

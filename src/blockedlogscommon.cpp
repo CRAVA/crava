@@ -76,7 +76,7 @@
 //
 //}
 
-BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_data,
+BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
@@ -999,9 +999,6 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid    & stormgrid,
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  const std::vector<double> & x = x_pos_raw_logs_; //GetXpos();
-  const std::vector<double> & y = y_pos_raw_logs_;
-  const std::vector<double> & z = z_pos_raw_logs_;
 
   //int   dummy;
   const std::vector<double> & x = GetXposRawLogs();
@@ -2750,9 +2747,9 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   std::vector<double> vs_seismic_resolution(n_data_, RMISSING);
   std::vector<double> rho_seismic_resolution(n_data_, RMISSING);
 
-  const std::vector<double> & vp_raw_logs  = GetVpraw_logs();
-  const std::vector<double> & vs_raw_logs  = GetVsraw_logs();
-  const std::vector<double> & rho_raw_logs = GetRhoraw_logs();
+  const std::vector<double> & vp_raw_logs  = GetVpRawLogs();
+  const std::vector<double> & vs_raw_logs  = GetVsRawLogs();
+  const std::vector<double> & rho_raw_logs = GetRhoRawLogs();
 
 
   //

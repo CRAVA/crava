@@ -249,7 +249,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
                                              std::string                                 & err_text,
                                              bool                                        & failed) const{
 
-
+/*
   // H TESTING WITH ONE CORRELATION DIRECTION
   Surface * corr_surf     = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
   int n_layers = model_settings->getTimeNz();
@@ -264,7 +264,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
 
   EstimateXYPaddingSizes(&interval_simbox, model_settings);
 
-
+  */
 
 
 

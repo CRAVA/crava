@@ -220,7 +220,7 @@ int main(int argc, char** argv)
       //From NRLib::Grid to FFT-grid, need to fill in padding.
       SeismicParametersHolder seismicParametersInterval;
       //Forventningsgrid (fra multisonegrid)
-      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval),
+      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval),
                                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
                                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
                                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());

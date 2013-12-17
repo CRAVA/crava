@@ -82,7 +82,7 @@ CommonData::CommonData(ModelSettings                            * model_settings
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
   if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
-    block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, *multiple_interval_grid_,
+    block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
                                             wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_, err_text);
 
   // 5. Reflection matrix and wavelet
@@ -173,7 +173,7 @@ CommonData::CommonData(ModelSettings                            * model_settings
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  ReadAngularCorrelations(model_settings, err_text);
+  //ReadAngularCorrelations(model_settings, err_text);
 
 }
 
@@ -554,13 +554,13 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
           GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
 
-          FFTGrid *  grid = createFFTGrid(estimation_simbox_.getnx(),
+          FFTGrid *  grid = NULL;/* createFFTGrid(estimation_simbox_.getnx(),
                                           estimation_simbox_.getny(),
                                           estimation_simbox_.getnz(),
                                           nx_pad,
                                           ny_pad,
                                           nz_pad,
-                                          model_settings->getFileGrid());
+                                          model_settings->getFileGrid());*/
 
           std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
           std::string par_name = "Seismic data angle stack "+angle;

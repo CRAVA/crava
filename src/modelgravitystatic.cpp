@@ -123,7 +123,7 @@
 
 ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
                                        CommonData          * commonData,
-                                       Simbox              * simbox,
+                                       const Simbox              * simbox,
                                        int                   i_interval)
 {
 
@@ -234,7 +234,7 @@ ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
 }
 
 void
-ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * fullTimeSimbox)
+ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Simbox * fullTimeSimbox)
 {
   int nx = fullTimeSimbox->getnx();
   int ny = fullTimeSimbox->getny();

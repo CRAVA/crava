@@ -19,7 +19,7 @@ class BlockedLogsCommon{
 public:
 
   // Constructor for wavelet estimation blocking
-  BlockedLogsCommon(NRLib::Well     * well_data,
+  BlockedLogsCommon(const NRLib::Well     * well_data,
                     const Simbox    * const estimation_simbox,
                     bool              interpolate,
                     //bool            & failed,
@@ -35,8 +35,15 @@ public:
                     bool                               interpolate,
                     std::string                      & err_text);
 
-  // Constructor for blocking in the surrounding estimation simbox
   BlockedLogsCommon(const NRLib::Well                * well_data,
+                    const std::vector<std::string>   & cont_logs_to_be_blocked,
+                    const std::vector<std::string>   & disc_logs_to_be_blocked,
+                    const Simbox                     * const estimation_simbox,
+                    bool                               interpolate,
+                    std::string                      & err_text);
+
+  // Constructor for blocking in the surrounding estimation simbox
+  BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
@@ -50,6 +57,8 @@ public:
                     const StormContGrid & stormgrid,
                     float                 max_hz_background = 0.0,
                     float                 max_hz_seismic = 0.0);
+
+
 
   ~BlockedLogsCommon();
 
@@ -78,11 +87,12 @@ public:
         std::vector<double>            & GetVpBlocked(void)            { return continuous_logs_blocked_.find("Vp")->second                           ;}
   const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
         std::vector<double>            & GetVsBlocked(void)            { return continuous_logs_blocked_.find("Vs")->second                           ;}
+  const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
   const std::vector<int>               & GetFaciesBlocked(void) const  { return facies_blocked_                                                       ;}
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
-  const std::vector<double>            & GetVpRawLogs(void)  const   { return continuous_logs_raw_logs_.find("Vp")->second                            ;}
-  const std::vector<double>            & GetVsRawLogs(void)  const   { return continuous_logs_raw_logs_.find("Vs")->second                            ;}
-  const std::vector<double>            & GetRhoRawLogs(void) const   { return continuous_logs_raw_logs_.find("Rho")->second                           ;}
+  const std::vector<double>            & GetVpRawLogs(void)  const   { return continuous_raw_logs_.find("Vp")->second                            ;}
+  const std::vector<double>            & GetVsRawLogs(void)  const   { return continuous_raw_logs_.find("Vs")->second                            ;}
+  const std::vector<double>            & GetRhoRawLogs(void) const   { return continuous_raw_logs_.find("Rho")->second                           ;}
 
   const std::vector<double>            & GetVpSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}

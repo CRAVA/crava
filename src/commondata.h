@@ -674,15 +674,16 @@ private:
                         bool                   & failed,
                         int                      i_timelapse);
 
-  void ReadAngularCorrelations(ModelSettings * model_settings,
-                               std::string   & err_text);
+  // EN kommentert ut fordi CRAVA ikke kompilerer så lenge den ikke er implementert
+  //void ReadAngularCorrelations(ModelSettings * model_settings,
+  //                             std::string   & err_text);
 
   bool optimizeWellLocations();
   bool estimateWaveletShape();
 
   int ComputeTime(int year, int month, int day) const;
 
-  FFTGrid * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid);
+  //FFTGrid * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid);
 
   // CLASS VARIABLES ---------------------------------------------------
 
