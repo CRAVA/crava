@@ -23,8 +23,6 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/welldata.h"
-#include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -47,363 +45,339 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
-                               ModelGeneral         *& modelGeneral,
-                               const InputFiles      * inputFiles,
-                               GridMapping           * timeCutMapping,
-                               Simbox                * timeSimbox,
-                               Simbox               *& timeBGSimbox,
-                               Simbox                * timeSimboxConstThick,
-                               std::vector<WellData *> wells)
-{
-  forwardModeling_        = modelSettings->getForwardModeling();
+//ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
+//                               ModelGeneral         *& modelGeneral,
+//                               const InputFiles      * inputFiles,
+//                               GridMapping           * timeCutMapping,
+//                               Simbox                * timeSimbox,
+//                               Simbox               *& timeBGSimbox,
+//                               Simbox                * timeSimboxConstThick,
+//                               std::vector<WellData *> wells)
+//{
+//  forwardModeling_        = modelSettings->getForwardModeling();
+//
+//  bool failedModelGeneral = modelGeneral->getFailed();
+//
+//  failed_                 = false;
+//  bool failedExtraSurf    = false;
+//  bool failedPriorFacies  = false;
+//
+//  bool failedLoadingModel = false;
+//
+//  std::string errText("");
+//
+//  if(!failedModelGeneral)
+//  {
+//    if (modelSettings->getForwardModeling() == false)
+//    {
+//      //
+//      // INVERSION/ESTIMATION
+//      //
+//
+//      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
+//                        timeSimbox, inputFiles, errText, failedExtraSurf);
+//
+//      blockLogs(wells, timeSimbox, timeBGSimbox, timeSimboxConstThick, modelSettings);
+//
+//      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+//      bool estimationMode = modelSettings->getEstimationMode();
+//      if (estimationMode == false && !failedExtraSurf)
+//      {
+//        Simbox * timeCutSimbox = NULL;
+//        if (timeCutMapping != NULL)
+//          timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+//        else
+//          timeCutSimbox = timeSimbox;
+//
+//        modelGeneral->processPriorFaciesProb(faciesEstimInterval_,
+//                                             wells,
+//                                             timeSimbox,
+//                                             timeCutSimbox,
+//                                             modelSettings,
+//                                             failedPriorFacies,
+//                                             errText,
+//                                             inputFiles);
+//      }
+//    }
+//    else // forward modeling
+//      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+//  }
+//  failedLoadingModel = failedExtraSurf || failedPriorFacies;
+//
+//  if (failedLoadingModel) {
+//    LogKit::WriteHeader("Error(s) while loading data");
+//    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+//    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+//  }
+//
+//  failed_ = failedLoadingModel;
+//  failed_details_.push_back(failedExtraSurf);
+//  failed_details_.push_back(failedPriorFacies);
+//}
 
-  bool failedModelGeneral = modelGeneral->getFailed();
-
-  failed_                 = false;
-  bool failedExtraSurf    = false;
-  bool failedPriorFacies  = false;
-
-  bool failedLoadingModel = false;
-
-  std::string errText("");
-
-  if(!failedModelGeneral)
-  {
-    if (modelSettings->getForwardModeling() == false)
-    {
-      //
-      // INVERSION/ESTIMATION
-      //
-
-      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
-                        timeSimbox, inputFiles, errText, failedExtraSurf);
-
-      blockLogs(wells, timeSimbox, timeBGSimbox, timeSimboxConstThick, modelSettings);
-
-      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
-      bool estimationMode = modelSettings->getEstimationMode();
-      if (estimationMode == false && !failedExtraSurf)
-      {
-        Simbox * timeCutSimbox = NULL;
-        if (timeCutMapping != NULL)
-          timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
-        else
-          timeCutSimbox = timeSimbox;
-
-        modelGeneral->processPriorFaciesProb(faciesEstimInterval_,
-                                             wells,
-                                             timeSimbox,
-                                             timeCutSimbox,
-                                             modelSettings,
-                                             failedPriorFacies,
-                                             errText,
-                                             inputFiles);
-      }
-    }
-    else // forward modeling
-      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
-  }
-  failedLoadingModel = failedExtraSurf || failedPriorFacies;
-
-  if (failedLoadingModel) {
-    LogKit::WriteHeader("Error(s) while loading data");
-    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  }
-
-  failed_ = failedLoadingModel;
-  failed_details_.push_back(failedExtraSurf);
-  failed_details_.push_back(failedPriorFacies);
-}
-
-ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
-                               ModelGeneral         *& modelGeneral,
-                               const InputFiles      * inputFiles,
-                               CommonData            * commonData,
-                               Simbox                * timeSimbox,
+ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
+                               //ModelGeneral         *& model_general,
+                               const InputFiles      * input_files,
+                               CommonData            * common_data,
+                               Simbox                * simbox,
                                int                     i_interval)
 {
-  forwardModeling_        = modelSettings->getForwardModeling();
+  forward_modeling_        = model_settings->getForwardModeling();
 
-  bool failedModelGeneral = modelGeneral->getFailed();
-
-  //failed_                 = false;
-  //bool failedExtraSurf    = false;
-  //bool failedPriorFacies  = false;
-
-  //bool failedLoadingModel = false;
-
-  //std::string errText("");
-
-  if(!failedModelGeneral)
+  if (model_settings->getForwardModeling() == false)
   {
-    if (modelSettings->getForwardModeling() == false)
-    {
-      //
-      // INVERSION/ESTIMATION
-      //
+    //
+    // INVERSION/ESTIMATION
+    //
+    checkAvailableMemory(simbox, model_settings, input_files);
+    bool estimationMode = model_settings->getEstimationMode();
+    if (estimationMode == false)
+      facies_estim_interval_ = common_data->GetFaciesEstimInterval(); //Read in in CommonData under SetupPriorFaciesProb based on estimation_simbox. Should this have been per interval?
 
-      faciesEstimInterval_ = commonData->GetFaciesEstimInterval();
+    //Maybe load in from modelSettings here, things that are needed in doAVOInversion
 
-      //loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
-      //                  timeSimbox, inputFiles, errText, failedExtraSurf);
 
-      //blockLogs(wells, timeSimbox, timeBGSimbox, timeSimboxConstThick, modelSettings);
 
-      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+    //Set up errCorr here
+    int nx  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNI();
+    int ny  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNJ();
+    int nz  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNK();
+    int nxp = model_settings->getNXpad();
+    int nyp = model_settings->getNYpad();
+    int nzp = model_settings->getNZpad();
 
-      //bool estimationMode = modelSettings->getEstimationMode();
-      //if (estimationMode == false && !failedExtraSurf)
-      //{
-      //  Simbox * timeCutSimbox = NULL;
-      //  if (timeCutMapping != NULL)
-      //    timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
-      //  else
-      //    timeCutSimbox = timeSimbox;
+    err_corr_ = createFFTGrid(nx, ny, nz,
+                              nxp, nyp, nzp,
+                              model_settings->getFileGrid());
+    err_corr_ ->setType(FFTGrid::COVARIANCE);
+    err_corr_ ->createRealGrid();
 
-      //  modelGeneral->processPriorFaciesProb(faciesEstimInterval_,
-      //                                       wells,
-      //                                       timeSimbox,
-      //                                       timeCutSimbox,
-      //                                       modelSettings,
-      //                                       failedPriorFacies,
-      //                                       errText,
-      //                                       inputFiles);
-      //}
-    }
-    else // forward modeling
-      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
+    float corr_grad_I = 0.0f;
+    float corr_grad_J = 0.0f;
+    //commonData::GetCorrGradIJ(timeSimbox, corrGradI, corrGradJ);  //H COMES LATER
+
+    //H Commenting out for debugging
+    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+
+    checkAvailableMemory(simbox, model_settings, input_files);
+
   }
-  //failedLoadingModel = failedExtraSurf || failedPriorFacies;
-
-  //if (failedLoadingModel) {
-  //  LogKit::WriteHeader("Error(s) while loading data");
-  //  LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-  //  LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  //}
-
-  //failed_ = failedLoadingModel;
-  //failed_details_.push_back(failedExtraSurf);
-  //failed_details_.push_back(failedPriorFacies);
+  else // forward modeling
+    checkAvailableMemory(simbox, model_settings, input_files);
 }
 
 
 ModelAVOStatic::~ModelAVOStatic(void)
 {
 
-  if(waveletEstimInterval_.size() == 2) {
-    if (waveletEstimInterval_[0] != NULL)
-      delete waveletEstimInterval_[0];
-    if (waveletEstimInterval_[1] != NULL)
-      delete waveletEstimInterval_[1];
+  if (wavelet_estim_interval_.size() == 2) {
+    if (wavelet_estim_interval_[0] != NULL)
+      delete wavelet_estim_interval_[0];
+    if (wavelet_estim_interval_[1] != NULL)
+      delete wavelet_estim_interval_[1];
   }
 
-  if(faciesEstimInterval_.size() == 2) {
-    if (faciesEstimInterval_[0] != NULL)
-      delete faciesEstimInterval_[0];
-    if (faciesEstimInterval_[1] != NULL)
-      delete faciesEstimInterval_[1];
+  if (facies_estim_interval_.size() == 2) {
+    if (facies_estim_interval_[0] != NULL)
+      delete facies_estim_interval_[0];
+    if (facies_estim_interval_[1] != NULL)
+      delete facies_estim_interval_[1];
   }
 
-  if(wellMoveInterval_.size() == 2) {
-    if (wellMoveInterval_[0] != NULL)
-      delete wellMoveInterval_[0];
-    if (wellMoveInterval_[1] != NULL)
-      delete wellMoveInterval_[1];
-  }
-}
-
-
-
-void
-ModelAVOStatic::blockLogs(std::vector<WellData *> & wells,
-                          Simbox                  * timeSimbox,
-                          Simbox                  * timeBGSimbox,
-                          Simbox                  * timeSimboxConstThick,
-                          ModelSettings          *& modelSettings)
-{
-  int     nWells         = modelSettings->getNumberOfWells();
-
-  if(nWells > 0) {
-    for (int i=0 ; i<nWells ; i++)
-    {
-      wells[i]->findMeanVsVp(waveletEstimInterval_);
-
-      wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel()) );
-      wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick) );
-      if (timeBGSimbox==NULL)
-        wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox) ); // Need a copy constructor?
-      else
-        wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox) );
-    }
+  if (well_move_interval_.size() == 2) {
+    if (well_move_interval_[0] != NULL)
+      delete well_move_interval_[0];
+    if (well_move_interval_[1] != NULL)
+      delete well_move_interval_[1];
   }
 }
 
-
+//void
+//ModelAVOStatic::blockLogs(std::vector<WellData *> & wells,
+//                          Simbox                  * timeSimbox,
+//                          Simbox                  * timeBGSimbox,
+//                          Simbox                  * timeSimboxConstThick,
+//                          ModelSettings          *& modelSettings)
+//{
+//  int     nWells         = modelSettings->getNumberOfWells();
+//
+//  if(nWells > 0) {
+//    for (int i=0 ; i<nWells ; i++)
+//    {
+//      wells[i]->findMeanVsVp(waveletEstimInterval_);
+//
+//      wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel()) );
+//      wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick) );
+//      if (timeBGSimbox==NULL)
+//        wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox) ); // Need a copy constructor?
+//      else
+//        wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox) );
+//    }
+//  }
+//}
 
 void
-ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
-                                     ModelSettings    * modelSettings,
-                                     const InputFiles * inputFiles)
+ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
+                                     ModelSettings    * model_settings,
+                                     const InputFiles * input_files)
 {
   LogKit::WriteHeader("Estimating amount of memory needed");
   //
   // Find the size of first seismic volume
   //
-  float memOneSeis = 0.0f;
-  if (inputFiles->getNumberOfSeismicFiles(0) > 0 && inputFiles->getSeismicFile(0,0) != "") {
-    memOneSeis = static_cast<float> (NRLib::FindFileSize(inputFiles->getSeismicFile(0,0)));
+  float mem_one_seis = 0.0f;
+  if (input_files->getNumberOfSeismicFiles(0) > 0 && input_files->getSeismicFile(0,0) != "") {
+    mem_one_seis = static_cast<float> (NRLib::FindFileSize(input_files->getSeismicFile(0,0)));
   }
 
   //
   // Find the size of one grid
   //
-  FFTGrid * dummyGrid = new FFTGrid(timeSimbox->getnx(),
-                                    timeSimbox->getny(),
-                                    timeSimbox->getnz(),
-                                    modelSettings->getNXpad(),
-                                    modelSettings->getNYpad(),
-                                    modelSettings->getNZpad());
-  long long int gridSizePad = static_cast<long long int>(4)*dummyGrid->getrsize();
+  FFTGrid * dummy_grid = new FFTGrid(time_simbox->getnx(),
+                                     time_simbox->getny(),
+                                     time_simbox->getnz(),
+                                     model_settings->getNXpad(),
+                                     model_settings->getNYpad(),
+                                     model_settings->getNZpad());
+  long long int grid_size_pad = static_cast<long long int>(4)*dummy_grid->getrsize();
 
-  delete dummyGrid;
-  dummyGrid = new FFTGrid(timeSimbox->getnx(),
-                          timeSimbox->getny(),
-                          timeSimbox->getnz(),
-                          timeSimbox->getnx(),
-                          timeSimbox->getny(),
-                          timeSimbox->getnz());
-  long long int gridSizeBase = 4*dummyGrid->getrsize();
-  delete dummyGrid;
-  int nGridParameters  = 3;                                      // Vp + Vs + Rho, padded
-  int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
-  int nGridCovariances = 6;                                      // Covariances, padded
-  int nGridSeismicData = modelSettings->getNumberOfAngles(0);     // One for each angle stack, padded
+  delete dummy_grid;
+  dummy_grid = new FFTGrid(time_simbox->getnx(),
+                           time_simbox->getny(),
+                           time_simbox->getnz(),
+                           time_simbox->getnx(),
+                           time_simbox->getny(),
+                           time_simbox->getnz());
+  long long int grid_size_base = 4*dummy_grid->getrsize();
+  delete dummy_grid;
+  int n_grid_parameters   = 3;                                      // Vp + Vs + Rho, padded
+  int n_grid_background   = 3;                                      // Vp + Vs + Rho, padded
+  int n_grid_covariances  = 6;                                      // Covariances, padded
+  int n_grid_seismic_data = model_settings->getNumberOfAngles(0);     // One for each angle stack, padded
 
-  std::map<std::string, float> facies_prob = modelSettings->getPriorFaciesProb(); //Used to find number of facies grids needed
+  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProb(); //Used to find number of facies grids needed
 
-  int nGridFacies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
-  int nGridHistograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.
-  int nGridKriging      = 1;                                      // One grid for kriging, unpadded.
-  int nGridCompute      = 1;                                      // Computation grid, padded (for convenience)
-  int nGridFileMode     = 1;                                      // One grid for intermediate file storage
+  int n_grid_facies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
+  int n_grid_histograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.
+  int n_grid_kriging      = 1;                                      // One grid for kriging, unpadded.
+  int n_grid_compute      = 1;                                      // Computation grid, padded (for convenience)
+  int n_grid_file_mode    = 1;                                      // One grid for intermediate file storage
 
-  int nGrids;
-  long long int gridMem;
-  if(modelSettings->getForwardModeling() == true) {
-    if (modelSettings->getFileGrid())  // Use disk buffering
-      nGrids = nGridFileMode;
+  int n_grids;
+  long long int grid_mem;
+  if (model_settings->getForwardModeling() == true) {
+    if (model_settings->getFileGrid())  // Use disk buffering
+      n_grids = n_grid_file_mode;
     else
-      nGrids = nGridParameters + 1;
+      n_grids = n_grid_parameters + 1;
 
-    gridMem = nGrids*gridSizePad;
+    grid_mem = n_grids*grid_size_pad;
   }
   else {
-    if (modelSettings->getFileGrid()) { // Use disk buffering
-      nGrids = nGridFileMode;
-      if(modelSettings->getKrigingParameter() > 0) {
-        nGrids += nGridKriging;
+    if (model_settings->getFileGrid()) { // Use disk buffering
+      n_grids = n_grid_file_mode;
+      if (model_settings->getKrigingParameter() > 0) {
+        n_grids += n_grid_kriging;
       }
-      if(modelSettings->getNumberOfSimulations() > 0)
-        nGrids = nGridParameters;
-      if(modelSettings->getUseLocalNoise(0)) {
-        nGrids = 2*nGridParameters;
+      if (model_settings->getNumberOfSimulations() > 0)
+        n_grids = n_grid_parameters;
+      if (model_settings->getUseLocalNoise(0)) {
+        n_grids = 2*n_grid_parameters;
       }
 
-      gridMem = nGrids*gridSizePad;
+      grid_mem = n_grids*grid_size_pad;
     }
     else {
       //baseP and baseU are the padded and unpadde grids allocated at each peak.
-      int baseP = nGridParameters + nGridCovariances;
-      if(modelSettings->getUseLocalNoise(0) == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
-        baseP += nGridBackground;
-      int baseU = 0;
-      if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-        baseU += static_cast<int>(facies_prob.size());
+      int base_P = n_grid_parameters + n_grid_covariances;
+      if (model_settings->getUseLocalNoise(0) == true || (model_settings->getEstimateFaciesProb() && model_settings->getFaciesProbRelative()))
+        base_P += n_grid_background;
+      int base_U = 0;
+      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+        base_U += static_cast<int>(facies_prob.size());
 
       //First peak: At inversion
-      int peak1P = baseP + nGridSeismicData; //Need seismic data as well here.
-      int peak1U = baseU;
+      int peak_1P = base_P + n_grid_seismic_data; //Need seismic data as well here.
+      int peak_1U = base_U;
 
-      long long int peakGridMem = peak1P*gridSizePad + peak1U*gridSizeBase; //First peak must be currently largest.
-      int peakNGrid   = peak1P;                                             //Also in number of padded grids
+      long long int peak_grid_mem = peak_1P*grid_size_pad + peak_1U*grid_size_base; //First peak must be currently largest.
+      int peak_n_grid = peak_1P;                                             //Also in number of padded grids
 
-      if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
-        int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
-        if(modelSettings->getUseLocalNoise(0) == true &&
-           (modelSettings->getEstimateFaciesProb() == false || modelSettings->getFaciesProbRelative() == false))
-          peak2P -= nGridBackground; //Background grids are released before simulation in this case.
-        int peak2U = baseU;     //Base level is the same, but may increase.
-        bool computeGridUsed = ((modelSettings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
-        if(computeGridUsed == true)
-          peak2P += nGridCompute;
-        else if(modelSettings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
-          peak2U += nGridKriging;
+      if (model_settings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
+        int peak_2P = base_P + 3; //Three extra parameter grids for simulated parameters.
+        if (model_settings->getUseLocalNoise(0) == true &&
+           (model_settings->getEstimateFaciesProb() == false || model_settings->getFaciesProbRelative() == false))
+          peak_2P -= n_grid_background; //Background grids are released before simulation in this case.
+        int peak_2U = base_U;     //Base level is the same, but may increase.
+        bool compute_grid_used = ((model_settings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
+        if (compute_grid_used == true)
+          peak_2P += n_grid_compute;
+        else if (model_settings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
+          peak_2U += n_grid_kriging;
 
-        if(peak2P > peakNGrid)
-          peakNGrid = peak2P;
+        if (peak_2P > peak_n_grid)
+          peak_n_grid = peak_2P;
 
-        long long int peak2Mem = peak2P*gridSizePad + peak2U*gridSizeBase;
-        if(peak2Mem > peakGridMem)
-          peakGridMem = peak2Mem;
+        long long int peak_2_mem = peak_2P*grid_size_pad + peak_2U*grid_size_base;
+        if (peak_2_mem > peak_grid_mem)
+          peak_grid_mem = peak_2_mem;
       }
 
-      if(modelSettings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
-        int peak3P = baseP;                //No extra padded grids, so this one can not peak here.
-        int peak3U = baseU + nGridFacies;  //But this one will, and may trigger new memory max.
-        if((modelSettings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
-          peak3U += 1; //Also needs to store seismic likelihood.
+      if (model_settings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
+        int peak_3P = base_P;                //No extra padded grids, so this one can not peak here.
+        int peak_3U = base_U + n_grid_facies;  //But this one will, and may trigger new memory max.
+        if ((model_settings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
+          peak_3U += 1; //Also needs to store seismic likelihood.
 
-        long long int peak3Mem = peak3P*gridSizePad + peak3U*gridSizeBase + 2000000*nGridHistograms; //These are 2MB when Vs is used.
-        if(peak3Mem > peakGridMem)
-          peakGridMem = peak3Mem;
+        long long int peak_3_mem = peak_3P*grid_size_pad + peak_3U*grid_size_base + 2000000*n_grid_histograms; //These are 2MB when Vs is used.
+        if (peak_3_mem > peak_grid_mem)
+          peak_grid_mem = peak_3_mem;
       }
-      nGrids  = peakNGrid;
-      gridMem = peakGridMem;
+      n_grids  = peak_n_grid;
+      grid_mem = peak_grid_mem;
     }
   }
-  FFTGrid::setMaxAllowedGrids(nGrids);
-  if(modelSettings->getDebugFlag()>0)
+  FFTGrid::setMaxAllowedGrids(n_grids);
+  if (model_settings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
 
-  int   workSize    = 2500 + static_cast<int>( 0.65*gridSizePad); //Size of memory used beyond grids.
+  int   work_size   = 2500 + static_cast<int>( 0.65*grid_size_pad); //Size of memory used beyond grids.
 
-  float mem0        = 4.0f * workSize;
-  float mem1        = static_cast<float>(gridMem);
-  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles(0))*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
+  float mem0        = 4.0f * work_size;
+  float mem1        = static_cast<float>(grid_mem);
+  float mem2        = static_cast<float>(model_settings->getNumberOfAngles(0))*grid_size_pad + mem_one_seis; //Peak memory when reading seismic, overestimated.
 
-  float neededMem   = mem0 + std::max(mem1, mem2);
+  float needed_mem   = mem0 + std::max(mem1, mem2);
 
-  float megaBytes   = neededMem/(1024.f*1024.f);
-  float gigaBytes   = megaBytes/1024.f;
+  float mega_bytes   = needed_mem/(1024.f*1024.f);
+  float giga_bytes   = mega_bytes/1024.f;
 
   LogKit::LogFormatted(LogKit::High,"\nMemory needed for reading seismic data       : %10.2f MB\n",mem2/(1024.f*1024.f));
-  LogKit::LogFormatted(LogKit::High,  "Memory needed for holding internal grids (%2d): %10.2f MB\n",nGrids, mem1/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::High,  "Memory needed for holding internal grids (%2d): %10.2f MB\n",n_grids, mem1/(1024.f*1024.f));
   LogKit::LogFormatted(LogKit::High,  "Memory needed for holding other entities     : %10.2f MB\n",mem0/(1024.f*1024.f));
 
-  if (megaBytes > 1000.0f)
-    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f gigaBytes\n",gigaBytes);
+  if (mega_bytes > 1000.0f)
+    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f gigaBytes\n",giga_bytes);
   else
-    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f megaBytes\n",megaBytes);
+    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f megaBytes\n",mega_bytes);
 
-  if(mem2>mem1)
+  if (mem2>mem1)
     LogKit::LogFormatted(LogKit::Low,"\n This estimate is too high because seismic data are cut to fit the internal grid\n");
-  if (!modelSettings->getFileGrid()) {
+  if (!model_settings->getFileGrid()) {
     //
     // Check if we can hold everything in memory.
     //
-    modelSettings->setFileGrid(false);
-    char ** memchunk  = new char*[nGrids];
+    model_settings->setFileGrid(false);
+    char ** memchunk  = new char*[n_grids];
 
     int i = 0;
     try {
-      for(i = 0 ; i < nGrids ; i++)
-        memchunk[i] = new char[static_cast<size_t>(gridSizePad)];
+      for(i = 0 ; i < n_grids ; i++)
+        memchunk[i] = new char[static_cast<size_t>(grid_size_pad)];
     }
     catch (std::bad_alloc& ) //Could not allocate memory
     {
-      modelSettings->setFileGrid(true);
+      model_settings->setFileGrid(true);
       LogKit::LogFormatted(LogKit::Low,"Not enough memory to hold all grids. Using file storage.\n");
     }
 
@@ -413,185 +387,256 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
   }
 }
 
+//void
+//ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
+//                                  std::vector<Surface *> & faciesEstimInterval,
+//                                  std::vector<Surface *> & wellMoveInterval,
+//                                  Simbox                 * timeSimbox,
+//                                  const InputFiles       * inputFiles,
+//                                  std::string            & errText,
+//                                  bool                   & failed)
+//{
+//  const double x0 = timeSimbox->getx0();
+//  const double y0 = timeSimbox->gety0();
+//  const double lx = timeSimbox->getlx();
+//  const double ly = timeSimbox->getly();
+//  const int    nx = timeSimbox->getnx();
+//  const int    ny = timeSimbox->getny();
+//  //
+//  // Get wavelet estimation interval
+//  //
+//  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0); //Same for all time lapses
+//  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);//Same for all time lapses
+//
+//  if (topWEI != "" && baseWEI != "") {
+//    waveletEstimInterval.resize(2);
+//    try {
+//      if (NRLib::IsNumber(topWEI))
+//        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
+//      else {
+//        Surface tmpSurf(topWEI);
+//        waveletEstimInterval[0] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//
+//    try {
+//      if (NRLib::IsNumber(baseWEI))
+//        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
+//      else {
+//        Surface tmpSurf(baseWEI);
+//        waveletEstimInterval[1] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//  }
+//  //
+//  // Get facies estimation interval
+//  //
+//  const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);
+//  const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
+//
+//  if (topFEI != "" && baseFEI != "") {
+//    faciesEstimInterval.resize(2);
+//    try {
+//      if (NRLib::IsNumber(topFEI))
+//        faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
+//      else {
+//        Surface tmpSurf(topFEI);
+//        faciesEstimInterval[0] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//
+//    try {
+//      if (NRLib::IsNumber(baseFEI))
+//        faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
+//      else {
+//        Surface tmpSurf(baseFEI);
+//        faciesEstimInterval[1] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//  }
+//  //
+//  // Get well move interval
+//  //
+//  const std::string & topWMI  = inputFiles->getWellMoveIntFile(0);
+//  const std::string & baseWMI = inputFiles->getWellMoveIntFile(1);
+//
+//  if (topWMI != "" && baseWMI != "") {
+//    wellMoveInterval.resize(2);
+//    try {
+//      if (NRLib::IsNumber(topWMI))
+//        wellMoveInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
+//      else {
+//        Surface tmpSurf(topWMI);
+//        wellMoveInterval[0] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//
+//    try {
+//      if (NRLib::IsNumber(baseWMI))
+//        wellMoveInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
+//      else {
+//        Surface tmpSurf(baseWMI);
+//        wellMoveInterval[1] = new Surface(tmpSurf);
+//      }
+//    }
+//    catch (NRLib::Exception & e) {
+//      errText += e.what();
+//      failed = true;
+//    }
+//  }
+//}
 
+//void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  for(int i=0;i<nWells;i++)
+//    wells[i]->writeWell(modelSettings->getWellFormatFlag());
+//}
 
-void
-ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
-                                  std::vector<Surface *> & faciesEstimInterval,
-                                  std::vector<Surface *> & wellMoveInterval,
-                                  Simbox                 * timeSimbox,
-                                  const InputFiles       * inputFiles,
-                                  std::string            & errText,
-                                  bool                   & failed)
+//void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  for(int i=0;i<nWells;i++)
+//    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
+//}
+
+void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                       ModelSettings                            * model_settings,
+                                       std::vector<std::string>                   facies_name,
+                                       std::vector<int>                           facies_label) const
 {
-  const double x0 = timeSimbox->getx0();
-  const double y0 = timeSimbox->gety0();
-  const double lx = timeSimbox->getlx();
-  const double ly = timeSimbox->getly();
-  const int    nx = timeSimbox->getnx();
-  const int    ny = timeSimbox->getny();
-  //
-  // Get wavelet estimation interval
-  //
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0); //Same for all time lapses
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);//Same for all time lapses
+  //int nWells  = modelSettings->getNumberOfWells();
+  //for(int i=0;i<nWells;i++)
+  //  wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
 
-  if (topWEI != "" && baseWEI != "") {
-    waveletEstimInterval.resize(2);
-    try {
-      if (NRLib::IsNumber(topWEI))
-        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
-      else {
-        Surface tmpSurf(topWEI);
-        waveletEstimInterval[0] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
 
-    try {
-      if (NRLib::IsNumber(baseWEI))
-        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
-      else {
-        Surface tmpSurf(baseWEI);
-        waveletEstimInterval[1] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
-  }
-  //
-  // Get facies estimation interval
-  //
-  const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);
-  const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
+    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
+                           model_settings->getMaxHzBackground(),
+                           model_settings->getMaxHzSeismic(),
+                           facies_name,
+                           facies_label);
 
-  if (topFEI != "" && baseFEI != "") {
-    faciesEstimInterval.resize(2);
-    try {
-      if (NRLib::IsNumber(topFEI))
-        faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
-      else {
-        Surface tmpSurf(topFEI);
-        faciesEstimInterval[0] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
-
-    try {
-      if (NRLib::IsNumber(baseFEI))
-        faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
-      else {
-        Surface tmpSurf(baseFEI);
-        faciesEstimInterval[1] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
-  }
-  //
-  // Get well move interval
-  //
-  const std::string & topWMI  = inputFiles->getWellMoveIntFile(0);
-  const std::string & baseWMI = inputFiles->getWellMoveIntFile(1);
-
-  if (topWMI != "" && baseWMI != "") {
-    wellMoveInterval.resize(2);
-    try {
-      if (NRLib::IsNumber(topWMI))
-        wellMoveInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
-      else {
-        Surface tmpSurf(topWMI);
-        wellMoveInterval[0] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
-
-    try {
-      if (NRLib::IsNumber(baseWMI))
-        wellMoveInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
-      else {
-        Surface tmpSurf(baseWMI);
-        wellMoveInterval[1] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
-  }
-}
-
-void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const
-{
-  int nWells  = modelSettings->getNumberOfWells();
-  for(int i=0;i<nWells;i++)
-    wells[i]->writeWell(modelSettings->getWellFormatFlag());
-}
-
-void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
-{
-  int nWells  = modelSettings->getNumberOfWells();
-  for(int i=0;i<nWells;i++)
-    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
-}
-
-void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
-                                    FFTGrid      ** seisCube,
-                                    const ModelSettings * modelSettings,
-                                    int             nAngles)
-{
-  int nWells  = modelSettings->getNumberOfWells();
-
-    for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
-    {
-      seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(int i=0;i<nWells;i++)
-        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
-      seisCube[iAngle]->endAccess();
-  }
-}
-
-void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
-                                              std::vector<WellData *> wells,
-                                              const float * const * reflectionMatrix,
-                                              const Simbox        * timeSimbox,
-                                              const ModelSettings * modelSettings,
-                                              int             nAngles)
-{
-  int nWells  = modelSettings->getNumberOfWells();
-  int nzp     = modelSettings->getNZpad();
-  int nz      = timeSimbox->getnz();
-
-  int i;
-
-  for( i=0; i<nWells; i++ )
-  {
-    if( wells[i]->isDeviated() == false )
-      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
   }
 }
 
+//void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
+//                                    FFTGrid              ** seisCube,
+//                                    const ModelSettings   * modelSettings,
+//                                    int                     nAngles)
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//
+//    for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
+//    {
+//      seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
+//      for(int i=0;i<nWells;i++)
+//        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+//      seisCube[iAngle]->endAccess();
+//  }
+//}
 
-
-void ModelAVOStatic::deleteDynamicWells(std::vector<WellData *> wells,
-                                        int                     nWells)
+void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                    std::vector<FFTGrid *>                     seis_cube,
+                                    int                                        n_angles)
 {
-  for(int i=0; i<nWells; i++){
-    wells[i]->getBlockedLogsConstThick()->deleteDynamicBlockedLogs();
-    wells[i]->getBlockedLogsExtendedBG()->deleteDynamicBlockedLogs();
-    wells[i]->getBlockedLogsOrigThick()->deleteDynamicBlockedLogs();
+  for (int i_angle = 0; i_angle < n_angles; i_angle++) {
+    seis_cube[i_angle]->setAccessMode(FFTGrid::RANDOMACCESS);
+
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
+
+      blocked_log->SetLogFromGrid(seis_cube[i_angle], i_angle, n_angles, "SEISMIC_DATA");
+    }
+    //for(int i=0;i<nWells;i++)
+    //  wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+    seis_cube[i_angle]->endAccess();
   }
 }
+
+//void ModelAVOStatic::generateSyntheticSeismic(Wavelet              ** wavelet,
+//                                              std::vector<WellData *> wells,
+//                                              const float *   const * reflectionMatrix,
+//                                              const Simbox          * timeSimbox,
+//                                              const ModelSettings   * modelSettings,
+//                                              int                     nAngles)
+//{
+//  int nWells  = modelSettings->getNumberOfWells();
+//  int nzp     = modelSettings->getNZpad();
+//  int nz      = timeSimbox->getnz();
+//
+//  int i;
+//
+//  for( i=0; i<nWells; i++ )
+//  {
+//    if( wells[i]->isDeviated() == false )
+//      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
+//  }
+//}
+
+void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
+                                              std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                              const float *                      const * reflection_matrix,
+                                              const Simbox                             * time_simbox,
+                                              const ModelSettings                      * model_settings,
+                                              int                                        n_angles)
+{
+  int nzp     = model_settings->getNZpad();
+  int nz      = time_simbox->getnz();
+
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if (blocked_log->GetIsDeviated() == true)
+      blocked_log->GenerateSyntheticSeismic(reflection_matrix, n_angles, wavelet, nz, nzp, time_simbox);
+  }
+}
+
+//-------------------------------------------------------------------
+FFTGrid *
+ModelAVOStatic::createFFTGrid(int nx,  int ny,  int nz,
+                              int nxp, int nyp, int nzp,
+                              bool file_grid)
+{
+  FFTGrid * fft_grid;
+  if (file_grid)
+    fft_grid = new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fft_grid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+  return(fft_grid);
+}
+
+
+//void ModelAVOStatic::deleteDynamicWells(std::vector<WellData *> wells,
+//                                        int                     nWells)
+//{
+//  for(int i=0; i<nWells; i++){
+//    wells[i]->getBlockedLogsConstThick()->deleteDynamicBlockedLogs();
+//    wells[i]->getBlockedLogsExtendedBG()->deleteDynamicBlockedLogs();
+//    wells[i]->getBlockedLogsOrigThick()->deleteDynamicBlockedLogs();
+//  }
+//}

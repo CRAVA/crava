@@ -658,7 +658,7 @@ private:
   float                             lowCut_;                     ///< lower limit for frequency to be inverted
   float                             highCut_;                    ///< upper limit for frecuency to be inverted
 
-  float                             wnc_;                        ///< White noise component, see crava.h
+  float                             wnc_;                        ///< White noise component, see avoinverson.h
 
   float                             energyThreshold_;            ///< If energy in reflection trace divided by mean energy
                                                                  ///< in reflection traces is lower than this, the reflections

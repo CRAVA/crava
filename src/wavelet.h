@@ -16,7 +16,7 @@
 
 class Simbox;
 class FFTGrid;
-class WellData;
+//class WellData;
 class ModelSettings;
 class Wavelet1D;
 
@@ -129,7 +129,8 @@ public:
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
-                                                const SeismicStorage  * /*seismic_data*/,
+                                                //const SeismicStorage  * /*seismic_data*/,
+                                                const std::vector<std::vector<double> >          & /*seis_logs*/,
                                                 //const std::vector<BlockedLogsCommon *>  /*blocked_logs_common*/,
                                                 const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                                 //const FFTGrid         * /*seisCube*/,
@@ -171,6 +172,7 @@ public:
  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
  void           nullOutsideFrequencyBand(float loCut ,float hiCut );
  float          findNorm() const;
+ void           SetReflectionCoeffs(const float * reflCoef);
 
 protected:
   float          getTheta()          const {return theta_;}

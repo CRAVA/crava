@@ -67,7 +67,7 @@ Kriging1D::krigVector(float * data,
 //-----------------------------------------------------------------------
 void
 Kriging1D::krigVector(double * data,
-                      float  * trend,
+                      double * trend,
                       int     nd,
                       float   dz)
 {
@@ -198,7 +198,7 @@ Kriging1D::subtractTrend(float * data,
 //-----------------------------------------------------------------------
 void
 Kriging1D::subtractTrend(double * data,
-                         float  * trend,
+                         double * trend,
                          int    * index,
                          int      md)
 {
@@ -228,7 +228,7 @@ Kriging1D::addTrend(float * data,
 //-----------------------------------------------------------------------
 void
 Kriging1D::addTrend(double * data,
-                    float  * trend,
+                    double * trend,
                     int      nd)
 {
   for (int i = 0 ; i < nd ; i++) {

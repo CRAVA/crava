@@ -102,7 +102,8 @@ RMSWell::RMSWell(const std::string& filename)
   //int legal_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
   //double dummy_z = WELLMISSING;
 
-  while(getline(file,dummy)) {
+  while (NRLib::CheckEndOfFile(file)==false) {
+    getline(file,dummy);
     std::istringstream ist(dummy);
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y

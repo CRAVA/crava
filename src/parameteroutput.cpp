@@ -11,16 +11,16 @@
 #include "src/io.h"
 
 void
-ParameterOutput::writeParameters(const Simbox  * simbox,
-                                 ModelGeneral  * modelGeneral,
+ParameterOutput::writeParameters(const Simbox        * simbox,
+                                 ModelGeneral        * modelGeneral,
                                  const ModelSettings * modelSettings,
-                                 FFTGrid       * alpha,
-                                 FFTGrid       * beta,
-                                 FFTGrid       * rho,
-                                 int             outputFlag,
-                                 bool            fileGrid,
-                                 int             simNum,
-                                 bool            kriged)
+                                 FFTGrid             * alpha,
+                                 FFTGrid             * beta,
+                                 FFTGrid             * rho,
+                                 int                   outputFlag,
+                                 bool                  fileGrid,
+                                 int                   simNum,
+                                 bool                  kriged)
 {
   std::string prefix;
   std::string suffix;
@@ -434,20 +434,20 @@ ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
 }
 
 void
-ParameterOutput::writeToFile(const Simbox      * simbox,
-                             ModelGeneral      * modelGeneral,
-                             const ModelSettings     * modelSettings,
-                             FFTGrid           * grid,
-                             const std::string & fileName,
-                             const std::string & sgriLabel,
-                             bool padding)
+ParameterOutput::writeToFile(const Simbox        * simbox,
+                             ModelGeneral        * modelGeneral,
+                             const ModelSettings * modelSettings,
+                             FFTGrid             * grid,
+                             const std::string   & fileName,
+                             const std::string   & sgriLabel,
+                             bool                  padding)
 {
   GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
-  GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();
+  GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
   float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
   TraceHeaderFormat *format = modelSettings->getTraceHeaderFormatOutput();
 
-  grid->writeFile(fileName,
+  grid->writeFile(fileName, //H FIX to use new simbox instead of timeCutMapping
                   IO::PathToInversionResults(),
                   simbox,
                   sgriLabel,

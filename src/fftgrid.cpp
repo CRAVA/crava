@@ -475,108 +475,108 @@ FFTGrid::~FFTGrid()
 //  endAccess();
 //}
 
-void
-FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                float                z0_data,
-                                float                zn_data,
-                                float                dz_data,
-                                float                smooth_length,
-                                std::string        & errTxt)
-{
-  // We recommend a guard zone of at least half a wavelet on each side of
-  // the target zone and that half a wavelet of the guard zone is smoothed.
-  //
-  // By default, we have: guard_zone = smooth_length = 0.5*wavelet = 100ms
-  //
-  // Originally, we checked here that the guard zone was larger than or equal
-  // to the smooth length. However, as a trace is generally not located in
-  // the center of the grid cell, we made an invalid comparison of z-values
-  // from different reference systems. Only when the top/base surface is flat
-  // such a comparison becomes valid. Instead, we hope and assume that the
-  // SegY volume made in ModelGeneral::readSegyFile() has been made with
-  // the correct guard zone in method.
+//void
+//FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
+//                                float                z0_data,
+//                                float                zn_data,
+//                                float                dz_data,
+//                                float                smooth_length,
+//                                std::string        & errTxt)
+//{
+//  // We recommend a guard zone of at least half a wavelet on each side of
+//  // the target zone and that half a wavelet of the guard zone is smoothed.
+//  //
+//  // By default, we have: guard_zone = smooth_length = 0.5*wavelet = 100ms
+//  //
+//  // Originally, we checked here that the guard zone was larger than or equal
+//  // to the smooth length. However, as a trace is generally not located in
+//  // the center of the grid cell, we made an invalid comparison of z-values
+//  // from different reference systems. Only when the top/base surface is flat
+//  // such a comparison becomes valid. Instead, we hope and assume that the
+//  // SegY volume made in ModelGeneral::readSegyFile() has been made with
+//  // the correct guard zone in method.
+//
+// //
+//  // k=n_smooth is the first sample within the simbox. For this sample
+//  // the smoothing factor (if it had been applied) should be one.
+//  //
+//  int n_smooth = static_cast<int>(floor(smooth_length/dz_data));
+//
+//  for (int k = 0 ; k < n_smooth ; k++) {
+//    double theta   = static_cast<double>(k)/static_cast<double>(n_smooth);
+//    float  sinT    = static_cast<float>(std::sin(NRLib::PiHalf*theta));
+//    data_trace[k] *= sinT*sinT;
+//  }
+//
+//  int n_data = data_trace.size();
+//  int kstart = n_data - n_smooth;
+//
+//  for (int k = 0 ; k < n_smooth ; k++) {
+//    double theta   = static_cast<double>(k + 1)/static_cast<double>(n_smooth);
+//    float  cosT    = static_cast<float>(std::cos(NRLib::PiHalf*theta));
+//    data_trace[kstart + k] *= cosT*cosT;
+//  }
+//}
 
- //
-  // k=n_smooth is the first sample within the simbox. For this sample
-  // the smoothing factor (if it had been applied) should be one.
-  //
-  int n_smooth = static_cast<int>(floor(smooth_length/dz_data));
 
-  for (int k = 0 ; k < n_smooth ; k++) {
-    double theta   = static_cast<double>(k)/static_cast<double>(n_smooth);
-    float  sinT    = static_cast<float>(std::sin(NRLib::PiHalf*theta));
-    data_trace[k] *= sinT*sinT;
-  }
-
-  int n_data = data_trace.size();
-  int kstart = n_data - n_smooth;
-
-  for (int k = 0 ; k < n_smooth ; k++) {
-    double theta   = static_cast<double>(k + 1)/static_cast<double>(n_smooth);
-    float  cosT    = static_cast<float>(std::cos(NRLib::PiHalf*theta));
-    data_trace[kstart + k] *= cosT*cosT;
-  }
-}
-
-
-void
-FFTGrid::resampleTrace(const std::vector<float> & data_trace,
-                       const rfftwnd_plan       & fftplan1,
-                       const rfftwnd_plan       & fftplan2,
-                       fftw_real                * rAmpData,
-                       fftw_real                * rAmpFine,
-                       int                        cnt,
-                       int                        rnt,
-                       int                        cmt,
-                       int                        rmt)
-{
-  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
-  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
-
-  //
-  // Fill vector to be FFT'ed
-  //
-  int n_data = static_cast<int>(data_trace.size());
-
-  for (int i = 0 ; i < n_data ; i++) {
-    rAmpData[i] = data_trace[i];
-  }
-  // Pad with zeros
-  for (int i = n_data ; i < rnt ; i++) {
-    rAmpData[i] = 0.0f;
-  }
-
-  //
-  // Transform to Fourier domain
-  //
-  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
-
-  //
-  // Fill fine-sampled grid
-  //
-  for (int i = 0 ; i < cnt ; i++) {
-    cAmpFine[i].re = cAmpData[i].re;
-    cAmpFine[i].im = cAmpData[i].im;
-  }
-  // Pad with zeros (cmt is always greater than cnt)
-  for (int i = cnt ; i < cmt ; i++) {
-    cAmpFine[i].re = 0.0f;
-    cAmpFine[i].im = 0.0f;
-  }
-
-  //
-  // Fine-sampled grid: Fourier --> Time
-  //
-  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
-
-  //
-  // Scale and fill grid_trace
-  //
-  float scale = 1/static_cast<float>(rnt);
-  for(int i = 0 ; i < rmt ; i++) {
-    rAmpFine[i] = scale*rAmpFine[i];
-  }
-}
+//void
+//FFTGrid::resampleTrace(const std::vector<float> & data_trace,
+//                       const rfftwnd_plan       & fftplan1,
+//                       const rfftwnd_plan       & fftplan2,
+//                       fftw_real                * rAmpData,
+//                       fftw_real                * rAmpFine,
+//                       int                        cnt,
+//                       int                        rnt,
+//                       int                        cmt,
+//                       int                        rmt)
+//{
+//  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+//  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+//
+//  //
+//  // Fill vector to be FFT'ed
+//  //
+//  int n_data = static_cast<int>(data_trace.size());
+//
+//  for (int i = 0 ; i < n_data ; i++) {
+//    rAmpData[i] = data_trace[i];
+//  }
+//  // Pad with zeros
+//  for (int i = n_data ; i < rnt ; i++) {
+//    rAmpData[i] = 0.0f;
+//  }
+//
+//  //
+//  // Transform to Fourier domain
+//  //
+//  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+//
+//  //
+//  // Fill fine-sampled grid
+//  //
+//  for (int i = 0 ; i < cnt ; i++) {
+//    cAmpFine[i].re = cAmpData[i].re;
+//    cAmpFine[i].im = cAmpData[i].im;
+//  }
+//  // Pad with zeros (cmt is always greater than cnt)
+//  for (int i = cnt ; i < cmt ; i++) {
+//    cAmpFine[i].re = 0.0f;
+//    cAmpFine[i].im = 0.0f;
+//  }
+//
+//  //
+//  // Fine-sampled grid: Fourier --> Time
+//  //
+//  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+//
+//  //
+//  // Scale and fill grid_trace
+//  //
+//  float scale = 1/static_cast<float>(rnt);
+//  for(int i = 0 ; i < rmt ; i++) {
+//    rAmpFine[i] = scale*rAmpFine[i];
+//  }
+//}
 
 // Trilinear interpolation
 double FFTGrid::InterpolateTrilinear(double x_min,

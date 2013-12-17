@@ -13,13 +13,13 @@ class InputFiles;
 class Simbox;
 class SeismicParametersHolder;
 
-void setupStaticModels(ModelGeneral           *& modelGeneral,
-                       ModelAVOStatic         *& modelAVOstatic,
-                       ModelGravityStatic     *& modelGravityStatic,
-                       ModelSettings           * modelSettings,
-                       InputFiles              * inputFiles,
-                       SeismicParametersHolder & seismicParameters,
-                       Simbox                 *& timeBGSimbox);
+//void setupStaticModels(ModelGeneral           *& modelGeneral,
+//                       ModelAVOStatic         *& modelAVOstatic,
+//                       ModelGravityStatic     *& modelGravityStatic,
+//                       ModelSettings           * modelSettings,
+//                       InputFiles              * inputFiles,
+//                       SeismicParametersHolder & seismicParameters,
+//                       Simbox                 *& timeBGSimbox);
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
@@ -30,20 +30,29 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                        CommonData               * commonData,
                        int                        i_interval);
 
-bool doFirstAVOInversion(ModelSettings           * modelSettings,
-                         ModelGeneral            * modelGeneral,
-                         ModelAVOStatic          * modelAVOStatic,
-                         SeismicParametersHolder & seismicParameters,
-                         InputFiles              * inputFiles,
-                         int                       sortedVintage,
-                         Simbox                  * timeBGSimbox);
+//bool doFirstAVOInversion(ModelSettings           * modelSettings,
+//                         ModelGeneral            * modelGeneral,
+//                         ModelAVOStatic          * modelAVOStatic,
+//                         SeismicParametersHolder & seismicParameters,
+//                         InputFiles              * inputFiles,
+//                         int                       sortedVintage,
+//                         Simbox                  * timeBGSimbox);
+
+//bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
+//                             ModelGeneral            * modelGeneral,
+//                             ModelAVOStatic          * modelAVOStatic,
+//                             InputFiles              * inputFiles,
+//                             SeismicParametersHolder & seismicParameters,
+//                             int                       sortedVintage);
 
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelGeneral            * modelGeneral,
-                             ModelAVOStatic          * modelAVOStatic,
-                             InputFiles              * inputFiles,
+                             ModelAVOStatic          * modelAVOstatic,
+                             CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
-                             int                       sortedVintage);
+                             //InputFiles              * inputFiles,
+                             int                       vintage,
+                             int                       i_interval);
 
 bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,
                                     const ModelGeneral            * modelGeneral,
@@ -54,6 +63,7 @@ bool doTimeLapseTravelTimeInversion(const ModelSettings           * modelSetting
 bool doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                      ModelGeneral            * modelGeneral,
                                      ModelGravityStatic      * modelGravityStatic,
+                                     CommonData              * commonData,
                                      InputFiles              * inputFiles,
                                      int                     & vintage,
                                      SeismicParametersHolder & seismicParameters);

@@ -13,8 +13,7 @@
 #include "src/vario.h"
 #include "src/simbox.h"
 #include "src/background.h"
-#include "src/welldata.h"
-#include "src/blockedlogs.h"
+//#include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
@@ -26,101 +25,101 @@
 #include "src/parameteroutput.h"
 #include "nrlib/surface/surface.hpp"
 
-ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
-                                       ModelGeneral         *& modelGeneral,
-                                       const InputFiles      * inputFiles)
-{
-  modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
-
-  debug_                  = true;
-  failed_                 = false;
-  before_injection_start_ = false; // When do we know what this should be??
-
-  bool failedLoadingModel = false; // Usikker på om trenger to slike failed-variable...
-  bool failedReadingFile  = false;
-  std::string errText("");
-
-  bool doGravityInversion = true;
-  int numberGravityFiles  = 0;
-  for(int i = 0; i<modelSettings->getNumberOfVintages(); i++){
-    if(modelSettings->getGravityTimeLapse(i))
-      numberGravityFiles++;
-  }
-
-  if(numberGravityFiles == 0){
-    // Everything is ok - we do not need gravity inversion
-    failedLoadingModel = false;
-    doGravityInversion = false;
-  }
-
-  if(numberGravityFiles == 1){
-    failedLoadingModel = true;
-    doGravityInversion = false;
-    errText+="Need at least two gravity surveys for inversion.";
-  }
-
-  // Set up gravimetric baseline
-  if(doGravityInversion){
-
-    LogKit::WriteHeader("Setting up gravimetric baseline");
-
-    // Find first gravity data file
-    std::string fileName = inputFiles->getGravimetricData(0);
-
-    int nObs = 30;     //user input
-    int nColumns = 5;  // We require data files to have five columns
-
-    observation_location_utmx_.resize(nObs);
-    observation_location_utmy_.resize(nObs);
-    observation_location_depth_.resize(nObs);
-    gravity_response_.resize(nObs);
-    gravity_std_dev_.resize(nObs);
-
-    ReadGravityDataFile(fileName, "gravimetric base survey",
-                        nObs, nColumns,
-                        observation_location_utmx_,
-                        observation_location_utmy_,
-                        observation_location_depth_,
-                        gravity_response_,
-                        gravity_std_dev_,
-                        failedReadingFile,
-                        errText);
-    failedLoadingModel = failedReadingFile;
-
-    Simbox * fullTimeSimbox = modelGeneral->getTimeSimbox();
-
-    x_upscaling_factor_ = 10;   // user input...
-    y_upscaling_factor_ = 10;
-    z_upscaling_factor_ = 5;
-
-    SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
-    // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
-    // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
-
-    dx_upscaled_ = fullTimeSimbox->GetLX()/nx_upscaled_;
-    dy_upscaled_ = fullTimeSimbox->GetLY()/ny_upscaled_;
-    dz_upscaled_ = fullTimeSimbox->GetLZ()/nz_upscaled_;
-
-    LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
-    MakeUpscalingKernel(modelSettings, fullTimeSimbox);  // sjekk at er over nxp
-    LogKit::LogFormatted(LogKit::Low, "ok.\n");
-
-    LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
-                                                                          + NRLib::ToString(nyp_upscaled_) + " x "
-                                                                          + NRLib::ToString(nzp_upscaled_) + ") ...");
-    MakeLagIndex(nxp_upscaled_, nyp_upscaled_, nzp_upscaled_); // NBNB including padded region!
-    LogKit::LogFormatted(LogKit::Low, "ok.\n");
-  }
-
-  if (failedLoadingModel) {
-    LogKit::WriteHeader("Error(s) with gravimetric surveys");
-    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  }
-
-  failed_ = failedLoadingModel || failedReadingFile;
-  failed_details_.push_back(failedReadingFile);
-}
+//ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
+//                                       ModelGeneral         *& modelGeneral,
+//                                       const InputFiles      * inputFiles)
+//{
+//  modelGeneral_           = modelGeneral; // For easier use when outputting parameters. // Remove it later
+//
+//  debug_                  = true;
+//  failed_                 = false;
+//  before_injection_start_ = false; // When do we know what this should be??
+//
+//  bool failedLoadingModel = false; // Usikker på om trenger to slike failed-variable...
+//  bool failedReadingFile  = false;
+//  std::string errText("");
+//
+//  bool doGravityInversion = true;
+//  int numberGravityFiles  = 0;
+//  for(int i = 0; i<modelSettings->getNumberOfVintages(); i++){
+//    if(modelSettings->getGravityTimeLapse(i))
+//      numberGravityFiles++;
+//  }
+//
+//  if(numberGravityFiles == 0){
+//    // Everything is ok - we do not need gravity inversion
+//    failedLoadingModel = false;
+//    doGravityInversion = false;
+//  }
+//
+//  if(numberGravityFiles == 1){
+//    failedLoadingModel = true;
+//    doGravityInversion = false;
+//    errText+="Need at least two gravity surveys for inversion.";
+//  }
+//
+//  // Set up gravimetric baseline
+//  if(doGravityInversion){
+//
+//    LogKit::WriteHeader("Setting up gravimetric baseline");
+//
+//    // Find first gravity data file
+//    std::string fileName = inputFiles->getGravimetricData(0);
+//
+//    int nObs = 30;     //user input
+//    int nColumns = 5;  // We require data files to have five columns
+//
+//    observation_location_utmx_.resize(nObs);
+//    observation_location_utmy_.resize(nObs);
+//    observation_location_depth_.resize(nObs);
+//    gravity_response_.resize(nObs);
+//    gravity_std_dev_.resize(nObs);
+//
+//    ReadGravityDataFile(fileName, "gravimetric base survey",
+//                        nObs, nColumns,
+//                        observation_location_utmx_,
+//                        observation_location_utmy_,
+//                        observation_location_depth_,
+//                        gravity_response_,
+//                        gravity_std_dev_,
+//                        failedReadingFile,
+//                        errText);
+//    failedLoadingModel = failedReadingFile;
+//
+//    Simbox * fullTimeSimbox = modelGeneral->getTimeSimbox();
+//
+//    x_upscaling_factor_ = 10;   // user input...
+//    y_upscaling_factor_ = 10;
+//    z_upscaling_factor_ = 5;
+//
+//    SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
+//    // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
+//    // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
+//
+//    dx_upscaled_ = fullTimeSimbox->GetLX()/nx_upscaled_;
+//    dy_upscaled_ = fullTimeSimbox->GetLY()/ny_upscaled_;
+//    dz_upscaled_ = fullTimeSimbox->GetLZ()/nz_upscaled_;
+//
+//    LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
+//    MakeUpscalingKernel(modelSettings, fullTimeSimbox);  // sjekk at er over nxp
+//    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+//
+//    LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
+//                                                                          + NRLib::ToString(nyp_upscaled_) + " x "
+//                                                                          + NRLib::ToString(nzp_upscaled_) + ") ...");
+//    MakeLagIndex(nxp_upscaled_, nyp_upscaled_, nzp_upscaled_); // NBNB including padded region!
+//    LogKit::LogFormatted(LogKit::Low, "ok.\n");
+//  }
+//
+//  if (failedLoadingModel) {
+//    LogKit::WriteHeader("Error(s) with gravimetric surveys");
+//    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+//    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+//  }
+//
+//  failed_ = failedLoadingModel || failedReadingFile;
+//  failed_details_.push_back(failedReadingFile);
+//}
 
 ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
                                        CommonData          * commonData,
@@ -134,11 +133,11 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
   // Set up gravimetric baseline
   LogKit::WriteHeader("Setting up gravimetric baseline");
 
-  observation_location_utmx_  = commonData->GetGravityObservationUtmxInterval(i_interval); //H When will these be used?
-  observation_location_utmy_  = commonData->GetGravityObservationUtmyInterval(i_interval);
-  observation_location_depth_ = commonData->GetGravityObservationDepthInterval(i_interval);
-  gravity_response_           = commonData->GetGravityResponseInterval(i_interval);
-  gravity_std_dev_            = commonData->GetGravityStdDevInterval(i_interval);
+  observation_location_utmx_  = commonData->GetGravityObservationUtmxTimeLapse(0); //H Not used?
+  observation_location_utmy_  = commonData->GetGravityObservationUtmyTimeLapse(0);
+  observation_location_depth_ = commonData->GetGravityObservationDepthTimeLapse(0);
+  gravity_response_           = commonData->GetGravityResponseTimeLapse(0);
+  gravity_std_dev_            = commonData->GetGravityStdDevTimeLapse(0);
 
   x_upscaling_factor_ = 10;   // user input...
   y_upscaling_factor_ = 10;

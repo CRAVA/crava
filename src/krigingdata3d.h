@@ -6,14 +6,18 @@
 #ifndef KRIGINGDATA3D_H
 #define KRIGINGDATA3D_H
 
-class WellData;
+//class WellData;
 class CBWellPt;
+class BlockedLogsCommon;
+
+#include <map>
 
 class KrigingData3D
 {
 public:
   KrigingData3D(int ntot);
-  KrigingData3D(std::vector<WellData *> wells, int nWells, int type);
+  //KrigingData3D(std::vector<WellData *> wells, int nWells, int type);
+  KrigingData3D(std::map<std::string, BlockedLogsCommon *> blocked_wells, int type);
   ~KrigingData3D(void);
 
   CBWellPt  ** getData(void)         const { return data_ ;}

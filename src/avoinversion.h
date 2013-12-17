@@ -2,8 +2,8 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-#ifndef CRAVA_H
-#define CRAVA_H
+#ifndef AVOINVERSION_H
+#define AVOINVERSION_H
 
 #include "fftw.h"
 #include "definitions.h"
@@ -18,7 +18,7 @@ class Wavelet;
 class Wavelet1D;
 class Simbox;
 class RandomGen;
-class WellData;
+//class WellData;
 class CKrigingAdmin;
 class CovGridSeparated;
 class KrigingData3D;
@@ -28,23 +28,31 @@ class ModelSettings;
 class SpatialWellFilter;
 class SeismicParametersHolder;
 
+class BlockedLogsCommon;
 
-class Crava
+
+class AVOInversion
 {
 public:
-  Crava(ModelSettings           * modelSettings,
-        ModelGeneral            * modelGeneral,
-        ModelAVOStatic          * modelAVOstatic,
-        ModelAVODynamic         * modelAVOdynamic,
-        SeismicParametersHolder & seismicParameters);
+  //AVOInversion(ModelSettings           * modelSettings,
+  //      ModelGeneral            * modelGeneral,
+  //      ModelAVOStatic          * modelAVOstatic,
+  //      ModelAVODynamic         * modelAVOdynamic,
+  //      SeismicParametersHolder & seismicParameters);
 
-  ~Crava();
+  AVOInversion(ModelSettings           * modelSettings,
+               ModelGeneral            * modelGeneral,
+               ModelAVOStatic          * modelAVOstatic,
+               ModelAVODynamic         * modelAVOdynamic,
+               SeismicParametersHolder & seismicParameters);
+
+  ~AVOInversion();
 
   int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
-  int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+  int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);
 
-  FFTGrid              * getPostAlpha() { return postAlpha_ ;}
-  FFTGrid              * getPostBeta()  { return postBeta_  ;}
+  FFTGrid              * getPostVp() { return postVp_ ;}
+  FFTGrid              * getPostVs()  { return postVs_  ;}
   FFTGrid              * getPostRho()   { return postRho_   ;}
 
   int                    getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
@@ -64,11 +72,11 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
-  void                   computeDataVariance(void);
-  void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
+  //void                   computeDataVariance(void);
+  //void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
 
-  void                   computeVariances(fftw_real     * corrT,
-                                          ModelSettings * modelSettings);
+  //void                   computeVariances(fftw_real     * corrT,
+  //                                        ModelSettings * modelSettings);
 
   void                   writeBWPredicted(void);
   float                  getEmpSNRatio(int l)     const { return empSNRatio_[l]     ;}
@@ -96,7 +104,7 @@ private:
 
   int                    checkScale(void);
 
-  void                   fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
+  void                   fillkW(int k, fftw_complex* kW, std::vector<Wavelet *> seisWavelet);
   void                   fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
   void                   fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
 
@@ -116,13 +124,13 @@ private:
   FFTGrid              * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
 
-  float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
+  //float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
 
   void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
   void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
-  void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
+  void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postVp, FFTGrid & postVs, FFTGrid & postRho);
 
-  void                   correctAlphaBetaRho(ModelSettings * modelSettings);
+  void                   correctVpVsRho(ModelSettings * modelSettings);
 
   FFTGrid *              computeSeismicImpedance(FFTGrid * alpha,
                                                  FFTGrid * beta,
@@ -159,22 +167,27 @@ private:
   int                nSim_;             // number of simulations
   float            * thetaDeg_;         // in degrees
 
-  FFTGrid          * meanAlpha_;        // mean values
-  FFTGrid          * meanBeta_;
+  FFTGrid          * meanVp_;        // mean values
+  FFTGrid          * meanVs_;
   FFTGrid          * meanRho_;
-  FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method
-  FFTGrid          * meanBeta2_;
+  FFTGrid          * meanVp2_;       // copy of mean values, to be used for facies prob, new method
+  FFTGrid          * meanVs2_;
   FFTGrid          * meanRho2_;
 
-  Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
-  FFTGrid         ** seisData_;         // Data
+  //Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
+  //FFTGrid         ** seisData_;         // Data
+  std::vector<Wavelet *> seisWavelet_;
+  std::vector<FFTGrid *> seisData_;
+
   double          ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
   float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
-  float            * empSNRatio_;       // signal noise ratio empirical
+  //float            * empSNRatio_;       // signal noise ratio empirical
+  std::vector<float> empSNRatio_;
+
   float            * theoSNRatio_;      // signal noise ratio from model
   float            * modelVariance_;
   float            * signalVariance_;
@@ -183,18 +196,21 @@ private:
 
   NRLib::Matrix      priorVar0_;
   NRLib::Matrix      postVar0_;
-  std::vector<float> postCovAlpha00_;        // Posterior covariance in (i,j) = (0,0)
-  std::vector<float> postCovBeta00_;
+  std::vector<float> postCovVp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float> postCovVs00_;
   std::vector<float> postCovRho00_;
 
-  FFTGrid          * postAlpha_;        // posterior values
-  FFTGrid          * postBeta_;
+  FFTGrid          * postVp_;        // posterior values
+  FFTGrid          * postVs_;
   FFTGrid          * postRho_;
   FFTGrid          * errCorr_;
 
-  int                     krigingParameter_;
-  std::vector<WellData *> wells_;
-  int                     nWells_;
+  bool               multiinterval_;
+
+  int                                        krigingParameter_;
+  //std::vector<WellData *> wells_;
+  std::map<std::string, BlockedLogsCommon *> blocked_wells_;
+  //int                                        nWells_;
 
   int                scaleWarning_;
   std::string        scaleWarningText_;

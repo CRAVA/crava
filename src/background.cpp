@@ -20,7 +20,7 @@
 #include "src/modelsettings.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-#include "src/welldata.h"
+//#include "src/welldata.h"
 //#include "nrlib/well/well.hpp"
 #include "src/background.h"
 #include "src/covgrid2d.h"
@@ -86,7 +86,8 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
                        const Simbox                               * time_bg_simbox,
                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                        std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                       const ModelSettings                        * model_settings)
+                       const ModelSettings                        * model_settings,
+                       std::string                                & err_text)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
@@ -108,7 +109,8 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
                             time_simbox,
                             blocked_logs,
                             bg_blocked_logs,
-                            model_settings);
+                            model_settings,
+                            err_text);
   }
   else
   {
@@ -117,7 +119,8 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
                             time_bg_simbox,
                             blocked_logs,
                             bg_blocked_logs,
-                            model_settings);
+                            model_settings,
+                            err_text);
 
     resampleBackgroundModel(bg_vp, bg_vs, bg_rho,
                             time_bg_simbox,
@@ -127,8 +130,8 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0],  //Vp_vs from background not used in CommonData
-  //             back_model_[1]);
+  //vsvp_ = findMeanVsVp(bg_vp, bg_vs); //Moved to Commondata
+
 }
 
 //-------------------------------------------------------------------------------
@@ -196,12 +199,12 @@ Background::Background(std::vector<NRLib::Grid<double> > & parameters,
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0],
-  //             back_model_[1]);
+  //vsvp_ = findMeanVsVp(bg_vp, bg_vs); //Moved to Commondata
 }
 
 //-------------------------------------------------------------------------------
 Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
+                       //std::vector<double>                             & vs_vp_ratios,
                        const std::vector<NRLib::Well>                  & wells,
                        MultiIntervalGrid                               * multiple_interval_grid,
                        const ModelSettings                             * model_settings,
@@ -229,34 +232,37 @@ Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & paramet
 
   //padAndSetBackgroundModelInterval(bg_vp, bg_vs, bg_rho);
 
-  //findMeanVsVp(back_model_[0], //Vp_vs from background not used in CommonData
-               //back_model_[1]);
+  //for(int i = 0; i < n_intervals; i++) { //Moved to Commondata
+  //  vs_vp_ratios[i] = findMeanVsVp(bg_vp[i], bg_vs[i]);
+  //}
+
 }
 
 //-------------------------------------------------------------------------------
-Background::Background(FFTGrid ** grids)
-  : DataTarget_(IMISSING),
-    vsvp_(RMISSING)
-{
-  for(int i=0 ; i<3 ; i++)
-    back_model_[i] = grids[i];
-  findMeanVsVp(back_model_[0],
-               back_model_[1]);
-}
+//Background::Background(FFTGrid ** grids)
+//  : DataTarget_(IMISSING),
+//    vsvp_(RMISSING)
+//{
+//  for(int i=0 ; i<3 ; i++)
+//    back_model_[i] = grids[i];
+//  findMeanVsVp(back_model_[0],
+//               back_model_[1]);
+//}
 
 //-------------------------------------------------------------------------------
 Background::~Background(void)
 {
-  for (int i=0 ; i<3 ; i++)
-    delete back_model_[i];
+  //for (int i=0 ; i<3 ; i++)
+  //  if(back_model_[i] != NULL)
+  //    delete back_model_[i];
 }
 
 //-------------------------------------------------------------------------------
 void
 Background::releaseGrids()
 {
-  for (int i=0 ; i<3 ; i++)
-    back_model_[i] = NULL;
+  //for (int i=0 ; i<3 ; i++)
+  //  back_model_[i] = NULL;
 }
 
 //-------------------------------------------------------------------------------
@@ -449,172 +455,162 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
                                     const Simbox                               * simbox,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                     std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                                    const ModelSettings                        * model_settings)
+                                    const ModelSettings                        * model_settings,
+                                    std::string                                & err_text)
 {
-  const int   nz     = simbox->getnz();
+  const int   nz      = simbox->getnz();
   const int   n_wells = model_settings->getNumberOfWells();
-  const float dz     = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
+  const float dz      = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
   std::string name_vp  = "Vp";
   std::string name_vs  = "Vs";
   std::string name_rho = "Rho";
 
-  std::vector<float *> well_trend_vp(n_wells);
-  std::vector<float *> well_trend_vs(n_wells);
-  std::vector<float *> well_trend_rho(n_wells);
-  std::vector<float *> high_cut_well_trend_vp(n_wells);
-  std::vector<float *> high_cut_well_trend_vs(n_wells);
-  std::vector<float *> high_cut_well_trend_rho(n_wells);
+  std::vector<std::vector<double> > well_trend_vp(n_wells);
+  std::vector<std::vector<double> > well_trend_vs(n_wells);
+  std::vector<std::vector<double> > well_trend_rho(n_wells);
+  std::vector<std::vector<double> > high_cut_well_trend_vp(n_wells);
+  std::vector<std::vector<double> > high_cut_well_trend_vs(n_wells);
+  std::vector<std::vector<double> > high_cut_well_trend_rho(n_wells);
 
-  getWellTrends(well_trend_vp, high_cut_well_trend_vp, wells, bg_blocked_logs, nz, name_vp);
-  getWellTrends(well_trend_vs, high_cut_well_trend_vs, wells, bg_blocked_logs, nz, name_vs);
-  getWellTrends(well_trend_rho, high_cut_well_trend_rho, wells, bg_blocked_logs, nz, name_rho);
+  std::string err_text_tmp = "";
 
-  float * trend_vp = new float[nz];
-  float * trend_vs = new float[nz];
-  float * trend_rho  = new float[nz];
-  float * trend_vel  = new float[nz]; // Allocate (for simplicity) although not always needed
+  getWellTrends(well_trend_vp,  high_cut_well_trend_vp,  wells, bg_blocked_logs, nz, name_vp, err_text_tmp);
+  getWellTrends(well_trend_vs,  high_cut_well_trend_vs,  wells, bg_blocked_logs, nz, name_vs, err_text_tmp);
+  getWellTrends(well_trend_rho, high_cut_well_trend_rho, wells, bg_blocked_logs, nz, name_rho, err_text_tmp);
 
-  float * avg_dev_vp = new float[n_wells];
-  float * avg_dev_vs = new float[n_wells];
-  float * avg_dev_rho = new float[n_wells];
-  float * avg_dev_vel = new float[n_wells]; // Allocate (for simplicity) although not always needed
-
-  calculateBackgroundTrend(trend_vp,
-                           avg_dev_vp,
-                           nz,
-                           dz,
-                           model_settings->getAlphaMin(),
-                           model_settings->getAlphaMax(),
-                           model_settings->getMaxHzBackground(),
-                           well_trend_vp,
-                           high_cut_well_trend_vp,
-                           name_vp);
-  calculateBackgroundTrend(trend_vs,
-                           avg_dev_vs,
-                           nz,
-                           dz,
-                           model_settings->getBetaMin(),
-                           model_settings->getBetaMax(),
-                           model_settings->getMaxHzBackground(),
-                           well_trend_vs,
-                           high_cut_well_trend_vs,
-                           name_vs);
-  calculateBackgroundTrend(trend_rho,
-                           avg_dev_rho,
-                           nz,
-                           dz,
-                           model_settings->getRhoMin(),
-                           model_settings->getRhoMax(),
-                           model_settings->getMaxHzBackground(),
-                           well_trend_rho,
-                           high_cut_well_trend_rho,
-                           name_rho);
-
-  bool has_velocity_trend = velocity.GetN() != 0; // != NULL;
-  bool write1D          = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-  bool write3D          = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
-
-  writeTrendsToFile(trend_vp, simbox, write1D, write3D, has_velocity_trend, name_vp, model_settings->getFileGrid());
-  writeTrendsToFile(trend_vs, simbox, write1D, write3D, has_velocity_trend, name_vs, model_settings->getFileGrid());
-  writeTrendsToFile(trend_rho, simbox, write1D, write3D, has_velocity_trend, name_rho, model_settings->getFileGrid());
-
-  if (velocity.GetN() != 0) { //!= NULL) {
-    //
-    // We still want calculateBackgroundTrend() for alpha above. By calculating
-    // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
-    // good as or better than that calculated by crava.
-    //
-    calculateVelocityDeviations(velocity, wells, simbox, blocked_logs, bg_blocked_logs,
-                                trend_vel, avg_dev_vel, avg_dev_vp,
-                                model_settings->getOutputGridsElastic(),
-                                n_wells);
-
-    velocity.LogTransform(RMISSING);
-    //velocity->logTransf();
-
-    //delete bg_vp;
-    bg_vp = velocity;
-    velocity.Resize(0, 0, 0, 0.0); // = NULL;
-    writeDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
-                                     trend_vel, trend_vs, trend_rho,
-                                     wells, n_wells, nz);
+  if(err_text_tmp != "") {
+    err_text += err_text_tmp;
   }
   else {
-    writeDeviationsFromVerticalTrend(avg_dev_vp, avg_dev_vs, avg_dev_rho,
-                                     trend_vp, trend_vs, trend_rho,
-                                     wells, n_wells, nz);
-  }
+    std::vector<double> trend_vp(nz);
+    std::vector<double> trend_vs(nz);
+    std::vector<double> trend_rho(nz);
+    std::vector<double> trend_vel(nz);
 
-  std::vector<KrigingData2D> kriging_data_vp(nz);
-  std::vector<KrigingData2D> kriging_data_vs(nz);
-  std::vector<KrigingData2D> kriging_data_rho(nz);
+    //float * trend_vel  = new float[nz]; // Allocate (for simplicity) although not always needed
 
-  std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
-  std::vector<std::vector<double > > bl_vs(n_wells);
-  std::vector<std::vector<double > > bl_rho(n_wells);
-  std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
-  std::vector<std::vector<double > > vt_vs(n_wells);
-  std::vector<std::vector<double > > vt_rho(n_wells);
+    std::vector<double> avg_dev_vp(n_wells);
+    std::vector<double> avg_dev_vs(n_wells);
+    std::vector<double> avg_dev_rho(n_wells);
+    std::vector<double> avg_dev_vel(n_wells);
 
-  std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
-  std::vector<const std::vector<int> > jpos(n_wells);
-  std::vector<const std::vector<int> > kpos(n_wells);
+    //float * avg_dev_vel = new float[n_wells]; // Allocate (for simplicity) although not always needed
 
-  for(int i=0; i<n_wells; i++) {
-    vt_vp[i] = std::vector<double>(nz);
-    vt_vs[i] = std::vector<double>(nz);
-    vt_rho[i] = std::vector<double>(nz);
-  }
+    calculateBackgroundTrend(trend_vp,
+                             avg_dev_vp,
+                             nz,
+                             dz,
+                             model_settings->getAlphaMin(),
+                             model_settings->getAlphaMax(),
+                             model_settings->getMaxHzBackground(),
+                             well_trend_vp,
+                             high_cut_well_trend_vp,
+                             name_vp);
+    calculateBackgroundTrend(trend_vs,
+                             avg_dev_vs,
+                             nz,
+                             dz,
+                             model_settings->getBetaMin(),
+                             model_settings->getBetaMax(),
+                             model_settings->getMaxHzBackground(),
+                             well_trend_vs,
+                             high_cut_well_trend_vs,
+                             name_vs);
+    calculateBackgroundTrend(trend_rho,
+                             avg_dev_rho,
+                             nz,
+                             dz,
+                             model_settings->getRhoMin(),
+                             model_settings->getRhoMax(),
+                             model_settings->getMaxHzBackground(),
+                             well_trend_rho,
+                             high_cut_well_trend_rho,
+                             name_rho);
 
-  std::vector<int> n_blocks(n_wells);
-  int              tot_blocks;
+    bool has_velocity_trend = velocity.GetN() != 0;
+    bool write1D            = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
+    bool write3D            = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
-  getKrigingWellTrends(bl_vp,bl_vs,bl_rho,
+    writeTrendsToFile(trend_vp,  simbox, write1D, write3D, has_velocity_trend, name_vp,  model_settings->getFileGrid());
+    writeTrendsToFile(trend_vs,  simbox, write1D, write3D, has_velocity_trend, name_vs,  model_settings->getFileGrid());
+    writeTrendsToFile(trend_rho, simbox, write1D, write3D, has_velocity_trend, name_rho, model_settings->getFileGrid());
+
+    if (velocity.GetN() != 0) {
+      //
+      // We still want calculateBackgroundTrend() for alpha above. By calculating
+      // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
+      // good as or better than that calculated by crava.
+      //
+      calculateVelocityDeviations(velocity, wells, simbox, blocked_logs, bg_blocked_logs,
+                                  trend_vel, avg_dev_vel, avg_dev_vp,
+                                  model_settings->getOutputGridsElastic(),
+                                  n_wells);
+
+      velocity.LogTransform(RMISSING);
+      //velocity->logTransf();
+
+      //delete bg_vp;
+      bg_vp = velocity;
+      velocity.Resize(0, 0, 0, 0.0);
+      writeDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
+                                       trend_vel, trend_vs, trend_rho,
+                                       wells, n_wells, nz);
+    }
+    else {
+      writeDeviationsFromVerticalTrend(avg_dev_vp, avg_dev_vs, avg_dev_rho,
+                                       trend_vp, trend_vs, trend_rho,
+                                       wells, n_wells, nz);
+    }
+
+    std::vector<KrigingData2D> kriging_data_vp(nz);
+    std::vector<KrigingData2D> kriging_data_vs(nz);
+    std::vector<KrigingData2D> kriging_data_rho(nz);
+
+    std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
+    std::vector<std::vector<double > > bl_vs(n_wells);
+    std::vector<std::vector<double > > bl_rho(n_wells);
+    std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
+    std::vector<std::vector<double > > vt_vs(n_wells);
+    std::vector<std::vector<double > > vt_rho(n_wells);
+
+    std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
+    std::vector<const std::vector<int> > jpos(n_wells);
+    std::vector<const std::vector<int> > kpos(n_wells);
+
+    for(int i=0; i<n_wells; i++) {
+      vt_vp[i] = std::vector<double>(nz);
+      vt_vs[i] = std::vector<double>(nz);
+      vt_rho[i] = std::vector<double>(nz);
+    }
+
+    std::vector<int> n_blocks(n_wells);
+    int              tot_blocks;
+
+    getKrigingWellTrends(bl_vp,bl_vs,bl_rho,
+                         vt_vp,vt_vs,vt_rho,
+                         ipos,jpos,kpos,
+                         n_blocks,tot_blocks,
+                         wells, bg_blocked_logs,
+                         n_wells);
+
+    setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
+                       trend_vp,trend_vs,trend_rho,
+                       model_settings->getOutputGridsElastic(),
+                       nz,dz,tot_blocks,n_blocks,
+                       bl_vp,bl_vs,bl_rho,
                        vt_vp,vt_vs,vt_rho,
-                       ipos,jpos,kpos,
-                       n_blocks,tot_blocks,
-                       wells, bg_blocked_logs,
-                       n_wells);
+                       ipos,jpos,kpos);
 
-  setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
-                     trend_vp,trend_vs,trend_rho,
-                     model_settings->getOutputGridsElastic(),
-                     nz,dz,tot_blocks,n_blocks,
-                     bl_vp,bl_vs,bl_rho,
-                     vt_vp,vt_vs,vt_rho,
-                     ipos,jpos,kpos);
+    const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
+                                                model_settings->getBackgroundVario(),
+                                                model_settings->getDebugFlag());
 
-  const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
-                                              model_settings->getBackgroundVario(),
-                                              model_settings->getDebugFlag());
+    makeKrigedBackground(kriging_data_vp,  bg_vp,  trend_vp,  simbox, covGrid2D, "Vp");
+    makeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs");
+    makeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho");
 
-  makeKrigedBackground(kriging_data_vp, bg_vp, trend_vp, simbox, covGrid2D, "Vp");
-  makeKrigedBackground(kriging_data_vs , bg_vs , trend_vs , simbox, covGrid2D, "Vs");
-  makeKrigedBackground(kriging_data_rho  , bg_rho  , trend_rho  , simbox, covGrid2D, "Rho");
-
-  delete &covGrid2D;
-
-  delete [] avg_dev_vp;
-  delete [] avg_dev_vs;
-  delete [] avg_dev_rho;
-  delete [] avg_dev_vel;
-
-  delete [] trend_vp;
-  delete [] trend_vs;
-  delete [] trend_rho;
-  delete [] trend_vel;
-
-  for(int i=0; i<n_wells; i++) {
-
-    delete [] well_trend_vp[i];
-    delete [] well_trend_vs[i];
-    delete [] well_trend_rho[i];
-
-    delete [] high_cut_well_trend_vp[i];
-    delete [] high_cut_well_trend_vs[i];
-    delete [] high_cut_well_trend_rho[i];
-
+    delete &covGrid2D;
   }
 }
 
@@ -851,7 +847,7 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        &
 
 //-------------------------------------------------------------------------------
 void
-Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp, //FFTGrid                       *& bg_vp,
+Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp,
                                              NRLib::Grid<double>            & bg_vs,
                                              NRLib::Grid<double>            & bg_rho,
                                              const std::vector<NRLib::Well> & wells,
@@ -907,22 +903,22 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
     std::string name_vs  = "Vs";
     std::string name_rho = "Rho";
 
-    std::vector<float *> trend_vp_zone(n_zones);
-    std::vector<float *> trend_vs_zone(n_zones);
-    std::vector<float *> trend_rho_zone(n_zones);
+    std::vector<std::vector<double> > trend_vp_zone(n_zones);
+    std::vector<std::vector<double> > trend_vs_zone(n_zones);
+    std::vector<std::vector<double> > trend_rho_zone(n_zones);
 
-    for(int i=0; i<n_zones; i++) {
+    for(int i=0; i < n_zones; i++) {
       LogKit::LogFormatted(LogKit::Low,"\nZone%2d:",i+1);
 
       int nz = static_cast<int>(vp_zones[i].GetNK());
 
-      std::vector<float *> well_trend_vp(n_wells);
-      std::vector<float *> well_trend_vs(n_wells);
-      std::vector<float *> well_trend_rho(n_wells);
+      std::vector<std::vector<double> > well_trend_vp(n_wells);
+      std::vector<std::vector<double> > well_trend_vs(n_wells);
+      std::vector<std::vector<double> > well_trend_rho(n_wells);
 
-      std::vector<float *> high_cut_well_trend_vp(n_wells);
-      std::vector<float *> high_cut_well_trend_vs(n_wells);
-      std::vector<float *> high_cut_well_trend_rho(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_vp(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_vs(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_rho(n_wells);
 
       StormContGrid eroded_zone;
 
@@ -933,113 +929,107 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
                        i);
 
       std::vector<bool> hit_zone(n_wells);
-      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells);
+      checkWellHitsZone(hit_zone, wells, eroded_zone, n_wells); //Check blocked logs?
 
       std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
+      std::string err_text_tmp = "";
 
-      trend_vp_zone[i] = new float[nz];
-      trend_vs_zone[i]  = new float[nz];
-      trend_rho_zone[i]   = new float[nz];
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
-      float * avg_dev_vp_zone = new float[n_wells];
-      float * avg_dev_vs_zone = new float[n_wells];
-      float * avg_dev_rho_zone = new float[n_wells];
+      if(err_text_tmp != "") {
+        err_text += err_text_tmp;
+        break; //H exit or continue?
+      }
+      else {
 
-      calculateBackgroundTrend(trend_vp_zone[i],
-                               avg_dev_vp_zone,
-                               nz,
-                               dz,
-                               model_settings->getAlphaMin(),
-                               model_settings->getAlphaMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_vp,
-                               high_cut_well_trend_vp,
-                               name_vp);
-      calculateBackgroundTrend(trend_vs_zone[i],
-                               avg_dev_vs_zone,
-                               nz,
-                               dz,
-                               model_settings->getBetaMin(),
-                               model_settings->getBetaMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_vs,
-                               high_cut_well_trend_vs,
-                               name_vs);
-      calculateBackgroundTrend(trend_rho_zone[i],
-                               avg_dev_rho_zone,
-                               nz,
-                               dz,
-                               model_settings->getRhoMin(),
-                               model_settings->getRhoMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_rho,
-                               high_cut_well_trend_rho,
-                               name_rho);
+        trend_vp_zone[i].resize(nz);
+        trend_vs_zone[i].resize(nz);
+        trend_rho_zone[i].resize(nz);
 
-      writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
-                                       avg_dev_vs_zone,
-                                       avg_dev_rho_zone,
-                                       trend_vp_zone[i],
-                                       trend_vs_zone[i],
-                                       trend_rho_zone[i],
-                                       wells,
-                                       n_wells,
-                                       nz);
+        std::vector<double> avg_dev_vp_zone(n_wells);
+        std::vector<double> avg_dev_vs_zone(n_wells);
+        std::vector<double> avg_dev_rho_zone(n_wells);
 
-      std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
-      std::vector<std::vector<double > > bl_vs(n_wells);
-      std::vector<std::vector<double > > bl_rho(n_wells);
-      std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
-      std::vector<std::vector<double > > vt_vs(n_wells);
-      std::vector<std::vector<double > > vt_rho(n_wells);
+        calculateBackgroundTrend(trend_vp_zone[i],
+                                 avg_dev_vp_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getAlphaMin(),
+                                 model_settings->getAlphaMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_vp,
+                                 high_cut_well_trend_vp,
+                                 name_vp);
+        calculateBackgroundTrend(trend_vs_zone[i],
+                                 avg_dev_vs_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getBetaMin(),
+                                 model_settings->getBetaMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_vs,
+                                 high_cut_well_trend_vs,
+                                 name_vs);
+        calculateBackgroundTrend(trend_rho_zone[i],
+                                 avg_dev_rho_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getRhoMin(),
+                                 model_settings->getRhoMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_rho,
+                                 high_cut_well_trend_rho,
+                                 name_rho);
 
-      std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
-      std::vector<const std::vector<int> > jpos(n_wells);
-      std::vector<const std::vector<int> > kpos(n_wells);
+        writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
+                                         avg_dev_vs_zone,
+                                         avg_dev_rho_zone,
+                                         trend_vp_zone[i],
+                                         trend_vs_zone[i],
+                                         trend_rho_zone[i],
+                                         wells,
+                                         n_wells,
+                                         nz);
 
-      int              totBlocks;
-      std::vector<int> nBlocks(n_wells);
+        std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
+        std::vector<std::vector<double > > bl_vs(n_wells);
+        std::vector<std::vector<double > > bl_rho(n_wells);
+        std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
+        std::vector<std::vector<double > > vt_vs(n_wells);
+        std::vector<std::vector<double > > vt_rho(n_wells);
 
-      getKrigingWellTrendsZone(blocked_logs,
-                               bl_vp,bl_vs,bl_rho,
-                               vt_vp,vt_vs,vt_rho,
-                               ipos,jpos,kpos,
-                               nBlocks,totBlocks,nz);
+        std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
+        std::vector<const std::vector<int> > jpos(n_wells);
+        std::vector<const std::vector<int> > kpos(n_wells);
 
-      std::vector<KrigingData2D> kriging_data_vp(nz);
-      std::vector<KrigingData2D> kriging_data_vs(nz);
-      std::vector<KrigingData2D> kriging_data_rho(nz);
+        int              totBlocks;
+        std::vector<int> nBlocks(n_wells);
 
-      setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
-                         trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
-                         model_settings->getOutputGridsElastic(),
-                         nz,dz,totBlocks,nBlocks,
-                         bl_vp,bl_vs,bl_rho,
-                         vt_vp,vt_vs,vt_rho,
-                         ipos,jpos,kpos);
+        getKrigingWellTrendsZone(blocked_logs,
+                                 bl_vp,bl_vs,bl_rho,
+                                 vt_vp,vt_vs,vt_rho,
+                                 ipos,jpos,kpos,
+                                 nBlocks,totBlocks,nz);
 
-      makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], covGrid2D);
-      makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], covGrid2D);
-      makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], covGrid2D);
+        std::vector<KrigingData2D> kriging_data_vp(nz);
+        std::vector<KrigingData2D> kriging_data_vs(nz);
+        std::vector<KrigingData2D> kriging_data_rho(nz);
 
-      delete [] avg_dev_vp_zone;
-      delete [] avg_dev_vs_zone;
-      delete [] avg_dev_rho_zone;
+        setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
+                           trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
+                           model_settings->getOutputGridsElastic(),
+                           nz,dz,totBlocks,nBlocks,
+                           bl_vp,bl_vs,bl_rho,
+                           vt_vp,vt_vs,vt_rho,
+                           ipos,jpos,kpos);
 
-      for(int j=0; j<n_wells; j++) {
-        delete [] well_trend_vp[j];
-        delete [] well_trend_vs[j];
-        delete [] well_trend_rho[j];
+        makeKrigedZone(kriging_data_vp,  trend_vp_zone[i],  vp_zones[i],  covGrid2D);
+        makeKrigedZone(kriging_data_vs,  trend_vs_zone[i],  vs_zones[i],  covGrid2D);
+        makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], covGrid2D);
 
-        delete [] high_cut_well_trend_vp[j];
-        delete [] high_cut_well_trend_vs[j];
-        delete [] high_cut_well_trend_rho[j];
-
-        delete blocked_logs[j];
       }
     }
 
@@ -1049,7 +1039,6 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
                             erosion_priority,
                             surface,
                             model_settings->getSurfaceUncertainty(),
-                            model_settings->getFileGrid(),
                             "multizone");
 
 
@@ -1069,10 +1058,6 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg
     delete &covGrid2D;
 
     for(int i=0; i<n_zones; i++) {
-      delete [] trend_vp_zone[i];
-      delete [] trend_vs_zone[i];
-      delete [] trend_rho_zone[i];
-
       delete eroded_surfaces[i];
     }
   }
@@ -1095,7 +1080,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
   //std::vector<int> correlation_structure = model_settings->getCorrelationStructure();
   //std::vector<int> erosion_priority      = model_settings->getErosionPriority();
 
-  int    n_wells    = wells.size(); //model_settings->getNumberOfWells();
+  int    n_wells     = wells.size(); //model_settings->getNumberOfWells();
   int    n_intervals = multiple_interval_grid->GetNIntervals();
   //float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
@@ -1123,9 +1108,9 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
     std::string name_vs  = "Vs";
     std::string name_rho = "Rho";
 
-    std::vector<float *> trend_vp_zone(n_intervals);
-    std::vector<float *> trend_vs_zone(n_intervals);
-    std::vector<float *> trend_rho_zone(n_intervals);
+    std::vector<std::vector<double> > trend_vp_zone(n_intervals);
+    std::vector<std::vector<double> > trend_vs_zone(n_intervals);
+    std::vector<std::vector<double> > trend_rho_zone(n_intervals);
 
     std::vector<const NRLib::Surface<double> *> surfaces; //(n_intervals+1);
 
@@ -1138,7 +1123,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
     //surfaces[0] = tmp; //multiple_interval_grid->GetSimbox(0)->GetTopSurface();
     //surfaces.push_back(&multiple_interval_grid->GetSimbox(0)->GetTopSurface());
 
-    for(int i=0; i<n_intervals; i++) {
+    for(int i=0; i < n_intervals; i++) {
 
       const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
       surfaces.push_back(&simbox->GetBotSurface());
@@ -1150,13 +1135,13 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
 
       int nz = static_cast<int>(vp_zones[i].GetNK());
 
-      std::vector<float *> well_trend_vp(n_wells);
-      std::vector<float *> well_trend_vs(n_wells);
-      std::vector<float *> well_trend_rho(n_wells);
+      std::vector<std::vector<double> > well_trend_vp(n_wells);
+      std::vector<std::vector<double> > well_trend_vs(n_wells);
+      std::vector<std::vector<double> > well_trend_rho(n_wells);
 
-      std::vector<float *> high_cut_well_trend_vp(n_wells);
-      std::vector<float *> high_cut_well_trend_vs(n_wells);
-      std::vector<float *> high_cut_well_trend_rho(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_vp(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_vs(n_wells);
+      std::vector<std::vector<double> > high_cut_well_trend_rho(n_wells);
 
       StormContGrid eroded_zone;
 
@@ -1169,113 +1154,110 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
 
       std::vector<BlockedLogsCommon *> blocked_logs(n_wells);
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp, high_cut_well_trend_vp, wells, eroded_zone, hit_zone, nz, name_vp,  i);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs, high_cut_well_trend_vs, wells, eroded_zone, hit_zone, nz, name_vs,  i);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i);
+      std::string err_text_tmp = "";
 
-      trend_vp_zone[i] = new float[nz];
-      trend_vs_zone[i] = new float[nz];
-      trend_rho_zone[i] = new float[nz];
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
-      float * avg_dev_vp_zone = new float[n_wells];
-      float * avg_dev_vs_zone = new float[n_wells];
-      float * avg_dev_rho_zone = new float[n_wells];
-
-      calculateBackgroundTrend(trend_vp_zone[i],
-                               avg_dev_vp_zone,
-                               nz,
-                               dz,
-                               model_settings->getAlphaMin(),
-                               model_settings->getAlphaMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_vp,
-                               high_cut_well_trend_vp,
-                               name_vp);
-      calculateBackgroundTrend(trend_vs_zone[i],
-                               avg_dev_vs_zone,
-                               nz,
-                               dz,
-                               model_settings->getBetaMin(),
-                               model_settings->getBetaMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_vs,
-                               high_cut_well_trend_vs,
-                               name_vs);
-      calculateBackgroundTrend(trend_rho_zone[i],
-                               avg_dev_rho_zone,
-                               nz,
-                               dz,
-                               model_settings->getRhoMin(),
-                               model_settings->getRhoMax(),
-                               model_settings->getMaxHzBackground(),
-                               well_trend_rho,
-                               high_cut_well_trend_rho,
-                               name_rho);
-
-      writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
-                                       avg_dev_vs_zone,
-                                       avg_dev_rho_zone,
-                                       trend_vp_zone[i],
-                                       trend_vs_zone[i],
-                                       trend_rho_zone[i],
-                                       wells,
-                                       n_wells,
-                                       nz);
-
-      std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
-      std::vector<std::vector<double > > bl_vs(n_wells);
-      std::vector<std::vector<double > > bl_rho(n_wells);
-      std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
-      std::vector<std::vector<double > > vt_vs(n_wells);
-      std::vector<std::vector<double > > vt_rho(n_wells);
-
-      std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
-      std::vector<const std::vector<int> > jpos(n_wells);
-      std::vector<const std::vector<int> > kpos(n_wells);
-
-      int              tot_blocks;
-      std::vector<int> n_blocks(n_wells);
-
-      getKrigingWellTrendsZone(blocked_logs,
-                               bl_vp,bl_vs,bl_rho,
-                               vt_vp,vt_vs,vt_rho,
-                               ipos,jpos,kpos,
-                               n_blocks,tot_blocks,nz);
-
-      std::vector<KrigingData2D> kriging_data_vp(nz);
-      std::vector<KrigingData2D> kriging_data_vs(nz);
-      std::vector<KrigingData2D> kriging_data_rho(nz);
-
-      setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
-                         trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
-                         model_settings->getOutputGridsElastic(),
-                         nz,dz,tot_blocks,n_blocks,
-                         bl_vp,bl_vs,bl_rho,
-                         vt_vp,vt_vs,vt_rho,
-                         ipos,jpos,kpos);
-
-      makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], cov_grid_2D);
-      makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], cov_grid_2D);
-      makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], cov_grid_2D);
-
-      delete [] avg_dev_vp_zone;
-      delete [] avg_dev_vs_zone;
-      delete [] avg_dev_rho_zone;
-
-      for(int j=0; j<n_wells; j++) {
-        delete [] well_trend_vp[j];
-        delete [] well_trend_vs[j];
-        delete [] well_trend_rho[j];
-
-        delete [] high_cut_well_trend_vp[j];
-        delete [] high_cut_well_trend_vs[j];
-        delete [] high_cut_well_trend_rho[j];
-
-        delete blocked_logs[j];
+      if(err_text_tmp != "") {
+        err_text += err_text_tmp;
+        break;
       }
+      else {
 
-    delete &cov_grid_2D;
+        trend_vp_zone[i].resize(nz);
+        trend_vs_zone[i].resize(nz);
+        trend_rho_zone[i].resize(nz);
 
+        std::vector<double> avg_dev_vp_zone(n_wells);
+        std::vector<double> avg_dev_vs_zone(n_wells);
+        std::vector<double> avg_dev_rho_zone(n_wells);
+
+        calculateBackgroundTrend(trend_vp_zone[i],
+                                 avg_dev_vp_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getAlphaMin(),
+                                 model_settings->getAlphaMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_vp,
+                                 high_cut_well_trend_vp,
+                                 name_vp);
+        calculateBackgroundTrend(trend_vs_zone[i],
+                                 avg_dev_vs_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getBetaMin(),
+                                 model_settings->getBetaMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_vs,
+                                 high_cut_well_trend_vs,
+                                 name_vs);
+        calculateBackgroundTrend(trend_rho_zone[i],
+                                 avg_dev_rho_zone,
+                                 nz,
+                                 dz,
+                                 model_settings->getRhoMin(),
+                                 model_settings->getRhoMax(),
+                                 model_settings->getMaxHzBackground(),
+                                 well_trend_rho,
+                                 high_cut_well_trend_rho,
+                                 name_rho);
+
+        writeDeviationsFromVerticalTrend(avg_dev_vp_zone,
+                                         avg_dev_vs_zone,
+                                         avg_dev_rho_zone,
+                                         trend_vp_zone[i],
+                                         trend_vs_zone[i],
+                                         trend_rho_zone[i],
+                                         wells,
+                                         n_wells,
+                                         nz);
+
+        std::vector<std::vector<double > > bl_vp(n_wells); // bl = blocked logs
+        std::vector<std::vector<double > > bl_vs(n_wells);
+        std::vector<std::vector<double > > bl_rho(n_wells);
+        std::vector<std::vector<double > > vt_vp(n_wells);   // vt = vertical trend
+        std::vector<std::vector<double > > vt_vs(n_wells);
+        std::vector<std::vector<double > > vt_rho(n_wells);
+
+        std::vector<const std::vector<int> > ipos(n_wells); //std::vector<const int *> ipos(n_wells);
+        std::vector<const std::vector<int> > jpos(n_wells);
+        std::vector<const std::vector<int> > kpos(n_wells);
+
+        int              tot_blocks;
+        std::vector<int> n_blocks(n_wells);
+
+        getKrigingWellTrendsZone(blocked_logs,
+                                 bl_vp,bl_vs,bl_rho,
+                                 vt_vp,vt_vs,vt_rho,
+                                 ipos,jpos,kpos,
+                                 n_blocks,tot_blocks,nz);
+
+        std::vector<KrigingData2D> kriging_data_vp(nz);
+        std::vector<KrigingData2D> kriging_data_vs(nz);
+        std::vector<KrigingData2D> kriging_data_rho(nz);
+
+        setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
+                           trend_vp_zone[i],trend_vs_zone[i],trend_rho_zone[i],
+                           model_settings->getOutputGridsElastic(),
+                           nz,dz,tot_blocks,n_blocks,
+                           bl_vp,bl_vs,bl_rho,
+                           vt_vp,vt_vs,vt_rho,
+                           ipos,jpos,kpos);
+
+        makeKrigedZone(kriging_data_vp, trend_vp_zone[i], vp_zones[i], cov_grid_2D);
+        makeKrigedZone(kriging_data_vs, trend_vs_zone[i], vs_zones[i], cov_grid_2D);
+        makeKrigedZone(kriging_data_rho, trend_rho_zone[i], rho_zones[i], cov_grid_2D);
+
+
+        for(int j=0; j<n_wells; j++) {
+          delete blocked_logs[j];
+        }
+
+        delete &cov_grid_2D;
+      }
     } //Intervals
 
     MakeMultiIntervalBackground(bg_vp, bg_vs, bg_rho,
@@ -1301,13 +1283,6 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<NRLib::Grid<double>
 
     //delete &cov_grid_2D;
 
-    for(int i=0; i<n_intervals; i++) {
-      delete [] trend_vp_zone[i];
-      delete [] trend_vs_zone[i];
-      delete [] trend_rho_zone[i];
-
-      //delete eroded_surfaces[i];
-    }
   }
 
 }
@@ -1323,7 +1298,6 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
                                     const std::vector<int>           & erosion_priority,
                                     const std::vector<Surface>       & surface,
                                     const std::vector<double>        & surface_uncertainty,
-                                    const bool                         is_file,
                                     const std::string                & type) const
 {
 
@@ -1336,12 +1310,7 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
   int ny = simbox->getny();
   int nz = simbox->getnz();
 
-  const int nxp  = nx;
-  const int nyp  = ny;
-  const int nzp  = nz;
-  const int rnxp = 2*(nxp/2 + 1);
-
-  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
@@ -1352,98 +1321,82 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
   bg_vs.Resize(nx, ny, nz);
   bg_rho.Resize(nx, ny, nz);
 
-  //bg_vp   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-  //bg_vs   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-  //bg_rho  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, is_file);
-
-  //bg_vp->createRealGrid();
-  //bg_vs->createRealGrid();
-  //bg_rho->createRealGrid();
-
-  //bg_vp->setType(FFTGrid::PARAMETER);
-  //bg_vs->setType(FFTGrid::PARAMETER);
-  //bg_rho->setType(FFTGrid::PARAMETER);
-
-  //bg_vp->setAccessMode(FFTGrid::RANDOMACCESS);
-  //bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
-  //bg_vs->setAccessMode(FFTGrid::RANDOMACCESS);
-
   // Beta distributed uncertainty on each surface
   // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
   std::vector<NRLib::Beta> horizon_distributions(n_zones+1);
-  for(int zone=1; zone<n_zones; zone++) {
+  for (int zone=1; zone<n_zones; zone++) {
     horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
   }
 
-  NRLib::Grid<double> z_surface(rnxp, nyp, n_zones+1);
-  for(int i=0; i<rnxp; i++) {
-    for(int j=0; j<nyp; j++) {
-      double x;
-      double y;
+  NRLib::Grid<double> z_surface(nx, ny, n_zones+1);
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+      double x = 0.0;
+      double y = 0.0;
       simbox->getXYCoord(i, j, x, y);
 
-      for(int k=0; k<n_zones+1; k++)
+      for (int k=0; k<n_zones+1; k++)
         z_surface(i, j, k) = surface[k].GetZ(x,y);
     }
   }
 
- for(int k=0; k<nzp; k++) {
+ for (int k = 0; k < nz; k++) {
 
-    for(int j=0; j<nyp; j++) {
+    for (int j = 0; j < ny; j++) {
 
-      for(int i=0; i<rnxp; i++) {
+      for (int i = 0; i < nx; i++) {
 
-        if(i<nx) {
+        //if(i<nx) {
 
-          double x;
-          double y;
+        double x = 0.0;
+        double y = 0.0;
 
-          simbox->getXYCoord(i, j, x, y);
+        simbox->getXYCoord(i, j, x, y);
 
-          // Calculate z directly to decrease computation time
-          double z = z_surface(i,j,0)+(z_surface(i,j,n_zones)-z_surface(i,j,0))*static_cast<double>(k+0.5)/static_cast<double>(nzp);
+        // Calculate z directly to decrease computation time
+        double z = z_surface(i,j,0)+(z_surface(i,j,n_zones)-z_surface(i,j,0))*static_cast<double>(k+0.5)/static_cast<double>(nz);
 
-          std::vector<double> z_relative(n_zones+1);
-          for(int zone=0; zone<n_zones+1; zone++)
-            z_relative[zone] = z - z_surface(i,j,zone);
+        std::vector<double> z_relative(n_zones+1);
+        for(int zone=0; zone<n_zones+1; zone++)
+          z_relative[zone] = z - z_surface(i,j,zone);
 
-          std::vector<double> zone_probability(n_zones);
+        std::vector<double> zone_probability(n_zones);
 
-          ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
+        ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
 
-          double vp  = 0;
-          double vs  = 0;
-          double rho = 0;
+        double vp  = 0.0;
+        double vs  = 0.0;
+        double rho = 0.0;
 
-          for(int zone=0; zone<n_zones; zone++) {
+        for (int zone=0; zone<n_zones; zone++) {
 
-            if(zone_probability[zone] > 0) {
-              size_t ind1;
-              size_t ind2;
-              double t;
+          if (zone_probability[zone] > 0) {
+            size_t ind1;
+            size_t ind2;
+            double t;
 
-              vp_zones[zone].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
+            vp_zones[zone].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
 
-              double vp_zone_new  = vp_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
-              double vs_zone_new  = vs_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
-              double rho_zone_new = rho_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            double vp_zone_new  = vp_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            double vs_zone_new  = vs_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+            double rho_zone_new = rho_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
 
-              vp  +=  vp_zone_new  * zone_probability[zone];
-              vs  +=  vs_zone_new  * zone_probability[zone];
-              rho +=  rho_zone_new * zone_probability[zone];
-            }
+            vp  +=  vp_zone_new  * zone_probability[zone];
+            vs  +=  vs_zone_new  * zone_probability[zone];
+            rho +=  rho_zone_new * zone_probability[zone];
           }
-
-          bg_vp(i,j,k) = vp;
-          bg_vs(i,j,k) = vs;
-          bg_rho(i,j,k) = rho;
         }
 
-        else {
-          bg_vp(i,j,k) = 0;
-          bg_vs(i,j,k) = 0;
-          bg_rho(i,j,k) = 0;
-        }
+        bg_vp(i,j,k) = vp;
+        bg_vs(i,j,k) = vs;
+        bg_rho(i,j,k) = rho;
+        //}
+
+        //else {
+        //  bg_vp(i,j,k) = 0;
+        //  bg_vs(i,j,k) = 0;
+        //  bg_rho(i,j,k) = 0;
+        //}
       }
     }
 
@@ -1454,10 +1407,6 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
       fflush(stdout);
     }
   }
-
-  //bg_vp->endAccess();
-  //bg_vs->endAccess();
-  //bg_rho->endAccess();
 }
 
 void
@@ -1780,14 +1729,10 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
         if(z_top == top_missing) {
           const std::string name = top.GetName();
           err_text += "ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n";
-          //LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
-          //exit(1);
         }
         else if(z_base == base_missing) {
           const std::string name = base.GetName();
           err_text += "ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n";
-          //LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
-          //exit(1);
         }
 
         if(z_base-z_top > max_distance) {
@@ -1799,8 +1744,6 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
 
     if(max_distance == 0) {
       err_text += "ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n";
-      //LogKit::LogFormatted(LogKit::Low,"ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n");
-      //exit(1);
     }
 
     //Make new top and base surfaces
@@ -1883,16 +1826,10 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
         z_base = base.GetZ(x,y);
 
         if(z_top == top_missing) {
-          //const std::string name = top.GetName();
-
-          LogKit::LogFormatted(LogKit::Low,"ERROR: The top surface for interval \'"+multiple_interval_grid->GetIntervalName(i)+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
+          err_text += "ERROR: The top surface for interval \'"+multiple_interval_grid->GetIntervalName(i)+"\' does not cover the inversion grid, or it contains missing values.\n";
         }
         else if(z_base == base_missing) {
-          //const std::string name = base.GetName();
-
-          LogKit::LogFormatted(LogKit::Low,"ERROR: The base surface for interval \'"+multiple_interval_grid->GetIntervalName(i)+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
+          err_text += "ERROR: The base surface for interval \'"+multiple_interval_grid->GetIntervalName(i)+"\' does not cover the inversion grid, or it contains missing values.\n";
         }
 
         if(z_base-z_top > max_distance) {
@@ -1903,8 +1840,7 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
     }
 
     if(max_distance == 0) {
-      LogKit::LogFormatted(LogKit::Low,"ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n");
-      exit(1);
+      err_text += "ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n";
     }
 
     ////Make new top and base surfaces
@@ -2005,14 +1941,14 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
 //}
 
 void
-Background::calculateVelocityDeviations(NRLib::Grid<double>                        & velocity, //FFTGrid                                    * velocity,
+Background::calculateVelocityDeviations(NRLib::Grid<double>                        & velocity,
                                         const std::vector<NRLib::Well>             & wells,
                                         const Simbox                               * simbox,
                                         std::map<std::string, BlockedLogsCommon *> & bl,
                                         std::map<std::string, BlockedLogsCommon *> & bg_bl,
-                                        float                                     *& trend_vel,
-                                        float                                     *& avg_dev_vel,
-                                        float                                      * avg_dev_vp,
+                                        std::vector<double>                        & trend_vel,
+                                        std::vector<double>                        & avg_dev_vel,
+                                        std::vector<double>                        & avg_dev_vp,
                                         int                                          output_flag,
                                         int                                          n_wells)
 {
@@ -2027,16 +1963,16 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
   //
   int max_blocks = 0;
   for (int w = 0 ; w < n_wells ; w++) {
-    int n_blocks = bl.find(wells[w].GetWellName())->second->GetNumberOfBlocks(); //wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+    int n_blocks = bl.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
     if (n_blocks > max_blocks)
       max_blocks = n_blocks;
   }
-  //float * velocity_log = new float[max_blocks];
+
   std::vector<double> velocity_log(max_blocks);
 
-  const int nz = simbox->getnz();
-  float * vt_vp    = new float[nz];
-  float * vt_velocity = new float[nz];
+  const int nz        = simbox->getnz();
+  std::vector<double> vt_vp(nz);
+  std::vector<double> vt_velocity(nz);
 
   for (int k=0 ; k<nz ; k++)
     trend_vel[k]=0.0;
@@ -2045,7 +1981,6 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
     //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     BlockedLogsCommon * blocked_log = bg_bl.find(wells[w].GetWellName())->second;
 
-    //const float * alphaLog = bl->getAlphaHighCutBackground();
     const std::vector<double> vp_log = blocked_log->GetVpHighCutBackground(); //H make sure HighCutBackground is created.
     blocked_log->GetVerticalTrend(vp_log, vt_vp);
     blocked_log->GetBlockedGrid(velocity, velocity_log);
@@ -2064,9 +1999,6 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
       sumDev /= count;
     avg_dev_vel[w] = sqrt(sumDev);
   }
-  delete [] vt_velocity;
-  delete [] vt_vp;
-  //delete [] velocity_log;
 
   for (int k=0 ; k<nz ; k++)
     trend_vel[k] /= n_wells;
@@ -2082,16 +2014,16 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
 
 //---------------------------------------------------------------------------
 void
-Background::calculateBackgroundTrend(float              * trend,
-                                     float              * avgDev,
-                                     const int            nz,
-                                     const float          dz,
-                                     float                logMin,
-                                     float                logMax,
-                                     float                maxHz,
-                                     std::vector<float *> wellTrend,
-                                     std::vector<float *> highCutWellTrend,
-                                     const std::string  & name)
+Background::calculateBackgroundTrend(std::vector<double>               & trend,
+                                     std::vector<double>               & avgDev,
+                                     const int                           nz,
+                                     const float                         dz,
+                                     float                               logMin,
+                                     float                               logMax,
+                                     float                               maxHz,
+                                     std::vector<std::vector<double> > & wellTrend,
+                                     std::vector<std::vector<double> > & highCutWellTrend,
+                                     const std::string                 & name)
 {
 
   calculateVerticalTrend(wellTrend,
@@ -2161,14 +2093,13 @@ Background::calculateBackgroundTrend(float              * trend,
 //}
 //---------------------------------------------------------------------------
 void
-Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl_vp, // std::vector<float *>           & bl_vp,
+Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl_vp,
                                  std::vector<std::vector<double> >          & bl_vs,
                                  std::vector<std::vector<double> >          & bl_rho,
                                  std::vector<std::vector<double> >          & vt_vp,
                                  std::vector<std::vector<double> >          & vt_vs,
                                  std::vector<std::vector<double> >          & vt_rho,
                                  std::vector<const std::vector<int> >       & ipos,
-                                 //std::vector<const int *>       & ipos,
                                  std::vector<const std::vector<int> >       & jpos,
                                  std::vector<const std::vector<int> >       & kpos,
                                  std::vector<int>                           & n_blocks,
@@ -2181,16 +2112,16 @@ Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl
   tot_blocks     = 0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    n_blocks[w] = bg_blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks(); //wells[w]->getBlockedLogsExtendedBG()->getNumberOfBlocks();
+    n_blocks[w] = bg_blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
     tot_blocks += n_blocks[w];
     if (n_blocks[w] > max_blocks)
       max_blocks = n_blocks[w];
   }
 
   for(int i=0; i<n_wells; i++) {
-    bl_vp[i] = std::vector<double>(max_blocks); //new float[maxBlocks];
-    bl_vs[i] = std::vector<double>(max_blocks); //new float[maxBlocks];
-    bl_rho[i] = std::vector<double>(max_blocks);  //new float[maxBlocks];
+    bl_vp[i] = std::vector<double>(max_blocks);
+    bl_vs[i] = std::vector<double>(max_blocks);
+    bl_rho[i] = std::vector<double>(max_blocks);
   }
 
   for (int w = 0 ; w < n_wells ; w++) {
@@ -2211,9 +2142,9 @@ Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl
     bg_blocked_log->GetVerticalTrend(bl_vs[w], vt_vs[w]);
     bg_blocked_log->GetVerticalTrend(bl_rho[w], vt_rho[w]);
 
-    ipos[w] = bg_blocked_log->GetIposVector(); //bl->getIpos();
-    jpos[w] = bg_blocked_log->GetJposVector(); //bl->getJpos();
-    kpos[w] = bg_blocked_log->GetKposVector(); //bl->getKpos();
+    ipos[w] = bg_blocked_log->GetIposVector();
+    jpos[w] = bg_blocked_log->GetJposVector();
+    kpos[w] = bg_blocked_log->GetKposVector();
 
   }
 }
@@ -2295,112 +2226,80 @@ Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl
 
 //---------------------------------------------------------------------------
 void
-Background::getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>  & blocked_logs,
-                                     std::vector<std::vector<double> >           & bl_vp,
-                                     std::vector<std::vector<double> >           & bl_vs,
-                                     std::vector<std::vector<double> >           & bl_rho,
-                                     std::vector<std::vector<double> >           & vt_vp,
-                                     std::vector<std::vector<double> >           & vt_vs,
-                                     std::vector<std::vector<double> >           & vt_rho,
-                                     //std::vector<float *>              & blAlpha,
-                                     //std::vector<float *>              & blBeta,
-                                     //std::vector<float *>              & blRho,
-                                     //std::vector<float *>              & vtAlpha,
-                                     //std::vector<float *>              & vtBeta,
-                                     //std::vector<float *>              & vtRho,
-                                     std::vector<const std::vector<int> >       & ipos,
-                                     std::vector<const std::vector<int> >       & jpos,
-                                     std::vector<const std::vector<int> >       & kpos,
-                                     //std::vector<const int *>          & ipos,
-                                     //std::vector<const int *>          & jpos,
-                                     //std::vector<const int *>          & kpos,
-                                     std::vector<int>                  & n_blocks,
-                                     int                               & tot_blocks,
-                                     const int                         & nz) const
+Background::getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>     & blocked_logs,
+                                     std::vector<std::vector<double> >    & bl_vp,
+                                     std::vector<std::vector<double> >    & bl_vs,
+                                     std::vector<std::vector<double> >    & bl_rho,
+                                     std::vector<std::vector<double> >    & vt_vp,
+                                     std::vector<std::vector<double> >    & vt_vs,
+                                     std::vector<std::vector<double> >    & vt_rho,
+                                     std::vector<const std::vector<int> > & ipos,
+                                     std::vector<const std::vector<int> > & jpos,
+                                     std::vector<const std::vector<int> > & kpos,
+                                     std::vector<int>                     & n_blocks,
+                                     int                                  & tot_blocks,
+                                     const int                            & nz) const
 {
   int n_wells    = static_cast<int>(blocked_logs.size());
   int max_blocks = 0;
   tot_blocks     = 0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    if(blocked_logs[w] != NULL) {
+    if (blocked_logs[w] != NULL) {
       n_blocks[w] = blocked_logs[w]->GetNumberOfBlocks();
       tot_blocks += n_blocks[w];
       if (n_blocks[w] > max_blocks)
         max_blocks = n_blocks[w];
     }
-    else
+    else {
       n_blocks[w] = 0;
+    }
   }
 
   for (int w = 0; w < n_wells; w++) {
-    if(blocked_logs[w] != NULL) {
-      std::vector<double> bl_vp_high_cut = blocked_logs[w]->GetVpHighCutBackground();
-      std::vector<double> bl_vs_high_cut = blocked_logs[w]->GetVsHighCutBackground();
-      std::vector<double> bl_rho_high_cut = blocked_logs[w]->GetRhoHighCutBackground();
+    if (blocked_logs[w] != NULL) {
 
-      //float * blAlphaCopy = new float[max_blocks];
-      //float * blBetaCopy  = new float[max_blocks];
-      //float * blRhoCopy   = new float[max_blocks];
+      std::vector<double> bl_vp_high_cut  = blocked_logs[w]->GetVpHighCutBackground();
+      std::vector<double> bl_vs_high_cut  = blocked_logs[w]->GetVsHighCutBackground();
+      std::vector<double> bl_rho_high_cut = blocked_logs[w]->GetRhoHighCutBackground();
 
       std::vector<double> bl_vp_copy(max_blocks);
       std::vector<double> bl_vs_copy(max_blocks);
       std::vector<double> bl_rho_copy(max_blocks);
 
-      for(int i=0; i<n_blocks[w]; i++) {
-        bl_vp_copy[i] = bl_vp_high_cut[i];
-        bl_vs_copy[i] = bl_vs_high_cut[i];
+      for(int i = 0; i < n_blocks[w]; i++) {
+        bl_vp_copy[i]  = bl_vp_high_cut[i];
+        bl_vs_copy[i]  = bl_vs_high_cut[i];
         bl_rho_copy[i] = bl_rho_high_cut[i];
       }
-      bl_vp[w] = bl_vp_copy;
+
+      bl_vp[w]  = bl_vp_copy;
       bl_vs[w]  = bl_vs_copy;
-      bl_rho[w]   = bl_rho_copy;
+      bl_rho[w] = bl_rho_copy;
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
-      vt_vp[w] = std::vector<double>(nz); //new float[nz];
-      vt_vs[w]  = std::vector<double>(nz); //new float[nz];
-      vt_rho[w]   = std::vector<double>(nz); //new float[nz];
+      vt_vp[w]  = std::vector<double>(nz);
+      vt_vs[w]  = std::vector<double>(nz);
+      vt_rho[w] = std::vector<double>(nz);
 
-      blocked_logs[w]->GetVerticalTrend(bl_vp_high_cut, vt_vp[w]);
+      blocked_logs[w]->GetVerticalTrend(bl_vp_high_cut,  vt_vp[w]);
       blocked_logs[w]->GetVerticalTrend(bl_vs_high_cut,  vt_vs[w]);
-      blocked_logs[w]->GetVerticalTrend(bl_rho_high_cut,   vt_rho[w]);
+      blocked_logs[w]->GetVerticalTrend(bl_rho_high_cut, vt_rho[w]);
 
-      const std::vector<int> & ipos_tmp = blocked_logs[w]->GetIposVector();
-      const std::vector<int> & jpos_tmp = blocked_logs[w]->GetJposVector();
-      const std::vector<int> & kpos_tmp = blocked_logs[w]->GetKposVector();
+      ipos[w] = blocked_logs[w]->GetIposVector();
+      jpos[w] = blocked_logs[w]->GetJposVector();
+      kpos[w] = blocked_logs[w]->GetKposVector();
 
-      //int * i_tmp;
-      //int * j_tmp;
-      //int * k_tmp;
-
-      std::vector<int> i_tmp;
-      std::vector<int> j_tmp;
-      std::vector<int> k_tmp;
-
-      for(size_t i = 0; i < ipos_tmp.size(); i++)
-        i_tmp[i] = ipos_tmp[i];
-      for(size_t j = 0; j < jpos_tmp.size(); j++)
-        i_tmp[j] = ipos_tmp[j];
-      for(size_t k = 0; k < kpos_tmp.size(); k++)
-        i_tmp[k] = ipos_tmp[k];
-
-      ipos[w] = i_tmp;
-      jpos[w] = j_tmp;
-      kpos[w] = k_tmp;
-
-      //ipos[w] = bl[w]->GetIposVector();
-      //jpos[w] = bl[w]->GetJposVector();
-      //kpos[w] = bl[w]->GetKposVector();
     }
     else {
-      vt_vp[w] = std::vector<double>(0); //NULL;
-      vt_vs[w] = std::vector<double>(0); //NULL;
-      vt_rho[w] = std::vector<double>(0); //NULL;
+      vt_vp[w]  = std::vector<double>(0);
+      vt_vs[w]  = std::vector<double>(0);
+      vt_rho[w] = std::vector<double>(0);
 
-      bl_vp[w] = std::vector<double>(0); //NULL;
-      bl_vs[w] = std::vector<double>(0); //NULL;
-      bl_rho[w] = std::vector<double>(0); //NULL;
+      bl_vp[w]  = std::vector<double>(0);
+      bl_vs[w]  = std::vector<double>(0);
+      bl_rho[w] = std::vector<double>(0);
     }
   }
 }
@@ -2468,22 +2367,28 @@ Background::getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>  & blocked
 //}
 //---------------------------------------------------------------------------
 void
-Background::getWellTrends(std::vector<float *>                       & well_trend,
-                          std::vector<float *>                       & high_cut_well_trend,
+Background::getWellTrends(std::vector<std::vector<double> >          & well_trend,
+                          std::vector<std::vector<double> >          & high_cut_well_trend,
                           const std::vector<NRLib::Well>             & wells,
                           std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                           const int                                  & nz,
-                          const std::string                          & name) const
+                          const std::string                          & name,
+                          std::string                                & err_text) const
 {
   int n_wells = static_cast<int>(well_trend.size());
   int i_wells = 0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    if (wells[w].getUseForBackgroundTrend()) {
+    BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+
+    if(blocked_log->GetUseForBackgroundTrend()) {
+    //if (wells[w].getUseForBackgroundTrend()) {
       //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
-      BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+      //BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+
       if(blocked_log != NULL) {
-        well_trend[w] = new float[nz];
+        well_trend[w].resize(nz);
+
         if (name == "Vp")
           blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), well_trend[w]); //bl->getAlpha()
         else if (name == "Vs")
@@ -2491,29 +2396,27 @@ Background::getWellTrends(std::vector<float *>                       & well_tren
         else if (name == "Rho")
           blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), well_trend[w]);
         else {
-          LogKit::LogFormatted(LogKit::Low,"ERROR in Background::getWellTrends(): ");
-          LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
-          exit(1);
+          err_text += "ERROR in Background::getWellTrends(): ";
+          err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
         }
         i_wells++;
       }
       else
-        well_trend[w] = NULL;
+        well_trend[w].resize(0);
     }
     else
-      well_trend[w] = NULL;
+      well_trend[w].resize(0);
   }
   if(i_wells == 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR in Background::getWellTrends(): There are no wells\n");
-    LogKit::LogFormatted(LogKit::Low,"available for the estimation of background trend.\n");
-    exit(1);
+    err_text += "\nERROR in Background::getWellTrends(): There are no wells\n";
+    err_text += "available for the estimation of background trend.\n";
   }
 
   for (int w = 0 ; w < n_wells ; w++) {
     //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
     if(blocked_log != NULL) {
-      high_cut_well_trend[w] = new float[nz];
+      high_cut_well_trend[w].resize(nz);
       if (name == "Vp")
         blocked_log->GetVerticalTrend(blocked_log->GetVpHighCutBackground(), high_cut_well_trend[w]);
       else if (name == "Vs")
@@ -2521,13 +2424,12 @@ Background::getWellTrends(std::vector<float *>                       & well_tren
       else if (name == "Rho")
         blocked_log->GetVerticalTrend(blocked_log->GetRhoHighCutBackground(), high_cut_well_trend[w]);
       else {
-        LogKit::LogFormatted(LogKit::Low,"ERROR in Background::getWellTrends(): ");
-        LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
-        exit(1);
+        err_text += "ERROR in Background::getWellTrends(): ";
+        err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
       }
     }
     else
-      high_cut_well_trend[w] = NULL;
+      high_cut_well_trend[w].resize(0);
   }
 }
 //---------------------------------------------------------------------------
@@ -2619,17 +2521,17 @@ Background::getWellTrends(std::vector<float *>                       & well_tren
 //}
 //---------------------------------------------------------------------------
 void
-Background::getWellTrendsZone(const ModelSettings                              * model_settings,
-                              std::vector<BlockedLogsCommon *>                 & bl,
-                              std::vector<float *>                             & well_trend,
-                              std::vector<float *>                             & high_cut_well_trend,
-                              const std::vector<NRLib::Well>                   & wells,
-                              StormContGrid                                    & eroded_zone,
-                              //const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                              const std::vector<bool>                          & hit_zone,
-                              const int                                        & nz,
-                              const std::string                                & name,
-                              const int                                        & i) const
+Background::getWellTrendsZone(const ModelSettings               * model_settings,
+                              std::vector<BlockedLogsCommon *>  & bl,
+                              std::vector<std::vector<double> > & well_trend,
+                              std::vector<std::vector<double> > & high_cut_well_trend,
+                              const std::vector<NRLib::Well>    & wells,
+                              StormContGrid                     & eroded_zone,
+                              const std::vector<bool>           & hit_zone,
+                              const int                         & nz,
+                              const std::string                 & name,
+                              const int                         & i,
+                              std::string                       & err_text) const
 {
 
   int n_valid_wells_in_zone = 0;
@@ -2637,39 +2539,31 @@ Background::getWellTrendsZone(const ModelSettings                              *
 
   std::vector<bool> use_for_background(n_wells);
 
-  //NRLib::Well tmp_well = wells[0];
-  //BlockedLogsCommon * tmp = mapped_blocked_logs.find(wells[0].GetWellName())->second;
-
-  for(int w=0; w<n_wells; w++) {
-    if(hit_zone[w] == true) {
-      //bl[w] = new BlockedLogsForZone(wells[w], eroded_zone, tmp);
-      //bl[w] = new BlockedLogsForZone(wells[w], eroded_zone, mapped_blocked_logs.find(wells[w].GetWellName())->second); ///H Use BlockedLogsCommon instead of this modified BlockedLogsForZone?
+  for (int w=0; w<n_wells; w++) {
+    if (hit_zone[w] == true) {
 
       bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
-
       n_valid_wells_in_zone++;
     }
     else
       bl[w] = NULL;
 
-    if (wells[w].getUseForBackgroundTrend())
+    if (bl[w]->GetUseForBackgroundTrend())
       use_for_background[w] = true;
     else
       use_for_background[w] = false;
   }
 
   if(n_valid_wells_in_zone == 0) {
-    LogKit::LogFormatted(LogKit::Low, "Invalid multizone background estimation: No well hits zone number "+NRLib::ToString(i+1)+"\n");
-    exit(1);
+    err_text += "Invalid multizone background estimation: No well hits zone number "+NRLib::ToString(i+1)+"\n";
   }
 
   int iWells = 0;
 
   for (int w = 0 ;w < n_wells; w++) {
     if (use_for_background[w] == true) {
-      if(bl[w] != NULL) {
-        well_trend[w] = new float[nz];
-        //wellTrend[w].resize(nz);
+      if (bl[w] != NULL) {
+        well_trend[w].resize(nz);
 
         if (name == "Vp")
           bl[w]->GetVerticalTrend(bl[w]->GetVpBlocked(), well_trend[w]);
@@ -2678,27 +2572,24 @@ Background::getWellTrendsZone(const ModelSettings                              *
         else if (name == "Rho")
           bl[w]->GetVerticalTrend(bl[w]->GetRhoBlocked(), well_trend[w]);
         else {
-          LogKit::LogFormatted(LogKit::Low,"ERROR in Background::getWellTrendsZone(): ");
-          LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
-          exit(1);
+          err_text += "ERROR in Background::getWellTrendsZone(): ";
+          err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
         }
         iWells++;
       }
-      else well_trend[w] = NULL;
+      else well_trend[w].resize(0);
     }
     else
-      well_trend[w] = NULL;
+      well_trend[w].resize(0);
   }
   if(iWells == 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR in Background::getWellTrendsZone(): There are no wells\n");
-    LogKit::LogFormatted(LogKit::Low,"available for the estimation of background trend.\n");
-    exit(1);
+    err_text += "\nERROR in Background::getWellTrendsZone(): There are no wells\n";
+    err_text += "available for the estimation of background trend.\n";
   }
 
   for (int w = 0; w < n_wells; w++) {
-    if(bl[w] != NULL) {
-      high_cut_well_trend[w] = new float[nz];
-      //highCutWellTrend[w].resize(nz);
+    if (bl[w] != NULL) {
+      high_cut_well_trend[w].resize(nz);
       if (name == "Vp")
         bl[w]->GetVerticalTrend(bl[w]->GetVpHighCutBackground(), high_cut_well_trend[w]);
       else if (name == "Vs")
@@ -2706,13 +2597,12 @@ Background::getWellTrendsZone(const ModelSettings                              *
       else if (name == "Rho")
         bl[w]->GetVerticalTrend(bl[w]->GetRhoHighCutBackground(), high_cut_well_trend[w]);
       else {
-        LogKit::LogFormatted(LogKit::Low,"ERROR in Background::getWellTrendsZone(): ");
-        LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
-        exit(1);
+        err_text += "ERROR in Background::getWellTrendsZone(): ";
+        err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
       }
     }
     else
-      high_cut_well_trend[w] = NULL;
+      high_cut_well_trend[w].resize(0);
   }
 }
 //---------------------------------------------------------------------------
@@ -2747,13 +2637,13 @@ Background::checkWellHitsZone(std::vector<bool>              & hitZone,
 }
 //---------------------------------------------------------------------------
 void
-Background::writeTrendsToFile(float             * trend,
-                              const Simbox      * simbox,
-                              bool                write1D,
-                              bool                write3D,
-                              bool                hasVelocityTrend,
-                              const std::string & name,
-                              bool                isFile)
+Background::writeTrendsToFile(std::vector<double> & trend,
+                              const Simbox        * simbox,
+                              bool                  write1D,
+                              bool                  write3D,
+                              bool                  hasVelocityTrend,
+                              const std::string   & name,
+                              bool                  isFile)
 {
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
   const int   nz = simbox->getnz();
@@ -2777,17 +2667,17 @@ Background::writeTrendsToFile(float             * trend,
 }
 //---------------------------------------------------------------------------
 void
-Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
-                                       const std::vector<float *>   vs_zones,
-                                       const std::vector<float *>   rho_zones,
-                                       std::vector<StormContGrid> & vp_trend_zone,
-                                       std::vector<StormContGrid> & vs_trend_zone,
-                                       std::vector<StormContGrid> & rho_trend_zone,
-                                       const Simbox               * simbox,
-                                       const std::vector<int>     & erosion_priority,
-                                       const std::vector<Surface> & surface,
-                                       const std::vector<double>  & surface_uncertainty,
-                                       const bool                   isFile) const
+Background::writeMultizoneTrendsToFile(const std::vector<std::vector<double> > & vp_zones,
+                                       const std::vector<std::vector<double> > & vs_zones,
+                                       const std::vector<std::vector<double> > & rho_zones,
+                                       std::vector<StormContGrid>              & vp_trend_zone,
+                                       std::vector<StormContGrid>              & vs_trend_zone,
+                                       std::vector<StormContGrid>              & rho_trend_zone,
+                                       const Simbox                            * simbox,
+                                       const std::vector<int>                  & erosion_priority,
+                                       const std::vector<Surface>              & surface,
+                                       const std::vector<double>               & surface_uncertainty,
+                                       const bool                                isFile) const
 {
   int n_zones = static_cast<int>(vp_zones.size());
 
@@ -2797,9 +2687,6 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
 
-  //FFTGrid * trend_vp;
-  //FFTGrid * trend_vs;
-  //FFTGrid * trend_rho;
   NRLib::Grid<double> trend_vp;
   NRLib::Grid<double> trend_vs;
   NRLib::Grid<double> trend_rho;
@@ -2814,7 +2701,6 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
                           erosion_priority,
                           surface,
                           surface_uncertainty,
-                          isFile,
                           "trend in multizone");
 
   //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp, true, isFile);
@@ -2825,6 +2711,7 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
   //std::string file_name_vs = IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
   //std::string file_name_rho = IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
 
+  //H Writing?
   //exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
   //exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
   //exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);
@@ -2840,21 +2727,18 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   vp_zones,
 
 //---------------------------------------------------------------------------
 void
-Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones,
-                                           const std::vector<float *>   vs_zones,
-                                           const std::vector<float *>   rho_zones,
-                                           std::vector<StormContGrid> & vp_trend_zone,
-                                           std::vector<StormContGrid> & vs_trend_zone,
-                                           std::vector<StormContGrid> & rho_trend_zone,
+Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double> >   & vp_zones,
+                                           const std::vector<std::vector<double> >   & vs_zones,
+                                           const std::vector<std::vector<double> >   & rho_zones,
+                                           std::vector<StormContGrid>                & vp_trend_zone,
+                                           std::vector<StormContGrid>                & vs_trend_zone,
+                                           std::vector<StormContGrid>                & rho_trend_zone,
                                            //const Simbox                     * simbox,
                                            //const std::vector<int>           & erosion_priority,
-                                           MultiIntervalGrid          * multiple_interval_grid,
-                                           //const std::vector<int>     & erosion_priority,
-                                           //const std::vector<NRLib::Surface<double> > & surfaces,
-                                           //std::vector<const NRLib::Surface<double>& > surfaces,
+                                           MultiIntervalGrid                         * multiple_interval_grid,
                                            std::vector<const NRLib::Surface<double> *> surfaces,
-                                           const std::vector<double>  & surface_uncertainty,
-                                           const bool                   is_file) const
+                                           const std::vector<double>                 & surface_uncertainty,
+                                           const bool                                  is_file) const
 {
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
@@ -2863,10 +2747,6 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
     makeTrendZone(vs_zones[i], vs_trend_zone[i]);
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
-
-  //std::vector<FFTGrid *> trend_vp(n_intervals);
-  //std::vector<FFTGrid *> trend_vs(n_intervals);
-  //std::vector<FFTGrid *> trend_rho(n_intervals);
 
   std::vector<NRLib::Grid<double> > trend_vp(n_intervals);
   std::vector<NRLib::Grid<double> > trend_vs(n_intervals);
@@ -2916,27 +2796,26 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<float *>   vp_zones
 
 //-------------------------------------------------------------------------------
 void
-Background::setupKrigingData2D(std::vector<KrigingData2D>     & kriging_data_vp,
-                               std::vector<KrigingData2D>     & kriging_data_vs,
-                               std::vector<KrigingData2D>     & kriging_data_rho,
-                               float                          * trend_vp,
-                               float                          * trend_vs,
-                               float                          * trend_rho,
-                               const int                        output_flag,
-                               const int                      & nz,
-                               const float                    & dz,
-                               const int                      & tot_blocks,
-                               const std::vector<int>         & n_blocks,
-                               const std::vector<std::vector<double> > & bl_vp,
-                               //const std::vector<float *>     & blAlpha,
-                               const std::vector<std::vector<double> > & bl_vs,
-                               const std::vector<std::vector<double> > & bl_rho,
-                               const std::vector<std::vector<double> > & vt_vp,
-                               const std::vector<std::vector<double> > & vt_vs,
-                               const std::vector<std::vector<double> > & vt_rho,
-                               const std::vector<const std::vector<int> >   ipos,
-                               const std::vector<const std::vector<int> >   jpos,
-                               const std::vector<const std::vector<int> >   kpos) const
+Background::setupKrigingData2D(std::vector<KrigingData2D>               & kriging_data_vp,
+                               std::vector<KrigingData2D>               & kriging_data_vs,
+                               std::vector<KrigingData2D>               & kriging_data_rho,
+                               std::vector<double>                      & trend_vp,
+                               std::vector<double>                      & trend_vs,
+                               std::vector<double>                      & trend_rho,
+                               const int                                  output_flag,
+                               const int                                & nz,
+                               const float                              & dz,
+                               const int                                & tot_blocks,
+                               const std::vector<int>                   & n_blocks,
+                               const std::vector<std::vector<double> >  & bl_vp,
+                               const std::vector<std::vector<double> >  & bl_vs,
+                               const std::vector<std::vector<double> >  & bl_rho,
+                               const std::vector<std::vector<double> >  & vt_vp,
+                               const std::vector<std::vector<double> >  & vt_vs,
+                               const std::vector<std::vector<double> >  & vt_rho,
+                               const std::vector<const std::vector<int> > ipos,
+                               const std::vector<const std::vector<int> > jpos,
+                               const std::vector<const std::vector<int> > kpos) const
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -2948,23 +2827,15 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>     & kriging_data_vp,
 
   for (int w = 0 ; w < n_wells ; w++) {
 
-    //if(vt_vp[w] != NULL) {
     if(vt_vp[w].size() > 0) {
       std::vector<double> vt_vp_well = vt_vp[w];
       std::vector<double> vt_vs_well = vt_vs[w];
       std::vector<double> vt_rho_well = vt_rho[w];
 
-      //float * vtAlphaWell = vtAlpha[w];
-      //float * vtBetaWell  = vtBeta[w];
-      //float * vtRhoWell   = vtRho[w];
-
       std::vector<double> bl_vp_well = bl_vp[w];
       std::vector<double> bl_vs_well = bl_vs[w];
       std::vector<double> bl_rho_well = bl_rho[w];
 
-      //float * blAlphaWell = blAlpha[w];
-      //float * blBetaWell  = blBeta[w];
-      //float * blRhoWell   = blRho[w];
       //
       // Kriging vertical trend (vt....) against global vertical trend (trend...)
       //
@@ -2977,10 +2848,6 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>     & kriging_data_vp,
       const std::vector<int> ipos_well = ipos[w];
       const std::vector<int> jpos_well = jpos[w];
       const std::vector<int> kpos_well = kpos[w];
-
-      //const int * iposWell = ipos[w];
-      //const int * jposWell = jpos[w];
-      //const int * kposWell = kpos[w];
 
       for (int m = 0 ; m < n_blocks[w] ; m++) {
         int i = ipos_well[m];
@@ -3119,12 +2986,11 @@ Background::makeCovGrid2D(const Simbox * simbox,
 
 void
 Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
-                                 NRLib::Grid<double>              & bg_grid, //FFTGrid                         *& bgGrid,
-                                 const float                      * trend,
+                                 NRLib::Grid<double>              & bg_grid,
+                                 std::vector<double>              & trend,
                                  const Simbox                     * simbox,
                                  const CovGrid2D                  & cov_grid_2D,
                                  const std::string                & type) const
-                                 //bool                               is_file) const
 {
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::Low,text);
@@ -3193,8 +3059,8 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
 
 //---------------------------------------------------------------------------
 void
-Background::makeTrendZone(const float   * trend,
-                          StormContGrid & trend_zone) const
+Background::makeTrendZone(const std::vector<double> & trend,
+                          StormContGrid             & trend_zone) const
 {
   const size_t nx   = trend_zone.GetNI();
   const size_t ny   = trend_zone.GetNJ();
@@ -3224,7 +3090,7 @@ Background::makeTrendZone(const float   * trend,
 //---------------------------------------------------------------------------
 void
 Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
-                           const float                      * trend,
+                           const std::vector<double>        & trend,
                            StormContGrid                    & kriged_zone,
                            const CovGrid2D                  & covGrid2D) const
 {
@@ -3258,17 +3124,17 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
-                                   float                * trend,
-                                   float                  logMin,
-                                   float                  logMax,
-                                   float                  maxHz,
-                                   int                    nz,
-                                   float                  dz,
-                                   const std::string    & name)
+Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
+                                   std::vector<double>               & trend,
+                                   float                               logMin,
+                                   float                               logMax,
+                                   float                               maxHz,
+                                   int                                 nz,
+                                   float                               dz,
+                                   const std::string                 & name)
 {
   int     nWells       = static_cast<int>(wellTrend.size());
-  float * filtered_log = new float[nz];
+  std::vector<double> filtered_log(nz);
   int   * count        = new int[nz];
   //
   // Calculate the average values of well log
@@ -3285,8 +3151,8 @@ Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
   }
   int iWells = 0;
   for (int w = 0 ; w < nWells ; w++) {
-    if (wellTrend[w] != NULL) {
-      float * well_trend = wellTrend[w];
+    if (wellTrend[w].size() > 0) {
+      std::vector<double> & well_trend = wellTrend[w];
 
       for (int k = 0 ; k < nz ; k++) {
         if (well_trend[k] != RMISSING) {
@@ -3315,11 +3181,17 @@ Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
 
   //Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend, nz);
 
-  WellData::applyFilter(filtered_log,
-                        trend,
-                        nz,
-                        dz,
-                        maxHz);
+  BlockedLogsCommon::ApplyFilter(filtered_log,
+                                 trend,
+                                 nz,
+                                 dz,
+                                 maxHz);
+
+  //WellData::applyFilter(filtered_log,
+  //                      trend,
+  //                      nz,
+  //                      dz,
+  //                      maxHz);
 
   for (int i=0 ; i<nz ; i++) {
     trend[i] = filtered_log[i];
@@ -3327,21 +3199,19 @@ Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
 
   //Utils::writeVectorToFile(std::string("trend_after_filter_") + name, trend, nz);
 
-
-  delete [] filtered_log;
   delete [] count;
 }
 
 //-------------------------------------------------------------------------------
 void
-Background::smoothTrendWithLocalLinearRegression(float      * trend,
-                                                 int        * count,
-                                                 int          iWells,
-                                                 int          nz,
-                                                 float        dz,
-                                                 float        min_value,
-                                                 float        max_value,
-                                                 std::string  parName)
+Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
+                                                 int                 * count,
+                                                 int                   iWells,
+                                                 int                   nz,
+                                                 float                 dz,
+                                                 float                 min_value,
+                                                 float                 max_value,
+                                                 std::string           parName)
 {
   bool debug = false;
   //
@@ -3518,10 +3388,10 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
           break;
         }
       }
-      trend[k] = log(value);
+      trend[k] = log(static_cast<double>(value));
     }
     else {
-      trend[k] = log(y[0]);
+      trend[k] = log(static_cast<double>(y[0]));
     }
     if (debug)
       LogKit::LogFormatted(LogKit::Low,"   TREND: trend[k] = %.2f        (minLog/maxLog = %.2f / %.2f)\n",exp(trend[k]),min_value,max_value);
@@ -3561,7 +3431,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   else {
     if (errorHead) {
       // Fix first part of trend containing missing-values.
-      float firstValue = trend[firstNonmissing];
+      double firstValue = trend[firstNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
       LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(firstValue),firstNonmissing);
@@ -3571,7 +3441,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     }
     if (errorTrail) {
       // Fix last part of trend containing missing-values.
-      float lastValue = trend[lastNonmissing];
+      double lastValue = trend[lastNonmissing];
       LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
       LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
       LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(lastValue),lastNonmissing);
@@ -3588,10 +3458,10 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::writeVerticalTrend(float      * trend,
-                               float        dz,
-                               int          nz,
-                               std::string  name)
+Background::writeVerticalTrend(std::vector<double> & trend,
+                               float                 dz,
+                               int                   nz,
+                               std::string           name)
 {
   float z0 = dz/2.0f;
   std::string baseName = IO::PrefixBackground() + IO::PrefixTrend() + name + IO::SuffixAsciiIrapClassic();
@@ -3611,16 +3481,16 @@ Background::writeVerticalTrend(float      * trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateDeviationFromVerticalTrend(std::vector<float *>   wellTrend,
-                                                const float          * globalTrend,
-                                                float                * avg_dev,
-                                                const int              nz)
+Background::calculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & wellTrend,
+                                                const std::vector<double>         & globalTrend,
+                                                std::vector<double>               & avg_dev,
+                                                const int                           nz)
 {
   int nWells = static_cast<int>(wellTrend.size());
 
   for (int w = 0 ; w < nWells ; w++) {
-    if(wellTrend[w] != NULL) {
-      float * well_trend = wellTrend[w];
+    if(wellTrend[w].size() > 0) {
+      std::vector<double> & well_trend = wellTrend[w];
       float sum_dev = 0.0f;
       int count = 0;
       for (int k = 0 ; k < nz ; k++) {
@@ -3725,12 +3595,12 @@ Background::calculateDeviationFromVerticalTrend(std::vector<float *>   wellTrend
 
 //-------------------------------------------------------------------------------
 void
-Background::writeDeviationsFromVerticalTrend(const float                    * avg_dev_alpha,
-                                             const float                    * avg_dev_beta,
-                                             const float                    * avg_dev_rho,
-                                             const float                    * trend_alpha,
-                                             const float                    * trend_beta,
-                                             const float                    * trend_rho,
+Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & avg_dev_vp,
+                                             const std::vector<double>      & avg_dev_vs,
+                                             const std::vector<double>      & avg_dev_rho,
+                                             const std::vector<double>      & trend_vp,
+                                             const std::vector<double>      & trend_vs,
+                                             const std::vector<double>      & trend_rho,
                                              const std::vector<NRLib::Well> & wells,
                                              const int                        nWells,
                                              const int                        nz)
@@ -3741,8 +3611,8 @@ Background::writeDeviationsFromVerticalTrend(const float                    * av
 
   for (int k=0 ; k<nz ; k++)
   {
-    global_mean_alpha += exp(trend_alpha[k]);
-    global_mean_beta  += exp(trend_beta[k]);
+    global_mean_alpha += exp(trend_vp[k]);
+    global_mean_beta  += exp(trend_vs[k]);
     global_mean_rho   += exp(trend_rho[k]);
   }
   global_mean_alpha /= nz;
@@ -3755,8 +3625,8 @@ Background::writeDeviationsFromVerticalTrend(const float                    * av
   float * rel_avg_dev = new float[nWells];
   for (int i=0 ; i<nWells ; i++)
   {
-    float rel_dev_alpha = avg_dev_alpha[i]/global_mean_alpha;
-    float rel_dev_beta  = avg_dev_beta[i]/global_mean_beta;
+    float rel_dev_alpha = avg_dev_vp[i]/global_mean_alpha;
+    float rel_dev_beta  = avg_dev_vs[i]/global_mean_beta;
     float rel_dev_rho   = avg_dev_rho[i]/global_mean_rho;
     rel_avg_dev[i] = (rel_dev_alpha + rel_dev_beta + rel_dev_rho)/3;
   }
@@ -3792,9 +3662,9 @@ Background::writeDeviationsFromVerticalTrend(const float                    * av
   for (int i=0 ; i<nWells ; i++)
   {
     int ii = index[i];
-    if(avg_dev_alpha[ii] != RMISSING) {
+    if(avg_dev_vp[ii] != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii].GetWellName().c_str(),
-                           avg_dev_alpha[ii], avg_dev_beta[ii], avg_dev_rho[ii]);
+                           avg_dev_vp[ii], avg_dev_vs[ii], avg_dev_rho[ii]);
     }
   }
 
@@ -3809,8 +3679,8 @@ Background::writeDeviationsFromVerticalTrend(const float                    * av
 
 //-------------------------------------------------------------------------------
 void
-Background::fillInVerticalTrend(FFTGrid     * grid,
-                                const float * trend)
+Background::fillInVerticalTrend(FFTGrid                   * grid,
+                                const std::vector<double> & trend)
 {
   const int nzp = grid->getNzp();  // equals nx
   const int nyp = grid->getNyp();  // equals ny
@@ -3859,24 +3729,49 @@ Background::findMeanVsVp(FFTGrid * Vp,
   vsvp_ = mean;
 }
 
+//-------------------------------------------------------------------------------
+//double
+//Background::findMeanVsVp(NRLib::Grid<double> & vp,
+//                         NRLib::Grid<double> & vs)
+//{
+//
+//  double mean = 0;
+//  int ni  = vp.GetNI();
+//  int nj  = vp.GetNJ();
+//  int nk  = vp.GetNK();
+//  for(int k=0; k < nk; k++) {
+//    for(int j=0; j < nj; j++) {
+//      for(int i=0; i < ni; i++) {
+//        double v1 = vp(i,j,k);
+//        double v2 = vs(i,j,k);
+//        mean += exp(v2-v1);
+//      }
+//    }
+//  }
+//  mean = mean/double(ni*nj*nk);
+//
+//  return(mean);
+//
+//}
+
+
+//-------------------------------------------------------------------------------
+//void
+//Background::setClassicVsVp()
+//{
+//  int nxp = back_model_[0]->getNxp();
+//  int nyp = back_model_[0]->getNyp();
+//  int nzp = back_model_[0]->getNzp();
+//  float vp = back_model_[0]->getFirstComplexValue().re;
+//  vp = float(exp(vp/sqrt(float(nxp*nyp*nzp))));
+//  float vs = back_model_[1]->getFirstComplexValue().re;
+//  vs = float(exp(vs/sqrt(float(nxp*nyp*nzp))));
+//  vsvp_ = vs/vp;
+//}
 
 //-------------------------------------------------------------------------------
 void
-Background::setClassicVsVp()
-{
-  int nxp = back_model_[0]->getNxp();
-  int nyp = back_model_[0]->getNyp();
-  int nzp = back_model_[0]->getNzp();
-  float vp = back_model_[0]->getFirstComplexValue().re;
-  vp = float(exp(vp/sqrt(float(nxp*nyp*nzp))));
-  float vs = back_model_[1]->getFirstComplexValue().re;
-  vs = float(exp(vs/sqrt(float(nxp*nyp*nzp))));
-  vsvp_ = vs/vp;
-}
-
-//-------------------------------------------------------------------------------
-void
-Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp, //FFTGrid            *& bg_vp,
+Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp,
                                     NRLib::Grid<double> & bg_vs,
                                     NRLib::Grid<double> & bg_rho,
                                     const Simbox        * time_bg_simbox,
@@ -3904,16 +3799,13 @@ Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp, //FFTGrid      
   //  delete exp_rho;
   //}
 
-  //FFTGrid * res_bg_vp = NULL;
-  //FFTGrid * res_bg_vs = NULL;
-  //FFTGrid * res_bg_rho = NULL;
   NRLib::Grid<double> res_bg_vp;
   NRLib::Grid<double> res_bg_vs;
   NRLib::Grid<double> res_bg_rho;
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
-  resampleParameter(res_bg_vp, bg_vp, time_simbox, time_bg_simbox);
-  resampleParameter(res_bg_vs, bg_vs, time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_vp,  bg_vp,  time_simbox, time_bg_simbox);
+  resampleParameter(res_bg_vs,  bg_vs,  time_simbox, time_bg_simbox);
   resampleParameter(res_bg_rho, bg_rho, time_simbox, time_bg_simbox);
 
   //if((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
@@ -4185,31 +4077,15 @@ Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,   
 }
 
 //-------------------------------------------------------------------------------
-void
-Background::padAndSetBackgroundModel(FFTGrid * bg_vp,
-                                     FFTGrid * bg_vs,
-                                     FFTGrid * bg_rho)
-{
-  //LogKit::LogFormatted(LogKit::Low,"\nPadding background model...\n");
-  createPaddedParameter(back_model_[0], bg_vp);
-  createPaddedParameter(back_model_[1], bg_vs);
-  createPaddedParameter(back_model_[2], bg_rho);
-}
-
-//-------------------------------------------------------------------------------
 //void
-//Background::padAndSetBackgroundModelInterval(std::vector<FFTGrid *> bg_vp,
-//                                             std::vector<FFTGrid *> bg_vs,
-//                                             std::vector<FFTGrid *> bg_rho)
+//Background::padAndSetBackgroundModel(FFTGrid * bg_vp,
+//                                     FFTGrid * bg_vs,
+//                                     FFTGrid * bg_rho)
 //{
 //  //LogKit::LogFormatted(LogKit::Low,"\nPadding background model...\n");
-//  int n_intervals = bg_vp.size();
-//
-//  for(int i = 0; i < n_intervals; i++) {
-//    createPaddedParameter(back_model_interval_[i][0], bg_vp[i]);
-//    createPaddedParameter(back_model_interval_[i][1], bg_vs[i]);
-//    createPaddedParameter(back_model_interval_[i][2], bg_rho[i]);
-//  }
+//  createPaddedParameter(back_model_[0], bg_vp);
+//  createPaddedParameter(back_model_[1], bg_vs);
+//  createPaddedParameter(back_model_[2], bg_rho);
 //}
 
 //-------------------------------------------------------------------------------
@@ -4288,45 +4164,45 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
 }
 
 //-------------------------------------------------------------------------------
-void
-Background::writeBackgrounds(const Simbox            * simbox,
-                             GridMapping             * depthMapping,
-                             const GridMapping       * timeMapping,
-                             const bool                isFile,
-                             const TraceHeaderFormat & thf) const
-{
-  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
-    const Simbox * timeSimbox = simbox;
-    if(timeMapping != NULL)
-      timeSimbox = timeMapping->getSimbox();
-    back_model_[0]->setAccessMode(FFTGrid::RANDOMACCESS);
-    depthMapping->setMappingFromVelocity(back_model_[0], timeSimbox);
-    back_model_[0]->endAccess();
-  }
-
-  std::string fileName1 = IO::PrefixBackground() + "Vp" ;
-  std::string fileName2 = IO::PrefixBackground() + "Vs" ;
-  std::string fileName3 = IO::PrefixBackground() + "Rho";
-
-  FFTGrid * expAlpha = copyFFTGrid(back_model_[0], true, isFile);
-  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
-  delete expAlpha;
-
-  FFTGrid * expBeta = copyFFTGrid(back_model_[1], true, isFile);
-  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
-  delete expBeta;
-
-  FFTGrid * expRho = copyFFTGrid(back_model_[2], true, isFile);
-  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
-  delete expRho;
-
-  //
-  // For debugging: write cubes not in ASCII, with padding, and with flat top.
-  //
-  //back_model_[0]->writeStormFile(fileName1, simbox, true, false, true, true);
-  //back_model_[1]->writeStormFile(fileName2, simbox, true, false, true, true);
-  //back_model_[2]->writeStormFile(fileName3, simbox, true, false, true, true);
-}
+//void
+//Background::writeBackgrounds(const Simbox            * simbox,
+//                             GridMapping             * depthMapping,
+//                             const GridMapping       * timeMapping,
+//                             const bool                isFile,
+//                             const TraceHeaderFormat & thf) const
+//{
+//  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
+//    const Simbox * timeSimbox = simbox;
+//    if(timeMapping != NULL)
+//      timeSimbox = timeMapping->getSimbox();
+//    back_model_[0]->setAccessMode(FFTGrid::RANDOMACCESS);
+//    depthMapping->setMappingFromVelocity(back_model_[0], timeSimbox);
+//    back_model_[0]->endAccess();
+//  }
+//
+//  std::string fileName1 = IO::PrefixBackground() + "Vp" ;
+//  std::string fileName2 = IO::PrefixBackground() + "Vs" ;
+//  std::string fileName3 = IO::PrefixBackground() + "Rho";
+//
+//  FFTGrid * expAlpha = copyFFTGrid(back_model_[0], true, isFile);
+//  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+//  delete expAlpha;
+//
+//  FFTGrid * expBeta = copyFFTGrid(back_model_[1], true, isFile);
+//  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+//  delete expBeta;
+//
+//  FFTGrid * expRho = copyFFTGrid(back_model_[2], true, isFile);
+//  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+//  delete expRho;
+//
+//  //
+//  // For debugging: write cubes not in ASCII, with padding, and with flat top.
+//  //
+//  //back_model_[0]->writeStormFile(fileName1, simbox, true, false, true, true);
+//  //back_model_[1]->writeStormFile(fileName2, simbox, true, false, true, true);
+//  //back_model_[2]->writeStormFile(fileName3, simbox, true, false, true, true);
+//}
 
 FFTGrid *
 Background::copyFFTGrid(FFTGrid   * origGrid,
