@@ -27,6 +27,7 @@ class TimeLine;
 //class ModelGravityStatic;
 class MultiIntervalGrid;
 class GridMapping;
+class BlockedLogsCommon;
 
 class CommonData{
 public:

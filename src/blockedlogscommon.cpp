@@ -54,8 +54,8 @@
 //  bool failed = false;
 //
 //  // Remove missing values
-//  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-//                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+//  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+//                         facies_raw_logs_, continuous_logs_raw_logs_, discrete_logs_raw_logs_, cont_logs_to_be_blocked,
 //                         disc_logs_to_be_blocked, n_data_, failed, err_text);
 //
 //  well_data->SetNumberOfNonMissingData(n_data_);
@@ -67,7 +67,7 @@
 //    FilterLogs(max_hz_background, max_hz_seismic);
 //
 //  if (!failed)
-//    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+//    BlockWell(estimation_simbox, continuous_logs_raw_logs_, discrete_logs_raw_logs_, continuous_logs_blocked_,
 //              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 //
 //  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
@@ -107,8 +107,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
   // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   well_data->SetNumberOfNonMissingData(n_data_);
@@ -120,7 +120,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
     FilterLogs(max_hz_background, max_hz_seismic);
 
   if (!failed)
-    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+    BlockWell(estimation_simbox, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
               discrete_logs_blocked_, n_data_, interpolate, facies_map_, facies_log_defined_, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
@@ -144,8 +144,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
 
   bool failed = false;
 
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   if(failed)
@@ -154,13 +154,13 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   if(!failed){
     if(interval_simboxes.size() == 1){
       // If there is only one interval, the well can be blocked as before.
-      BlockWell(&interval_simboxes[0], continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+      BlockWell(&interval_simboxes[0], continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
               discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
     }
     else{
       // If there are multiple intervals, special treatment is required. Neighbouring cells vertically 
       // must have the same correlation within each trace.
-      BlockWellForCorrelationEstimation(multiple_interval_grid, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+      BlockWellForCorrelationEstimation(multiple_interval_grid, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
               discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
     }
   }
@@ -185,14 +185,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
 
   // Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
   if(failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
   if (!failed)
-    BlockWell(estimation_simbox, continuous_logs_unblocked_, discrete_logs_unblocked_, continuous_logs_blocked_,
+    BlockWell(estimation_simbox, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
               discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
@@ -240,8 +240,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   }
 
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
-  RemoveMissingLogValues(well_data, x_pos_unblocked_, y_pos_unblocked_, z_pos_unblocked_, twt_unblocked_,
-                         facies_unblocked_, continuous_logs_unblocked_, discrete_logs_unblocked_, cont_logs_to_be_blocked,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
   std::vector<int> b_ind(n_data_); //GetNData->getNd()); // Gives which block each well log entry contributes to
@@ -249,7 +249,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   FindSizeAndBlockPointers(stormgrid, b_ind);
   FindBlockIJK(stormgrid, b_ind);
 
-  for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked_.begin(); it!=continuous_logs_unblocked_.end(); it++){
+  for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_raw_logs_.begin(); it!=continuous_raw_logs_.end(); it++){
     std::vector<double> temp_vector_blocked;
 
     BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
@@ -269,8 +269,8 @@ BlockedLogsCommon::~BlockedLogsCommon(){
 }
 
 void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGrid                             & multiple_interval_grid,
-                                                          const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
-                                                          const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                                                          const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                                                          const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
                                                           std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                                                           std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
                                                           unsigned int                                          n_data,
@@ -290,14 +290,14 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 
     // Coordinate logs and necessary logs
 
-    BlockCoordinateLog(b_ind, x_pos_unblocked_, x_pos_blocked_);
-    BlockCoordinateLog(b_ind, y_pos_unblocked_, y_pos_blocked_);
-    BlockCoordinateLog(b_ind, z_pos_unblocked_, z_pos_blocked_);
-    BlockContinuousLog(b_ind, twt_unblocked_, twt_blocked_    );
+    BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
+    BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
+    BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
+    BlockContinuousLog(b_ind, twt_raw_logs_, twt_blocked_    );
 
     // Continuous logs
 
-    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++){
+    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
       std::vector<double> temp_vector_blocked;
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
@@ -305,9 +305,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 
     // Discrete logs
     if (facies_log_defined)
-      BlockFaciesLog(b_ind, facies_unblocked_, facies_map, facies_map.size(), facies_blocked_);
+      BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
 
-    (void) discrete_logs_unblocked;
+    (void) discrete_logs_raw_logs;
     (void) discrete_logs_blocked;
 
     if(interpolate){
@@ -350,8 +350,8 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 }
 
 void BlockedLogsCommon::BlockWell(const Simbox                                        * const estimation_simbox,
-                                  const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
-                                  const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                                  const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                                  const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
                                   std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                                   std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
                                   unsigned int                                          n_data,
@@ -377,7 +377,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
     // Continuous logs
 
-    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_unblocked.begin(); it!=continuous_logs_unblocked.end(); it++) {
+    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++) {
       std::vector<double> temp_vector_blocked;
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
@@ -387,7 +387,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     if (facies_log_defined)
       BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
 
-    (void) discrete_logs_unblocked;
+    (void) discrete_logs_raw_logs;
     (void) discrete_logs_blocked;
 
     if (interpolate){
@@ -581,9 +581,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
                                                   std::vector<int>     & b_ind) {
   int   nd = static_cast<int>(b_ind.size());
-  const std::vector<double> x_pos = GetXposNotBlocked();
-  const std::vector<double> y_pos = GetYposNotBlocked();
-  const std::vector<double> z_pos = GetZposNotBlocked();
+  const std::vector<double> x_pos = GetXposRawLogs();
+  const std::vector<double> y_pos = GetYposRawLogs();
+  const std::vector<double> z_pos = GetZposRawLogs();
 
   //
   // Find first cell in Simbox that the well hits
@@ -942,14 +942,14 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid    & stormgrid,
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  const std::vector<double> & x = x_pos_unblocked_; //GetXpos();
-  const std::vector<double> & y = y_pos_unblocked_;
-  const std::vector<double> & z = z_pos_unblocked_;
+  const std::vector<double> & x = x_pos_raw_logs_; //GetXpos();
+  const std::vector<double> & y = y_pos_raw_logs_;
+  const std::vector<double> & z = z_pos_raw_logs_;
 
   //int   dummy;
-  const std::vector<double> & x = GetXposNotBlocked();
-  const std::vector<double> & y = GetYposNotBlocked();
-  const std::vector<double> & z = GetZposNotBlocked();
+  const std::vector<double> & x = GetXposRawLogs();
+  const std::vector<double> & y = GetYposRawLogs();
+  const std::vector<double> & z = GetZposRawLogs();
 
   //
   // Set IJK for virtual part of well in upper part of stormgrid
@@ -1778,13 +1778,13 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(float                    *& bloc
 }
 //------------------------------------------------------------------------------
 void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * well_data,
-                                                  std::vector<double>                          & x_pos_unblocked,
-                                                  std::vector<double>                          & y_pos_unblocked,
-                                                  std::vector<double>                          & z_pos_unblocked,
-                                                  std::vector<double>                          & twt_unblocked,
-                                                  std::vector<int>                             & facies_unblocked,
-                                                  std::map<std::string, std::vector<double> >  & continuous_logs_unblocked,
-                                                  std::map<std::string, std::vector<int> >     & discrete_logs_unblocked,
+                                                  std::vector<double>                          & x_pos_raw_logs,
+                                                  std::vector<double>                          & y_pos_raw_logs,
+                                                  std::vector<double>                          & z_pos_raw_logs,
+                                                  std::vector<double>                          & twt_raw_logs,
+                                                  std::vector<int>                             & facies_raw_logs,
+                                                  std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
+                                                  std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
                                                   const std::vector<std::string>               & cont_logs_to_be_blocked,
                                                   const std::vector<std::string>               & disc_logs_to_be_blocked,
                                                   unsigned int                                 & n_data,
@@ -1804,8 +1804,8 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
     std::map<std::string,std::vector<double> >  continuous_logs_well = well_data->GetContLog();
     std::map<std::string,std::vector<int> >     discrete_logs_well   = well_data->GetDiscLog();
 
-    std::map<std::string, std::vector<double> > continuous_logs_unblocked_temp;
-    std::map<std::string, std::vector<int> >    discrete_logs_unblocked_temp;
+    std::map<std::string, std::vector<double> > continuous_logs_raw_logs_temp;
+    std::map<std::string, std::vector<int> >    discrete_logs_raw_logs_temp;
 
     // Pick only the variables that are requested in the constructor --------------------------------------------------------
 
@@ -1814,7 +1814,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
       std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(cont_logs_to_be_blocked[i]);
       // if the well log contains this continuous log
       if (it != continuous_logs_well.end()){
-        continuous_logs_unblocked_temp.insert(std::pair<std::string, std::vector<double> >(it->first, it->second));
+        continuous_logs_raw_logs_temp.insert(std::pair<std::string, std::vector<double> >(it->first, it->second));
       }
     }
 
@@ -1823,18 +1823,18 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
       std::map<std::string,std::vector<int> >::iterator it = discrete_logs_well.find(disc_logs_to_be_blocked[i]);
       // if the well log contains this discrete log
       if (it != discrete_logs_well.end()){
-        discrete_logs_unblocked_temp.insert(std::pair<std::string, std::vector<int> >(it->first, it->second));
+        discrete_logs_raw_logs_temp.insert(std::pair<std::string, std::vector<int> >(it->first, it->second));
       }
     }
 
-    for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
+    for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_raw_logs_temp.begin(); it!=continuous_logs_raw_logs_temp.end(); it++){
       std::vector<double> temp_vector;
-      continuous_logs_unblocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector));
+      continuous_logs_raw_logs.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector));
     }
 
-    for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
+    for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_raw_logs_temp.begin(); it!=discrete_logs_raw_logs_temp.end(); it++){
       std::vector<int> temp_vector;
-      discrete_logs_unblocked.insert(std::pair<std::string, std::vector<int> >(it->first, temp_vector));
+      discrete_logs_raw_logs.insert(std::pair<std::string, std::vector<int> >(it->first, temp_vector));
     }
 
 
@@ -1842,25 +1842,25 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
     for (unsigned int i=0; i<n_data_with_wellmissing; i++){
       // TWT is the variable we are testing for WELLMISSING values
 
-      //double dummy = continuous_logs_unblocked_temp.find("TWT")->second[i];
+      //double dummy = continuous_logs_raw_logs_temp.find("TWT")->second[i];
       double dummy = continuous_logs_well.find("TWT")->second[i];  //H Changed in debugging test_case_2
 
       if (dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
-        x_pos_unblocked.push_back(continuous_logs_well.find("X_pos")->second[i]);
-        y_pos_unblocked.push_back(continuous_logs_well.find("Y_pos")->second[i]);
-        z_pos_unblocked.push_back(continuous_logs_well.find("TVD")->second[i]);
-        twt_unblocked.push_back(continuous_logs_well.find("TWT")->second[i]);
+        x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
+        y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
+        z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
+        twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
         if (facies_log_defined_)
-          facies_unblocked.push_back(discrete_logs_well.find("Facies")->second[i]);
+          facies_raw_logs.push_back(discrete_logs_well.find("Facies")->second[i]);
 
         // Loop over continuous variables and push back this element
-        for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_unblocked_temp.begin(); it!=continuous_logs_unblocked_temp.end(); it++){
-          continuous_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
+        for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_raw_logs_temp.begin(); it!=continuous_logs_raw_logs_temp.end(); it++){
+          continuous_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
         }
 
         // Loop over discrete variables and push back this element
-        for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_unblocked_temp.begin(); it!=discrete_logs_unblocked_temp.end(); it++){
-          discrete_logs_unblocked.find(it->first)->second.push_back(it->second[i]);
+        for (std::map<std::string,std::vector<int> >::iterator it = discrete_logs_raw_logs_temp.begin(); it!=discrete_logs_raw_logs_temp.end(); it++){
+          discrete_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
         }
 
         n_data++;
@@ -1946,9 +1946,9 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     j_offset[j+j_max_offset]=j;
   }
 
-  GetVerticalTrendLimited(GetVpUnblocked(), vp_vert, limits);
-  GetVerticalTrendLimited(GetVsUnblocked(), vs_vert, limits);
-  GetVerticalTrendLimited(GetRhoUnblocked(), rho_vert, limits);
+  GetVerticalTrendLimited(GetVpraw_logs(), vp_vert, limits);
+  GetVerticalTrendLimited(GetVsraw_logs(), vs_vert, limits);
+  GetVerticalTrendLimited(GetRhoraw_logs(), rho_vert, limits);
 
   std::vector<bool> has_data(n_layers_);
   for (i = 0 ; i < n_layers_ ; i++) {
@@ -2690,9 +2690,9 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   std::vector<double> vs_seismic_resolution(n_data_, RMISSING);
   std::vector<double> rho_seismic_resolution(n_data_, RMISSING);
 
-  const std::vector<double> & vp_unblocked  = GetVpUnblocked();
-  const std::vector<double> & vs_unblocked  = GetVsUnblocked();
-  const std::vector<double> & rho_unblocked = GetRhoUnblocked();
+  const std::vector<double> & vp_raw_logs  = GetVpraw_logs();
+  const std::vector<double> & vs_raw_logs  = GetVsraw_logs();
+  const std::vector<double> & rho_raw_logs = GetRhoraw_logs();
 
 
   //
@@ -2700,47 +2700,47 @@ void BlockedLogsCommon::FilterLogs(float max_hz_background,
   //
   bool filtered = ResampleTime(time_resampled, n_data_, dt); //False if well not monotonous in time.
 
-  if (filtered) { //H Changed all to unblocked (Filterlogs is run in ModelGeneral::processWell which is run before ModelAVOStatic::Blocklogs)
+  if (filtered) { //H Changed all to raw_logs (Filterlogs is run in ModelGeneral::processWell which is run before ModelAVOStatic::Blocklogs)
     //
     // Vp
     //
-    ResampleLog(vp_resampled, vp_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);         // May generate missing values
+    ResampleLog(vp_resampled, vp_raw_logs, z_pos_raw_logs_, time_resampled, n_data_, dt);         // May generate missing values
     InterpolateLog(vp_interpolated, vp_resampled, n_data_);                     // Interpolate missing values
 
     ApplyFilter(vp_filtered, vp_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(vp_background_resolution, vp_resampled, n_data_);
 
     ApplyFilter(vp_filtered, vp_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(vp_seismic_resolution, vp_resampled, n_data_);
 
     //
     // Vs
     //
-    ResampleLog(vs_resampled, vs_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);
+    ResampleLog(vs_resampled, vs_raw_logs, z_pos_raw_logs_, time_resampled, n_data_, dt);
     InterpolateLog(vs_interpolated, vs_resampled, n_data_);
 
     ApplyFilter(vs_filtered, vs_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(vs_background_resolution, vs_resampled, n_data_);
 
     ApplyFilter(vs_filtered, vs_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(vs_seismic_resolution, vs_resampled, n_data_);
 
     //
     // Rho
     //
-    ResampleLog(rho_resampled, rho_unblocked, z_pos_unblocked_, time_resampled, n_data_, dt);
+    ResampleLog(rho_resampled, rho_raw_logs, z_pos_raw_logs_, time_resampled, n_data_, dt);
     InterpolateLog(rho_interpolated, rho_resampled, n_data_);
 
     ApplyFilter(rho_filtered, rho_interpolated, n_data_, dt, max_hz_background);
-    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(rho_background_resolution, rho_resampled, n_data_);
 
     ApplyFilter(rho_filtered, rho_interpolated, n_data_, dt, max_hz_seismic);
-    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_unblocked_, n_data_, dt);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos_raw_logs_, n_data_, dt);
     InterpolateLog(rho_seismic_resolution, rho_resampled, n_data_);
   }
 
@@ -2789,11 +2789,11 @@ bool BlockedLogsCommon::ResampleTime(std::vector<double> & time_resampled,
                                      int                   nd,
                                      double              & dt) {
   //Only resample if monotonous increasing in time.
-  double time_begin = z_pos_unblocked_[0]; //H Changed to unblocked
-  double time_end   = z_pos_unblocked_[nd - 1];
+  double time_begin = z_pos_raw_logs_[0]; //H Changed to raw_logs
+  double time_end   = z_pos_raw_logs_[nd - 1];
   bool   monotonous = true;
   for (int i = 1 ; (i < nd && monotonous == true); i++)
-    if (z_pos_unblocked_[i] < z_pos_unblocked_[i-1])
+    if (z_pos_raw_logs_[i] < z_pos_raw_logs_[i-1])
       monotonous = false;
 
   if (monotonous == false)

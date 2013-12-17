@@ -82,7 +82,7 @@ CommonData::CommonData(ModelSettings                            * model_settings
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
   if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
-    block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
+    block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, *multiple_interval_grid_,
                                             wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_, err_text);
 
   // 5. Reflection matrix and wavelet
@@ -121,7 +121,7 @@ CommonData::CommonData(ModelSettings                            * model_settings
   if (setup_multigrid_) {
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (read_wells_)
-        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, err_text);
+        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, err_text);
     }
     else
       setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, err_text);
@@ -3816,9 +3816,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
               // Outside this interval
               if (multiple_interval_grid_->GetNIntervals() > 1) {
-                const std::vector<double> x_pos = blocked_log->GetXpos();
-                const std::vector<double> y_pos = blocked_log->GetYpos();
-                const std::vector<double> z_pos = blocked_log->GetZpos();
+                const std::vector<double> x_pos = blocked_log->GetXposBlocked();
+                const std::vector<double> y_pos = blocked_log->GetYposBlocked();
+                const std::vector<double> z_pos = blocked_log->GetZposBlocked();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
                   const Simbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
@@ -3831,9 +3831,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
               }
 
               if (facies_estim_interval_.size() > 0) {
-                const std::vector<double> x_pos = blocked_log->GetXpos();
-                const std::vector<double> y_pos = blocked_log->GetYpos();
-                const std::vector<double> z_pos = blocked_log->GetZpos();
+                const std::vector<double> x_pos = blocked_log->GetXposBlocked();
+                const std::vector<double> y_pos = blocked_log->GetYposBlocked();
+                const std::vector<double> z_pos = blocked_log->GetZposBlocked();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
                   const double z_top  = facies_estim_interval_[0]->GetZ(x_pos[i], y_pos[i]);
@@ -6970,14 +6970,14 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
 
         if (!failed) {
 
-          const int nx        = simboxes[i].getnx();
-          const int ny        = simboxes[i].getny();
-          const int nz        = simboxes[i].getnz();
+          const int nx        = interval_simboxes[i].getnx();
+          const int ny        = interval_simboxes[i].getny();
+          const int nz        = interval_simboxes[i].getnz();
           const int nx_pad     = model_settings->getNXpad();
           const int ny_pad     = model_settings->getNYpad();
-          const int nz_pad     = simboxes[i].GetNZpad();
+          const int nz_pad     = interval_simboxes[i].GetNZpad();
 
-          float dt = static_cast<float>(simboxes[i].getdz());
+          float dt = static_cast<float>(interval_simboxes[i].getdz());
           float low_cut = model_settings->getLowCut();
           int low_int_cut = int(floor(low_cut*(nz_pad*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
 

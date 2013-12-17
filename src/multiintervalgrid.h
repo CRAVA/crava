@@ -35,8 +35,8 @@ public:
   std::vector<Simbox>                                    & GetIntervalSimboxes()                 { return interval_simboxes_        ;}
   const Simbox                                           * GetIntervalSimbox(int i) const        { return &interval_simboxes_[i]    ;}
   Simbox                                                 & GetIntervalSimboxE(int i)             { return interval_simboxes_[i]     ;}
-  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return parameters_               ;}
-  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return parameters_[i]            ;}
+  const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return background_parameters_    ;}
+  const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return background_parameters_[i] ;}
   const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]        ;}
   const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_       ;}
   const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_            ;}
@@ -51,6 +51,8 @@ public:
 
   const std::vector<std::vector<NRLib::Grid<double> > > & GetPriorFaciesProbCubes()              const { return prior_facies_prob_cubes_    ;}
   const std::vector<NRLib::Grid<double> >               & GetPriorFaciesProbCubesInterval(int i) const { return prior_facies_prob_cubes_[i] ;}
+  const std::vector<CravaTrend>                         & GetTrendCubes()                        const { return trend_cubes_                ;}
+  const CravaTrend                                      & GetTrendCube(int i)                    const { return trend_cubes_[i]             ;}
 
 
   // SET FUNCTIONS

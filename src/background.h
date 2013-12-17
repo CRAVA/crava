@@ -27,6 +27,7 @@ class ModelSettings;
 
 class BlockedLogs;
 class MultiIntervalGrid;
+class BlockedLogsCommon;
 
 
 //Special note on the use of Background:

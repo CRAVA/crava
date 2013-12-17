@@ -82,9 +82,9 @@ public:
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
         std::vector<double>            & GetRhoBlocked(void)           { return continuous_logs_blocked_.find("Rho")->second                          ;}
   const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
-  const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vp")->second                         ;}
-  const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vs")->second                         ;}
-  const std::vector<double>            & GetRhoUnblocked(void) const   { return continuous_logs_unblocked_.find("Rho")->second                        ;}
+  const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_raw_logs_.find("Vp")->second                         ;}
+  const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_raw_logs_.find("Vs")->second                         ;}
+  const std::vector<double>            & GetRhoUnblocked(void) const   { return continuous_raw_logs_.find("Rho")->second                        ;}
 
   const std::vector<double>            & GetVpSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}
@@ -505,8 +505,8 @@ private:
   std::vector<double> twt_raw_logs_;
   std::vector<int>    facies_raw_logs_;
 
-  std::map<std::string, std::vector<double> > continuous_logs_unblocked_;  // Map between variable name and unblocked continuous log
-  std::map<std::string, std::vector<int> >    discrete_logs_unblocked_;    // Map between variable name and unblocked discrete log
+  std::map<std::string, std::vector<double> > continuous_raw_logs_;  // Map between variable name and raw continuous logs
+  std::map<std::string, std::vector<int> >    discrete_raw_logs_;    // Map between variable name and raw discrete logs
 
   //Variables needed in SetLogFromGrid and later used in WriteWell
   std::map<int, std::vector<double> >         cpp_;                        ///< Mapped reflection coefficients for angles
