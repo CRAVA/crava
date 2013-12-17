@@ -221,23 +221,23 @@ int main(int argc, char** argv)
       SeismicParametersHolder seismicParametersInterval;
       //Forventningsgrid (fra multisonegrid)
       seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval),
-                                                                modelSettings->getNXpad(),
-                                                                modelSettings->getNYpad(),
-                                                                modelSettings->getNZpad());
-      //korrelasjonsgrid (2m) //H Waiting for priorCorr in CommonData
-      //seismicParametersInterval.setCovParameters(common_data->GetMultipleIntervalGrid()->GetCovParametersInterval(i_interval),
-      //                                           modelSettings->getNXpad(),
-      //                                           modelSettings->getNYpad(),
-      //                                           modelSettings->getNZpad());
+                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
+                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
+                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
+      //korrelasjonsgrid (2m)
+      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
 
-      //seismicParametersInterval.setCrCovParameters(common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[0],
-      //                                             common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[1],
-      //                                             common_data->GetMultipleIntervalGrid()->GetCorrParametersInterval(i_interval)[2],
-      //                                             modelSettings->getNXpad(),
-      //                                             modelSettings->getNYpad(),
-      //                                             modelSettings->getNZpad());
+      seismicParametersInterval.setCrCovParameters(common_data->GetCorrParametersInterval(i_interval)[0],
+                                                   common_data->GetCorrParametersInterval(i_interval)[1],
+                                                   common_data->GetCorrParametersInterval(i_interval)[2],
+                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
+                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
+                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
 
-      //seismicParametersInterval.setPriorVar0(common_data->GetMultipleIntervalGrid()->GetPriorVar0(i_interval));
+      seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,

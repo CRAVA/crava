@@ -24,7 +24,7 @@ class KrigingData3D;
 class KrigingData2D;
 class ModelSettings;
 //class BlockedLogsForZone;
-
+class BlockedLogsCommon;
 class BlockedLogs;
 class MultiIntervalGrid;
 class BlockedLogsCommon;
@@ -36,12 +36,6 @@ class BlockedLogsCommon;
 class Background
 {
 public:
-  //Background(FFTGrid                       ** grids,
-  //           const std::vector<WellData *>  & wells,
-  //           FFTGrid                       *& velocity,
-  //           const Simbox                   * timeSimbox,
-  //           const Simbox                   * timeBGSimbox,
-  //           const ModelSettings            * modelSettings);
 
   Background(std::vector<NRLib::Grid<double> >          & parameters,
              const std::vector<NRLib::Well>             & wells,
@@ -52,12 +46,6 @@ public:
              std::map<std::string, BlockedLogsCommon *> & bg_bl,
              const ModelSettings                        * modelSettings,
              std::string                                & err_text);
-
-  //Background(FFTGrid                       ** grids,
-  //           const std::vector<WellData *>  & wells,
-  //           const Simbox                   * timeSimbox,
-  //           const ModelSettings            * modelSettings,
-  //           const std::vector<std::string> & correlation_files);
 
   Background(std::vector<NRLib::Grid<double> > & parameters,
              const std::vector<NRLib::Well>    & wells,

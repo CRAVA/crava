@@ -120,9 +120,9 @@ void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
   max = -std::numeric_limits<A>::infinity();
   min = +std::numeric_limits<A>::infinity();
 
-  for(size_t i = 0; i < ni_; i++) {
-    for(size_t j = 0; j < nj_; j++) {
-      for(size_t k = 0; k < nk_; k++) {
+  for(unsigned int i = 0; i < ni_; i++) {
+    for(unsigned int j = 0; j < nj_; j++) {
+      for(unsigned int k = 0; k < nk_; k++) {
         value = data_[GetIndex(i, j, k)];
         sum += value;
 

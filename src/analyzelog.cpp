@@ -19,11 +19,11 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-Analyzelog::Analyzelog(std::vector<WellData *> wells,
-                       Background            * background,
-                       const Simbox          * simbox,
-                       const ModelSettings   * modelSettings,
-                       std::string           & errTxt)
+Analyzelog::Analyzelog(std::vector<WellData *>  & wells,
+                       Background               * background,
+                       const Simbox             * simbox,
+                       const ModelSettings      * modelSettings,
+                       std::string              & errTxt)
 {
   pointVar0_ = new float*[3];
   for(int i=0 ; i<3 ; i++)
@@ -44,6 +44,7 @@ Analyzelog::Analyzelog(std::vector<WellData *> wells,
            background,
            errTxt);
 }
+
 
 Analyzelog::~Analyzelog(void)
 {

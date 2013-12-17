@@ -145,6 +145,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               model_settings->getCorrDirIntervalBaseConform(),
                               desired_grid_resolution_,
                               relative_grid_resolution_,
+                              dz_rel_,
                               err_text,
                               failed);
       }
@@ -285,11 +286,12 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 const std::map<std::string, bool>         & corr_dir_base_conform,
                                                 std::vector<double>                       & desired_grid_resolution,
                                                 std::vector<double>                       & relative_grid_resolution,
+                                                std::vector<double>                       & dz_rel,
                                                 std::string                               & err_text,
                                                 bool                                      & failed) const{
 
   for (size_t i = 0; i< interval_names.size(); i++){
-
+    bool                   corr_dir                               = false;
     std::string            interval_name                          = interval_names[i];
     Surface                top_surface                            = eroded_surfaces[i];
     Surface                base_surface                           = eroded_surfaces[i+1];
@@ -304,29 +306,21 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     //SegyGeometry * geometry = model_settings->getAreaParameters();
 
     float min_samp_dens = model_settings->getMinSamplingDensity();
-    double tmp = interval_simboxes[i].getMinRelThick();
-
-    //if (interval_simboxes[i].getdz()*interval_simboxes[i].getMinRelThick() < min_samp_dens){ ///H Commented out. Move this?
-    //  failed   = true;
-    //  err_text += "We normally discourage denser sampling than "+NRLib::ToString(min_samp_dens);
-    //  err_text += "ms in the time grid. If you really need\nthis, please use ";
-    //  err_text += "<project-settings><advanced-settings><minimum-sampling-density>\n";
-    //}
-
 
     // Make extended interval_simbox for the inversion interval ---------------------------
 
     if (interval_simboxes[i].status() == Simbox::EMPTY){
-      LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval:","Two-way-time");
 
       // Case 1: Single correlation surface
       if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
+        corr_dir = true;
         Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
         interval_simboxes[i]    = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, corr_surf, err_text, failed);
         interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
       }
       // Case 2: Top and base correlation surfaces
       else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
+        corr_dir = true;
         Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
@@ -336,12 +330,12 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       // Case 3: Top conform and base conform if (i) both are set conform or (ii) if no other corr surfaces have been defined
       else if ((it_top_conform->second == true && it_base_conform->second == true) ||
                (it_single == corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end())){
-        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                NULL, NULL);
+        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed);
         interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
       }
       // Case 4: Top correlation surface and base conform
       else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true){
+        corr_dir = true;
         Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 corr_surf_top, NULL);
@@ -349,6 +343,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       }
       // Case 5: Top conform and base correlation surface
       else if (it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
+        corr_dir = true;
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 NULL, corr_surf_base);
@@ -360,47 +355,66 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         err_text += ".\n";
         failed = true;
       }
+      
+
     }
     // Calculate Z padding ----------------------------------------------------------------
 
     if (!failed){
+      // calculated dz should be the same as the desired grid resolution?
       int status = interval_simboxes[i].calculateDz(model_settings->getLzLimit(),err_text);
-      EstimateZPaddingSize(&interval_simboxes[i], model_settings);
       relative_grid_resolution[i] = interval_simboxes[i].getdz() / desired_grid_resolution[i];
+      EstimateZPaddingSize(&interval_simboxes[i], model_settings);
 
+      if (interval_simboxes[i].getdz()*interval_simboxes[i].getMinRelThick() < min_samp_dens){
+        failed   = true;
+        err_text += "We normally discourage denser sampling than "+NRLib::ToString(min_samp_dens);
+        err_text += "ms in the time grid. If you really need\nthis, please use ";
+        err_text += "<project-settings><advanced-settings><minimum-sampling-density>\n";
+      }
 
-      if (status == Simbox::BOXOK)
-        LogIntervalInformation(&interval_simboxes[i], "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
-      else
-      {
+      if(interval_simboxes[i].status() == Simbox::BOXOK){
+        if(corr_dir){
+          LogIntervalInformation(interval_simboxes[i], interval_names[i], 
+            "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
+        }
+        else{
+          LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval:","Two-way-time");
+        }
+      }
+      else {
         err_text += "Could not make the time simulation grid.\n";
         failed = true;
       }
+    }
 
     // Calculate XY padding ---------------------------------------------------------------
 
     if (!failed) {
 
-      EstimateXYPaddingSizes(&interval_simboxes[i], model_settings);
+      //EstimateXYPaddingSizes(&interval_simboxes[i], model_settings);
+      interval_simboxes[i].SetNXpad(estimation_simbox->GetNXpad());
+      interval_simboxes[i].SetNYpad(estimation_simbox->GetNYpad());
+      interval_simboxes[i].SetXPadFactor(estimation_simbox->GetXPadFactor());
+      interval_simboxes[i].SetYPadFactor(estimation_simbox->GetYPadFactor());
 
-            unsigned long long int grid_size = static_cast<unsigned long long int>(model_settings->getNXpad())*model_settings->getNYpad()*model_settings->getNZpad();
+      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i].GetNXpad())*interval_simboxes[i].GetNYpad()*interval_simboxes[i].GetNZpad();
 
-            if (grid_size > std::numeric_limits<unsigned int>::max()) {
-              float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
-              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
-              err_text += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
-              err_text += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
-              failed = true;
-            }
+      if(grid_size > std::numeric_limits<unsigned int>::max()) {
+        float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
+        float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+        err_text += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
+        err_text += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
+        failed = true;
+      }
 
-            LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
-            LogKit::LogFormatted(LogKit::Low,"  Output grid        %4i * %4i * %4i   : %10llu\n",
-                                 interval_simboxes[i].getnx(),interval_simboxes[i].getny(),interval_simboxes[i].getnz(),
-                                 static_cast<unsigned long long int>(interval_simboxes[i].getnx())*interval_simboxes[i].getny()*interval_simboxes[i].getnz());
-            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
-                                 model_settings->getNXpad(),model_settings->getNYpad(),model_settings->getNZpad(),
-                                 static_cast<unsigned long long int>(model_settings->getNXpad())*model_settings->getNYpad()*model_settings->getNZpad());
-          }
+      LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
+      LogKit::LogFormatted(LogKit::Low,"  Output grid        %4i * %4i * %4i   : %10llu\n",
+                            interval_simboxes[i].getnx(),interval_simboxes[i].getny(),interval_simboxes[i].getnz(),
+                            static_cast<unsigned long long int>(interval_simboxes[i].getnx())*interval_simboxes[i].getny()*interval_simboxes[i].getnz());
+      LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
+                            interval_simboxes[i].GetNXpad(),interval_simboxes[i].GetNYpad(),interval_simboxes[i].GetNZpad(),
+                            static_cast<unsigned long long int>(interval_simboxes[i].GetNXpad())*interval_simboxes[i].GetNYpad()*interval_simboxes[i].GetNZpad());
     }
 
     // Check consistency ------------------------------------------------------------------
@@ -408,6 +422,11 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       err_text += "dz for interval \'" + interval_names[i] + "\' is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
       failed = true;
     }
+  } // end for loop over intervals
+  dz_rel.resize(interval_names.size());
+  double dz_0 = interval_simboxes[0].getdz();
+  for(size_t m = 0; m<interval_simboxes.size(); m++){
+    dz_rel[m] = interval_simboxes[m].getdz()/dz_0;
   }
 }
 
@@ -538,7 +557,8 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
                                                       std::vector<NRLib::Grid<double> >          & vs_interval,
                                                       std::vector<NRLib::Grid<double> >          & rho_interval,
-                                                      const std::vector<Simbox>                 & interval_simboxes) const{
+                                                      const std::vector<Simbox>                 & interval_simboxes,
+                                                      std::vector<double>                       & relative_grid_resolution) const{
 
   for (size_t i=0; i<n_intervals_; i++) {
     int    nx        = interval_simboxes[i].getnx();
@@ -606,19 +626,19 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   {
     double w_length    = static_cast<double>(model_settings->getDefaultWaveletLength());
     double p_fac      = 1.0;
-    z_pad             = w_length/p_fac;                             // Use half a wavelet as padding
+    z_pad             = w_length/p_fac;                               // Use half a wavelet as padding
     z_pad_fac         = std::min(1.0, z_pad/min_lz);                  // More than 100% padding is not sensible
   }
-  int nz_pad          = SetPaddingSize(nz, z_pad_fac);
+  int nz_pad          = FindPaddingSize(nz, z_pad_fac);
   z_pad_fac           = static_cast<double>(nz_pad - nz)/static_cast<double>(nz);
 
-  simbox->setNZpad(nz_pad);
-  simbox->setZPadFac(z_pad_fac);
+  simbox->SetNZpad(nz_pad);
+  simbox->SetZPadFactor(z_pad_fac);
 }
 
 // --------------------------------------------------------------------------------
-int MultiIntervalGrid::SetPaddingSize(int     nx,
-                                      double  px) const{
+int MultiIntervalGrid::FindPaddingSize(int     nx,
+                                      double  px){
 
   int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
   int closestprod = FindClosestFactorableNumber(leastint);
@@ -626,7 +646,7 @@ int MultiIntervalGrid::SetPaddingSize(int     nx,
 }
 
 // --------------------------------------------------------------------------------
-int MultiIntervalGrid::FindClosestFactorableNumber(int leastint) const{
+int MultiIntervalGrid::FindClosestFactorableNumber(int leastint){
   int i,j,k,l,m,n;
   int factor   =       1;
 
@@ -723,73 +743,4 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
   }
 
   return max_resolution;
-}
-
-// --------------------------------------------------------------------------------
-void  MultiIntervalGrid::EstimateXYPaddingSizes(Simbox          * interval_simbox,
-                                                ModelSettings   * model_settings) const{
-  double dx      = interval_simbox->getdx();
-  double dy      = interval_simbox->getdy();
-  double lx      = interval_simbox->getlx();
-  double ly      = interval_simbox->getly();
-  int    nx      = interval_simbox->getnx();
-  int    ny      = interval_simbox->getny();
-  int    nz      = interval_simbox->getnz();
-
-  double xPadFac = model_settings->getXPadFac();
-  double yPadFac = model_settings->getYPadFac();
-  double xPad    = xPadFac*lx;
-  double yPad    = yPadFac*ly;
-
-  if (model_settings->getEstimateXYPadding())
-  {
-    float  range1 = model_settings->getLateralCorr()->getRange();
-    float  range2 = model_settings->getLateralCorr()->getSubRange();
-    float  angle  = model_settings->getLateralCorr()->getAngle();
-    double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
-
-    xPad          = factor * std::max(fabs(range1*cos(angle)), fabs(range2*sin(angle)));
-    yPad          = factor * std::max(fabs(range1*sin(angle)), fabs(range2*cos(angle)));
-    xPad          = std::max(xPad, dx);     // Always require at least on grid cell
-    yPad          = std::max(yPad, dy);     // Always require at least one grid cell
-    xPadFac       = std::min(1.0, xPad/lx); // A padding of more than 100% is insensible
-    yPadFac       = std::min(1.0, yPad/ly);
-  }
-
-  int nxPad = SetPaddingSize(nx, xPadFac);
-  int nyPad = SetPaddingSize(ny, yPadFac);
-  int nzPad = model_settings->getNZpad();
-
-  double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
-  double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
-  double true_zPadFac = model_settings->getZPadFac();
-  double true_xPad    = true_xPadFac*lx;
-  double true_yPad    = true_yPadFac*ly;
-  double true_zPad    = true_zPadFac*(interval_simbox->getlz()*interval_simbox->getMinRelThick());
-
-  model_settings->setNXpad(nxPad);
-  model_settings->setNYpad(nyPad);
-  model_settings->setXPadFac(true_xPadFac);
-  model_settings->setYPadFac(true_yPadFac);
-
-  std::string text1;
-  std::string text2;
-  int logLevel = LogKit::Medium;
-  if (model_settings->getEstimateXYPadding()) {
-    text1 = " estimated from lateral correlation ranges in internal grid";
-    logLevel = LogKit::Low;
-  }
-  if (model_settings->getEstimateZPadding()) {
-    text2 = " estimated from an assumed wavelet length";
-    logLevel = LogKit::Low;
-  }
-
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
-  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
-                       true_xPad, true_xPadFac, nx, nxPad);
-  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
-                       true_yPad, true_yPadFac, ny, nyPad);
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
-                       true_zPad, true_zPadFac, nz, nzPad);
 }

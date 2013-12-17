@@ -14,20 +14,17 @@
 #include "src/blockedlogscommon.h"
 #include "src/tasklist.h"
 #include "src/seismicstorage.h"
-#include "src/multiintervalgrid.h"
 #include "src/background.h"
-//#include "src/timeevolution.h"
 #include "src/gridmapping.h"
+#include "src/analyzelog.h"
+#include "src/inputfiles.h"
+#include "src/modelsettings.h"
+#include "src/timeline.h"
 
-class CravaTrend;
-class InputFiles;
-class ModelSettings;
-//class ModelGeneral;
-class TimeLine;
-//class ModelGravityStatic;
 class MultiIntervalGrid;
-class GridMapping;
+class CravaTrend;
 class BlockedLogsCommon;
+
 
 class CommonData{
 public:
@@ -40,11 +37,14 @@ public:
 
   //GET FUNCTIONS
 
-  const Simbox                    & GetEstimationSimbox()     const { return estimation_simbox_      ;}
-  const NRLib::Volume             & GetFullInversionVolume()  const { return full_inversion_volume_  ;}
-  const std::vector<NRLib::Well>  & GetWells()                const { return wells_                  ;}
-  const MultiIntervalGrid         * GetMultipleIntervalGrid() const { return multiple_interval_grid_ ;}
-  MultiIntervalGrid               * GetMultipleIntervalGrid(void)   { return multiple_interval_grid_ ;}
+  const Simbox                            & GetEstimationSimbox()               const { return estimation_simbox_      ;}
+  const NRLib::Volume                     & GetFullInversionVolume()            const { return full_inversion_volume_  ;}
+  const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
+  const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
+  MultiIntervalGrid                       * GetMultipleIntervalGrid(void)             { return multiple_interval_grid_ ;}
+  const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
+  const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
+  const NRLib::Matrix                     & GetPriorVar0(int i_interval);
 
   const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()  const { return rock_distributions_  ;}
   const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables() const { return reservoir_variables_ ;}
@@ -120,18 +120,15 @@ private:
                             const Simbox                 * estimation_simbox,
                             std::vector<Surface *>       & well_move_interval,
                             std::string                  & err_text);
-                            //bool                         & failed);
 
   bool  OptimizeWellLocations(ModelSettings                                 * model_settings,
                               InputFiles                                    * input_files,
                               const Simbox                                  * estimation_simbox,
-                              //const NRLib::Volume                           & volume,
                               std::vector<NRLib::Well>                      & wells,
                               std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                               std::map<int, std::vector<SeismicStorage> >   & seismic_data,
                               std::map<int, float **>                       & reflection_matrix,
                               std::string                                   & err_text);
-                              //bool                                          & failed);
 
   void MoveWell(const NRLib::Well & well,
                 const Simbox      * simbox,
@@ -165,9 +162,6 @@ private:
                   Simbox              * time_simbox,
                   std::string         & err_text);
 
-  void  EstimateXYPaddingSizes(Simbox         * simbox,
-                               ModelSettings  * model_settings) const;
-
   void FindSmallestSurfaceGeometry(const double   x0,
                                    const double   y0,
                                    const double   lx,
@@ -183,14 +177,12 @@ private:
                                     Simbox                         & estimation_simbox,
                                     const InputFiles               * input_files,
                                     std::string                    & err_text);
-                                    //bool                           & failed);
 
   void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                  NRLib::Volume                    & full_inversion_volume,
                                  Simbox                           & estimation_simbox,
                                  const std::vector<std::string>   & surf_file,
                                  std::string                      & err_text);
-                                 //bool                             & failed);
 
   bool ReadSeismicData(ModelSettings  * modelSettings,
                        InputFiles     * inputFiles,
@@ -207,7 +199,7 @@ private:
 
   bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
                                const Simbox                                   & estimation_simbox,
-                               const MultiIntervalGrid                        & multiple_interval_grid,
+                               const MultiIntervalGrid                        * multiple_interval_grid,
                                std::vector<NRLib::Well>                       & wells,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
@@ -589,13 +581,11 @@ private:
 
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
-                                       //std::vector<NRLib::Grid<double> >      & parameters,
                                        NRLib::Grid<double>                    & vp,
                                        NRLib::Grid<double>                    & vs,
                                        NRLib::Grid<double>                    & rho,
                                        Simbox                                 & simbox,
                                        const CravaTrend                       & trend_cube);
-                                       //int                                      i_interval);
 
   void SetupExtendedBackgroundSimbox(Simbox   * simbox,
                                      Surface  * corr_surf,
@@ -622,6 +612,7 @@ private:
                              const std::vector<std::string>                               & facies_names,
                              const std::vector<CravaTrend>                                & trend_cubes,
                              const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
+                             const std::vector<std::vector<NRLib::Grid<double> > >        & background,
                              std::string                                                  & err_text);
 
   void            GetCorrGradIJ(float         & corr_grad_I, 
@@ -639,6 +630,9 @@ private:
                                            const std::vector<float>               & probability,
                                            const std::vector<double>              & trend_position,
                                            NRLib::Grid2D<double>                  & sigma_sum) const;
+
+  void EstimateXYPaddingSizes(Simbox          * interval_simbox,
+                              ModelSettings   * model_settings) const;
 
   void ValidateCorrelationMatrix(float               ** C,
                                  const ModelSettings *  model_settings,
@@ -669,8 +663,6 @@ private:
   //void  SetUpscaledPaddingSize(ModelSettings * model_settings);
 
   //int   SetPaddingSize(int original_nxp, int upscaling_factor);
-
-  //std::vector<int> FindClosestFactorableNumber(int leastint);
 
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,
@@ -728,10 +720,10 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;           ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
   std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
-  std::vector<std::string>                      continuous_logs_to_be_blocked_; ///< Continuous logs that should be blocked
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;   ///< Discrete logs that should be blocked
+  std::vector<std::string>                      continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
+  std::vector<std::string>                      discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
