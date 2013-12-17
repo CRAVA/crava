@@ -116,9 +116,6 @@ private:
                   Simbox              * time_simbox,
                   std::string         & err_text);
 
-  void  EstimateXYPaddingSizes(Simbox         * simbox,
-                               ModelSettings  * model_settings) const;
-
   void FindSmallestSurfaceGeometry(const double   x0,
                                    const double   y0,
                                    const double   lx,
@@ -566,6 +563,9 @@ private:
                                            const std::vector<double>              & trend_position,
                                            NRLib::Grid2D<double>                  & sigma_sum) const;
 
+  void EstimateXYPaddingSizes(Simbox          * interval_simbox,
+                              ModelSettings   * model_settings) const;
+
   void ValidateCorrelationMatrix(float               ** C,
                                  const ModelSettings *  model_settings,
                                  std::string         &  err_txt);
@@ -595,8 +595,6 @@ private:
   //void  SetUpscaledPaddingSize(ModelSettings * model_settings);
 
   //int   SetPaddingSize(int original_nxp, int upscaling_factor);
-
-  //std::vector<int> FindClosestFactorableNumber(int leastint);
 
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,
@@ -649,10 +647,10 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;           ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
   std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
-  std::vector<std::string>                      continuous_logs_to_be_blocked_; ///< Continuous logs that should be blocked
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;   ///< Discrete logs that should be blocked
+  std::vector<std::string>                      continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
+  std::vector<std::string>                      discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;

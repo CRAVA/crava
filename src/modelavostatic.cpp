@@ -262,9 +262,9 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
   FFTGrid * dummyGrid = new FFTGrid(timeSimbox->getnx(),
                                     timeSimbox->getny(),
                                     timeSimbox->getnz(),
-                                    modelSettings->getNXpad(),
-                                    modelSettings->getNYpad(),
-                                    modelSettings->getNZpad());
+                                    timeSimbox->GetNXpad(),
+                                    timeSimbox->GetNYpad(),
+                                    timeSimbox->GetNZpad());
   long long int gridSizePad = static_cast<long long int>(4)*dummyGrid->getrsize();
 
   delete dummyGrid;
@@ -572,7 +572,7 @@ void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
                                               int             nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
-  int nzp     = modelSettings->getNZpad();
+  int nzp     = timeSimbox->GetNZpad();
   int nz      = timeSimbox->getnz();
 
   int i;

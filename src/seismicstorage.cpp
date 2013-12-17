@@ -162,8 +162,8 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     double y_tmp = 0.0;
     double z_tmp = 0.0;
 
-    int index_i = 0;
-    int index_j = 0;
+    unsigned int index_i = 0;
+    unsigned int index_j = 0;
     int trace_index = 0;
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));

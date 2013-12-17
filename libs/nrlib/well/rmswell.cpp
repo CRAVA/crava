@@ -56,9 +56,9 @@ RMSWell::RMSWell(const std::string& filename)
   nlog = ReadNext<int>(file, line);          // read number of logs
   DiscardRestOfLine(file, line, false);
   lognames_.resize(nlog+3);
-  lognames_[0] = "x";
-  lognames_[1] = "y";
-  lognames_[2] = "z";
+  lognames_[0] = "X";
+  lognames_[1] = "Y";
+  lognames_[2] = "Z";
 
   int ident;
   std::string identstr;
@@ -73,7 +73,7 @@ RMSWell::RMSWell(const std::string& filename)
   for (size_t i = 0; i < nlog; i++) {
     getline(file,dummy);
     std::istringstream ist(dummy);
-    lognames_[i+3] = ReadNext<std::string>(ist, line);
+    lognames_[i+3] = NRLib::Uppercase(ReadNext<std::string>(ist, line));
     token = ReadNext<std::string>(ist, line);
     if (token=="DISC") { // discrete log
       isDiscrete_[i+3] = true;
@@ -102,7 +102,10 @@ RMSWell::RMSWell(const std::string& filename)
   //int legal_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
   //double dummy_z = WELLMISSING;
 
-  while(getline(file,dummy)) {
+  int count = 0;
+
+  while(NRLib::CheckEndOfFile(file)==false && getline(file,dummy)) {
+    count ++;
     std::istringstream ist(dummy);
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y

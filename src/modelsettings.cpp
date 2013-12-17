@@ -109,9 +109,9 @@ ModelSettings::ModelSettings(void)
   yPadFac_                 =      0.0;
   zPadFac_                 =      0.0;
 
-  nxPad_                   = IMISSING;
-  nyPad_                   = IMISSING;
-  nzPad_                   = IMISSING;
+  //nxPad_                   = IMISSING;
+  //nyPad_                   = IMISSING;
+  //nzPad_                   = IMISSING;
 
   estimateXYPadding_       =     true;
   estimateZPadding_        =     true;

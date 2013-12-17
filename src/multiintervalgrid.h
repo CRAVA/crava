@@ -28,6 +28,8 @@ public:
   // MIXED FUNCTIONS
 
   int                                                      WhichSimbox(double x, double y, double z) const;
+  static int                                               FindPaddingSize(int nx, double px);
+  static int                                               FindClosestFactorableNumber(int leastint);
 
   // GET FUNCTIONS
   int                                                      GetNIntervals()       const           { return n_intervals_              ;}
@@ -132,11 +134,6 @@ private:
   void  EstimateZPaddingSize(Simbox          * simbox,
                              ModelSettings   * model_settings) const;
 
-  int   SetPaddingSize(int        nx,
-                       double     px) const;
-
-  int   FindClosestFactorableNumber(int leastint) const;
-
   void  LogIntervalInformation(const Simbox         & simbox,
                                const std::string    & interval_name,
                                const std::string    & header_text1,
@@ -150,9 +147,6 @@ private:
                          const Surface * base_surface,
                          const Simbox  * estimation_simbox,
                          int             n_layers) const;
-
-  void  EstimateXYPaddingSizes(Simbox          * interval_simbox,
-                               ModelSettings   * model_settings) const;
 
   // CLASS VARIABLES
   size_t                                               n_intervals_;

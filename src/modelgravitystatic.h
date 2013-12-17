@@ -101,7 +101,8 @@ private:
 
   void MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled);
 
-  void SetUpscaledPaddingSize(ModelSettings * modelSettings);
+  void SetUpscaledPaddingSize(ModelSettings * modelSettings,
+                              const Simbox  * simbox);
 
 };
 

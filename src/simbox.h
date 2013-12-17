@@ -50,7 +50,15 @@ public:
          const Surface        * top_corr_surface,
          const Surface        * base_corr_surface);
 
-  Simbox(const Simbox         *simbox);
+  Simbox(const Simbox         * simbox);
+
+  Simbox(const Simbox         * estimation_simbox,
+         const std::string    & interval_name,
+         int                    n_layers,
+         const Surface        & top_surface,
+         const Surface        & base_surface,
+         std::string          & err_text,
+         bool                 & failed);
 
   ~Simbox();
 
@@ -110,6 +118,11 @@ public:
   double         getBotZMin()                    const { return(GetBotZMin(nx_,ny_))          ;}
   double         getBotZMax()                    const { return(GetBotZMax(nx_,ny_))          ;}
   int            GetNZpad(void)                  const { return nz_pad_                       ;}
+  int            GetNXpad(void)                  const { return nx_pad_                       ;}
+  int            GetNYpad(void)                  const { return ny_pad_                       ;}
+  double         GetXPadFactor()                 const { return x_pad_fac_                    ;}
+  double         GetYPadFactor()                 const { return y_pad_fac_                    ;}
+  double         GetZPadFactor()                 const { return z_pad_fac_                    ;}
   double         GetGradX()                      const { return grad_x_                       ;}
   double         GetGradY()                      const { return grad_y_                       ;}
 
@@ -136,8 +149,12 @@ public:
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);
   void           setDepth(const NRLib::Surface<double>& top_surf, const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck);
-  void           setNZpad(int nz_pad)           { nz_pad_                    = nz_pad                     ;}
-  void           setZPadFac(double z_pad_fac)   { z_pad_fac_                 = z_pad_fac                  ;}
+  void           SetNXpad(int nx_pad)                  { nx_pad_      = nx_pad                       ;}
+  void           SetNYpad(int ny_pad)                  { ny_pad_      = ny_pad                       ;}
+  void           SetNZpad(int nz_pad)                  { nz_pad_      = nz_pad                       ;}
+  void           SetXPadFactor(double x_pad_fac)       { x_pad_fac_   = x_pad_fac                    ;}
+  void           SetYPadFactor(double y_pad_fac)       { y_pad_fac_   = y_pad_fac                    ;}
+  void           SetZPadFactor(double z_pad_fac)       { z_pad_fac_   = z_pad_fac                    ;}
 
   // other public functions
 
@@ -153,8 +170,12 @@ public:
                                     Surface             * templateSurf) const;
 
 private:
-  int            nz_pad_;
-  double         z_pad_fac_;
+  int                               nx_pad_;                      ///< Number of cells to pad in x direction
+  int                               ny_pad_;
+  int                               nz_pad_;
+  double                            x_pad_fac_;
+  double                            y_pad_fac_;
+  double                            z_pad_fac_;
   double         grad_x_;
   double         grad_y_;
   double         dx_, dy_, dz_;            // Working resolution.

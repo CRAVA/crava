@@ -93,7 +93,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
     y_upscaling_factor_ = 10;
     z_upscaling_factor_ = 5;
 
-    SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
+    SetUpscaledPaddingSize(modelSettings, fullTimeSimbox);  // NB: Changes upscaling factors!
     // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
     // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
 
@@ -144,7 +144,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
   y_upscaling_factor_ = 10;
   z_upscaling_factor_ = 5;
 
-  SetUpscaledPaddingSize(modelSettings);  // NB: Changes upscaling factors!
+  SetUpscaledPaddingSize(modelSettings, simbox);  // NB: Changes upscaling factors!
   // Sets: nxp_upscaled_, nyp_upscaled_ , nzp_upscaled_ , nx_upscaled_, ny_upscaled_, nz_upscaled_ and
   // the true upscaling factors:  x_upscaling_factor_, y_upscaling_factor_, z_upscaling_factor_
 
@@ -241,9 +241,9 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, Simbox * 
   int ny = fullTimeSimbox->getny();
   int nz = fullTimeSimbox->getnz();
 
-  int nxp = modelSettings->getNXpad();
-  int nyp = modelSettings->getNYpad();
-  int nzp = modelSettings->getNZpad();
+  int nxp = fullTimeSimbox->GetNXpad();
+  int nyp = fullTimeSimbox->GetNYpad();
+  int nzp = fullTimeSimbox->GetNZpad();
 
   upscaling_kernel_ = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
   upscaling_kernel_->setType(FFTGrid::PARAMETER);
@@ -325,12 +325,13 @@ void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_u
       // Dump lag index array
 }
 void
-ModelGravityStatic::SetUpscaledPaddingSize(ModelSettings * modelSettings)
+ModelGravityStatic::SetUpscaledPaddingSize(ModelSettings * modelSettings,
+                                           const Simbox  * simbox)
 {
   // Find original nxp, nyp, nzp
-  int nxpad = modelSettings->getNXpad();
-  int nypad = modelSettings->getNYpad();
-  int nzpad = modelSettings->getNZpad();
+  int nxpad = simbox->GetNXpad();
+  int nypad = simbox->GetNYpad();
+  int nzpad = simbox->GetNZpad();
 
   int nxpad_up = SetPaddingSize(nxpad, x_upscaling_factor_);
   int nypad_up = SetPaddingSize(nypad, y_upscaling_factor_);

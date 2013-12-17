@@ -137,11 +137,11 @@ bool Well::HasDiscLog(const std::string& name) const{
 bool
 Well::HasContLog(const std::string& name) const
 {
-  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
-  if(item != cont_log_.end())
-    return(true);
+  //std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  if(cont_log_.find(name) != cont_log_.end())
+    return true;
   else
-    return(false);
+    return false;
 }
 
 

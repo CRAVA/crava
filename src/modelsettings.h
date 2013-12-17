@@ -133,9 +133,9 @@ public:
   double                           getXPadFac(void)                     const { return xPadFac_                                   ;}
   double                           getYPadFac(void)                     const { return yPadFac_                                   ;}
   double                           getZPadFac(void)                     const { return zPadFac_                                   ;}
-  int                              getNXpad(void)                       const { return nxPad_                                     ;}
-  int                              getNYpad(void)                       const { return nyPad_                                     ;}
-  int                              getNZpad(void)                       const { return nzPad_                                     ;}
+  //int                              getNXpad(void)                       const { return nxPad_                                     ;}
+  //int                              getNYpad(void)                       const { return nyPad_                                     ;}
+  //int                              getNZpad(void)                       const { return nzPad_                                     ;}
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
@@ -314,7 +314,7 @@ public:
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
-  void addLogName(const std::string & log_name)           { logNames_.push_back(log_name)                        ;}
+  void addLogName(const std::string & log_name)           { logNames_.push_back(NRLib::Uppercase(log_name))      ;}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
@@ -360,9 +360,9 @@ public:
   void setXPadFac(double xPadFac)                         { xPadFac_                  = xPadFac                  ;}
   void setYPadFac(double yPadFac)                         { yPadFac_                  = yPadFac                  ;}
   void setZPadFac(double zPadFac)                         { zPadFac_                  = zPadFac                  ;}
-  void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
-  void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
-  void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
+  //void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
+  //void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
+  //void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
   void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
@@ -681,9 +681,10 @@ private:
   double                            yPadFac_;                    ///< Padding factor/fraction in y direction
   double                            zPadFac_;                    ///< Padding factor/fraction in z direction
 
-  int                               nxPad_;                      ///< Number of cells to pad in x direction
-  int                               nyPad_;
-  int                               nzPad_;
+  // EN: padding data is moved to the simboxes
+  //int                               nxPad_;                      ///< Number of cells to pad in x direction
+  //int                               nyPad_;
+  //int                               nzPad_;
 
   bool                              estimateXYPadding_;          ///< Estimate the z-padding from ranges
   bool                              estimateZPadding_;           ///< Estimate the z-padding from wavelet length

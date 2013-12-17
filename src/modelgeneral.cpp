@@ -361,9 +361,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings, //Multiple 
       priorFacies_ = commonData->GetPriorFaciesInterval(i_interval);
 
       priorFaciesProbCubes_.resize(3);
-      priorFaciesProbCubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
-      priorFaciesProbCubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
-      priorFaciesProbCubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], modelSettings->getNXpad(), modelSettings->getNYpad(), modelSettings->getNZpad());
+      priorFaciesProbCubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], timeSimbox_->GetNXpad(), timeSimbox_->GetNYpad(), timeSimbox_->GetNZpad());
+      priorFaciesProbCubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], timeSimbox_->GetNXpad(), timeSimbox_->GetNYpad(), timeSimbox_->GetNZpad());
+      priorFaciesProbCubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], timeSimbox_->GetNXpad(), timeSimbox_->GetNYpad(), timeSimbox_->GetNZpad());
 
       //bool estimationMode = modelSettings->getEstimationMode();
 
@@ -570,9 +570,9 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     }
     else
     {
-      xpad = modelSettings->getNXpad();
-      ypad = modelSettings->getNYpad();
-      zpad = modelSettings->getNZpad();
+      xpad = timeSimbox->GetNXpad();
+      ypad = timeSimbox->GetNYpad();
+      zpad = timeSimbox->GetNZpad();
     }
     target = createFFTGrid(timeSimbox->getnx(),
                            timeSimbox->getny(),
@@ -714,9 +714,9 @@ ModelGeneral::readStormFile(const std::string   & fName,
   int xpad, ypad, zpad;
   if(nopadding==false)
   {
-    xpad = modelSettings->getNXpad();
-    ypad = modelSettings->getNYpad();
-    zpad = modelSettings->getNZpad();
+    xpad = timeSimbox->GetNXpad();
+    ypad = timeSimbox->GetNYpad();
+    zpad = timeSimbox->GetNZpad();
   }
   else
   {
@@ -784,7 +784,7 @@ ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
                                const InputFiles * inputFiles,
                                std::string      & errText,
                                bool             & failed)
-{
+{/*
   std::string gridFile("");
 
   int  areaSpecification      = modelSettings->getAreaSpecification();
@@ -1099,7 +1099,7 @@ ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
                                  timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
                                  static_cast<unsigned long long int>(timeSimbox->getnx())*timeSimbox->getny()*timeSimbox->getnz());
             LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
-                                 modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
+                                 timeSimbox->GetNXpad(),timeSimbox->GetNYpad(),timeSimbox->GetNZpad(),
                                  static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad());
           }
 
@@ -1137,6 +1137,7 @@ ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
       }
     }
   }
+  */
 }
 
 
@@ -1554,7 +1555,7 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
 
   int nxPad = setPaddingSize(nx, xPadFac);
   int nyPad = setPaddingSize(ny, yPadFac);
-  int nzPad = modelSettings->getNZpad();
+  int nzPad = timeSimbox->GetNZpad();
 
   double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
   double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
@@ -1563,10 +1564,10 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
   double true_yPad    = true_yPadFac*ly;
   double true_zPad    = true_zPadFac*(timeSimbox->getlz()*timeSimbox->getMinRelThick());
 
-  modelSettings->setNXpad(nxPad);
-  modelSettings->setNYpad(nyPad);
-  modelSettings->setXPadFac(true_xPadFac);
-  modelSettings->setYPadFac(true_yPadFac);
+  timeSimbox->SetNXpad(nxPad);
+  timeSimbox->SetNYpad(nyPad);
+  timeSimbox->SetXPadFactor(true_xPadFac);
+  timeSimbox->SetYPadFactor(true_yPadFac);
 
   std::string text1;
   std::string text2;
@@ -1609,8 +1610,8 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
   int nzPad        = setPaddingSize(nz, zPadFac);
   zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
 
-  modelSettings->setNZpad(nzPad);
-  modelSettings->setZPadFac(zPadFac);
+  timeSimbox->SetNZpad(nzPad);
+  timeSimbox->SetZPadFactor(zPadFac);
 }
 
 void
@@ -1640,9 +1641,9 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
     }
     else
     {
-      nxPad = modelSettings->getNXpad();
-      nyPad = modelSettings->getNYpad();
-      nzPad = modelSettings->getNZpad();
+      nxPad = timeSimbox->GetNXpad();
+      nyPad = timeSimbox->GetNYpad();
+      nzPad = timeSimbox->GetNZpad();
     }
     LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+parName+"\' from file "+fileName);
     grid = createFFTGrid(timeSimbox->getnx(),
@@ -3444,9 +3445,9 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
   const int nx    = timeSimbox.getnx();
   const int ny    = timeSimbox.getny();
   const int nz    = timeSimbox.getnz();
-  const int nxPad = modelSettings.getNXpad();
-  const int nyPad = modelSettings.getNYpad();
-  const int nzPad = modelSettings.getNZpad();
+  const int nxPad = timeSimbox.GetNXpad();
+  const int nyPad = timeSimbox.GetNYpad();
+  const int nzPad = timeSimbox.GetNZpad();
 
   // Creating grids for mu static
   vp_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
@@ -4028,7 +4029,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       estimateCorrXYFromSeismic(priorCorrXY_, seisCube, modelSettings->getNumberOfAngles(timelapse));
     }
 
-    int nCorrT = modelSettings->getNZpad();
+    int nCorrT = timeSimbox->GetNZpad();
     if((nCorrT % 2) == 0)
       nCorrT = nCorrT/2+1;
     else
@@ -4118,9 +4119,9 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       const int nx        = timeSimbox->getnx();
       const int ny        = timeSimbox->getny();
       const int nz        = timeSimbox->getnz();
-      const int nxPad     = modelSettings->getNXpad();
-      const int nyPad     = modelSettings->getNYpad();
-      const int nzPad     = modelSettings->getNZpad();
+      const int nxPad     = timeSimbox->GetNXpad();
+      const int nyPad     = timeSimbox->GetNYpad();
+      const int nzPad     = timeSimbox->GetNZpad();
 
       float dt = static_cast<float>(timeSimbox->getdz());
       float lowCut = modelSettings->getLowCut();
@@ -4241,8 +4242,8 @@ ModelGeneral::findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * mo
   float dx  = static_cast<float>(timeSimbox->getdx());
   float dy  = static_cast<float>(timeSimbox->getdy());
 
-  int   nx  = modelSettings->getNXpad();
-  int   ny  = modelSettings->getNYpad();
+  int   nx  = timeSimbox->GetNXpad();
+  int   ny  = timeSimbox->GetNYpad();
 
   Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
 
@@ -4767,9 +4768,9 @@ ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
   const int nx    = timeSimbox_->getnx();
   const int ny    = timeSimbox_->getny();
   const int nz    = timeSimbox_->getnz();
-  const int nxPad = modelSettings->getNXpad();
-  const int nyPad = modelSettings->getNYpad();
-  const int nzPad = modelSettings->getNZpad();
+  const int nxPad = timeSimbox_->GetNXpad();
+  const int nyPad = timeSimbox_->GetNYpad();
+  const int nzPad = timeSimbox_->GetNZpad();
 
   complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad,initialMean,initialCov);
 
@@ -4799,9 +4800,9 @@ ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
   const int nx    = timeSimbox_->getnx();
   const int ny    = timeSimbox_->getny();
   const int nz    = timeSimbox_->getnz();
-  const int nxPad = modelSettings->getNXpad();
-  const int nyPad = modelSettings->getNYpad();
-  const int nzPad = modelSettings->getNZpad();
+  const int nxPad = timeSimbox_->GetNXpad();
+  const int nyPad = timeSimbox_->GetNYpad();
+  const int nzPad = timeSimbox_->GetNZpad();
 
   complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
 }

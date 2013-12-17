@@ -71,7 +71,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data,
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
-                                     const MultiIntervalGrid          & multiple_interval_grid,
+                                     const MultiIntervalGrid          * multiple_interval_grid,
                                      bool                               interpolate,
                                      std::string                      & err_text){
   n_angles_     = 0;
@@ -79,7 +79,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   n_layers_     = 0;
   n_blocks_     = 0;
   interpolate_  = interpolate;
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   bool failed = false;
 
@@ -173,7 +173,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   //
   std::vector<int> b_ind(n_data_); //GetNData->getNd()); // Gives which block each well log entry contributes to
 
-  FindSizeAndBlockPointers(stormgrid, b_ind);
+  FindSizeAndBlockPointers(stormgrid, b_ind, n_blocks_);
   FindBlockIJK(stormgrid, b_ind);
 
 
@@ -207,7 +207,7 @@ BlockedLogsCommon::~BlockedLogsCommon(){
 
 }
 
-void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGrid                             & multiple_interval_grid,
+void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
                                                           const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
                                                           const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
                                                           std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
@@ -220,11 +220,11 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
                                                           bool                                                & failed,
                                                           std::string                                         & err_text){
   std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   try{
 
-    FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers);
+    FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers, n_blocks_);
     FindBlockIJK(multiple_interval_grid, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(), b_ind);
 
     // Coordinate logs and necessary logs
@@ -304,7 +304,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
   try{
 
-    FindSizeAndBlockPointers(estimation_simbox, b_ind);
+    FindSizeAndBlockPointers(estimation_simbox, b_ind, n_blocks_);
     FindBlockIJK(estimation_simbox, b_ind);
 
     // Coordinate logs and necessary logs
@@ -369,12 +369,13 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
 }
 
-void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       & multiple_interval_grid,
+void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       * multiple_interval_grid,
                                                   std::vector<int>              & b_ind,
                                                   int                             n_data,
-                                                  int                           & n_layers){
+                                                  int                           & n_layers,
+                                                  unsigned int                  & n_blocks){
 
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   const std::vector<double> x_pos             = GetXposRawLogs();
   const std::vector<double> y_pos             = GetYposRawLogs();
   const std::vector<double> z_pos             = GetZposRawLogs();
@@ -441,21 +442,21 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   int * simbox_ind = new int[n_data];                                     // help hack
   const int nx    = interval_simboxes[0].getnx();                         // help hack
   const int ny    = interval_simboxes[0].getny();                         // help hack
-  std::vector<int> nz(multiple_interval_grid.GetNIntervals());
+  std::vector<int> nz(multiple_interval_grid->GetNIntervals());
   for(size_t m = 0; m<interval_simboxes.size(); m++){
     nz[m] = interval_simboxes[m].getnz();                                 //
     n_layers += nz[m];
   }
 
   // dz_rel is the dz of simbox i relative to the first simbox
-  const std::vector<double> dz_rel = multiple_interval_grid.GetDzRel();
+  const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();
 
   simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                         // help hack
 
   for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
     // Find which interval simbox we are in (this function simply iterates through the simboxes
     // to find out where the x,y,z-coordinates belong
-    int simbox_number = multiple_interval_grid.WhichSimbox(x_pos[m], y_pos[m], z_pos[m]);
+    int simbox_number = multiple_interval_grid->WhichSimbox(x_pos[m], y_pos[m], z_pos[m]);
 
     interval_simboxes[simbox_number].getIndexes(x_pos[m], y_pos[m], z_pos[m] , new_I , new_J , new_K);
 
@@ -501,7 +502,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   // log at all because the well was too short, we have to make a virtual
   // well.
   //
-  n_blocks_ = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
+  n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
 
   bool debug = false;
   if (debug) {
@@ -516,7 +517,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 }
 
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                                  std::vector<int>     & b_ind){
+                                                  std::vector<int>     & b_ind,
+                                                  unsigned int         & n_blocks){
   int   nd = static_cast<int>(b_ind.size());
   const std::vector<double> x_pos = GetXposRawLogs();
   const std::vector<double> y_pos = GetYposRawLogs();
@@ -612,7 +614,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   // log at all because the well was too short, we have to make a virtual
   // well.
   //
-  n_blocks_ = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
+  n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
 
   bool debug = false;
   if (debug) {
@@ -627,7 +629,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
 
 //------------------------------------------------------------------------------
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                                  std::vector<int>     & b_ind)
+                                                  std::vector<int>     & b_ind,
+                                                  unsigned int         & n_blocks)
 {
   //int            dummy;
   int            missing = 99999;
@@ -732,17 +735,17 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgr
   // log at all because the well was too short, we have to make a virtual
   // well.
   //
-  n_blocks_ = static_cast<int>(first_K) + n_defined_blocks + (n_layers_ - static_cast<int>(last_K) - 1);
+  n_blocks = static_cast<int>(first_K) + n_defined_blocks + (n_layers_ - static_cast<int>(last_K) - 1);
 }
 
 //------------------------------------------------------------------------------
-void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          & multiple_interval_grid,
+void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multiple_interval_grid,
                                         const std::vector<double>        & x_pos_raw_logs,
                                         const std::vector<double>        & y_pos_raw_logs,
                                         const std::vector<double>        & z_pos_raw_logs,
                                         const std::vector<int>           & bInd){
   
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid.GetIntervalSimboxes();
+  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   i_pos_.resize(n_blocks_);
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
@@ -1832,29 +1835,35 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 
     // Remove WELLMISSING data from wells
-    for(unsigned int i=0; i<n_data_with_wellmissing; i++){
-      // TWT is the variable we are testing for WELLMISSING values
-      double dummy = continuous_logs_raw_logs_temp.find("TWT")->second[i];
-      if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
-        x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
-        y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
-        z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
-        twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
-        if(facies_log_defined_)
-          facies_raw_logs.push_back(discrete_logs_well.find("Facies")->second[i]);
+    if(continuous_logs_well.find("TWT") != continuous_logs_well.end()){
+      for(unsigned int i=0; i<n_data_with_wellmissing; i++){
+        // TWT is the variable we are testing for WELLMISSING values
+        double dummy = continuous_logs_well.find("TWT")->second[i];
+        if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
+          x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
+          y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
+          z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
+          twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
+          if(facies_log_defined_)
+            facies_raw_logs.push_back(discrete_logs_well.find("Facies")->second[i]);
 
-        // Loop over continuous variables and push back this element
-        for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_raw_logs_temp.begin(); it!=continuous_logs_raw_logs_temp.end(); it++){
-          continuous_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
+          // Loop over continuous variables and push back this element
+          for(std::map<std::string,std::vector<double> >::iterator it = continuous_logs_raw_logs_temp.begin(); it!=continuous_logs_raw_logs_temp.end(); it++){
+            continuous_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
+          }
+
+          // Loop over discrete variables and push back this element
+          for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_raw_logs_temp.begin(); it!=discrete_logs_raw_logs_temp.end(); it++){
+            discrete_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
+          }
+
+          n_data++;
         }
-
-        // Loop over discrete variables and push back this element
-        for(std::map<std::string,std::vector<int> >::iterator it = discrete_logs_raw_logs_temp.begin(); it!=discrete_logs_raw_logs_temp.end(); it++){
-          discrete_logs_raw_logs.find(it->first)->second.push_back(it->second[i]);
-        }
-
-        n_data++;
       }
+    }
+    else{
+      failed = true;
+      err_text += "\nError: TWT is not in part of logs in well " + well_data->GetWellName();
     }
   }catch(NRLib::Exception & e) {
     err_text += "Error: "+std::string(e.what());

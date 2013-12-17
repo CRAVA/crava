@@ -116,7 +116,7 @@ NorsarWell::NorsarWell(const std::string & filename)
   std::vector<std::string> log_name;
   for(int i=0; i<n_track_par;i++) {
     name = ReadNext<std::string>(file, line); //parameter
-    log_name.push_back(name);
+    log_name.push_back(NRLib::Uppercase(name));
     if(name == "MD")
       track_MD = i;
     token = ReadNext<std::string>(file, line); //unit
@@ -160,7 +160,7 @@ NorsarWell::NorsarWell(const std::string & filename)
       if(name == "MD")
         log_MD = i;
       else
-        log_name.push_back(name);
+        log_name.push_back(NRLib::Uppercase(name));
       token = ReadNext<std::string>(file, line); //unit
       if(log_MD != i)
         units_.insert(unitpair(name,token));

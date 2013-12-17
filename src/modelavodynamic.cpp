@@ -635,9 +635,9 @@ ModelAVODynamic::processBackground(Background                    *& background,
   const int nx    = timeSimbox->getnx();
   const int ny    = timeSimbox->getny();
   const int nz    = timeSimbox->getnz();
-  const int nxPad = modelSettings->getNXpad();
-  const int nyPad = modelSettings->getNYpad();
-  const int nzPad = modelSettings->getNZpad();
+  const int nxPad = timeSimbox->GetNXpad();
+  const int nyPad = timeSimbox->GetNYpad();
+  const int nzPad = timeSimbox->GetNZpad();
   if (modelSettings->getGenerateBackground()) {
 
     if(modelSettings->getGenerateBackgroundFromRockPhysics() == false) {
@@ -1194,7 +1194,7 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
       if (error == 0)
         wavelet->resample(static_cast<float>(timeSimbox->getdz()),
                           timeSimbox->getnz(),
-                          modelSettings->getNZpad());
+                          timeSimbox->GetNZpad());
   }
 
   if (error == 0) {
@@ -1336,7 +1336,7 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
       if (error == 0)
         wavelet->resample(static_cast<float>(timeSimbox->getdz()),
                           timeSimbox->getnz(),
-                          modelSettings->getNZpad());
+                          timeSimbox->GetNZpad());
     }
   }
   if ((modelSettings->getEstimationMode() == false) && timeSimbox->getIsConstantThick()) {

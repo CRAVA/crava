@@ -31,7 +31,7 @@ public:
   BlockedLogsCommon(const NRLib::Well                * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
-                    const MultiIntervalGrid          & multiple_interval_grid,
+                    const MultiIntervalGrid          * multiple_interval_grid,
                     bool                               interpolate,
                     std::string                      & err_text);
 
@@ -256,7 +256,7 @@ private:
                     bool                                                & failed,
                     std::string                                         & err_text);
 
-  void    BlockWellForCorrelationEstimation(const MultiIntervalGrid                             & multiple_interval_grid,
+  void    BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
                                             const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
                                             const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
                                             std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
@@ -269,21 +269,24 @@ private:
                                             bool                                                & failed,
                                             std::string                                         & err_text);
 
-  void    FindSizeAndBlockPointers(const MultiIntervalGrid       & multiple_interval_grid,
+  void    FindSizeAndBlockPointers(const MultiIntervalGrid       * multiple_interval_grid,
                                    std::vector<int>              & b_ind,
                                    int                             n_data,
-                                   int                           & n_layers);
+                                   int                           & n_layers,
+                                   unsigned int                  & n_blocks);
 
   void    FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                   std::vector<int>     & b_ind);
+                                   std::vector<int>     & b_ind,
+                                   unsigned int         & n_blocks);
 
   void    FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                   std::vector<int>     & bInd);
+                                   std::vector<int>     & bInd,
+                                   unsigned int         & n_blocks);
 
   void    FindBlockIJK(const Simbox                     * const estimation_simbox,
                        const std::vector<int>           & b_ind);
 
-  void    FindBlockIJK(const MultiIntervalGrid          & multiple_interval_grid,
+  void    FindBlockIJK(const MultiIntervalGrid          * multiple_interval_grid,
                        const std::vector<double>        & x_pos,
                        const std::vector<double>        & y_pos,
                        const std::vector<double>        & z_pos,
