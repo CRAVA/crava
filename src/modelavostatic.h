@@ -37,7 +37,7 @@ public:
                  //ModelGeneral         *& model_general,
                  const InputFiles      * input_files,
                  CommonData            * common_data,
-                 Simbox                * simbox,
+                 const Simbox                * simbox,
                  int                     i_intervals);
 
   ~ModelAVOStatic();
@@ -109,7 +109,7 @@ private:
   //                                   std::string            & errText,
   //                                   bool                   & failed);
 
-  void             checkAvailableMemory(Simbox              * time_simbox,
+  void             checkAvailableMemory(const Simbox              * time_simbox,
                                         ModelSettings       * model_settings,
                                         const InputFiles    * input_files);
 

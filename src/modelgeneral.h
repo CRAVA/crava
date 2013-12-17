@@ -59,7 +59,7 @@ public:
 
   ~ModelGeneral();
 
-  Simbox                   * getTimeSimbox()            const { return simbox_                 ;}
+  const Simbox                   * getTimeSimbox()            const { return simbox_                 ;}
   //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   RandomGen                * getRandomGen()             const { return random_gen_              ;}
   GridMapping              * getTimeDepthMapping()      const { return time_depth_mapping_       ;}
@@ -375,7 +375,7 @@ private:
   void              makeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  Simbox                  * simbox_;                 ///< Information about simulation area.
+  const Simbox                  * simbox_;                 ///< Information about simulation area.
 
   RandomGen               * random_gen_;                  ///< Random generator.
 

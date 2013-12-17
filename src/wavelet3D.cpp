@@ -814,9 +814,9 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
 
   //Check that data are within wavelet estimation interval
   if (estimInterval.size() > 0) {
-    const std::vector<double> xPos = blocked_log->GetXpos();
-    const std::vector<double> yPos = blocked_log->GetYpos();
-    const std::vector<double> zPos = blocked_log->GetZpos();
+    const std::vector<double> xPos = blocked_log->GetXposBlocked();
+    const std::vector<double> yPos = blocked_log->GetYposBlocked();
+    const std::vector<double> zPos = blocked_log->GetZposBlocked();
     for (int k=0; k<nz_; k++) {
       const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
       const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);

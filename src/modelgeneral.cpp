@@ -252,7 +252,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
                            :do_4D_inversion_(model_settings->getDo4DInversion()),
                             do_4D_rock_physics_vnversion_(model_settings->getDo4DRockPhysicsInversion())
 {
-  simbox_        = new Simbox();
+  simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
   random_gen_    = NULL;
   time_line_     = NULL;
   multi_interval_ = false;
@@ -299,7 +299,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
     LogKit::WriteHeader("Defining modelling grid");
 
     MultiIntervalGrid * multiple_interval_grid = common_data->GetMultipleIntervalGrid();
-    simbox_                                    = multiple_interval_grid->GetIntervalSimboxN(i_interval);
+    //simbox_                                    = multiple_interval_grid->GetIntervalSimboxE(i_interval);
 
     //
     // FORWARD MODELLING
@@ -326,9 +326,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
         prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
 
         prior_facies_prob_cubes_.resize(3);
-        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
-        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
-        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], model_settings->getNXpad(), model_settings->getNYpad(), model_settings->getNZpad());
+        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
       }
 
       bool estimation_mode = model_settings->getEstimationMode();
@@ -704,370 +704,19 @@ ModelGeneral::setPaddingSize(int nx, double px)
   return(closestprod);
 }
 
-//void
-//ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
-//                               Simbox          *& timeCutSimbox,
-//                               Simbox          *& timeBGSimbox,
-//                               Simbox          *& timeSimboxConstThick,
-//                               Surface         *& correlationDirection,
-//                               ModelSettings   *& model_settings,
-//                               const InputFiles * input_files,
-//                               std::string      & errText,
-//                               bool             & failed)
-//{
-//  std::string gridFile("");
-//
-//  int  areaSpecification      = model_settings->getAreaSpecification();
-//
-//  bool estimationModeNeedILXL = model_settings->getEstimationMode() &&
-//                                (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
-//                                 areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
-//                                 areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE ||
-//                                (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
-//                                (model_settings->getOutputGridFormat() & IO::SEGY) > 0);
-//
-//  if (model_settings->getForwardModeling())
-//    gridFile = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
-//  else {
-//    if (model_settings->getEstimationMode() == false || estimationModeNeedILXL)
-//      gridFile = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
-//  }
-//  SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
-//
-//  //
-//  // Set area geometry information
-//  // -----------------------------
-//  //
-//  std::string areaType;
-//  if (areaSpecification == ModelSettings::AREA_FROM_UTM)
-//  {
-//    // The geometry is already present in model_settings (read from model file).
-//    LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
-//    areaType = "Model file";
-//  }
-//  else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE)
-//  {
-//    LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
-//    areaType = "Surface";
-//    RotatedSurface surf(input_files->getAreaSurfaceFile());
-//    SegyGeometry geometry(surf);
-//    model_settings->setAreaParameters(&geometry);
-//  }
-//  else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA         ||
-//          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
-//          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
-//  {
-//    LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
-//    areaType = "Grid data";
-//    std::string tmpErrText;
-//    SegyGeometry * geometry;
-//    getGeometryFromGridOnFile(gridFile,
-//                              model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
-//                              geometry,
-//                              tmpErrText);
-//
-//    model_settings->setSeismicDataAreaParameters(geometry);
-//    if (geometry != NULL) {
-//      geometry->WriteGeometry();
-//
-//      if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
-//        SegyGeometry * fullGeometry = geometry;
-//
-//        std::vector<int> areaILXL;
-//        bool gotArea = true;
-//
-//        //
-//        // Geometry is given as XY, but we snap it to IL and XL.
-//        //
-//        if (model_settings->getSnapGridToSeismicData()) {
-//          SegyGeometry * templateGeometry = NULL;
-//          if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-//            templateGeometry = model_settings->getAreaParameters();
-//          }
-//          else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-//            RotatedSurface surf(input_files->getAreaSurfaceFile());
-//            templateGeometry = new SegyGeometry(surf);
-//          }
-//          else {
-//            errText += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
-//            errText += "on XY input information, but no UTM coordinates or surface have\n";
-//            errText += "been specified in model file.\n";
-//            gotArea = false;
-//          }
-//          if (gotArea) {
-//            areaILXL = fullGeometry->findAreaILXL(templateGeometry);
-//          }
-//        }
-//        else {
-//          areaILXL = model_settings->getAreaILXL();
-//        }
-//
-//        if (gotArea) {
-//          try {
-//            bool interpolated, aligned;
-//            geometry = fullGeometry->GetILXLSubGeometry(areaILXL, interpolated, aligned);
-//
-//            std::string text;
-//            if (interpolated == true) {
-//              if (aligned == true) {
-//                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-//                text += "   of those found in the seismic data. Furthermore, the distance between first\n";
-//                text += "   and last XL and/or IL does not match the step size.\n";
-//                TaskList::addTask(text);
-//              }
-//              else {
-//                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-//                text += "   of those found in the seismic data.\n";
-//                TaskList::addTask(text);
-//              }
-//            }
-//            else if (aligned == true) {
-//              text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
-//              text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
-//              text += "   of steps away from the start.\n";
-//              TaskList::addTask(text);
-//            }
-//          }
-//          catch (NRLib::Exception & e) {
-//            errText += "Error: "+std::string(e.what());
-//            geometry->WriteILXL(true);
-//            geometry = NULL;
-//            failed = true;
-//          }
-//        }
-//        delete fullGeometry;
-//      }
-//      else {
-//        geometry->WriteILXL();
-//      }
-//      if (!failed) {
-//        model_settings->setAreaParameters(geometry);
-//        ILXLGeometry = geometry;
-//      }
-//    }
-//    else {
-//      errText += tmpErrText;
-//      failed = true;
-//    }
-//  }
-//  if (!failed)
-//  {
-//    const SegyGeometry * areaParams = model_settings->getAreaParameters();
-//    failed = timeSimbox->setArea(areaParams, errText);
-//
-//    if (failed)
-//    {
-//      writeAreas(areaParams,timeSimbox,areaType);
-//      errText += "The specified AREA extends outside the surface(s).\n";
-//    }
-//    else
-//    {
-//      LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
-//      LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-//      double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
-//      if (azimuth < 0)
-//        azimuth += 360.0;
-//      LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
-//                           areaType.c_str(),
-//                           timeSimbox->getx0(), timeSimbox->gety0(),
-//                           timeSimbox->getlx(), timeSimbox->getly(), azimuth,
-//                           timeSimbox->getdx(), timeSimbox->getdy());
-//    }
-//
-//    float minHorRes = model_settings->getMinHorizontalRes();
-//    if (timeSimbox->getdx() < minHorRes || timeSimbox->getdy() < minHorRes){
-//      failed = true;
-//      errText += "The horizontal resolution in dx and dy should normally be above "+NRLib::ToString(minHorRes)
-//        +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
-//    }
-//
-//    if (!failed)
-//    {
-//      //
-//      // Set IL/XL information in geometry
-//      // ---------------------------------
-//      //
-//      // Skip for estimation mode if possible:
-//      //   a) For speed
-//      //   b) Grid data may not be available.
-//      if (model_settings->getEstimationMode() == false || estimationModeNeedILXL == true) {
-//        if (ILXLGeometry == NULL) {
-//          int gridType = IO::findGridType(gridFile);
-//          bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
-//          if (ilxl_info_available) {
-//            LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
-//            std::string tmpErrText;
-//            getGeometryFromGridOnFile(gridFile,
-//                                      model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
-//                                      ILXLGeometry,
-//                                      tmpErrText);
-//            if (ILXLGeometry == NULL) {
-//              errText += tmpErrText;
-//              failed = true;
-//            }
-//          }
-//          else {
-//            LogKit::LogFormatted(LogKit::High,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+gridFile+"\'\n");
-//          }
-//        }
-//        if (ILXLGeometry != NULL) {
-//          if (timeSimbox->isAligned(ILXLGeometry))
-//            timeSimbox->setILXL(ILXLGeometry);
-//          delete ILXLGeometry;
-//        }
-//      }
-//
-//      // Rotate variograms relative to simbox
-//      model_settings->rotateVariograms(static_cast<float> (simbox_->getAngle()));
-//
-//      //
-//      // Set SURFACES
-//      //
-//
-//      setSimboxSurfaces(timeSimbox,
-//                        input_files->getTimeSurfFiles(),
-//                        model_settings,
-//                        errText,
-//                        failed);
-//
-//      if (!failed)
-//      {
-//        if (model_settings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
-//        {
-//          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
-//          TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
-//        }
-//
-//
-//        int status = timeSimbox->calculateDz(model_settings->getLzLimit(),errText);
-//        estimateZPaddingSize(timeSimbox, model_settings);
-//
-//        float minSampDens = model_settings->getMinSamplingDensity();
-//        if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
-//          failed   = true;
-//          errText += "We normally discourage denser sampling than "+NRLib::ToString(minSampDens);
-//          errText += "ms in the time grid. If you really need\nthis, please use ";
-//          errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
-//        }
-//
-//        if (status == Simbox::BOXOK)
-//        {
-//          logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
-//          //
-//          // Make extended time simbox
-//          //
-//          if (input_files->getCorrDirFile() != "") {
-//            //
-//            // Get correlation direction
-//            //
-//            try {
-//              Surface tmpSurf(input_files->getCorrDirFile());
-//              if (timeSimbox->CheckSurface(tmpSurf) == true)
-//                correlationDirection = new Surface(tmpSurf);
-//              else {
-//                errText += "Error: Correlation surface does not cover volume.\n";
-//                failed = true;
-//              }
-//            }
-//            catch (NRLib::Exception & e) {
-//              errText += e.what();
-//              failed = true;
-//            }
-//
-//            if (failed == false && model_settings->getForwardModeling() == false) {
-//              //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-//              setupExtendedTimeSimbox(timeSimbox, correlationDirection,
-//                                      timeCutSimbox,
-//                                      model_settings->getOutputGridFormat(),
-//                                      model_settings->getOutputGridDomain(),
-//                                      model_settings->getOtherOutputFlag());
-//            }
-//
-//            estimateZPaddingSize(timeSimbox, model_settings);
-//
-//            status = timeSimbox->calculateDz(model_settings->getLzLimit(),errText);
-//
-//            if (status == Simbox::BOXOK)
-//              logIntervalInformation(timeSimbox, "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
-//            else
-//            {
-//              errText += "Could not make the time simulation grid.\n";
-//              failed = true;
-//            }
-//
-//            if (model_settings->getForwardModeling() == false && failed == false) {
-//              setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox,
-//                                            model_settings->getOutputGridFormat(),
-//                                            model_settings->getOutputGridDomain(),
-//                                            model_settings->getOtherOutputFlag());
-//              status = timeBGSimbox->calculateDz(model_settings->getLzLimit(),errText);
-//              if (status == Simbox::BOXOK)
-//                logIntervalInformation(timeBGSimbox, "Time interval used for background modelling:","Two-way-time");
-//              else
-//              {
-//                errText += "Could not make the grid for background model.\n";
-//                failed = true;
-//              }
-//            }
-//          }
-//
-//          if (failed == false) {
-//            estimateXYPaddingSizes(timeSimbox, model_settings);
-//
-//            unsigned long long int gridsize = static_cast<unsigned long long int>(model_settings->getNXpad())*model_settings->getNYpad()*model_settings->getNZpad();
-//
-//            if (gridsize > std::numeric_limits<unsigned int>::max()) {
-//              float fsize = 4.0f*static_cast<float>(gridsize)/static_cast<float>(1024*1024*1024);
-//              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
-//              errText += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
-//              errText += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
-//              failed = true;
-//            }
-//
-//            LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
-//            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10llu\n",
-//                                 timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
-//                                 static_cast<unsigned long long int>(timeSimbox->getnx())*timeSimbox->getny()*timeSimbox->getnz());
-//            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
-//                                 model_settings->getNXpad(),model_settings->getNYpad(),model_settings->getNZpad(),
-//                                 static_cast<unsigned long long int>(model_settings->getNXpad())*model_settings->getNYpad()*model_settings->getNZpad());
-//          }
-//
-//          //
-//          // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
-//          //
-//          timeSimboxConstThick = new Simbox(timeSimbox);
-//          Surface tsurf(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
-//          timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
-//
-//          if ((model_settings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (model_settings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
-//            std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
-//            std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
-//            timeSimboxConstThick->writeTopBotGrids(topSurf,
-//                                                   baseSurf,
-//                                                   IO::PathToInversionResults(),
-//                                                   model_settings->getOutputGridFormat());
-//          }
-//
-//          if (timeSimbox->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
-//            errText += "dz is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
-//            failed = true;
-//          }
-//        }
-//        else
-//        {
-//          errText += "Could not make time simulation grid.\n";
-//          failed = true;
-//        }
-//      }
-//      else
-//      {
-//        timeSimbox->externalFailure();
-//        failed = true;
-//      }
-//    }
-//  }
-//}
+/*
+void
+ModelGeneral::makeTimeSimboxes(Simbox          *& timeSimbox,
+                               Simbox          *& timeCutSimbox,
+                               Simbox          *& timeBGSimbox,
+                               Simbox          *& timeSimboxConstThick,
+                               Surface         *& correlationDirection,
+                               ModelSettings   *& modelSettings,
+                               const InputFiles * inputFiles,
+                               std::string      & errText,
+                               bool             & failed)
+{
+  std::string gridFile("");
 
 
 //void
@@ -1092,6 +741,374 @@ ModelGeneral::setPaddingSize(int nx, double px)
 //                       simbox->getdz()*simbox->getMinRelThick());
 //}
 
+  if(modelSettings->getForwardModeling())
+    gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
+  else {
+    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL)
+      gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
+  }
+  SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
+
+  //
+  // Set area geometry information
+  // -----------------------------
+  //
+  std::string areaType;
+  if (areaSpecification == ModelSettings::AREA_FROM_UTM)
+  {
+    // The geometry is already present in modelSettings (read from model file).
+    LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
+    areaType = "Model file";
+  }
+  else if(areaSpecification == ModelSettings::AREA_FROM_SURFACE)
+  {
+    LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+inputFiles->getAreaSurfaceFile()+"\'\n");
+    areaType = "Surface";
+    RotatedSurface surf(inputFiles->getAreaSurfaceFile());
+    SegyGeometry geometry(surf);
+    modelSettings->setAreaParameters(&geometry);
+  }
+  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA         ||
+          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
+          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
+  {
+    LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
+    areaType = "Grid data";
+    std::string tmpErrText;
+    SegyGeometry * geometry;
+    getGeometryFromGridOnFile(gridFile,
+                              modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
+                              geometry,
+                              tmpErrText);
+
+    modelSettings->setSeismicDataAreaParameters(geometry);
+    if(geometry != NULL) {
+      geometry->WriteGeometry();
+
+      if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
+        SegyGeometry * fullGeometry = geometry;
+
+        std::vector<int> areaILXL;
+        bool gotArea = true;
+
+        //
+        // Geometry is given as XY, but we snap it to IL and XL.
+        //
+        if (modelSettings->getSnapGridToSeismicData()) {
+          SegyGeometry * templateGeometry = NULL;
+          if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+            templateGeometry = modelSettings->getAreaParameters();
+          }
+          else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
+            RotatedSurface surf(inputFiles->getAreaSurfaceFile());
+            templateGeometry = new SegyGeometry(surf);
+          }
+          else {
+            errText += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
+            errText += "on XY input information, but no UTM coordinates or surface have\n";
+            errText += "been specified in model file.\n";
+            gotArea = false;
+          }
+          if (gotArea) {
+            areaILXL = fullGeometry->findAreaILXL(templateGeometry);
+          }
+        }
+        else {
+          areaILXL = modelSettings->getAreaILXL();
+        }
+
+        if (gotArea) {
+          try {
+            bool interpolated, aligned;
+            geometry = fullGeometry->GetILXLSubGeometry(areaILXL, interpolated, aligned);
+
+            std::string text;
+            if(interpolated == true) {
+              if(aligned == true) {
+                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                text += "   of those found in the seismic data. Furthermore, the distance between first\n";
+                text += "   and last XL and/or IL does not match the step size.\n";
+                TaskList::addTask(text);
+              }
+              else {
+                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                text += "   of those found in the seismic data.\n";
+                TaskList::addTask(text);
+              }
+            }
+            else if(aligned == true) {
+              text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
+              text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
+              text += "   of steps away from the start.\n";
+              TaskList::addTask(text);
+            }
+          }
+          catch (NRLib::Exception & e) {
+            errText += "Error: "+std::string(e.what());
+            geometry->WriteILXL(true);
+            geometry = NULL;
+            failed = true;
+          }
+        }
+        delete fullGeometry;
+      }
+      else {
+        geometry->WriteILXL();
+      }
+      if(!failed) {
+        modelSettings->setAreaParameters(geometry);
+        ILXLGeometry = geometry;
+      }
+    }
+    else {
+      errText += tmpErrText;
+      failed = true;
+    }
+  }
+  if(!failed)
+  {
+    const SegyGeometry * areaParams = modelSettings->getAreaParameters();
+    failed = timeSimbox->setArea(areaParams, errText);
+
+    if(failed)
+    {
+      writeAreas(areaParams,timeSimbox,areaType);
+      errText += "The specified AREA extends outside the surface(s).\n";
+    }
+    else
+    {
+      LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
+      LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+      double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
+      if (azimuth < 0)
+        azimuth += 360.0;
+      LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
+                           areaType.c_str(),
+                           timeSimbox->getx0(), timeSimbox->gety0(),
+                           timeSimbox->getlx(), timeSimbox->getly(), azimuth,
+                           timeSimbox->getdx(), timeSimbox->getdy());
+    }
+
+    float minHorRes = modelSettings->getMinHorizontalRes();
+    if (timeSimbox->getdx() < minHorRes || timeSimbox->getdy() < minHorRes){
+      failed = true;
+      errText += "The horizontal resolution in dx and dy should normally be above "+NRLib::ToString(minHorRes)
+        +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
+    }
+
+    if(!failed)
+    {
+      //
+      // Set IL/XL information in geometry
+      // ---------------------------------
+      //
+      // Skip for estimation mode if possible:
+      //   a) For speed
+      //   b) Grid data may not be available.
+      if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
+        if(ILXLGeometry == NULL) {
+          int gridType = IO::findGridType(gridFile);
+          bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
+          if (ilxl_info_available) {
+            LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
+            std::string tmpErrText;
+            getGeometryFromGridOnFile(gridFile,
+                                      modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
+                                      ILXLGeometry,
+                                      tmpErrText);
+            if(ILXLGeometry == NULL) {
+              errText += tmpErrText;
+              failed = true;
+            }
+          }
+          else {
+            LogKit::LogFormatted(LogKit::High,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+gridFile+"\'\n");
+          }
+        }
+        if(ILXLGeometry != NULL) {
+          if(timeSimbox->isAligned(ILXLGeometry))
+            timeSimbox->setILXL(ILXLGeometry);
+          delete ILXLGeometry;
+        }
+      }
+
+      // Rotate variograms relative to simbox
+      modelSettings->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
+
+      //
+      // Set SURFACES
+      //
+
+      setSimboxSurfaces(timeSimbox,
+                        inputFiles->getTimeSurfFiles(),
+                        modelSettings,
+                        errText,
+                        failed);
+
+      if(!failed)
+      {
+        if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
+        {
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
+          TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
+        }
+
+
+        int status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
+        estimateZPaddingSize(timeSimbox, modelSettings);
+
+        float minSampDens = modelSettings->getMinSamplingDensity();
+        if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
+          failed   = true;
+          errText += "We normally discourage denser sampling than "+NRLib::ToString(minSampDens);
+          errText += "ms in the time grid. If you really need\nthis, please use ";
+          errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
+        }
+
+        if(status == Simbox::BOXOK)
+        {
+          logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
+          //
+          // Make extended time simbox
+          //
+          if(inputFiles->getCorrDirFile() != "") {
+            //
+            // Get correlation direction
+            //
+            try {
+              Surface tmpSurf(inputFiles->getCorrDirFile());
+              if(timeSimbox->CheckSurface(tmpSurf) == true)
+                correlationDirection = new Surface(tmpSurf);
+              else {
+                errText += "Error: Correlation surface does not cover volume.\n";
+                failed = true;
+              }
+            }
+            catch (NRLib::Exception & e) {
+              errText += e.what();
+              failed = true;
+            }
+
+            if(failed == false && modelSettings->getForwardModeling() == false) {
+              //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
+              setupExtendedTimeSimbox(timeSimbox, correlationDirection,
+                                      timeCutSimbox,
+                                      modelSettings->getOutputGridFormat(),
+                                      modelSettings->getOutputGridDomain(),
+                                      modelSettings->getOtherOutputFlag());
+            }
+
+            estimateZPaddingSize(timeSimbox, modelSettings);
+
+            status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
+
+            if(status == Simbox::BOXOK)
+              logIntervalInformation(timeSimbox, "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
+            else
+            {
+              errText += "Could not make the time simulation grid.\n";
+              failed = true;
+            }
+
+            if(modelSettings->getForwardModeling() == false && failed == false) {
+              setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox,
+                                            modelSettings->getOutputGridFormat(),
+                                            modelSettings->getOutputGridDomain(),
+                                            modelSettings->getOtherOutputFlag());
+              status = timeBGSimbox->calculateDz(modelSettings->getLzLimit(),errText);
+              if(status == Simbox::BOXOK)
+                logIntervalInformation(timeBGSimbox, "Time interval used for background modelling:","Two-way-time");
+              else
+              {
+                errText += "Could not make the grid for background model.\n";
+                failed = true;
+              }
+            }
+          }
+
+          if(failed == false) {
+            estimateXYPaddingSizes(timeSimbox, modelSettings);
+
+            unsigned long long int gridsize = static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad();
+
+            if(gridsize > std::numeric_limits<unsigned int>::max()) {
+              float fsize = 4.0f*static_cast<float>(gridsize)/static_cast<float>(1024*1024*1024);
+              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+              errText += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
+              errText += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
+              failed = true;
+            }
+
+            LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
+            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10llu\n",
+                                 timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
+                                 static_cast<unsigned long long int>(timeSimbox->getnx())*timeSimbox->getny()*timeSimbox->getnz());
+            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
+                                 timeSimbox->GetNXpad(),timeSimbox->GetNYpad(),timeSimbox->GetNZpad(),
+                                 static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad());
+          }
+
+          //
+          // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
+          //
+          timeSimboxConstThick = new Simbox(timeSimbox);
+          Surface tsurf(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
+          timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
+
+          if((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (modelSettings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
+            std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
+            std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
+            timeSimboxConstThick->writeTopBotGrids(topSurf,
+                                                   baseSurf,
+                                                   IO::PathToInversionResults(),
+                                                   modelSettings->getOutputGridFormat());
+          }
+
+          if(timeSimbox->getdz() >= 10.0 && modelSettings->getFaciesProbFromRockPhysics() == true) {
+            errText += "dz is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
+            failed = true;
+          }
+        }
+        else
+        {
+          errText += "Could not make time simulation grid.\n";
+          failed = true;
+        }
+      }
+      else
+      {
+        timeSimbox->externalFailure();
+        failed = true;
+      }
+    }
+  }
+  
+}
+
+
+
+void
+ModelGeneral::logIntervalInformation(const Simbox      * simbox,
+                                     const std::string & header_text1,
+                                     const std::string & header_text2)
+{
+  LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+"\n");
+  double zmin, zmax;
+  simbox->getMinMaxZ(zmin,zmax);
+  LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       header_text2.c_str(),
+                       zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,
+                       zmin,zmax);
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       simbox->getlz()*simbox->getAvgRelThick(),
+                       simbox->getlz()*simbox->getMinRelThick(),
+                       simbox->getlz());
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
+                       simbox->getdz()*simbox->getAvgRelThick(),
+                       simbox->getdz(),
+                       simbox->getdz()*simbox->getMinRelThick());
+}
+*/
 void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
                                      const std::vector<std::string> & surfFile,
                                      ModelSettings                  * model_settings,
@@ -1484,7 +1501,7 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
 
   int nxPad = setPaddingSize(nx, xPadFac);
   int nyPad = setPaddingSize(ny, yPadFac);
-  int nzPad = model_settings->getNZpad();
+  int nzPad = timeSimbox->GetNZpad();
 
   double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
   double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
@@ -1493,10 +1510,10 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
   double true_yPad    = true_yPadFac*ly;
   double true_zPad    = true_zPadFac*(timeSimbox->getlz()*timeSimbox->getMinRelThick());
 
-  model_settings->setNXpad(nxPad);
-  model_settings->setNYpad(nyPad);
-  model_settings->setXPadFac(true_xPadFac);
-  model_settings->setYPadFac(true_yPadFac);
+  timeSimbox->SetNXpad(nxPad);
+  timeSimbox->SetNYpad(nyPad);
+  timeSimbox->SetXPadFactor(true_xPadFac);
+  timeSimbox->SetYPadFactor(true_yPadFac);
 
   std::string text1;
   std::string text2;
@@ -1539,8 +1556,8 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
   int nzPad        = setPaddingSize(nz, zPadFac);
   zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
 
-  model_settings->setNZpad(nzPad);
-  model_settings->setZPadFac(zPadFac);
+  timeSimbox->SetNZpad(nzPad);
+  timeSimbox->SetZPadFactor(zPadFac);
 }
 
 //void
@@ -3374,9 +3391,9 @@ ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>  
   const int nx    = timeSimbox.getnx();
   const int ny    = timeSimbox.getny();
   const int nz    = timeSimbox.getnz();
-  const int nxPad = model_settings.getNXpad();
-  const int nyPad = model_settings.getNYpad();
-  const int nzPad = model_settings.getNZpad();
+  const int nxPad = timeSimbox.GetNXpad();
+  const int nyPad = timeSimbox.GetNYpad();
+  const int nzPad = timeSimbox.GetNZpad();
 
   // Creating grids for mu static
   vp_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
@@ -4095,6 +4112,657 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 //  }
 //}
 
+//    bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
+//    int     nFacies        = 0;
+//    int     error = 0;
+//
+//    std::string tmpErrText("");
+//    wells.resize(nWells);
+//    for(int i=0 ; i<nWells ; i++) {
+//      wells[i] = new WellData(inputFiles->getWellFile(i),
+//        modelSettings->getLogNames(),
+//        modelSettings->getInverseVelocity(),
+//        modelSettings,
+//        modelSettings->getIndicatorFacies(i),
+//        modelSettings->getIndicatorFilter(i),
+//        modelSettings->getIndicatorWavelet(i),
+//        modelSettings->getIndicatorBGTrend(i),
+//        modelSettings->getIndicatorRealVs(i),
+//        faciesLogGiven);
+//      if(wells[i]->checkError(tmpErrText) != 0) {
+//        errText += tmpErrText;
+//        error = 1;
+//      }
+//    }
+//
+//
+//    if (error == 0) {
+//      if(modelSettings->getFaciesLogGiven()) {
+//        setFaciesNamesFromWells(wells, modelSettings, tmpErrText, error);
+//        nFacies = static_cast<int>(faciesNames_.size()); // nFacies is set in setFaciesNames()
+//      }
+//      if (error>0)
+//        errText += "Prior facies probabilities from wells failed.\n"+tmpErrText;
+//
+//      int   * validWells    = new int[nWells];
+//      bool  * validIndex    = new bool[nWells];
+//      int   * nMerges       = new int[nWells];
+//      int   * nInvalidAlpha = new int[nWells];
+//      int   * nInvalidBeta  = new int[nWells];
+//      int   * nInvalidRho   = new int[nWells];
+//      float * rankCorr      = new float[nWells];
+//      float * devAngle      = new float[nWells];
+//      int  ** faciesCount   = NULL;
+//
+//      if(nFacies > 0) {
+//        faciesCount = new int * [nWells];
+//        for (int i = 0 ; i < nWells ; i++)
+//          faciesCount[i] = new int[nFacies];
+//      }
+//
+//      int count = 0;
+//      int nohit=0;
+//      int empty=0;
+//      int facieslognotok = 0;
+//      int upwards=0;
+//      LogKit::LogFormatted(LogKit::Low,"\n");
+//      for (int i=0 ; i<nWells ; i++)
+//      {
+//        bool skip = false;
+//        LogKit::LogFormatted(LogKit::Low,wells[i]->getWellname()+" : \n");
+//        if(wells[i]!=NULL) {
+//          if(wells[i]->checkSimbox(timeSimbox) == 1) {
+//            skip = true;
+//            nohit++;
+//            TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
+//          }
+//          if(wells[i]->getNd() == 0) {
+//            LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
+//            skip = true;
+//            empty++;
+//            TaskList::addTask("Check the log entries in well "+wells[i]->getWellname()+".");
+//          }
+//          if(wells[i]->isFaciesOk()==0) {
+//            LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
+//            skip = true;
+//            facieslognotok++;
+//            TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
+//          }
+//          if(wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
+//            LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
+//            skip = true;
+//            upwards++;
+//            TaskList::addTask("Check the TWT log in well "+wells[i]->getWellname()+".\n       The well is moving too much upwards, and the well is ignored");
+//          }
+//          if(skip)
+//            validIndex[i] = false;
+//          else {
+//            validIndex[i] = true;
+//            wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
+//            wells[i]->filterLogs();
+//            //wells[i]->findMeanVsVp(waveletEstimInterval_);
+//            wells[i]->lookForSyntheticVsLog(rankCorr[i]);
+//            wells[i]->calculateDeviation(devAngle[i], timeSimbox);
+//
+//            if (nFacies > 0)
+//              wells[i]->countFacies(timeSimbox,faciesCount[i]);
+//            validWells[count] = i;
+//            count++;
+//          }
+//        }
+//      }
+//      //
+//      // Write summary.
+//      //
+//      LogKit::LogFormatted(LogKit::Low,"\n");
+//      LogKit::LogFormatted(LogKit::Low,"                                      Invalid                                    \n");
+//      LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
+//      LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
+//      for(int i=0 ; i<nWells ; i++) {
+//        if (validIndex[i])
+//          LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
+//          wells[i]->getWellname().c_str(),
+//          nMerges[i],
+//          nInvalidAlpha[i],
+//          nInvalidBeta[i],
+//          nInvalidRho[i],
+//          (wells[i]->hasSyntheticVsLog() ? "yes" : " no"),
+//          rankCorr[i],
+//          (devAngle[i] > modelSettings->getMaxDevAngle() ? "yes" : " no"),
+//          devAngle[i]);
+//        else
+//          LogKit::LogFormatted(LogKit::Low,"%-23s      -       -    -    -       - /     -       -  /    -\n",
+//          wells[i]->getWellname().c_str());
+//      }
+//
+//      //
+//      // Print facies count for each well
+//      //
+//      if(nFacies > 0) {
+//        //
+//        // Probabilities
+//        //
+//        LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each well: \n");
+//        LogKit::LogFormatted(LogKit::Low,"\nWell                    ");
+//        for (int i = 0 ; i < nFacies ; i++)
+//          LogKit::LogFormatted(LogKit::Low,"%12s ",faciesNames_[i].c_str());
+//        LogKit::LogFormatted(LogKit::Low,"\n");
+//        for (int i = 0 ; i < 24+13*nFacies ; i++)
+//          LogKit::LogFormatted(LogKit::Low,"-");
+//        LogKit::LogFormatted(LogKit::Low,"\n");
+//        for (int i = 0 ; i < nWells ; i++) {
+//          if (validIndex[i]) {
+//            float tot = 0.0;
+//            for (int f = 0 ; f < nFacies ; f++)
+//              tot += static_cast<float>(faciesCount[i][f]);
+//            LogKit::LogFormatted(LogKit::Low,"%-23s ",wells[i]->getWellname().c_str());
+//            for (int f = 0 ; f < nFacies ; f++) {
+//              if (tot > 0) {
+//                float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
+//                LogKit::LogFormatted(LogKit::Low,"%12.4f ",faciesProb);
+//              }
+//              else
+//                LogKit::LogFormatted(LogKit::Low,"         -   ");
+//            }
+//            LogKit::LogFormatted(LogKit::Low,"\n");
+//          }
+//          else {
+//            LogKit::LogFormatted(LogKit::Low,"%-23s ",wells[i]->getWellname().c_str());
+//            for (int f = 0 ; f < nFacies ; f++)
+//              LogKit::LogFormatted(LogKit::Low,"         -   ");
+//            LogKit::LogFormatted(LogKit::Low,"\n");
+//
+//          }
+//        }
+//        LogKit::LogFormatted(LogKit::Low,"\n");
+//        //
+//        // Counts
+//        //
+//        LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each well: \n");
+//        LogKit::LogFormatted(LogKit::Medium,"\nWell                    ");
+//        for (int i = 0 ; i < nFacies ; i++)
+//          LogKit::LogFormatted(LogKit::Medium,"%12s ",faciesNames_[i].c_str());
+//        LogKit::LogFormatted(LogKit::Medium,"\n");
+//        for (int i = 0 ; i < 24+13*nFacies ; i++)
+//          LogKit::LogFormatted(LogKit::Medium,"-");
+//        LogKit::LogFormatted(LogKit::Medium,"\n");
+//        for (int i = 0 ; i < nWells ; i++) {
+//          if (validIndex[i]) {
+//            float tot = 0.0;
+//            for (int f = 0 ; f < nFacies ; f++)
+//              tot += static_cast<float>(faciesCount[i][f]);
+//            LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells[i]->getWellname().c_str());
+//            for (int f = 0 ; f < nFacies ; f++) {
+//              LogKit::LogFormatted(LogKit::Medium,"%12d ",faciesCount[i][f]);
+//            }
+//            LogKit::LogFormatted(LogKit::Medium,"\n");
+//          }
+//          else {
+//            LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells[i]->getWellname().c_str());
+//            for (int f = 0 ; f < nFacies ; f++)
+//              LogKit::LogFormatted(LogKit::Medium,"         -   ");
+//            LogKit::LogFormatted(LogKit::Medium,"\n");
+//
+//          }
+//        }
+//        LogKit::LogFormatted(LogKit::Medium,"\n");
+//      }
+//
+//      //
+//      // Remove invalid wells
+//      //
+//      for(int i=0 ; i<nWells ; i++)
+//        if (!validIndex[i])
+//          delete wells[i];
+//      for(int i=0 ; i<count ; i++)
+//        wells[i] = wells[validWells[i]];
+//      for(int i=count ; i<nWells ; i++)
+//        wells[i] = NULL;
+//      nWells = count;
+//      modelSettings->setNumberOfWells(nWells);
+//
+//      delete [] validWells;
+//      delete [] validIndex;
+//      delete [] nMerges;
+//      delete [] nInvalidAlpha;
+//      delete [] nInvalidBeta;
+//      delete [] nInvalidRho;
+//      delete [] rankCorr;
+//      delete [] devAngle;
+//
+//      if (nohit>0)
+//        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
+//      if (empty>0)
+//        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
+//      if(facieslognotok>0)
+//        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
+//      if(upwards>0)
+//        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n",upwards);
+//      if (nWells==0 && modelSettings->getNoWellNedded()==false) {
+//        LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
+//        LogKit::LogFormatted(LogKit::Low,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");
+//        LogKit::LogFormatted(LogKit::Low,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
+//        LogKit::LogFormatted(LogKit::Low,"\n       -------------------------------------------------------------------------------");
+//        LogKit::LogFormatted(LogKit::Low,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n",
+//          timeSimbox->getx0(), timeSimbox->gety0(),
+//          timeSimbox->getlx(), timeSimbox->getly(),
+//          (timeSimbox->getAngle()*180)/M_PI);
+//        errText += "No wells available for estimation.";
+//        error = 1;
+//      }
+//
+//      if(nFacies > 0) {
+//        int fc;
+//        for(int i = 0; i < nFacies; i++){
+//          fc = 0;
+//          for(int j = 0; j < nWells; j++){
+//            fc+=faciesCount[j][i];
+//          }
+//          if(fc == 0){
+//            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",faciesNames_[i].c_str() );
+//            TaskList::addTask("In order to estimate prior facies probability for facies "+ faciesNames_[i] + " add wells which contain observations of this facies.\n");
+//          }
+//        }
+//        for (int i = 0 ; i<nWells ; i++)
+//          delete [] faciesCount[i];
+//        delete [] faciesCount;
+//      }
+//
+//    }
+//    failed = error > 0;
+//    Timings::setTimeWells(wall,cpu);
+//  }
+//}
+
+//void
+//ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
+//                                      ModelSettings            *& modelSettings,
+//                                      std::string               & tmpErrText,
+//                                      int                       & error)
+//{
+//  int min,max;
+//  int globalmin = 0;
+//  int globalmax = 0;
+//  bool first = true;
+//  for (int w = 0; w < modelSettings->getNumberOfWells(); w++) {
+//    if(wells[w]->isFaciesLogDefined())
+//    {
+//      wells[w]->getMinMaxFnr(min,max);
+//      if(first==true)
+//      {
+//        globalmin = min;
+//        globalmax = max;
+//        first = false;
+//      }
+//      else
+//      {
+//        if(min<globalmin)
+//          globalmin = min;
+//        if(max>globalmax)
+//          globalmax = max;
+//      }
+//    }
+//  }
+//
+//  int nnames = globalmax - globalmin + 1;
+//  std::vector<std::string> names(nnames);
+//
+//  for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
+//  {
+//    if(wells[w]->isFaciesLogDefined())
+//    {
+//      for(int i=0 ; i < wells[w]->getNFacies() ; i++)
+//      {
+//        std::string name = wells[w]->getFaciesName(i);
+//        int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
+//
+//        if(names[fnr] == "") {
+//          names[fnr] = name;
+//        }
+//        else if(names[fnr] != name)
+//        {
+//          tmpErrText += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
+//          error++;
+//        }
+//      }
+//    }
+//  }
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
+//  LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
+//  for(int i=0 ; i<nnames ; i++)
+//    if(names[i] != "")
+//      LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
+//
+//  int nFacies = 0;
+//  for(int i=0 ; i<nnames ; i++)
+//    if(names[i] != "")
+//      nFacies++;
+//
+//  for(int i=0 ; i<nnames ; i++) {
+//    if(names[i] != "") {
+//      faciesLabels_.push_back(globalmin + i);
+//      faciesNames_.push_back(names[i]);
+//    }
+//  }
+//}
+//
+//void
+//ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
+//                                    float                       ** reflectionMatrix,
+//                                    ModelSettings                * modelSettings,
+//                                    const std::vector<Surface *> & interval)
+//{
+//  LogKit::WriteHeader("Estimating optimized well location");
+//
+//  double  deltaX, deltaY;
+//  float   sum;
+//  float   kMove;
+//  float   moveAngle;
+//  int     iMove;
+//  int     jMove;
+//  int     i,j,w;
+//  int     iMaxOffset;
+//  int     jMaxOffset;
+//  int     nMoveAngles = 0;
+//  int     nWells      = modelSettings->getNumberOfWells();
+//  int     nAngles     = modelSettings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
+//  float   maxShift    = modelSettings->getMaxWellShift();
+//  float   maxOffset   = modelSettings->getMaxWellOffset();
+//  double  angle       = timeSimbox_->getAngle();
+//  double  dx          = timeSimbox_->getdx();
+//  double  dy          = timeSimbox_->getdy();
+//  std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
+//
+//  std::vector<float> angleWeight(nAngles);
+//  LogKit::LogFormatted(LogKit::Low,"\n");
+//  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+//  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+//
+//  for (w = 0 ; w < nWells ; w++) {
+//    if( wells_[w]->isDeviated()==true )
+//      continue;
+//
+//    BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
+//    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+//
+//    if( nMoveAngles==0 )
+//      continue;
+//
+//    for( i=0; i<nAngles; i++ )
+//      angleWeight[i] = 0;
+//
+//    for( i=0; i<nMoveAngles; i++ ){
+//      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+//
+//      for( j=0; j<nAngles; j++ ){
+//        if( moveAngle == seismicAngle[j]){
+//          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+//          break;
+//        }
+//      }
+//    }
+//
+//    sum = 0;
+//    for( i=0; i<nAngles; i++ )
+//      sum += angleWeight[i];
+//    if( sum == 0 )
+//      continue;
+//
+//    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
+//    jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
+//
+//    bl->findOptimalWellLocation(seisCube,timeSimbox_,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
+//
+//    deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
+//    deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
+//    wells_[w]->moveWell(timeSimbox_,deltaX,deltaY,kMove);
+//    wells_[w]->deleteBlockedLogsOrigThick();
+//    wells_[w]->setBlockedLogsOrigThick( new BlockedLogs(wells_[w], timeSimbox_, modelSettings->getRunFromPanel()) );
+//    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
+//    wells_[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
+//  }
+//
+//   for (w = 0 ; w < nWells ; w++){
+//     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+//
+//    if( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
+//    {
+//      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
+//          wells_[w]->getWellname().c_str());
+//      TaskList::addTask("Well "+NRLib::ToString(wells_[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
+//    }
+//   }
+//}
+//void
+//ModelGeneral::processPriorCorrelations(Background                     * background,
+//                                       std::vector<WellData *>          wells,
+//                                       const Simbox                   * timeSimbox,
+//                                       const ModelSettings            * modelSettings,
+//                                       const std::vector<float>       & priorFacies,
+//                                       FFTGrid                       ** seisCube,
+//                                       const InputFiles               * inputFiles,
+//                                       SeismicParametersHolder        & seismicParameters,
+//                                       std::string                    & errText,
+//                                       bool                           & failed)
+//{
+//  bool printResult = ((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
+//                      modelSettings->getEstimationMode() == true);
+//  if (modelSettings->getDoInversion() || printResult)
+//  {
+//    LogKit::WriteHeader("Prior Covariance");
+//
+//    double wall=0.0, cpu=0.0;
+//    TimeKit::getTime(wall,cpu);
+//
+//    const std::string & paramCovFile = inputFiles->getParamCorrFile();
+//    const std::string & corrTFile    = inputFiles->getTempCorrFile();
+//
+//    bool estimateParamCov = paramCovFile == "";
+//    bool estimateTempCorr = (corrTFile    == "" && modelSettings->getUseVerticalVariogram() == false);
+//
+//    //
+//    // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
+//    // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
+//    //
+//    float ** paramCorr = NULL;
+//    bool failedParamCorr = false;
+//    std::string tmpErrText("");
+//    if(!estimateParamCov) {
+//      paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
+//      validateCorrelationMatrix(paramCorr, modelSettings, tmpErrText);
+//      if(paramCorr == NULL || tmpErrText != "") {
+//        errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
+//        errText += tmpErrText;
+//        failedParamCorr = true;
+//      }
+//    }
+//    else if (modelSettings->getFaciesProbFromRockPhysics() == true) {
+//      estimateParamCov = false;
+//      paramCorr = new float * [3];
+//      for(int i=0;i<3;i++) {
+//        paramCorr[i] = new float[3];
+//      }
+//
+//      int n_facies = static_cast<int>(faciesNames_.size());
+//
+//      std::vector<DistributionsRock *> rock_distribution(n_facies);
+//      typedef std::map<std::string, DistributionsRock *> rfMapType;
+//      rfMapType rfMap = getRockDistributionTime0();
+//
+//      for(int i=0; i<n_facies; i++) {
+//        rfMapType::iterator iter = rfMap.find(faciesNames_[i]);
+//        if(iter != rfMap.end())
+//          rock_distribution[i] = iter->second;
+//      }
+//
+//      NRLib::Grid2D<double> param_corr(3,3);
+//      calculateCovariancesFromRockPhysics(rock_distribution,
+//                                          priorFacies,
+//                                          param_corr,
+//                                          errText);
+//
+//
+//      for(int i=0; i<3; i++) {
+//        for(int j=0; j<3; j++)
+//          paramCorr[i][j] = static_cast<float>(param_corr(i,j));
+//      }
+//
+//      if (tmpErrText != "")
+//      {
+//        errText += "Parameter covariance matrix from rock physics failed\n";
+//        errText += tmpErrText;
+//        failedParamCorr = true;
+//      }
+//    }
+//
+//    //
+//    // Estimate lateral correlation from seismic data
+//    //
+//    priorCorrXY_ = findCorrXYGrid(timeSimbox, modelSettings);
+//
+//    if(modelSettings->getLateralCorr()==NULL) // NBNB-PAL: this will never be true (default lateral corr)
+//    {
+//      int timelapse = 0; // Setting timelapse = 0 as this is the generation of prior model
+//      estimateCorrXYFromSeismic(priorCorrXY_, seisCube, modelSettings->getNumberOfAngles(timelapse));
+//    }
+//
+//    int nCorrT = timeSimbox->GetNZpad();
+//    if((nCorrT % 2) == 0)
+//      nCorrT = nCorrT/2+1;
+//    else
+//      nCorrT = nCorrT/2;
+//
+//    std::vector<float> corrT;
+//
+//    bool failedTempCorr = false;
+//    if(!estimateTempCorr)
+//    {
+//      if(modelSettings->getUseVerticalVariogram() == true) {
+//        corrT.resize(nCorrT+1);
+//        float tempCorrRange = modelSettings->getTemporalCorrelationRange();
+//        float dz = static_cast<float>(timeSimbox->getdz());
+//        for(int i=0; i<=nCorrT; i++){
+//          //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
+//          corrT[i] = exp(-3*dz*i/tempCorrRange);
+//        }
+//      }
+//      else{
+//        std::string tmpErrText("");
+//        float ** corrMat = ModelAVODynamic::readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
+//        if(corrMat == NULL)
+//        {
+//          errText += "Reading of file '"+corrTFile+"' for temporal correlation failed\n";
+//          errText += tmpErrText;
+//          failedTempCorr = true;
+//        }
+//        corrT.resize(nCorrT);
+//        if (!failedTempCorr)
+//        {
+//          for(int i=0;i<nCorrT;i++)
+//            corrT[i] = corrMat[0][i+1];
+//          delete [] corrMat[0];
+//          delete [] corrMat;
+//        }
+//      }
+//    }
+//
+//    float ** pointVar0 = NULL;
+//    if (estimateParamCov || estimateTempCorr) //Need well estimation
+//    {
+//      std::string tmpErrTxt;
+//      Analyzelog * analyze = new Analyzelog(wells,
+//                                            background,
+//                                            timeSimbox,
+//                                            modelSettings,
+//                                            tmpErrTxt);
+//      if (tmpErrTxt != "") {
+//        errText += tmpErrTxt;
+//        failedParamCorr = true;
+//      }
+//
+//      if(estimateParamCov)
+//        paramCorr = analyze->getVar0();
+//      else
+//        delete [] analyze->getVar0();
+//
+//      pointVar0 = analyze->getPointVar0();
+//
+//      float * estCorrT = analyze->getCorrT();
+//      if(estimateTempCorr) {
+//        corrT.resize(nCorrT);
+//        int nEst = analyze->getNumberOfLags();
+//        int i, max = nEst;
+//        if(max > nCorrT)
+//          max = nCorrT;
+//        for(i=0;i<max;i++)
+//          corrT[i] = estCorrT[i];
+//        if(i<nCorrT) {
+//          LogKit::LogFormatted(LogKit::High,
+//            "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, nCorrT);
+//          for(;i<nCorrT;i++)
+//            corrT[i] = 0.0f;
+//        }
+//      }
+//      delete [] estCorrT;
+//
+//      delete analyze;
+//    }
+//
+//    if (failedParamCorr || failedTempCorr)
+//      failed = true;
+//
+//    if (!failed) {
+//
+//      const int nx        = timeSimbox->getnx();
+//      const int ny        = timeSimbox->getny();
+//      const int nz        = timeSimbox->getnz();
+//      const int nxPad     = timeSimbox->GetNXpad();
+//      const int nyPad     = timeSimbox->GetNYpad();
+//      const int nzPad     = timeSimbox->GetNZpad();
+//
+//      float dt = static_cast<float>(timeSimbox->getdz());
+//      float lowCut = modelSettings->getLowCut();
+//      int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+//
+//      float corrGradI;
+//      float corrGradJ;
+//      getCorrGradIJ(corrGradI, corrGradJ);
+//      //makeCorr2DPositiveDefinite( priorCorrXY_);
+//
+//      seismicParameters.setCorrelationParameters(paramCorr,
+//                                                 corrT,
+//                                                 priorCorrXY_,
+//                                                 lowIntCut,
+//                                                 corrGradI,
+//                                                 corrGradJ,
+//                                                 nx,
+//                                                 ny,
+//                                                 nz,
+//                                                 nxPad,
+//                                                 nyPad,
+//                                                 nzPad);
+//
+//      for(int i=0; i<3; i++)
+//        delete [] paramCorr[i];
+//      delete [] paramCorr;
+//
+//      if(printResult)
+//        seismicParameters.writeFilePriorVariances(modelSettings, corrT, priorCorrXY_, dt);
+//      seismicParameters.printPriorVariances();
+//    }
+//
+//
+//    if(failedTempCorr == true || failedParamCorr == true)
+//    {
+//      errText += "Could not construct prior covariance. Unknown why...\n";
+//      failed = true;
+//    }
+//
+//    Timings::setTimePriorCorrelation(wall,cpu);
+//  }
+//}
+
 void ModelGeneral::validateCorrelationMatrix(float               ** C,
                                              const ModelSettings *  model_settings,
                                              std::string         &  errTxt)
@@ -4201,6 +4869,41 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
 //          refj = j-ny;
 //        }
 //        (*grid)(j*nx+i) = model_settings->getLateralCorr()->corr(refi*dx, refj*dy);
+//      }
+//    }
+//  }
+//  return(grid);
+//}
+
+//  int   nx  = timeSimbox->GetNXpad();
+//  int   ny  = timeSimbox->GetNYpad();
+//
+//  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+//
+//  if(modelSettings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
+//  {
+//    int refi,refj;
+//    for(int j=0;j<ny;j++)
+//    {
+//      for(int i=0;i<nx;i++)
+//      {
+//        if(i<(nx/2+1))
+//        {
+//          refi = i;
+//        }
+//        else
+//        {
+//          refi = i-nx;
+//        }
+//        if(j< (ny/2+1))
+//        {
+//          refj = j;
+//        }
+//        else
+//        {
+//          refj = j-ny;
+//        }
+//        (*grid)(j*nx+i) = modelSettings->getLateralCorr()->corr(refi*dx, refj*dy);
 //      }
 //    }
 //  }
@@ -4714,8 +5417,145 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //
 //}
 
+//void
+//ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
+//                                       ModelSettings           * modelSettings,
+//                                       std::vector<FFTGrid *>  & priorFaciesProbCubes,
+//                                       Simbox                  * timeSimbox,
+//                                       Simbox                  * timeCutSimbox,
+//                                       std::string             & errTxt,
+//                                       bool                    & failed)
+//{
+//  int nFacies = static_cast<int>(faciesNames_.size());
+//  priorFaciesProbCubes.resize(nFacies);
+//
+//  typedef std::map<std::string,std::string> mapType;
+//  mapType myMap = inputFiles->getPriorFaciesProbFile();
+//  for(int i=0;i<nFacies;i++)
+//  {
+//    mapType::iterator iter = myMap.find(faciesNames_[i]);
+//
+//    if(iter!=myMap.end())
+//    {
+//      const std::string & faciesProbFile = iter->second;
+//      const SegyGeometry      * dummy1 = NULL;
+//      const TraceHeaderFormat * dummy2 = NULL;
+//      const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+//      std::string errorText("");
+//      ModelGeneral::readGridFromFile(faciesProbFile,
+//                                     "priorfaciesprob",
+//                                     offset,
+//                                     priorFaciesProbCubes[i],
+//                                     dummy1,
+//                                     dummy2,
+//                                     FFTGrid::PARAMETER,
+//                                     timeSimbox,
+//                                     timeCutSimbox,
+//                                     modelSettings,
+//                                     errorText,
+//                                     true);
+//      if(errorText != "")
+//      {
+//        errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
+//                     +faciesNames_[i]+"\' failed\n";
+//        errTxt += errorText;
+//        failed = true;
+//      }
+//    }
+//    else
+//    {
+//      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",
+//                           faciesNames_[i].c_str());
+//      TaskList::addTask("Check that facies "+NRLib::ToString(faciesNames_[i].c_str())+" is given prior probability in the xml-file");
+//      modelSettings->setEstimateFaciesProb(false);
+//      break;
+//    }
+//  }
+//}
+//
+//bool
+//ModelGeneral::process4DBackground(ModelSettings           *& modelSettings,
+//                                  const InputFiles         * inputFiles,
+//                                  SeismicParametersHolder  & seismicParameters,
+//                                  std::string              & errText,
+//                                  bool                     & failed,
+//                                  NRLib::Vector            & initialMean,
+//                                  NRLib::Matrix            & initialCov)
+//{
+//  bool failedPriorCorr               = false;
+//  bool failedRockPhysics4DBackground = false;
+//
+//  // Variables to be created in this function
+//  Background * background = NULL;
+//
+//  FFTGrid **seisCube = NULL;  // vet ikke hva denne skal være
+//
+//  int n_facies = static_cast<int>(faciesNames_.size());
+//
+//  std::vector<float> priorProbability(n_facies);
+//  typedef std::map<std::string,float> mapType;
+//  mapType myMap = modelSettings->getPriorFaciesProb();
+//
+//  for(int i=0;i<n_facies;i++) {
+//    mapType::iterator iter = myMap.find(faciesNames_[i]);
+//    if(iter!=myMap.end())
+//      priorProbability[i] = static_cast<float>(iter->second);
+//  }
+//
+//  std::vector<DistributionsRock *> rock_distribution(n_facies);
+//  typedef std::map<std::string, DistributionsRock *> rfMapType;
+//  rfMapType rfMap = getRockDistributionTime0();
+//
+//  for(int i=0; i<n_facies; i++) {
+//    rfMapType::iterator iter = rfMap.find(faciesNames_[i]);
+//    if(iter != rfMap.end())
+//      rock_distribution[i] = iter->second;
+//  }
+//
+//  std::string tmpError = "";
+//  setUp3DPartOf4DBackground(rock_distribution,
+//                            priorProbability,
+//                            timeSimbox_,
+//                            *modelSettings,
+//                            seismicParameters,
+//                            state4d_,
+//                            tmpError);
+//
+//  processPriorCorrelations(background,
+//                           wells_,
+//                           timeSimbox_,
+//                           modelSettings,
+//                           priorProbability,
+//                           seisCube,
+//                           inputFiles,
+//                           seismicParameters,
+//                           errText,
+//                           failedPriorCorr);
+//
+//
+//  copyCorrelationsTo4DState( seismicParameters, state4d_);
+//  const int nx    = timeSimbox_->getnx();
+//  const int ny    = timeSimbox_->getny();
+//  const int nz    = timeSimbox_->getnz();
+//  const int nxPad = timeSimbox_->GetNXpad();
+//  const int nyPad = timeSimbox_->GetNYpad();
+//  const int nzPad = timeSimbox_->GetNZpad();
+//
+//  complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad,initialMean,initialCov);
+//
+//  if(tmpError != "") {
+//    errText += tmpError;
+//    failedRockPhysics4DBackground = true;
+//  }
+//
+//  failed = failedPriorCorr || failedRockPhysics4DBackground;
+//
+//  return failed;
+//
+//}
+
 void
-ModelGeneral::setupState4D(ModelSettings           *& model_settings,
+ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
                            SeismicParametersHolder  & seismicParameters,
                            NRLib::Vector            & initialMean,
                            NRLib::Matrix            & initialCov)
@@ -4729,9 +5569,9 @@ ModelGeneral::setupState4D(ModelSettings           *& model_settings,
   const int nx    = simbox_->getnx();
   const int ny    = simbox_->getny();
   const int nz    = simbox_->getnz();
-  const int nxPad = model_settings->getNXpad();
-  const int nyPad = model_settings->getNYpad();
-  const int nzPad = model_settings->getNZpad();
+  const int nxPad = simbox_->GetNXpad();
+  const int nyPad = simbox_->GetNYpad();
+  const int nzPad = simbox_->GetNZpad();
 
   complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
 }

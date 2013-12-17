@@ -13,17 +13,36 @@
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 
+class MultiIntervalGrid;
+
 class BlockedLogsCommon{
 public:
-  BlockedLogsCommon();
 
-  //BlockedLogsCommon(NRLib::Well     * well_data,
-  //                  const Simbox    * const estimation_simbox,
-  //                  bool              interpolate,
-  //                  std::string     & err_text,
-  //                  float             max_hz_background = 0.0,
-  //                  float             max_hz_seismic = 0.0);
+  // Constructor for wavelet estimation blocking
+  BlockedLogsCommon(const NRLib::Well     * well_data,
+                    const Simbox    * const estimation_simbox,
+                    bool              interpolate,
+                    //bool            & failed,
+                    std::string     & err_text,
+                    float             max_hz_background = 0.0,
+                    float             max_hz_seismic = 0.0);
 
+  // Constructor for correlation estimation blocking
+  BlockedLogsCommon(const NRLib::Well                * well_data,
+                    const std::vector<std::string>   & cont_logs_to_be_blocked,
+                    const std::vector<std::string>   & disc_logs_to_be_blocked,
+                    const MultiIntervalGrid          * multiple_interval_grid,
+                    bool                               interpolate,
+                    std::string                      & err_text);
+
+  BlockedLogsCommon(const NRLib::Well                * well_data,
+                    const std::vector<std::string>   & cont_logs_to_be_blocked,
+                    const std::vector<std::string>   & disc_logs_to_be_blocked,
+                    const Simbox                     * const estimation_simbox,
+                    bool                               interpolate,
+                    std::string                      & err_text);
+
+  // Constructor for blocking in the surrounding estimation simbox
   BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
@@ -33,10 +52,13 @@ public:
                     float                              max_hz_background = 0.0,
                     float                              max_hz_seismic = 0.0);
 
+  // Constructor for wavelet estimation blocking
   BlockedLogsCommon(const NRLib::Well   * well_data,
                     const StormContGrid & stormgrid,
                     float                 max_hz_background = 0.0,
                     float                 max_hz_seismic = 0.0);
+
+
 
   ~BlockedLogsCommon();
 
@@ -46,14 +68,17 @@ public:
   std::string                            GetWellName()         const   { return well_name_                                                            ;}
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
   int                                    GetNFacies()          const   { return static_cast<int>(facies_map_.size())                                  ;}
-  const std::vector<double>            & GetXpos(void)         const   { return x_pos_blocked_                                                        ;}
-  const std::vector<double>            & GetYpos(void)         const   { return y_pos_blocked_                                                        ;}
-  const std::vector<double>            & GetZpos(void)         const   { return z_pos_blocked_                                                        ;}
+  const std::vector<double>            & GetXposBlocked(void)  const   { return x_pos_blocked_                                                        ;}
+  const std::vector<double>            & GetYposBlocked(void)  const   { return y_pos_blocked_                                                        ;}
+  const std::vector<double>            & GetZposBlocked(void)  const   { return z_pos_blocked_                                                        ;}
+  const std::vector<double>            & GetXposRawLogs()      const   { return x_pos_raw_logs_                                                       ;}
+  const std::vector<double>            & GetYposRawLogs()      const   { return y_pos_raw_logs_                                                       ;}
+  const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
 
-  const std::vector<double>            & GetTVD(void)          const   { return z_pos_blocked_                                                        ;}
-  const std::vector<double>            & GetTWT(void)          const   { return twt_blocked_                                                          ;}
+  const std::vector<double>            & GetTVDBlocked(void)   const   { return z_pos_blocked_                                                        ;}
+  const std::vector<double>            & GetTWTBlocked(void)   const   { return twt_blocked_                                                          ;}
 
-  const std::map<int, std::string>     & GetFaciesMap()       const    { return facies_map_                                                           ;}
+  const std::map<int, std::string>     & GetFaciesMap()        const    { return facies_map_                                                          ;}
   const std::vector<int>               & GetIposVector()       const   { return i_pos_                                                                ;}
   const std::vector<int>               & GetJposVector()       const   { return j_pos_                                                                ;}
   const std::vector<int>               & GetKposVector()       const   { return k_pos_                                                                ;}
@@ -62,13 +87,12 @@ public:
         std::vector<double>            & GetVpBlocked(void)            { return continuous_logs_blocked_.find("Vp")->second                           ;}
   const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
         std::vector<double>            & GetVsBlocked(void)            { return continuous_logs_blocked_.find("Vs")->second                           ;}
+  const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
   const std::vector<int>               & GetFaciesBlocked(void) const  { return facies_blocked_                                                       ;}
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
-        std::vector<double>            & GetRhoBlocked(void)           { return continuous_logs_blocked_.find("Rho")->second                          ;}
-  const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
-  const std::vector<double>            & GetVpUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vp")->second                         ;}
-  const std::vector<double>            & GetVsUnblocked(void)  const   { return continuous_logs_unblocked_.find("Vs")->second                         ;}
-  const std::vector<double>            & GetRhoUnblocked(void) const   { return continuous_logs_unblocked_.find("Rho")->second                        ;}
+  const std::vector<double>            & GetVpRawLogs(void)  const   { return continuous_raw_logs_.find("Vp")->second                            ;}
+  const std::vector<double>            & GetVsRawLogs(void)  const   { return continuous_raw_logs_.find("Vs")->second                            ;}
+  const std::vector<double>            & GetRhoRawLogs(void) const   { return continuous_raw_logs_.find("Rho")->second                           ;}
 
   const std::vector<double>            & GetVpSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}
@@ -296,13 +320,13 @@ private:
                                  const float * coeff) const;
 
   void    RemoveMissingLogValues(const NRLib::Well                            * well_data,
-                                 std::vector<double>                          & x_pos_unblocked,
-                                 std::vector<double>                          & y_pos_unblocked,
-                                 std::vector<double>                          & z_pos_unblocked,
-                                 std::vector<double>                          & twt_unblocked,
-                                 std::vector<int>                             & facies_unblocked,
-                                 std::map<std::string, std::vector<double> >  & continuous_logs_unblocked,
-                                 std::map<std::string, std::vector<int> >     & discrete_logs_unblocked,
+                                 std::vector<double>                          & x_pos_raw_logs,
+                                 std::vector<double>                          & y_pos_raw_logs,
+                                 std::vector<double>                          & z_pos_raw_logs,
+                                 std::vector<double>                          & twt_raw_logs,
+                                 std::vector<int>                             & facies_raw_logs,
+                                 std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
+                                 std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
                                  const std::vector<std::string>               & cont_logs_to_be_blocked,
                                  const std::vector<std::string>               & disc_logs_to_be_blocked,
                                  unsigned int                                 & n_data,
@@ -310,8 +334,8 @@ private:
                                  std::string                                  & err_text);
 
   void    BlockWell(const Simbox                                        * const estimation_simbox,
-                    const std::map<std::string, std::vector<double> >   & continuous_logs_unblocked,
-                    const std::map<std::string, std::vector<int> >      & discrete_logs_unblocked,
+                    const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                    const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
                     std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                     std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
                     unsigned int                                          n_data,
@@ -321,17 +345,44 @@ private:
                     bool                                                & failed,
                     std::string                                         & err_text);
 
+  void    BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
+                                            const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                                            const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
+                                            std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                            std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                            unsigned int                                          n_data,
+                                            bool                                                  facies_log_defined,
+                                            const std::map<int, std::string>                    & facies_map,
+                                            bool                                                  interpolate,
+                                            int                                                 & n_layers,
+                                            bool                                                & failed,
+                                            std::string                                         & err_text);
+
+  void    FindSizeAndBlockPointers(const MultiIntervalGrid       * multiple_interval_grid,
+                                   std::vector<int>              & b_ind,
+                                   int                             n_data,
+                                   int                           & n_layers,
+                                   unsigned int                  & n_blocks);
+
   void    FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                   std::vector<int>     & b_ind);
+                                   std::vector<int>     & b_ind,
+                                   unsigned int         & n_blocks);
 
   void    FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                   std::vector<int>     & bInd);
+                                   std::vector<int>     & bInd,
+                                   unsigned int         & n_blocks);
 
   void    FindBlockIJK(const Simbox                     * const estimation_simbox,
                        const std::vector<int>           & b_ind);
 
-  void    FindBlockIJK(const StormContGrid    & stormgrid,
-                       const std::vector<int>   b_ind);
+  void    FindBlockIJK(const MultiIntervalGrid          * multiple_interval_grid,
+                       const std::vector<double>        & x_pos,
+                       const std::vector<double>        & y_pos,
+                       const std::vector<double>        & z_pos,
+                       const std::vector<int>           & b_ind);
+
+  void    FindBlockIJK(const StormContGrid              & stormgrid,
+                       const std::vector<int>             b_ind);
 
   void    BlockCoordinateLog(const std::vector<int>     &  b_ind,
                              const std::vector<double>  &  coord,
@@ -418,8 +469,9 @@ private:
   // CLASS VARIABLES -----------------------------
 
   unsigned int       n_blocks_;         // number of blocks
-  unsigned int       n_data_; //Number of non-missing
+  unsigned int       n_data_;           //Number of non-missing
   std::string        well_name_;
+
 
   std::map<int, std::string>  facies_map_;
   bool                        facies_log_defined_;
@@ -433,12 +485,13 @@ private:
   std::vector<double> twt_blocked_;    // Blocked twt value
   std::vector<int>    facies_blocked_; // Blocked facies log
 
-  std::vector<int> i_pos_;    // Simbox i position for block
-  std::vector<int> j_pos_;    // Simbox j position for block
-  std::vector<int> k_pos_;    // Simbox k position for block
+  std::vector<int>    s_pos_;    // Simbox number for block
+  std::vector<int>    i_pos_;    // Simbox i position for block
+  std::vector<int>    j_pos_;    // Simbox j position for block
+  std::vector<int>    k_pos_;    // Simbox k position for block
 
-  int n_continuous_logs_;     // Number of continuous logs
-  int n_discrete_logs_;       // Number of discrete logs
+  int                 n_continuous_logs_;     // Number of continuous logs
+  int                 n_discrete_logs_;       // Number of discrete logs
 
   std::map<std::string, std::vector<double> > continuous_logs_blocked_;         // Map between variable name and blocked continuous log
   std::map<std::string, std::vector<int> >    discrete_logs_blocked_;           // Map between variable name and blocked discrete log
@@ -461,15 +514,15 @@ private:
   float lateral_threshold_gradient_; //Minimum lateral distance where gradient lines must not cross
   float sigma_m_; //Smoothing factor for the gradients
 
-  // Unblocked values
-  std::vector<double> x_pos_unblocked_;
-  std::vector<double> y_pos_unblocked_;
-  std::vector<double> z_pos_unblocked_;
-  std::vector<double> twt_unblocked_;
-  std::vector<int>    facies_unblocked_;
+  // Logs from well, not blocked
+  std::vector<double> x_pos_raw_logs_;
+  std::vector<double> y_pos_raw_logs_;
+  std::vector<double> z_pos_raw_logs_;
+  std::vector<double> twt_raw_logs_;
+  std::vector<int>    facies_raw_logs_;
 
-  std::map<std::string, std::vector<double> > continuous_logs_unblocked_;  // Map between variable name and unblocked continuous log
-  std::map<std::string, std::vector<int> >    discrete_logs_unblocked_;    // Map between variable name and unblocked discrete log
+  std::map<std::string, std::vector<double> > continuous_raw_logs_;  // Map between variable name and raw continuous logs
+  std::map<std::string, std::vector<int> >    discrete_raw_logs_;    // Map between variable name and raw discrete logs
 
   //Variables needed in SetLogFromGrid and later used in WriteWell
   std::map<int, std::vector<double> >         cpp_;                        ///< Mapped reflection coefficients for angles
@@ -487,9 +540,12 @@ private:
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
   float                     dz_;                       ///< Simbox dz value for block
 
+  int                       first_S_;                   ///< First simbox that the well log appears in
+  int                       last_S_;                    ///< Last simbox that the well log appears in
+
   int                       first_M_;                   ///< First well log entry contributing to blocked well
   int                       last_M_;                    ///< Last well log entry contributing to blocked well
-
+                     
   int                       first_B_;                   ///< First block with contribution from well log
   int                       last_B_;                    ///< Last block with contribution from well log
 

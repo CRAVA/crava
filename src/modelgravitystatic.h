@@ -16,7 +16,7 @@ public:
 
   ModelGravityStatic(ModelSettings      *& modelSettings,
                      CommonData          * common_data,
-                     Simbox              * simbox,
+                     const Simbox              * simbox,
                      int                   i_interval);
 
   ~ModelGravityStatic();
@@ -97,11 +97,12 @@ private:
   ModelGeneral * modelGeneral_;
 
   void MakeUpscalingKernel(ModelSettings * modelSettings,
-                           Simbox        * fullTimeSimbox);
+                           const Simbox        * fullTimeSimbox);
 
   void MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled);
 
-  void SetUpscaledPaddingSize(ModelSettings * modelSettings);
+  void SetUpscaledPaddingSize(ModelSettings * modelSettings,
+                              const Simbox  * simbox);
 
 };
 

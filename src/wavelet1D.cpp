@@ -159,9 +159,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       // Check seismic data outside estimation interval missing
       //
       if (estimInterval.size() > 0) {
-        const std::vector<double> xPos = blocked_log->GetXpos();
-        const std::vector<double> yPos = blocked_log->GetYpos();
-        const std::vector<double> zPos = blocked_log->GetZpos();
+        const std::vector<double> xPos = blocked_log->GetXposBlocked();
+        const std::vector<double> yPos = blocked_log->GetYposBlocked();
+        const std::vector<double> zPos = blocked_log->GetZposBlocked();
         for (int k = 0 ; k < blocked_log->GetNumberOfBlocks(); k++) {
           const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
           const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
@@ -209,7 +209,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         Utils::fftInv(seis_c[w], seis_r[w], nzp_);
         wellWeight[w] = length*dzWell[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with
                                                                            // large reflection coefficients
-        z0[w] = static_cast<float> (blocked_log->GetZpos()[0]);
+        z0[w] = static_cast<float> (blocked_log->GetZposBlocked()[0]);
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
       }
@@ -1253,8 +1253,8 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real                                
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     const BlockedLogsCommon * blocked_log = iter->second;
 
-    const std::vector<double> & x = blocked_log->GetXpos();
-    const std::vector<double> & y = blocked_log->GetXpos();
+    const std::vector<double> & x = blocked_log->GetXposBlocked();
+    const std::vector<double> & y = blocked_log->GetXposBlocked();
     int ix, iy;
     simbox->getIndexes(x[0],y[0],ix,iy);
     //scale[i] = gain->GetZ(x[0],y[0]);
@@ -1333,8 +1333,8 @@ Wavelet1D::estimateLocalShift(const CovGrid2D                                  &
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      const std::vector<double> & xPos = blocked_log->GetXpos();
-      const std::vector<double> & yPos = blocked_log->GetXpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetXposBlocked();
       int xInd, yInd;
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       shiftData.addData(xInd,yInd,shiftWell[i]);
@@ -1379,8 +1379,8 @@ Wavelet1D::estimateLocalGain(const CovGrid2D                                  & 
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      const std::vector<double> & xPos = blocked_log->GetXpos();
-      const std::vector<double> & yPos = blocked_log->GetXpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetXposBlocked();
       int xInd, yInd;
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       gainData.addData(xInd,yInd,scaleOptWell[i]);
@@ -1425,8 +1425,8 @@ Wavelet1D::estimateLocalNoise(const CovGrid2D                                  &
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      const std::vector<double> & xPos = blocked_log->GetXpos();
-      const std::vector<double> & yPos = blocked_log->GetXpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetXposBlocked();
       int xInd, yInd;
       simbox->getIndexes(xPos[0], yPos[0], xInd, yInd);
       noiseData.addData(xInd, yInd, errWellOptScale[i]/globalNoise);
