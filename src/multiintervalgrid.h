@@ -36,6 +36,7 @@ public:
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetBackgroundParametersAllIntervals() const     { return background_parameters_    ;}
   const std::vector<NRLib::Grid<double> >                & GetBackgroundParametersForInterval(int i) const { return background_parameters_[i] ;}
   const std::string                                      & GetIntervalName(int i)                          { return interval_names_[i]        ;}
+  const std::vector<std::string>                         & GetIntervalNames()                        const { return interval_names_           ;}
   //const std::vector<Surface>                             & GetErodedSurfaces() const             { return eroded_surfaces_       ;}
   const std::vector<int>                                 & GetErosionPriorities() const                    { return erosion_priorities_       ;}
   const std::vector<std::string>                         & GetSurfaceFiles() const                         { return surface_files_            ;}

@@ -455,15 +455,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->setType(FFTGrid::PARAMETER);
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    bool is_segy     = false;
-    bool is_storm    = false;
-    FFTGrid          * fft_grid_old;
+    bool is_segy           = false;
+    bool is_storm          = false;
+    FFTGrid * fft_grid_old = NULL;
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
       is_segy = true;
     }
-    else if (seismic_type == 4) { //FFTGrid
+    else if (seismic_type == 3) { //FFTGrid
       fft_grid_old = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
     }
     else { //STORM / SGRI
@@ -479,7 +479,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     int missing_traces_padding = 0;
     int dead_traces_simbox     = 0;
 
+
+    //H Cut seismic against simbox before resampling to seis_cube_[i]
+
+
+
     NRLib::Grid<double> grid_tmp;
+    seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,
                             seis_cubes_[i],
                             simbox,
@@ -490,7 +496,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             missing_traces_simbox,
                             missing_traces_padding,
                             dead_traces_simbox,
-                            seis_cubes_[i]->getType(),
+                            FFTGrid::DATA,
                             scale,
                             is_segy,
                             is_storm);
