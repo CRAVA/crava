@@ -169,7 +169,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   // Building gravity matrix for each time vintage, using updated mean Vp in generating the grid.
   double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
 
-  Simbox * fullSizeTimeSimbox = NULL;
+  const Simbox * fullSizeTimeSimbox = NULL;
   if(simbox == NULL)
     fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
   else

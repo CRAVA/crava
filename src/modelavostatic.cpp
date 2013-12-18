@@ -119,7 +119,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
                                //ModelGeneral         *& model_general,
                                const InputFiles      * input_files,
                                CommonData            * common_data,
-                               Simbox                * simbox,
+                               const Simbox                * simbox,
                                int                     i_interval)
 {
   forward_modeling_        = model_settings->getForwardModeling();
@@ -139,12 +139,12 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 
     //Set up errCorr here
-    int nx  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNI();
-    int ny  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNJ();
-    int nz  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersForInterval(i_interval)[0].GetNK();
-    int nxp = model_settings->getNXpad();
-    int nyp = model_settings->getNYpad();
-    int nzp = model_settings->getNZpad();
+    int nx  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNI();
+    int ny  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNJ();
+    int nz  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNK();
+    int nxp = simbox->GetNXpad();
+    int nyp = simbox->GetNYpad();
+    int nzp = simbox->GetNZpad();
 
     err_corr_ = createFFTGrid(nx, ny, nz,
                               nxp, nyp, nzp,
@@ -217,7 +217,7 @@ ModelAVOStatic::~ModelAVOStatic(void)
 //}
 
 void
-ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
+ModelAVOStatic::checkAvailableMemory(const Simbox           * time_simbox,
                                      ModelSettings    * model_settings,
                                      const InputFiles * input_files)
 {
@@ -236,9 +236,9 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * time_simbox,
   FFTGrid * dummy_grid = new FFTGrid(time_simbox->getnx(),
                                      time_simbox->getny(),
                                      time_simbox->getnz(),
-                                     model_settings->getNXpad(),
-                                     model_settings->getNYpad(),
-                                     model_settings->getNZpad());
+                                     time_simbox->GetNXpad(),
+                                     time_simbox->GetNYpad(),
+                                     time_simbox->GetNZpad());
   long long int grid_size_pad = static_cast<long long int>(4)*dummy_grid->getrsize();
 
   delete dummy_grid;
@@ -604,7 +604,7 @@ void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>            
                                               const ModelSettings                      * model_settings,
                                               int                                        n_angles)
 {
-  int nzp     = model_settings->getNZpad();
+  int nzp     = time_simbox->GetNZpad();
   int nz      = time_simbox->getnz();
 
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {

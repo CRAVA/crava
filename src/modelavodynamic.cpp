@@ -441,9 +441,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   int nx  = simbox->getnx();
   int ny  = simbox->getny();
   int nz  = simbox->getnz();
-  int nxp = model_settings->getNXpad();
-  int nyp = model_settings->getNYpad();
-  int nzp = model_settings->getNZpad();
+  int nxp = simbox->GetNXpad();
+  int nyp = simbox->GetNYpad();
+  int nzp = simbox->GetNZpad();
 
   SegY          * segy  = NULL;
   StormContGrid * storm = NULL;
@@ -700,7 +700,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
           const std::vector<double> & synt_seis = common_data->GetSyntSeis(this_timelapse_)[i];
 
-          float z0      = blocked_log->GetZpos()[0];
+          float z0      = blocked_log->GetZposBlocked()[0];
           float dz      = simbox->getdz();
           int   nz      = synt_seis.size(); //simbox->getnz();
           float dz_well = simbox->getRelThick(blocked_log->GetIposVector()[0], blocked_log->GetJposVector()[0]) * dz;

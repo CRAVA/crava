@@ -1568,9 +1568,9 @@ void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLog
       faciesCountWell[i][f] = 0;
 
     if (faciesEstimInterval.size() > 0) {
-      const std::vector<double> xPos = bw[i]->GetXpos();
-      const std::vector<double> yPos = bw[i]->GetYpos();
-      const std::vector<double> zPos = bw[i]->GetZpos();
+      const std::vector<double> xPos = bw[i]->GetXposBlocked();
+      const std::vector<double> yPos = bw[i]->GetYposBlocked();
+      const std::vector<double> zPos = bw[i]->GetZposBlocked();
 
       //const double * xPos  = bw[i]->getXpos();
       //const double * yPos  = bw[i]->getYpos();
@@ -2587,9 +2587,9 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
         f = blocked_log->GetFaciesBlocked()[i];
 
         if (faciesEstimInterval.size() > 0) {
-          const std::vector<double> xPos = blocked_log->GetXpos();
-          const std::vector<double> yPos = blocked_log->GetYpos();
-          const std::vector<double> zPos = blocked_log->GetZpos();
+          const std::vector<double> xPos = blocked_log->GetXposBlocked();
+          const std::vector<double> yPos = blocked_log->GetYposBlocked();
+          const std::vector<double> zPos = blocked_log->GetZposBlocked();
           //const double * xPos  = bw->getXpos();
           //const double * yPos  = bw->getYpos();
           //const double * zPos  = bw->getZpos();
@@ -2835,9 +2835,9 @@ std::vector<double> FaciesProb::calculateChiSquareTest(std::map<std::string, Blo
     //const int    * jpos      = bw->getJpos();
     //const int    * kpos      = bw->getKpos();
     const double   dz        = bw->GetDz();
-    const std::vector<double> & xPos = bw->GetXpos();
-    const std::vector<double> & yPos = bw->GetYpos();
-    const std::vector<double> & zPos = bw->GetZpos();
+    const std::vector<double> & xPos = bw->GetXposBlocked();
+    const std::vector<double> & yPos = bw->GetYposBlocked();
+    const std::vector<double> & zPos = bw->GetZposBlocked();
     //const double * xPos      = bw->getXpos();
     //const double * yPos      = bw->getYpos();
     //const double * zPos      = bw->getZpos();
