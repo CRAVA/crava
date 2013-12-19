@@ -432,18 +432,6 @@ private:
                         std::string                       & err_text,
                         bool                                nopadding = true);
 
-  //void ReadGridFromFile(const std::string                 & file_name,
-  //                      const std::string                 & par_name,
-  //                      const float                         offset,
-  //                      NRLib::Grid<double>               & interval_grids,
-  //                      const SegyGeometry               *& geometry,
-  //                      const TraceHeaderFormat           * format,
-  //                      int                                 grid_type,
-  //                      const Simbox                      & simboxes,
-  //                      const ModelSettings               * model_settings,
-  //                      std::string                       & err_text,
-  //                      bool                                nopadding = true);
-
   //void ReadCravaFile(NRLib::Grid<double> & grid,
   //                   const std::string   & file_name,
   //                   std::string         & err_text);
@@ -492,7 +480,6 @@ private:
                              int                  n_fine,
                              int                  nz,
                              int                  nzp);
-                             //int                  grid_nk);
 
   void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
                                 float                      z0_grid,
@@ -503,12 +490,10 @@ private:
                                 int                        n_fine,
                                 int                        nz,
                                 int                        nzp);
-                                //int                        grid_nk);
 
   int GetZSimboxIndex(int k,
                       int nz,
                       int nzp);
-                      //int grid_nk);
 
   void SetTrace(const std::vector<float> & trace,
                 NRLib::Grid<double>      & grid,
@@ -664,9 +649,8 @@ private:
                         bool                   & failed,
                         int                      i_timelapse);
 
-  // EN kommentert ut fordi CRAVA ikke kompilerer så lenge den ikke er implementert
-  //void ReadAngularCorrelations(ModelSettings * model_settings,
-  //                             std::string   & err_text);
+  void ReadAngularCorrelations(ModelSettings * model_settings,
+                               std::string   & err_text);
 
   bool optimizeWellLocations();
   bool estimateWaveletShape();

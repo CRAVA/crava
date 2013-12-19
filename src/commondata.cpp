@@ -173,7 +173,9 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  //ReadAngularCorrelations(model_settings, err_text);
+  ReadAngularCorrelations(model_settings, err_text);
+
+  //TODO: Handle if err_text != "".
 
 }
 
@@ -4256,9 +4258,9 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
 
   int fileType = IO::findGridType(file_name);
 
-  if (fileType == IO::CRAVA) {
+  LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
 
-    LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
+  if (fileType == IO::CRAVA) {
 
     int nx_pad = estimation_simbox_.GetNXpad();
     int ny_pad = estimation_simbox_.GetNYpad();
@@ -4347,86 +4349,7 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
   else {
     err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
   }
-  //}
 }
-
-//void
-//CommonData::ReadGridFromFile(const std::string        & file_name,
-//                             const std::string        & par_name,
-//                             const float                offset,
-//                             NRLib::Grid<double>      & grid,
-//                             const SegyGeometry      *& geometry,
-//                             const TraceHeaderFormat  * format,
-//                             int                        grid_type,
-//                             const Simbox             & simbox,
-//                             const ModelSettings      * model_settings,
-//                             std::string              & err_text,
-//                             bool                       nopadding) {
-//
-//  //H This ReadGridFromFile is only used for Velocity, merge with the other ReadGridFromFile?
-//  int fileType = IO::findGridType(file_name);
-//
-//  (void) nopadding;
-//
-//  if (fileType == IO::CRAVA) {
-//    int nx = simbox.getnx();
-//    int ny = simbox.getny();
-//    int nz = simbox.getnz();
-//
-//    grid.Resize(nx, ny, nz);
-//
-//    LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-//
-//    ReadCravaFile(grid, file_name, err_text);
-//
-//    //H Alternative: Read in as a fftgrid->readCravaFile
-//    //Resample with FillInData.
-//
-//  }
-//  else {
-//    std::vector<NRLib::Grid<double> > grids(1);
-//    //grids.push_back(grid);
-//
-//    std::vector<Simbox> simboxes;
-//    simboxes.push_back(&simbox);
-//
-//    if (fileType == IO::SEGY)
-//      ReadSegyFile(file_name,
-//                   grids,
-//                   simboxes,
-//                   simbox,
-//                   model_settings,
-//                   geometry,
-//                   grid_type,
-//                   par_name,
-//                   offset,
-//                   format,
-//                   err_text);
-//    else if (fileType == IO::STORM)
-//      ReadStormFile(file_name,
-//                    grids,
-//                    grid_type,
-//                    par_name,
-//                    simboxes,
-//                    model_settings,
-//                    err_text,
-//                    false);
-//    else if (fileType == IO::SGRI)
-//      ReadStormFile(file_name,
-//                    grids,
-//                    grid_type,
-//                    par_name,
-//                    simboxes,
-//                    model_settings,
-//                    err_text,
-//                    true);
-//    else {
-//      err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
-//    }
-//
-//    grid = grids[0]; //H Reconstruct to avvoid copy of grid?
-//  }
-//}
 
 //void CommonData::ReadCravaFile(NRLib::Grid<double> & grid,
 //                               const std::string   & file_name,
@@ -7829,4 +7752,25 @@ CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, boo
 
   return(fft_grid);
 
+}
+
+void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
+                                         std::string   & err_text) {
+
+  for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
+
+    Vario * vario                     = model_settings->getAngularCorr(t);
+    int n_angles                      = model_settings->getNumberOfAngles(t);
+    const std::vector<float> & angles = model_settings->getAngle(t);
+
+    std::vector<std::vector<float> > angle_corr(n_angles);
+    for (int i = 0; i < n_angles; i++) {
+      angle_corr[i].resize(n_angles);
+      for (int j = 0; j < n_angles; j++) {
+        float d_angle = angles[i] - angles[j];
+        angle_corr[i][i] = vario->corr(d_angle, 0);
+      }
+    }
+    angular_correlations_.push_back(angle_corr);
+  }
 }

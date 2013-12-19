@@ -264,7 +264,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);*/
 
   // H TESTING WITHOUT CORRELATION DIRECTION
-  /*int n_layers = model_settings->getTimeNz();
+/*  int n_layers = model_settings->getTimeNz();
   Surface top_surface = eroded_surfaces[0];
   Surface base_surface = eroded_surfaces[1];
   interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
