@@ -76,7 +76,7 @@
 //
 //}
 
-BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                * well_data,
+BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
@@ -142,32 +142,40 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   n_blocks_     = 0;
   interpolate_  = interpolate;
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  facies_log_defined_ = false;
 
   bool failed = false;
+
+  // FACIES
+  if (well_data->HasFaciesLog()) {
+    facies_log_defined_ = true;
+    facies_map_ = well_data->GetFaciesMap();
+  }
 
   RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
-  if(failed)
-  err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+  if (failed)
+    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
-  if(!failed){
-    if(interval_simboxes.size() == 1){
+  if (!failed) {
+    if (interval_simboxes.size() == 1) {
       // If there is only one interval, the well can be blocked as before.
+      n_layers_ = interval_simboxes[0].getnz();
       BlockWell(&interval_simboxes[0], continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+                discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
     }
-    else{
+    else {
       // If there are multiple intervals, special treatment is required. Neighbouring cells vertically
       // must have the same correlation within each trace.
       BlockWellForCorrelationEstimation(multiple_interval_grid, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
+                                        discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
     }
   }
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
+  n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 }
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
@@ -175,7 +183,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
-                                     std::string                      & err_text){
+                                     std::string                      & err_text) {
   n_angles_ = 0;
   well_name_ = well_data->GetWellName();
   n_layers_ = estimation_simbox->getnz();

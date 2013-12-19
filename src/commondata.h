@@ -411,13 +411,13 @@ private:
                                 const std::vector<Simbox>                       & interval_simboxes,
                                 std::string                                     & err_text);
 
-  //static FFTGrid  * CreateFFTGrid(int nx,
-  //                                int ny,
-  //                                int nz,
-  //                                int nxp,
-  //                                int nyp,
-  //                                int nzp,
-  //                                bool fileGrid);
+  static FFTGrid  * CreateFFTGrid(int nx,
+                                  int ny,
+                                  int nz,
+                                  int nxp,
+                                  int nyp,
+                                  int nzp,
+                                  bool file_grid);
 
   void ReadGridFromFile(const std::string                 & file_name,
                         const std::string                 & par_name,
@@ -432,21 +432,21 @@ private:
                         std::string                       & err_text,
                         bool                                nopadding = true);
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        NRLib::Grid<double>               & interval_grids,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const Simbox                      & simboxes,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  //void ReadGridFromFile(const std::string                 & file_name,
+  //                      const std::string                 & par_name,
+  //                      const float                         offset,
+  //                      NRLib::Grid<double>               & interval_grids,
+  //                      const SegyGeometry               *& geometry,
+  //                      const TraceHeaderFormat           * format,
+  //                      int                                 grid_type,
+  //                      const Simbox                      & simboxes,
+  //                      const ModelSettings               * model_settings,
+  //                      std::string                       & err_text,
+  //                      bool                                nopadding = true);
 
-  void ReadCravaFile(NRLib::Grid<double> & grid,
-                     const std::string   & file_name,
-                     std::string         & err_text);
+  //void ReadCravaFile(NRLib::Grid<double> & grid,
+  //                   const std::string   & file_name,
+  //                   std::string         & err_text);
 
   void GetZPaddingFromCravaFile(const std::string & file_name,
                                 std::string       & err_text,
@@ -551,24 +551,14 @@ private:
   double FindMeanVsVp(NRLib::Grid<double> & vp,
                       NRLib::Grid<double> & vs);
 
-  //void GetAvgMinMaxGrid(const NRLib::Grid<double> & grid,
-  //                      double                    & avg,
-  //                      double                    & min,
-  //                      double                    & max);
-
   void SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid,
                                             const double          avg);
-
-  //void LogTransformGrid(NRLib::Grid<double> & grid);
 
   void SubtractGrid(NRLib::Grid<double>       & to_grid,
                     const NRLib::Grid<double> & from_grid);
 
   void ChangeSignGrid(NRLib::Grid<double> & grid);
 
-  //void LoadVelocity(FFTGrid             *& velocity,
-  //                  const Simbox         * interval_simbox, //timeSimbox,
-  //                  const Simbox         * simbox, //timeCutSimbox,
   void LoadVelocity(NRLib::Grid<double>  & velocity,
                     const Simbox         & interval_simbox,
                     const ModelSettings  * model_settings,
@@ -683,8 +673,6 @@ private:
 
   int ComputeTime(int year, int month, int day) const;
 
-  //FFTGrid * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid);
-
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
@@ -734,19 +722,16 @@ private:
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
   // prior facies
-  std::vector<std::vector<float> >               prior_facies_;                  ///< Prior facies probabilities
-  std::vector<Surface *>                         facies_estim_interval_;
-
-  //std::vector<std::vector<FFTGrid *> >          prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities //H Need to move this to multi_interval_grid_
-  //std::vector<std::vector<NRLib::Grid<double> > > prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities. Vector(facies) vector(intervals).
+  std::vector<std::vector<float> >                   prior_facies_;                  ///< Prior facies probabilities
+  std::vector<Surface *>                             facies_estim_interval_;
 
   // Timeline
-  TimeLine                                    * time_line_;
+  TimeLine                                         * time_line_;
 
-  bool                                          forward_modeling_;
+  bool                                               forward_modeling_;
 
-  std::map<int, float **>                       reflection_matrix_; //Map timelapse
-  bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
+  std::map<int, float **>                            reflection_matrix_; //Map timelapse
+  bool                                               refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
   std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
   std::map<int, std::vector<Grid2D *> >              local_noise_scale_;
@@ -766,7 +751,7 @@ private:
   std::vector<std::vector<std::string> >        facies_names_wells_;            ///< Facies Names per well
   std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
-  std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells. (Intervals?)
+  std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells.
   std::vector<int>                              facies_labels_;
 
   // Prior correlation
@@ -794,8 +779,6 @@ private:
 
   //Angular correlations
   std::vector<std::vector<std::vector<float> > > angular_correlations_;
-  //std::vector<Vario *>                          angular_correlations_;
-
 
 };
 #endif

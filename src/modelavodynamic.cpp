@@ -392,13 +392,11 @@
 //}
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
-                                 //const InputFiles        * input_files,
                                  ModelAVOStatic          * model_avo_static,
                                  ModelGeneral            * model_general,
                                  CommonData              * common_data,
                                  SeismicParametersHolder & seismic_parameters,
                                  const Simbox            * simbox,
-                                 //const Surface           * correlationDirection,
                                  //const GridMapping       * timeDepthMapping,
                                  //const GridMapping       * timeCutMapping,
                                  int                       t,
@@ -478,10 +476,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     int missing_traces_simbox  = 0;
     int missing_traces_padding = 0;
     int dead_traces_simbox     = 0;
-
-
-    //H Cut seismic against simbox before resampling to seis_cube_[i]
-
 
 
     NRLib::Grid<double> grid_tmp;
@@ -656,11 +650,16 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
       wavelets_[i]->SetReflectionCoeffs(*reflection_matrix_);
 
+
+      //Resample wavelet for this interval
+      wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
+                             simbox->getnz(),
+                             simbox->GetNZpad());
+
       LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
 
-        //H
         std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
         int w = 0;
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
@@ -672,9 +671,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           w++;
         }
 
-        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox, //common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
                                                                      seis_logs,
-                                                                     //&seismic_data[i],
                                                                      mapped_blocked_logs,
                                                                      model_settings,
                                                                      err_text,

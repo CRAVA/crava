@@ -19,13 +19,12 @@ class BlockedLogsCommon{
 public:
 
   // Constructor for wavelet estimation blocking
-  BlockedLogsCommon(const NRLib::Well     * well_data,
-                    const Simbox    * const estimation_simbox,
-                    bool              interpolate,
-                    //bool            & failed,
-                    std::string     & err_text,
-                    float             max_hz_background = 0.0,
-                    float             max_hz_seismic = 0.0);
+  //BlockedLogsCommon(const NRLib::Well * well_data,
+  //                  const Simbox      * const estimation_simbox,
+  //                  bool                interpolate,
+  //                  std::string       & err_text,
+  //                  float               max_hz_background = 0.0,
+  //                  float               max_hz_seismic = 0.0);
 
   // Constructor for correlation estimation blocking
   BlockedLogsCommon(const NRLib::Well                * well_data,
