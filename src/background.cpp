@@ -20,8 +20,6 @@
 #include "src/modelsettings.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-//#include "src/welldata.h"
-//#include "nrlib/well/well.hpp"
 #include "src/background.h"
 #include "src/covgrid2d.h"
 #include "src/krigingdata2d.h"

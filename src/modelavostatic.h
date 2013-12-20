@@ -57,20 +57,13 @@ public:
 
   //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
   //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
-  void             writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                      ModelSettings                            * model_settings,
                                      std::vector<std::string>                   facies_name,
                                      std::vector<int>                           facies_label) const;
 
-  //void             addSeismicLogs(std::vector<WellData *>     wells,
-  //                                FFTGrid                  ** seisCube,
-  //                                const ModelSettings       * modelSettings,
-  //                                int                         nAngles);                              // Changes wells
-
-  void             addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                   std::vector<FFTGrid *>                     seis_cube,
-                                  //FFTGrid                                 ** seis_cube,
-                                  //const ModelSettings                      * model_settings,
                                   int                                        n_angles);                              // Changes wells
 
   //void             generateSyntheticSeismic(Wavelet              ** wavelet,
@@ -80,14 +73,14 @@ public:
   //                                          const ModelSettings   * modelSettings,
   //                                          int                     nAngles);                    // Changes wells
 
-  void             generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
+  void             GenerateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
                                             std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                             const float *                      const * reflection_matrix,
                                             const Simbox                             * time_simbox,
                                             const ModelSettings                      * model_settings,
                                             int                                        n_angles);
 
-  static FFTGrid *        createFFTGrid(int nx,  int ny,  int nz,
+  static FFTGrid *        CreateFFTGrid(int nx,  int ny,  int nz,
                                         int nxp, int nyp, int nzp,
                                         bool file_grid);
 
@@ -109,7 +102,7 @@ private:
   //                                   std::string            & errText,
   //                                   bool                   & failed);
 
-  void             checkAvailableMemory(const Simbox              * time_simbox,
+  void             CheckAvailableMemory(const Simbox              * time_simbox,
                                         ModelSettings       * model_settings,
                                         const InputFiles    * input_files);
 

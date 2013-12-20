@@ -14,7 +14,6 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/vario.h"
-//#include "src/welldata.h"
 #include "src/krigingdata3d.h"
 #include "src/covgridseparated.h"
 #include "src/krigingadmin.h"
@@ -145,7 +144,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
       spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
-      //FFTGrid * alphaCov = seismicParameters.GetCovVp();
       FFTGrid * covVp = seismicParameters.GetCovVp();
       covVp->setAccessMode(FFTGrid::RANDOMACCESS);
 
@@ -282,7 +280,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     //H Writing of wells? Why is this done for each timelapse?
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
-      modelAVOstatic->writeBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
+      modelAVOstatic->WriteBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
@@ -1856,8 +1854,6 @@ AVOInversion::fillInverseAbskWRobust_flens(int                     k,
     }
   }
 }
-
-
 
 FFTGrid*
 AVOInversion::createFFTGrid()

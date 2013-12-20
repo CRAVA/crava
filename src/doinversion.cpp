@@ -160,7 +160,6 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelAVOStatic          * modelAVOstatic,
                              CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
-                             //InputFiles              * inputFiles,
                              int                       vintage,
                              int                       i_interval)
 {
@@ -170,13 +169,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   // Wells are adjusted by ModelAVODynamic constructor.
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
-                                        //inputFiles,
                                         modelAVOstatic,
                                         modelGeneral,
                                         commonData,
                                         seismicParameters,
                                         modelGeneral->getTimeSimbox(),
-                                        //modelGeneral->getCorrelationDirection(),
                                         //modelGeneral->getTimeDepthMapping(),
                                         //modelGeneral->getTimeCutMapping(),
                                         vintage,
@@ -191,20 +188,10 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
     delete avoinversion;
   }
 
-  //H Changed from float * to map i BlockedLogsCommon
-  //modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
-
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
-
-
 }
-
-
-
-
-
 
 bool
 doTimeLapseTravelTimeInversion(const ModelSettings           * modelSettings,

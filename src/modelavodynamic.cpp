@@ -392,13 +392,11 @@
 //}
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
-                                 //const InputFiles        * input_files,
                                  ModelAVOStatic          * model_avo_static,
                                  ModelGeneral            * model_general,
                                  CommonData              * common_data,
                                  SeismicParametersHolder & seismic_parameters,
                                  const Simbox            * simbox,
-                                 //const Surface           * correlationDirection,
                                  //const GridMapping       * timeDepthMapping,
                                  //const GridMapping       * timeCutMapping,
                                  int                       t,
@@ -421,9 +419,17 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
   //matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
-  wavelets_.resize(number_of_angles_);
+  wavelets_.  resize(number_of_angles_);
   seis_cubes_.resize(number_of_angles_);
-  sn_ratio_.resize(number_of_angles_);
+  sn_ratio_.  resize(number_of_angles_);
+
+  theta_deg_       = new float[number_of_angles_];
+  data_variance_   = new float[number_of_angles_];
+  error_variance_  = new float[number_of_angles_];
+  model_variance_  = new float[number_of_angles_];
+  signal_variance_ = new float[number_of_angles_];
+  theo_sn_ratio_   = new float[number_of_angles_];
+  err_theta_cov_   = new double*[number_of_angles_];
 
   const std::vector<SeismicStorage> & seismic_data  = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
@@ -450,20 +456,20 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   for (int i = 0; i < number_of_angles_; i++) {
 
-    seis_cubes_[i] = ModelAVOStatic::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
+    seis_cubes_[i] = ModelAVOStatic::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
     seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::PARAMETER);
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    bool is_segy     = false;
-    bool is_storm    = false;
-    FFTGrid          * fft_grid_old;
+    bool is_segy           = false;
+    bool is_storm          = false;
+    FFTGrid * fft_grid_old = NULL;
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
       is_segy = true;
     }
-    else if (seismic_type == 4) { //FFTGrid
+    else if (seismic_type == 3) { //FFTGrid
       fft_grid_old = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
     }
     else { //STORM / SGRI
@@ -480,6 +486,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     int dead_traces_simbox     = 0;
 
     NRLib::Grid<double> grid_tmp;
+    seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,
                             seis_cubes_[i],
                             simbox,
@@ -490,10 +497,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             missing_traces_simbox,
                             missing_traces_padding,
                             dead_traces_simbox,
-                            seis_cubes_[i]->getType(),
+                            FFTGrid::DATA,
                             scale,
                             is_segy,
                             is_storm);
+    seis_cubes_[i]->endAccess();
 
     if (fft_grid_old != NULL)
       delete fft_grid_old;
@@ -518,40 +526,34 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   //Logging from processSeismic
-  LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-  LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
 
-  for (int i = 0; i < number_of_angles_; i++) {
-    if (seis_cubes_[i] != NULL) {
-      double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
-      if (geo_angle < 0)
-        geo_angle += 360.0;
 
+  bool segy_volumes_read = false;
+  for (int i = 0; i < number_of_angles_ ; i++) {
+    int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+    if (seismic_type == 0) //(geometry[i] != NULL)
+      segy_volumes_read = true;
+  }
+  if (segy_volumes_read) {
+    LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+    LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+    for (int i = 0; i < number_of_angles_; i++) {
       int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-
-      if (seismic_type == 0) {
-
-        SegY * segy = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
-
+      if (seismic_type == 0) { //(geometry[i] != NULL) {
+        double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
+        if (geo_angle < 0)
+          geo_angle += 360.0;
         LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
                              segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
                              segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
                              segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
-
       }
-      else {
-
-        StormContGrid * storm = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
-
-        LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                             storm->GetXMin(), storm->GetYMin(),
-                             storm->GetLX(),   storm->GetLY(), geo_angle,
-                             storm->GetDX(),   storm->GetDY());
-
-      }
-
     }
   }
+  //LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+  //                     storm->GetXMin(), storm->GetYMin(),
+  //                     storm->GetLX(),   storm->GetLY(), geo_angle,
+  //                     storm->GetDX(),   storm->GetDY());
 
   //H Missing from processSeismic:
   //seisCube[i]->writeFile
@@ -560,7 +562,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
   //Or should this have been set in CommonData::ReadWellData?
   if (model_general->getMultiInterval() == false) {
-    model_avo_static->addSeismicLogs(model_general->getBlockedWells(),
+    model_avo_static->AddSeismicLogs(model_general->getBlockedWells(),
                                      seis_cubes_,
                                      number_of_angles_);
   }
@@ -574,7 +576,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     vsvp = 1 / vpvs;
   }
   else if (model_settings->getVpVsRatioFromWells()) { //wells
-    vsvpFromWells(model_general->getBlockedWells(),
+    VsVpFromWells(model_general->getBlockedWells(),
                   common_data,
                   i_interval,
                   vsvp,
@@ -654,7 +656,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
 
-        //H
         std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
         int w = 0;
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
@@ -666,9 +667,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           w++;
         }
 
-        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox, //common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
                                                                      seis_logs,
-                                                                     //&seismic_data[i],
                                                                      mapped_blocked_logs,
                                                                      model_settings,
                                                                      err_text,
@@ -694,10 +694,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
           const std::vector<double> & synt_seis = common_data->GetSyntSeis(this_timelapse_)[i];
 
-          float z0      = blocked_log->GetZposBlocked()[0];
-          float dz      = simbox->getdz();
-          int   nz      = synt_seis.size(); //simbox->getnz();
-          float dz_well = simbox->getRelThick(blocked_log->GetIposVector()[0], blocked_log->GetJposVector()[0]) * dz;
+          double z0      = blocked_log->GetZposBlocked()[0];
+          double dz      = simbox->getdz();
+          int    nz      = synt_seis.size(); //simbox->getnz();
+          double dz_well = simbox->getRelThick(blocked_log->GetIposVector()[0], blocked_log->GetJposVector()[0]) * dz;
 
           blocked_log->SetLogFromVerticalTrend(synt_seis, z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, number_of_angles_);
 
@@ -745,34 +745,39 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     else {
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
+
+      //Resample wavelet for this interval
+      wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
+                             simbox->getnz(),
+                             simbox->GetNZpad());
+
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    model_avo_static->generateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
+    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
   //H Move from AVODynamic, so it wont be written out per interval. Where to?
   if (estimation_mode)
-    model_avo_static->writeBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
+    model_avo_static->WriteBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
 
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
-
-  //nx  = seismicParameters.GetMeanVp()->getNx(); //H Not use simbox?
-
+  //H-DEBUGGING
   fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
+    err_theta_cov_[i] = new double[number_of_angles_];
     theta_deg_[i]     = static_cast<float>(angle_[i]*180.0/NRLib::Pi);
   }
 
-  computeDataVariance(seis_cubes_,
+  ComputeDataVariance(seis_cubes_,
                       data_variance_,
                       nx,  ny,  nz,
                       nxp, nyp, nzp);
 
-  setupErrorCorrelation(local_noise_scale_,
+  SetupErrorCorrelation(local_noise_scale_,
                         data_variance_,
                         error_variance_,
                         err_theta_cov_);
@@ -804,8 +809,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   // Compute variation in wavelet
+  //H-DEBUGGING
   for (int l=0; l < number_of_angles_; l++) {
-    wd_corr_mvar[l] = computeWDCorrMVar(error_smooth[l], corrT, nzp);
+    wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
   }
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
@@ -1237,7 +1243,8 @@ ModelAVODynamic::~ModelAVODynamic(void)
   //  delete [] seisCube_;
   //}
   for (int i=0;i<number_of_angles_;i++)
-    delete seis_cubes_[i];
+    if (seis_cubes_[i] != NULL)
+      delete seis_cubes_[i];
 }
 
 void
@@ -1759,7 +1766,7 @@ ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
 //  return static_cast<double>(VsVp);
 //}
 
-void ModelAVODynamic::vsvpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
+void ModelAVODynamic::VsVpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     CommonData                                     * common_data,
                                     int                                              i_interval,
                                     double                                         & vs_vp,
@@ -2394,7 +2401,7 @@ void ModelAVODynamic::vsvpFromWells(const std::map<std::string, BlockedLogsCommo
 //}
 
 bool
-ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
+ModelAVODynamic::FindTimeGradientSurface(const std::string    & refTimeFile,
                                          const Simbox         * simbox,
                                          NRLib::Grid2D<float> & refTimeGradX,
                                          NRLib::Grid2D<float> & refTimeGradY)
@@ -2619,7 +2626,7 @@ ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
 
 
 void
-ModelAVODynamic::computeDataVariance(std::vector<FFTGrid *> & seis_data,
+ModelAVODynamic::ComputeDataVariance(std::vector<FFTGrid *> & seis_data,
                                      float                  * data_variance,
                                      int                      nx,
                                      int                      ny,
@@ -2667,7 +2674,7 @@ ModelAVODynamic::computeDataVariance(std::vector<FFTGrid *> & seis_data,
 }
 
 void
-ModelAVODynamic::setupErrorCorrelation(const std::vector<Grid2D *> & noise_scale,
+ModelAVODynamic::SetupErrorCorrelation(const std::vector<Grid2D *> & noise_scale,
                                        const float                 * data_variance,
                                        float                       * error_variance,
                                        double                     ** err_theta_cov)
@@ -2676,39 +2683,27 @@ ModelAVODynamic::setupErrorCorrelation(const std::vector<Grid2D *> & noise_scale
   //  Setup error correlation matrix
   //
 
-  for (int l=0; l < number_of_angles_; l++)
-  {
-    //empSNRatio_[l] = getSNRatio(l);
-
+  for (int l = 0; l < number_of_angles_; l++) {
     if (use_local_noise_ == true) {
       double minScale = noise_scale[l]->FindMin(RMISSING);
       error_variance[l] = float(data_variance[l]*minScale/sn_ratio_[l]);
     }
     else
       error_variance[l] = data_variance[l]/sn_ratio_[l];
-
-    //if (SNRatio_[l] < 1.1f)
-    //{
-    //  LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,SNRatio_[l]);
-    //  LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-    //  LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
-    //  exit(1);
-    //}
   }
-
-  //const std::vector<std::vector<float> > & angularCorr = modelAVOdynamic_->getAngularCorr();
 
   for (int i = 0; i < number_of_angles_; i++) {
     for (int j = 0; j < number_of_angles_; j++) {
-        err_theta_cov[i][j] = static_cast<float>(sqrt(error_variance_[i])
-                                                *sqrt(error_variance_[j])
-                                                *angular_corr_[i][j]);
+
+      err_theta_cov[i][j] = static_cast<float>(sqrt(error_variance_[i])
+                                              *sqrt(error_variance_[j])
+                                              *angular_corr_[i][j]);
     }
   }
 }
 
 float
-ModelAVODynamic::computeWDCorrMVar(Wavelet1D* WD,
+ModelAVODynamic::ComputeWDCorrMVar(Wavelet1D* WD,
                                    fftw_real* corrT,
                                    int        nzp)
 {

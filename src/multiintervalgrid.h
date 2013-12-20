@@ -40,6 +40,7 @@ public:
   const std::vector<std::vector<NRLib::Grid<double> > >  & GetParametersAllIntervals() const     { return background_parameters_    ;}
   const std::vector<NRLib::Grid<double> >                & GetParametersForInterval(int i) const { return background_parameters_[i] ;}
   const std::string                                      & GetIntervalName(int i)                { return interval_names_[i]        ;}
+  const std::vector<std::string>                         & GetIntervalNames()                    { return interval_names_           ;}
   const std::vector<int>                                 & GetErosionPriorities() const          { return erosion_priorities_       ;}
   const std::vector<std::string>                         & GetSurfaceFiles() const               { return surface_files_            ;}
   const std::vector<double>                              & GetRelativeGridResolution() const     { return relative_grid_resolution_ ;}
@@ -94,6 +95,7 @@ private:
   void  SetupIntervalSimbox(ModelSettings                               * model_settings,
                             const Simbox                                * estimation_simbox,
                             Simbox                                      & interval_simboxes,
+                            const std::vector<Surface>                  & eroded_surfaces,
                             const std::string                           & corr_dir_single_surf,
                             const std::string                           & corr_dir_top_surf,
                             const std::string                           & corr_dir_base_surf,

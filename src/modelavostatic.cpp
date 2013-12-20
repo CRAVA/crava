@@ -129,7 +129,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     //
     // INVERSION/ESTIMATION
     //
-    checkAvailableMemory(simbox, model_settings, input_files);
+    CheckAvailableMemory(simbox, model_settings, input_files);
     bool estimationMode = model_settings->getEstimationMode();
     if (estimationMode == false)
       facies_estim_interval_ = common_data->GetFaciesEstimInterval(); //Read in in CommonData under SetupPriorFaciesProb based on estimation_simbox. Should this have been per interval?
@@ -146,7 +146,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
 
-    err_corr_ = createFFTGrid(nx, ny, nz,
+    err_corr_ = CreateFFTGrid(nx, ny, nz,
                               nxp, nyp, nzp,
                               model_settings->getFileGrid());
     err_corr_ ->setType(FFTGrid::COVARIANCE);
@@ -154,16 +154,16 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
     float corr_grad_I = 0.0f;
     float corr_grad_J = 0.0f;
-    //commonData::GetCorrGradIJ(timeSimbox, corrGradI, corrGradJ);  //H COMES LATER
+    common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
-    //H Commenting out for debugging
-    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+    //H-DEBUGGING
+    err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
-    checkAvailableMemory(simbox, model_settings, input_files);
+    CheckAvailableMemory(simbox, model_settings, input_files);
 
   }
   else // forward modeling
-    checkAvailableMemory(simbox, model_settings, input_files);
+    CheckAvailableMemory(simbox, model_settings, input_files);
 }
 
 
@@ -217,7 +217,7 @@ ModelAVOStatic::~ModelAVOStatic(void)
 //}
 
 void
-ModelAVOStatic::checkAvailableMemory(const Simbox           * time_simbox,
+ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
                                      ModelSettings    * model_settings,
                                      const InputFiles * input_files)
 {
@@ -520,15 +520,11 @@ ModelAVOStatic::checkAvailableMemory(const Simbox           * time_simbox,
 //    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
 //}
 
-void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+void ModelAVOStatic::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                        ModelSettings                            * model_settings,
                                        std::vector<std::string>                   facies_name,
                                        std::vector<int>                           facies_label) const
 {
-  //int nWells  = modelSettings->getNumberOfWells();
-  //for(int i=0;i<nWells;i++)
-  //  wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
-
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
@@ -558,7 +554,7 @@ void ModelAVOStatic::writeBlockedWells(std::map<std::string, BlockedLogsCommon *
 //  }
 //}
 
-void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+void ModelAVOStatic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     std::vector<FFTGrid *>                     seis_cube,
                                     int                                        n_angles)
 {
@@ -597,7 +593,7 @@ void ModelAVOStatic::addSeismicLogs(std::map<std::string, BlockedLogsCommon *> b
 //  }
 //}
 
-void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
+void ModelAVOStatic::GenerateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
                                               std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                               const float *                      const * reflection_matrix,
                                               const Simbox                             * time_simbox,
@@ -618,7 +614,7 @@ void ModelAVOStatic::generateSyntheticSeismic(std::vector<Wavelet *>            
 
 //-------------------------------------------------------------------
 FFTGrid *
-ModelAVOStatic::createFFTGrid(int nx,  int ny,  int nz,
+ModelAVOStatic::CreateFFTGrid(int nx,  int ny,  int nz,
                               int nxp, int nyp, int nzp,
                               bool file_grid)
 {

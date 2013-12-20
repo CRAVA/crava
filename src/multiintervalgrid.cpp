@@ -41,6 +41,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
     background_parameters_.resize(n_intervals_);
+    for(int i = 0; i < n_intervals_; i++)
+      background_parameters_[i].resize(3);
     background_vs_vp_ratios_.resize(n_intervals_);
   }
   // if there is only one interval
@@ -54,6 +56,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     surfaces.resize(1);
     interval_simboxes_.resize(1);
     background_parameters_.resize(1);
+    background_parameters_[0].resize(3);
     background_vs_vp_ratios_.resize(1);
   }
 
@@ -124,10 +127,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   //interval_simboxes_.resize(interval_names_.size()); //H Removed
 
-  //H Testing while SetupIntervalSimbox is uncomplete.
-  //interval_names_.push_back("test");
-  //multiple_interval_setting_ = true;
-
   if (!failed){
     try{
       // if multiple-intervals keyword is used in model settings
@@ -155,6 +154,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         SetupIntervalSimbox(model_settings,
                             estimation_simbox,
                             interval_simboxes_[0],
+                            eroded_surfaces, //H Added for testing
                             input_files->getCorrDirFile(),
                             input_files->getCorrDirTopFile(),
                             input_files->getCorrDirBaseFile(),
@@ -239,6 +239,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const{
 void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                               * model_settings,
                                              const Simbox                                * estimation_simbox,
                                              Simbox                                      & interval_simbox,
+                                             const std::vector<Surface>                  & eroded_surfaces, //H Added for testing
                                              const std::string                           & corr_dir_single_surf,
                                              const std::string                           & corr_dir_top_surf,
                                              const std::string                           & corr_dir_base_surf,
@@ -249,24 +250,36 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
                                              std::string                                 & err_text,
                                              bool                                        & failed) const{
 
-/*
-  // H TESTING WITH ONE CORRELATION DIRECTION
-  Surface * corr_surf     = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
-  int n_layers = model_settings->getTimeNz();
-  Surface top_surface = eroded_surfaces_[0];
-  Surface base_surface = eroded_surfaces_[1];
-  interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
 
+  bool                   corr_dir                               = false;
+  Surface                top_surface                            = eroded_surfaces[0];
+  Surface                base_surface                           = eroded_surfaces[1];
+  int                    n_layers                               = model_settings->getTimeNz();
+
+  //H-DEBUGGING Added cases for debugging
+  /*
+  // Case 1: Single correlation surface
+  if (corr_dir_single_surf != "") {
+    Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
+    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
     const SegyGeometry * area_params = model_settings->getAreaParameters();
     failed = interval_simbox.setArea(area_params, err_text);
 
-  interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+  }
+  else {
+    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
+    const SegyGeometry * area_params = model_settings->getAreaParameters();
+    failed = interval_simbox.setArea(area_params, err_text);
 
-  EstimateXYPaddingSizes(&interval_simbox, model_settings);
+    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+  }
 
+  interval_simbox.SetNXpad(estimation_simbox->GetNXpad());
+  interval_simbox.SetNYpad(estimation_simbox->GetNYpad());
+  interval_simbox.SetXPadFactor(estimation_simbox->GetXPadFactor());
+  interval_simbox.SetYPadFactor(estimation_simbox->GetYPadFactor());
   */
-
-
 
   // Calculate Z padding ----------------------------------------------------------------
   int status = interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
@@ -355,7 +368,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         err_text += ".\n";
         failed = true;
       }
-      
+
 
     }
     // Calculate Z padding ----------------------------------------------------------------
@@ -375,7 +388,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
       if(interval_simboxes[i].status() == Simbox::BOXOK){
         if(corr_dir){
-          LogIntervalInformation(interval_simboxes[i], interval_names[i], 
+          LogIntervalInformation(interval_simboxes[i], interval_names[i],
             "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
         }
         else{
