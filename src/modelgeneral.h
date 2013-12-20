@@ -59,27 +59,33 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                   * getTimeSimbox()            const { return simbox_                 ;}
-  //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
-  RandomGen                * getRandomGen()             const { return random_gen_              ;}
-  GridMapping              * getTimeDepthMapping()      const { return time_depth_mapping_       ;}
-  //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
-  CravaTrend               & getTrendCubes()                  { return trend_cubes_            ;}
-  CravaTrend                 getTrendCubes()            const { return trend_cubes_            ;}
-  //Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
+  const Simbox                             * getTimeSimbox()            const { return simbox_                  ;}
+  RandomGen                                * getRandomGen()             const { return random_gen_              ;}
+  GridMapping                              * getTimeDepthMapping()      const { return time_depth_mapping_      ;}
+  CravaTrend                               & getTrendCubes()                  { return trend_cubes_             ;}
+  CravaTrend                                 getTrendCubes()            const { return trend_cubes_             ;}
+  bool                                       getVelocityFromInversion() const { return velocity_from_inversion_ ;}
+  bool                                       getMultiInterval()         const { return multi_interval_          ;}
+  State4D                                    getState4D()               const { return state4d_                 ;}
+  TimeLine                                 * getTimeLine()              const { return time_line_               ;}
+  std::map<std::string, BlockedLogsCommon *> getBlockedWells()                { return blocked_logs_            ;}
+  const std::vector<float>                 & getPriorFacies()       /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>             & getPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string>           & getFaciesNames(void)       const { return facies_names_            ;}
+  std::vector<int>                           getFaciesLabel()           const { return facies_labels_           ;}
+  bool                                       getIs4DActive()            const { return(do_4D_inversion_)        ;}
 
-  bool                       getVelocityFromInversion() const { return velocity_from_inversion_  ;}
-  bool                       getMultiInterval()         const { return multi_interval_          ;}
+  void addFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
+  void addFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
+
+  //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
+  //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
+  //Surface                  * getPriorCorrXY()           const { return priorCorrXY_            ;}
   //bool                       getFailed()                const { return failed_                 ;}
   //std::vector<bool>          getFailedDetails()         const { return failed_details_         ;}
-
   //void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   //Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
-  State4D                    getState4D()               const { return state4d_                ;}
-
-  TimeLine                 * getTimeLine()              const { return time_line_               ;}
   //std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
-  std::map<std::string, BlockedLogsCommon *> getBlockedWells()    { return blocked_logs_           ;}
 
   //static void                readSegyFile(const std::string       & fileName,
   //                                        FFTGrid                *& target,
@@ -109,16 +115,6 @@ public:
   //                                         bool                 nopadding = true);
 
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
-
-  const std::vector<float>       & getPriorFacies()           /*const*/ { return prior_facies_            ;}
-  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return prior_facies_prob_cubes_ ;}
-  const std::vector<std::string> & getFaciesNames(void)           const { return facies_names_            ;}
-  std::vector<int>                 getFaciesLabel()               const { return facies_labels_           ;}
-
-  void addFaciesLabel(int faciesLabel)                    { facies_labels_.push_back(faciesLabel) ;}
-  void addFaciesName(const std::string & faciesName)      { facies_names_.push_back(faciesName)   ;}
-
-  bool getIs4DActive() const {return(do_4D_inversion_);}
 
   static FFTGrid  * createFFTGrid(int nx,
                                   int ny,
@@ -202,18 +198,18 @@ public:
    //                                       std::string                  & errTxt,
    //                                       const InputFiles             * inputFiles);
 
-  void              generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                    const std::vector<float>                         & probability,
-                                                    FFTGrid                                          & vp,
-                                                    FFTGrid                                          & vs,
-                                                    FFTGrid                                          & rho);
+  //void              generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
+  //                                                  const std::vector<float>                         & probability,
+  //                                                  FFTGrid                                          & vp,
+  //                                                  FFTGrid                                          & vs,
+  //                                                  FFTGrid                                          & rho);
 
   void              calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
                                                         const std::vector<float>                         & probability,
                                                         NRLib::Grid2D<double>                            & param_corr,
                                                         std::string                                      & errTxt);
 
-  void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
+  void              Complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
   //void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
   bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
@@ -240,15 +236,15 @@ private:
 
   //void              setFaciesNamesFromRockPhysics();
 
-  void              setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
-                                              const std::vector<float>                         & probability,
-                                              const Simbox                                     & timeSimbox,
-                                              const ModelSettings                              & modelSettings,
-                                              SeismicParametersHolder                          & seismicParameters,
-                                              State4D                                          & state4d,
-                                              std::string                                      & errTxt);
+  //void              setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
+  //                                            const std::vector<float>                         & probability,
+  //                                            const Simbox                                     & timeSimbox,
+  //                                            const ModelSettings                              & modelSettings,
+  //                                            SeismicParametersHolder                          & seismicParameters,
+  //                                            State4D                                          & state4d,
+  //                                            std::string                                      & errTxt);
 
-  void              copyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,
+  void              CopyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,
                                               State4D                                    & state4d);
 
   //bool              process4DBackground(ModelSettings           *& modelSettings,
@@ -259,7 +255,7 @@ private:
   //                                      NRLib::Vector            & initialMean,
   //                                      NRLib::Matrix            & initialCov);
 
-  void              setupState4D(ModelSettings           *& modelSettings,
+  void              SetupState4D(ModelSettings           *& modelSettings,
                                  SeismicParametersHolder  & seismicParameters,
                                  NRLib::Vector            & initialMean,
                                  NRLib::Matrix            & initialCov);

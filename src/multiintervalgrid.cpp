@@ -251,29 +251,35 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
                                              bool                                        & failed) const{
 
 
-  // H TESTING WITH ONE CORRELATION DIRECTION
-  /*Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
-  int n_layers = model_settings->getTimeNz();
-  Surface top_surface = eroded_surfaces[0];
-  Surface base_surface = eroded_surfaces[1];
-  interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+  bool                   corr_dir                               = false;
+  Surface                top_surface                            = eroded_surfaces[0];
+  Surface                base_surface                           = eroded_surfaces[1];
+  int                    n_layers                               = model_settings->getTimeNz();
 
-  const SegyGeometry * area_params = model_settings->getAreaParameters();
-  failed = interval_simbox.setArea(area_params, err_text);
+  //H-DEBUGGING Added cases for debugging
+  /*
+  // Case 1: Single correlation surface
+  if (corr_dir_single_surf != "") {
+    Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
+    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+    const SegyGeometry * area_params = model_settings->getAreaParameters();
+    failed = interval_simbox.setArea(area_params, err_text);
 
-  interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);*/
+    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+  }
+  else {
+    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
+    const SegyGeometry * area_params = model_settings->getAreaParameters();
+    failed = interval_simbox.setArea(area_params, err_text);
 
-  // H TESTING WITHOUT CORRELATION DIRECTION
-/*  int n_layers = model_settings->getTimeNz();
-  Surface top_surface = eroded_surfaces[0];
-  Surface base_surface = eroded_surfaces[1];
-  interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
+    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+  }
 
-  const SegyGeometry * area_params = model_settings->getAreaParameters();
-  failed = interval_simbox.setArea(area_params, err_text);
-
-  interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);*/
-
+  interval_simbox.SetNXpad(estimation_simbox->GetNXpad());
+  interval_simbox.SetNYpad(estimation_simbox->GetNYpad());
+  interval_simbox.SetXPadFactor(estimation_simbox->GetXPadFactor());
+  interval_simbox.SetYPadFactor(estimation_simbox->GetYPadFactor());
+  */
 
   // Calculate Z padding ----------------------------------------------------------------
   int status = interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);

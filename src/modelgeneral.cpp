@@ -304,8 +304,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
     //
     // FORWARD MODELLING
     //
-    if (model_settings->getForwardModeling() == true)
-    {
+    if (model_settings->getForwardModeling() == true) {
 //      checkAvailableMemory(simbox_, model_settings, input_files);
     }
     else {
@@ -357,7 +356,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
         NRLib::Vector initial_mean(6);
         NRLib::Matrix initial_cov(6,6);
 
-        setupState4D(model_settings, seismic_parameters, initial_mean, initial_cov);
+        SetupState4D(model_settings, seismic_parameters, initial_mean, initial_cov);
 
         time_evolution_ = TimeEvolution(10000, *time_line_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
         time_evolution_.SetInitialMean(initial_mean);
@@ -3090,134 +3089,134 @@ ModelGeneral::computeTime(int year, int month, int day) const
   return(time);
 }
 
-void
-ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
-                                              const std::vector<float>                         & probability,
-                                              FFTGrid                                          & vp,
-                                              FFTGrid                                          & vs,
-                                              FFTGrid                                          & rho)
-{
-  // Set up of expectations grids
-
-  // Variables for looping through FFTGrids
-  const int nz   = vp.getNz();
-  const int ny   = vp.getNy();
-  const int nx   = vp.getNx();
-  const int nzp  = vp.getNzp();
-  const int nyp  = vp.getNyp();
-  const int nxp = vp.getNxp();
-  const int rnxp = vp.getRNxp();
-
-  LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
-
-  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
-  float nextMonitor = monitorSize;
-  std::cout
-    << "\n  0%       20%       40%       60%       80%      100%"
-    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
-    << "\n  ^";
-
-  const size_t number_of_facies = probability.size();
-
-  // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
-  NRLib::Grid2D<float> topVp  (nx, ny, 0.0);
-  NRLib::Grid2D<float> topVs  (nx, ny, 0.0);
-  NRLib::Grid2D<float> topRho (nx, ny, 0.0);
-  NRLib::Grid2D<float> baseVp (nx ,ny, 0.0);
-  NRLib::Grid2D<float> baseVs (nx, ny, 0.0);
-  NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
-
-  vp.setAccessMode(FFTGrid::WRITE);
-  vs.setAccessMode(FFTGrid::WRITE);
-  rho.setAccessMode(FFTGrid::WRITE);
-
-  // Loop through all cells in the FFTGrids
-  for (int k = 0; k < nzp; k++) {
-    for (int j = 0; j < nyp; j++) {
-      for (int i = 0; i < rnxp; i++) {
-
-        // If outside/If in the padding in x- and y-direction,
-        // set expectation equal to something at right scale
-        // (top value for closest edge)
-        // NBNB OK Can be made better linear interoplation between first and last value in i an j direction as well
-        if (i >= nx || j >= ny) {
-          int indexI;
-          int indexJ;
-          indexI = i > (nx+nxp)/2 ? 0   : nx-1;
-          indexJ = j > (ny+nyp)/2 ? 0   : ny-1;
-          indexI = std::min(i,indexI);
-          indexJ = std::min(j,indexJ);
-
-          float vpVal  = topVp(indexI,indexJ);
-          float vsVal  = topVs(indexI,indexJ);
-          float rhoVal = topRho(indexI,indexJ);
-          vp.setNextReal(vpVal);
-          vs.setNextReal(vsVal);
-          rho.setNextReal(rhoVal);
-        }
-
-        // If outside in z-direction, use linear interpolation between top and base values of the expectations
-        else if (k >= nz) {
-          double t  = double(nzp-k+1)/(nzp-nz+1);
-          double vpVal =  topVp(i,j)*t  + baseVp(i,j)*(1-t);
-          double vsVal =  topVs(i,j)*t  + baseVs(i,j)*(1-t);
-          double rhoVal = topRho(i,j)*t + baseRho(i,j)*(1-t);
-
-          // Set interpolated values in expectation grids
-          vp.setNextReal(static_cast<float>(vpVal));
-          vs.setNextReal(static_cast<float>(vsVal));
-          rho.setNextReal(static_cast<float>(rhoVal));
-        }
-
-        // Otherwise use trend values to get expectation values for each facies from the rock
-        else {
-          std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
-
-          std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
-
-          std::vector<std::vector<double> > expectation_m(number_of_facies);
-          for (size_t f = 0; f < number_of_facies; f++)
-            expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
-
-          // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
-          for (size_t f = 0; f < number_of_facies; f++){
-            expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
-            expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
-            expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
-          }
-
-          // Set values in expectation grids
-          vp.setNextReal(expectations[0]);
-          vs.setNextReal(expectations[1]);
-          rho.setNextReal(expectations[2]);
-
-          // Store top and base values of the expectations for later use in interpolation in the padded region.
-          if (k==0) {
-            topVp(i,j)  = expectations[0];
-            topVs(i,j)  = expectations[1];
-            topRho(i,j) = expectations[2];
-          }
-          else if (k==nz-1) {
-            baseVp(i,j)  = expectations[0];
-            baseVs(i,j)  = expectations[1];
-            baseRho(i,j) = expectations[2];
-          }
-        }
-      }
-    }
-
-    // Log progress
-    if (k+1 >= static_cast<int>(nextMonitor) && k < nz) {
-      nextMonitor += monitorSize;
-      std::cout << "^";
-      fflush(stdout);
-    }
-  }
-
-  vp.endAccess();
-  vs.endAccess();
-  rho.endAccess();
-}
+//void
+//ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
+//                                              const std::vector<float>                         & probability,
+//                                              FFTGrid                                          & vp,
+//                                              FFTGrid                                          & vs,
+//                                              FFTGrid                                          & rho)
+//{
+//  // Set up of expectations grids
+//
+//  // Variables for looping through FFTGrids
+//  const int nz   = vp.getNz();
+//  const int ny   = vp.getNy();
+//  const int nx   = vp.getNx();
+//  const int nzp  = vp.getNzp();
+//  const int nyp  = vp.getNyp();
+//  const int nxp = vp.getNxp();
+//  const int rnxp = vp.getRNxp();
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nGenerating background model from rock physics:\n");
+//
+//  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+//  float nextMonitor = monitorSize;
+//  std::cout
+//    << "\n  0%       20%       40%       60%       80%      100%"
+//    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+//    << "\n  ^";
+//
+//  const size_t number_of_facies = probability.size();
+//
+//  // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
+//  NRLib::Grid2D<float> topVp  (nx, ny, 0.0);
+//  NRLib::Grid2D<float> topVs  (nx, ny, 0.0);
+//  NRLib::Grid2D<float> topRho (nx, ny, 0.0);
+//  NRLib::Grid2D<float> baseVp (nx ,ny, 0.0);
+//  NRLib::Grid2D<float> baseVs (nx, ny, 0.0);
+//  NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
+//
+//  vp.setAccessMode(FFTGrid::WRITE);
+//  vs.setAccessMode(FFTGrid::WRITE);
+//  rho.setAccessMode(FFTGrid::WRITE);
+//
+//  // Loop through all cells in the FFTGrids
+//  for (int k = 0; k < nzp; k++) {
+//    for (int j = 0; j < nyp; j++) {
+//      for (int i = 0; i < rnxp; i++) {
+//
+//        // If outside/If in the padding in x- and y-direction,
+//        // set expectation equal to something at right scale
+//        // (top value for closest edge)
+//        // NBNB OK Can be made better linear interoplation between first and last value in i an j direction as well
+//        if (i >= nx || j >= ny) {
+//          int indexI;
+//          int indexJ;
+//          indexI = i > (nx+nxp)/2 ? 0   : nx-1;
+//          indexJ = j > (ny+nyp)/2 ? 0   : ny-1;
+//          indexI = std::min(i,indexI);
+//          indexJ = std::min(j,indexJ);
+//
+//          float vpVal  = topVp(indexI,indexJ);
+//          float vsVal  = topVs(indexI,indexJ);
+//          float rhoVal = topRho(indexI,indexJ);
+//          vp.setNextReal(vpVal);
+//          vs.setNextReal(vsVal);
+//          rho.setNextReal(rhoVal);
+//        }
+//
+//        // If outside in z-direction, use linear interpolation between top and base values of the expectations
+//        else if (k >= nz) {
+//          double t  = double(nzp-k+1)/(nzp-nz+1);
+//          double vpVal =  topVp(i,j)*t  + baseVp(i,j)*(1-t);
+//          double vsVal =  topVs(i,j)*t  + baseVs(i,j)*(1-t);
+//          double rhoVal = topRho(i,j)*t + baseRho(i,j)*(1-t);
+//
+//          // Set interpolated values in expectation grids
+//          vp.setNextReal(static_cast<float>(vpVal));
+//          vs.setNextReal(static_cast<float>(vsVal));
+//          rho.setNextReal(static_cast<float>(rhoVal));
+//        }
+//
+//        // Otherwise use trend values to get expectation values for each facies from the rock
+//        else {
+//          std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
+//
+//          std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
+//
+//          std::vector<std::vector<double> > expectation_m(number_of_facies);
+//          for (size_t f = 0; f < number_of_facies; f++)
+//            expectation_m[f] = rock_distribution[f]->GetLogExpectation(trend_position);
+//
+//          // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
+//          for (size_t f = 0; f < number_of_facies; f++){
+//            expectations[0] += static_cast<float>(expectation_m[f][0] * probability[f]);
+//            expectations[1] += static_cast<float>(expectation_m[f][1] * probability[f]);
+//            expectations[2] += static_cast<float>(expectation_m[f][2] * probability[f]);
+//          }
+//
+//          // Set values in expectation grids
+//          vp.setNextReal(expectations[0]);
+//          vs.setNextReal(expectations[1]);
+//          rho.setNextReal(expectations[2]);
+//
+//          // Store top and base values of the expectations for later use in interpolation in the padded region.
+//          if (k==0) {
+//            topVp(i,j)  = expectations[0];
+//            topVs(i,j)  = expectations[1];
+//            topRho(i,j) = expectations[2];
+//          }
+//          else if (k==nz-1) {
+//            baseVp(i,j)  = expectations[0];
+//            baseVs(i,j)  = expectations[1];
+//            baseRho(i,j) = expectations[2];
+//          }
+//        }
+//      }
+//    }
+//
+//    // Log progress
+//    if (k+1 >= static_cast<int>(nextMonitor) && k < nz) {
+//      nextMonitor += monitorSize;
+//      std::cout << "^";
+//      fflush(stdout);
+//    }
+//  }
+//
+//  vp.endAccess();
+//  vs.endAccess();
+//  rho.endAccess();
+//}
 
 void
 ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
@@ -3369,56 +3368,56 @@ ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<Distributions
 }
 
 
+//void
+//ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
+//                                        const std::vector<float>                         & probability,
+//                                        const Simbox                                     & timeSimbox,
+//                                        const ModelSettings                              & model_settings,
+//                                        SeismicParametersHolder                          & seismicParameters,
+//                                        State4D                                          & state4d,
+//                                        std::string                                      & /*errTxt*/)
+//{
+//  LogKit::WriteHeader("Prior Expectations / Background Model");
+//
+//  // Allocates the static mu grid: 3 grids.
+//
+//  // Static grids for 4D inversion, filled with 3D rock physics background
+//  FFTGrid * vp_stat;
+//  FFTGrid * vs_stat;
+//  FFTGrid * rho_stat;
+//
+//  // Parameters for generating new FFTGrids
+//  const int nx    = timeSimbox.getnx();
+//  const int ny    = timeSimbox.getny();
+//  const int nz    = timeSimbox.getnz();
+//  const int nxPad = timeSimbox.GetNXpad();
+//  const int nyPad = timeSimbox.GetNYpad();
+//  const int nzPad = timeSimbox.GetNZpad();
+//
+//  // Creating grids for mu static
+//  vp_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
+//  vs_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
+//  rho_stat = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
+//
+//  vp_stat ->createRealGrid();
+//  vs_stat ->createRealGrid();
+//  rho_stat->createRealGrid();
+//
+//  // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
+//  generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat);
+//
+//  vp_stat ->setType(FFTGrid::PARAMETER);
+//  vs_stat ->setType(FFTGrid::PARAMETER);
+//  rho_stat->setType(FFTGrid::PARAMETER);
+//
+//  state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
+//
+//  seismicParameters.copyBackgroundParameters(vp_stat, vs_stat, rho_stat);
+//
+//}
+
 void
-ModelGeneral::setUp3DPartOf4DBackground(const std::vector<DistributionsRock *>           & rock,
-                                        const std::vector<float>                         & probability,
-                                        const Simbox                                     & timeSimbox,
-                                        const ModelSettings                              & model_settings,
-                                        SeismicParametersHolder                          & seismicParameters,
-                                        State4D                                          & state4d,
-                                        std::string                                      & /*errTxt*/)
-{
-  LogKit::WriteHeader("Prior Expectations / Background Model");
-
-  // Allocates the static mu grid: 3 grids.
-
-  // Static grids for 4D inversion, filled with 3D rock physics background
-  FFTGrid * vp_stat;
-  FFTGrid * vs_stat;
-  FFTGrid * rho_stat;
-
-  // Parameters for generating new FFTGrids
-  const int nx    = timeSimbox.getnx();
-  const int ny    = timeSimbox.getny();
-  const int nz    = timeSimbox.getnz();
-  const int nxPad = timeSimbox.GetNXpad();
-  const int nyPad = timeSimbox.GetNYpad();
-  const int nzPad = timeSimbox.GetNZpad();
-
-  // Creating grids for mu static
-  vp_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
-  vs_stat  = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
-  rho_stat = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, model_settings.getFileGrid());
-
-  vp_stat ->createRealGrid();
-  vs_stat ->createRealGrid();
-  rho_stat->createRealGrid();
-
-  // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat);
-
-  vp_stat ->setType(FFTGrid::PARAMETER);
-  vs_stat ->setType(FFTGrid::PARAMETER);
-  rho_stat->setType(FFTGrid::PARAMETER);
-
-  state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
-
-  seismicParameters.copyBackgroundParameters(vp_stat, vs_stat, rho_stat);
-
-}
-
-void
-ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                          & seismicParameters,
+ModelGeneral::CopyCorrelationsTo4DState(SeismicParametersHolder                          & seismicParameters,
                                        State4D                                          & state4d)
 {
   // Allocates the static sigma grids: 6 grids.
@@ -3430,7 +3429,6 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
   FFTGrid * vs_vs_stat;
   FFTGrid * vs_rho_stat;
   FFTGrid * rho_rho_stat;
-
 
   // Copying grids for sigma static
   vp_vp_stat   = new FFTGrid( seismicParameters.GetCovVp());
@@ -5555,7 +5553,7 @@ void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settin
 //}
 
 void
-ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
+ModelGeneral::SetupState4D(ModelSettings           *& modelSettings,
                            SeismicParametersHolder  & seismicParameters,
                            NRLib::Vector            & initialMean,
                            NRLib::Matrix            & initialCov)
@@ -5564,7 +5562,7 @@ ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
   //Now, use background created in CommonData
   state4d_.setStaticMu(seismicParameters.GetMeanVp(), seismicParameters.GetMeanVs(), seismicParameters.GetMeanRho());
 
-  copyCorrelationsTo4DState(seismicParameters, state4d_);
+  CopyCorrelationsTo4DState(seismicParameters, state4d_);
 
   const int nx    = simbox_->getnx();
   const int ny    = simbox_->getny();
@@ -5573,11 +5571,11 @@ ModelGeneral::setupState4D(ModelSettings           *& modelSettings,
   const int nyPad = simbox_->GetNYpad();
   const int nzPad = simbox_->GetNZpad();
 
-  complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
+  Complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
 }
 
 void
-ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov)
+ModelGeneral::Complete4DBackground(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov)
 {
   // Static grids (3 + 6) are set in process4DBackground.
   // Dynamic grids (3 + 6 + 9) are set here.

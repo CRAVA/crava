@@ -140,6 +140,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
+   //H-DEBUGGING
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
       if(read_wells_ && setup_multigrid_){
@@ -158,6 +159,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   else{
     err_text += "Could not set up prior correlations since this requires seismic data.\n";
   }
+
 
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
@@ -2519,9 +2521,6 @@ CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
   }
 }
 
-
-
-
 //bool CommonData::optimizeWellLocations() {
 //  return true;
 //}
@@ -2915,7 +2914,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
       int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
 
-      int status = estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
+      estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
     catch(NRLib::Exception & e) {
       err_text += e.what();
@@ -4295,6 +4294,20 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
       int missing_traces_padding = 0;
       int dead_traces_simbox     = 0;
 
+      int file_type = IO::findGridType(file_name);
+      bool is_segy  = false;
+      bool is_storm = false;
+      bool scale    = false;
+
+      if (file_type == IO::SEGY)
+        is_segy = true;
+      else if (file_type == IO::STORM)
+        is_storm = true;
+      else if (file_type == IO::SGRI) {
+        is_storm = true;
+        scale    = true;
+      }
+
       FillInData(interval_grids[i_interval],
                  fft_grid_tmp,
                  interval_simboxes[i_interval],
@@ -4305,7 +4318,10 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
-                 grid_type);
+                 grid_type,
+                 scale,
+                 is_segy,
+                 is_storm);
 
       if (fft_grid_tmp != NULL)
         delete fft_grid_tmp;
@@ -4748,14 +4764,14 @@ void CommonData::FillInData(NRLib::Grid<double> & grid_new,
         double grid_z = 0.0;
         float  value  = 0.0f;
 
-        float z_min = 0.0f;
-        float z_max = 0.0f;
-
         //Get data_trace for this i and j.
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
         }
         else if (is_storm) {
+          float z_min = 0.0f;
+          float z_max = 0.0f;
+
           storm_grid->FindXYIndex(xf, yf, grid_i, grid_j);
           for (size_t k = 0; k < grid_new.GetNK(); k++) {
             storm_grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
@@ -4775,10 +4791,13 @@ void CommonData::FillInData(NRLib::Grid<double> & grid_new,
         else {
           data_trace = fft_grid_old->getRealTrace2(refi, refj);
 
-          z_min = fft_grid_old->getRealValue(refi, refj, 0);
-          z_max = fft_grid_old->getRealValue(refi, refj, fft_grid_old->getNzp()-1);
+          double z_min = 0.0;
+          double z_max = 0.0;
 
-          dz_data = (z_max- z_min) / fft_grid_old->getNzp(); //H Not work for seismic?
+          simbox.getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
+          simbox.getZCoord(fft_grid_old->getNz(), xf, yf, z_max);
+
+          dz_data = (z_max- z_min) / fft_grid_old->getNz();
           dz_min = dz_data/4.0f;
           z0_data = z_min;
         }
@@ -5738,8 +5757,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  Background * background = NULL;
-
   if (model_settings->getGenerateBackground()) {
 
     if (model_settings->getGenerateBackgroundFromRockPhysics() == false) {
@@ -5761,22 +5778,23 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           err_text += "There is no variogram available for the background modelling.\n";
         }
 
-        Surface * correlation_direction;
-        Simbox * bg_simbox = NULL;
-        BlockedLogsCommon * bl_bg;
+        Surface           * correlation_direction = NULL;
+        Simbox            * bg_simbox             = NULL;
+        BlockedLogsCommon * bl_bg                 = NULL;
         std::map<std::string, BlockedLogsCommon *> mapped_bg_bl;
 
-        //H Could this extended simbox be included the new simbox (which containts correlation surfaces?)
-        if (input_files->getCorrDirFile() != "") { //H Could be given as a top-file and base-file?
+        if (input_files->getCorrDirFile() != "") {
 
           Surface tmpSurf(input_files->getCorrDirFile());
           if (estimation_simbox_.CheckSurface(tmpSurf) == true)
             correlation_direction = new Surface(tmpSurf);
           else {
-            err_text += "Error: Correlation surface does not cover volume.\n"; //In ModelGeneral this test is done against timeSimBox before it is expanded (=timeCutSimbox)
+            err_text += "Error: Correlation surface does not cover volume.\n";
           }
 
-          //Background simbox
+          //Create a sepeate background simbox based on correlation_direction
+          //H In ModelGeneral setupExtendedTimeSimbox and setupExtendedBackgroundSimbox were created seperatly
+          //  Could extended_background_simbox we covered/included by the new simbox-format?
           SetupExtendedBackgroundSimbox(&estimation_simbox_, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
 
         }
@@ -6500,30 +6518,30 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
   // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's current
   // inability to set dTop equal to Simbox top surface.
   //
-  Surface dTop(tmp_surf);
-  dTop.SubtractNonConform(&(simbox->GetTopSurface()));
-  dTop.Multiply(-1.0);
-  double shiftTop = dTop.Min();
-  Surface topSurf(tmp_surf);
-  topSurf.Add(shiftTop);
+  Surface d_top(tmp_surf);
+  d_top.SubtractNonConform(&(simbox->GetTopSurface()));
+  d_top.Multiply(-1.0);
+  double shift_top = d_top.Min();
+  Surface top_surf(tmp_surf);
+  top_surf.Add(shift_top);
 
   //
   // Find base surface of background simbox
   //
-  Surface dBot(tmp_surf);
-  dBot.SubtractNonConform(&(simbox->GetBotSurface()));
-  dBot.Multiply(-1.0);
-  double shiftBot = dBot.Max();
-  Surface botSurf(tmp_surf);
-  botSurf.Add(shiftBot);
+  Surface d_bot(tmp_surf);
+  d_bot.SubtractNonConform(&(simbox->GetBotSurface()));
+  d_bot.Multiply(-1.0);
+  double shift_bot = d_bot.Max();
+  Surface bot_surf(tmp_surf);
+  bot_surf.Add(shift_bot);
 
   //
   // Calculate number of layers of background simbox
   //
   tmp_surf.Assign(0.0);
-  tmp_surf.AddNonConform(&botSurf);
-  tmp_surf.SubtractNonConform(&topSurf);
-  double dMax = tmp_surf.Max();
+  tmp_surf.AddNonConform(&bot_surf);
+  tmp_surf.SubtractNonConform(&top_surf);
+  double d_max = tmp_surf.Max();
   double dt = simbox->getdz();
   int nz;
   //
@@ -6534,19 +6552,19 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
   //  LogKit::LogFormatted(LogKit::High," modelling from %.2fms to 10.0ms\n");
   //  dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
   // }
-  nz = static_cast<int>(ceil(dMax/dt));
+  nz = static_cast<int>(ceil(d_max/dt));
 
   //
   // Make new simbox
   //
   bg_simbox = new Simbox(simbox);
-  bg_simbox->setDepth(topSurf, botSurf, nz);
+  bg_simbox->setDepth(top_surf, bot_surf, nz);
 
   if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
-    std::string top_surf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
-    std::string base_surf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
-    bg_simbox->writeTopBotGrids(top_surf,
-                                base_surf,
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
+    bg_simbox->writeTopBotGrids(top_surf_name,
+                                base_surf_name,
                                 IO::PathToBackground(),
                                 output_format);
   }

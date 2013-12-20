@@ -225,6 +225,7 @@ int main(int argc, char** argv)
                                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
                                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
       //korrelasjonsgrid (2m)
+       //H-DEBUGGING
       seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
                                                  common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
                                                  common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),

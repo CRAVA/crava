@@ -14,68 +14,6 @@
 //#include "fftw.h"
 //#include "rfftw.h"
 
-//BlockedLogsCommon::BlockedLogsCommon(NRLib::Well     * well_data, //Merged with constructor below.
-//                                     const Simbox    * const estimation_simbox,
-//                                     bool              interpolate,
-//                                     std::string     & err_text,
-//                                     float             max_hz_background,
-//                                     float             max_hz_seismic) {
-//  n_angles_                     = 0;
-//  well_name_                    = well_data->GetWellName();
-//  n_layers_                     = estimation_simbox->getnz();
-//  n_blocks_                     = 0;
-//  interpolate_                  = interpolate;
-//  is_deviated_                  = well_data->IsDeviated();
-//  use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-//  real_vs_log_                  = well_data->GetRealVsLog();
-//  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
-//  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
-//  use_for_filtering_            = well_data->GetUseForFiltering();
-//  facies_log_defined_           = false;
-//
-//  // Get all continuous and discrete logs
-//  std::vector<std::string> cont_logs_to_be_blocked;
-//  std::vector<std::string> disc_logs_to_be_blocked;
-//
-//  const std::map<std::string,std::vector<double> > cont_logs = well_data->GetContLog();
-//  const std::map<std::string,std::vector<int> >    disc_logs = well_data->GetDiscLog();
-//
-//  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-//    cont_logs_to_be_blocked.push_back(it->first);
-//  }
-//  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-//    disc_logs_to_be_blocked.push_back(it->first);
-//  }
-//
-//  // FACIES
-//  if (well_data->HasFaciesLog()) {
-//    facies_log_defined_ = true;
-//    facies_map_ = well_data->GetFaciesMap();
-//  }
-//  bool failed = false;
-//
-//  // Remove missing values
-//  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
-//                         facies_raw_logs_, continuous_logs_raw_logs_, discrete_logs_raw_logs_, cont_logs_to_be_blocked,
-//                         disc_logs_to_be_blocked, n_data_, failed, err_text);
-//
-//  well_data->SetNumberOfNonMissingData(n_data_);
-//
-//  if (failed)
-//    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
-//
-//  if (max_hz_background != 0.0 || max_hz_seismic != 0.0)
-//    FilterLogs(max_hz_background, max_hz_seismic);
-//
-//  if (!failed)
-//    BlockWell(estimation_simbox, continuous_logs_raw_logs_, discrete_logs_raw_logs_, continuous_logs_blocked_,
-//              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
-//
-//  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-//  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
-//
-//}
-
 BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
@@ -156,11 +94,11 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
-  if (failed)
+  if(failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
-  if (!failed) {
-    if (interval_simboxes.size() == 1) {
+  if(!failed){
+    if(interval_simboxes.size() == 1){
       // If there is only one interval, the well can be blocked as before.
       n_layers_ = interval_simboxes[0].getnz();
       BlockWell(&interval_simboxes[0], continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,

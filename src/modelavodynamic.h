@@ -19,7 +19,6 @@ struct irapgrid;
 class Wavelet;
 class Wavelet1D;
 class Simbox;
-//class WellData;
 class FFTGrid;
 class RandomGen;
 class GridMapping;
@@ -61,13 +60,11 @@ public:
   //                int                       t);
 
   ModelAVODynamic(ModelSettings          *& model_settings,
-                  //const InputFiles        * inputFiles,
                   ModelAVOStatic          * model_avo_static,
                   ModelGeneral            * model_general,
                   CommonData              * commo_data,
                   SeismicParametersHolder & seismic_parameters,
                   const Simbox            * simbox,
-                  //const Surface           * correlationDirection,
                   //const GridMapping       * timeDepthMapping,
                   //const GridMapping       * timeCutMapping,
                   int                       t,
@@ -120,7 +117,6 @@ public:
   bool                          getFailed()                const { return failed_                         ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
-  //Vario                       * getAngularCorr()           const { return angularCorr_                    ;}
   const std::vector<std::vector<float> > & getAngularCorr() const { return angular_corr_                  ;}
 
   float                         getSNRatioAngle(int i)     const { return sn_ratio_[i]                    ;}
@@ -131,13 +127,13 @@ public:
   //bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
   int                           getNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
 
-  float                       * getThetaDeg()              const { return theta_deg_                      ;} //ok
-  float                       * getDataVariance()          const { return data_variance_                  ;} //ok
-  float                       * getErrorVariance()         const { return error_variance_                 ;} //ok
-  float                       * getModelVariance()         const { return model_variance_                 ;} //ok
-  float                       * getSignalVariance()        const { return signal_variance_                ;} //ok
-  float                       * getTheoSNRatio()           const { return theo_sn_ratio_                  ;} //ok
-  double                     ** getErrThetaCov()           const { return err_theta_cov_                  ;} //ok
+  float                       * getThetaDeg()              const { return theta_deg_                      ;}
+  float                       * getDataVariance()          const { return data_variance_                  ;}
+  float                       * getErrorVariance()         const { return error_variance_                 ;}
+  float                       * getModelVariance()         const { return model_variance_                 ;}
+  float                       * getSignalVariance()        const { return signal_variance_                ;}
+  float                       * getTheoSNRatio()           const { return theo_sn_ratio_                  ;}
+  double                     ** getErrThetaCov()           const { return err_theta_cov_                  ;}
 
   void                          releaseGrids();                        // Cuts connection to SeisCube_
 
@@ -220,7 +216,7 @@ private:
   //                                      std::string & errText);
   //double           vsvpFromWells(const std::vector<WellData *> & wells,
   //                               int                     nWells);
-  void             vsvpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  void             VsVpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                  CommonData                                     * common_data,
                                  int                                              i_interval,
                                  double                                         & vsvp,
@@ -238,7 +234,7 @@ private:
   //void             resampleGrid2DToSurface(const Simbox  * simbox,
   //                                         const Grid2D  * grid,
   //                                         Surface      *& surface);
-  bool             findTimeGradientSurface(const std::string     & refTimeFile,
+  bool             FindTimeGradientSurface(const std::string     & refTimeFile,
                                            const Simbox          * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
@@ -256,7 +252,7 @@ private:
 
   //void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
-  void              computeDataVariance(std::vector<FFTGrid *> & seisData,
+  void              ComputeDataVariance(std::vector<FFTGrid *> & seisData,
                                         float                  * dataVariance,
                                         int                      nx,
                                         int                      ny,
@@ -265,33 +261,32 @@ private:
                                         int                      nyp,
                                         int                      nzp);
 
-  void              setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale,
+  void              SetupErrorCorrelation(const std::vector<Grid2D *> & noiseScale,
                                           const float                 * dataVariance,
                                           float                       * errorVariance,
                                           double                     ** errThetaCov);
 
-  float             computeWDCorrMVar(Wavelet1D* WD,
+  float             ComputeWDCorrMVar(Wavelet1D* WD,
                                       fftw_real* corrT,
                                       int        nzp);
 
   int                       number_of_angles_;
 
-  std::vector<Wavelet *>    wavelets_;   ///< Wavelet for angle
-  std::vector<FFTGrid *>    seis_cubes_; ///< Seismic data cubes
+  std::vector<Wavelet *>    wavelets_;               ///< Wavelet for angle
+  std::vector<FFTGrid *>    seis_cubes_;             ///< Seismic data cubes
 
   float                  ** reflection_matrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
-                                                    ///< indicating that standard approximation will be used.
+                                                     ///< indicating that standard approximation will be used.
 
   GridMapping             * time_depth_mapping_;      ///< Contains both simbox and mapping used for depth conversion
   //GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut*/
 
   std::vector<Grid2D *>     local_noise_scale_;       ///< Scale factors for local noise
 
-  bool                      failed_;                ///< Indicates whether errors occured during construction.
+  bool                      failed_;                  ///< Indicates whether errors occured during construction.
   //std::vector<bool>         failed_details_;        ///< Detailed failed information.
 
-  std::vector<std::vector<float > > angular_corr_;   ///< correlations between angle i and j.
-  //Vario                   * angularCorr_;
+  std::vector<std::vector<float > > angular_corr_;    ///< correlations between angle i and j.
 
   std::vector<float>        sn_ratio_;
   std::vector<float>        angle_;
