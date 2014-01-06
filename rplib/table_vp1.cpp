@@ -1,4 +1,4 @@
-#include "rplib/table_rho1.h"
+#include "rplib/table_vp1.h"
 namespace ConstDataStoredAsSurface {
 const NRLib::RegularSurface<double> CreateSurfaceVP1() {
 NRLib::Grid2D<double> grid2d(78,186, 0.0);
