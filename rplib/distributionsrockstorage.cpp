@@ -590,7 +590,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
         }
       }
       else
-        tmpErrTxt += "<correlation-vs-density> can not be estimatedfor time lapse data\n";
+        tmpErrTxt += "<correlation-vs-density> can not be estimated for time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
@@ -830,7 +830,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                                                 s1,
                                                                                 s2,
                                                                                 output_other,
-                                                                                rock_name_ + "density",
+                                                                                rock_name_ + "_density",
                                                                                 tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();

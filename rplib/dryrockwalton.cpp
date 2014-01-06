@@ -39,9 +39,14 @@ DryRockWalton::DryRockWalton(const Solid                       * solid,
 
 }
 
-DryRockWalton::DryRockWalton() : DryRock()
+DryRockWalton::DryRockWalton()
+: DryRock()
 {
-  rho_ = k_ = mu_ = 0;
+  solid_             = NULL;
+  friction_weight_   = 0;
+  calc_coord_number_ = 0;
+  pressure_          = 0;
+  coord_number_      = 0;
 }
 
 DryRockWalton::~DryRockWalton()

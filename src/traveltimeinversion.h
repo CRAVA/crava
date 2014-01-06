@@ -132,11 +132,6 @@ private:
                                                         const int & i_ind,
                                                         const int & j_ind) const;
 
-  std::vector<double>           generateMuVpAbove(const double & top_value,
-                                                  const double & base_value,
-                                                  const int    & nz,
-                                                  const int    & nzp) const;
-
   std::vector<double>           generateMuVpBelow(const double & top_value,
                                                   const double & base_value,
                                                   const int    & nz,
@@ -166,16 +161,6 @@ private:
 
   std::vector<double>           getCovLogVp(FFTGrid * cov_log_vp) const;
 
-  void                          transformVpToVpSquare(const std::vector<double>   & mu_vp,
-                                                      const NRLib::Grid2D<double> & Sigma_vp,
-                                                      std::vector<double>         & mu_vp_square,
-                                                      NRLib::Grid2D<double>       & Sigma_vp_square) const;
-
-  void                          transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
-                                                      const NRLib::Grid2D<double> & Sigma_vp_square,
-                                                      std::vector<double>         & mu_vp,
-                                                      NRLib::Grid2D<double>       & Sigma_vp) const;
-
   void                          transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
                                                          const NRLib::Grid2D<double> & Sigma_vp_square,
                                                          std::vector<double>         & mu_log_vp,
@@ -195,11 +180,6 @@ private:
                                                                       const NRLib::Grid2D<double> & variance_log_vp,
                                                                       std::vector<double>         & mu_vp_square,
                                                                       NRLib::Grid2D<double>       & variance_vp_square) const;
-
-  void                          calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                                    const NRLib::Grid2D<double> & variance_log_vp,
-                                                                    std::vector<double>         & mu_vp,
-                                                                    NRLib::Grid2D<double>       & variance_vp) const;
 
   void                          calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
                                                                           const NRLib::Grid2D<double> & variance_log_vp,

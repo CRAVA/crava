@@ -1,4 +1,4 @@
-// $Id: trendkit.hpp 1217 2013-11-14 14:13:29Z gudmundh $
+// $Id: trendkit.hpp 1223 2013-12-12 09:00:09Z ulvmoen $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -256,10 +256,6 @@ namespace NRLib {
                                                  std::vector<std::vector<double> > & z0,
                                                  std::vector<std::vector<double> > & w0,
                                                  bool                              & complete_surface);
-
-  void                   SmoothTrendWithLocalLinearRegression(std::vector<double>    & trend,
-                                                              const std::vector<int> & count,
-                                                              const int              & iWells);
 
   void                   ReadTrend2DPlainAscii(const std::string     & file_name,
                                                std::string           & /*errText*/,

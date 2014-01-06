@@ -13,6 +13,26 @@
 
 State4D::State4D()
 {
+  mu_static_.resize(3);
+  for (int i = 0; i < 3; i++)
+    mu_static_[i] = NULL;
+
+  mu_dynamic_.resize(3);
+  for (int i = 0; i < 3; i++)
+    mu_dynamic_[i] = NULL;
+
+  sigma_static_static_.resize(6);
+  for (int i = 0; i < 6; i++)
+    sigma_static_static_[i] = NULL;
+
+  sigma_dynamic_dynamic_.resize(6);
+   for (int i = 0; i < 6; i++)
+     sigma_dynamic_dynamic_[i] = NULL;
+
+  sigma_static_dynamic_.resize(9);
+  for (int i = 0; i < 9; i++)
+    sigma_static_dynamic_[i] = NULL;
+
 }
 
 State4D::~State4D()
@@ -35,8 +55,6 @@ State4D::~State4D()
 
 void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
 {
-  mu_dynamic_.resize(3);
-
   mu_dynamic_[0] = vp;
   mu_dynamic_[1] = vs;
   mu_dynamic_[2] = rho;
@@ -44,8 +62,6 @@ void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
 
 void State4D::setStaticMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
 {
-  mu_static_.resize(3);
-
   mu_static_[0] = vp;
   mu_static_[1] = vs;
   mu_static_[2] = rho;
@@ -79,8 +95,6 @@ State4D::updateDynamicMu(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
 
 void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
 {
-  sigma_static_static_.resize(6);
-
   sigma_static_static_[0] = vpvp;
   sigma_static_static_[1] = vpvs;
   sigma_static_static_[2] = vprho;
@@ -91,8 +105,6 @@ void State4D::setStaticSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGr
 
 void State4D::setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho)
 {
-  sigma_dynamic_dynamic_.resize(6);
-
   sigma_dynamic_dynamic_[0] = vpvp;
   sigma_dynamic_dynamic_[1] = vpvs;
   sigma_dynamic_dynamic_[2] = vprho;
@@ -103,8 +115,6 @@ void State4D::setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTG
 
 void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho)
 {
-  sigma_static_dynamic_.resize(9);
-
   sigma_static_dynamic_[0] = vpvp;
   sigma_static_dynamic_[1] = vpvs;
   sigma_static_dynamic_[2] = vprho;
@@ -758,7 +768,8 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
 
 
-void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
+void State4D::evolve(int                   time_step,
+                     const TimeEvolution & timeEvolution )
 {
   LogKit::LogFormatted(LogKit::Low, "\nEvolving distribution of dynamic part...\n");
   // Evolution matrix and correction terms from TimeEvolution class
@@ -1041,7 +1052,9 @@ State4D::iFFTCov()
 
 
 std::vector<FFTGrid*>
-State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<DistributionsRock *> rock_distributions,  TimeEvolution timeEvolution)
+State4D::doRockPhysicsInversion(TimeLine                               & time_line,
+                                const std::vector<DistributionsRock *>   rock_distributions,
+                                TimeEvolution                          & timeEvolution)
 {
   LogKit::WriteHeader("Start 4D rock physics inversion");
   bool debug=true; // triggers printouts
@@ -1055,9 +1068,9 @@ State4D::doRockPhysicsInversion(TimeLine&  time_line, const std::vector<Distribu
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
 
-  int nTimeSteps=rockSample.size();
+  int nTimeSteps = static_cast<int>(rockSample.size());
   //nSim=rockSample[0].size();
-  int nParam=rockSample[0][0].size();
+  int nParam = static_cast<int>(rockSample[0][0].size());
   int nM = 3;  // number of seismic parameters.
   int nRockProperties = nParam-nM; // number of rock parameters
 

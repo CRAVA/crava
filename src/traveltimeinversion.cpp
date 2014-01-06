@@ -663,9 +663,11 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
   std::vector<double> time_P0(n_horizons);
   std::vector<double> push_down(n_horizons);
   double              top  = 0;
-  double              base = 0;
 
   for (int k = 0; k < n_horizons; ++k) {
+
+    double base = 0;
+
     time_P0[k]   = initial_horizons[k].GetZ(x, y);
     push_down[k] = push_down_horizons[k].GetZ(x, y);
 
@@ -689,7 +691,7 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
 
     for (int k = 0; k < n_horizons; ++k) {
       if (time_P0[k] != missing_value && push_down[k] != missing_value) {
-        d[k]          = time_P0[k]+push_down[k]-top;
+        d[k]          = time_P0[k] + push_down[k] - top;
         Sigma_d(k, k) = std::pow(standard_deviation[k], 2);
       }
     }
@@ -1030,7 +1032,7 @@ TravelTimeInversion::calculateG(const std::vector<double> & rms_time,
   for (int j = 0; j < n_rms_data; j++) {
     int k=0;
     double prev_base_t = t[0];
-    while (rms_time[j] >= t[k]+dt[k] && k < n_layers) { // while rms_time is below the base of the current cell
+    while (rms_time[j] >= t[k] + dt[k] && k < n_layers) { // while rms_time is below the base of the current cell
       G(j,k) = dt[k] / rms_time[j];
       if (t[k] != 0)  // no increment  if this is a padding cell
         prev_base_t = t[k]+dt[k];
@@ -1164,24 +1166,6 @@ TravelTimeInversion::generateMuLogVpFromGrid(FFTGrid   * mu_log_vp,
 
   return mu_grid_log_vp;
 
-}
-
-//-----------------------------------------------------------------------------------------//
-
-std::vector<double>
-TravelTimeInversion::generateMuVpAbove(const double & top_value,
-                                       const double & base_value,
-                                       const int    & nz,
-                                       const int    & nzp) const
-{
-  std::vector<double> mu_vp = generateMuVp(top_value, base_value, nz);
-
-  mu_vp.resize(nzp);
-
-  for (int i = nz; i < nzp; i++)
-    mu_vp[i] = mu_vp[nz - 1];
-
-  return mu_vp;
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -1328,37 +1312,6 @@ TravelTimeInversion::generateSigmaModel(const std::vector<double> & cov_grid) co
 
   return Sigma_m;
 }
-//-----------------------------------------------------------------------------------------//
-
-void
-TravelTimeInversion::transformVpToVpSquare(const std::vector<double>   & mu_vp,
-                                           const NRLib::Grid2D<double> & Sigma_vp,
-                                           std::vector<double>         & mu_vp_square,
-                                           NRLib::Grid2D<double>       & Sigma_vp_square) const
-{
-  std::vector<double>   mu_log_vp;
-  NRLib::Grid2D<double> Sigma_log_vp;
-
-  calculateCentralMomentLogNormalInverse(mu_vp, Sigma_vp, mu_log_vp, Sigma_log_vp);
-
-  calculateSecondCentralMomentLogNormal(mu_log_vp, Sigma_log_vp, mu_vp_square, Sigma_vp_square);
-}
-
-//-----------------------------------------------------------------------------------------//
-
-void
-TravelTimeInversion::transformVpSquareToVp(const std::vector<double>   & mu_vp_square,
-                                           const NRLib::Grid2D<double> & Sigma_vp_square,
-                                           std::vector<double>         & mu_vp,
-                                           NRLib::Grid2D<double>       & Sigma_vp) const
-{
-  std::vector<double>   mu_log_vp;
-  NRLib::Grid2D<double> Sigma_log_vp;
-
-  calculateCentralMomentLogNormalInverse(mu_vp_square, Sigma_vp_square, mu_log_vp, Sigma_log_vp);
-
-  calculateHalfCentralMomentLogNormal(mu_log_vp, Sigma_log_vp, mu_vp, Sigma_vp);
-}
 
 //-----------------------------------------------------------------------------------------//
 
@@ -1471,31 +1424,6 @@ TravelTimeInversion::calculateSecondCentralMomentLogNormal(const std::vector<dou
   calculateCentralMomentLogNormal(mu, variance, mu_vp_square, variance_vp_square);
 }
 
-//-----------------------------------------------------------------------------------------//
-
-void
-TravelTimeInversion::calculateHalfCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
-                                                         const NRLib::Grid2D<double> & variance_log_vp,
-                                                         std::vector<double>         & mu_vp,
-                                                         NRLib::Grid2D<double>       & variance_vp) const
-{
-  int n_layers = static_cast<int>(mu_log_vp.size());
-
-  std::vector<double> mu(n_layers);
-  for (int i = 0; i < n_layers; i++)
-    mu[i] = mu_log_vp[i] / 2;
-
-  NRLib::Grid2D<double> variance(n_layers, n_layers);
-  for (int i = 0; i < n_layers; i++) {
-    for (int j = 0; j <n_layers; j++)
-      variance(i, j) = variance_log_vp(i, j) / 4;
-  }
-
-  mu_vp.resize(n_layers);
-  variance_vp.Resize(n_layers, n_layers);
-
-  calculateCentralMomentLogNormal(mu, variance, mu_vp, variance_vp);
-}
 //-----------------------------------------------------------------------------------------//
 void
 TravelTimeInversion::calculateMinusFirstCentralMomentLogNormal(const std::vector<double>   & mu_log_vp,
@@ -2402,9 +2330,9 @@ TravelTimeInversion::calculateDistanceGrid(const Simbox              * simbox,
                                            const NRLib::Grid<double> & divided_grid,
                                            NRLib::Grid<double>       & distance) const
 {
-  int nx  = divided_grid.GetNI();
-  int ny  = divided_grid.GetNJ();
-  int nz  = divided_grid.GetNK();
+  int nx  = static_cast<int>(divided_grid.GetNI());
+  int ny  = static_cast<int>(divided_grid.GetNJ());
+  int nz  = static_cast<int>(divided_grid.GetNK());
 
   distance.Resize(nx, ny, nz);
 
@@ -2460,8 +2388,6 @@ TravelTimeInversion::calculateEVpGrid(FFTGrid  * mu_log_vp,
 
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
-
-      std::vector<double> mu_v(nz);
 
       std::vector<double>   mu_log_vp_profile(nz);
       std::vector<double>   mu_vp_profile;
