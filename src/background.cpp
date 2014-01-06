@@ -89,19 +89,30 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
-  const int nx    = time_simbox->getnx();
-  const int ny    = time_simbox->getny();
-  const int nz    = time_simbox->getnz();
+
+  int nx = 0;
+  int ny = 0;
+  int nz = 0;
+
+  if (time_bg_simbox == NULL) {
+    nx = time_simbox->getnx();
+    ny = time_simbox->getny();
+    nz = time_simbox->getnz();
+  }
+  else {
+    nx = time_bg_simbox->getnx();
+    ny = time_bg_simbox->getny();
+    nz = time_bg_simbox->getnz();
+  }
 
   for(int i=0 ; i<3 ; i++)
     parameters[i].Resize(nx, ny, nz);
 
-  NRLib::Grid<double> & bg_vp = parameters[0];
-  NRLib::Grid<double> & bg_vs = parameters[1];
+  NRLib::Grid<double> & bg_vp  = parameters[0];
+  NRLib::Grid<double> & bg_vs  = parameters[1];
   NRLib::Grid<double> & bg_rho = parameters[2];
 
-  if (time_bg_simbox == NULL)
-  {
+  if (time_bg_simbox == NULL) {
     generateBackgroundModel(bg_vp, bg_vs, bg_rho,
                             velocity, wells,
                             time_simbox,
@@ -110,8 +121,7 @@ Background::Background(std::vector<NRLib::Grid<double> >          & parameters,
                             model_settings,
                             err_text);
   }
-  else
-  {
+  else {
     generateBackgroundModel(bg_vp, bg_vs, bg_rho,
                             velocity, wells,
                             time_bg_simbox,
@@ -184,8 +194,8 @@ Background::Background(std::vector<NRLib::Grid<double> > & parameters,
   for(int i=0 ; i<3 ; i++)
     parameters[i].Resize(nx, ny, nz);
 
-  NRLib::Grid<double> & bg_vp = parameters[0];
-  NRLib::Grid<double> & bg_vs = parameters[1];
+  NRLib::Grid<double> & bg_vp  = parameters[0];
+  NRLib::Grid<double> & bg_vs  = parameters[1];
   NRLib::Grid<double> & bg_rho = parameters[2];
 
   GenerateMultizoneBackgroundModel(bg_vp, bg_vs, bg_rho,
@@ -202,7 +212,6 @@ Background::Background(std::vector<NRLib::Grid<double> > & parameters,
 
 //-------------------------------------------------------------------------------
 Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & parameters,
-                       //std::vector<double>                             & vs_vp_ratios,
                        const std::vector<NRLib::Well>                  & wells,
                        MultiIntervalGrid                               * multiple_interval_grid,
                        const ModelSettings                             * model_settings,
@@ -2997,11 +3006,6 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
   const int    ny   = simbox->getny();
   const int    nz   = simbox->getnz();
 
-  //const int    nxp  = nx;
-  //const int    nyp  = ny;
-  //const int    nzp  = nz;
-  //const int    rnxp = 2*(nxp/2 + 1);
-
   const double x0   = simbox->getx0();
   const double y0   = simbox->gety0();
   const double lx   = simbox->getlx();
@@ -3019,13 +3023,9 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  //bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  //bgGrid->createRealGrid();
-  //bgGrid->setType(FFTGrid::PARAMETER);
-  //bgGrid->setAccessMode(FFTGrid::WRITE);
+  bg_grid.Resize(nx, ny, nz);
 
-  for (int k=0; k < nz; k++)
-  {
+  for (int k=0; k < nz; k++) {
     // Set trend for layer
     surface.Assign(trend[k]);
 
@@ -3036,11 +3036,6 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
     for(int j=0; j < ny; j++) {
       for(int i=0 ; i < nx ; i++) {
         bg_grid(i, j, k) = surface(i, j);
-
-        //if(i<nxp)
-        //  bgGrid->setNextReal(float(surface(i,j)));
-        //else
-        //  bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
       }
     }
 
@@ -3052,7 +3047,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
       fflush(stdout);
     }
   }
-  //bgGrid->endAccess();
+
 }
 
 //---------------------------------------------------------------------------
@@ -3954,11 +3949,10 @@ Background::resampleBackgroundModel(NRLib::Grid<double> & bg_vp,
 //}
 
 void
-Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,        // Resample to
-                              NRLib::Grid<double> & p_old, //FFTGrid  * pOld,        // Resample from
+Background::resampleParameter(NRLib::Grid<double> & p_new, // Resample to
+                              NRLib::Grid<double> & p_old, // Resample from
                               const Simbox        * simbox_new,
                               const Simbox        * simbox_old)
-                              //bool          isFile)
 {
   int nx  = simbox_new->getnx();
   int ny  = simbox_new->getny();
@@ -3998,14 +3992,6 @@ Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,   
   // Resample parameter
   //
   p_new.Resize(nx, ny, nz);
-  //pNew = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  //pNew->createRealGrid();
-  //pNew->setType(FFTGrid::PARAMETER);
-  //pNew->setAccessMode(FFTGrid::WRITE);
-
-  //pOld->setAccessMode(FFTGrid::RANDOMACCESS);
-
-  //int rnxp = 2*(nxp/2 + 1);
 
   double * layer = new double[nx*ny];
 
@@ -4016,11 +4002,9 @@ Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,   
     int ij=0;
     for (int j=0 ; j<ny; j++) {
       for (int i=0 ; i<nx; i++) {
-        if (i < nx && j < ny && k < nz) {
-          int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
-          layer[ij] = p_old(i, j, k_old);//pOld->getRealValue(i, j, kOld);
-          ij++;
-        }
+        int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
+        layer[ij] = p_old(i, j, k_old);
+        ij++;
       }
     }
     //
@@ -4029,45 +4013,38 @@ Background::resampleParameter(NRLib::Grid<double> & p_new, //FFTGrid *& pNew,   
     float value;
     for (int j=0 ; j<ny; j++) {
       for (int i=0 ; i<nx; i++) {
-        if (i < nx && j < ny && k < nz) {
-          int n = 1;
-          double sum = layer[j*nx + i];
-          if (i>1) {
-            sum += layer[j*nx + i - 1];
-            n++;
-          }
-          if (j>1) {
-            sum += layer[(j - 1)*nx + i];
-            n++;
-          }
-          if (i>1 && j>1) {
-            sum += layer[(j - 1)*nx + i - 1];
-            n++;
-          }
-          if (i<nx-1) {
-            sum += layer[j*nx + i + 1];
-            n++;
-          }
-          if (j<ny-1) {
-            sum += layer[(j + 1)*nx + i];
-            n++;
-          }
-          if (i<nx-1 && j<ny-1) {
-            sum += layer[(j + 1)*nx + i + 1];
-            n++;
-          }
-          value = static_cast<float>(sum)/static_cast<float>(n);
+        int n = 1;
+        double sum = layer[j*nx + i];
+        if (i>1) {
+          sum += layer[j*nx + i - 1];
+          n++;
         }
-        else {
-          value = RMISSING;
+        if (j>1) {
+          sum += layer[(j - 1)*nx + i];
+          n++;
         }
+        if (i>1 && j>1) {
+          sum += layer[(j - 1)*nx + i - 1];
+          n++;
+        }
+        if (i<nx-1) {
+          sum += layer[j*nx + i + 1];
+          n++;
+        }
+        if (j<ny-1) {
+          sum += layer[(j + 1)*nx + i];
+          n++;
+        }
+        if (i<nx-1 && j<ny-1) {
+          sum += layer[(j + 1)*nx + i + 1];
+          n++;
+        }
+        value = static_cast<float>(sum)/static_cast<float>(n);
+
         p_new(i, j, k) = value;
-        //pNew->setNextReal(value);
       }
     }
   }
-  //pOld->endAccess();
-  //pNew->endAccess();
 
   delete [] layer;
   delete [] a;

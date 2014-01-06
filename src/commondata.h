@@ -618,7 +618,6 @@ private:
                                std::string   & err_text);
 
   bool optimizeWellLocations();
-  bool estimateWaveletShape();
 
   int ComputeTime(int year, int month, int day) const;
 
@@ -634,7 +633,6 @@ private:
   bool temporary_wavelet_;
   bool optimize_well_location_;
   bool wavelet_handling_;
-  //bool wavelet_estimation_shape_;
   bool setup_multigrid_;
   bool setup_trend_cubes_;
   bool setup_estimation_rock_physics_;
@@ -665,7 +663,6 @@ private:
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
-  //std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model

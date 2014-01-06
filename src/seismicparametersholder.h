@@ -39,7 +39,7 @@ public:
   void                          FFTAllGrids();
   void                          updatePriorVar();
 
-  void                          setPriorVar0(NRLib::Matrix priorVar0)   { priorVar0_ = priorVar0 ;}
+  //void                          setPriorVar0(NRLib::Matrix priorVar0)   { priorVar0_ = priorVar0 ;}
 
   void                          setBackgroundParameters(FFTGrid  * meanVp,
                                                         FFTGrid  * meanVs,
@@ -50,17 +50,17 @@ public:
                                                                 int                                       ny_pad,
                                                                 int                                       nz_pad);
 
-  void                          setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters,
-                                                 int                                       nx_pad,
-                                                 int                                       ny_pad,
-                                                 int                                       nz_pad);
+  //void                          setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters,
+  //                                               int                                       nx_pad,
+  //                                               int                                       ny_pad,
+  //                                               int                                       nz_pad);
 
-  void                          setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
-                                                   const NRLib::Grid<double> & cr_cov_vp_rho,
-                                                   const NRLib::Grid<double> & cr_cov_vs_rho,
-                                                   int                         nx_pad,
-                                                   int                         ny_pad,
-                                                   int                         nz_pad);
+  //void                          setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
+  //                                                 const NRLib::Grid<double> & cr_cov_vp_rho,
+  //                                                 const NRLib::Grid<double> & cr_cov_vs_rho,
+  //                                                 int                         nx_pad,
+  //                                                 int                         ny_pad,
+  //                                                 int                         nz_pad);
 
   void                          copyBackgroundParameters(FFTGrid  * meanVp,
                                                          FFTGrid  * meanVs,

@@ -44,6 +44,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     for(int i = 0; i < n_intervals_; i++)
       background_parameters_[i].resize(3);
     background_vs_vp_ratios_.resize(n_intervals_);
+    prior_facies_prob_cubes_.resize(n_intervals_);
   }
   // if there is only one interval
   else {
@@ -58,6 +59,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     background_parameters_.resize(1);
     background_parameters_[0].resize(3);
     background_vs_vp_ratios_.resize(1);
+    prior_facies_prob_cubes_.resize(1);
   }
 
   // 1. ERODE SURFACES AND SET SURFACES OF SIMBOXES -----------------------------------------
@@ -257,7 +259,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   int                    n_layers                               = model_settings->getTimeNz();
 
   //H-DEBUGGING Added cases for debugging
-  /*
+
   // Case 1: Single correlation surface
   if (corr_dir_single_surf != "") {
     Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
@@ -279,7 +281,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   interval_simbox.SetNYpad(estimation_simbox->GetNYpad());
   interval_simbox.SetXPadFactor(estimation_simbox->GetXPadFactor());
   interval_simbox.SetYPadFactor(estimation_simbox->GetYPadFactor());
-  */
+
 
   // Calculate Z padding ----------------------------------------------------------------
   int status = interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);

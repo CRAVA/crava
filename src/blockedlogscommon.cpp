@@ -60,7 +60,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
   if (!failed)
     BlockWell(estimation_simbox, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, interpolate, facies_map_, facies_log_defined_, failed, err_text);
+              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
@@ -102,7 +102,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
       // If there is only one interval, the well can be blocked as before.
       n_layers_ = interval_simboxes[0].getnz();
       BlockWell(&interval_simboxes[0], continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-                discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+                discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
     }
     else {
       // If there are multiple intervals, special treatment is required. Neighbouring cells vertically
@@ -140,7 +140,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
 
   if (!failed)
     BlockWell(estimation_simbox, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, failed, err_text);
+              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
@@ -579,26 +579,26 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
   // indices of the simbox cells that are already accounted for, so that these are not
   // enlisted more than one time.
   //
-  int * simbox_ind = new int[nd];                                     // help hack
-  const int nx    = estimation_simbox->getnx();                                 // help hack
-  const int ny    = estimation_simbox->getny();                                 // help hack
-  simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                        // help hack
+  int * simbox_ind = new int[nd];                                    // help hack
+  const int nx    = estimation_simbox->getnx();                      // help hack
+  const int ny    = estimation_simbox->getny();                      // help hack
+  simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                    // help hack
 
   for (int m = first_M_ + 1 ; m < last_M_ + 1 ; m++) {
     estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], new_I ,new_J, new_K);
 
     if (new_I != old_I || new_J != old_J || new_K != old_K) {
 
-      int  this_ind = nx*ny*new_K + nx*new_J + new_I;                    // help hack
-      bool block_not_listed = true;                                    // help hack
-      for (int l = 0 ; l < n_defined_blocks ; l++) {                   // help hack
-        if (this_ind == simbox_ind[l]) {                               // help hack
-          block_not_listed = false;                                    // help hack
+      int  this_ind = nx*ny*new_K + nx*new_J + new_I;                // help hack
+      bool block_not_listed = true;                                  // help hack
+      for (int l = 0 ; l < n_defined_blocks ; l++) {                 // help hack
+        if (this_ind == simbox_ind[l]) {                             // help hack
+          block_not_listed = false;                                  // help hack
           break;                                                     // help hack
         }                                                            // help hack
       }                                                              // help hack
-      if (block_not_listed) {                                          // help hack
-        simbox_ind[n_defined_blocks+1] = this_ind;                       // help hack
+      if (block_not_listed) {                                        // help hack
+        simbox_ind[n_defined_blocks+1] = this_ind;                   // help hack
         old_I = new_I;
         old_J = new_J;
         old_K = new_K;
@@ -1114,7 +1114,7 @@ void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
   // Block log
   //
   for (int m = first_M_ ; m < last_M_ + 1 ; m++) {
-    if (well_log[m] != RMISSING) {
+    if (well_log[m] != RMISSING && well_log[m] != WELLMISSING) {
       blocked_log[b_ind[m]] += log(well_log[m]); //NBNB-PAL: Flytt denne logaritmen nedover...
       count[b_ind[m]]++;
       //LogKit::LogFormatted(LogKit::Low,"m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));

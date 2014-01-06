@@ -116,10 +116,9 @@
 //}
 
 ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
-                               //ModelGeneral         *& model_general,
                                const InputFiles      * input_files,
                                CommonData            * common_data,
-                               const Simbox                * simbox,
+                               const Simbox          * simbox,
                                int                     i_interval)
 {
   forward_modeling_        = model_settings->getForwardModeling();
@@ -137,11 +136,10 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     //Maybe load in from modelSettings here, things that are needed in doAVOInversion
 
 
-
     //Set up errCorr here
-    int nx  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNI();
-    int ny  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNJ();
-    int nz  = common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval)[0].GetNK();
+    int nx  = common_data->GetMultipleIntervalGrid()->GetParametersInterval(i_interval)[0].GetNI();
+    int ny  = common_data->GetMultipleIntervalGrid()->GetParametersInterval(i_interval)[0].GetNJ();
+    int nz  = common_data->GetMultipleIntervalGrid()->GetParametersInterval(i_interval)[0].GetNK();
     int nxp = simbox->GetNXpad();
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
@@ -157,7 +155,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
     //H-DEBUGGING
-    err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
     CheckAvailableMemory(simbox, model_settings, input_files);
 

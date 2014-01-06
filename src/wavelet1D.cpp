@@ -54,23 +54,16 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   coeff_[2]   = reflCoef[2];
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
-  //theta_      = seisCube->getTheta();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  //cnzp_       = nzp_/2+1;
-  //rnzp_       = 2*cnzp_;
+  nzp_        = seismic_data->GetNz();
+  cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
   cz_         = 0;
   inFFTorder_ = true;
   isReal_     = true;
   formats_    = modelSettings->getWaveletFormatFlag();
-
-  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  //nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
-  nzp_        = seismic_data->GetNz();
-
-  cnzp_       = nzp_/2+1;
-  rnzp_       = 2*cnzp_;
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -726,7 +719,6 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 
 float
 Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * simbox,
-                                           //const SeismicStorage                             * seismic_data,
                                            const std::vector<std::vector<double> >          & seis_logs,
                                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                            const ModelSettings                              * modelSettings,
@@ -1336,6 +1328,7 @@ Wavelet1D::estimateLocalShift(const CovGrid2D                                  &
       const std::vector<double> & xPos = blocked_log->GetXposBlocked();
       const std::vector<double> & yPos = blocked_log->GetXposBlocked();
       int xInd, yInd;
+
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       shiftData.addData(xInd,yInd,shiftWell[i]);
     }

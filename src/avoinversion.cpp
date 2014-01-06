@@ -141,28 +141,24 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seisData_       = modelAVOdynamic_->getSeisCubes();
     modelAVOdynamic_->releaseGrids();
 
-    if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
-      spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
+    //H-DEBUGGING
+    //if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
+    //  spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
-      FFTGrid * covVp = seismicParameters.GetCovVp();
-      covVp->setAccessMode(FFTGrid::RANDOMACCESS);
+    //  FFTGrid * covVp = seismicParameters.GetCovVp();
+    //  covVp->setAccessMode(FFTGrid::RANDOMACCESS);
 
-      //for (int i=0; i<nWells_; i++)
-      //  spatwellfilter->setPriorSpatialCorr(alphaCov, wells_[i], i);
-      int i = 0;
-      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
-        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
-        BlockedLogsCommon * blocked_log = iter->second;
+    //  int i = 0;
+    //  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+    //    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+    //    BlockedLogsCommon * blocked_log = iter->second;
 
-        spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i); //H Correct use of i?
-        i++;
-      }
+    //    spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
+    //    i++;
+    //  }
 
-      covVp->endAccess();
-    }
-
-    //float corrGradI, corrGradJ;
-    //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
+    //  covVp->endAccess();
+    //}
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
@@ -172,10 +168,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
     errCorr_ = modelAVOstatic->getErrCorr();
-    //errCorr_ = createFFTGrid();
-    //errCorr_ ->setType(FFTGrid::COVARIANCE);
-    //errCorr_ ->createRealGrid();
-    //errCorr_->fillInErrCorr(modelGeneral->getPriorCorrXY(), corrGradI, corrGradJ); // errCorr_->fftInPlace();
 
     for (int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));

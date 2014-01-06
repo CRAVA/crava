@@ -219,26 +219,32 @@ int main(int argc, char** argv)
 
       //From NRLib::Grid to FFT-grid, need to fill in padding.
       SeismicParametersHolder seismicParametersInterval;
+
+      const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
+
       //Forventningsgrid (fra multisonegrid)
-      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersForInterval(i_interval),
-                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
-                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
-                                                                common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
+      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetParametersInterval(i_interval),
+                                                                simbox->GetNXpad(),
+                                                                simbox->GetNYpad(),
+                                                                simbox->GetNZpad());
       //korrelasjonsgrid (2m)
-       //H-DEBUGGING
-      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
+      float corr_grad_I = 0.0f;
+      float corr_grad_J = 0.0f;
+      common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
-      seismicParametersInterval.setCrCovParameters(common_data->GetCorrParametersInterval(i_interval)[0],
-                                                   common_data->GetCorrParametersInterval(i_interval)[1],
-                                                   common_data->GetCorrParametersInterval(i_interval)[2],
-                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
-                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
-                                                   common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
-
-      seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
+      //H-DEBUGGING
+      //seismicParametersInterval.setCorrelationParameters(paramCorr, //From CommonData
+      //                                                   corrT,     //From CommonData
+      //                                                   common_data->GetPriorCorrXY(), //priorCorrXY_, //From CommonData
+      //                                                   lowIntCut, //From CommonData
+      //                                                   corr_grad_I,
+      //                                                   corr_grad_J,
+      //                                                   simbox->getnx(),
+      //                                                   simbox->getny(),
+      //                                                   simbox->getnz(),
+      //                                                   simbox->GetNXpad(),
+      //                                                   simbox->GetNYpad(),
+      //                                                   simbox->GetNZpad());
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,
@@ -257,11 +263,9 @@ int main(int argc, char** argv)
 
       //Skal ikke være en egen doFirstAVOInversion (det som er spesielt i denne skal være gjort i CommonData eller flyttes til doAVOInversion)
       //Må skille ut forward-modelling her et sted.
+
       if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
 
-        //Forward-modelling skal ikke være på interval-basis:
-        // flyttes utenfor intervall-løkken?
-        // eller gå ut av intervall-løkken etter dette punktet?
 
       }
       else {
@@ -344,8 +348,8 @@ int main(int argc, char** argv)
 
 
 
-    Simbox * timeBGSimbox = NULL;
-    SeismicParametersHolder seismicParameters;
+    //Simbox * timeBGSimbox = NULL;
+    //SeismicParametersHolder seismicParameters;
 
     //setupStaticModels(modelGeneral,
     //                  modelAVOstatic,
