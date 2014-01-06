@@ -1,4 +1,4 @@
-#include "rplib/table_vp2.h"
+#include "rplib/table_rho1.h"
 
 namespace ConstDataStoredAsSurface {
 const NRLib::RegularSurface<double> CreateSurfaceRho1() {
