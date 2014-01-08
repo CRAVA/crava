@@ -116,6 +116,11 @@ private:
                                                          const int                   & n_below,
                                                          std::vector<double>         & mu_vp_square,
                                                          NRLib::Grid2D<double>       & Sigma_vp_square) const;
+  void                          transformCovarianceToRelativeScale(const std::vector<double>     mu,
+                                                                         NRLib::Grid2D<double> & Sigma,
+                                                                         int n1, int n1p,
+                                                                         int n2, int n2p,
+                                                                         int n3, int n3p) const;
 
   void                          generateMuSigmaLogVpAbove(const int                    & nz,
                                                           const int                    & nzp,
@@ -242,11 +247,12 @@ private:
                                                                FFTGrid                    *& stationary_covariance,
                                                                std::vector<int>            & observation_filter) const;
 
-  void                          calculateStationaryObservations(const fftw_complex  * pri_cov_c,
-                                                                const fftw_complex  * var_e_c,
-                                                                FFTGrid             * pri_mu,
-                                                                FFTGrid             * post_mu,
-                                                                FFTGrid            *& stat_d) const;
+  void                          calculateStationaryObservations(const fftw_complex  *  pri_cov_c,
+                                                                const fftw_complex  *  var_e_c,
+                                                                const std::vector<int> filter_c,
+                                                                FFTGrid             *  pri_mu,
+                                                                FFTGrid             *  post_mu,
+                                                                FFTGrid             *& stat_d) const;
 
   void                          calculateErrorVariance(const fftw_complex * pri_cov_c,
                                                        const fftw_complex * post_cov_c,

@@ -4019,7 +4019,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-      //makeCorr2DPositiveDefinite( priorCorrXY_);
+      makeCorr2DPositiveDefinite( priorCorrXY_);
 
       seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
@@ -4788,21 +4788,21 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
     if (debug == true)
       dump4Dparameters(modelSettings,
                        "_BeforeEvolve_",
-                       previous_vintage);
+                       previous_vintage,debug);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
 
     if (debug == true)
       dump4Dparameters(modelSettings,
                        "_AfterEvolve_",
-                       previous_vintage+1);
+                       previous_vintage,debug);
 
     state4d_.merge(seismicParameters);
 
 
     if (debug == true)
       dumpSeismicParameters(modelSettings,
-                            "_next_prior",
+                            "_prior",
                             previous_vintage + 1,
                             seismicParameters);
   }
@@ -4845,7 +4845,7 @@ ModelGeneral::updateState4D(SeismicParametersHolder &  seismicParameters)
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 {
-
+  dump4Dparameters(modelSettings,"_FinalInversion_End", 0);
   std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*timeLine_, rock_distributions_.begin()->second,  timeEvolution_);
   int nParamOut =predictions.size();
 
@@ -4890,7 +4890,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
-  /*
+  // /*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "mean_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -4916,7 +4916,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
 }
 
 void
-ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep)
+ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding)
 {
   state4d_.iFFT();
 
@@ -4927,22 +4927,21 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
 
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),true);
-
-  /*
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),printPadding);
+  // /*
   tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoStatic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoStatic() , fileName, tag.str(),printPadding);
   // */
   // write mu dynamic
   tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),true);
-  /*
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),printPadding);
+  // /*
   tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),printPadding);
   // */
 
 
@@ -5003,6 +5002,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
 void
 ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
 {
+  float centerValue =  float((*corrXY)(0));
   int      nxp    = corrXY->GetNI();
   int      nyp    = corrXY->GetNJ();
   FFTGrid  helper = FFTGrid(nxp,nyp,1,nxp,nyp,1);
@@ -5029,9 +5029,9 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
     }
 
   helper.invFFTInPlace();
-  double scale=1.0/double(helper.getRealValue(0,0,0));
+  double scale=centerValue/double(helper.getRealValue(0,0,0));
 
-  printf("\nFix in latteral correlation in CRAVA results in a variance increase of %f %% (of 100%%) \n",(scale-1.0)*100);
+  printf("\nFix in latteral correlation in CRAVA results in a variance changeof %f %% (of 100%%) \n",std::abs(scale/centerValue-1.0)*100);
 
   for(int i =0;i<nxp;i++)
     for(int j =0;j<nyp;j++)

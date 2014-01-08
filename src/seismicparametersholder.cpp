@@ -356,31 +356,21 @@ void
 SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) const
 {
 
-  fftw_complex iiTmp = covAlpha_      ->getNextComplex();
-  fftw_complex jjTmp = covBeta_       ->getNextComplex();
-  fftw_complex kkTmp = covRho_        ->getNextComplex();
-  fftw_complex ijTmp = crCovAlphaBeta_->getNextComplex();
-  fftw_complex ikTmp = crCovAlphaRho_ ->getNextComplex();
-  fftw_complex jkTmp = crCovBetaRho_  ->getNextComplex();
+  fftw_complex ii = covAlpha_      ->getNextComplex();
+  fftw_complex jj = covBeta_       ->getNextComplex();
+  fftw_complex kk = covRho_        ->getNextComplex();
+  fftw_complex ij = crCovAlphaBeta_->getNextComplex();
+  fftw_complex ik = crCovAlphaRho_ ->getNextComplex();
+  fftw_complex jk = crCovBetaRho_  ->getNextComplex();
 
-  fftw_complex ii;
-  fftw_complex jj;
-  fftw_complex kk;
-  fftw_complex ij;
-  fftw_complex ik;
-  fftw_complex jk;
+  parVar[0][0].re = sqrt(ii.re*ii.re+ii.im*ii.im); // assures positive and real diagonal
+  parVar[0][0].im = 0.0f;
+  parVar[1][1].re = sqrt(jj.re*jj.re+jj.im*jj.im);
+  parVar[1][1].im = 0.0f;
+  parVar[2][2].re = sqrt(kk.re*kk.re+kk.im*kk.im);
+  parVar[2][2].im = 0.0f;
 
-  ii = getParameterCovariance(priorVar0_, 0, 0, iiTmp);
-  jj = getParameterCovariance(priorVar0_, 1, 1, jjTmp);
-  kk = getParameterCovariance(priorVar0_, 2, 2, kkTmp);
-  ij = getParameterCovariance(priorVar0_, 0, 1, ijTmp);
-  ik = getParameterCovariance(priorVar0_, 0, 2, ikTmp);
-  jk = getParameterCovariance(priorVar0_, 1, 2, jkTmp);
-
-  parVar[0][0] = ii;
-  parVar[1][1] = jj;
-  parVar[2][2] = kk;
-
+  // assures hermittian structure
   parVar[0][1].re =  ij.re;
   parVar[0][1].im =  ij.im;
   parVar[1][0].re =  ij.re;

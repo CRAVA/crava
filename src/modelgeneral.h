@@ -216,7 +216,7 @@ public:
   void              setTimeSimbox(Simbox * new_timeSimbox);
 
   void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
-  void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
+  void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=false);
   void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:

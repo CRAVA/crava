@@ -14,7 +14,7 @@
 #include "src/covgrid2d.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
-
+#include "lib/lib_matr.h"
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #include "lib/timekit.hpp"
@@ -193,7 +193,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
-  stationary_covariance->fftInPlace();
+  //stationary_covariance->fftInPlace();
 
   FFTGrid * post_mu_log_vp = NULL;
   calculateLogVpExpectation(observation_filter,
@@ -441,8 +441,6 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
-  stationary_covariance->fftInPlace();
-
   if (inversion_number == 0 && this_time_lapse > 0) {
     // Generate new simbox, and resample expectation grids in seismicParametersHolder
 
@@ -550,7 +548,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
                                      stationary_covariance_above,
                                      observation_filter_above);
 
-      stationary_covariance_above->fftInPlace();
+      //stationary_covariance_above->fftInPlace();
       Sigma_log_vp_above         ->fftInPlace();
 
       FFTGrid * post_mu_log_vp_above = NULL;
@@ -698,6 +696,7 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_log_v
                             G,
                             mu_post,
                             Sigma_post);
+    transformCovarianceToRelativeScale(mu_post,Sigma_post, 0,0,nz,nzp,0, 0);
 
     // Transform to log(Vp)
     transformVpMinusToLogVp(mu_post,
@@ -789,6 +788,7 @@ TravelTimeInversion::do1DRMSInversion(const double                & mu_vp_base,
                           G,
                           mu_post,
                           Sigma_post);
+  transformCovarianceToRelativeScale(mu_post,Sigma_post, n_above, n_pad_above,n_model,n_pad_model,n_below, n_pad_below);
 
   transformVpSquareToLogVp(mu_post,
                            Sigma_post,
@@ -880,6 +880,20 @@ TravelTimeInversion::calculatePosteriorModel(const std::vector<double>   & d,
     for (int j = 0; j < n_layers; j++)
       Sigma_post(i,j) = Sigma_post1(i,j);
   }
+  /*
+  NRLib::WriteVectorToFile("mu_m1.dat",mu_m1);
+  NRLib::WriteVectorToFile("d1.dat",d1);
+  NRLib::WriteVectorToFile("dataMean.dat",dataMean);
+  NRLib::WriteVectorToFile("mu_post1.dat",mu_post1);
+  NRLib::WriteVectorToFile("mu_help.dat", mu_help);
+  NRLib::WriteMatrixToFile("Sigma_post.dat",Sigma_post1);
+  NRLib::WriteMatrixToFile("G.dat",G1);
+  NRLib::WriteMatrixToFile("Sigma_d1.dat",Sigma_d1);
+  NRLib::WriteMatrixToFile("G1_transpose.dat",G1_transpose);
+  NRLib::WriteMatrixToFile("Sigma_m1.dat",Sigma_m1);
+  NRLib::WriteMatrixToFile("helpMat.dat",helpMat);
+  NRLib::WriteMatrixToFile("Sigma_help.dat",Sigma_help);
+  */
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -1636,6 +1650,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
                                                     FFTGrid                    *& stationary_covariance,
                                                     std::vector<int>            & observation_filter) const
 {
+   // Checked 28.November 2013 by Odd Kolbjørnsen
   int nx   = pri_mu->getNx();
   int ny   = pri_mu->getNy();
   int nz   = pri_mu->getNz();
@@ -1653,11 +1668,29 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
                      nyp,
                      post_mu);
 
+  /* print out for debug
+  pri_mu->invFFTInPlace();
+  pri_mu->writeAsciiRaw("pri_mu.dat");
+  pri_mu->fftInPlace();
+  post_mu->writeAsciiRaw("post_mu.dat");
+  //  */
+  post_mu->fftInPlace();
+  float scalePost = static_cast<float>(post_mu->getFirstComplexValue().re/std::sqrt(static_cast<double>(nxp*nyp*nzp)));
+  float scalePri  = static_cast<float>(pri_mu->getFirstComplexValue().re/std::sqrt(static_cast<double>(nxp*nyp*nzp)));
+
+  // adjust covariance by scale factor because the change of absolute level
+  // will adjust the total uncertainty level (which is unfortunate)
+  // The argument beeing that changes made to the absolute level
+  // will influence variability in all frequencies, this is not wanted.
+  // This is used for the computation of properties of likelihood, which in turn is used further.
+
+  float scaleFactor = exp(2*(scalePri-scalePost));
+
   fftw_real    * pri_cov_r = new fftw_real[rnzp];
   fftw_complex * pri_cov_c = reinterpret_cast<fftw_complex*>(pri_cov_r);
 
   for (int i = 0; i < nzp; i++)
-    pri_cov_r[i] = static_cast<float>(pri_circulant_cov[i]);
+    pri_cov_r[i] = static_cast<float>(pri_circulant_cov[i])*scaleFactor;
 
   Utils::fft(pri_cov_r, pri_cov_c, nzp);
 
@@ -1678,33 +1711,51 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
   fftw_real    * var_e_r = new fftw_real[rnzp];
   fftw_complex * var_e_c = reinterpret_cast<fftw_complex*>(var_e_r);
 
+  // Calculate error for traces where the traveltime data are observed
   calculateErrorVariance(pri_cov_c, post_cov_c, nzp, var_e_c);
-
+  // compute the observations corresponding to prior vs posterior for each observed profile
   stationary_observations = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
   stationary_observations->createComplexGrid();
   stationary_observations->setType(FFTGrid::DATA);
 
-  post_mu->fftInPlace();
-
+  // Find those frequencies where there has been a relevant change
+  calculateFilter(pri_cov_c, post_cov_c, nzp, observation_filter);
   calculateStationaryObservations(pri_cov_c,
                                   var_e_c,
+                                  observation_filter,
                                   pri_mu,
                                   post_mu,
                                   stationary_observations);
 
-  calculateFilter(pri_cov_c, post_cov_c, nzp, observation_filter);
+  // Replaces this with error correlation errorCorrXY
+  // Multiply var_e_c with  factor below to increase the variance as the RMS data are only observed in some of the traces
+  // Note that the information in one profile is distributed to all neighbours, thus there is no "loss" of information
+  // just redistribution/reinterpretation.
+  //float factor = static_cast<float>(nx * ny) / static_cast<float>(n_rms_traces);
+  //for (int i = 0; i < cnzp; i++)
+  //  var_e_c[i].re *= factor;
 
-  float factor = static_cast<float>(nx * ny) / static_cast<float>(n_rms_traces); // Multiply var_e_c with this factor to increase the variance as the RMS data are only observed in some of the traces
-
-  Utils::fftInv(var_e_c, var_e_r, nzp);
-  for (int i = 0; i < nzp; i++)
-    var_e_r[i] *= factor;
+  /*  printout for debug
+  lib_matrDumpVecCpx("pri_cov_c.dat", pri_cov_c, cnzp);
+  lib_matrDumpVecCpx("post_cov_c.dat", post_cov_c,cnzp);
+  lib_matrDumpVecCpx("var_e_c.dat", var_e_c,cnzp);
+  // */
 
   stationary_covariance = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
   stationary_covariance->createRealGrid();
   stationary_covariance->setType(FFTGrid::COVARIANCE);
 
+  Utils::fftInv(var_e_c, var_e_r, nzp);
+
   stationary_covariance->fillInParamCorr(errorCorrXY, var_e_r, corrGradI, corrGradJ);
+
+  /*  print out for debug
+     stationary_covariance->writeAsciiRaw("StationaryErrorCov.dat");
+     stationary_observations->invFFTInPlace();
+     stationary_observations->writeAsciiRaw("StationaryObs.dat");
+     stationary_observations->fftInPlace();
+ // */
+    stationary_covariance->fftInPlace();
 
   delete [] pri_cov_r;
   delete [] post_cov_r;
@@ -1716,14 +1767,16 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
 //-------------------------------------------------------------------------------
 
 void
-TravelTimeInversion::calculateStationaryObservations(const fftw_complex  * pri_cov_c,
-                                                     const fftw_complex  * var_e_c,
-                                                     FFTGrid             * pri_mu,
-                                                     FFTGrid             * post_mu,
-                                                     FFTGrid            *& stat_d) const
+TravelTimeInversion::calculateStationaryObservations(const fftw_complex  *  pri_cov_c,
+                                                     const fftw_complex  *  var_e_c,
+                                                     const std::vector<int>  filter_c,
+                                                     FFTGrid             *  pri_mu,
+                                                     FFTGrid             *  post_mu,
+                                                     FFTGrid             *& stat_d) const
 {
   // Calculate d = mu_pri + (var_pri+var_e)/conj_var_pri * (mu_post-mu_pri)
-
+   // Checked 28.November 2013 by Odd Kolbjørnsen
+  assert(pri_mu->getIsTransformed());assert(post_mu->getIsTransformed());
   int nyp = pri_mu->getNyp();
   int nzp = pri_mu->getNzp();
   int cnxp = pri_mu->getCNxp();
@@ -1760,10 +1813,13 @@ TravelTimeInversion::calculateStationaryObservations(const fftw_complex  * pri_c
       for (int i = 0; i < cnxp; i++) {
         fftw_complex pri_c  = pri_mu ->getNextComplex();
         fftw_complex post_c = post_mu->getNextComplex();
-
-        subtractComplex(&post_c, &pri_c, 1, &subtract);
-        multiplyComplex(&div, &subtract, 1, &multiply);
-        addComplex(&pri_c, &multiply, 1, &d);
+        if(filter_c[k]>0){
+          subtractComplex(&post_c, &pri_c, 1, &subtract);
+          multiplyComplex(&div, &subtract, 1, &multiply);
+          addComplex(&pri_c, &multiply, 1, &d);
+        }else{
+          d =pri_c ;
+        }
 
         stat_d->setNextComplex(d);
       }
@@ -1787,7 +1843,7 @@ TravelTimeInversion::calculateErrorVariance(const fftw_complex * pri_cov_c,
                                             fftw_complex       * var_e_c) const
 {
   // Calculate var_e = var_pri *(conj_var_pri - var_pri + var_post) / (var_pri-var_post)
-
+   // Checked 28.November 2013 by Odd Kolbjørnsen
   int cnzp = nzp / 2 + 1;
 
   fftw_complex * conj_pri_cov  = new fftw_complex[cnzp];
@@ -1830,7 +1886,8 @@ TravelTimeInversion::calculateFilter(const fftw_complex * pri_cov_c,
   // Fudge factor 1.04:
   // Rules out cases where the error standard deviation is
   // 5 times larger than the standard deviation in the parameter, 5 = sqrt(1/0.04)
-
+  //
+  // Checked 2.Desember 2013 by Odd Kolbjørnsen
   int cnzp = nzp/2 + 1;
 
   std::vector<double> abs_pri;
@@ -1842,7 +1899,7 @@ TravelTimeInversion::calculateFilter(const fftw_complex * pri_cov_c,
   filter.resize(nzp, 0);
 
   for (int i = 0; i < cnzp; i++) {
-    if (abs_pri[i] > abs_post[i] * 1.04)
+    if (abs_pri[i] > abs_post[i] * 1.01)
       filter[i] = 1;
   }
 
@@ -1953,6 +2010,17 @@ TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & obser
   FFTGrid * cr_cov_vp_vs  = seismic_parameters.GetCrCovAlphaBeta();
   FFTGrid * cr_cov_vp_rho = seismic_parameters.GetCrCovAlphaRho();
   FFTGrid * cr_cov_vs_rho = seismic_parameters.GetCrCovBetaRho();
+
+   /*  print out for debug
+
+  mu_vp->invFFTInPlace();
+  cov_vp->invFFTInPlace();
+  mu_vp->writeAsciiRaw("prior_meanVp.dat");
+  cov_vp->writeAsciiRaw("prior_covVp.dat");
+  mu_vp->fftInPlace();
+  cov_vp->fftInPlace();
+
+  // */
 
   mu_vp ->setAccessMode(FFTGrid::READANDWRITE);
   mu_vs ->setAccessMode(FFTGrid::READANDWRITE);
@@ -2096,7 +2164,65 @@ TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & obser
 
   for (int i = 0; i < 3; ++i)
     delete [] Sigma_post[i];
+
+   /*  print out for debug
+  mu_vp->invFFTInPlace();
+  cov_vp->invFFTInPlace();
+  mu_vp->writeAsciiRaw("post_meanVp.dat");
+  cov_vp->writeAsciiRaw("post_covVp.dat");
+  mu_vp->fftInPlace();
+  cov_vp->fftInPlace();
+  // */
 }
+//-----------------------------------------------------------------------------------------//
+void
+TravelTimeInversion::transformCovarianceToRelativeScale( std::vector<double> mu, NRLib::Grid2D<double> & Sigma, int n1, int n1p,int n2, int n2p,int n3, int n3p) const
+{
+  int ntot=n1p+n2p+n3p;
+  NRLib::Vector localCoefficientOfVariation(ntot);
+  NRLib::Vector multiplyer(ntot);
+  double meanCoefficientOfVariation1;
+  double meanCoefficientOfVariation2;
+  double meanCoefficientOfVariation3;
+
+  for(int i=0;i<n1p;i++)
+    localCoefficientOfVariation(i)=sqrt(Sigma(i,i))/mu[i];
+
+   meanCoefficientOfVariation1=0.0;
+   for(int i=0;i<n1;i++) // Here  we use nz  to find the reduction in the reservoir
+     meanCoefficientOfVariation1 += localCoefficientOfVariation(i)/n1;
+
+   for(int i=n1p;i<n1p+n2p;i++)
+    localCoefficientOfVariation(i)=sqrt(Sigma(i,i))/mu[i];
+
+   meanCoefficientOfVariation2=0.0;
+   for(int i=n1p;i<n1p+n2;i++) // Here  we use nz  to find the reduction in the reservoir
+     meanCoefficientOfVariation2 += localCoefficientOfVariation(i)/n2;
+
+   for(int i=n1p+n2p;i<ntot;i++)
+    localCoefficientOfVariation(i)=sqrt(Sigma(i,i))/mu[i];
+
+   meanCoefficientOfVariation3=0.0;
+   for(int i=n1p+n2p;i<n1p+n2p+n3;i++) // Here  we use nz  to find the reduction in the reservoir
+     meanCoefficientOfVariation3 += localCoefficientOfVariation(i)/n3;
+
+   for(int i=0;i<n1p;i++)
+     multiplyer(i)=meanCoefficientOfVariation1/localCoefficientOfVariation(i);
+   for(int i=n1p;i<n1p+n2p;i++)
+     multiplyer(i)=meanCoefficientOfVariation2/localCoefficientOfVariation(i);
+   for(int i=n1p+n2p;i<ntot;i++)
+     multiplyer(i)=meanCoefficientOfVariation3/localCoefficientOfVariation(i);
+
+
+  for(int i=0;i<ntot;i++)
+    for(int j=0;j<ntot;j++)
+    {
+      Sigma(i,j) = Sigma(i,j)*multiplyer(i)*multiplyer(j);
+    }
+
+}
+
+
 //-----------------------------------------------------------------------------------------//
 void
 TravelTimeInversion::generateMuSigmaLogVpAbove(const int                    & nz,
