@@ -25,9 +25,13 @@ RockDEM::RockDEM(const Solid                         * solid,
 
 }
 
-RockDEM::RockDEM() : Rock()
+RockDEM::RockDEM()
+: Rock(),
+  fluid_(0)
 {
-   k_ = mu_ = 0;
+  solid_ = NULL;
+  k_     = 0;
+  mu_    = 0;
 }
 
 RockDEM::~RockDEM()

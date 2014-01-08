@@ -376,6 +376,8 @@ int main(int argc, char** argv)
     delete modelGeneral;
     delete modelSettings;
     delete inputFiles;
+    delete modelTravelTimeStatic;
+    delete modelGravityStatic;
 
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");

@@ -590,7 +590,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
         }
       }
       else
-        tmpErrTxt += "<correlation-vs-density> can not be estimatedfor time lapse data\n";
+        tmpErrTxt += "<correlation-vs-density> can not be estimated for time lapse data\n";
     }
     else
       FindDoubleValueFromDistributionWithTrend(correlation_vs_density_[i], "correlation", corr_vs_density[i], errTxt);
@@ -830,7 +830,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                                                 s1,
                                                                                 s2,
                                                                                 output_other,
-                                                                                rock_name_ + "density",
+                                                                                rock_name_ + "_density",
                                                                                 tmpErrTxt);
       else
         density_dist_with_trend[i] = density_dist_with_trend[i-1]->Clone();
@@ -962,13 +962,13 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   if(tmpErrTxt == "") {
     for(int i=0; i<n_vintages; i++) {
       if(i >= n_vintages_bulk_shear)
-        corr_bulk_shear.push_back(corr_bulk_shear[i-1]);
+        corr_bulk_shear[i] = corr_bulk_shear[i-1];
 
       if(i >= n_vintages_bulk_density)
-        corr_bulk_density.push_back(corr_bulk_density[i-1]);
+        corr_bulk_density[i] = corr_bulk_density[i-1];
 
       if(i >= n_vintages_shear_density)
-        corr_shear_density.push_back(corr_shear_density[i-1]);
+        corr_shear_density[i] = corr_shear_density[i-1];
     }
 
     for(int i=0; i<n_vintages; i++) {
@@ -1559,6 +1559,7 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
 
 
   if (tmpErrTxt == "") {
+
     for(int i=0; i<n_vintages; i++) {
       DistributionsRock * rock = new DistributionsRockGassmann(final_distr_dryrock[i],
                                                                final_distr_fluid[i],
@@ -1567,6 +1568,13 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
 
       dist_rock[i] = rock;
     }
+
+    for(int i=0; i<n_vintages; i++) {
+      delete final_distr_dryrock[i];
+
+      delete final_distr_fluid[i];
+    }
+
   }
   else {
     errTxt += "\nProblems with the Gassmann rock physics model:\n";

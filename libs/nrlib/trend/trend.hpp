@@ -1,4 +1,4 @@
-// $Id: trend.hpp 1218 2013-11-15 10:35:04Z gudmundh $
+// $Id: trend.hpp 1223 2013-12-12 09:00:09Z ulvmoen $
 #ifndef NRLIB_TREND_HPP
 #define NRLIB_TREND_HPP
 
@@ -71,9 +71,7 @@ public:
 
   virtual Trend           * Clone()                                                                               const { return new Trend1D(*this) ;}
   virtual void              AddConstant(double c);
-  virtual double            GetTrendElement(int i, int j, int k)                                                  const { if(reference_ == 1) return trend_[i];
-                                                                                                                  else if (reference_ == 2) return trend_[j];
-                                                                                                                  else return trend_[k];   }
+  virtual double            GetTrendElement(int i, int j, int k)                                                  const;
   virtual int               GetReference(void)                                                                    const { return reference_         ;}
   virtual NRLib::Point      DrawPoint(const NRLib::Volume & /*volume*/)                                           const { return Point(0,0,0)       ;}
 

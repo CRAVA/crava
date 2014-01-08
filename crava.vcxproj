@@ -263,9 +263,14 @@
     </ClCompile>
     <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp" />
     <ClCompile Include="rplib\distributionsdryrockwalton.cpp" />
+    <ClCompile Include="rplib\dryrock.cpp" />
     <ClCompile Include="rplib\dryrockwalton.cpp" />
+    <ClCompile Include="rplib\fluid.cpp" />
+    <ClCompile Include="rplib\solid.cpp" />
+    <ClCompile Include="rplib\table_rho.cpp" />
     <ClCompile Include="rplib\table_rho1.cpp" />
     <ClCompile Include="rplib\table_rho2.cpp" />
+    <ClCompile Include="rplib\table_vp.cpp" />
     <ClCompile Include="rplib\table_vp1.cpp" />
     <ClCompile Include="rplib\table_vp2.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
@@ -1364,8 +1369,10 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="rplib\table_rho.h" />
     <ClInclude Include="rplib\table_rho1.h" />
     <ClInclude Include="rplib\table_rho2.h" />
+    <ClInclude Include="rplib\table_vp.h" />
     <ClInclude Include="rplib\table_vp1.h" />
     <ClInclude Include="rplib\table_vp2.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />

@@ -1014,6 +1014,21 @@
     <ClCompile Include="src\modeltraveltimestatic.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="rplib\table_rho.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\solid.cpp">
+      <Filter>Source Files\rplib\solid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\fluid.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\dryrock.cpp">
+      <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1705,6 +1720,12 @@
     </ClInclude>
     <ClInclude Include="src\modeltraveltimestatic.h">
       <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho.h">
+      <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

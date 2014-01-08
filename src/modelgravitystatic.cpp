@@ -182,10 +182,9 @@ ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
       index++;
     }
   }
-  else{
-    failed = true;
+  else
     LogKit::LogFormatted(LogKit::Low,"failed.\n");
-  }
+
   delete [] tmpRes;
 }
 

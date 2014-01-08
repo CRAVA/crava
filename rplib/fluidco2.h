@@ -25,7 +25,6 @@ public:
   virtual Fluid *             Clone()                                                               const;
 
   void                        ComputeElasticParams(double temp, double pressure);
-  void                        DebugTest();
 
   double                      GetCritTemp()                                                         const { return 30.9783;}
   double                      GetCritPressure()                                                     const { return 7.3772; }

@@ -4429,10 +4429,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
           }
           LogKit::LogFormatted(LogKit::Medium,"\n");
 
-          for (int w = 0 ; w < nWells ; w++)
-            delete [] faciesCount[w];
-          delete [] faciesCount;
-
           //
           // Make prior facies probabilities
           //
@@ -4446,7 +4442,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
               nData[faciesLog[i]]++;
             }
           }
-          delete [] faciesLog;
 
           for(int i=0 ; i<nFacies ; i++)
             sum += nData[i];
@@ -4478,6 +4473,12 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
 
           TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
         }
+
+        for (int w = 0 ; w < nWells ; w++)
+          delete [] faciesCount[w];
+        delete [] faciesCount;
+
+        delete [] faciesLog;
       }
       else
       {
@@ -4841,6 +4842,28 @@ ModelGeneral::updateState4D(SeismicParametersHolder &  seismicParameters)
   state4d_.split(seismicParameters);
 }
 
+void
+ModelGeneral::updateState4DWithSingleParameter(FFTGrid * EPost,
+                                               FFTGrid * CovPost,
+                                               int       parameterNumber)
+{
+  state4d_.updateWithSingleParameter(EPost,
+                                     CovPost,
+                                     parameterNumber);
+}
+
+void
+ModelGeneral::updateState4DMu(FFTGrid * mu_vp_static,
+                              FFTGrid * mu_vs_static,
+                              FFTGrid * mu_rho_static,
+                              FFTGrid * mu_vp_dynamic,
+                              FFTGrid * mu_vs_dynamic,
+                              FFTGrid * mu_rho_dynamic)
+{
+  state4d_.updateStaticMu(mu_vp_static, mu_vs_static, mu_rho_static);
+
+  state4d_.updateDynamicMu(mu_vp_dynamic, mu_vs_dynamic, mu_rho_dynamic);
+}
 
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
@@ -4867,6 +4890,9 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
      fileName= outPre + labels[i];
      ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, labels[i]);
   }
+
+  for (size_t i = 0; i < predictions.size(); i++)
+    delete predictions[i];
 
   return 0;
 }

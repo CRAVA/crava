@@ -9,3 +9,11 @@ Rock::Rock()
 Rock::~Rock()
 {
 }
+
+void
+Rock::GetSeismicParams(double & vp, double & vs, double & rho) const
+{
+  vp  = vp_;
+  vs  = vs_;
+  rho = rho_;
+}

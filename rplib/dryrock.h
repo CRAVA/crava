@@ -7,14 +7,14 @@
 class DryRock {
 public:
 
-  DryRock(){}
-  virtual ~DryRock() {}
+  DryRock();
+  virtual ~DryRock();
 
   virtual DryRock                   * Clone()                                                                             const = 0;
 
-  void                                GetElasticParams(double & k, double & mu, double & rho)  const {
-                                        k = k_; mu  = mu_; rho = rho_;
-                                      }
+  void                                GetElasticParams(double & k,
+                                                       double & mu,
+                                                       double & rho) const;
 
   double                              GetMineralModuliK() const   { return mineral_moduli_k_; }
   double                              GetTotalPorosity()  const   { return total_porosity_; }
