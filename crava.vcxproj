@@ -270,9 +270,13 @@
     <ClCompile Include="rplib\table_rho.cpp" />
     <ClCompile Include="rplib\table_rho1.cpp" />
     <ClCompile Include="rplib\table_rho2.cpp" />
+    <ClCompile Include="rplib\table_rho_2.cpp" />
+    <ClCompile Include="rplib\table_rho_3.cpp" />
     <ClCompile Include="rplib\table_vp.cpp" />
     <ClCompile Include="rplib\table_vp1.cpp" />
     <ClCompile Include="rplib\table_vp2.cpp" />
+    <ClCompile Include="rplib\table_vp_2.cpp" />
+    <ClCompile Include="rplib\table_vp_3.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1372,9 +1376,13 @@
     <ClInclude Include="rplib\table_rho.h" />
     <ClInclude Include="rplib\table_rho1.h" />
     <ClInclude Include="rplib\table_rho2.h" />
+    <ClInclude Include="rplib\table_rho_2.h" />
+    <ClInclude Include="rplib\table_rho_3.h" />
     <ClInclude Include="rplib\table_vp.h" />
     <ClInclude Include="rplib\table_vp1.h" />
     <ClInclude Include="rplib\table_vp2.h" />
+    <ClInclude Include="rplib\table_vp_2.h" />
+    <ClInclude Include="rplib\table_vp_3.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\modeltraveltimestatic.h" />
