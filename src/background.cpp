@@ -223,19 +223,23 @@ Background::Background(std::vector<std::vector<NRLib::Grid<double> > > & paramet
   //Background for multiple intervals
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
-  std::vector<NRLib::Grid<double> > bg_vp(n_intervals);
-  std::vector<NRLib::Grid<double> > bg_vs(n_intervals);
-  std::vector<NRLib::Grid<double> > bg_rho(n_intervals);
+  parameters[0].resize(n_intervals);
+  parameters[1].resize(n_intervals);
+  parameters[2].resize(n_intervals);
 
-  GenerateMultiIntervalBackgroundModel(bg_vp, bg_vs, bg_rho,
+  //std::vector<NRLib::Grid<double> > bg_vp(n_intervals);
+  //std::vector<NRLib::Grid<double> > bg_vs(n_intervals);
+  //std::vector<NRLib::Grid<double> > bg_rho(n_intervals);
+
+  GenerateMultiIntervalBackgroundModel(parameters[0], parameters[1], parameters[2],
                                        wells,
                                        multiple_interval_grid,
                                        model_settings,
                                        err_text);
 
-  parameters.push_back(bg_vp);
-  parameters.push_back(bg_vs);
-  parameters.push_back(bg_rho);
+  //parameters.push_back(bg_vp);
+  //parameters.push_back(bg_vs);
+  //parameters.push_back(bg_rho);
 
   //padAndSetBackgroundModelInterval(bg_vp, bg_vs, bg_rho);
 

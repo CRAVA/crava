@@ -68,10 +68,10 @@ SeismicParametersHolder::setBackgroundParameters(FFTGrid  * meanVp,
 }
 
 void
-SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> > & mean_parameters,
-                                                         int                                       nx_pad,
-                                                         int                                       ny_pad,
-                                                         int                                       nz_pad)
+SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> *> & mean_parameters,
+                                                         int                                        nx_pad,
+                                                         int                                        ny_pad,
+                                                         int                                        nz_pad)
 {
   meanVp_  = new FFTGrid(mean_parameters[0], nx_pad, ny_pad, nz_pad);
   meanVs_  = new FFTGrid(mean_parameters[1], nx_pad, ny_pad, nz_pad);

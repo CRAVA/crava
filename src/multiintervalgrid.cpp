@@ -41,7 +41,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
     background_parameters_.resize(n_intervals_);
-    for(int i = 0; i < n_intervals_; i++)
+    for(size_t i = 0; i < n_intervals_; i++)
       background_parameters_[i].resize(3);
     background_vs_vp_ratios_.resize(n_intervals_);
     prior_facies_prob_cubes_.resize(n_intervals_);

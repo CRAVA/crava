@@ -504,8 +504,8 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
-  double FindMeanVsVp(NRLib::Grid<double> & vp,
-                      NRLib::Grid<double> & vs);
+  double FindMeanVsVp(const NRLib::Grid<double> & vp,
+                      const NRLib::Grid<double> & vs);
 
   void SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid,
                                             const double          avg);

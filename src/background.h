@@ -17,8 +17,6 @@ class Vario;
 class Simbox;
 class FFTGrid;
 class CovGrid2D;
-//class WellData;
-//class Well;
 class GridMapping;
 class KrigingData3D;
 class KrigingData2D;
@@ -27,8 +25,6 @@ class ModelSettings;
 class BlockedLogsCommon;
 class BlockedLogs;
 class MultiIntervalGrid;
-class BlockedLogsCommon;
-
 
 //Special note on the use of Background:
 //All pointers used here are also used externally, so no deletion happens.
@@ -111,7 +107,7 @@ private:
   //                                              const ModelSettings            * modelSettings,
   //                                              const std::vector<std::string> & surface_files);
 
-  void         GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp,//FFTGrid                       *& bgAlpha,
+  void         GenerateMultizoneBackgroundModel(NRLib::Grid<double>            & bg_vp,
                                                 NRLib::Grid<double>            & bg_vs,
                                                 NRLib::Grid<double>            & bg_rho,
                                                 const std::vector<NRLib::Well> & wells,
@@ -297,27 +293,23 @@ private:
                                   Vario        * vario,
                                   int            debugFlag);
 
-  void         setupKrigingData2D(std::vector<KrigingData2D>     & kriging_data_vp,
-                                  std::vector<KrigingData2D>     & kriging_data_vs,
-                                  std::vector<KrigingData2D>     & kriging_data_rho,
-                                  std::vector<double>            & trend_vp,
-                                  std::vector<double>            & trend_vs,
-                                  std::vector<double>            & trend_rho,
-                                  //float                          * trend_vp,
-                                  //float                          * trend_vs,
-                                  //float                          * trend_rho,
-                                  const int                        output_flag,
-                                  const int                      & nz,
-                                  const float                    & dz,
-                                  const int                      & tot_blocks,
-                                  const std::vector<int>         & n_blocks,
-                                  const std::vector<std::vector<double> > & bl_vp,
-                               //const std::vector<float *>     & blAlpha,
-                                  const std::vector<std::vector<double> > & bl_vs,
-                                  const std::vector<std::vector<double> > & bl_rho,
-                                  const std::vector<std::vector<double> > & vt_vp,
-                                  const std::vector<std::vector<double> > & vt_vs,
-                                  const std::vector<std::vector<double> > & vt_rho,
+  void         setupKrigingData2D(std::vector<KrigingData2D>                 & kriging_data_vp,
+                                  std::vector<KrigingData2D>                 & kriging_data_vs,
+                                  std::vector<KrigingData2D>                 & kriging_data_rho,
+                                  std::vector<double>                        & trend_vp,
+                                  std::vector<double>                        & trend_vs,
+                                  std::vector<double>                        & trend_rho,
+                                  const int                                    output_flag,
+                                  const int                                  & nz,
+                                  const float                                & dz,
+                                  const int                                  & tot_blocks,
+                                  const std::vector<int>                     & n_blocks,
+                                  const std::vector<std::vector<double> >    & bl_vp,
+                                  const std::vector<std::vector<double> >    & bl_vs,
+                                  const std::vector<std::vector<double> >    & bl_rho,
+                                  const std::vector<std::vector<double> >    & vt_vp,
+                                  const std::vector<std::vector<double> >    & vt_vs,
+                                  const std::vector<std::vector<double> >    & vt_rho,
                                   const std::vector<const std::vector<int> >   ipos,
                                   const std::vector<const std::vector<int> >   jpos,
                                   const std::vector<const std::vector<int> >   kpos) const;
@@ -325,23 +317,20 @@ private:
   void         makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
                                     NRLib::Grid<double>              & bg_grid,
                                     std::vector<double>              & trend,
-                                    //const float                      * trend,
                                     const Simbox                     * simbox,
                                     const CovGrid2D                  & cov_grid_2D,
                                     const std::string                & type) const;
                                     //bool                               isFile) const;
 
   void         makeTrendZone(const std::vector<double> & trend,
-                             //const float   * trend,
                              StormContGrid             & trend_zone) const;
 
   void         makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
                               const std::vector<double>        & trend,
-                              //const float                      * trend,
                               StormContGrid                    & kriged_zone,
                               const CovGrid2D                  & covGrid2D) const;
 
-  void         MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp, //FFTGrid                                   *& bgAlpha,
+  void         MakeMultizoneBackground(NRLib::Grid<double>              & bg_vp,
                                        NRLib::Grid<double>              & bg_vs,
                                        NRLib::Grid<double>              & bg_rho,
                                        const std::vector<StormContGrid> & vp_zones,
@@ -379,7 +368,7 @@ private:
   //                                         int                             outputFlag,
   //                                         int                             nWells);
 
-  void         calculateVelocityDeviations(NRLib::Grid<double>                        & velocity, //FFTGrid                        * velocity,
+  void         calculateVelocityDeviations(NRLib::Grid<double>                        & velocity,
                                            const std::vector<NRLib::Well>             & wells,
                                            const Simbox                               * simbox,
                                            std::map<std::string, BlockedLogsCommon *> & bl,
@@ -402,15 +391,13 @@ private:
                                  const Simbox        * simbox_old);
 
   void         calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
-                                      std::vector<double> & trend,
-                                      //std::vector<float *> wellTrend,
-                                      //float              * trend,
-                                      float                logMin,
-                                      float                logMax,
-                                      float                maxHz,
-                                      int                  nz,
-                                      float                dz,
-                                      const std::string  & name);
+                                      std::vector<double>               & trend,
+                                      float                               logMin,
+                                      float                               logMax,
+                                      float                               maxHz,
+                                      int                                 nz,
+                                      float                               dz,
+                                      const std::string                 & name);
 
   void         writeVerticalTrend(std::vector<double> & trend,
                                   float                 dz,
@@ -420,9 +407,6 @@ private:
   void         calculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & wellTrend,
                                                    const std::vector<double>         & trend,
                                                    std::vector<double>               & avg_dev,
-                                                   //std::vector<float *>  wellTrend,
-                                                   //const float         * trend,
-                                                   //float               * avg_dev,
                                                    const int                           nd);
 
   //void         writeDeviationsFromVerticalTrend(const float                   * avg_dev_alpha,
@@ -446,17 +430,15 @@ private:
                                                 const int                        nz);
 
   void         smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
-                                                    //float      * trend,
-                                                    int        * count,
-                                                    int          nWells,
-                                                    int          nz,
-                                                    float        dz,
-                                                    float        min_value,
-                                                    float        max_value,
-                                                    std::string  parName);
+                                                    int                 * count,
+                                                    int                   nWells,
+                                                    int                   nz,
+                                                    float                 dz,
+                                                    float                 min_value,
+                                                    float                 max_value,
+                                                    std::string           parName);
   void         fillInVerticalTrend(FFTGrid                   * bgTrend,
                                    const std::vector<double> & trend);
-                                   //const float * trend);
   void         findMeanVsVp(FFTGrid * Vp,
                             FFTGrid * Vs);
   //double       findMeanVsVp(NRLib::Grid<double> & vp,

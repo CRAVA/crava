@@ -52,9 +52,11 @@ public:
 
   inline reference operator()(size_t i, size_t j, size_t k);
   inline reference operator()(size_t index);
+  inline reference GetValue(size_t i, size_t j, size_t k);
 
   inline const_reference operator()(size_t i, size_t j, size_t k) const;
   inline const_reference operator()(size_t index) const;
+  inline const_reference GetValue(size_t i, size_t j, size_t k) const;
 
   iterator       begin() {return( data_.begin()); }
   iterator       end()   {return( data_.end()); }
@@ -169,6 +171,11 @@ typename Grid<A>::reference Grid<A>::operator()(size_t index)
   return data_[index];
 }
 
+template<class A>
+typename Grid<A>::reference Grid<A>::GetValue(size_t i, size_t j, size_t k)
+{
+  return data_[GetIndex(i, j, k)];
+}
 
 template<class A>
 typename Grid<A>::const_reference Grid<A>::operator()(size_t i, size_t j, size_t k) const
@@ -183,6 +190,12 @@ typename Grid<A>::const_reference Grid<A>::operator()(size_t index) const
   assert(index < GetN());
 
   return data_[index];
+}
+
+template<class A>
+typename Grid<A>::const_reference Grid<A>::GetValue(size_t i, size_t j, size_t k) const
+{
+  return data_[GetIndex(i, j, k)];
 }
 
 

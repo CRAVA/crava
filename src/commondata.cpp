@@ -186,8 +186,11 @@ CommonData::CommonData(ModelSettings * model_settings,
 }
 
 CommonData::~CommonData() {
-  if (multiple_interval_grid_ != NULL)
-    delete multiple_interval_grid_;
+
+  //if (multiple_interval_grid_ != NULL) //H Error in test_case 1
+  //  delete multiple_interval_grid_;
+
+
   //delete estimation_simbox_;
   //delete full_inversion_volume_;
 }
@@ -1771,7 +1774,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     for (int j = 0; j < n_angles; j++) {
 
-      float angle = float(angles[i]*180.0/M_PI);
+      float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
 
       SeismicStorage * seismic_data = NULL;
@@ -2003,8 +2006,11 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
           }
         }
       }
-      //Store a general wavelet here (resample because correct dz is needed)
+      //Store a general wavelet here (resample because correct dz/nz is needed, same length as the blocked logs)
       //Wavelets are resampled per interval (with padding) in ModelAVODynamic
+
+      //H problem: When wavelet is resampled, inFFTorder is set to true (central point moved to the start)
+      //Want to resample the wavelet to each interval in ModelAVODynamic, but you can't resample a wavelet inFFTorder with the current resample algorithm.
       if (error == 0)
         wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
                           estimation_simbox_.getnz(),
@@ -4046,8 +4052,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
         int n_facies = facies_names_.size();
         for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
           multiple_interval_grid_->GetPriorFaciesProbCubesInterval(i).resize(n_facies);
+
           for (size_t j = 0; j < n_facies; j++) {
-            multiple_interval_grid_->AddPriorFaciesCube(i, j, prior_facies_prob_cubes[j][i]);
+            multiple_interval_grid_->AddPriorFaciesCube(i, j, &prior_facies_prob_cubes[j][i]);
           }
         }
 
@@ -5713,7 +5720,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
         std::string sgri_label = std::string("Time-to-depth velocity");
         float       offset    = model_settings->getSegyOffset(0);//Only allow one segy offset for time lapse data
 
-        FFTGrid * velocity_fft = new FFTGrid(velocity, velocity.GetNI(), velocity.GetNJ(), velocity.GetNK());
+        FFTGrid * velocity_fft = new FFTGrid(&velocity, velocity.GetNI(), velocity.GetNJ(), velocity.GetNK());
         velocity_fft->writeFile(base_name,
                                 IO::PathToVelocity(),
                                 &estimation_simbox_,
@@ -5867,17 +5874,21 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
           double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
-          multiple_interval_grid_->AddBackgroundParametersForInterval(0, parameters);
+          for (int j = 0; j < 3; j++)
+            multiple_interval_grid_->AddBackgroundParameterForInterval(0, j, &parameters[j]);
+
           multiple_interval_grid_->SetBackgroundVsVpRatio(0, vs_vp_ratio);
         }
         else { //Multiple intervals, not multizone background
-          std::vector<std::vector<NRLib::Grid<double> > > parameters;
+          std::vector<std::vector<NRLib::Grid<double> > > parameters; //vector(parameters) vector(intervals)
           std::vector<double> vs_vp_ratios;
 
           Background(parameters, wells_, multiple_interval_grid_, model_settings, err_text);
 
           for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
-            multiple_interval_grid_->AddBackgroundParametersForInterval(i, parameters[i]);
+            for (int j = 0; j < 3; j++)
+              multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, &parameters[j][i]);
+
             vs_vp_ratios[i] = FindMeanVsVp(parameters[i][0], parameters[i][1]);
           }
 
@@ -5918,7 +5929,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                         multiple_interval_grid_->GetTrendCube(i_interval));
         double vs_vp_ratio = FindMeanVsVp(parameters[0], parameters[1]);
 
-        multiple_interval_grid_->AddBackgroundParametersForInterval(i_interval, parameters);
+        for (int j = 0; j < 3; j++)
+          multiple_interval_grid_->AddBackgroundParameterForInterval(i_interval, j, &parameters[j]);
+
         multiple_interval_grid_->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
 
       }
@@ -6069,7 +6082,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
     for (int i = 0; i < n_intervals; i++) {
      for (int j = 0; j < 3; j++) {
-       multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, parameters[j][i]);
+       multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, &parameters[j][i]);
      }
 
      vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
@@ -6102,8 +6115,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
   return true;
 }
 
-double CommonData::FindMeanVsVp(NRLib::Grid<double> & vp,
-                                NRLib::Grid<double> & vs) {
+double CommonData::FindMeanVsVp(const NRLib::Grid<double> & vp,
+                                const NRLib::Grid<double> & vs) {
 
   //Copied from background
   double mean = 0;
@@ -6247,7 +6260,7 @@ void CommonData::LoadVelocity(NRLib::Grid<double>  & velocity,
     const float               offset = model_settings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string err_text_tmp         = "";
 
-    std::vector<NRLib::Grid<double> > grids;
+    std::vector<NRLib::Grid<double> > grids(1);
     std::vector<Simbox> simboxes;
     simboxes.push_back(estimation_simbox);
 

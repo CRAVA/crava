@@ -747,9 +747,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
 
       //Resample wavelet for this interval
-      wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
-                             simbox->getnz(),
-                             simbox->GetNZpad());
+
+      //H
+      //Want to resample wavelet to this interval-simbox
+      //Get an assert error since inFFTorder_ == true (this is set as true when the wavelet is resampled to estimation_simbox in CommonData).
+      //How to resample the wavelet again?
+
+      //wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
+      //                       simbox->getnz(),
+      //                       simbox->GetNZpad());
 
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
