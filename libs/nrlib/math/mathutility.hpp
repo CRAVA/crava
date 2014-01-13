@@ -1,4 +1,4 @@
-// $Id: mathutility.hpp 1129 2012-12-10 14:51:52Z pdahle $
+// $Id: mathutility.hpp 1191 2013-08-07 10:02:00Z perroe $
 
 #ifndef NRLIB_MATH_FLOATUTIL_HPP
 #define NRLIB_MATH_FLOATUTIL_HPP
@@ -24,12 +24,28 @@ namespace NRLib {
 
   /// Equals zero.
   /// Function checking if a equals zero (numerically).
-  inline bool IsZero(const double &a,  const double tol = NRLIB_MACRO_STANDARD_TOLERANCE) {
+  inline bool IsZero(double a,  double tol = NRLIB_MACRO_STANDARD_TOLERANCE) {
     return (IsEqual(a, 0.0, tol));
   }
 
-inline bool InInterval(const double &x, const double &a,
-  const double &b, double tol = NRLIB_MACRO_STANDARD_TOLERANCE) {
+  /// Function checking if number is significantly positive.
+  inline bool IsPositive(double a,  double tol = NRLIB_MACRO_STANDARD_TOLERANCE)
+  {
+    if (a < 0.0 || IsZero(a, tol))
+      return false;
+    return true;
+  }
+
+  /// Function checking if number is significantly positive.
+  inline bool IsNegative(double a,  double tol = NRLIB_MACRO_STANDARD_TOLERANCE)
+  {
+    if (a > 0.0 || IsZero(a, tol))
+      return false;
+    return true;
+  }
+
+  inline bool InInterval(double x, double a,
+                         double b, double tol = NRLIB_MACRO_STANDARD_TOLERANCE) {
 
    double fa = std::fabs(a);
    double fb = std::fabs(b);
@@ -38,7 +54,7 @@ inline bool InInterval(const double &x, const double &a,
    double tolR = (fb < 1.0 ? tol : fb*tol);
 
    return (x >= a - tolL && x <= b + tolR);
-}
+  }
 
 
   inline bool IsSameSign(double a, double b) {
@@ -48,15 +64,15 @@ inline bool InInterval(const double &x, const double &a,
       return (false);
   }
 
-  inline bool ZeroComparedTo(const double& a, const double& b)
-{
+  inline bool ZeroComparedTo(double a, double b)
+  {
    if (IsZero(a))
      return true;
    else if (b!=0)
      return IsZero(a/b);
    else
      return false;
-}
+  }
 
 
 

@@ -1,4 +1,4 @@
-// $Id: segytrace.cpp 949 2012-01-12 14:22:51Z pdahle $
+// $Id: segytrace.cpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -124,7 +124,7 @@ SegYTrace::SegYTrace(std::fstream & file, size_t jStart, size_t jEnd, int format
   }
 }
 
-SegYTrace::SegYTrace(std::vector<float> indata, size_t jStart, size_t jEnd, float x, float y, int inLine, int crossLine)
+SegYTrace::SegYTrace(std::vector<float> indata, size_t jStart, size_t jEnd, double x, double y, int inLine, int crossLine)
 {
   rmissing_   = segyRMISSING;
   imissing_   = segyIMISSING;

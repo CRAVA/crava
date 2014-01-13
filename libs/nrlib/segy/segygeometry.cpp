@@ -1,4 +1,4 @@
-// $Id: segygeometry.cpp 1140 2013-02-07 10:19:06Z georgsen $
+// $Id: segygeometry.cpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -218,7 +218,7 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
       error_dist = distXL;
     error_dist = 0.25f*error_dist; //Compare square distances, use half distance as limit.
 
-    float max_dist = 0;
+    double max_dist = 0;
     for (size_t k = 0; k < ntraces; k++)
     {
       if (traces[k] != 0)
@@ -229,14 +229,14 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
         if (til != IMISSING && txl != IMISSING)
         {
           size_t i, j;
-          float x = traces[k]->GetX();
-          float y = traces[k]->GetY();
+          double x = traces[k]->GetX();
+          double y = traces[k]->GetY();
 
           float cx, cy;
           this->FindXYFromILXL(til, txl, cx, cy);
-          float dtx  = x - cx;
-          float dty  = y - cy;
-          float dist = dtx*dtx + dty*dty;
+          double dtx  = x - cx;
+          double dty  = y - cy;
+          double dist = dtx*dtx + dty*dty;
           if(dist> max_dist)
             max_dist = dist;
 
@@ -440,13 +440,13 @@ SegyGeometry::Regularize(double   x0,   double   y0,
 }
 
 void
-SegyGeometry::SetupGeometry(float xRef, float yRef, int ilRef, int xlRef,
+SegyGeometry::SetupGeometry(double xRef, double yRef, int ilRef, int xlRef,
                             int minIL, int maxIL, int minXL, int maxXL,
                             float dxIL, float dyIL, float dxXL, float dyXL,
                             int deltaIL, int deltaXL)
 {
-  float lx0 = xRef-xlRef*dxXL-ilRef*dxIL;
-  float ly0 = yRef-xlRef*dyXL-ilRef*dyIL;
+  double lx0 = xRef-xlRef*dxXL-ilRef*dxIL;
+  double ly0 = yRef-xlRef*dyXL-ilRef*dyIL;
 
   std::vector<double> cornerx(4);
   std::vector<double> cornery(4);
@@ -894,7 +894,7 @@ SegyGeometry::~SegyGeometry()
 }
 
 bool
-SegyGeometry::IsInside(float x, float y) const
+SegyGeometry::IsInside(double x, double y) const
 {
   float xind, yind;
   return(FindContIndex(x,y,xind,yind));
@@ -909,7 +909,7 @@ SegyGeometry::FindIndex(float x, float y) const
 }
 
 void
-SegyGeometry::FindIndex(float x, float y, size_t &i, size_t &j) const
+SegyGeometry::FindIndex(double x, double y, size_t &i, size_t &j) const
 {
   double teller1 = (x-x0_)*cos_rot_+(y-y0_)*sin_rot_;
   if (dx_ == 0)
@@ -935,7 +935,7 @@ SegyGeometry::FindIndex(int IL, int XL, size_t &i, size_t &j) const
 }
 
 bool
-SegyGeometry::FindContIndex(float x, float y, float &xind, float  &yind) const
+SegyGeometry::FindContIndex(double x, double y, float &xind, float  &yind) const
 {
   xind = static_cast<float>(( (x-x0_)*cos_rot_+(y-y0_)*sin_rot_)/dx_);
   if (dx_==0)
@@ -951,6 +951,13 @@ SegyGeometry::FindContIndex(float x, float y, float &xind, float  &yind) const
 
 void
 SegyGeometry::FindILXL(float x, float y, int &IL, int &XL) const
+{
+  IL = static_cast<int>(0.5+in_line0_+(x-x0_)*il_stepX_+(y-y0_)*il_stepY_);
+  XL = static_cast<int>(0.5+cross_line0_+(x-x0_)*xl_stepX_+(y-y0_)*xl_stepY_);
+}
+
+void
+SegyGeometry::FindILXL(double x, double y, int &IL, int &XL) const
 {
   IL = static_cast<int>(0.5+in_line0_+(x-x0_)*il_stepX_+(y-y0_)*il_stepY_);
   XL = static_cast<int>(0.5+cross_line0_+(x-x0_)*xl_stepX_+(y-y0_)*xl_stepY_);
@@ -1292,8 +1299,6 @@ SegyGeometry::findAreaILXL(SegyGeometry * tempGeometry)
 {
   double x0   = tempGeometry->GetX0();
   double y0   = tempGeometry->GetY0();
-  double dx   = tempGeometry->GetDx();
-  double dy   = tempGeometry->GetDy();
   double lx   = tempGeometry->Getlx();
   double ly   = tempGeometry->Getly();
   double rot  = tempGeometry->GetAngle();
@@ -1366,83 +1371,13 @@ SegyGeometry::findAreaILXL(SegyGeometry * tempGeometry)
   intMinXL = std::max(intMinXL, minXL_);
   intMaxXL = std::min(intMaxXL, maxXL_);
 
-  //
-  // Round the inversion resolution dXL and dIL to the nearest multiple
-  // of XLStep and ILSstep.
-  //
-  bool XLStep_to_dXL = false;
-  double diff_angle = rot - this->rot_; // difference between inversion angle and seismic angle
-  if(diff_angle <= NRLib::Pi/4 && diff_angle> -NRLib::Pi/4){
-    XLStep_to_dXL = true;
-  }else if(diff_angle <= 3*NRLib::Pi/4 && diff_angle > NRLib::Pi/4){
-    XLStep_to_dXL = false;
-  }else if(diff_angle <= -NRLib::Pi/4 && diff_angle >-3*NRLib::Pi/4){
-    XLStep_to_dXL = false;
-  }else{
-    XLStep_to_dXL= true;
-  }
-
-  // dx and dy are the step sizes requested by the user
-  // XLStep_*dx_ is the step size in the seismic.
-  int XLStep_rounded, ILStep_rounded;
-
-  if(XLStep_to_dXL){ // The angle between the inversion x-axis and seismic XL-axis is between -90 and 90 degrees
-
-    XLStep_rounded = static_cast<int> (floor(dx/(dx_*XLStep_) + 0.5));
-    ILStep_rounded = static_cast<int> (floor(dy/(dy_*ILStep_) + 0.5));
-
-    if(XLStep_rounded < XLStep_){
-      XLStep_rounded = XLStep_;
-    }
-    else if(XLStep_rounded > intMaxXL - intMinXL){
-      XLStep_rounded = intMaxXL - intMinXL;
-    }
-
-    if(ILStep_rounded < ILStep_){
-      ILStep_rounded = ILStep_;
-    }
-    else if(ILStep_rounded > intMaxIL - intMinIL){
-      ILStep_rounded = intMaxIL - intMinIL;
-    }
-    LogKit::LogFormatted(LogKit::Low,"\nSnapping to seismic data:\n");
-    LogKit::LogFormatted(LogKit::Low,"The resolution of the requested inversion area is rounded to the nearest multiple of the seismic resolution:\n");
-    LogKit::LogFormatted(LogKit::Low,"From dx = %7.2f to dXL= %d*%7.2f= %7.2f.\n", dx, XLStep_rounded , dx_ , dx_*XLStep_rounded);
-    LogKit::LogFormatted(LogKit::Low,"From dy = %7.2f to dIL= %d*%7.2f= %7.2f.\n", dy, ILStep_rounded , dy_ , dy_*ILStep_rounded);
-  }
-  else{ // The angle between the inversion x-axis and seismic XL-axis is greater than 90 degrees
-
-    XLStep_rounded = static_cast<int>(floor(dy/(dx_*XLStep_)+0.5));
-    ILStep_rounded = static_cast<int>(floor(dx/(dy_*ILStep_)+0.5));
-
-    if(XLStep_rounded < XLStep_){
-      XLStep_rounded = XLStep_;
-    }
-    else if(XLStep_rounded > intMaxXL - intMinXL){
-      XLStep_rounded = intMaxXL - intMinXL;
-    }
-
-    if(ILStep_rounded < ILStep_){
-      ILStep_rounded = ILStep_;
-    }else if(ILStep_rounded > intMaxIL - intMinIL){
-      ILStep_rounded = intMaxIL - intMinIL;
-    }
-
-    LogKit::LogFormatted(LogKit::Low,"\nSnapping to seismic data:\n");
-    LogKit::LogFormatted(LogKit::Low,"\nThe angle between the x-axis of the inversion area and the seismic data exceeds 45 degrees, so the requested\n");
-    LogKit::LogFormatted(LogKit::Low,"dx is used as requested dIL, and the requested dy is used as requested dXL.\n");
-    LogKit::LogFormatted(LogKit::Low,"The resolution of the requested inversion area is rounded to the nearest multiple of the seismic resolution:\n");
-    LogKit::LogFormatted(LogKit::Low,"From dx = %7.2f to dXL= %d*%7.2f= %7.2f.\n", dx, XLStep_rounded , dx_ , dx_*XLStep_rounded);
-    LogKit::LogFormatted(LogKit::Low,"From dy = %7.2f to dIL= %d*%7.2f= %7.2f.\n", dy, ILStep_rounded , dy_ , dy_*ILStep_rounded);
-
-  }
-
   std::vector<int> areaILXL(6);
   areaILXL[0] = intMinIL;
   areaILXL[1] = intMaxIL;
   areaILXL[2] = intMinXL;
   areaILXL[3] = intMaxXL;
-  areaILXL[4] = ILStep_rounded;
-  areaILXL[5] = XLStep_rounded;
+  areaILXL[4] = ILStep_;   // Enforce same step as original seismic data
+  areaILXL[5] = XLStep_;   // Enforce same step as original seismic data
 
   return areaILXL;
 }

@@ -1,4 +1,4 @@
-// $Id: normal.hpp 1112 2012-11-13 10:02:55Z anner $
+// $Id: normal.hpp 1228 2014-01-03 12:30:11Z gudmundh $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -46,9 +46,13 @@ public:
   inline double Quantile(double p) const;
 
   inline double Draw() const;
+  inline double Draw(RandomGenerator & g) const;
   double        DrawLowerTruncated(double lower) const; //Not tested
+  double        DrawLowerTruncated(double lower, RandomGenerator &g) const; //Not tested
   double        DrawUpperTruncated(double upper) const; //Not tested
+  double        DrawUpperTruncated(double upper, RandomGenerator &g) const; //Not tested
   double        DrawTwoSidedTruncated(double min, double max) const; // Not tested
+  double        DrawTwoSidedTruncated(double min, double max, RandomGenerator &g) const; // Not tested
 
   double        PhiInverse(double y) const;  //Not tested
   inline double Potential(double x) const; // -Log of pdf
@@ -75,12 +79,14 @@ private:
 
   double DrawLowerTruncatedAcceptReject(double mu,
                                         double sigma,
-                                        double lower) const;
+                                        double lower,
+                                        RandomGenerator *g = NULL) const;
 
   double DrawTwoSidedTruncatedAcceptReject(double mu,
                                            double sigma,
                                            double lower,
-                                           double upper) const;
+                                           double upper,
+                                           RandomGenerator *g = NULL) const;
 };
 
 // ---------------- IMPLEMENTATION OF INLINE FUNCTIONS -----------------
@@ -114,12 +120,21 @@ double Normal::Draw() const {
   return mean_ + std_dev_ * z;
 }
 
+
+double Normal::Draw(RandomGenerator & g) const {
+    // Default implementation.
+    double z = g.Norm01();
+    return mean_ + std_dev_ * z;
+}
+
+
 double Normal::Potential(double x) const {
   double var = std_dev_*std_dev_;
   double y = x - mean_;
   double potential = 0.5*(log(2.0*NRLib::Pi*var) + ((y*y)/var));
   return potential;
 }
+
 
 double Normal::PotentialTwoSidedTruncated(double x, double min, double max) const {
   assert(max > min);

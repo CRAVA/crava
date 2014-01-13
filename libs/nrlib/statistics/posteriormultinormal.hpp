@@ -1,4 +1,4 @@
-// $Id: posteriormultinormal.hpp 1092 2012-10-09 14:24:00Z georgsen $
+// $Id: posteriormultinormal.hpp 1208 2013-10-29 11:00:40Z hauge $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -31,6 +31,7 @@
 
 namespace NRLib {
 
+  class Point;
 
   bool CondDistrMultiNormal(const std::vector<double> &x_known,
                             const std::vector<double> &known_values,
@@ -39,9 +40,34 @@ namespace NRLib {
                             const std::vector<double> &exp_unknown,
                             const std::vector<double> &std_known,
                             const std::vector<double> &std_unknown,
-                            const Variogram &vario,
-                            Vector &exp,
-                            SymmetricMatrix &cov);
+                            const Variogram           &vario,
+                            Vector                    &exp,
+                            SymmetricMatrix           &cov);
+
+  bool SecondayCondDistrMultiNormal2D(const std::vector<NRLib::Point> &pos_known,
+                                      const std::vector<double>       &known_values,
+                                      const std::vector<double>       &local_corr,   //Allows secondary observations. Must have same correlation with unknown. A value of 1 indicates primary observation, lower value seconday.
+                                      const std::vector<NRLib::Point> &pos_unknown,
+                                      const std::vector<double>       &exp_known,
+                                      const std::vector<double>       &exp_unknown,
+                                      const std::vector<double>       &std_known,
+                                      const std::vector<double>       &std_unknown,
+                                      const Variogram                 &vario,
+                                      Vector                          &exp,
+                                      SymmetricMatrix                 &cov);
+
+  void EliminateLargeCorr(std::vector<NRLib::Point> & pos_known,
+                          Vector                    & delta_known,
+                          std::vector<double>       & std_known,
+                          const std::vector<double> & local_corr,
+                          const Variogram           & vario);
+
+  void IdentifyLargeCorr(const std::vector<NRLib::Point> & pos_known,
+                         const std::vector<double>       & local_corr,
+                         const Variogram                 & vario,
+                         std::vector<int>                & obs_chain_map,
+                         std::vector<std::vector<int> >  & obs_chains);
+
 
   void Posterior1DNormal(double exp_prior, double cov_prior,
                        double exp_obs, double cov_obs,
@@ -54,9 +80,14 @@ namespace NRLib {
                               const SymmetricMatrix & sigma);
 
 
+  bool CondDistrMultiNormalCore(const SymmetricMatrix & sigma_11,
+                              const Matrix          & sigma_12,
+                              SymmetricMatrix       & sigma_22,
+                              const Vector          & mu_unknown,
+                              const Vector          & delta_known,
+                              Vector                & exp,
+                              SymmetricMatrix       & cov);
+
 }
-
-
-
 
 #endif

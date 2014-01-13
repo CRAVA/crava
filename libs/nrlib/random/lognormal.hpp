@@ -1,4 +1,4 @@
-// $Id: lognormal.hpp 1083 2012-10-01 10:55:34Z georgsen $
+// $Id: lognormal.hpp 1228 2014-01-03 12:30:11Z gudmundh $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -44,6 +44,7 @@ public:
 
   inline void   SetParameters(double mu, double sigma);
   inline double Draw() const;
+  inline double Draw(RandomGenerator & g) const;
 
   inline double Pdf(double x) const;
   inline double Cdf(double x) const;
@@ -68,9 +69,14 @@ void LogNormal::SetParameters(double mu, double sigma)
   std_dev_ = std::sqrt((std::exp(sigma_*sigma_)-1.0) * std::exp(2.0 * mu_ + sigma_ * sigma_));
 }
 
-double LogNormal::Draw() const
-{
+double LogNormal::Draw() const {
   double normal = normal_.Draw();
+  double value =  std::exp(normal);
+  return value;
+}
+
+double LogNormal::Draw(RandomGenerator & g) const {
+  double normal = normal_.Draw(g);
   double value =  std::exp(normal);
   return value;
 }

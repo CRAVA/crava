@@ -1,4 +1,4 @@
-// $Id: eclipsegeometry.hpp 1136 2013-01-21 13:13:56Z georgsen $
+// $Id: eclipsegeometry.hpp 1187 2013-06-14 13:34:45Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -47,6 +47,9 @@ public:
   size_t GetNJ() const    { return nj_; }
   size_t GetNK() const    { return nk_; }
   size_t GetN()  const    { return active_.GetN(); } // = ni_*nj_*nk_
+
+  inline void   GetIJK(size_t index, size_t& i, size_t& j, size_t& k) const;
+  inline size_t GetIndex(size_t i, size_t j, size_t k) const;
 
   void Resize(size_t ni, size_t nj, size_t nk);
 
@@ -267,6 +270,25 @@ private:
 
 
 // ===================== INLINE MEMBER FUNCTIONS ======================
+
+
+void EclipseGeometry::GetIJK(size_t index, size_t& i, size_t& j, size_t& k) const
+{
+  assert(index < GetN());
+
+  i = index % ni_;
+  j = (index-i)/ni_ % nj_;
+  k = (index - j*ni_ - i)/ni_/nj_;
+}
+
+
+size_t EclipseGeometry::GetIndex(size_t i, size_t j, size_t k) const
+{
+  assert(i < GetNI() && j < GetNI() && k < GetNK());
+
+  return i + j*GetNI() + k*GetNI()*GetNJ();
+}
+
 
 bool EclipseGeometry::IsActive(size_t i, size_t j, size_t k) const
 {

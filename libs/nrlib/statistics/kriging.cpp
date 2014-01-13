@@ -1,4 +1,4 @@
-// $Id: kriging.cpp 1134 2013-01-02 11:56:53Z anner $
+// $Id: kriging.cpp 1161 2013-04-25 12:06:52Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -32,9 +32,9 @@ void NRLib::Krig1D(std::vector<double>       &field,
                    double                     dx,
                    const Variogram           &vario)
 {
-
-  size_t n_obs = obs.size();
-  size_t n_unobs = field.size() - n_obs;
+  assert(field.size() == is_known.size());
+  assert(obs.size() <= field.size());
+  int n_obs = static_cast<int>(obs.size());
 
   NRLib::Vector residual(static_cast<int> (n_obs));
   int j = 0;
@@ -46,13 +46,11 @@ void NRLib::Krig1D(std::vector<double>       &field,
 
   }
 
-
-  SymmetricMatrix K;
-  NRLib::Vector k_vec(static_cast<int> (n_obs));
-  K = SymmetricMatrix(static_cast<int> (n_obs));
+  NRLib::SymmetricMatrix K(n_obs);
+  NRLib::Vector k_vec(n_obs);
   std::vector<double> x_known;
   std::vector<double> x_unknown;
-  NRLib::Vector K_res(static_cast<int> (n_obs));
+  NRLib::Vector K_res(n_obs);
 
   for(size_t i = 0; i < is_known.size(); i++){
     if(is_known[i] == true)
@@ -62,7 +60,7 @@ void NRLib::Krig1D(std::vector<double>       &field,
   }
 
 
-  for(int i = 0; i < static_cast<int> (n_obs); i++)
+  for(int i = 0; i < n_obs; i++)
     for(int j = 0; j <= i; j++)
       K(j,i) = vario.GetCorr(x_known[i]-x_known[j]);
 
@@ -72,19 +70,18 @@ void NRLib::Krig1D(std::vector<double>       &field,
   size_t kk = 0;
   for(size_t k = 0; k < field.size(); k++){
     if(is_known[k] == false){
-    for(int i = 0; i < static_cast<int> (n_obs); i++)
-      k_vec(i) = vario.GetCorr(x_known[i]-x_unknown[j]);
+      for(int i = 0; i < n_obs; i++)
+        k_vec(i) = vario.GetCorr(x_known[i]-x_unknown[j]);
 
-    double prod = k_vec * K_res;
-    field[k] += prod;
-    j++;
+      double prod = k_vec * K_res;
+      field[k] += prod;
+      j++;
     }
     else{
       field[k] = obs[kk];
       kk++;
     }
   }
-
 
 }
 

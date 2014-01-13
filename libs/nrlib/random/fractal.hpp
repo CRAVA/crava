@@ -1,4 +1,4 @@
-// $Id: fractal.hpp 1083 2012-10-01 10:55:34Z georgsen $
+// $Id: fractal.hpp 1228 2014-01-03 12:30:11Z gudmundh $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -39,7 +39,6 @@ public:
   inline double Cdf(double x) const;
   inline double Quantile(double p) const;
 
-  inline double Draw() const;
   double        DrawFromUpperQuantile(double qu, bool has_limit_info = false, double limit = 0.0) const;
   double        DrawFromLowerQuantile(double ql) const;
   double        DrawFromMiddleQuantile(double ql, double qu) const;
@@ -87,13 +86,6 @@ double Fractal::Quantile(double p) const {
   return(q);
 }
 
-
-double Fractal::Draw() const {
-  double unif01 = NRLib::Random::Unif01();
-  double f = std::pow(max_fractal_ + unif01 * (min_fractal_ - max_fractal_),
-                      - 1.0/dim_);
-  return(f);
-}
 
 } // namespace NRLib
 
