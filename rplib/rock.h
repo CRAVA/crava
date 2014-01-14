@@ -1,6 +1,7 @@
 #ifndef RPLIB_ROCK_H
 #define RPLIB_ROCK_H
 
+#include <cstddef>
 #include <vector>
 
 

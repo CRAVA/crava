@@ -1,4 +1,4 @@
-// $Id: distribution.hpp 1081 2012-09-28 09:11:07Z perroe $
+// $Id: distribution.hpp 1169 2013-05-22 12:54:23Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -23,6 +23,7 @@
 #define NRLIB_RANDOM_DISTRIBUTION_HPP
 
 #include "random.hpp"
+#include "randomgenerator.hpp"
 
 namespace NRLib {
 
@@ -52,6 +53,13 @@ public:
     double q = NRLib::Random::Unif01();
     return Quantile(q);
   }
+
+  virtual A Draw(RandomGenerator & g) const {
+    // Default implementation.
+    double q = g.Unif01();
+    return Quantile(q);
+  }
+
 };
 
 template<class A>

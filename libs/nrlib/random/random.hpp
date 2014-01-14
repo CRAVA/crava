@@ -1,4 +1,4 @@
-// $Id: random.hpp 1177 2013-05-27 08:37:26Z perroe $
+// $Id: random.hpp 1189 2013-07-02 12:24:28Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -42,6 +42,9 @@ public:
 
   /// \return uniform number in [0,1)
   static double Unif01()             { return dsfmt_gv_genrand_close_open(); }
+
+  /// \return uniform number in (0,1)
+  static double Unif01Open()             { return dsfmt_gv_genrand_open_open(); }
 
   /// \return unsigned 32-bit integer betwen 0 and 0xFFFFFFFF
   static unsigned long DrawUint32()  { return dsfmt_gv_genrand_uint32(); }

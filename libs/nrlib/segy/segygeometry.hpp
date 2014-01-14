@@ -1,4 +1,4 @@
-// $Id: segygeometry.hpp 1128 2012-12-04 13:05:39Z hauge $
+// $Id: segygeometry.hpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -45,9 +45,9 @@ public:
   @param[in] traces  Traces from segY cube
   */
   SegyGeometry(std::vector<SegYTrace *> &traces);
-  SegyGeometry(double x0,double y0,double dXL,double dIL, size_t n_XL,size_t n_IL, ///< When XL, IL information not available, generates internally.
+  SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL information not available, generates internally.
                double rot);
-  SegyGeometry(double x0,double y0,double dXL,double dIL, size_t n_XL,size_t n_IL, ///< When XL, IL is available.
+  SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL is available.
                double IL0, double XL0, double ilStepX, double ilStepY,
                double xlStepX, double xlStepY, double rot);
   SegyGeometry(const RegularSurface<double> surf);
@@ -57,13 +57,14 @@ public:
 
   ~SegyGeometry();
 
-  bool   IsInside(float x, float y) const;
+  bool   IsInside(double x, double y) const;
 
   size_t FindIndex(float x, float y) const;
-  void   FindIndex(float x, float y, size_t &i, size_t  &j) const;               ///< Return grid index for i and j
+  void   FindIndex(double x, double y, size_t &i, size_t  &j) const;               ///< Return grid index for i and j
   void   FindIndex(int IL, int XL, size_t &i, size_t &j) const;
-  bool   FindContIndex(float x, float y, float &xind, float  &yind) const; ///< Compute decimal index, to give location in cell. Return true if inside grid.
+  bool   FindContIndex(double x, double y, float &xind, float  &yind) const; ///< Compute decimal index, to give location in cell. Return true if inside grid.
   void   FindILXL(float x, float y, int &IL, int &XL) const;
+  void   FindILXL(double x, double y, int &IL, int &XL) const;
   void   FindILXL(size_t i, size_t j, int &IL, int &XL) const;
   void   FindContILXL(float x, float y, double &IL, double &XL) const;
   void   FindXYFromIJ(size_t i, size_t j, float &x, float &y) const;
@@ -92,7 +93,7 @@ public:
   void   WriteGeometry() const;
   void   WriteILXL(bool errorMode = false) const;
 
-  void   SetupGeometry(float xRef, float yRef, int ilRef, int xlRef,
+  void   SetupGeometry(double xRef, double yRef, int ilRef, int xlRef,
                        int minIL, int maxIL, int minXL, int maxXL,
                        float dxIL, float dyIL, float dxXL, float dyXL,
                        int deltaXL, int deltaIL);
@@ -114,15 +115,13 @@ private:
   void   SetupGeometrySingleTrace(const SegYTrace * trace);
 
   double x0_, y0_;                  ///<
-/// !! Here, dx, dy, nx and ny are step sizes and number of points of the local coordinate system !!
-  double dx_, dy_;                  ///< Cell increments along XL and IL axes
-  size_t nx_, ny_;                  ///< Grid dimensions along XL and IL axes
+  double dx_, dy_;                  ///< Cell increments
+  size_t nx_, ny_;                  ///< Grid dimensions
   double in_line0_, cross_line0_;   ///< Start value for inline and crossline
-/// !! Here, X and Y are the coordinates along the global UTM coordinate system !!
-  double il_stepX_, il_stepY_;      ///< Change in IL (local) when moving one unit along x/y (global)
-  double xl_stepX_, xl_stepY_;      ///< Change in XL (local) when moving one unit along x/y (global)
+  double il_stepX_, il_stepY_;      ///< Change in IL when moving one unit along x/y (global)
+  double xl_stepX_, xl_stepY_;      ///< Change in XL when moving one unit along x/y (global)
   double sin_rot_, cos_rot_;        ///<
-  double rot_;                      ///< Angle of the local XL-axis relative to the global UTMX axis
+  double rot_;                      ///<
 
   int IL0_, XL0_;                   ///<
   int minIL_, maxIL_, ILStep_;      ///< inline start,stop and step

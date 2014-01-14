@@ -1,4 +1,4 @@
-// $Id: fft.cpp 996 2012-03-01 09:47:40Z georgsen $
+// $Id: fft.cpp 1168 2013-05-07 06:07:04Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -56,13 +56,13 @@ NRLib::FindNewSizeWithPadding(size_t minSize, bool must_be_even) {
   if (must_be_even)
     minant2 = 1;
 
-  int maxant2    = (int) (ceil((double) log((float)(minSize)) / log(2.0f) ));
-  int maxant3    = (int) (ceil((double) log((float)(minSize)) / log(3.0f) ));
-  int maxant5    = (int) (ceil((double) log((float)(minSize)) / log(5.0f) ));
-  int maxant7    = (int) (ceil((double) log((float)(minSize)) / log(7.0f) ));
+  int maxant2    = static_cast<int>(ceil((double) log((float)(minSize)) / log(2.0f) ));
+  int maxant3    = static_cast<int>(ceil((double) log((float)(minSize)) / log(3.0f) ));
+  int maxant5    = static_cast<int>(ceil((double) log((float)(minSize)) / log(5.0f) ));
+  int maxant7    = static_cast<int>(ceil((double) log((float)(minSize)) / log(7.0f) ));
   int maxant11   = 0;
   int maxant13   = 0;
-  size_t closestprod= (size_t) pow(2.0f,maxant2);
+  size_t closestprod= static_cast<size_t>(pow(2.0f,maxant2));
 
   // kan forbedres ved aa trekke fra i endepunktene.i for lokkene
   for (i = minant2; i < maxant2+1; i++)

@@ -1,4 +1,4 @@
-// $Id: normal.cpp 1090 2012-10-09 13:00:04Z georgsen $
+// $Id: normal.cpp 1220 2013-11-27 09:54:01Z hauge $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -56,23 +56,27 @@ Normal::PhiInverse(double y) const
   if (y == 1.0) return exp(1000.0);
 
   if (y > 0.5) {
-    lower_limit = 0.0;
-    upper_limit = 1.0;
+    double step = std_dev_;
+    lower_limit = mean_;
+    upper_limit = mean_ + step;
     while (Cdf(upper_limit) < y) {
-      lower_limit = upper_limit;
-      upper_limit *= 10.0;
+      lower_limit  = upper_limit;
+      step        *= 10.0;
+      upper_limit  = mean_ + step;
     }
   }
   else if (y < 0.5) {
-    upper_limit = 0.0;
-    lower_limit = -1.0;
+    double step = std_dev_;
+    upper_limit = mean_;
+    lower_limit = mean_ - step;
     while (Cdf(lower_limit) > y) {
       upper_limit = lower_limit;
-      lower_limit *= 10.0;
+      step        *= 10.0;
+      lower_limit  = mean_ - step;
     }
   }
   else
-    return 0.0;
+    return mean_;
 
   if (IsEqual(Cdf(upper_limit),y))
     return upper_limit;
@@ -176,6 +180,7 @@ double Normal::RootPHI(double lower,double upper,double xacc,int MaxIt, double y
   throw Exception("Maximum number of iterations exceeded in NRLib::Normal::RootPHI");
 }
 
+
 double Normal::DrawLowerTruncated(double lower) const
 {
   if(IsZero(std_dev_)) {
@@ -189,6 +194,22 @@ double Normal::DrawLowerTruncated(double lower) const
   return(out);
 }
 
+
+double Normal::DrawLowerTruncated(double lower, RandomGenerator &g) const
+{
+  if(IsZero(std_dev_)) {
+    if(mean_ >= lower)
+      return mean_;
+    else
+      throw Exception("Cannot draw from a truncated distribution with zero variance, when the mean is outside the truncation values");
+  }
+
+  double out = DrawLowerTruncatedAcceptReject(mean_, std_dev_, lower, &g);
+
+  return(out);
+}
+
+
 double Normal::DrawUpperTruncated(double upper) const
 {
   if(IsZero(std_dev_)) {
@@ -199,6 +220,23 @@ double Normal::DrawUpperTruncated(double upper) const
   }
   upper = 2*mean_-upper;
   double out = DrawLowerTruncatedAcceptReject(mean_, std_dev_, upper);
+
+  out = 2*mean_ - out;
+
+  return(out);
+}
+
+
+double Normal::DrawUpperTruncated(double upper, RandomGenerator &g) const
+{
+  if(IsZero(std_dev_)) {
+    if(mean_ <= upper)
+      return mean_;
+    else
+      throw Exception("Cannot draw from a truncated distribution with zero variance, when the mean is outside the truncation values");
+  }
+  upper = 2*mean_-upper;
+  double out = DrawLowerTruncatedAcceptReject(mean_, std_dev_, upper, &g);
 
   out = 2*mean_ - out;
 
@@ -226,9 +264,32 @@ double Normal::DrawTwoSidedTruncated(double lower, double upper) const
   return(out);
 }
 
+
+double Normal::DrawTwoSidedTruncated(double lower, double upper, RandomGenerator &g) const
+{
+  if(lower > upper) {
+    std::string err_txt = "Wrong input to truncated normal, should have min <= max). (min, max) = ("
+      + NRLib::ToString(lower) + ", " + NRLib::ToString(upper) + ").";
+    throw Exception(err_txt);
+  }
+
+  if(IsZero(std_dev_)) {
+    if(lower <= mean_ && mean_ <= upper)
+      return mean_;
+    else
+      throw Exception("Can not draw from a truncated distribution with zero variance, when the mean is outside the truncation values");
+  }
+
+  double out = DrawTwoSidedTruncatedAcceptReject(mean_, std_dev_, lower, upper, &g);
+
+  return(out);
+}
+
+
 double Normal::DrawLowerTruncatedAcceptReject(double mu,
                                               double sigma,
-                                              double lower) const
+                                              double lower,
+                                              RandomGenerator *g) const
 {
   double xL = (lower - mu)/sigma;
   double out(0.0);
@@ -238,24 +299,27 @@ double Normal::DrawLowerTruncatedAcceptReject(double mu,
   const double max_attempts(100000);
 
   int attempts(1);
-  double ru01 = NRLib::Random::Unif01();
+  double ru01;
+  if(g == NULL)
+    ru01 = NRLib::Random::Unif01Open();
+  else
+    ru01 = g->Unif01Open();
   double ordinate = phi_lower + ru01 * (phi_upper - phi_lower);
   bool ok(false);
 
-  if(IsEqual(phi_upper, phi_lower))
+  if(phi_upper == phi_lower)
     out = lower;
   else {
     while(!ok && attempts < max_attempts) {
-      if (IsZero(ordinate))
-        out = lower;
-      else {
         out = norm01.PhiInverse(ordinate);
         out *= sigma;
         out += mu;
-      }
       if(out < lower) {
         attempts++;
-        ru01 = NRLib::Random::Unif01();
+        if(g == NULL)
+          ru01 = NRLib::Random::Unif01Open();
+        else
+          ru01 = g->Unif01Open();
         ordinate = phi_lower + ru01 * (phi_upper - phi_lower);
       }
       else
@@ -263,7 +327,10 @@ double Normal::DrawLowerTruncatedAcceptReject(double mu,
     }
     if(!ok) { //have tried many times without success
       double tm = mu + sigma * norm01.Pdf(xL)/(phi_upper - phi_lower);
-      ru01 = NRLib::Random::Unif01();
+      if(g == NULL)
+        ru01 = NRLib::Random::Unif01Open();
+      else
+        ru01 = g->Unif01Open();
       //returns a uniform sample in (lower_, 2*tm-lower_)
       //where tm is the mean of the truncated normal
       out = lower + ru01*2*(tm - lower);
@@ -276,7 +343,8 @@ double Normal::DrawLowerTruncatedAcceptReject(double mu,
 double Normal::DrawTwoSidedTruncatedAcceptReject(double mu,
                                                  double sigma,
                                                  double lower,
-                                                 double upper) const
+                                                 double upper,
+                                                 RandomGenerator *g) const
 {
   double xL = (lower - mu)/sigma;
   double xU =  (upper - mu)/sigma;
@@ -286,18 +354,20 @@ double Normal::DrawTwoSidedTruncatedAcceptReject(double mu,
   const double max_attempts(100000);
 
   int attempts(1);
-  double ru01 = NRLib::Random::Unif01();
+  double ru01;
+  if(g == NULL)
+    ru01 = NRLib::Random::Unif01Open();
+  else
+    ru01 = g->Unif01Open();
   double ordinate = phi_lower + ru01 * (phi_upper - phi_lower);
   bool ok(false);
 
   double out(0.0);
-  if(IsEqual(phi_upper, phi_lower))
+  if(phi_upper == phi_lower)
     out = (upper + lower)/2.0;
   else {
     while(!ok && attempts < max_attempts) {
-      if (IsZero(ordinate))
-        out = lower;
-      else if (IsEqual(ordinate, 1.0))
+      if (ordinate == 1.0)
         out = upper;
       else {
         out = norm01.PhiInverse(ordinate);
@@ -306,16 +376,19 @@ double Normal::DrawTwoSidedTruncatedAcceptReject(double mu,
       }
       if(out < lower || out > upper) {
         attempts++;
-        ru01 = NRLib::Random::Unif01();
+        if(g == NULL)
+          ru01 = NRLib::Random::Unif01Open();
+        else
+          ru01 = g->Unif01Open();
         ordinate = phi_lower + ru01 * (phi_upper - phi_lower);
       }
-      else{
+      else {
         ok = true;
       }
     }
   }
 
-  if (attempts==max_attempts)
+  if (attempts == max_attempts)
     out = (upper + lower)/2.0;
 
   return out;

@@ -1,4 +1,4 @@
-// $Id: pointset.cpp 1068 2012-09-18 11:21:53Z perroe $
+// $Id: pointset.cpp 1188 2013-06-26 07:33:27Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -60,10 +60,12 @@ PointSet::PointSet(const std::string & filename,
   else
     throw FileFormatError(filename  + " is not a valid point-set file.");
 }
+
+
 PointSet::PointSet(const NRLib::RegularSurface<double> & storm_surface)
 {
-  for (size_t i = 0; i < storm_surface.GetNI(); i++) {
-    for (size_t j = 0; j < storm_surface.GetNJ(); j++) {
+  for (size_t j = 0; j < storm_surface.GetNJ(); j++) {
+    for (size_t i = 0; i < storm_surface.GetNI(); i++) {
       double x, y;
       storm_surface.GetXY(i, j, x, y);
       double z = storm_surface(i,j);
