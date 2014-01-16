@@ -41,8 +41,12 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     erosion_priorities_.resize(n_intervals_+1);
     interval_simboxes_.resize(n_intervals_);
     background_parameters_.resize(n_intervals_);
-    for(size_t i = 0; i < n_intervals_; i++)
+    for (size_t i = 0; i < n_intervals_; i++) {
       background_parameters_[i].resize(3);
+      for (int j = 0; j < 3; j++)
+        background_parameters_[i][j] = new NRLib::Grid<double>();
+    }
+
     background_vs_vp_ratios_.resize(n_intervals_);
     prior_facies_prob_cubes_.resize(n_intervals_);
   }
@@ -58,6 +62,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     interval_simboxes_.resize(1);
     background_parameters_.resize(1);
     background_parameters_[0].resize(3);
+    for (size_t i = 0; i < 3; i++)
+      background_parameters_[0][i] = new NRLib::Grid<double>();
     background_vs_vp_ratios_.resize(1);
     prior_facies_prob_cubes_.resize(1);
   }
@@ -631,7 +637,7 @@ void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<do
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
-                                             ModelSettings   * model_settings) const{
+                                             ModelSettings   * model_settings) const {
   int    nz             = simbox->getnz();
   double min_lz         = simbox->getlz()*simbox->getMinRelThick();
   double z_pad_fac      = model_settings->getZPadFac();

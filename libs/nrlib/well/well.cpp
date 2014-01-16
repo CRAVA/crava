@@ -87,6 +87,9 @@ Well::ReadWell(const std::string              & file_name,
     disc_log_  = well.GetDiscLog();
     read_ok    = true;
 
+    //Norwar well has its own missing value in the well-log
+    SetMissing(well.GetContMissing());
+
     // assume that facies logs from norsar wells are not used
     has_facies_log_ = false;
   }

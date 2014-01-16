@@ -485,7 +485,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     int missing_traces_padding = 0;
     int dead_traces_simbox     = 0;
 
-    NRLib::Grid<double> grid_tmp;
+    NRLib::Grid<double> * grid_tmp = new NRLib::Grid<double>();
+
     seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,
                             seis_cubes_[i],
@@ -501,10 +502,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             scale,
                             is_segy,
                             is_storm);
-    seis_cubes_[i]->endAccess();
 
+    seis_cubes_[i]->endAccess(); //H deletes grid?
+
+    if(grid_tmp != NULL)
+      delete grid_tmp;
     if (fft_grid_old != NULL)
       delete fft_grid_old;
+
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox

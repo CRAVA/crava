@@ -152,9 +152,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       // Check seismic data outside estimation interval missing
       //
       if (estimInterval.size() > 0) {
-        const std::vector<double> xPos = blocked_log->GetXposBlocked();
-        const std::vector<double> yPos = blocked_log->GetYposBlocked();
-        const std::vector<double> zPos = blocked_log->GetZposBlocked();
+        const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+        const std::vector<double> & yPos = blocked_log->GetYposBlocked();
+        const std::vector<double> & zPos = blocked_log->GetZposBlocked();
         for (int k = 0 ; k < blocked_log->GetNumberOfBlocks(); k++) {
           const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
           const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);

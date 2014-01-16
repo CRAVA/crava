@@ -71,6 +71,7 @@ public:
 
   inline size_t  GetIndex(size_t i, size_t j, size_t k) const;
   void           GetIJK(size_t index, size_t &i, size_t &j, size_t &k) const;
+  void           SetValue(size_t i, size_t j, size_t k, const A& value);
 
   void           Swap(Grid<A>& other);
 
@@ -117,7 +118,7 @@ void Grid<A>::Resize(size_t ni, size_t nj, size_t nk, const A& val)
 template<class A>
 void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
 {
-  A sum = 0.0;
+  A sum   = 0.0;
   A value = 0.0;
   max = -std::numeric_limits<A>::infinity();
   min = +std::numeric_limits<A>::infinity();
@@ -162,7 +163,6 @@ typename Grid<A>::reference Grid<A>::operator()(size_t i, size_t j, size_t k)
   return data_[GetIndex(i, j, k)];
 }
 
-
 template<class A>
 typename Grid<A>::reference Grid<A>::operator()(size_t index)
 {
@@ -183,7 +183,6 @@ typename Grid<A>::const_reference Grid<A>::operator()(size_t i, size_t j, size_t
   return data_[GetIndex(i, j, k)];
 }
 
-
 template<class A>
 typename Grid<A>::const_reference Grid<A>::operator()(size_t index) const
 {
@@ -197,7 +196,6 @@ typename Grid<A>::const_reference Grid<A>::GetValue(size_t i, size_t j, size_t k
 {
   return data_[GetIndex(i, j, k)];
 }
-
 
 template<class A>
 size_t Grid<A>::GetIndex(size_t i, size_t j, size_t k) const
@@ -215,6 +213,12 @@ void Grid<A>::GetIJK(size_t index, size_t &i, size_t &j, size_t &k) const
   i = index % ni_;
   j = (index-i)/ni_ % nj_;
   k = (index - j*ni_ - i)/ni_/nj_;
+}
+
+template<class A>
+void Grid<A>::SetValue(size_t i, size_t j, size_t k, const A& value)
+{
+  data_[GetIndex(i, j, k)] = value;
 }
 
 template<class A>

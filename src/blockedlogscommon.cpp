@@ -320,7 +320,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
     BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
     BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
-    BlockContinuousLog(b_ind, twt_raw_logs_, twt_blocked_    );
+    BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
 
     // Continuous logs
 
@@ -384,9 +384,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
                                                   unsigned int                  & n_blocks){
 
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-  const std::vector<double> x_pos             = GetXposRawLogs();
-  const std::vector<double> y_pos             = GetYposRawLogs();
-  const std::vector<double> z_pos             = GetZposRawLogs();
+  const std::vector<double> & x_pos           = GetXposRawLogs();
+  const std::vector<double> & y_pos           = GetYposRawLogs();
+  const std::vector<double> & z_pos           = GetZposRawLogs();
   int   n_intervals                           = static_cast<int>(interval_simboxes.size());
   //
   // Find first cell in first simbox that the well hits
@@ -528,9 +528,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
                                                   std::vector<int>     & b_ind,
                                                   unsigned int         & n_blocks){
   int   nd = static_cast<int>(b_ind.size());
-  const std::vector<double> x_pos = GetXposRawLogs();
-  const std::vector<double> y_pos = GetYposRawLogs();
-  const std::vector<double> z_pos = GetZposRawLogs();
+  const std::vector<double> & x_pos = GetXposRawLogs();
+  const std::vector<double> & y_pos = GetYposRawLogs();
+  const std::vector<double> & z_pos = GetZposRawLogs();
 
   //
   // Find first cell in Simbox that the well hits
@@ -876,9 +876,9 @@ void    BlockedLogsCommon::FindBlockIJK(const Simbox             * const estimat
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
 
-  const std::vector<double> x_pos = this->GetXposRawLogs();
-  const std::vector<double> y_pos = this->GetYposRawLogs();
-  const std::vector<double> z_pos = this->GetZposRawLogs();
+  const std::vector<double> & x_pos = this->GetXposRawLogs();
+  const std::vector<double> & y_pos = this->GetYposRawLogs();
+  const std::vector<double> & z_pos = this->GetZposRawLogs();
 
   //
   // Set IJK for virtual part of well in upper part of simbox
@@ -2503,6 +2503,16 @@ void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> & grid,
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blocked_log[m] = grid(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
+  }
+}
+
+void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> * grid,
+                                       std::vector<double>       & blocked_log,
+                                       int                         i_offset,
+                                       int                         j_offset) {
+  for (size_t m = 0 ; m < n_blocks_ ; m++) {
+    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
+    blocked_log[m] = grid->GetValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
   }
 }
 

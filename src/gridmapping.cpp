@@ -115,7 +115,7 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
 }
 
 void
-GridMapping::makeTimeDepthMapping(NRLib::Grid<double> & velocity,
+GridMapping::makeTimeDepthMapping(NRLib::Grid<double> * velocity,
                                   const Simbox        * timeSimbox)
 {
   Simbox * depthSimbox = simbox_; // For readability
@@ -140,7 +140,7 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<double> & velocity,
       double sum    = 0.0;
       double sumz   = 0.0;
       for(int k=0 ; k<timeSimbox->getnz() ; k++)
-        sumz +=deltaT*velocity(i,j,k);
+        sumz +=deltaT*velocity->GetValue(i,j,k);
       double c = (zBase-zTop)/sumz;
       (*mapping_)(i,j,0) = static_cast<float>(tTop);
       int kk = 0;
@@ -150,9 +150,9 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<double> & velocity,
         while(sum<z && kk<nz)
         {
           kk++;
-          sum+=deltaT*c*velocity(i,j,kk-1);
+          sum+=deltaT*c*velocity->GetValue(i,j,kk-1);
         }
-        double v   = velocity(i,j,kk-1);
+        double v   = velocity->GetValue(i,j,kk-1);
         double z0  = tTop;
         double dz1 = 2000.0*static_cast<double>(kk-1)*deltaT;
         double dz2 = 2000.0*(z - sum + deltaT*c*v)/(c*v);
@@ -300,7 +300,7 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
 }
 
 void
-GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> & velocity,
+GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> * velocity,
                                           const Simbox        * timeSimbox)
 {
   if(z0Grid_==NULL || z1Grid_==NULL)
@@ -341,7 +341,7 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> & velocity,
         {
           double sum = 0.0;
           for(int k=0 ; k<nz ; k++)
-            sum += velocity(ii,jj,k);
+            sum += velocity->GetValue(ii,jj,k);
           (*isochore)(i,j) = sum*dt;
         }
         else
@@ -369,13 +369,13 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> & velocity,
             double sum = 0.0;
             for(int k=0 ; k<nz ; k++) {
               if(i1!=IMISSING && j1!=IMISSING)
-                sum += velocity(i1,j1,k);
+                sum += velocity->GetValue(i1,j1,k);
               if(i2!=IMISSING && j2!=IMISSING)
-                sum += velocity(i2,j2,k);
+                sum += velocity->GetValue(i2,j2,k);
               if(i3!=IMISSING && j3!=IMISSING)
-                sum += velocity(i3,j3,k);
+                sum += velocity->GetValue(i3,j3,k);
               if(i4!=IMISSING && j4!=IMISSING)
-                sum += velocity(i4,j4,k);
+                sum += velocity->GetValue(i4,j4,k);
             }
             (*isochore)(i,j) = sum*dt/static_cast<double>(n);
           }

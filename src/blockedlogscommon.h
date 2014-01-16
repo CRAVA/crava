@@ -72,7 +72,9 @@ public:
   const std::vector<double>            & GetZposBlocked(void)  const   { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetXposRawLogs()      const   { return x_pos_raw_logs_                                                       ;}
   const std::vector<double>            & GetYposRawLogs()      const   { return y_pos_raw_logs_                                                       ;}
-  const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
+  //const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
+  //H-Test
+  const std::vector<double>            & GetZposRawLogs()      const   { return  continuous_raw_logs_.find("TWT")->second                             ;}
 
   const std::vector<double>            & GetTVDBlocked(void)   const   { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetTWTBlocked(void)   const   { return twt_blocked_                                                          ;}
@@ -160,6 +162,11 @@ public:
                                                         int                   j_offset = 0);
 
   void                                   GetBlockedGrid(const NRLib::Grid<double> & grid,
+                                                        std::vector<double>       & blocked_log,
+                                                        int                         i_offset = 0,
+                                                        int                         j_offset = 0);
+
+  void                                   GetBlockedGrid(const NRLib::Grid<double> * grid,
                                                         std::vector<double>       & blocked_log,
                                                         int                         i_offset = 0,
                                                         int                         j_offset = 0);

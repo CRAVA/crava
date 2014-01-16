@@ -22,12 +22,10 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "src/modelsettings.h"
-//#include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet3D.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet.h"
-//#include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
@@ -69,10 +67,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   dz_         = static_cast<float>(simBox->getdz());
 
   //nzp_        = seisCube->getNzp();
-  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  //nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
   nzp_        = seismic_data->GetNz();
-
+  nzp_        = simBox->GetNZpad(); //H-test
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 
@@ -149,14 +145,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         if( ModelSettings::getDebugLevel() > 0 ) {
           std::string fileName = "xgrad_depth_" + wellname + "_" + angle;
 
-          //std::vector<float> az_tmp(az.size());
-          //for(size_t i = 0; i < az_tmp.size(); i++)
-          //  az_tmp[i] = static_cast<float>(az[i]);
-          //printVecToFile(fileName, &az_tmp[0], length);
-
           //printVecToFile(fileName, &az[0], length);
           printVecDoubleToFile(fileName, &az[0], length);
-
 
           fileName = "ygrad_depth_" + wellname + "_" + angle;
           //printVecToFile(fileName, &bz[0], length);
@@ -802,21 +792,21 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
   std::vector<double> seis_data(nz_);
   blocked_log->GetVerticalTrend(seisLog, seis_data);
 
-  std::vector<double> alpha(nz_);
-  std::vector<double> beta(nz_);
+  std::vector<double> vp(nz_);
+  std::vector<double> vs(nz_);
   std::vector<double> rho(nz_);
-  blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), alpha);
-  blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), beta);
+  blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), vp);
+  blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), vs);
   blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
 
   for (int k=0; k<nz_; k++)
-    hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seis_data[k] != RMISSING);
+    hasWellData[k] = (vp[k] != RMISSING && vs[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seis_data[k] != RMISSING);
 
   //Check that data are within wavelet estimation interval
   if (estimInterval.size() > 0) {
-    const std::vector<double> xPos = blocked_log->GetXposBlocked();
-    const std::vector<double> yPos = blocked_log->GetYposBlocked();
-    const std::vector<double> zPos = blocked_log->GetZposBlocked();
+    const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+    const std::vector<double> & yPos = blocked_log->GetYposBlocked();
+    const std::vector<double> & zPos = blocked_log->GetZposBlocked();
     for (int k=0; k<nz_; k++) {
       const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
       const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);

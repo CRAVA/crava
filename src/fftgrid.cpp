@@ -161,9 +161,9 @@ FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
   //
 
   createRealGrid();
-  setType(FFTGrid::PARAMETER);
+  setType(PARAMETER);
 
-  setAccessMode(FFTGrid::RANDOMACCESS);
+  setAccessMode(RANDOMACCESS);
 
   float sum_c = 1.0f/static_cast<float>(nzp_ - nz_ + 1);
   float sum_b = 1.0f/static_cast<float>(nyp_ - ny_ + 1);
@@ -175,6 +175,7 @@ FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
 
         float value = RMISSING;
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
+
           value = static_cast<float>(grid->GetValue(i, j, k)); //H grid(i,j,k) not working when a pointer is used?
           //value = pOld->getRealValue(i, j, k);
         }
