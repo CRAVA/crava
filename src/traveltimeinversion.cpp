@@ -193,7 +193,7 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                                  stationary_covariance,
                                  observation_filter);
 
-  //stationary_covariance->fftInPlace();
+  //stationary_covariance->fftInPlace(); NBNB: OK her in or out??
 
   FFTGrid * post_mu_log_vp = NULL;
   calculateLogVpExpectation(observation_filter,
@@ -314,7 +314,7 @@ TravelTimeInversion::doRMSInversion(ModelGeneral            * modelGeneral,
   LogKit::LogFormatted(LogKit::Low, text);
 
   FFTGrid * mu_log_vp_grid                 = seismicParameters.GetMuAlpha();
-  FFTGrid * cov_log_vp_grid                = seismicParameters.GetCovBeta();
+  FFTGrid * cov_log_vp_grid                = seismicParameters.GetCovAlpha();
 
   const Simbox * timeSimbox                = modelGeneral->getTimeSimbox();
   const Simbox * simbox_above              = modelTravelTimeStatic ->getSimboxAbove();
