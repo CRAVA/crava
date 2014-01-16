@@ -310,7 +310,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
   std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
 
-  try{
+  try {
 
     FindSizeAndBlockPointers(estimation_simbox, b_ind, n_blocks_);
     FindBlockIJK(estimation_simbox, b_ind);
@@ -320,11 +320,13 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
     BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
     BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
-    BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
+    //BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
+
+    //Extrapolates if missing values in the beginning or end.
+    FindXYZForVirtualPart(estimation_simbox); //H Added
 
     // Continuous logs
-
-    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
+    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++) {
       std::vector<double> temp_vector_blocked;
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
@@ -1839,15 +1841,18 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 
     // Remove WELLMISSING data from wells
-    if(continuous_logs_well.find("TWT") != continuous_logs_well.end()){
-      for(unsigned int i=0; i<n_data_with_wellmissing; i++){
+    if(continuous_logs_well.find("Z_pos") != continuous_logs_well.end()) {
+      for(unsigned int i = 0; i < n_data_with_wellmissing; i++) {
         // TWT is the variable we are testing for WELLMISSING values
-        double dummy = continuous_logs_well.find("TWT")->second[i];
+        double dummy = continuous_logs_well.find("Z_pos")->second[i];
         if(dummy != WELLMISSING && dummy != OPENWORKS_MISSING){
           x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
           y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
-          z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
-          twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
+          //z_pos_raw_logs.push_back(continuous_logs_well.find("TVD")->second[i]);
+          //H
+          z_pos_raw_logs.push_back(continuous_logs_well.find("Z_pos")->second[i]);
+
+          //twt_raw_logs.push_back(continuous_logs_well.find("TWT")->second[i]);
           if(facies_log_defined_)
             facies_raw_logs.push_back(discrete_logs_well.find("Facies")->second[i]);
 
@@ -2496,15 +2501,15 @@ void BlockedLogsCommon::GetBlockedGrid(const FFTGrid       * grid,
   }
 }
 
-void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> & grid,
-                                       std::vector<double>       & blocked_log,
-                                       int                         i_offset,
-                                       int                         j_offset) {
-  for (size_t m = 0 ; m < n_blocks_ ; m++) {
-    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
-    blocked_log[m] = grid(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
-  }
-}
+//void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> & grid,
+//                                       std::vector<double>       & blocked_log,
+//                                       int                         i_offset,
+//                                       int                         j_offset) {
+//  for (size_t m = 0 ; m < n_blocks_ ; m++) {
+//    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
+//    blocked_log[m] = grid(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
+//  }
+//}
 
 void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> * grid,
                                        std::vector<double>       & blocked_log,
@@ -3685,4 +3690,27 @@ void BlockedLogsCommon::FindMeanVsVp(const NRLib::Surface<double> & top,
   }
 
   mean_vs_vp /= n_vs_vp;
+}
+
+void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox * simbox)
+{
+  //
+  // If the ends have undefined coordinates we use the nearest defined
+  // coordinate for x and y and the block cell centre for z
+  //
+  for (int b = 0 ; b < first_B_ ; b++) {
+    double x,y,z;
+    simbox->getCoord(i_pos_[b], j_pos_[b], k_pos_[b], x, y, z);
+    x_pos_blocked_[b] = x_pos_blocked_[first_B_];
+    y_pos_blocked_[b] = y_pos_blocked_[first_B_];
+    z_pos_blocked_[b] = z;
+  }
+
+  for (int b = last_B_ + 1; b < n_blocks_; b++) {
+    double x,y,z;
+    simbox->getCoord(i_pos_[b], j_pos_[b], k_pos_[b], x, y, z);
+    x_pos_blocked_[b] = x_pos_blocked_[last_B_];
+    y_pos_blocked_[b] = y_pos_blocked_[last_B_];
+    z_pos_blocked_[b] = z;
+  }
 }

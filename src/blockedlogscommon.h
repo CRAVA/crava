@@ -161,10 +161,10 @@ public:
                                                         int                   i_offset = 0,
                                                         int                   j_offset = 0);
 
-  void                                   GetBlockedGrid(const NRLib::Grid<double> & grid,
-                                                        std::vector<double>       & blocked_log,
-                                                        int                         i_offset = 0,
-                                                        int                         j_offset = 0);
+  //void                                   GetBlockedGrid(const NRLib::Grid<double> & grid,
+  //                                                      std::vector<double>       & blocked_log,
+  //                                                      int                         i_offset = 0,
+  //                                                      int                         j_offset = 0);
 
   void                                   GetBlockedGrid(const NRLib::Grid<double> * grid,
                                                         std::vector<double>       & blocked_log,
@@ -472,6 +472,8 @@ private:
   void    WriteNorsarWell(float max_hz_background,
                           float max_hz_seismic);
 
+  void    FindXYZForVirtualPart(const Simbox * simbox);
+
   // CLASS VARIABLES -----------------------------
 
   unsigned int       n_blocks_;         // number of blocks
@@ -488,7 +490,7 @@ private:
   std::vector<double> x_pos_blocked_;  // Blocked x position
   std::vector<double> y_pos_blocked_;  // Blocked y position
   std::vector<double> z_pos_blocked_;  // Blocked z position
-  std::vector<double> twt_blocked_;    // Blocked twt value
+  //std::vector<double> twt_blocked_;    // Blocked twt value //H twt stored as z_pos
   std::vector<int>    facies_blocked_; // Blocked facies log
 
   std::vector<int>    s_pos_;    // Simbox number for block
@@ -524,7 +526,7 @@ private:
   std::vector<double> x_pos_raw_logs_;
   std::vector<double> y_pos_raw_logs_;
   std::vector<double> z_pos_raw_logs_;
-  std::vector<double> twt_raw_logs_;
+  //std::vector<double> twt_raw_logs_;
   std::vector<int>    facies_raw_logs_;
 
   std::map<std::string, std::vector<double> > continuous_raw_logs_;  // Map between variable name and raw continuous logs
