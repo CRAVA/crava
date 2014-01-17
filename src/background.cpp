@@ -108,10 +108,6 @@ Background::Background(std::vector<NRLib::Grid<double> *>         & parameters,
   for(int i=0 ; i<3 ; i++)
     parameters[i]->Resize(nx, ny, nz);
 
-  //NRLib::Grid<double> & bg_vp  = parameters[0];
-  //NRLib::Grid<double> & bg_vs  = parameters[1];
-  //NRLib::Grid<double> & bg_rho = parameters[2];
-
   if (time_bg_simbox == NULL) {
     generateBackgroundModel(parameters[0], parameters[1], parameters[2],
                             velocity, wells,
@@ -194,10 +190,6 @@ Background::Background(std::vector<NRLib::Grid<double> *> & parameters,
   for(int i=0 ; i<3 ; i++)
     parameters[i]->Resize(nx, ny, nz);
 
-  //NRLib::Grid<double> & bg_vp  = parameters[0];
-  //NRLib::Grid<double> & bg_vs  = parameters[1];
-  //NRLib::Grid<double> & bg_rho = parameters[2];
-
   GenerateMultizoneBackgroundModel(parameters[0], //vp
                                    parameters[1], //vs
                                    parameters[2], //rho
@@ -225,20 +217,9 @@ Background::Background(std::vector<std::vector<NRLib::Grid<double> *> > & parame
   //Background for multiple intervals
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
-  //TEST
-  //Assume //vector(intervals) vector(parameters)
-  //Change order
-  //std::vector<NRLib::Grid<double> > vp_tmp(n_intervals);
-  //std::vector<NRLib::Grid<double> > vs_tmp(n_intervals);
-  //std::vector<NRLib::Grid<double> > rho_tmp(n_intervals);
-
   for (int i = 0; i < n_intervals; i++) {
     parameters[i].resize(3);
   }
-
-  //parameters[0].resize(n_intervals);
-  //parameters[1].resize(n_intervals);
-  //parameters[2].resize(n_intervals);
 
   GenerateMultiIntervalBackgroundModel(parameters, //parameters[0], parameters[1], parameters[2],
                                        wells,
@@ -3514,11 +3495,11 @@ Background::calculateDeviationFromVerticalTrend(std::vector<std::vector<double> 
   for (int w = 0 ; w < nWells ; w++) {
     if(wellTrend[w].size() > 0) {
       std::vector<double> & well_trend = wellTrend[w];
-      float sum_dev = 0.0f;
+      double sum_dev = 0.0f;
       int count = 0;
       for (int k = 0 ; k < nz ; k++) {
         if (well_trend[k] != RMISSING) {
-          float diff = exp(well_trend[k]) - exp(globalTrend[k]);
+          double diff = exp(well_trend[k]) - exp(globalTrend[k]);
           sum_dev += diff*diff;
           count++;
         }
@@ -3628,30 +3609,30 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
                                              const int                        nWells,
                                              const int                        nz)
 {
-  float global_mean_alpha = 0.0f;
-  float global_mean_beta  = 0.0f;
-  float global_mean_rho   = 0.0f;
+  double global_mean_vp  = 0.0;
+  double global_mean_vs  = 0.0;
+  double global_mean_rho = 0.0;
 
   for (int k=0 ; k<nz ; k++)
   {
-    global_mean_alpha += exp(trend_vp[k]);
-    global_mean_beta  += exp(trend_vs[k]);
-    global_mean_rho   += exp(trend_rho[k]);
+    global_mean_vp  += exp(trend_vp[k]);
+    global_mean_vs  += exp(trend_vs[k]);
+    global_mean_rho += exp(trend_rho[k]);
   }
-  global_mean_alpha /= nz;
-  global_mean_beta  /= nz;
-  global_mean_rho   /= nz;
+  global_mean_vp  /= nz;
+  global_mean_vs  /= nz;
+  global_mean_rho /= nz;
 
   //
   // Find the relative average deviations (mean of Vp,Vs and Rho deviations).
   //
-  float * rel_avg_dev = new float[nWells];
+  double * rel_avg_dev = new double[nWells];
   for (int i=0 ; i<nWells ; i++)
   {
-    float rel_dev_alpha = avg_dev_vp[i]/global_mean_alpha;
-    float rel_dev_beta  = avg_dev_vs[i]/global_mean_beta;
-    float rel_dev_rho   = avg_dev_rho[i]/global_mean_rho;
-    rel_avg_dev[i] = (rel_dev_alpha + rel_dev_beta + rel_dev_rho)/3;
+    double rel_dev_vp  = avg_dev_vp[i]/global_mean_vp;
+    double rel_dev_vs  = avg_dev_vs[i]/global_mean_vs;
+    double rel_dev_rho = avg_dev_rho[i]/global_mean_rho;
+    rel_avg_dev[i] = (rel_dev_vp + rel_dev_vs + rel_dev_rho)/3;
   }
   //
   // Sort deviations to find worst well.
@@ -3717,7 +3698,7 @@ Background::fillInVerticalTrend(FFTGrid                   * grid,
   for (int k = 0; k < nzp; k++)
     for (int j = 0; j < nyp; j++)
       for (int i = 0; i < rnxp; i++)
-        grid->setNextReal(trend[k]);
+        grid->setNextReal(static_cast<float>(trend[k]));
 
   grid->endAccess();
 }

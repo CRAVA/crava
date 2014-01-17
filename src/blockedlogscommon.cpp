@@ -46,7 +46,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
   // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, //twt_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
@@ -90,7 +90,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     facies_map_ = well_data->GetFaciesMap();
   }
 
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, //twt_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
@@ -132,7 +132,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
 
   // Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, //twt_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
   if(failed)
@@ -187,7 +187,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   }
 
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, twt_raw_logs_,
+  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_, //twt_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
@@ -240,10 +240,12 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
     BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
     BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
     BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
-    BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
+    //BlockContinuousLog(b_ind, twt_raw_logs_,   twt_blocked_  );
+
+    //Extrapolates if missing values in the beginning or end.
+    //FindXYZForVirtualPart(estimation_simbox); //TODO: Adjust for multiple_intervals
 
     // Continuous logs
-
     for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
       std::vector<double> temp_vector_blocked;
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
@@ -275,7 +277,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
             InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
             InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
             InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(twt_blocked_, start, end, j, t);
+            //InterpolateContinuousLog(twt_blocked_, start, end, j, t);
 
             // all blocked continuous logs
             for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
@@ -357,7 +359,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
             InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
             InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
             InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(twt_blocked_, start, end, j, t);
+            //InterpolateContinuousLog(twt_blocked_, start, end, j, t);
 
             // all blocked continuous logs
             for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked_.begin(); it!=continuous_logs_blocked_.end(); ++it){
@@ -1783,7 +1785,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
                                                   std::vector<double>                          & x_pos_raw_logs,
                                                   std::vector<double>                          & y_pos_raw_logs,
                                                   std::vector<double>                          & z_pos_raw_logs,
-                                                  std::vector<double>                          & twt_raw_logs,
+                                                  //std::vector<double>                          & twt_raw_logs,
                                                   std::vector<int>                             & facies_raw_logs,
                                                   std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
                                                   std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
@@ -3698,7 +3700,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox * simbox)
   // If the ends have undefined coordinates we use the nearest defined
   // coordinate for x and y and the block cell centre for z
   //
-  for (int b = 0 ; b < first_B_ ; b++) {
+  for (size_t b = 0 ; b < first_B_ ; b++) {
     double x,y,z;
     simbox->getCoord(i_pos_[b], j_pos_[b], k_pos_[b], x, y, z);
     x_pos_blocked_[b] = x_pos_blocked_[first_B_];
@@ -3706,7 +3708,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox * simbox)
     z_pos_blocked_[b] = z;
   }
 
-  for (int b = last_B_ + 1; b < n_blocks_; b++) {
+  for (size_t b = last_B_ + 1; b < n_blocks_; b++) {
     double x,y,z;
     simbox->getCoord(i_pos_[b], j_pos_[b], k_pos_[b], x, y, z);
     x_pos_blocked_[b] = x_pos_blocked_[last_B_];

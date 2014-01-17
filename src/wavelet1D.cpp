@@ -56,7 +56,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  nzp_        = seismic_data->GetNz(); //H-DEBUGGING simbox->getnz(); //H Heap Corruption error in writeWaveletToFile if nzp = nz ? when deleting remember []
+  nzp_        = simbox->GetNZpad(); //H-TEST seismic_data->GetNz(); //H-DEBUGGING simbox->getnz(); //H Heap Corruption error in writeWaveletToFile if nzp = nz ? when deleting remember []
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
@@ -640,11 +640,6 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 //The reason why the next three variables are not taken from the class variables is that this function is called
 //before resample in Model::processWavelets. This means that at this point nz_, nzp_ and rnzp_ are not properly set.
   int nz              = simbox->getnz();
-
-  //int nzp             = seisCube->getNzp();
-  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  //int nzp = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
-
   int nzp             = seismic_data->GetNz();
   int rnzp            = 2*(nzp/2+1);
 

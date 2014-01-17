@@ -94,6 +94,9 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
+  //H-TEST for test_case 11: Waveletestimation
+  estimation_simbox_.SetNZpad(480);
+
   //H-TEST for test_cast 15: Cholesky error in wavelet3D
   //estimation_simbox_ = multiple_interval_grid_->GetIntervalSimbox(0);
   //estimation_simbox_.SetNXpad(315);
@@ -775,8 +778,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
       //Cut wells against full_inversion_volume
-      //if (err_text == "") //H-DEBUGGING
-      //  CutWell(well_file_name, new_well, full_inversion_volume_);
+      if (err_text == "")
+        CutWell(well_file_name, new_well, full_inversion_volume_);
 
       //Store facies names.
       if (model_settings->getFaciesLogGiven()) {
@@ -827,14 +830,17 @@ void CommonData::CutWell(std::string           well_file_name,
                          const NRLib::Volume & full_inversion_volume) {
 
   //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
-  //Possible Logs: TVT, X_pos, Y_pos, TVD, Dt, Vp, Rho, Dts, Facies
-  const std::vector<double> & tvd_old = well.GetContLog("TVD");
+  //Possible Logs: TVD, X_pos, Y_pos, TVD, Dt, Vp, Rho, Dts, Facies
+  //const std::vector<double> & tvd_old = well.GetContLog("TVD");
   const std::vector<double> & x_old   = well.GetContLog("X_pos");
   const std::vector<double> & y_old   = well.GetContLog("Y_pos");
+  const std::vector<double> & z_old   = well.GetContLog("Z_pos");
 
-  std::vector<double> tvd_new;
+  //std::vector<double> tvd_new;
+  //std::vector<double> twt_new;
   std::vector<double> x_new;
   std::vector<double> y_new;
+  std::vector<double> z_new;
   std::vector<double> dt_new;
   std::vector<double> vp_new;
   std::vector<double> dts_new;
@@ -846,19 +852,22 @@ void CommonData::CutWell(std::string           well_file_name,
   const NRLib::Surface<double> & bot_surf = full_inversion_volume.GetBotSurface();
 
   bool need_cutting = false;
-  if (tvd_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || tvd_old[tvd_old.size()-1] > bot_surf.GetZ(x_old[tvd_old.size()-1], y_old[tvd_old.size()-1]))
+  if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
     need_cutting = true;
 
   if (need_cutting == true) {
 
-    for (size_t i = 0; i < tvd_old.size(); i++) {
+    for (size_t i = 0; i < z_old.size(); i++) {
 
-      if ( !(tvd_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || tvd_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+      if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
 
-        tvd_new.push_back(tvd_old[i]);
+        //tvd_new.push_back(tvd_old[i]);
         x_new.push_back(x_old[i]);
         y_new.push_back(y_old[i]);
+        z_new.push_back(z_old[i]);
 
+        //if (well.HasContLog("TWT"))
+        //  twt_new.push_back(well.GetContLog("TWT")[i]);
         if (well.HasContLog("Dt"))
           dt_new.push_back(well.GetContLog("Dt")[i]);
         if (well.HasContLog("Vp"))
@@ -875,12 +884,16 @@ void CommonData::CutWell(std::string           well_file_name,
     }
 
     //Replace logs
-    well.RemoveContLog("TVD");
-    well.AddContLog("TVD", tvd_new);
+    //well.RemoveContLog("TWT");
+    //well.AddContLog("TWT", twt_new);
+    //well.RemoveContLog("TVD");
+    //well.AddContLog("TVD", tvd_new);
     well.RemoveContLog("X_pos");
     well.AddContLog("X_pos", x_new);
     well.RemoveContLog("Y_pos");
     well.AddContLog("Y_pos", y_new);
+    well.RemoveContLog("Z_pos");
+    well.AddContLog("Z_pos", z_new);
     if (well.HasContLog("Dt")) {
       well.RemoveContLog("Dt");
       well.AddContLog("Dt", dt_new);
@@ -905,6 +918,8 @@ void CommonData::CutWell(std::string           well_file_name,
       well.RemoveDiscLog("Facies");
       well.AddDiscLog("Facies", facies_new);
     }
+
+    well.SetNumberOfData(z_new.size());
   }
 }
 
@@ -960,24 +975,44 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
 
   int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
 
-  // Norsar wells must have a TVD log
-  if (new_well.HasContLog("TVD")) {
-    std::vector<double> tvd_temp = new_well.GetContLog("TVD");
-    for (unsigned int i = 0; i < tvd_temp.size(); i++) {
-      tvd_temp[i] = tvd_temp[i]*factor_kilometer;
 
-      if (tvd_temp[i] != WELLMISSING)
+  //H new fix: Store TWT as Z_pos
+  if (new_well.HasContLog("TWT")) {
+    std::vector<double> twt_temp = new_well.GetContLog("TWT");
+    for (unsigned int i = 0; i < twt_temp.size(); i++) {
+      twt_temp[i] = twt_temp[i]*factor_kilometer;
+
+      if (twt_temp[i] != WELLMISSING)
         nonmissing_data++;
 
     }
-    new_well.RemoveContLog("TVD");
-    new_well.AddContLog("TVD", tvd_temp);
+    //new_well.RemoveContLog("TVD");
+    new_well.AddContLog("Z_pos", twt_temp);
 
     new_well.SetNumberOfNonMissingData(nonmissing_data);
   }
   else { // Process MD log if TVD is not available?
-    err_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
+    err_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
+
+  // Norsar wells must have a TVD log
+  //if (new_well.HasContLog("TVD")) {
+  //  std::vector<double> tvd_temp = new_well.GetContLog("TVD");
+  //  for (unsigned int i = 0; i < tvd_temp.size(); i++) {
+  //    tvd_temp[i] = tvd_temp[i]*factor_kilometer;
+
+  //    if (tvd_temp[i] != WELLMISSING)
+  //      nonmissing_data++;
+
+  //  }
+  //  new_well.RemoveContLog("TVD");
+  //  new_well.AddContLog("TVD", tvd_temp);
+
+  //  new_well.SetNumberOfNonMissingData(nonmissing_data);
+  //}
+  //else { // Process MD log if TVD is not available?
+  //  err_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
+  //}
 
   // Time is always entry 0 in the log name list and is always called TWT
   //if (new_well.HasContLog(log_names_from_user[0])){
@@ -1096,17 +1131,27 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     error_text += "Could not find log 'Y' in well file "+new_well.GetWellName()+".\n";
   }
 
-  // RMS wells must have a z log
-  if (new_well.HasContLog("Z")) {
-    new_well.AddContLog("TVD", new_well.GetContLog("Z"));
+  //H New fix: Store TWT-log as z-log. (Remove old Z-log from well and remove TVD(?))
+  if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
+  if (new_well.HasContLog("TWT")) {
+    new_well.AddContLog("Z_pos", new_well.GetContLog("TWT"));
   }
   else {
-    error_text += "Could not find log 'Z' in well file "+new_well.GetWellName()+".\n";
+    error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
 
+  // RMS wells must have a z log
+  //if (new_well.HasContLog("Z")) {
+  //  new_well.AddContLog("TVD", new_well.GetContLog("Z"));
+  //  new_well.RemoveContLog("Z");
+  //}
+  //else {
+  //  error_text += "Could not find log 'Z' in well file "+new_well.GetWellName()+".\n";
+  //}
+
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
-  const std::vector<double> & z_tmp = new_well.GetContLog("TVD");
+  const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
   for (size_t i = 0; i < z_tmp.size(); i++) {
     if (z_tmp[i] != WELLMISSING)
       nonmissing_data++;
@@ -3135,7 +3180,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   continuous_logs_to_be_blocked_.push_back("Vs");
   continuous_logs_to_be_blocked_.push_back("Rho");
   continuous_logs_to_be_blocked_.push_back("MD");
-  continuous_logs_to_be_blocked_.push_back("TWT");
+  //continuous_logs_to_be_blocked_.push_back("TWT");
 
   // Discrete parameters that are to be used in BlockedLogs
 
@@ -4889,7 +4934,7 @@ void CommonData::FillInData(NRLib::Grid<double> * grid_new,
 
           dz_data = (z_max- z_min) / fft_grid_old->getNz();
           dz_min = dz_data/4.0f;
-          z0_data = z_min;
+          z0_data = static_cast<float>(z_min);
         }
 
         size_t n_trace = data_trace.size();

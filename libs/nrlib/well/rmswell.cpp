@@ -109,9 +109,7 @@ RMSWell::RMSWell(const std::string& filename)
     std::istringstream ist(dummy);
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y
-    //contlogs[2].push_back(ReadNext<double>(ist, line)); //z
-    dummy_z = ReadNext<double>(ist, line);
-    contlogs[2].push_back(dummy_z); //z
+    contlogs[2].push_back(ReadNext<double>(ist, line)); //z
 
     //if(dummy_z != WELLMISSING)
     //  legal_data++;

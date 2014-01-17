@@ -68,7 +68,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
   //nzp_        = seisCube->getNzp();
   nzp_        = seismic_data->GetNz();
-  nzp_        = simBox->GetNZpad(); //H-test
+  nzp_        = simBox->GetNZpad(); //H-TEST
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 

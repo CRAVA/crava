@@ -137,6 +137,9 @@ namespace NRLib {
     /// Set number of non-missing data
     void SetNumberOfNonMissingData(int n_data_nonmissing) {n_data_nonmissing_ = n_data_nonmissing ;}
 
+    /// Set number of data
+    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
     void SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
@@ -156,9 +159,6 @@ namespace NRLib {
     int CheckStormgrid(StormContGrid & stormgrid) const;
 
   protected:
-    /// Set number of data
-    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
-
     // Number of time data including WELLMISSING values
     unsigned int              n_data_;
 

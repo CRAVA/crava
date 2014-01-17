@@ -72,12 +72,12 @@ public:
   const std::vector<double>            & GetZposBlocked(void)  const   { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetXposRawLogs()      const   { return x_pos_raw_logs_                                                       ;}
   const std::vector<double>            & GetYposRawLogs()      const   { return y_pos_raw_logs_                                                       ;}
-  //const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
+  const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
   //H-Test
-  const std::vector<double>            & GetZposRawLogs()      const   { return  continuous_raw_logs_.find("TWT")->second                             ;}
+  //const std::vector<double>            & GetZposRawLogs()      const   { return  continuous_raw_logs_.find("TWT")->second                             ;}
 
-  const std::vector<double>            & GetTVDBlocked(void)   const   { return z_pos_blocked_                                                        ;}
-  const std::vector<double>            & GetTWTBlocked(void)   const   { return twt_blocked_                                                          ;}
+  //const std::vector<double>            & GetTVDBlocked(void)   const   { return z_pos_blocked_                                                        ;}
+  //const std::vector<double>            & GetTWTBlocked(void)   const   { return twt_blocked_                                                          ;}
 
   const std::map<int, std::string>     & GetFaciesMap()        const    { return facies_map_                                                          ;}
   const std::vector<int>               & GetIposVector()       const   { return i_pos_                                                                ;}
@@ -329,7 +329,7 @@ private:
                                  std::vector<double>                          & x_pos_raw_logs,
                                  std::vector<double>                          & y_pos_raw_logs,
                                  std::vector<double>                          & z_pos_raw_logs,
-                                 std::vector<double>                          & twt_raw_logs,
+                                 //std::vector<double>                          & twt_raw_logs,
                                  std::vector<int>                             & facies_raw_logs,
                                  std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
                                  std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
