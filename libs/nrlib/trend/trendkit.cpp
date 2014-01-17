@@ -1,4 +1,4 @@
-// $Id: trendkit.cpp 1225 2013-12-16 08:40:07Z ulvmoen $
+// $Id: trendkit.cpp 1231 2014-01-13 12:17:00Z gudmundh $
 #include "trendkit.hpp"
 #include "../iotools/logkit.hpp"
 #include "../iotools/fileio.hpp"
@@ -290,8 +290,8 @@ void EstimateTrend1D(const std::vector<double> & x,
   // the effective sample size has to be less than the actual sample size.
   if (x_binned.size() < effective_sample_size) {
     effective_sample_size = x_binned.size();
-    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
-    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model in the estimation of 1D trend.\n");
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 1D trend is larger than the actual sample size.");
+    LogKit::LogFormatted(LogKit::High,"\n          The local linear model is reduced to a standard linear model.");
   }
 
   // local linear regression with varying bandwidth
@@ -366,6 +366,8 @@ bool CheckConfigurations1D(const std::vector<double> & x,
                            const double              & bandwidth,
                            std::string               & errTxt)
 {
+  bool   valid_dataset = true;
+
   double upp       = 3.0;
   double large     = 1.0;
 
@@ -380,44 +382,47 @@ bool CheckConfigurations1D(const std::vector<double> & x,
   double x0_max    = *std::max_element(x0.begin(), x0.end());
 
   if (!CheckIfVectorIsSorted(x0)) {
-    errTxt += "Error: The inputs vector is not sorted. \n";
-    return(false);
+    errTxt        += "Error: Unable to estimate 1D trend/variance.\n";
+    errTxt        += "       The inputs vector is not sorted. \n";
+    valid_dataset  = false;
   }
   else {
     if (x0_min < x_min - x_upp && x_max + x_upp < x0_max) {
-      errTxt += "Error: Unable to estimate complete 1D trend.\n";
-      errTxt += "       The interpolated region is too large compared to the support of the data.\n";
-      errTxt += "       Reduce the size of the estimated region or estimate a constant value.\n";
-      return(false);
+      errTxt        += "Error: Unable to estimate 1D trend/variance.\n";
+      errTxt        += "       The interpolated region is too large compared to the support of the data.\n";
+      errTxt        += "       Reduce the size of the estimated region or estimate a constant value.\n";
+      valid_dataset  = false;
     }
     else {
       if (x0_min < x_min - x_large || x_max + x_large < x0_max) {
-        LogKit::LogFormatted(LogKit::Low,"\nWARNING : The defined region is large compared to the support of the data. This can result in unstable estimates.\n");
-        LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method.\n");
+        LogKit::LogFormatted(LogKit::High,"\nWARNING : The defined region for 1D trend/variance is large compared to the support of the data.");
+        LogKit::LogFormatted(LogKit::High,"\n          This can result in unstable estimates. Consider using an alternative (low-dimensional) method.\n");
       }
 
       else {
         if (n_samples < 10) {
-          errTxt += "Error: Too few observations. \n";
-          errTxt += "       The algorithm requires at least 11 observations. \n";
-          return(false);
+          errTxt        += "Error: Unable to estimate 1D trend/variance.\n";
+          errTxt        += "       Too few observations.\n";
+          errTxt        += "       The algorithm requires at least 11 observations to run.\n";
+          valid_dataset  = false;
         }
         else {
           if (bandwidth < 1e-5) {
-            errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
-            return(false);
+            errTxt        += "Error: Unable to estimate 1D trend/variance.\n";
+            errTxt        += "       The spread in the data is too low to provide a valid bandwidth.\n ";
+            valid_dataset  = false;
           }
           else {
             if (n_samples < 32) {
-              LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
-              LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+              LogKit::LogFormatted(LogKit::High,"\nWARNING : The sample size is relatively small for 1D trend/variance estiamtion.");
+              LogKit::LogFormatted(LogKit::High,"\n          This can result in unstable estimates. Consider using an alternative (low-dimensional) method.\n");
             }
           }
         }
       }
     }
   }
-  return(true);
+  return(valid_dataset);
 }
 //-------------------------------------------------------------------------------
 void MakeBinnedDataset1D(const std::vector<double>         & x,
@@ -652,7 +657,8 @@ void EstimateVariance1D(const std::vector<double> & x,
   /* -------------------------------*/
 
   if (y_var == RMISSING) {
-    errTxt +=  "Error: Unable to compute global variance.\n";
+    errTxt += "Error: Unable to estimate 1D variance.\n";
+    errTxt += "       The data contains only missing values.\n";
   }
   else {
 
@@ -679,8 +685,8 @@ void EstimateVariance1D(const std::vector<double> & x,
 
     if (x_binned.size() < y_var_weight) {
       y_var_weight = x_binned.size();
-      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
-      LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 1D variance is larger than the actual sample size.");
+      LogKit::LogFormatted(LogKit::High,"\n          The local linear model is reduced to a standard linear model.");
     }
 
     /* -- estiamte weighted variance -- */
@@ -802,8 +808,8 @@ void EstimateTrend2D(const std::vector<double>         & x,
 
   if (z_binned.size() < effective_sample_size) {
     effective_sample_size = z_binned.size();
-    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
-    LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+    LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 2D trend is larger than the actual sample size.");
+    LogKit::LogFormatted(LogKit::High,"\n          The local linear is reduced to a standard linear model.");
   }
 
   bool   complete_surface = false;
@@ -833,9 +839,9 @@ void EstimateTrend2D(const std::vector<double>         & x,
     l = l + 1;
   }
   if (l > 1e4) {
-    errTxt +=  "Error: Unable to compute complete trend surface (type 3). \n";
-    errTxt +=  "       The interpolated region is too large compared to the support of the data. \n";
-    errTxt +=  "       Reduce the size of the estiamted region or use a low dimensional method. \n";
+    errTxt +=  "Error: Unable to compute complete 2D trend surface.\n";
+    errTxt +=  "       The interpolated region is too large compared to the support of the data.\n";
+    errTxt +=  "       Reduce the size of the estiamted region or use a low-dimensional method.\n";
   }
   BilinearInterpolation(x0_regridded, y0_regridded, z0_regridded, x0, y0, z0);
 }
@@ -889,62 +895,65 @@ bool CheckConfigurations2D(const std::vector<double> & x,
                            const double              & bandwidth_y,
                            std::string               & errTxt)
 {
-  double              upp       = 3.0;
-  double              large     = 1.0;
+  bool                valid_dataset = true;
 
-  size_t              n_samples = z.size();
+  double              upp           = 3.0;
+  double              large         = 1.0;
 
-  double              x_min     = *std::min_element(x.begin(), x.end());
-  double              x_max     = *std::max_element(x.begin(), x.end());
-  double              x_delta   = std::abs(x_max - x_min);
-  double              x_upp     = upp*x_delta;
-  double              x_large   = large*x_delta;
+  size_t              n_samples     = z.size();
 
-  double              y_min     = *std::min_element(y.begin(), y.end());
-  double              y_max     = *std::max_element(y.begin(), y.end());
-  double              y_delta   = std::abs(y_max - y_min);
-  double              y_upp     = upp*y_delta;
-  double              y_large   = large*y_delta;
+  double              x_min         = *std::min_element(x.begin(), x.end());
+  double              x_max         = *std::max_element(x.begin(), x.end());
+  double              x_delta       = std::abs(x_max - x_min);
+  double              x_upp         = upp*x_delta;
+  double              x_large       = large*x_delta;
+
+  double              y_min         = *std::min_element(y.begin(), y.end());
+  double              y_max         = *std::max_element(y.begin(), y.end());
+  double              y_delta       = std::abs(y_max - y_min);
+  double              y_upp         = upp*y_delta;
+  double              y_large       = large*y_delta;
 
   if (!CheckIfVectorIsSorted(x0) || !CheckIfVectorIsSorted(y0)) {
-    errTxt += "Error: At least one of the inputs are not sorted. \n";
-    return(false);
+    errTxt        += "Error: Unable to estimate 2D trend/variance.\n";
+    errTxt        += "       At least one of the inputs are not sorted.\n";
+    valid_dataset  = false;
   }
   else {
     if (x0.front() < x_min - x_upp &&  x_max + x_upp < x0.back() && y0.front() < y_min - y_upp &&  y_max + y_upp < y0.back()) {
-      errTxt += "Error: Unable to compute complete trend surface (type 1). \n";
-      errTxt += "       The interpolated region is too large compared to the support of the data.\n";
-      errTxt += "       Reduce the size of the estiamted region or use a low dimensional method.\n";
-      return(false);
+      errTxt        += "Error: Unable to estimate 2D trend/variance.\n";
+      errTxt        += "       The interpolated region is too large compared to the support of the data.\n";
+      errTxt        += "       Reduce the size of the estiamted region or use a low dimensional method.\n";
+      valid_dataset  = false;
     }
     else {
       if (x0.front() < x_min - x_large || x0.back() > x_max + x_large || y0.front() < y_min - y_large || y0.back() > y_max + y_large) {
-        LogKit::LogFormatted(LogKit::Low,"\nWARNING : The defined region is large compared to the support of the data. This can result in unstable estimates. \n");
-        LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+        LogKit::LogFormatted(LogKit::High,"\nWARNING : The defined region for 2D trend/variance is large compared to the support of the data.");
+        LogKit::LogFormatted(LogKit::High,"\n          This can result in unstable estimates. Consider using an alternative (low-dimensional) method.\n");
       }
 
       else {
         if (n_samples < 10) {
-          errTxt += "Error: Too few observations. \n";
-          errTxt += "       The algorithm requires at least 11 observations. \n";
-          return(false);
+          errTxt        += "Error: Unable to estimate 2D trend/variance.\n";
+          errTxt        += "       Too few observations. The algorithm requires at least 11 observations to run.\n";
+          valid_dataset  = false;
         } else {
           if (bandwidth_x < 1e-5 || bandwidth_y < 1e-5) {
-            errTxt += "Error: The spread in the data is too low to provide a valid bandwidth.\n ";
-            errTxt += "       Consider using a low-dimensional method. \n";
-            return(false);
+            errTxt        += "Error: Unable to estimate 2D trend/variance.\n";
+            errTxt        += "       The spread in the data is too low to provide a valid bandwidth.\n ";
+            valid_dataset  = false;
           }
           else {
             if (n_samples < 48) {
-              LogKit::LogFormatted(LogKit::Low,"\nWARNING : The sample size is relatively small. This can result in unstable estimates. \n");
-              LogKit::LogFormatted(LogKit::Low,"            Consider using a low-dimensional method. \n");
+              LogKit::LogFormatted(LogKit::High,"\nWARNING : The sample size is relatively small for 2D trend/variance estiamtion.");
+              LogKit::LogFormatted(LogKit::High,"\n          This can result in unstable estimates. Consider using an alternative (low-dimensional) method.\n");
             }
           }
         }
       }
     }
   }
-  return(true);
+  return(valid_dataset);
 }
 
 //-------------------------------------------------------------------------------
@@ -1528,15 +1537,18 @@ void EstimateVariance2D(const std::vector<double>               & x,
   nSamples = z_z_mean_squared.size();
   if (nSamples > 1) {
     z_var = z_var/(nSamples - 1);
-  } else {
+  }
+  else {
     z_var = RMISSING;
   }
   /* ------------------------------*/
 
 
   if (z_var == RMISSING) {
-    errTxt +=  "Error: Unable to compute global variance.\n";
-  } else {
+    errTxt += "Error: Unable to estimate 2D variance.\n";
+    errTxt += "       The data contains only missing values.\n";
+    }
+    else {
     MakeNewGridResolution(bandwidth_x, x0, x0_regridded);
     MakeNewGridResolution(bandwidth_y, y0, y0_regridded);
 
@@ -1556,8 +1568,8 @@ void EstimateVariance2D(const std::vector<double>               & x,
 
     if (x_binned.size() < effective_sample_size) {
       effective_sample_size = static_cast<double>(x_binned.size());
-      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size is larger than the actual sample size.\n");
-      LogKit::LogFormatted(LogKit::High,"            The local linear method is replaced by a standard linear model.\n");
+      LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 2D variance is larger than the actual sample size.");
+      LogKit::LogFormatted(LogKit::High,"\n          The local linear is reduced to a standard linear model.");
     }
 
     double z_var_weight = effective_sample_size;
@@ -1764,7 +1776,7 @@ void ReadTrend3DBinary(const std::string   & file_name,
                        NRLib::Grid<double> & trend3d)
 {
   std::ifstream file;
-  OpenRead(file, file_name);
+  OpenRead(file, file_name, std::ios::in | std::ios::binary);
   std::vector<int> dim(3);
   ReadBinaryIntArray(file, dim.begin(), 3, file_format);
   trend3d.Resize(dim[0], dim[1], dim[2]);

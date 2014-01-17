@@ -1,4 +1,4 @@
-// $Id: segy.hpp 1064 2012-09-13 12:33:43Z perroe $
+// $Id: segy.hpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -131,12 +131,14 @@ public:
 
   //>>>Begin write mode
   void                      SetGeometry(const SegyGeometry * geometry);
-  void                      StoreTrace(float                 x,
-                                       float                 y,
+
+  void                      StoreTrace(double                     x,
+                                       double                     y,
                                        const std::vector<float>   data,
                                        const NRLib::Volume      * volume,
                                        float                      topVal  = 0.0f,
                                        float                      baseVal = 0.0f);
+
   /// Write single trace to file
   void                      WriteTrace(const TraceHeader        & traceHeader,
                                        const std::vector<float> & data,
@@ -144,13 +146,15 @@ public:
                                        float                      topVal  = 0.0f,
                                        float                      baseVal = 0.0f);
   /// Write single trace to internal memory
-  void                      WriteTrace(float                    x,
-                                       float                    y,
+
+  void                      WriteTrace(double                   x,
+                                       double                   y,
                                        const std::vector<float> data,
                                        const NRLib::Volume    * volume,
                                        float                    topVal  = 0.0f,
-                                       float                    baseVal = 0.0f);
-  void                      WriteAllTracesToFile(); ///< Use only after writeTrace with x and y as input is used for the whole cube
+                                       float                    baseVal = 0.0f,
+                                       short                    scalcoinitial = 1);
+  void                      WriteAllTracesToFile(short scalcoinitial = 1); ///< Use only after writeTrace with x and y as input is used for the whole cube
   //<<<End write mode
 
 
@@ -197,7 +201,7 @@ private:
   void                      SetBogusILXLUndefined(std::vector<NRLib::SegYTrace*> & traces);
 
   bool                      TraceHeaderOK(std::fstream &file, const TraceHeaderFormat *headerFormat);
-  void                      FindDeltaILXL(TraceHeader *t1, TraceHeader *t2, TraceHeader *t3, float &dil, float &dxl, bool x);
+  void                      FindDeltaILXL(TraceHeader *t1, TraceHeader *t2, TraceHeader *t3, double &dil, double &dxl, bool x);
   void                      CheckTopBotError(const double * tE, const double * bE); ///<Summarizes lack of data at top and bottom.
 
   TraceHeaderFormat         trace_header_format_;

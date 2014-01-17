@@ -1,4 +1,4 @@
-// $Id: rmswell.cpp 1068 2012-09-18 11:21:53Z perroe $
+// $Id: rmswell.cpp 1194 2013-08-19 08:24:58Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -218,46 +218,47 @@ RMSWell::GetDiscNames(const std::string& log_name) const
 }
 
 
-void RMSWell::WriteToFile(const std::string& /*filename*/)
+void RMSWell::WriteToFile(const std::string& filename)
 {
-  //std::ofstream file;
-  //OpenWrite(file, filename);
+  std::ofstream file;
+  OpenWrite(file, filename, std::ios::out);
 
-  //file << line1_ << "\n"
-  //  << line2_ << "\n"
-  //  << std::setprecision(8)
-  //  << GetWellName() << " " << xpos0_ <<" " << ypos0_ << "\n"
-  //  << GetNlog() - 3 << "\n";
+  file << line1_ << "\n"
+    << line2_ << "\n"
+    << std::setprecision(8)
+    << GetWellName() << " " << xpos0_ <<" " << ypos0_ << "\n"
+    << GetNlog() - 3 << "\n";
 
-  //size_t k = 0;
-  //std::map<std::string, std::map<int, std::string> >::iterator iter = discnames_.begin();
-  //typedef std::map<int, std::string>::const_iterator ci;
-  //for (size_t i = 0; i < GetNlog(); i++) {
-  //  if (lognames_[i] != "x" && lognames_[i] != "y" && lognames_[i] != "z") {
-  //    file<< lognames_[i] << " ";
-  //    if (isDiscrete_[i]==true) {
-  //      file << "disc" << " ";
-  //      for (ci p = iter->second.begin(); p !=iter->second.end();++p)
-  //        file << p->first << " " << p->second << " ";
-  //      file << "\n";
-  //      ++iter;
-  //    }
-  //    else {
-  //      file<< unit_[k] << " " << scale_[k] <<"\n";
-  //      k++;
-  //    }
-  //  }
-  //}
-  //file.precision(8);
-  //size_t n = GetContLogLength(lognames_[0]);
-  //for (size_t i = 0; i < n; i++) {
-  //  for (size_t j = 0; j < GetNlog(); j++) {
-  //    if (isDiscrete_[j]==true)
-  //      file << GetDiscValue(i, lognames_[j]) << " ";
-  //    else
-  //      file << GetContValue(i, lognames_[j]) << " ";
-  //  }
-  //  file << "\n";
-  //}
-  //file.close();
+  size_t k = 0;
+  std::map<std::string, std::map<int, std::string> >::iterator iter = discnames_.begin();
+  typedef std::map<int, std::string>::const_iterator ci;
+  for (size_t i = 0; i < GetNlog(); i++) {
+    if (lognames_[i] != "x" && lognames_[i] != "y" && lognames_[i] != "z") {
+      file<< lognames_[i] << " ";
+      iter = discnames_.find(lognames_[i]);
+      if (isDiscrete_[i]==true) {
+        file << "DISC" << " ";
+        for (ci p = iter->second.begin(); p !=iter->second.end();++p)
+          file << p->first << " " << p->second << " ";
+        file << "\n";
+       // ++iter;
+      }
+      else {
+        file<< unit_[k] << " " << scale_[k] <<"\n";
+        k++;
+      }
+    }
+  }
+  file.precision(8);
+  size_t n = GetContLogLength(lognames_[0]);
+  for (size_t i = 0; i < n; i++) {
+    for (size_t j = 0; j < GetNlog(); j++) {
+      if (isDiscrete_[j]==true)
+        file << GetDiscValue(i, lognames_[j]) << " ";
+      else
+        file << GetContValue(i, lognames_[j]) << " ";
+    }
+    file << "\n";
+  }
+  file.close();
 }

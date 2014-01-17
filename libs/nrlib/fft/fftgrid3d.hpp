@@ -1,4 +1,4 @@
-// $Id: fftgrid3d.hpp 1073 2012-09-18 14:01:17Z perroe $
+// $Id: fftgrid3d.hpp 1192 2013-08-16 14:48:34Z ok $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -27,6 +27,15 @@
 
 // Must set MKL's /include/fftw or fftw's include directory as additional include directory.
 #include "fftw3.h"
+
+
+// #define  FFTW_DEBUG
+#ifdef FFTW_DEBUG
+#include <string>
+#include "../iotools/fileio.hpp"
+#include <iostream>
+#include <fstream>
+#endif
 
 #include "../grid/grid.hpp"
 #include "fft.hpp"
@@ -371,6 +380,55 @@ Grid<T>  FFTGrid3D<T>::GetRealGrid() const
   return output;
 
 }
+
+
+#ifdef FFTW_DEBUG
+template <typename T>
+void FFTGrid3D<T>::WriteRealToFile(const std::string& filename)
+{
+  std::ofstream out;
+  NRLib::OpenWrite(out, filename);
+
+  for (size_t k = 0; k < nk_tot_; ++k) {
+    for (size_t j = 0; j < nj_tot_; ++j) {
+      for (size_t i = 0; i < ni_tot_; ++i) {
+        out << real_data_[i+ni_tot_*j+ni_tot_*nj_tot_*k]<< " ";
+      }
+    }
+    out << "\n";
+  }
+}
+
+
+template <typename T>
+void FFTGrid3D<T>::WriteComplexToFile(const std::string& filename)
+{
+  ofstream outreal;
+  NRLib::OpenWrite(outreal, "real_"+filename);
+
+  for (size_t k = 0; k < nk_tot_; ++k) {
+    for (size_t j = 0; j < nj_tot_; ++j) {
+      for (size_t i = 0; i < ni_tot_/2+1; ++i) {
+        outreal << complex_data_[i+ni_tot_*j+ni_tot_*nj_tot_*k].real() << " ";
+      }
+    }
+    outreal << "\n";
+  }
+
+  ofstream outimag;
+  NRLib::OpenWrite(outimag, "imag_"+filename);
+
+  for (size_t k = 0; k < GetComplexNK(); ++k) {
+    for (size_t j = 0; j < GetComplexNJ(); ++j) {
+      for (size_t i = 0; i < GetComplexNI(); ++i) {
+        outimag << complex_data_[i+ni_tot_*j+ni_tot_*nj_tot_*k].imag()<< " ";
+      }
+    }
+   outimag << "\n";
+  }
+}
+#endif
+
 
 // ----------------  FFTW interface functions ---------------------
 

@@ -1,4 +1,4 @@
-// $Id: gaussianfield.hpp 1045 2012-08-14 09:05:16Z anner $
+// $Id: gaussianfield.hpp 1182 2013-05-30 11:29:57Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -24,22 +24,32 @@
 
 #include <cstdlib>
 #include <vector>
-
+#include "../random/randomgenerator.hpp"
 
 namespace NRLib {
   class Variogram;
   template <typename T> class Grid2D;
+
+  void Simulate2DGaussianField(const Variogram &              variogram,
+                               size_t                         nx,
+                               double                         dx,
+                               size_t                         ny,
+                               double                         dy,
+                               int                            n_fields,
+                               std::vector<Grid2D<double> > & grid_out,
+                               NRLib::RandomGenerator        *rg = NULL);
 
   void Simulate2DGaussianField(const Variogram& variogram,
                                size_t nx, double dx,
                                size_t ny, double dy,
                                // double padding_fraction,
                                // bool   user_defined_padding,
-                               Grid2D<double>& grid_out);
+                               Grid2D<double> & grid_out);
 
   void Simulate1DGaussianField(const Variogram& variogram,
                                size_t nx, double dx,
-                               std::vector<double> & grid_out);
+                               std::vector<double> & grid_out,
+                               NRLib::RandomGenerator *rg = NULL);
 
  // void Simulate1DGaussianField(NRLib::Matrix cov_in,
  //                              size_t nx,

@@ -1,6 +1,7 @@
 #ifndef RPLIB_DRY_ROCK_H
 #define RPLIB_DRY_ROCK_H
 
+#include <cstddef>
 #include <vector>
 
 // Abstract DryRock class.

@@ -1,4 +1,4 @@
-// $Id: regularsurface.hpp 1047 2012-08-14 11:54:48Z perroe $
+// $Id: regularsurface.hpp 1196 2013-09-09 12:01:04Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -116,9 +116,6 @@ public:
   A Avg() const;
   // n_nodes is number of nodes with non-missing values.
   A Avg(int& n_nodes) const;
-
-  A MinInArea(double x0, double y0, double lx, double ly, double angle) const;
-  A MaxInArea(double x0, double y0, double lx, double ly, double angle) const;
 
   /// Returns vector with the four corners around the point (x,y).
   /// Fails if failOutside is false and either ni or nj is greater than 2^31.

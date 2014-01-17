@@ -1,4 +1,4 @@
-// $Id: traceheader.hpp 958 2012-02-03 10:21:31Z pdahle $
+// $Id: traceheader.hpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -182,19 +182,19 @@ public:
 
   /// Get UTM X coordinate.
   /// returns #RMISSING if UTM X location is not set in the format.
-  float GetUtmx() const;
+  double GetUtmx() const;
 
   /// Set UTM X coordinate.
   /// Does nothing if UTM X location is not set in the format.
-  void SetUtmx(float utmx);
+  void SetUtmx(double utmx);
 
   /// Get UTM Y coordinate.
   /// returns #RMISSING if UTM Y location is not set in the format.
-  float GetUtmy() const;
+  double GetUtmy() const;
 
   /// Set UTM Y coordinate.
   /// Does nothing if UTM Y location is not set in the format.
-  void SetUtmy(float utmy);
+  void SetUtmy(double utmy);
 
   /// Get inline coordinate.
   /// returns #IMISSING if inline location is not set in the format.
@@ -214,11 +214,11 @@ public:
 
   /// Get current first coordinate (either UTM x or IL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
-  float GetCoord1() const;
+  double GetCoord1() const;
 
   /// Get current second coordinate (either UTM y or XL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
-  float GetCoord2() const;
+  double GetCoord2() const;
 
 
   /// Set number of samples.
@@ -227,6 +227,8 @@ public:
   /// Set sample interval in mikroseconds.
   void SetDt(int dt);
   short GetDt() {return(dt_);}
+
+  void SetScalCo(short scalcoinitial);
 
 
   /// Get status code.
@@ -249,8 +251,8 @@ private:
   float scal_co_;
 
   short scalcoinitial_;
-  float utmx_;
-  float utmy_;
+  double utmx_;
+  double utmy_;
   int inline_;
   int crossline_;
   short ns_;

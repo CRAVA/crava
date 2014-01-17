@@ -1,4 +1,4 @@
-// $Id: segytrace.hpp 970 2012-02-08 09:22:21Z pdahle $
+// $Id: segytrace.hpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -56,8 +56,8 @@ public:
   SegYTrace(std::vector<float> indata,
             size_t             jStart,
             size_t             jEnd,
-            float              x,
-            float              y,
+            double              x,
+            double              y,
             int                inLine,
             int                crossLine);                                                ///< Standard writing constructor
 
@@ -73,12 +73,12 @@ public:
   size_t                     GetLegalIndex(size_t index) const;
   size_t                     GetStart()                  const { return j_start_    ;}    ///< Get start index
   size_t                     GetEnd()                    const { return j_end_      ;}    ///< Get end index
-  float                      GetX()                      const { return x_          ;}    ///< Get UTM x coordinate
-  float                      GetY()                      const { return y_          ;}    ///< Get UTM y coordinate
+  double                     GetX()                      const { return x_          ;}    ///< Get UTM x coordinate
+  double                     GetY()                      const { return y_          ;}    ///< Get UTM y coordinate
   int                        GetInline()                 const { return in_line_    ;}    ///< Get inline number
   int                        GetCrossline()              const { return cross_line_ ;}    ///< Get crossline number
-  float                      GetCoord1()                 const { return coord1_     ;}    ///< Get first coordinate current system (either UTM or ILXL, defined in header)
-  float                      GetCoord2()                 const { return(coord2_);}        ///< Get second coordinate current system (either UTM or ILXL, defined in header)
+  double                     GetCoord1()                 const { return coord1_     ;}    ///< Get first coordinate current system (either UTM or ILXL, defined in header)
+  double                     GetCoord2()                 const { return(coord2_);}        ///< Get second coordinate current system (either UTM or ILXL, defined in header)
   size_t                     GetTableIndex()             const { return(table_index_);}   ///< Get tableIndex
   const TraceHeader        & GetTraceHeader()            const;                           ///< Traceheader
   std::streampos             GetFilePos()                const { return(file_position_);} ///< Get file position
@@ -104,12 +104,12 @@ private:
   std::vector<float> data_;         ///< Data in trace
   size_t             j_start_;      ///< Start index
   size_t             j_end_;        ///< End index
-  float              x_;            ///< UTM x coord
-  float              y_;            ///< UTM y coord
+  double             x_;            ///< UTM x coord
+  double             y_;            ///< UTM y coord
   int                in_line_;      ///< inline index
   int                cross_line_;   ///< crossline index
-  float              coord1_;       ///< Coordinate 1 (either x or IL)
-  float              coord2_;       ///< Coordinate 2 (either y or XL)
+  double             coord1_;       ///< Coordinate 1 (either x or IL)
+  double             coord2_;       ///< Coordinate 2 (either y or XL)
   float              rmissing_;
   int                imissing_;
 

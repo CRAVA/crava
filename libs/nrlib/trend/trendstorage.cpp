@@ -1,4 +1,4 @@
-// $Id: trendstorage.cpp 1225 2013-12-16 08:40:07Z ulvmoen $
+// $Id: trendstorage.cpp 1231 2014-01-13 12:17:00Z gudmundh $
 #include "trendstorage.hpp"
 #include "trendkit.hpp"
 #include "trend.hpp"
@@ -265,115 +265,84 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
     double scale = 1.414214;
 
     if (type == TrendStorage::MEAN) {
-      std::vector<double> trend_estimate;
-      if (reference == 1) {
-        std::vector<double> x;
-        std::vector<double> z;
+      std::vector<std::vector<double> > s;
+      std::vector<double>               trend_estimate;
+      std::vector<double>               x;
+      std::vector<double>               y;
 
-        PreprocessData1D(s1,
+      if (reference == 1) {
+        s = s1;
+      }
+      else if (reference == 2) {
+        s = s2;
+      }
+      if (reference == 1 || reference == 2) {
+        PreprocessData1D(s,
                          blocked_logs,
-                         trend_cube_sampling[0],
+                         trend_cube_sampling[reference - 1],
                          x,
-                         z);
+                         y);
 
         double bandwidth = CalculateBandwidth(x, scale, 0.2);
 
-        if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
+        if (CheckConfigurations1D(x, y, trend_sampling, bandwidth,errTxt)) {
           EstimateTrend1D(x,
-                          z,
-                          trend_cube_sampling[0],
+                          y,
+                          trend_cube_sampling[reference - 1],
                           trend_estimate,
                           bandwidth,
                           errTxt);
         }
       }
-      else if (reference == 2) {
-        std::vector<double> y;
-        std::vector<double> z;
-
-        PreprocessData1D(s2,
-                         blocked_logs,
-                         trend_cube_sampling[1],
-                         y,
-                         z);
-
-        double bandwidth = CalculateBandwidth(y, scale, 0.2);
-        if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth,errTxt)) {
-          EstimateTrend1D(y,
-                          z,
-                          trend_cube_sampling[1],
-                          trend_estimate,
-                          bandwidth,
-                          errTxt);
-        }
-      }
-      if (errTxt == "")
+      if (errTxt == "") {
         trend = new Trend1D(trend_estimate, reference, increment);
+      }
     }
 
     if (type == TrendStorage::VAR) {
-      std::vector<double> variance_estimate;
+      std::vector<std::vector<double> > s;
+      std::vector<double>               trend_cube_trend;
+      std::vector<double>               variance_estimate;
+      std::vector<double>               x;
+      std::vector<double>               y;
+
       if (typeid(*mean_trend) == typeid(NRLib::TrendConstant) || typeid(*mean_trend) == typeid(NRLib::Trend1D)) {
         if (reference == 1) {
-
+          s = s1;
           /* -- obtain trend -- */
-          std::vector<double> trend_cube_trend(trend_cube_sampling[0].size(), 0.0);
+          trend_cube_trend.resize(trend_cube_sampling[reference - 1].size(), 0.0);
           int j_dummy = 0;
           int k_dummy = 0;
 
           for (int i = 0; i < static_cast<int>(trend_cube_trend.size()); ++i) {
             trend_cube_trend[i] = mean_trend->GetTrendElement(i, j_dummy, k_dummy);
           }
-          /* ------------------ */
-
-          std::vector<double> x;
-          std::vector<double> z;
-
-          PreprocessData1D(s1,
-                           blocked_logs,
-                           trend_cube_sampling[reference - 1],
-                           x,
-                           z);
-
-          double bandwidth = CalculateBandwidth(x, scale, 0.2);
-
-          if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
-            EstimateVariance1D(x,
-                               z,
-                               trend_cube_sampling[0],
-                               trend_cube_trend,
-                               variance_estimate,
-                               bandwidth,
-                               errTxt);
-          }
         }
         else if (reference == 2) {
-
+          s = s2;
           /* -- obtain trend -- */
-          std::vector<double> trend_cube_trend(trend_cube_sampling[1].size(), 0.0);
+          trend_cube_trend.resize(trend_cube_sampling[reference - 1].size(), 0.0);
           int i_dummy = 0;
           int k_dummy = 0;
 
           for (int j = 0; j < static_cast<int>(trend_cube_trend.size()); ++j) {
             trend_cube_trend[j] = mean_trend->GetTrendElement(i_dummy, j, k_dummy);
           }
-          /* ------------------ */
+        }
 
-          std::vector<double> y;
-          std::vector<double> z;
-
-          PreprocessData1D(s2,
+        if (reference == 1 || reference == 2) {
+          PreprocessData1D(s,
                            blocked_logs,
                            trend_cube_sampling[reference - 1],
-                           y,
-                           z);
+                           x,
+                           y);
 
-          double bandwidth = CalculateBandwidth(y, scale, 0.2);
+          double bandwidth = CalculateBandwidth(x, scale, 0.2);
 
-          if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth,errTxt)) {
-            EstimateVariance1D(y,
-                               z,
-                               trend_cube_sampling[1],
+          if (CheckConfigurations1D(x, y, trend_cube_sampling[0], bandwidth,errTxt)) {
+            EstimateVariance1D(x,
+                               y,
+                               trend_cube_sampling[reference - 1],
                                trend_cube_trend,
                                variance_estimate,
                                bandwidth,
@@ -424,10 +393,10 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
         if (reference == 1) {
           double bandwidth = CalculateBandwidth(x, scale, 0.2);
 
-          if (CheckConfigurations1D(x, z, trend_cube_sampling[0], bandwidth,errTxt)) {
+          if (CheckConfigurations1D(x, z, trend_cube_sampling[reference - 1], bandwidth, errTxt)) {
             EstimateVariance1D(x,
                                z,
-                               trend_cube_sampling[0],
+                               trend_cube_sampling[reference - 1],
                                trend_cube_trend_dummy,
                                variance_estimate,
                                bandwidth,
@@ -437,10 +406,10 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
         else if (reference == 2) {
           double bandwidth = CalculateBandwidth(y, scale, 0.2);
 
-          if (CheckConfigurations1D(y, z, trend_cube_sampling[1], bandwidth, errTxt)) {
+          if (CheckConfigurations1D(y, z, trend_cube_sampling[reference - 1], bandwidth, errTxt)) {
             EstimateVariance1D(y,
                                z,
-                               trend_cube_sampling[1],
+                               trend_cube_sampling[reference - 1],
                                trend_cube_trend_dummy,
                                variance_estimate,
                                bandwidth,

@@ -1029,6 +1029,18 @@
     <ClCompile Include="rplib\dryrock.cpp">
       <Filter>Source Files\rplib\dryrock</Filter>
     </ClCompile>
+    <ClCompile Include="rplib\table_vp_2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp_3.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho_3.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho_2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1725,6 +1737,18 @@
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
     <ClInclude Include="rplib\table_rho.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp_3.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp_2.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho_3.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho_2.h">
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,4 @@
-// $Id: segy.cpp 1152 2013-04-09 12:47:11Z perroe $
+// $Id: segy.cpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -226,17 +226,17 @@ SegY::SegY(const std::string               & fileName,
 
 bool SegY::CompareTraces(TraceHeader *header1, TraceHeader *header2, int &delta, int &deltail, int &deltaxl)
 {
-  float deltax  = std::abs(header1->GetUtmx() - header2->GetUtmx());
-  float deltay  = std::abs(header1->GetUtmy() - header2->GetUtmy());
+  double deltax  = std::abs(header1->GetUtmx() - header2->GetUtmx());
+  double deltay  = std::abs(header1->GetUtmy() - header2->GetUtmy());
   deltail = abs(header1->GetInline() - header2->GetInline());
   deltaxl = abs(header1->GetCrossline() - header2->GetCrossline());
-  float deltaxSq = deltax*deltax;
-  float deltaySq = deltay*deltay;
-  float utmDist = sqrt(deltaxSq+deltaySq);
+  double deltaxSq = deltax*deltax;
+  double deltaySq = deltay*deltay;
+  double utmDist = sqrt(deltaxSq+deltaySq);
   int   deltaxlSq = deltaxl*deltaxl;
   int   deltailSq = deltail*deltail;
 
-  float k;
+  double k;
   if (deltail == 0 && deltaxl == 0)
     return false;
   if (deltax == 0.0 && deltay == 0)
@@ -246,7 +246,7 @@ bool SegY::CompareTraces(TraceHeader *header1, TraceHeader *header2, int &delta,
   if (deltail==0)
   {
     k = utmDist/deltaxl;
-    float help = fmod(k,float(6.25));
+    double help = fmod(k,double(6.25));
       if (k/6.25<8.5 && k/6.25>0.5 && (help<=1.0 || (6.25-help)<=1.0))
       {
         ok = true;
@@ -257,7 +257,7 @@ bool SegY::CompareTraces(TraceHeader *header1, TraceHeader *header2, int &delta,
   else if (deltaxl==0)
   {
     k = utmDist/deltail;
-    float help = fmod(k,float(6.25));
+    double help = fmod(k,double(6.25));
       if (k/6.25<8.5 && k/6.25>0.5 && (help<=1.0 || (6.25-help)<=1.0))
       {
         ok = true;
@@ -276,7 +276,7 @@ bool SegY::CompareTraces(TraceHeader *header1, TraceHeader *header2, int &delta,
       int j0 = static_cast<int>(floor(sqrt(prodSumSqRelXL-i*i*deltailxlRelSq)));
       for(j=j0;j<=j0+1;j++) {
         k = utmDist/sqrt(static_cast<float>(i*i*deltailSq+j*j*deltaxlSq));
-        float help = fmod(k,6.25f);
+        double help = fmod(k,6.25);
         if (k/6.25<8.5 && k/6.25>0.5 && (help<=1.0 || (6.25-help)<=1.0))
           ok = true;
       }
@@ -655,14 +655,14 @@ SegY::ReadTrace(const Volume * volume,
     outsideTopBot[0] = 0; // > 0 indicates top error
     outsideTopBot[1] = 0; // > 0 indicates bot error
   }
-  float x, y;
+  double x, y;
   if (trace_header_format_.GetCoordSys() == TraceHeaderFormat::UTM) {
     x = traceHeader.GetUtmx();
     y = traceHeader.GetUtmy();
   }
   else if (trace_header_format_.GetCoordSys() == TraceHeaderFormat::ILXL) {
-    x = static_cast<float>(traceHeader.GetInline());
-    y = static_cast<float>(traceHeader.GetCrossline());
+    x = static_cast<double>(traceHeader.GetInline());
+    y = static_cast<double>(traceHeader.GetCrossline());
   }
   else {
    throw Exception("Invalid coordinate system number ("
@@ -1054,23 +1054,23 @@ SegY::WriteMainHeader(const TextualHeader& ebcdicHeader)
 }
 
 void
-SegY::StoreTrace(float x, float y, const std::vector<float> data, const Volume *volume, float topVal,float baseVal)
+SegY::StoreTrace(double x, double y, const std::vector<float> data, const Volume *volume, float topVal,float baseVal)
 {
   assert(file_);
   assert(geometry_ != 0);
-  TraceHeader header(trace_header_format_);
-  header.SetNSamples(nz_);
-  header.SetDt(static_cast<unsigned short>(dz_*1000));
-
-  header.SetUtmx(x);
-  header.SetUtmy(y);
+ // TraceHeader header(trace_header_format_);
+ // header.SetNSamples(nz_);
+ // header.SetDt(static_cast<unsigned short>(dz_*1000));
+ // header.SetScalCo(scalcoinitial);
+ // header.SetUtmx(x);
+ // header.SetUtmy(y);
   int IL,XL;
   bool ok = geometry_->IsInside(x,y);
   if (ok==true)
   {
     geometry_->FindILXL(x,y,IL,XL);
-    header.SetInline(IL);
-    header.SetCrossline(XL);
+  //  header.SetInline(IL);
+  //  header.SetCrossline(XL);
 
     // header.write(file_);
     double ztop;
@@ -1109,14 +1109,16 @@ SegY::StoreTrace(float x, float y, const std::vector<float> data, const Volume *
     throw Exception(" Coordinates are outside grid.");
 }
 
+
 void
-SegY::WriteTrace(float x, float y, const std::vector<float> data, const Volume *volume, float topVal,float baseVal)
+SegY::WriteTrace(double x, double y, const std::vector<float> data, const Volume *volume, float topVal,float baseVal, short scalcoinitial)
 {
   assert(file_);
   assert(geometry_ != 0);
   TraceHeader header(trace_header_format_);
   header.SetNSamples(nz_);
   header.SetDt(static_cast<unsigned short>(dz_*1000));
+  header.SetScalCo(scalcoinitial);
 
   header.SetUtmx(x);
   header.SetUtmy(y);
@@ -1231,7 +1233,7 @@ bool SortIndex(const SegYTrace * t1, const SegYTrace * t2)
 }
 
 void
-SegY::WriteAllTracesToFile()
+SegY::WriteAllTracesToFile(short scalcoinitial)
 {
   size_t i, k;
   std::vector<float>  trace(nz_);
@@ -1252,8 +1254,9 @@ SegY::WriteAllTracesToFile()
       TraceHeader header(trace_header_format_);
       header.SetNSamples(nz_);
       header.SetDt(static_cast<unsigned short>(dz_*1000));
-      header.SetUtmx(static_cast<float>(x));
-      header.SetUtmy(static_cast<float>(y));
+      header.SetScalCo(scalcoinitial);
+      header.SetUtmx(static_cast<double>(x));
+      header.SetUtmy(static_cast<double>(y));
       header.SetInline(traces_[i]->GetInline());
       header.SetCrossline(traces_[i]->GetCrossline());
       header.Write(file_);
@@ -1719,7 +1722,7 @@ SegY::TraceHeaderOK(std::fstream &file, const TraceHeaderFormat *headerFormat)
   }
 
 //Given t1, t2 and t3, calculate dxXL, ...
-  float dxXL, dyXL, dxIL, dyIL;
+  double dxXL, dyXL, dxIL, dyIL;
 
   FindDeltaILXL(t1,t2,t3,dxIL,dxXL,true);
   FindDeltaILXL(t1,t2,t3,dyIL,dyXL,false);
@@ -1758,7 +1761,7 @@ SegY::TraceHeaderOK(std::fstream &file, const TraceHeaderFormat *headerFormat)
     if(fabs(s1-s4)>0.01 && fabs(s2-s5)>0.01 && fabs(s3-s5)>0.01)
       contin = false;
   }
-  float utmx4 = t1->GetUtmx() + (t4->GetCrossline()-t1->GetCrossline())*dxXL + (t4->GetInline()-t1->GetInline())*dxIL;
+  double utmx4 = t1->GetUtmx() + (t4->GetCrossline()-t1->GetCrossline())*dxXL + (t4->GetInline()-t1->GetInline())*dxIL;
   if(fabs(utmx4-t4->GetUtmx())> 5.0)
   {
     delete t1;
@@ -1767,7 +1770,7 @@ SegY::TraceHeaderOK(std::fstream &file, const TraceHeaderFormat *headerFormat)
     delete t4;
     return false;
   }
-  float utmy4 = t1->GetUtmy() + (t4->GetCrossline()-t1->GetCrossline())*dyXL + (t4->GetInline()-t1->GetInline())*dyIL;
+  double utmy4 = t1->GetUtmy() + (t4->GetCrossline()-t1->GetCrossline())*dyXL + (t4->GetInline()-t1->GetInline())*dyIL;
   if(fabs(utmy4-t4->GetUtmy())> 5.0)
   {
     delete t1;
@@ -1787,9 +1790,9 @@ SegY::TraceHeaderOK(std::fstream &file, const TraceHeaderFormat *headerFormat)
 
 //solves the equations x1 +(xl2-xl1)dxl + (il2-il1)dil = x2
 //                     x1 + (xl3-xl1)dxl + (il3-il1)dil = x3
-void SegY::FindDeltaILXL(TraceHeader *t1, TraceHeader *t2, TraceHeader *t3, float &dil, float &dxl, bool x)
+void SegY::FindDeltaILXL(TraceHeader *t1, TraceHeader *t2, TraceHeader *t3, double &dil, double &dxl, bool x)
 {
-  float x1, x2, x3;
+  double x1, x2, x3;
   int il1, il2, il3, xl1, xl2, xl3;
   if(x==true)
   {
@@ -1810,8 +1813,8 @@ void SegY::FindDeltaILXL(TraceHeader *t1, TraceHeader *t2, TraceHeader *t3, floa
   xl2 = t2->GetCrossline();
   xl3 = t3->GetCrossline();
 
-  float teller = x3-x1;
-  float nevner = ((xl3-xl1)*(x2-x1)-(il2-il1))/(xl2-xl1)+(il3-il1);
+  double teller = x3-x1;
+  double nevner = ((xl3-xl1)*(x2-x1)-(il2-il1))/(xl2-xl1)+(il3-il1);
   dil = teller/nevner;
   dxl = ((x2-x1)-(il2-il1)*dil)/(xl2-xl1);
 }

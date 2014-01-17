@@ -1,4 +1,4 @@
-// $Id: stormcontgrid.cpp 1165 2013-05-01 15:52:57Z pdahle $
+// $Id: stormcontgrid.cpp 1190 2013-07-03 10:57:27Z ulvmoen $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
