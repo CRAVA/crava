@@ -24,7 +24,6 @@ class MultiIntervalGrid;
 class CravaTrend;
 class BlockedLogsCommon;
 
-
 class CommonData{
 public:
   CommonData(ModelSettings                            * model_settings,
@@ -150,8 +149,8 @@ private:
   SegyGeometry * GetGeometryFromCravaFile(const std::string & file_name);
 
   SegyGeometry * GetGeometryFromStormFile(const std::string    & file_name,
-                                       std::string          & err_text,
-                                       bool                   scale = false);
+                                          std::string          & err_text,
+                                          bool                   scale = false);
 
   bool CreateOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
@@ -173,15 +172,21 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
+  int GetNzFromGridOnFile(ModelSettings     * model_settings,
+                          const std::string & grid_file,
+                          std::string       & err_text);
+
   void SetSurfacesMultipleIntervals(const ModelSettings            * const model_settings,
                                     NRLib::Volume                  & full_inversion_volume,
                                     Simbox                         & estimation_simbox,
+                                    int                              nz,
                                     const InputFiles               * input_files,
                                     std::string                    & err_text);
 
   void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                  NRLib::Volume                    & full_inversion_volume,
                                  Simbox                           & estimation_simbox,
+                                 int                                nz,
                                  const std::vector<std::string>   & surf_file,
                                  std::string                      & err_text);
 

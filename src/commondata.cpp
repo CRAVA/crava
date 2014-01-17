@@ -94,9 +94,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
-  //H-TEST for test_case 11: Waveletestimation
-  estimation_simbox_.SetNZpad(480);
-
   //H-TEST for test_cast 15: Cholesky error in wavelet3D
   //estimation_simbox_ = multiple_interval_grid_->GetIntervalSimbox(0);
   //estimation_simbox_.SetNXpad(315);
@@ -416,19 +413,22 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
       // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
 
+      // Set number of layers in estimation_simbox equal to input file
+      int nz = GetNzFromGridOnFile(model_settings, grid_file, err_text);
+
       // if multiple intervals
       if (model_settings->getIntervalNames().size() > 0) {
-        SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, input_files, err_text);
+        SetSurfacesMultipleIntervals(model_settings, full_inversion_volume, estimation_simbox, nz, input_files, err_text);
       }
       // single interval described by either one or two surfaces
       else{
-        SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, input_files->getTimeSurfFiles(), err_text);
+        SetSurfacesSingleInterval(model_settings, full_inversion_volume, estimation_simbox, nz, input_files->getTimeSurfFiles(), err_text);
       }
     }
   }
 
   // CALCULATE XY PADDING -------------------------------------------------------------------------
-  if (err_text == ""){
+  if (err_text == "") {
     EstimateXYPaddingSizes(&estimation_simbox, model_settings);
   }
 
@@ -1789,10 +1789,6 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
     //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
     t_grad_x_.resize(n_wells);
     t_grad_y_.resize(n_wells);
-    //std::vector<std::vector<double> > t_grad_x(n_wells);
-    //std::vector<std::vector<double> > t_grad_y(n_wells);
-    //NRLib::Grid2D<float> ref_time_grad_x; ///< Time gradient in x-direction for reference time surface (t0)
-    //NRLib::Grid2D<float> ref_time_grad_y; ///< Time gradient in x-direction for reference time surface (t0)
     NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
     NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
@@ -2870,9 +2866,70 @@ void CommonData::FindSmallestSurfaceGeometry(const double   x0,
   }
 }
 
+int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
+                                    const std::string & grid_file,
+                                    std::string       & err_text) {
+
+  int nz = 0;
+  if (grid_file != "") {
+    int file_type = IO::findGridType(grid_file);
+
+    if (file_type == IO::CRAVA) {
+      GetZPaddingFromCravaFile(grid_file, err_text, nz);
+    }
+
+    else if (file_type == IO::SEGY) {
+
+      SegY              * segy   = NULL;
+      TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(0, 0);
+      float offset               = model_settings->getSegyOffset(0);
+
+      if (format == NULL) { //Unknown format
+        std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
+
+        if (model_settings->getTraceHeaderFormat() != NULL)
+          traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
+
+        segy = new SegY(grid_file,
+                        offset,
+                        traceHeaderFormats,
+                        true); // Add standard formats to format search
+      }
+      else { //Known format, read directly.
+        segy = new SegY(grid_file, offset, *format);
+      }
+
+      nz = segy->GetNz();
+      if (segy != NULL)
+        delete segy;
+    }
+
+    else if (file_type == IO::STORM || file_type == IO::SGRI) {
+
+      StormContGrid * stormgrid = NULL;
+      stormgrid = new StormContGrid(0,0,0);
+      stormgrid->ReadFromFile(grid_file);
+      nz = stormgrid->GetNK();
+
+      if (stormgrid != NULL)
+        delete stormgrid;
+
+    }
+    else {
+      err_text = "Trying to read grid dimensions from unknown file format.\n";
+    }
+  }
+  else {
+    err_text = "Cannot read grid from file. The file name is empty.\n";
+  }
+
+  return nz;
+}
+
 void CommonData::SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                            NRLib::Volume                    & full_inversion_volume,
                                            Simbox                           & estimation_simbox,
+                                           int                                nz,
                                            const std::vector<std::string>   & surf_file,
                                            std::string                      & err_text) {
   bool failed = false;
@@ -2884,7 +2941,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
   bool                      estimation_mode               = model_settings->getEstimationMode();
   bool                      generate_background           = model_settings->getGenerateBackground();
   bool                      parallel_surfaces             = model_settings->getParallelTimeSurfaces();
-  int                       nz                            = model_settings->getTimeNz();
+  //int                       nz                            = model_settings->getTimeNz();
   int                       output_format                 = model_settings->getOutputGridFormat();
   int                       output_domain                 = model_settings->getOutputGridDomain();
   int                       output_grids_elastic          = model_settings->getOutputGridsElastic();
@@ -2904,9 +2961,9 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
     double x_min, x_max;
     double y_min, y_max;
     FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
-                                  estimation_simbox.getlx(), estimation_simbox.getly(),
-                                  estimation_simbox.getAngle(),
-                                  x_min,y_min,x_max,y_max);
+                                estimation_simbox.getlx(), estimation_simbox.getly(),
+                                estimation_simbox.getAngle(),
+                                x_min,y_min,x_max,y_max);
     if (NRLib::IsNumber(top_surface_file_name)) {
       LogKit::LogFormatted(LogKit::Low,"Top surface: Flat surface at depth %11.2f \n", atof(top_surface_file_name.c_str()));
       // Find the smallest surface that covers the simbox.
@@ -3026,7 +3083,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         nx, ny, z_max);
 
-      int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
+      //int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
 
       estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
@@ -3047,6 +3104,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
 void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * const model_settings,
                                               NRLib::Volume                   & full_inversion_volume,
                                               Simbox                          & estimation_simbox,
+                                              int                               nz,
                                               const InputFiles                * input_files,
                                               std::string                     & err_text) {
 
@@ -3068,7 +3126,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   bool                                      estimation_mode               = model_settings->getEstimationMode();
   bool                                      generate_background           = model_settings->getGenerateBackground();
   bool                                      parallel_surfaces             = model_settings->getParallelTimeSurfaces();
-  int                                       nz                            = model_settings->getTimeNz();
+  //int                                       nz                            = model_settings->getTimeNz();
   int                                       output_format                 = model_settings->getOutputGridFormat();
   int                                       output_domain                 = model_settings->getOutputGridDomain();
   int                                       output_grids_elastic          = model_settings->getOutputGridsElastic();
@@ -3144,7 +3202,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         model_settings->getAreaParameters()->GetNx(), model_settings->getAreaParameters()->GetNy(), z_max);
-      int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
+      //int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
 
       int status = estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);

@@ -56,7 +56,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  nzp_        = simbox->GetNZpad(); //H-TEST seismic_data->GetNz(); //H-DEBUGGING simbox->getnz(); //H Heap Corruption error in writeWaveletToFile if nzp = nz ? when deleting remember []
+  nzp_        = simbox->getnz() +2; //H-TEST seismic_data->GetNz(); //H-DEBUGGING simbox->getnz(); //H Heap Corruption error in writeWaveletToFile if nzp = nz ? when deleting remember []
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
