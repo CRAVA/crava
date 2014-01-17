@@ -6272,7 +6272,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 double CommonData::FindMeanVsVp(const NRLib::Grid<double> * vp,
                                 const NRLib::Grid<double> * vs) {
 
-  //Copied from background
   double mean = 0;
   int ni  = vp->GetNI();
   int nj  = vp->GetNJ();
