@@ -56,7 +56,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  nzp_        = simbox->getnz() +2; //H-TEST seismic_data->GetNz(); //H-DEBUGGING simbox->getnz(); //H Heap Corruption error in writeWaveletToFile if nzp = nz ? when deleting remember []
+  nzp_        = simbox->getnz(); //H
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
@@ -738,6 +738,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   int         nWells                = modelSettings->getNumberOfWells();
   bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
+
+  //H-TEST
+  dz_;
+  dz_ = simbox->getdz();
 
   //Noise estimation
   fftw_real    ** cpp_r           = new fftw_real*[nWells];

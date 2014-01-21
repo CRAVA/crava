@@ -503,7 +503,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                             is_segy,
                             is_storm);
 
-    seis_cubes_[i]->endAccess(); //H deletes grid?
+    seis_cubes_[i]->endAccess();
 
     if(grid_tmp != NULL)
       delete grid_tmp;
@@ -669,10 +669,30 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
           seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
           blocked_log->GetBlockedGrid(seis_cubes_[i], seis_logs[w]);
+
+          //H-TEST
+          //blocked_log->GetBlockedGrid(&seismic_data[w], simbox, seis_logs[w]);
+
           w++;
         }
 
-        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox, //common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+        //H-TEST Estimate a temporary wavelet according to this interval_simbox:
+        //std::vector<double> synt_seis_TMP;
+        //std::vector<Surface *> wavelet_estim_interval;
+        //wavelets_[i] = new  Wavelet1D(simbox,
+        //                              &seismic_data[i],
+        //                              mapped_blocked_logs,
+        //                              wavelet_estim_interval,
+        //                              model_settings,
+        //                              reflection_matrix_[i],
+        //                              synt_seis_TMP,
+        //                              i,
+        //                              error,
+        //                              err_text);
+
+
+
+        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox,
                                                                      seis_logs,
                                                                      mapped_blocked_logs,
                                                                      model_settings,

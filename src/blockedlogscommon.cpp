@@ -2503,16 +2503,6 @@ void BlockedLogsCommon::GetBlockedGrid(const FFTGrid       * grid,
   }
 }
 
-//void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> & grid,
-//                                       std::vector<double>       & blocked_log,
-//                                       int                         i_offset,
-//                                       int                         j_offset) {
-//  for (size_t m = 0 ; m < n_blocks_ ; m++) {
-//    //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
-//    blocked_log[m] = grid(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
-//  }
-//}
-
 void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> * grid,
                                        std::vector<double>       & blocked_log,
                                        int                         i_offset,
@@ -2522,7 +2512,6 @@ void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> * grid,
     blocked_log[m] = grid->GetValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
   }
 }
-
 
 void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
                                       int                     start,

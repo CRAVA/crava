@@ -296,9 +296,9 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
     NRLib::Surface<double> & top  = stormgrid.GetTopSurface();
     NRLib::Surface<double> & base = stormgrid.GetBotSurface();
 
-    std::vector<double> x_pos = GetContLog().find("X_pos")->second; //H Works for both RMS and Norsar wells? Use blocked logs?
-    std::vector<double> y_pos = GetContLog().find("Y_pos")->second;
-    std::vector<double> z_pos = GetContLog().find("TVD")->second;
+    const std::vector<double> & x_pos = GetContLog().find("X_pos")->second;
+    const std::vector<double> & y_pos = GetContLog().find("Y_pos")->second;
+    const std::vector<double> & z_pos = GetContLog().find("Z_pos")->second;
 
     for(unsigned int i=0; i < n_data_nonmissing_; i++) { //nd_
 

@@ -103,22 +103,45 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                          surfaces,
                          *estimation_simbox);
       }
-      else{
+      else {
         err_text += "Erosion of surfaces failed because the interval surfaces could not be set up correctly.\n";
       }
     }
     // if multiple-intervals is NOT used in model settings
-    else{
-      top_surface_file_name_temp = input_files->getTimeSurfFile(0);
-      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
-      eroded_surfaces[0] = *top_surface;
+    else {
 
-      base_surface_file_name_temp = input_files->getTimeSurfFile(1);
-      base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
-      eroded_surfaces[1] = *base_surface;
+      int nz = model_settings->getTimeNz();
 
-      desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox,
-                                                    model_settings->getTimeNz());
+      if (model_settings->getParallelTimeSurfaces() == false) {
+        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
+        eroded_surfaces[0] = *top_surface;
+
+        base_surface_file_name_temp = input_files->getTimeSurfFile(1);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
+        eroded_surfaces[1] = *base_surface;
+
+      }
+      else { //H added if only one surface-file is used, similar to setup of estimation_simbox.
+        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
+        eroded_surfaces[0] = *top_surface;
+
+        base_surface = new Surface(*top_surface);
+        double lz = model_settings->getTimeLz();
+        base_surface->Add(lz);
+        eroded_surfaces[1] = *base_surface;
+
+        double dz = model_settings->getTimeDz();
+        if (model_settings->getTimeNz() == RMISSING) //Taken from simbox->SetDepth without nz
+          nz = static_cast<int>(0.5+lz/dz);
+
+      }
+
+      desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
+                                                   //model_settings->getTimeNz());
+
+
     }
   }
   catch(NRLib::Exception & e){
@@ -264,6 +287,9 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   Surface                base_surface                           = eroded_surfaces[1];
   int                    n_layers                               = model_settings->getTimeNz();
 
+  if (n_layers == RMISSING)
+    n_layers = static_cast<int>(0.5+model_settings->getTimeLz()/model_settings->getTimeDz());
+
   //H-DEBUGGING Added cases for debugging
 
   // Case 1: Single correlation surface
@@ -290,7 +316,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
 
 
   // Calculate Z padding ----------------------------------------------------------------
-  int status = interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
+  interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
   EstimateZPaddingSize(&interval_simbox, model_settings);
 }
 
@@ -637,7 +663,7 @@ void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<do
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
-                                             ModelSettings   * model_settings) const {
+                                             ModelSettings   * model_settings) {// const { //H-TEST
   int    nz             = simbox->getnz();
   double min_lz         = simbox->getlz()*simbox->getMinRelThick();
   double z_pad_fac      = model_settings->getZPadFac();

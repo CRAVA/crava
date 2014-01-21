@@ -94,6 +94,9 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
+  //H-TEST
+  //MultiIntervalGrid::EstimateZPaddingSize(&estimation_simbox_, model_settings);
+
   //H-TEST for test_cast 15: Cholesky error in wavelet3D
   //estimation_simbox_ = multiple_interval_grid_->GetIntervalSimbox(0);
   //estimation_simbox_.SetNXpad(315);
@@ -975,7 +978,6 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
 
   int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
 
-
   //H new fix: Store TWT as Z_pos
   if (new_well.HasContLog("TWT")) {
     std::vector<double> twt_temp = new_well.GetContLog("TWT");
@@ -1164,7 +1166,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   // Vp is always entry 1 in the log name list and entry 0 in inverse_velocity
   if (new_well.HasContLog(log_names_from_user[1])) {
-    std::vector<double> vp_temp = new_well.GetContLog(log_names_from_user[1]);
+    const std::vector<double> & vp_temp = new_well.GetContLog(log_names_from_user[1]);
     std::vector<double> vp(vp_temp.size());
     if (inverse_velocity[0]) {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
@@ -1188,7 +1190,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   // Vs is always entry 3 in the log name list
   if (new_well.HasContLog(log_names_from_user[3])) {
-    std::vector<double> vs_temp = new_well.GetContLog(log_names_from_user[3]);
+    const std::vector<double> & vs_temp = new_well.GetContLog(log_names_from_user[3]);
     std::vector<double> vs(vs_temp.size());
     if (inverse_velocity[1]) {
       for (unsigned int i = 0; i < vs_temp.size(); i++) {
@@ -2982,12 +2984,12 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
 
   if (!failed) {
     if (parallel_surfaces) { //Only one reference surface
-      estimation_simbox.setDepth(*top_surface_flat, d_top, lz, dz, model_settings->getRunFromPanel());
+      //estimation_simbox.setDepth(*top_surface_flat, d_top, lz, dz, model_settings->getRunFromPanel()); //H Removed. Top_surface_flat not created yet.
       top_surface->Add(d_top);
       base_surface = new Surface(*top_surface);
       base_surface->Add(lz);
       LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
-      full_inversion_volume.SetSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
+      //full_inversion_volume.SetSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel()); //H
     }
     else { //Two reference surfaces
       const std::string & base_surface_file_name = surf_file[1];
@@ -3083,9 +3085,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         nx, ny, z_max);
 
-      //int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
-
       estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
     catch(NRLib::Exception & e) {
@@ -3202,10 +3202,9 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         model_settings->getAreaParameters()->GetNx(), model_settings->getAreaParameters()->GetNy(), z_max);
-      //int nz = model_settings->getTimeNz(); //H Changed from 2. Added calculateDz
-      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
 
-      int status = estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
+      estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
+      estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
     catch(NRLib::Exception & e){
       err_text += e.what();
@@ -3395,19 +3394,20 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   return true;
 }
 
-void CommonData::MoveWell(const NRLib::Well & well,
-                          const Simbox      * simbox,
-                          double              delta_X,
-                          double              delta_Y,
-                          double              k_move){
+void CommonData::MoveWell(NRLib::Well  & well,
+                          const Simbox * simbox,
+                          double         delta_X,
+                          double         delta_Y,
+                          double         k_move){
 
   double delta_Z;
   double top_old, top_new;
 
   if (well.HasContLog("X_pos") && well.HasContLog("Y_pos")){
-    std::vector<double> x_pos = well.GetContLog("X_pos");
-    std::vector<double> y_pos = well.GetContLog("Y_pos");
-    std::vector<double> z_pos = well.GetContLog("TVD");
+    std::vector<double> & x_pos = well.GetContLog("X_pos");
+    std::vector<double> & y_pos = well.GetContLog("Y_pos");
+    std::vector<double> & z_pos = well.GetContLog("Z_pos");
+
     top_old = simbox->getTop(x_pos[0], y_pos[0]);
 
     for (unsigned int i=0; i<x_pos.size(); i++)
@@ -3437,9 +3437,9 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
   float max_deviation =  0.0f;
   float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
 
-  std::vector<double> x_pos = new_well.GetContLog("X_pos");
-  std::vector<double> y_pos = new_well.GetContLog("Y_pos");
-  std::vector<double> z_pos = new_well.GetContLog("TVD");
+  const std::vector<double> & x_pos = new_well.GetContLog("X_pos");
+  const std::vector<double> & y_pos = new_well.GetContLog("Y_pos");
+  const std::vector<double> & z_pos = new_well.GetContLog("Z_pos");
 
   //
   // Find first log entry in simbox
@@ -8033,3 +8033,25 @@ void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
     angular_correlations_.push_back(angle_corr);
   }
 }
+
+//H-TEST
+//void CommonData::EstimateZPaddingSize(Simbox          * simbox,
+//                                             ModelSettings   * model_settings) const {
+//  int    nz             = simbox->getnz();
+//  double min_lz         = simbox->getlz()*simbox->getMinRelThick();
+//  double z_pad_fac      = model_settings->getZPadFac();
+//  double z_pad          = z_pad_fac*min_lz;
+//
+//  if (model_settings->getEstimateZPadding())
+//  {
+//    double w_length    = static_cast<double>(model_settings->getDefaultWaveletLength());
+//    double p_fac      = 1.0;
+//    z_pad             = w_length/p_fac;                               // Use half a wavelet as padding
+//    z_pad_fac         = std::min(1.0, z_pad/min_lz);                  // More than 100% padding is not sensible
+//  }
+//  int nz_pad          = FindPaddingSize(nz, z_pad_fac);
+//  z_pad_fac           = static_cast<double>(nz_pad - nz)/static_cast<double>(nz);
+//
+//  simbox->SetNZpad(nz_pad);
+//  simbox->SetZPadFactor(z_pad_fac);
+//}

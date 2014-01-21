@@ -509,7 +509,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   //This gives inconsistency if a wavelet is read and written.
   //Make consistent by truncating wavelet to writing range before interpolation.
   int     activeCells = int(floor(waveletLength_/2/dz_));
-  float * remember    = new float[nzp_];
+  float * remember    = new float[nzp_ + 1]; //H Added +1. Error delete [] remember if nz = nzp.
   for(int i=activeCells+1;i<=nz_;i++) {
     remember[i]        = rAmp_[i];
     rAmp_[i]           = 0;

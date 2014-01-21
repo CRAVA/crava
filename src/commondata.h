@@ -130,11 +130,11 @@ private:
                               std::map<int, float **>                       & reflection_matrix,
                               std::string                                   & err_text);
 
-  void MoveWell(const NRLib::Well & well,
-                const Simbox      * simbox,
-                double              delta_X,
-                double              delta_Y,
-                double              k_move);
+  void MoveWell( NRLib::Well & well,
+                const Simbox * simbox,
+                double         delta_X,
+                double         delta_Y,
+                double         k_move);
 
   void  CalculateDeviation(NRLib::Well            & new_well,
                            const ModelSettings    * const model_settings,
@@ -636,6 +636,10 @@ private:
   bool optimizeWellLocations();
 
   int ComputeTime(int year, int month, int day) const;
+
+  //H-TEST
+  //void EstimateZPaddingSize(Simbox          * simbox,
+  //                                           ModelSettings   * model_settings) const;
 
   // CLASS VARIABLES ---------------------------------------------------
 
