@@ -49,7 +49,7 @@ public:
 
   TimeLine                               * GetTimeLine()                        { return time_line_       ;}
   const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
-  const std::vector<int>                 & GetFaciesLabels()              const { return facies_labels_   ;}
+  const std::vector<int>                 & GetFaciesNr()                  const { return facies_nr_       ;}
   const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
   const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
@@ -136,10 +136,16 @@ private:
                 double         delta_Y,
                 double         k_move);
 
-  void  CalculateDeviation(NRLib::Well            & new_well,
-                           const ModelSettings    * const model_settings,
-                           float                  & dev_angle,
-                           Simbox                 * simbox);
+  void  CalculateDeviation(NRLib::Well         & new_well,
+                           const ModelSettings * const model_settings,
+                           float               & dev_angle,
+                           Simbox              * simbox);
+
+  void CountFaciesInWell(NRLib::Well            & well,
+                         Simbox                 * simbox,
+                         int                      n_facies,
+                         const std::vector<int> & facies_nr,
+                         std::vector<int>       & facies_count);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -210,6 +216,37 @@ private:
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
                                std::string                                    & err_text);
+
+  bool RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
+                                         ModelSettings * model_settings,
+                                         const Simbox  * simbox,
+                                         int           & n_merges);
+
+  void MergeCells(const std::string         & name,
+                  std::vector<double>       & pos_resampled,
+                  const std::vector<double> & pos,
+                  int                         ii,
+                  int                         istart,
+                  int                         iend,
+                  bool                        print_to_screen);
+
+  void MergeCellsDiscrete(const std::string      & name,
+                          std::vector<int>       & log_resampled,
+                          const std::vector<int> & log,
+                          int                      ii,
+                          int                      istart,
+                          int                      iend,
+                          bool                     print_to_screen);
+
+  void SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
+                                         ModelSettings * model_settings,
+                                         int           & count_vp,
+                                         int           & count_vs,
+                                         int           & count_rho);
+
+  void LookForSyntheticVsLog(NRLib::Well   & well,
+                             ModelSettings * model_settings,
+                             float         & rank_correlation);
 
   void CutWell(std::string           well_file_name,
                NRLib::Well         & well,
@@ -472,20 +509,10 @@ private:
                       int nz,
                       int nzp);
 
-  //void SetTrace(const std::vector<float> & trace,
-  //              NRLib::Grid<double>      & grid,
-  //              size_t                     i,
-  //              size_t                     j);
-
   void SetTrace(const std::vector<float> & trace,
                 NRLib::Grid<double>      * grid,
                 size_t                     i,
                 size_t                     j);
-
-  //void SetTrace(float                 value,
-  //              NRLib::Grid<double> & grid,
-  //              size_t                i,
-  //              size_t                j);
 
   void SetTrace(float                 value,
                 NRLib::Grid<double> * grid,
@@ -637,10 +664,6 @@ private:
 
   int ComputeTime(int year, int month, int day) const;
 
-  //H-TEST
-  //void EstimateZPaddingSize(Simbox          * simbox,
-  //                                           ModelSettings   * model_settings) const;
-
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
@@ -718,7 +741,7 @@ private:
   std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
   std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells.
-  std::vector<int>                              facies_labels_;
+  std::vector<int>                              facies_nr_;
 
   // Prior correlation
   std::vector<Surface *>                        prior_corr_XY_;

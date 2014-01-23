@@ -87,13 +87,13 @@ Well::ReadWell(const std::string              & file_name,
     disc_log_  = well.GetDiscLog();
     read_ok    = true;
 
-    //Norwar well has its own missing value in the well-log
+    //Norsar wells has its own missing value in the well-log
     SetMissing(well.GetContMissing());
 
     // assume that facies logs from norsar wells are not used
     has_facies_log_ = false;
   }
-  else if(file_name.find(".rms",0) != std::string::npos) {
+  else if(file_name.find(".rms",0) != std::string::npos || file_name.find(".txt",0) != std::string::npos) {
     NRLib::RMSWell well(file_name);
     well_name_ = well.GetWellName();
     n_data_    = well.GetNData();
@@ -103,8 +103,6 @@ Well::ReadWell(const std::string              & file_name,
     std::map<int, std::string> facies_map;
     if(well.HasDiscLog(facies_log))
       facies_map = well.GetDiscNames(facies_log);
-    //if(well.HasDiscLog("FACIES"))
-    //  facies_map = well.GetDiscNames("FACIES");
 
     if(facies_map.size() > 0){
       has_facies_log_ = true;
@@ -286,10 +284,10 @@ size_t Well::GetContLogLength(const std::string& logname) const
   return (item->second).size();
 }
 
-int Well::CheckStormgrid(StormContGrid & stormgrid) const
+int Well::CheckStormgrid(NRLib::StormContGrid & stormgrid) const
 {
-  bool insideArea = false;
-  int  error      = 1;
+  bool inside_area = false;
+  int  error       = 1;
 
   //if(timemissing_ == 0) { //Timemissing not stored when reading logs in commondata ReadWell?
 
@@ -303,7 +301,7 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
     for(unsigned int i=0; i < n_data_nonmissing_; i++) { //nd_
 
       if(stormgrid.IsInside(x_pos[i], y_pos[i])) {
-        insideArea = true;
+        inside_area = true;
         //
         // Correct handling of top and base checking.
         //
@@ -321,13 +319,50 @@ int Well::CheckStormgrid(StormContGrid & stormgrid) const
   //  error = 0;
 
   if (error) {
-    if (insideArea) {
+    if (inside_area) {
       LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+": ");
       LogKit::LogFormatted(LogKit::Low,"IGNORED. Well does not hit the inversion volume.\n");
     }
     else {
       LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+": ");
       LogKit::LogFormatted(LogKit::Low,"IGNORED. Well is not inside the inversion area.\n");
+    }
+  }
+  return(error);
+}
+
+
+int Well::CheckSimbox(Simbox * simbox) const
+{
+  bool inside_area = false;
+  int error        = 1;
+
+  const std::vector<double> & x_pos = GetContLog().find("X_pos")->second;
+  const std::vector<double> & y_pos = GetContLog().find("Y_pos")->second;
+  const std::vector<double> & z_pos = GetContLog().find("Z_pos")->second;
+
+  for(size_t i = 0; i < n_data_nonmissing_; i++) {
+    if(simbox->isInside(x_pos[i], y_pos[i])) {
+      inside_area = true;
+      //
+      // Correct handling of top and base checking.
+      //
+      if(z_pos[i] > simbox->getTop(x_pos[i], y_pos[i]) && z_pos[i] < simbox->getBot(x_pos[i], y_pos[i])) {
+        error = 0;
+        break;
+      }
+    }
+  }
+
+  if (error) {
+    if (inside_area) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+":\n");
+      LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
+      LogKit::LogFormatted(LogKit::Low,"           (well-depth: min,max = "+NRLib::ToString(z_pos[0])+","+NRLib::ToString(z_pos[n_data_nonmissing_-1])+")\n");
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+well_name_+":\n");
+      LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
     }
   }
   return(error);

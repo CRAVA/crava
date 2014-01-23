@@ -27,6 +27,7 @@
 #include <map>
 
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "src/simbox.h"
 
 namespace NRLib {
   class Well{
@@ -135,7 +136,7 @@ namespace NRLib {
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
     /// Set number of non-missing data
-    void SetNumberOfNonMissingData(int n_data_nonmissing) {n_data_nonmissing_ = n_data_nonmissing ;}
+    void SetNumberOfNonMissingData(int n_data_nonmissing) { n_data_nonmissing_ = n_data_nonmissing ;}
 
     /// Set number of data
     void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
@@ -154,9 +155,13 @@ namespace NRLib {
     int GetUseForWaveletEstimation(void)   const { return use_for_wavelet_estimation_   ;}
     int GetRealVsLog(void)                 const { return real_vs_log_                  ;}
 
+    bool HasSyntheticVsLog(void)           const { return(real_vs_log_)==0              ;}
+
     //bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
 
     int CheckStormgrid(StormContGrid & stormgrid) const;
+
+    int CheckSimbox(Simbox * simbox) const;
 
   protected:
     // Number of time data including WELLMISSING values
@@ -187,9 +192,6 @@ namespace NRLib {
     int                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
     int                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
     int                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
-
-    // Number of data excluding WELLMISSING values
-    //unsigned int              n_data_nonmissing_;
 
   };
 

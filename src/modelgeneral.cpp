@@ -319,7 +319,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
 
       //Facies-names
       facies_names_  = common_data->GetFaciesNames();
-      facies_labels_ = common_data->GetFaciesLabels();
+      facies_labels_ = common_data->GetFaciesNr();
 
       //Priorfacies
       if (common_data->GetPriorFacies().size() > 0) {

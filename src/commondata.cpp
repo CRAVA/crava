@@ -753,11 +753,28 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       log_names.push_back(log_names_from_user[i]);
   }
 
-  int n_wells = model_settings->getNumberOfWells();
-  std::vector<float> dev_angle(n_wells);
-  try{
+  int n_wells  = model_settings->getNumberOfWells();
+  int n_facies = facies_names_.size();
+  try {
     if (n_wells > 0)
       LogKit::WriteHeader("Reading wells");
+
+    int no_hit            = 0;
+    int empty             = 0;
+    int facies_log_not_ok = 0;
+    int upwards           = 0;
+    std::vector<bool>  valid_index(n_wells);
+    std::vector<int>   n_merges(n_wells);
+    std::vector<int>   n_invalid_vp(n_wells);
+    std::vector<int>   n_invalid_vs(n_wells);
+    std::vector<int>   n_invalid_rho(n_wells);
+    std::vector<float> rank_corr(n_wells);
+    std::vector<float> dev_angle(n_wells);
+
+    std::vector<std::vector<int> > facies_count(n_wells);
+    for (int i = 0; i < n_wells; i++) {
+      facies_count[i].resize(n_facies);
+    }
 
     for (int i = 0; i < n_wells; i++) {
 
@@ -775,9 +792,10 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       std::vector<int> facies_nr;
       std::vector<std::string> facies_names;
 
+      //Process logs
       if (well_file_name.find(".nwh",0) != std::string::npos)
         ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
-      else if (well_file_name.find(".rms",0) != std::string::npos)
+      else if (well_file_name.find(".rms",0) != std::string::npos || well_file_name.find(".txt",0) != std::string::npos)
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
       //Cut wells against full_inversion_volume
@@ -787,8 +805,6 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       //Store facies names.
       if (model_settings->getFaciesLogGiven()) {
         ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names);
-
-        facies_log_wells_.push_back(true);
       }
 
       facies_nr_wells_.push_back(facies_nr);
@@ -798,27 +814,225 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
       new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
       new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
-
       new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
-      CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox);
 
-      if (read_ok == true) {
-        wells_.push_back(new_well);
+      //Check if well is valid
+      bool well_valid = true;
+      bool facies_ok  = true;
+      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
+
+      if (new_well.CheckSimbox(estimation_simbox) == 1) {
+        well_valid = false;
+        no_hit++;
+        TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
       }
-      else {
+      if (new_well.GetNData() == 0) {
+        LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
+        well_valid = false;
+        empty++;
+        TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
+      }
+      //Check well for valid facies
+      if (new_well.HasFaciesLog() == true) {
+        const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
+        int n_facies                        = new_well.GetNFacies();
+        bool facies_ok_tmp                  = false;
+        for (size_t j = 0; j < facies_log.size(); j++) {
+          if (facies_log[j] != IMISSING) {
+            for (size_t k = 0; k < n_facies; k++) {
+              if (facies_nr[k] == facies_log[j]) {
+                facies_ok_tmp = true;
+                break;
+              }
+            }
+            if (facies_ok_tmp == false) { //Found a facies in facies_log that is not defined in facies_nr
+              facies_ok = false;
+              break;
+            }
+          }
+        }
+      }
+      if (facies_ok == false) {
+        LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
+        well_valid = false;
+        facies_log_not_ok++;
+        TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
+      }
+      bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, estimation_simbox, n_merges[i]);
+      if (monotonous == false) {
+        LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
+        well_valid = false;
+        upwards++;
+        TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
+      }
+
+      if (read_ok == false) {
         err_text += "Well format of file " + well_file_name + " not recognized.\n";
       }
+      else if (well_valid == true) {
 
-      //H
-      //Add in WellData::lookForSyntheticVsLog? (Updates useForFaciesProbabilities)
+        valid_index[i] = true;
+        SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[i], n_invalid_vs[i], n_invalid_rho[i]);
+        //wells[i]->filterLogs(); //H Moved to BlockedLogsCommon. Move to CommonData?
+        LookForSyntheticVsLog(new_well, model_settings, rank_corr[i]);
+        CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox);
 
+        if (n_facies > 0)
+          CountFaciesInWell(new_well, estimation_simbox, n_facies, facies_nr, facies_count[i]);
+
+        wells_.push_back(new_well);
+
+        if (model_settings->getFaciesLogGiven())
+          facies_log_wells_.push_back(true);
+        else
+          facies_log_wells_.push_back(false);
+      }
+      else
+        valid_index[i] = false;
+
+    } //n_wells
+
+    //Combines facies information from wells
+    if (model_settings->getFaciesLogGiven() && err_text == "")
+      SetFaciesNamesFromWells(model_settings, err_text);
+
+    //Update n_wells
+    n_wells = wells_.size();
+    model_settings->setNumberOfWells(n_wells);
+
+    //
+    // Write summary.
+    //
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"                                      Invalid                                    \n");
+    LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
+    LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
+    for (int i = 0; i < n_wells; i++) {
+      if (valid_index[i])
+        LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
+        wells_[i].GetWellName().c_str(),
+        n_merges[i],
+        n_invalid_vp[i],
+        n_invalid_vs[i],
+        n_invalid_rho[i],
+        (wells_[i].HasSyntheticVsLog() ? "yes" : " no"),
+        rank_corr[i],
+        (dev_angle[i] > model_settings->getMaxDevAngle() ? "yes" : " no"),
+        dev_angle[i]);
+      else
+        LogKit::LogFormatted(LogKit::Low,"%-23s      -       -    -    -       - /     -       -  /    -\n",
+        wells_[i].GetWellName().c_str());
     }
-  } catch (NRLib::Exception & e) {
+
+    //
+    // Print facies count for each well
+    //
+    if (n_facies > 0) {
+      //
+      // Probabilities
+      //
+      LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each well: \n");
+      LogKit::LogFormatted(LogKit::Low,"\nWell                    ");
+      for (int i = 0; i < n_facies; i++)
+        LogKit::LogFormatted(LogKit::Low,"%12s ",facies_names_[i].c_str());
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      for (int i = 0 ; i < 24+13*n_facies ; i++)
+        LogKit::LogFormatted(LogKit::Low,"-");
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      for (int i = 0; i < n_wells; i++) {
+        if (valid_index[i]) {
+          float tot = 0.0;
+          for (int f = 0; f < n_facies; f++)
+            tot += static_cast<float>(facies_count[i][f]);
+          LogKit::LogFormatted(LogKit::Low,"%-23s ", wells_[i].GetWellName().c_str());
+          for (int f = 0; f < n_facies; f++) {
+            if (tot > 0) {
+              float faciesProb = static_cast<float>(facies_count[i][f])/tot;
+              LogKit::LogFormatted(LogKit::Low,"%12.4f ",faciesProb);
+            }
+            else
+              LogKit::LogFormatted(LogKit::Low,"         -   ");
+          }
+          LogKit::LogFormatted(LogKit::Low,"\n");
+        }
+        else {
+          LogKit::LogFormatted(LogKit::Low,"%-23s ", wells_[i].GetWellName().c_str());
+          for (int f = 0; f < n_facies; f++)
+            LogKit::LogFormatted(LogKit::Low,"         -   ");
+          LogKit::LogFormatted(LogKit::Low,"\n");
+
+        }
+      }
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      //
+      // Counts
+      //
+      LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each well: \n");
+      LogKit::LogFormatted(LogKit::Medium,"\nWell                    ");
+      for (int i = 0; i < n_facies; i++)
+        LogKit::LogFormatted(LogKit::Medium,"%12s ",facies_names_[i].c_str());
+      LogKit::LogFormatted(LogKit::Medium,"\n");
+      for (int i = 0; i < 24+13*n_facies; i++)
+        LogKit::LogFormatted(LogKit::Medium,"-");
+      LogKit::LogFormatted(LogKit::Medium,"\n");
+      for (int i = 0; i < n_wells; i++) {
+        if (valid_index[i]) {
+          float tot = 0.0;
+          for (int f = 0; f < n_facies; f++)
+            tot += static_cast<float>(facies_count[i][f]);
+          LogKit::LogFormatted(LogKit::Medium,"%-23s ", wells_[i].GetWellName().c_str());
+          for (int f = 0; f < n_facies; f++) {
+            LogKit::LogFormatted(LogKit::Medium,"%12d ",facies_count[i][f]);
+          }
+          LogKit::LogFormatted(LogKit::Medium,"\n");
+        }
+        else {
+          LogKit::LogFormatted(LogKit::Medium,"%-23s ", wells_[i].GetWellName().c_str());
+          for (int f = 0; f < n_facies; f++)
+            LogKit::LogFormatted(LogKit::Medium,"         -   ");
+          LogKit::LogFormatted(LogKit::Medium,"\n");
+        }
+      }
+      LogKit::LogFormatted(LogKit::Medium,"\n");
+    }
+
+    if (no_hit > 0)
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n", no_hit);
+    if (empty > 0)
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n", empty);
+    if (facies_log_not_ok > 0)
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n", facies_log_not_ok);
+    if (upwards > 0)
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n", upwards);
+    if (n_wells == 0 && model_settings->getNoWellNedded()==false) {
+      LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
+      LogKit::LogFormatted(LogKit::Low,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");
+      LogKit::LogFormatted(LogKit::Low,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
+      LogKit::LogFormatted(LogKit::Low,"\n       -------------------------------------------------------------------------------");
+      LogKit::LogFormatted(LogKit::Low,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n",
+        estimation_simbox->getx0(), estimation_simbox->gety0(),
+        estimation_simbox->getlx(), estimation_simbox->getly(),
+        (estimation_simbox->getAngle()*180)/M_PI);
+      err_text += "No wells available for estimation.";
+    }
+
+    if (n_facies > 0) {
+      int fc;
+      for (int i = 0; i < n_facies; i++) {
+        fc = 0;
+        for (int j = 0; j < n_wells; j++) {
+          fc+=facies_count[j][i];
+        }
+        if (fc == 0) {
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",facies_names_[i].c_str() );
+          TaskList::addTask("In order to estimate prior facies probability for facies "+ facies_names_[i] + " add wells which contain observations of this facies.\n");
+        }
+      }
+    }
+  }
+  catch (NRLib::Exception & e) {
     err_text += "Error: " + NRLib::ToString(e.what());
   }
-
-  if (model_settings->getFaciesLogGiven() && err_text == "")
-    SetFaciesNamesFromWells(model_settings, err_text);
 
   if (err_text != "") {
     err_text_common += err_text;
@@ -828,19 +1042,381 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
   return true;
 }
 
+bool CommonData::RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
+                                                   ModelSettings * model_settings,
+                                                   const Simbox  * simbox,
+                                                   int           & n_merges)
+{
+  bool debug      = false;
+  bool monotonous = true; //Check that well does not move unreasonably much upwards.
+  float max_upward_dist = -3.0f*static_cast<float>(simbox->getdz()); //Do not allow upwards movement of more than three cells. Calibrate.
+
+  float min_merge_dist = model_settings->getMaxMergeDist();
+  int   n_data         = well.GetNData();
+
+  std::vector<double> x_pos_resampled;
+  std::vector<double> y_pos_resampled;
+  std::vector<double> z_pos_resampled;  // time step
+  std::vector<double> vp_resampled;
+  std::vector<double> vs_resampled;
+  std::vector<double> rho_resampled;
+  std::vector<int>    facies_resampled; // Always included (for convenience)
+
+  const std::vector<double> & x_pos = well.GetContLog("X_pos");
+  const std::vector<double> & y_pos = well.GetContLog("Y_pos");
+  const std::vector<double> & z_pos = well.GetContLog("Z_pos");
+  const std::vector<double> & vp    = well.GetContLog("Vp");
+  const std::vector<double> & vs    = well.GetContLog("Vs");
+  const std::vector<double> & rho   = well.GetContLog("Rho");
+
+  int ii = 0;
+  int istart = 0;                                // First element in merge
+  int iend;                                      // Last element in merge
+  while (istart < n_data) {                      // Loop over elements in original log
+    if (istart == n_data - 1)                    // Are we at last element?
+      iend = istart;
+    else {
+      iend = istart + 1;                         // Start looking one element ahead
+      while (z_pos[iend] - z_pos[istart] < min_merge_dist && iend < n_data - 1) {
+        iend++;
+        if(monotonous == true && z_pos[iend] - z_pos[istart] < max_upward_dist)
+          monotonous = false;
+      }
+      iend--;
+    }
+
+    bool print_to_screen = debug && iend != istart;
+    if (print_to_screen)
+      LogKit::LogFormatted(LogKit::Low,"Merge log entries %d -> %d into new entry %d\n",istart,iend,ii);
+
+    MergeCells("time", z_pos_resampled, z_pos, ii, istart, iend, print_to_screen);
+    MergeCells("x   ", x_pos_resampled, x_pos, ii, istart, iend, print_to_screen);
+    MergeCells("y   ", y_pos_resampled, y_pos, ii, istart, iend, print_to_screen);
+    MergeCells("Vp  ", vp_resampled,    vp,    ii, istart, iend, print_to_screen);
+    MergeCells("Vs  ", vs_resampled,    vs,    ii, istart, iend, print_to_screen);
+    MergeCells("Rho ", rho_resampled,   rho,   ii, istart, iend, print_to_screen);
+    if(well.HasFaciesLog()) {
+      const std::vector<int>  & facies = well.GetDiscLog("Facies");
+      MergeCellsDiscrete("Facies ", facies_resampled, facies, ii, istart, iend, print_to_screen);
+    }
+
+    if (print_to_screen)
+      LogKit::LogFormatted(LogKit::Low,"\n");
+
+    istart = iend + 1;
+    ii++;
+  }
+
+  n_merges = 0;
+  if (ii != n_data) {
+    n_merges = n_data - ii;
+    LogKit::LogFormatted(LogKit::Low,"   Duplicate log entries merged with neighbour : %d\n",n_merges);
+    n_data = ii;
+  }
+
+  well.SetNumberOfData(n_data);
+
+  //Store new logs
+  well.RemoveContLog("X_pos");
+  well.AddContLog("X_pos", x_pos_resampled);
+
+  well.RemoveContLog("Y_pos");
+  well.AddContLog("Y_pos", y_pos_resampled);
+
+  well.RemoveContLog("Z_pos");
+  well.AddContLog("Z_pos", z_pos_resampled);
+
+  well.RemoveContLog("Vp");
+  well.AddContLog("Vp", vp_resampled);
+
+  well.RemoveContLog("Vs");
+  well.AddContLog("Vs", vs_resampled);
+
+  well.RemoveContLog("Rho");
+  well.AddContLog("Rho", rho_resampled);
+
+  if (well.HasFaciesLog()) {
+    well.RemoveDiscLog("Facies");
+    well.AddDiscLog("Facies", facies_resampled);
+  }
+
+  return(monotonous);
+}
+
+//----------------------------------------------------------------------------
+void CommonData::MergeCells(const std::string         & name,
+                            std::vector<double>       & pos_resampled,
+                            const std::vector<double> & pos,
+                            int                         ii,
+                            int                         istart,
+                            int                         iend,
+                            bool                        print_to_screen)
+{
+  int n_sample = 0;
+  pos_resampled.push_back(0.0);
+
+  for (int i = istart; i < iend + 1; i++) {
+    if (pos[i] != RMISSING) {
+      pos_resampled[ii] += pos[i];
+      n_sample++;
+      if (print_to_screen)
+        LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   pos = %.3f\n",name.c_str(),i,pos[i]);
+    }
+  }
+  if (n_sample == 0)
+    pos_resampled[ii] = RMISSING;
+  else
+    pos_resampled[ii] /= n_sample;
+  if (print_to_screen)
+    LogKit::LogFormatted(LogKit::Low,"%s     New:%d   pos = %.3f\n",name.c_str(),ii,pos_resampled[ii]);
+}
+
+void CommonData::MergeCellsDiscrete(const std::string      & name,
+                                    std::vector<int>       & log_resampled,
+                                    const std::vector<int> & log,
+                                    int                      ii,
+                                    int                      istart,
+                                    int                      iend,
+                                    bool                     print_to_screen)
+{
+  int n_sample = 0;
+  for (int i = istart; i < iend + 1; i++) {
+    if (log[i] != RMISSING) {
+      //log_resampled[ii] += log[i];
+      n_sample++;
+      if (print_to_screen)
+        LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   log = %d\n",name.c_str(),i,log[i]);
+    }
+  }
+
+  log_resampled.push_back(log[istart]);
+  if (print_to_screen)
+    LogKit::LogFormatted(LogKit::Low,"%s     New:%d   log = %d\n",name.c_str(),ii,log_resampled[ii]);
+
+}
+
+//----------------------------------------------------------------------------
+void CommonData::SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
+                                                   ModelSettings * model_settings,
+                                                   int           & count_vp,
+                                                   int           & count_vs,
+                                                   int           & count_rho)
+{
+  //
+  // Log values outside the minimum and maximum limits given below
+  // are set to RMISSING as such values are very unlikely.
+  //
+  bool debug = true;
+
+  float vp_min  = model_settings->getAlphaMin();
+  float vp_max  = model_settings->getAlphaMax();
+  float vs_min  = model_settings->getBetaMin();
+  float vs_max  = model_settings->getBetaMax();
+  float rho_min = model_settings->getRhoMin();
+  float rho_max = model_settings->getRhoMax();
+
+  count_vp  = 0;
+  count_vs  = 0;
+  count_rho = 0;
+
+  std::vector<double> & vp  = well.GetContLog("Vp");
+  std::vector<double> & vs  = well.GetContLog("Vs");
+  std::vector<double> & rho = well.GetContLog("Rho");
+  const std::vector<double> & z_pos = well.GetContLog("Z_pos");
+
+  int n_data = well.GetNData();
+
+  for (int i = 0; i < n_data; i++) {
+    if (vp[i] != RMISSING && (vp[i] < vp_min || vp[i] > vp_max)) {
+      if (debug)
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vp = %.2f\n",z_pos[i],vp[i]);
+      vp[i] = RMISSING;
+      count_vp++;
+    }
+    if (vs[i] != RMISSING && (vs[i] < vs_min || vs[i] > vs_max)) {
+      if (debug)
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vs = %.2f\n",z_pos[i],vs[i]);
+      vs[i] = RMISSING;
+      count_vs++;
+    }
+    if (rho[i] != RMISSING && (rho[i] < rho_min || rho[i] > rho_max)) {
+      if (debug)
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Rho = %.2f\n",z_pos[i],rho[i]);
+      rho[i] = RMISSING;
+      count_rho++;
+    }
+  }
+
+  if (count_vp > 0 || count_vs || count_rho> 0)
+    LogKit::LogFormatted(LogKit::Low,"   Log entries have been set undefined (Vp:%d Vs:%d Rho:%d)\n",
+                         count_vp, count_vs, count_rho);
+}
+
+//----------------------------------------------
+bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
+{
+  return (i1.second < i2.second);
+}
+
+void CommonData::LookForSyntheticVsLog(NRLib::Well   & well,
+                                       ModelSettings * model_settings,
+                                       float         & rank_correlation)
+{
+  float corr_threshold = model_settings->getMaxRankCorr();
+
+  //
+  // Estimate the correlation between Vp and Vs logs. To be able to identify
+  // nonlinear relationships between the logs we use rank correlation.
+  //
+  typedef std::pair<int, float> Item;
+  std::vector<Item> sorted_vp;
+  std::vector<Item> sorted_vs;
+
+  //
+  // Store Vp and Vs in sortable structs. Note that we can only use nonmissing values.
+  //
+  int n_data = well.GetNData();
+  const std::vector<double> & vp = well.GetContLog("Vp");
+  const std::vector<double> & vs = well.GetContLog("Vs");
+
+  int real_vs_log = well.GetRealVsLog();
+
+  for (int i = 0; i < n_data; i++) {
+    if (vp[i] != RMISSING && vs[i] != RMISSING) {
+      sorted_vp.push_back(Item(i, vp[i]));
+      sorted_vs.push_back(Item(i, vs[i]));
+    }
+  }
+
+  int n = static_cast<int>(sorted_vp.size());
+  if (n > 0) {
+    //
+    // Sort Vp and Vs logs.
+    //
+    std::sort(sorted_vp.begin(), sorted_vp.end(), compare);
+    std::sort(sorted_vs.begin(), sorted_vs.end(), compare);
+
+    //
+    // Estimate correlation between sorted alpha and beta sorted by alpha
+    //
+    float mean = float(n)/2.0f; // We start the indexing at 0 rather than 1
+    float cov_rank = 0.0;       // Covariance between ranks of alpha and beta (sorted on alpha)
+    float var_rank = 0.0;       // Variance in ranks of alpha and beta (which are equal)
+
+    for (int i = 0; i < n; i++) {
+      var_rank +=(i - mean)*(i - mean);
+      for (int j = 0; j < n; j++) {
+
+        if (sorted_vs[j].first == sorted_vp[i].first) {
+          cov_rank += (j - mean)*(i - mean);
+        }
+      }
+    }
+    rank_correlation = cov_rank/var_rank; // Skip division by n-1 in both nominator and denominator
+
+    if (rank_correlation > corr_threshold) {
+      if (real_vs_log == ModelSettings::NOTSET) {
+        LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
+        real_vs_log = ModelSettings::NO;
+      }
+      else {
+        if (real_vs_log == ModelSettings::YES)
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
+        else
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+      }
+    }
+    else {
+      switch(real_vs_log) {
+        case ModelSettings::YES :
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
+          break;
+        case ModelSettings::NO :
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+          break;
+        default :
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
+          break;
+      }
+    }
+
+  }
+  else
+  {
+    LogKit::LogFormatted(LogKit::Low,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
+  }
+
+  well.SetRealVsLog(real_vs_log);
+
+  bool use_filter    = model_settings->getUseFilterForFaciesProb();
+  bool use_vp_vs_rho = model_settings->getNoVsFaciesProb() == false;
+  int  use_for_facies_probabilities = well.GetUseForFaciesProbabilities();
+
+  if(use_filter && use_vp_vs_rho && real_vs_log == ModelSettings::NO && use_for_facies_probabilities == ModelSettings::NOTSET)
+    use_for_facies_probabilities = ModelSettings::NO;
+
+  well.SetUseForFaciesProbabilities(use_for_facies_probabilities);
+}
+
+//----------------------------------------------------------------------------
+void CommonData::CountFaciesInWell(NRLib::Well            & well,
+                                   Simbox                 * simbox,
+                                   int                      n_facies,
+                                   const std::vector<int> & facies_nr,
+                                   std::vector<int>       & facies_count)
+{
+  for (int i = 0; i < n_facies; i++)
+    facies_count[i] = 0;
+
+  int n_data = well.GetNData();
+  const std::vector<double> & x_pos  = well.GetContLog("X_pos");
+  const std::vector<double> & y_pos  = well.GetContLog("Y_pos");
+  const std::vector<double> & z_pos  = well.GetContLog("Z_pos");
+  const std::vector<double> & vp     = well.GetContLog("Vp");
+  const std::vector<double> & vs     = well.GetContLog("Vs");
+  const std::vector<double> & rho    = well.GetContLog("Rho");
+  const std::vector<int>    & facies = well.GetDiscLog("Facies");
+
+  if (n_facies > 0) {
+    for(int i = 0; i < n_data; i++) {
+      if (facies[i] != IMISSING) {
+        //
+        // Count facies only when logs
+        //
+        if (vp[i] != RMISSING && vs[i] != RMISSING && rho[i] != RMISSING) {
+          //
+          // Count facies only for part of well inside simbox
+          //
+          if(simbox->isInside(x_pos[i], y_pos[i])) {
+            if(z_pos[i] > simbox->getTop(x_pos[i], y_pos[i]) && z_pos[i] < simbox->getBot(x_pos[i], y_pos[i]))  {
+              //
+              // Find facies index...
+              //
+              for (int j = 0; j < n_facies; j++) {
+                if (facies_nr[j] == facies[i]) {
+                  facies_count[j]++;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 void CommonData::CutWell(std::string           well_file_name,
                          NRLib::Well         & well,
                          const NRLib::Volume & full_inversion_volume) {
 
   //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
-  //Possible Logs: TVD, X_pos, Y_pos, TVD, Dt, Vp, Rho, Dts, Facies
-  //const std::vector<double> & tvd_old = well.GetContLog("TVD");
+  //Possible Logs: X_pos, Y_pos, Z_pos, Dt, Vp, Dts, Vs, Rho, Facies
+
   const std::vector<double> & x_old   = well.GetContLog("X_pos");
   const std::vector<double> & y_old   = well.GetContLog("Y_pos");
   const std::vector<double> & z_old   = well.GetContLog("Z_pos");
 
-  //std::vector<double> tvd_new;
-  //std::vector<double> twt_new;
   std::vector<double> x_new;
   std::vector<double> y_new;
   std::vector<double> z_new;
@@ -858,39 +1434,35 @@ void CommonData::CutWell(std::string           well_file_name,
   if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
     need_cutting = true;
 
-  if (need_cutting == true) {
+  if (need_cutting == true) { //H Cut missing values?
 
     for (size_t i = 0; i < z_old.size(); i++) {
 
-      if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+      if (z_old[i] != RMISSING) {
 
-        //tvd_new.push_back(tvd_old[i]);
-        x_new.push_back(x_old[i]);
-        y_new.push_back(y_old[i]);
-        z_new.push_back(z_old[i]);
+        if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
 
-        //if (well.HasContLog("TWT"))
-        //  twt_new.push_back(well.GetContLog("TWT")[i]);
-        if (well.HasContLog("Dt"))
-          dt_new.push_back(well.GetContLog("Dt")[i]);
-        if (well.HasContLog("Vp"))
-          vp_new.push_back(well.GetContLog("Vp")[i]);
-        if (well.HasContLog("Dts"))
-          dts_new.push_back(well.GetContLog("Dts")[i]);
-        if (well.HasContLog("Vs"))
-          vs_new.push_back(well.GetContLog("Vs")[i]);
-        if (well.HasContLog("Rho"))
-          rho_new.push_back(well.GetContLog("Rho")[i]);
-        if (well.HasDiscLog("Facies"))
-          facies_new.push_back(well.GetDiscLog("Facies")[i]);
+          x_new.push_back(x_old[i]);
+          y_new.push_back(y_old[i]);
+          z_new.push_back(z_old[i]);
+
+          if (well.HasContLog("Dt"))
+            dt_new.push_back(well.GetContLog("Dt")[i]);
+          if (well.HasContLog("Vp"))
+            vp_new.push_back(well.GetContLog("Vp")[i]);
+          if (well.HasContLog("Dts"))
+            dts_new.push_back(well.GetContLog("Dts")[i]);
+          if (well.HasContLog("Vs"))
+            vs_new.push_back(well.GetContLog("Vs")[i]);
+          if (well.HasContLog("Rho"))
+            rho_new.push_back(well.GetContLog("Rho")[i]);
+          if (well.HasDiscLog("Facies"))
+            facies_new.push_back(well.GetDiscLog("Facies")[i]);
+        }
       }
     }
 
     //Replace logs
-    //well.RemoveContLog("TWT");
-    //well.AddContLog("TWT", twt_new);
-    //well.RemoveContLog("TVD");
-    //well.AddContLog("TVD", tvd_new);
     well.RemoveContLog("X_pos");
     well.AddContLog("X_pos", x_new);
     well.RemoveContLog("Y_pos");
@@ -923,6 +1495,14 @@ void CommonData::CutWell(std::string           well_file_name,
     }
 
     well.SetNumberOfData(z_new.size());
+
+    int nonmissing_data = 0;
+    for (size_t i = 0; i < z_new.size(); i++) {
+      if (z_new[i] != WELLMISSING)
+        nonmissing_data++;
+    }
+    well.SetNumberOfNonMissingData(nonmissing_data);
+
   }
 }
 
@@ -978,7 +1558,7 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
 
   int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
 
-  //H new fix: Store TWT as Z_pos
+  //Store TWT as Z_pos
   if (new_well.HasContLog("TWT")) {
     std::vector<double> twt_temp = new_well.GetContLog("TWT");
     for (unsigned int i = 0; i < twt_temp.size(); i++) {
@@ -988,7 +1568,6 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
         nonmissing_data++;
 
     }
-    //new_well.RemoveContLog("TVD");
     new_well.AddContLog("Z_pos", twt_temp);
 
     new_well.SetNumberOfNonMissingData(nonmissing_data);
@@ -996,25 +1575,6 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
   else { // Process MD log if TVD is not available?
     err_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
-
-  // Norsar wells must have a TVD log
-  //if (new_well.HasContLog("TVD")) {
-  //  std::vector<double> tvd_temp = new_well.GetContLog("TVD");
-  //  for (unsigned int i = 0; i < tvd_temp.size(); i++) {
-  //    tvd_temp[i] = tvd_temp[i]*factor_kilometer;
-
-  //    if (tvd_temp[i] != WELLMISSING)
-  //      nonmissing_data++;
-
-  //  }
-  //  new_well.RemoveContLog("TVD");
-  //  new_well.AddContLog("TVD", tvd_temp);
-
-  //  new_well.SetNumberOfNonMissingData(nonmissing_data);
-  //}
-  //else { // Process MD log if TVD is not available?
-  //  err_text += "Could not find log 'TVD' in well file "+new_well.GetWellName()+".\n";
-  //}
 
   // Time is always entry 0 in the log name list and is always called TWT
   //if (new_well.HasContLog(log_names_from_user[0])){
@@ -1133,7 +1693,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     error_text += "Could not find log 'Y' in well file "+new_well.GetWellName()+".\n";
   }
 
-  //H New fix: Store TWT-log as z-log. (Remove old Z-log from well and remove TVD(?))
+  //Store TWT as Z_pos
   if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
   if (new_well.HasContLog("TWT")) {
@@ -1142,15 +1702,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   else {
     error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
-
-  // RMS wells must have a z log
-  //if (new_well.HasContLog("Z")) {
-  //  new_well.AddContLog("TVD", new_well.GetContLog("Z"));
-  //  new_well.RemoveContLog("Z");
-  //}
-  //else {
-  //  error_text += "Could not find log 'Z' in well file "+new_well.GetWellName()+".\n";
-  //}
 
   int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
   const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
@@ -1208,7 +1759,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
           vs[i] = RMISSING;
       }
     }
-    new_well.RemoveContLog(log_names_from_user[3]); //1
+    new_well.RemoveContLog(log_names_from_user[3]);
     new_well.AddContLog("Vs", vs);
   }
 
@@ -1371,18 +1922,15 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
     n_facies = facies_names_wells_[w].size();
     facies_nr = facies_nr_wells_[w];
 
-    if (facies_log_wells_[w] == true)
-    {
+    if (facies_log_wells_[w] == true) {
       GetMinMaxFnr(min,max, n_facies, facies_nr);
 
-      if (first==true)
-      {
+      if (first==true) {
         globalmin = min;
         globalmax = max;
         first = false;
       }
-      else
-      {
+      else {
         if (min<globalmin)
           globalmin = min;
         if (max>globalmax)
@@ -1394,13 +1942,13 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
   int n_names = globalmax - globalmin + 1;
   std::vector<std::string> names(n_names);
 
-  for (int w=0; w < model_settings->getNumberOfWells(); w++) {
+  for (int w = 0; w < model_settings->getNumberOfWells(); w++) {
 
     if (facies_log_wells_[w] == true) {
 
       n_facies = facies_names_wells_[w].size();
 
-      for (int i=0 ; i < n_facies; i++) {
+      for (int i = 0; i < n_facies; i++) {
 
         std::string name = facies_names_wells_[w][i];
         int         fnr  = facies_nr_wells_[w][i] - globalmin;
@@ -1429,7 +1977,7 @@ void CommonData::SetFaciesNamesFromWells(ModelSettings            *& model_setti
 
   for (int i=0 ; i < n_names ; i++) {
     if (names[i] != "") {
-      facies_labels_.push_back(globalmin + i);
+      facies_nr_.push_back(globalmin + i);
       facies_names_.push_back(names[i]);
     }
   }
@@ -4405,7 +4953,7 @@ CommonData::SetFaciesNamesFromRockPhysics()
   int i = 0;
   for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     facies_names_.push_back(it->first);
-    facies_labels_.push_back(i);
+    facies_nr_.push_back(i);
     i++;
   }
 }
@@ -8034,24 +8582,3 @@ void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
   }
 }
 
-//H-TEST
-//void CommonData::EstimateZPaddingSize(Simbox          * simbox,
-//                                             ModelSettings   * model_settings) const {
-//  int    nz             = simbox->getnz();
-//  double min_lz         = simbox->getlz()*simbox->getMinRelThick();
-//  double z_pad_fac      = model_settings->getZPadFac();
-//  double z_pad          = z_pad_fac*min_lz;
-//
-//  if (model_settings->getEstimateZPadding())
-//  {
-//    double w_length    = static_cast<double>(model_settings->getDefaultWaveletLength());
-//    double p_fac      = 1.0;
-//    z_pad             = w_length/p_fac;                               // Use half a wavelet as padding
-//    z_pad_fac         = std::min(1.0, z_pad/min_lz);                  // More than 100% padding is not sensible
-//  }
-//  int nz_pad          = FindPaddingSize(nz, z_pad_fac);
-//  z_pad_fac           = static_cast<double>(nz_pad - nz)/static_cast<double>(nz);
-//
-//  simbox->SetNZpad(nz_pad);
-//  simbox->SetZPadFactor(z_pad_fac);
-//}

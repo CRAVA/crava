@@ -99,7 +99,6 @@ RMSWell::RMSWell(const std::string& filename)
   std::vector<std::vector<int> > disclogs(ndisc);
   std::vector<std::vector<double> > contlogs(ncont);
 
-  //int legal_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
   double dummy_z = WELLMISSING;
 
   int count = 0;
@@ -111,26 +110,20 @@ RMSWell::RMSWell(const std::string& filename)
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y
     contlogs[2].push_back(ReadNext<double>(ist, line)); //z
 
-    //if(dummy_z != WELLMISSING)
-    //  legal_data++;
-
     j = 0;
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
-        //H problem with ReadNext<int> and facies on the form -9.9900000e+002. Add in solution from WellData::readRMSWell.
-        double dummy = ReadNext<double>(ist, line);
+        double dummy = ReadNext<double>(ist, line); //H Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
         if(dummy != WELLMISSING)
           disclogs[j].push_back(static_cast<int>(dummy));
         else
           disclogs[j].push_back(IMISSING);
 
-        //disclogs[j].push_back(ReadNext<int>(ist, line));
-        j++;
+         j++;
       }
       else {
         contlogs[k].push_back(ReadNext<double>(ist, line));
-        //if(k==3 && contlogs[k]!= WELLMISSING)
         k++;
       }
     }
@@ -152,11 +145,9 @@ RMSWell::RMSWell(const std::string& filename)
    }
   }
 
-  // find n_data including WELLMISSING values
+  // Find n_data including WELLMISSING values
   unsigned int n_data = GetContLog("TWT").size();
   this->SetNumberOfData(n_data);
-  //this->SetNumberOfLegalData(legal_data);
-
 }
 
 

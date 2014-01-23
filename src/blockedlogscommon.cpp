@@ -341,7 +341,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     (void) discrete_logs_raw_logs;
     (void) discrete_logs_blocked;
 
-    if (interpolate){
+    if (interpolate) {
       for (unsigned int i=1;i<n_data;i++) {
         if (abs(b_ind[i]-b_ind[i-1]) > 1) {
           int start, end;
