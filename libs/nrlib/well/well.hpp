@@ -63,8 +63,13 @@ namespace NRLib {
 
     /// Return continuous logs
     std::vector<double> & GetContLog(const std::string& name);
+    std::vector<double> & GetContLogSeismicResolution(const std::string& name);
+    std::vector<double> & GetContLogBackgroundResolution(const std::string& name);
+
     /// Return continuous logs
     const std::vector<double> & GetContLog(const std::string& name) const;
+    const std::vector<double> & GetContLogSeismicResolution(const std::string& name) const;
+    const std::vector<double> & GetContLogBackgroundResolution(const std::string& name) const;
 
     /// Return discrete logs
     std::vector<int> & GetDiscLog(const std::string& name);
@@ -79,6 +84,8 @@ namespace NRLib {
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
     void AddContLog(const std::string& name, const std::vector<double>& log);
+    void AddContLogSeismicResolution(const std::string& name, const std::vector<double>& log);
+    void AddContLogBackgroundResolution(const std::string& name, const std::vector<double>& log);
     /// Remove continuous log
     /// Does nothing if there is no log with the given name.
     void RemoveContLog(const std::string& name);
@@ -126,6 +133,8 @@ namespace NRLib {
     size_t GetContLogLength(const std::string& logname) const;
     /// Return all continuous logs
     const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
+    const std::map<std::string,std::vector<double> > & GetContLogSeismicResolution() const { return cont_log_seismic_resolution_; };
+    const std::map<std::string,std::vector<double> > & GetContLogBackgroundResolution() const { return cont_log_background_resolution_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
     /// Facies
@@ -175,6 +184,10 @@ namespace NRLib {
     std::map<std::string,std::vector<double> > cont_log_;
     /// Discrete logs
     std::map<std::string,std::vector<int> >    disc_log_;
+    /// Continuous logs
+    std::map<std::string,std::vector<double> > cont_log_seismic_resolution_;
+    /// Continuous logs
+    std::map<std::string,std::vector<double> > cont_log_background_resolution_;
     /// Name of well
     std::string well_name_;
     /// Missing value for continous logs.

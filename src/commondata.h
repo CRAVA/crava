@@ -114,6 +114,12 @@ public:
                                 float         & corr_grad_J,
                                 const Simbox  * simbox) const;
 
+  static   void ApplyFilter(std::vector<double> & log_filtered,
+                   std::vector<double> & log_interpolated,
+                   int                   n_time_samples,
+                   double                dt_milliseconds,
+                   float                 max_hz);
+
 private:
 
   void LoadWellMoveInterval(const InputFiles             * input_files,
@@ -247,6 +253,25 @@ private:
   void LookForSyntheticVsLog(NRLib::Well   & well,
                              ModelSettings * model_settings,
                              float         & rank_correlation);
+
+  void FilterLogs(NRLib::Well   & well,
+                  ModelSettings * model_settings);
+
+  bool ResampleTime(std::vector<double>       & time_resampled,
+                    const std::vector<double> & z_pos,
+                    int                         nd,
+                    double                    & dt);
+
+  void ResampleLog(std::vector<double>       & log_resampled,
+                   const std::vector<double> & log,
+                   const std::vector<double> & time,
+                   const std::vector<double> & time_resampled,
+                   int                         nd,
+                   double                      dt);
+
+  void InterpolateLog(std::vector<double>       & log_interpolated,
+                      const std::vector<double> & log_resampled,
+                      int                         nd);
 
   void CutWell(std::string           well_file_name,
                NRLib::Well         & well,

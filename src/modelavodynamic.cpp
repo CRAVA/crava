@@ -410,7 +410,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   this_timelapse_           = t;
   bool failed_loading_model = false;
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
-  bool estimation_mode      = model_settings->getEstimationMode();  //Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
+  bool estimation_mode      = model_settings->getEstimationMode();  //H Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
 
@@ -581,7 +581,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     vsvp = 1 / vpvs;
   }
   else if (model_settings->getVpVsRatioFromWells()) { //wells
-    VsVpFromWells(model_general->getBlockedWells(),
+    VsVpFromWells(model_general->getBlockedWells(), //H Change to well and not blocked well? Used to be in WellData and check with nd_ elements.
                   common_data,
                   i_interval,
                   vsvp,

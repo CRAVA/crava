@@ -771,6 +771,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     std::vector<float> rank_corr(n_wells);
     std::vector<float> dev_angle(n_wells);
 
+    std::vector<std::string> well_names(n_wells);
+
     std::vector<std::vector<int> > facies_count(n_wells);
     for (int i = 0; i < n_wells; i++) {
       facies_count[i].resize(n_facies);
@@ -839,7 +841,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         bool facies_ok_tmp                  = false;
         for (size_t j = 0; j < facies_log.size(); j++) {
           if (facies_log[j] != IMISSING) {
-            for (size_t k = 0; k < n_facies; k++) {
+            for (int k = 0; k < n_facies; k++) {
               if (facies_nr[k] == facies_log[j]) {
                 facies_ok_tmp = true;
                 break;
@@ -866,6 +868,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
       }
 
+      well_names.push_back(new_well.GetWellName());
+
       if (read_ok == false) {
         err_text += "Well format of file " + well_file_name + " not recognized.\n";
       }
@@ -873,7 +877,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
 
         valid_index[i] = true;
         SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[i], n_invalid_vs[i], n_invalid_rho[i]);
-        //wells[i]->filterLogs(); //H Moved to BlockedLogsCommon. Move to CommonData?
+        FilterLogs(new_well, model_settings);
         LookForSyntheticVsLog(new_well, model_settings, rank_corr[i]);
         CalculateDeviation(new_well, model_settings, dev_angle[i], estimation_simbox);
 
@@ -896,10 +900,6 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     if (model_settings->getFaciesLogGiven() && err_text == "")
       SetFaciesNamesFromWells(model_settings, err_text);
 
-    //Update n_wells
-    n_wells = wells_.size();
-    model_settings->setNumberOfWells(n_wells);
-
     //
     // Write summary.
     //
@@ -921,7 +921,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         dev_angle[i]);
       else
         LogKit::LogFormatted(LogKit::Low,"%-23s      -       -    -    -       - /     -       -  /    -\n",
-        wells_[i].GetWellName().c_str());
+        well_names[i].c_str());
     }
 
     //
@@ -944,11 +944,11 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
           float tot = 0.0;
           for (int f = 0; f < n_facies; f++)
             tot += static_cast<float>(facies_count[i][f]);
-          LogKit::LogFormatted(LogKit::Low,"%-23s ", wells_[i].GetWellName().c_str());
+          LogKit::LogFormatted(LogKit::Low,"%-23s ", well_names[i].c_str());
           for (int f = 0; f < n_facies; f++) {
             if (tot > 0) {
-              float faciesProb = static_cast<float>(facies_count[i][f])/tot;
-              LogKit::LogFormatted(LogKit::Low,"%12.4f ",faciesProb);
+              float facies_prob = static_cast<float>(facies_count[i][f])/tot;
+              LogKit::LogFormatted(LogKit::Low,"%12.4f ",facies_prob);
             }
             else
               LogKit::LogFormatted(LogKit::Low,"         -   ");
@@ -956,7 +956,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
           LogKit::LogFormatted(LogKit::Low,"\n");
         }
         else {
-          LogKit::LogFormatted(LogKit::Low,"%-23s ", wells_[i].GetWellName().c_str());
+          LogKit::LogFormatted(LogKit::Low,"%-23s ", well_names[i].c_str());
           for (int f = 0; f < n_facies; f++)
             LogKit::LogFormatted(LogKit::Low,"         -   ");
           LogKit::LogFormatted(LogKit::Low,"\n");
@@ -980,14 +980,14 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
           float tot = 0.0;
           for (int f = 0; f < n_facies; f++)
             tot += static_cast<float>(facies_count[i][f]);
-          LogKit::LogFormatted(LogKit::Medium,"%-23s ", wells_[i].GetWellName().c_str());
+          LogKit::LogFormatted(LogKit::Medium,"%-23s ", well_names[i].c_str());
           for (int f = 0; f < n_facies; f++) {
             LogKit::LogFormatted(LogKit::Medium,"%12d ",facies_count[i][f]);
           }
           LogKit::LogFormatted(LogKit::Medium,"\n");
         }
         else {
-          LogKit::LogFormatted(LogKit::Medium,"%-23s ", wells_[i].GetWellName().c_str());
+          LogKit::LogFormatted(LogKit::Medium,"%-23s ", well_names[i].c_str());
           for (int f = 0; f < n_facies; f++)
             LogKit::LogFormatted(LogKit::Medium,"         -   ");
           LogKit::LogFormatted(LogKit::Medium,"\n");
@@ -995,6 +995,11 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       }
       LogKit::LogFormatted(LogKit::Medium,"\n");
     }
+
+    //Update n_wells
+    int n_wells_all = n_wells;
+    n_wells = wells_.size();
+    model_settings->setNumberOfWells(n_wells);
 
     if (no_hit > 0)
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n", no_hit);
@@ -1020,7 +1025,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       int fc;
       for (int i = 0; i < n_facies; i++) {
         fc = 0;
-        for (int j = 0; j < n_wells; j++) {
+        for (int j = 0; j < n_wells_all; j++) {
           fc+=facies_count[j][i];
         }
         if (fc == 0) {
@@ -1405,6 +1410,358 @@ void CommonData::CountFaciesInWell(NRLib::Well            & well,
     }
   }
 }
+
+//----------------------------------------------------------------------------
+void CommonData::FilterLogs(NRLib::Well   & well,
+                            ModelSettings * model_settings)
+{
+  float max_hz_background = model_settings->getMaxHzBackground();
+  float max_hz_seismic    = model_settings->getMaxHzSeismic();
+
+  int n_data = well.GetNData();
+
+  std::vector<double> vp_interpolated(n_data);
+  std::vector<double> vs_interpolated(n_data);
+  std::vector<double> rho_interpolated(n_data);
+
+  std::vector<double> vp_resampled(n_data);
+  std::vector<double> vs_resampled(n_data);
+  std::vector<double> rho_resampled(n_data);
+
+  std::vector<double> vp_filtered(n_data);
+  std::vector<double> vs_filtered(n_data);
+  std::vector<double> rho_filtered(n_data);
+
+  std::vector<double> time_resampled(n_data);
+  double dt = 0.0;
+
+  std::vector<double> vp_background_resolution(n_data,  RMISSING);
+  std::vector<double> vs_background_resolution(n_data,  RMISSING);
+  std::vector<double> rho_background_resolution(n_data, RMISSING);
+
+  std::vector<double> vp_seismic_resolution(n_data,  RMISSING);
+  std::vector<double> vs_seismic_resolution(n_data,  RMISSING);
+  std::vector<double> rho_seismic_resolution(n_data, RMISSING);
+
+  const std::vector<double> & vp  = well.GetContLog("Vp"); //_raw_logs  = GetVpRawLogs();
+  const std::vector<double> & vs  = well.GetContLog("Vs");
+  const std::vector<double> & rho = well.GetContLog("Rho");
+
+  const std::vector<double> & z_pos = well.GetContLog("Z_pos");
+  //
+  // Time
+  //
+  bool filtered = ResampleTime(time_resampled, z_pos, n_data, dt); //False if well not monotonous in time.
+
+  if (filtered) {
+    //
+    // Vp
+    //
+    ResampleLog(vp_resampled, vp, z_pos, time_resampled, n_data, dt);         // May generate missing values
+    InterpolateLog(vp_interpolated, vp_resampled, n_data);                    // Interpolate missing values
+
+    ApplyFilter(vp_filtered, vp_interpolated, n_data, dt, max_hz_background);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(vp_background_resolution, vp_resampled, n_data);
+
+    ApplyFilter(vp_filtered, vp_interpolated, n_data, dt, max_hz_seismic);
+    ResampleLog(vp_resampled, vp_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(vp_seismic_resolution, vp_resampled, n_data);
+
+    //
+    // Vs
+    //
+    ResampleLog(vs_resampled, vs, z_pos, time_resampled, n_data, dt);
+    InterpolateLog(vs_interpolated, vs_resampled, n_data);
+
+    ApplyFilter(vs_filtered, vs_interpolated, n_data, dt, max_hz_background);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(vs_background_resolution, vs_resampled, n_data);
+
+    ApplyFilter(vs_filtered, vs_interpolated, n_data, dt, max_hz_seismic);
+    ResampleLog(vs_resampled, vs_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(vs_seismic_resolution, vs_resampled, n_data);
+
+    //
+    // Rho
+    //
+    ResampleLog(rho_resampled, rho, z_pos, time_resampled, n_data, dt);
+    InterpolateLog(rho_interpolated, rho_resampled, n_data);
+
+    ApplyFilter(rho_filtered, rho_interpolated, n_data, dt, max_hz_background);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(rho_background_resolution, rho_resampled, n_data);
+
+    ApplyFilter(rho_filtered, rho_interpolated, n_data, dt, max_hz_seismic);
+    ResampleLog(rho_resampled, rho_filtered, time_resampled, z_pos, n_data, dt);
+    InterpolateLog(rho_seismic_resolution, rho_resampled, n_data);
+  }
+
+  well.AddContLogSeismicResolution("Vp",  vp_seismic_resolution);
+  well.AddContLogSeismicResolution("Vs",  vs_seismic_resolution);
+  well.AddContLogSeismicResolution("Rho", rho_seismic_resolution);
+
+  well.AddContLogBackgroundResolution("Vp",  vp_background_resolution);
+  well.AddContLogBackgroundResolution("Vs",  vs_background_resolution);
+  well.AddContLogBackgroundResolution("Rho", rho_background_resolution);
+
+}
+
+//----------------------------------------------------------------------------
+bool CommonData::ResampleTime(std::vector<double>       & time_resampled,
+                              const std::vector<double> & z_pos,
+                              int                         nd,
+                              double                    & dt) {
+  //Only resample if monotonous increasing in time.
+  double time_begin = z_pos[0];
+  double time_end   = z_pos[nd - 1];
+  bool   monotonous = true;
+  for (int i = 1 ; (i < nd && monotonous == true); i++)
+    if (z_pos[i] < z_pos[i-1])
+      monotonous = false;
+
+  if (monotonous == false)
+    return(false);
+
+  //
+  // Make new time scale with constant sampling density
+  //
+
+  if (time_begin != RMISSING && time_end != RMISSING) {
+    dt = (time_end - time_begin)/(nd - 1);            // average sampling density
+    for (int i = 0; i < nd; i++)
+      time_resampled[i] = time_begin + i*dt;
+  }
+  else {
+    LogKit::LogFormatted(LogKit::Warning,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
+    LogKit::LogFormatted(LogKit::Warning,"         time[first] = %12.2f\n",time_begin);
+    LogKit::LogFormatted(LogKit::Warning,"         time[last]  = %12.2f\n",time_end);
+    return(false);
+  }
+
+  return(true);
+
+  //printf("i time[i] dt  time_resampled[i] dt   %d  %7.3f         %7.3f\n",0,time[0],time_resampled[0]);
+  //for (unsigned int i = 1 ; i < nd ; i++)
+  //{
+  //  printf("i time[i] dt  time_resampled[i] dt   %d  %7.3f %.3f   %7.3f %.3f\n",i,time[i],time[i]-time[i-1],time_resampled[i],dt);
+  //}
+}
+
+//----------------------------------------------------------------------------
+void CommonData::ResampleLog(std::vector<double>       & log_resampled,
+                             const std::vector<double> & log,
+                             const std::vector<double> & time,
+                             const std::vector<double> & time_resampled,
+                             int                         nd,
+                             double                      dt) {
+  bool resample_log = true;
+
+  if (!resample_log) {
+    for (int i = 0; i < nd; i++) {
+      log_resampled[i] = log[i];
+    }
+  }
+
+  //
+  // Initialise as undefined
+  //
+  for (int i = 0 ; i < nd ; i++) {
+    log_resampled[i] = RMISSING;
+  }
+
+  //
+  // Set end points equal to original log. Set the rest undefined
+  //
+  log_resampled[0]    = log[0];
+  log_resampled[nd-1] = log[nd-1];
+
+  //
+  // Paals first-shot interpolation...
+  //
+  // Aritmethic mean of raw values in interval (i-0.5)*dt < t < (i+0.5)*dt
+  //
+  int j = 0;
+  while (time[j] < time_resampled[1] - 0.5*dt) // Find starting position
+    j++;
+
+  for (int i = 1; i < nd - 1; i++) { // End points are already set
+    // Start gathering values
+    double       value = 0.0;
+    unsigned int count = 0;
+
+    while ((time[j] < time_resampled[i] + 0.5*dt) && (j<nd-1)) {
+      if (log[j] != RMISSING) {
+        value += log[j];
+        count++;
+        //printf("i j value   %d %d  %7.3f\n",i,j,value);
+
+      }
+      j++;
+    }
+    if (count > 0)
+      log_resampled[i] = value/count;
+  }
+
+  //for (unsigned int i = 0 ; i < nd ; i++)
+  //{
+  //  printf("i log[i] log_resampled[i]    %d  %7.3f   %7.3f\n",i,log[i],log_resampled[i]);
+  //}
+}
+
+//----------------------------------------------------------------------------
+void CommonData::InterpolateLog(std::vector<double>       & log_interpolated,
+                                const std::vector<double> & log_resampled,
+                                int                         nd) {
+  int i;
+  for (i = 0; i < nd; i++) {
+    log_interpolated[i] = log_resampled[i];
+  }
+
+  // Skip leading RMISSING
+
+  i = 0;
+  while (i < nd && log_resampled[i] == RMISSING)
+    i++;
+
+  // When the log has intermediate RMISSING... use linear interpolation. Skip trailing RMISSING
+
+  while (i < nd) {
+    if (log_resampled[i] == RMISSING) {
+      int last_nonmissing = i - 1;                // last defined value (e.g. ..., 2.31, -99999, -99999, ...)
+      while (i < nd && log_resampled[i] == RMISSING)  //                               ^^^^
+        i++;
+      if (i < nd) {
+        int   first_nonmissing = i;               // first defined value (e.g. ..., -99999, -99999, 2.29, ...)
+        int   j0 = last_nonmissing;               //                                                ^^^^
+        int   j1 = first_nonmissing;
+        double l0 = log_resampled[j0];
+        double l1 = log_resampled[j1];
+
+        double a = (l1 - l0)/double(j1 - j0);
+
+        for (int j = j0 + 1; j < j1; j++) {
+          log_interpolated[j] = a*(j - j0) + l0;
+        }
+      }
+    }
+    else
+      i++;
+  }
+  //for (int i=0 ; i<nd ; i++) {
+  //  printf("i log_resampled[i] log_interpolated[i]  %d  %.3f  %.3f\n",i,log_resampled[i],log_interpolated[i]);
+  //}
+}
+
+//----------------------------------------------------------------------------
+void CommonData::ApplyFilter(std::vector<double> & log_filtered,
+                             std::vector<double> & log_interpolated,
+                             int                   n_time_samples,
+                             double                dt_milliseconds,
+                             float                 max_hz) {
+  //
+  // Extract nonmissing part of log
+  //
+  int i=0;
+  while (i < n_time_samples && log_interpolated[i] == RMISSING)
+    i++;
+  int first_nonmissing = i;
+  i = n_time_samples - 1;
+  while (i > 0 && log_interpolated[i] == RMISSING)
+    i--;
+  int last_nonmissing = i;
+  int n_time_samples_defined = last_nonmissing - first_nonmissing + 1;
+
+  for (i = 0; i < n_time_samples; i++) {            // Initialise with RMISSING
+    log_filtered[i] = RMISSING;
+  }
+
+  if (n_time_samples_defined > 0) {
+    //
+    // Setup FFT
+    //
+    int   nt  = 2*n_time_samples_defined;
+    int   cnt = nt/2 + 1;
+    int   rnt = 2*cnt;
+
+    fftw_real*    rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+    fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
+
+    for (i = 0; i < n_time_samples_defined; i++) {          // Array to filter is made symmetric
+      rAmp[i]      = static_cast<fftw_real>(log_interpolated[first_nonmissing + i]);
+      rAmp[nt-i-1] = rAmp[i];
+    }
+
+    //for (int i=0 ; i<nt ; i++) {
+    //  printf("i=%d, log_interpolated[i]=%7.4f\n",i,rAmp[i]);
+    //}
+
+    //
+    // Transform to Fourier domain
+    //
+    rfftwnd_plan p1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+    rfftwnd_one_real_to_complex(p1, rAmp, cAmp);
+    fftwnd_destroy_plan(p1);
+
+    //for (int i=0 ; i<cnt ; i++) {
+    //  printf("i=%2d, cAmp.re[i]=%11.4f  cAmp.im[i]=%11.4f\n",i,cAmp[i].re,cAmp[i].im);
+    //}
+
+    //
+    // Filter using Odd's magic vector...
+    //
+    float dt  = static_cast<float> (dt_milliseconds/1000.0); // Sampling density in seconds
+    float T   = (nt - 1)*dt;                                 // Time sample
+    float w   = 1/T;                                         // Lowest frequency that can be extracted from log
+    int   N   = int(max_hz/w + 0.5f);                        // Number of elements of Fourier vector to keep
+
+    if (cnt < N+1) {
+      LogKit::LogMessage(LogKit::Warning, "Warning: The vertical resolution is too low to allow filtering of well logs to %3.1f Hz.\n");
+    }
+
+    float * magic_vector = new float[cnt];
+    for (i = 0; ((i < N+1) && (i < cnt)); i++) {
+      magic_vector[i] = 1.0;
+    }
+    for (;i < cnt; i++) {
+      magic_vector[i] = 0.0;
+    }
+    for (i = 0; i < cnt; i++) {
+      cAmp[i].re *= magic_vector[i];
+      cAmp[i].im *= magic_vector[i];
+    }
+
+    //for (int i=0 ; i<cnt ; i++) {
+    //  printf("i=%2d, cAmp.re[i]=%11.4f  cAmp.im[i]=%11.4f\n",i,cAmp[i].re,cAmp[i].im);
+    //}
+
+    //
+    // Backtransform to time domain
+    //
+    rfftwnd_plan p2 = rfftwnd_create_plan(1, &nt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+    rfftwnd_one_complex_to_real(p2, cAmp, rAmp);
+    fftwnd_destroy_plan(p2);
+
+    float scale= float(1.0/nt);
+    for (i = 0; i < rnt; i++) {
+      rAmp[i] *= scale;
+    }
+
+    //
+    // Fill log_filtered[]
+    //
+    for (i = 0; i < n_time_samples_defined; i++) {
+      log_filtered[first_nonmissing + i] = rAmp[i];      // Fill with values where defined
+    }
+    delete [] magic_vector;
+    fftw_free(rAmp);
+
+    //for (int i=0 ; i<n_time_samples ; i++) {
+    //  printf("i log_interpolated[i] log_filtered[i]  %d  %.3f  %.3f\n",i,log_interpolated[i],log_filtered[i]);
+    //}
+  }
+}
+
 
 void CommonData::CutWell(std::string           well_file_name,
                          NRLib::Well         & well,
@@ -6602,18 +6959,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                           disc_logs_to_be_blocked,
                                           &estimation_simbox_,
                                           false,
-                                          err_text,
-                                          model_settings->getMaxHzBackground(),
-                                          model_settings->getMaxHzSeismic());
+                                          err_text);
           else
             bl_bg = new BlockedLogsCommon(&wells_[i],
                                           cont_logs_to_be_blocked,
                                           disc_logs_to_be_blocked,
                                           bg_simbox,
                                           false,
-                                          err_text,
-                                          model_settings->getMaxHzBackground(),
-                                          model_settings->getMaxHzSeismic());
+                                          err_text);
 
           mapped_bg_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells_[i].GetWellName(), bl_bg));
 

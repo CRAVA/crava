@@ -1388,7 +1388,7 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
     //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     BlockedLogsCommon * blocked_log = bg_bl.find(wells[w].GetWellName())->second;
 
-    const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground(); //H make sure HighCutBackground is created.
+    const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground();
     blocked_log->GetVerticalTrend(vp_log, vt_vp);
     blocked_log->GetBlockedGrid(velocity, velocity_log);
     blocked_log->GetVerticalTrend(velocity_log, vt_velocity);
@@ -1422,28 +1422,28 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
 //---------------------------------------------------------------------------
 void
 Background::calculateBackgroundTrend(std::vector<double>               & trend,
-                                     std::vector<double>               & avgDev,
+                                     std::vector<double>               & avg_dev,
                                      const int                           nz,
                                      const float                         dz,
-                                     float                               logMin,
-                                     float                               logMax,
-                                     float                               maxHz,
-                                     std::vector<std::vector<double> > & wellTrend,
-                                     std::vector<std::vector<double> > & highCutWellTrend,
+                                     float                               log_min,
+                                     float                               log_max,
+                                     float                               max_hz,
+                                     std::vector<std::vector<double> > & well_trend,
+                                     std::vector<std::vector<double> > & high_cut_well_trend,
                                      const std::string                 & name)
 {
 
-  calculateVerticalTrend(wellTrend,
+  calculateVerticalTrend(well_trend,
                          trend,
-                         logMin,
-                         logMax,
-                         maxHz,
+                         log_min,
+                         log_max,
+                         max_hz,
                          nz,
                          dz,
                          name);
 
 
-  calculateDeviationFromVerticalTrend(highCutWellTrend, trend, avgDev, nz);
+  calculateDeviationFromVerticalTrend(high_cut_well_trend, trend, avg_dev, nz);
 
 
 }
@@ -1538,9 +1538,9 @@ Background::getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>     & bloc
   for (int w = 0; w < n_wells; w++) {
     if (blocked_logs[w] != NULL) {
 
-      std::vector<double> bl_vp_high_cut  = blocked_logs[w]->GetVpHighCutBackground();
-      std::vector<double> bl_vs_high_cut  = blocked_logs[w]->GetVsHighCutBackground();
-      std::vector<double> bl_rho_high_cut = blocked_logs[w]->GetRhoHighCutBackground();
+      const std::vector<double> & bl_vp_high_cut  = blocked_logs[w]->GetVpHighCutBackground();
+      const std::vector<double> & bl_vs_high_cut  = blocked_logs[w]->GetVsHighCutBackground();
+      const std::vector<double> & bl_rho_high_cut = blocked_logs[w]->GetRhoHighCutBackground();
 
       std::vector<double> bl_vp_copy(max_blocks);
       std::vector<double> bl_vs_copy(max_blocks);
@@ -1975,9 +1975,9 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>               & krigin
         kriging_data_rho[k].addData(i, j, static_cast<float>(bl_rho_well[m]));
       }
 
-      forLogging.addData(&bl_vp_well[0], &bl_vs_well[0], &bl_rho_well[0],
-        &ipos_well[0],&jpos_well[0],&kpos_well[0],
-        n_blocks[w]);
+      forLogging.addData(bl_vp_well, bl_vs_well, bl_rho_well,
+                         ipos_well, jpos_well, kpos_well,
+                         n_blocks[w]);
     }
 
     for (int k=0 ; k<nz ; k++) {
@@ -2203,17 +2203,11 @@ Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend
 
   //Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend, nz);
 
-  BlockedLogsCommon::ApplyFilter(filtered_log,
-                                 trend,
-                                 nz,
-                                 dz,
-                                 maxHz);
-
-  //WellData::applyFilter(filtered_log,
-  //                      trend,
-  //                      nz,
-  //                      dz,
-  //                      maxHz);
+  CommonData::ApplyFilter(filtered_log,
+                          trend,
+                          nz,
+                          dz,
+                          maxHz);
 
   for (int i=0 ; i<nz ; i++) {
     trend[i] = filtered_log[i];

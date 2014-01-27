@@ -124,6 +124,18 @@ Well::AddContLog(const std::string& name, const std::vector<double>& log)
   cont_log_[name] = log;
 }
 
+void
+Well::AddContLogSeismicResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_seismic_resolution_[name] = log;
+}
+
+void
+Well::AddContLogBackgroundResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_background_resolution_[name] = log;
+}
+
 
 bool Well::HasDiscLog(const std::string& name) const{
   std::map<std::string, std::vector<int> >::const_iterator it = disc_log_.find(name);
@@ -154,11 +166,43 @@ Well::GetContLog(const std::string& name)
   return item->second;
 }
 
+std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_background_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
 
 const std::vector<double>&
 Well::GetContLog(const std::string& name) const
 {
   std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_background_resolution_.find(name);
   assert(item != cont_log_.end());
   return item->second;
 }
