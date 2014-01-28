@@ -1385,7 +1385,6 @@ Background::calculateVelocityDeviations(NRLib::Grid<double>                     
     trend_vel[k]=0.0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     BlockedLogsCommon * blocked_log = bg_bl.find(wells[w].GetWellName())->second;
 
     const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground();
@@ -1468,21 +1467,20 @@ Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl
   int max_blocks = 0;
   tot_blocks     = 0;
 
-  for (int w = 0 ; w < n_wells ; w++) {
+  for (int w = 0; w < n_wells; w++) {
     n_blocks[w] = bg_blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
     tot_blocks += n_blocks[w];
     if (n_blocks[w] > max_blocks)
       max_blocks = n_blocks[w];
   }
 
-  for (int i=0; i<n_wells; i++) {
-    bl_vp[i] = std::vector<double>(max_blocks);
-    bl_vs[i] = std::vector<double>(max_blocks);
+  for (int i = 0; i < n_wells; i++) {
+    bl_vp[i]  = std::vector<double>(max_blocks);
+    bl_vs[i]  = std::vector<double>(max_blocks);
     bl_rho[i] = std::vector<double>(max_blocks);
   }
 
   for (int w = 0 ; w < n_wells ; w++) {
-    //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     BlockedLogsCommon * bg_blocked_log  = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     bl_vp[w]  = bg_blocked_log->GetVpHighCutBackground();
@@ -1523,7 +1521,7 @@ Background::getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>     & bloc
   int max_blocks = 0;
   tot_blocks     = 0;
 
-  for (int w = 0 ; w < n_wells ; w++) {
+  for (int w = 0; w < n_wells; w++) {
     if (blocked_logs[w] != NULL) {
       n_blocks[w] = blocked_logs[w]->GetNumberOfBlocks();
       tot_blocks += n_blocks[w];
@@ -1596,7 +1594,7 @@ Background::getWellTrends(std::vector<std::vector<double> >          & well_tren
   int n_wells = static_cast<int>(well_trend.size());
   int i_wells = 0;
 
-  for (int w = 0 ; w < n_wells ; w++) {
+  for (int w = 0; w < n_wells; w++) {
     BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     if (blocked_log->GetUseForBackgroundTrend()) {
@@ -1627,8 +1625,7 @@ Background::getWellTrends(std::vector<std::vector<double> >          & well_tren
     err_text += "available for the estimation of background trend.\n";
   }
 
-  for (int w = 0 ; w < n_wells ; w++) {
-    //BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+  for (int w = 0; w < n_wells; w++) {
     BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
     if (blocked_log != NULL) {
       high_cut_well_trend[w].resize(nz);
@@ -1664,11 +1661,11 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
 {
 
   int n_valid_wells_in_zone = 0;
-  int n_wells            = static_cast<int>(bl.size());
+  int n_wells               = static_cast<int>(bl.size());
 
   std::vector<bool> use_for_background(n_wells);
 
-  for (int w=0; w<n_wells; w++) {
+  for (int w = 0; w < n_wells; w++) {
     if (hit_zone[w] == true) {
 
       bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
@@ -1687,9 +1684,9 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
     err_text += "Invalid multizone background estimation: No well hits zone number "+NRLib::ToString(i+1)+"\n";
   }
 
-  int iWells = 0;
+  int i_wells = 0;
 
-  for (int w = 0 ;w < n_wells; w++) {
+  for (int w = 0; w < n_wells; w++) {
     if (use_for_background[w] == true) {
       if (bl[w] != NULL) {
         well_trend[w].resize(nz);
@@ -1704,14 +1701,14 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
           err_text += "ERROR in Background::getWellTrendsZone(): ";
           err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
         }
-        iWells++;
+        i_wells++;
       }
       else well_trend[w].resize(0);
     }
     else
       well_trend[w].resize(0);
   }
-  if (iWells == 0) {
+  if (i_wells == 0) {
     err_text += "\nERROR in Background::getWellTrendsZone(): There are no wells\n";
     err_text += "available for the estimation of background trend.\n";
   }
@@ -1756,9 +1753,9 @@ Background::writeTrendsToFile(std::vector<double> & trend,
                               const Simbox        * simbox,
                               bool                  write1D,
                               bool                  write3D,
-                              bool                  hasVelocityTrend,
+                              bool                  has_velocity_trend,
                               const std::string   & name,
-                              bool                  isFile)
+                              bool                  is_file)
 {
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
   const int   nz = simbox->getnz();
@@ -1767,17 +1764,16 @@ Background::writeTrendsToFile(std::vector<double> & trend,
     writeVerticalTrend(trend, dz, nz, name);
   }
 
-  if (write3D == true && !(name=="Vp" && hasVelocityTrend))
-  {
+  if (write3D == true && !(name=="Vp" && has_velocity_trend)) {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    FFTGrid * trendGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, isFile);
-    fillInVerticalTrend(trendGrid, trend);
-    FFTGrid * expTrend = copyFFTGrid(trendGrid, true, isFile);
-    delete trendGrid;
-    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
-    expTrend->writeFile(fileName, IO::PathToBackground(), simbox);
-    delete expTrend;
+    FFTGrid * trend_grid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
+    fillInVerticalTrend(trend_grid, trend);
+    FFTGrid * exp_trend = copyFFTGrid(trend_grid, true, is_file);
+    delete trend_grid;
+    std::string file_name = IO::PrefixBackground() + IO::PrefixTrend() + name;
+    exp_trend->writeFile(file_name, IO::PathToBackground(), simbox);
+    delete exp_trend;
   }
 }
 //---------------------------------------------------------------------------
@@ -1934,22 +1930,22 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>               & krigin
 
   KrigingData3D forLogging(tot_blocks);
 
-  for (int w = 0 ; w < n_wells ; w++) {
+  for (int w = 0; w < n_wells; w++) {
 
     if (vt_vp[w].size() > 0) {
-      std::vector<double> vt_vp_well = vt_vp[w];
-      std::vector<double> vt_vs_well = vt_vs[w];
+      std::vector<double> vt_vp_well  = vt_vp[w];
+      std::vector<double> vt_vs_well  = vt_vs[w];
       std::vector<double> vt_rho_well = vt_rho[w];
 
-      std::vector<double> bl_vp_well = bl_vp[w];
-      std::vector<double> bl_vs_well = bl_vs[w];
+      std::vector<double> bl_vp_well  = bl_vp[w];
+      std::vector<double> bl_vs_well  = bl_vs[w];
       std::vector<double> bl_rho_well = bl_rho[w];
 
       //
       // Kriging vertical trend (vt....) against global vertical trend (trend...)
       //
-      Kriging1D::krigVector(&vt_vp_well[0], &trend_vp[0], nz, dz);
-      Kriging1D::krigVector(&vt_vs_well[0], &trend_vs[0], nz, dz);
+      Kriging1D::krigVector(&vt_vp_well[0],  &trend_vp[0],  nz, dz);
+      Kriging1D::krigVector(&vt_vs_well[0],  &trend_vs[0],  nz, dz);
       Kriging1D::krigVector(&vt_rho_well[0], &trend_rho[0], nz, dz);
       //
       // Use kriged vertical trend where original log is not defined.
@@ -1958,7 +1954,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>               & krigin
       const std::vector<int> jpos_well = jpos[w];
       const std::vector<int> kpos_well = kpos[w];
 
-      for (int m = 0 ; m < n_blocks[w] ; m++) {
+      for (int m = 0; m < n_blocks[w]; m++) {
         int i = ipos_well[m];
         int j = jpos_well[m];
         int k = kpos_well[m];
@@ -1980,7 +1976,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>               & krigin
                          n_blocks[w]);
     }
 
-    for (int k=0 ; k<nz ; k++) {
+    for (int k = 0; k < nz; k++) {
       kriging_data_vp[k].findMeanValues();
       kriging_data_vs[k].findMeanValues();
       kriging_data_rho[k].findMeanValues();
@@ -1998,8 +1994,8 @@ Background::setupKrigingData2D(std::vector<KrigingData2D>               & krigin
 //---------------------------------------------------------------------------
 const CovGrid2D &
 Background::makeCovGrid2D(const Simbox * simbox,
-                          Vario  * vario,
-                          int      debugFlag)
+                          Vario        * vario,
+                          int            debug_flag)
 {
   //
   // Pretabulate all needed covariances
@@ -2012,10 +2008,10 @@ Background::makeCovGrid2D(const Simbox * simbox,
 
   CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
 
-  if (debugFlag == 1) {
-    std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
-    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
-    cov->writeToFile(fileName);
+  if (debug_flag == 1) {
+    std::string base_name = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
+    std::string file_name = IO::makeFullFileName(IO::PathToBackground(), base_name);
+    cov->writeToFile(file_name);
   }
   return (*cov);
 }
@@ -2045,8 +2041,8 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
   //
   Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
-  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
-  float nextMonitor = monitorSize;
+  float monitor_size = std::max(1.0f, static_cast<float>(nz)*0.02f);
+  float next_monitor = monitor_size;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
@@ -2062,16 +2058,15 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
     Kriging2D::krigSurface(surface, kriging_data[k], cov_grid_2D);
 
     // Set layer in background model from surface
-    for (int j=0; j < ny; j++) {
-      for (int i=0 ; i < nx ; i++) {
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0 ; i < nx ; i++) {
         bg_grid->SetValue(i, j, k, surface(i,j));
       }
     }
 
     // Log progress
-    if (k+1 >= static_cast<int>(nextMonitor))
-    {
-      nextMonitor += monitorSize;
+    if (k+1 >= static_cast<int>(next_monitor)) {
+      next_monitor += monitor_size;
       std::cout << "^";
       fflush(stdout);
     }
@@ -2096,14 +2091,14 @@ Background::makeTrendZone(const std::vector<double> & trend,
   // Template surface to be kriged
   //
   Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
-  for (size_t k=0; k<nz; k++) {
+  for (size_t k = 0; k < nz; k++) {
 
     // Set trend for layer
     surface.Assign(trend[k]);
 
     // Set layer in background model from surface
-    for (size_t j=0 ; j<ny; j++) {
-      for (size_t i=0 ; i<nx; i++)
+    for (size_t j = 0; j < ny; j++) {
+      for (size_t i = 0; i < nx; i++)
         trend_zone(i,j,k) = float(surface(i,j));
     }
   }
@@ -2111,7 +2106,7 @@ Background::makeTrendZone(const std::vector<double> & trend,
 
 //---------------------------------------------------------------------------
 void
-Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
+Background::makeKrigedZone(const std::vector<KrigingData2D> & kriging_data,
                            const std::vector<double>        & trend,
                            StormContGrid                    & kriged_zone,
                            const CovGrid2D                  & covGrid2D) const
@@ -2128,17 +2123,17 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
   // Template surface to be kriged
   //
   Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
-  for (size_t k=0; k<nz; k++) {
+  for (size_t k = 0; k < nz; k++) {
 
     // Set trend for layer
     surface.Assign(trend[k]);
 
     // Kriging of layer
-    Kriging2D::krigSurface(surface, krigingData[k], covGrid2D);
+    Kriging2D::krigSurface(surface, kriging_data[k], covGrid2D);
 
     // Set layer in background model from surface
-    for (size_t j=0 ; j<ny; j++) {
-      for (size_t i=0 ; i<nx; i++)
+    for (size_t j = 0; j < ny; j++) {
+      for (size_t i = 0; i < nx; i++)
         kriged_zone(i,j,k) = float(surface(i,j));
     }
   }
@@ -2146,16 +2141,16 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
+Background::calculateVerticalTrend(std::vector<std::vector<double> > & well_trend,
                                    std::vector<double>               & trend,
-                                   float                               logMin,
-                                   float                               logMax,
-                                   float                               maxHz,
+                                   float                               log_min,
+                                   float                               log_max,
+                                   float                               max_hz,
                                    int                                 nz,
                                    float                               dz,
                                    const std::string                 & name)
 {
-  int     nWells       = static_cast<int>(wellTrend.size());
+  int     n_wells      = static_cast<int>(well_trend.size());
   std::vector<double> filtered_log(nz);
   int   * count        = new int[nz];
   //
@@ -2167,26 +2162,26 @@ Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend
   // first. This way we avoid strange behaviour caused by
   // deviated/horizontal wells.
   //
-  for (int k = 0 ; k < nz ; k++) {
+  for (int k = 0; k < nz; k++) {
     trend[k] = 0.0f;
     count[k] = 0;
   }
-  int iWells = 0;
-  for (int w = 0 ; w < nWells ; w++) {
-    if (wellTrend[w].size() > 0) {
-      std::vector<double> & well_trend = wellTrend[w];
+  int i_wells = 0;
+  for (int w = 0; w < n_wells; w++) {
+    if (well_trend[w].size() > 0) {
+      std::vector<double> & w_trend = well_trend[w];
 
-      for (int k = 0 ; k < nz ; k++) {
-        if (well_trend[k] != RMISSING) {
-          trend[k] += exp(well_trend[k]);
+      for (int k = 0; k < nz; k++) {
+        if (w_trend[k] != RMISSING) {
+          trend[k] += exp(w_trend[k]);
           count[k]++;
         }
       }
-      iWells++;
+      i_wells++;
     }
   }
-  if (iWells > 0) {
-    for (int k = 0 ; k < nz ; k++) {
+  if (i_wells > 0) {
+    for (int k = 0; k < nz; k++) {
       if (count[k] > 0) {
         trend[k] = trend[k]/count[k];
       }
@@ -2196,9 +2191,9 @@ Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend
   //Utils::writeVectorToFile(std::string("trend_mean_values_") + name, trend, nz);
 
   smoothTrendWithLocalLinearRegression(trend, count,
-                                       iWells, nz, dz,
-                                       logMin,
-                                       logMax,
+                                       i_wells, nz, dz,
+                                       log_min,
+                                       log_max,
                                        name);
 
   //Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend, nz);
@@ -2207,9 +2202,9 @@ Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend
                           trend,
                           nz,
                           dz,
-                          maxHz);
+                          max_hz);
 
-  for (int i=0 ; i<nz ; i++) {
+  for (int i = 0; i < nz; i++) {
     trend[i] = filtered_log[i];
   }
 
@@ -2222,12 +2217,12 @@ Background::calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend
 void
 Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
                                                  int                 * count,
-                                                 int                   iWells,
+                                                 int                   i_wells,
                                                  int                   nz,
                                                  float                 dz,
                                                  float                 min_value,
                                                  float                 max_value,
-                                                 std::string           parName)
+                                                 std::string           par_name)
 {
   bool debug = false;
   //
@@ -2259,31 +2254,31 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
   // "arbitrary" end behaviour.
   //
 
-  float fraction   = 5.0f;                      // Require minimum 5*iWells
-  int   nTimeLimit = static_cast<int>(50.0/dz); // The smaller sampling density, the more values are needed.
-  int   nLowLimit  = 10;                        // Require minimum 10
-  int   nDataMin   = std::max(nLowLimit, std::max(nTimeLimit, int(fraction * iWells)));
+  float fraction     = 5.0f;                      // Require minimum 5*iWells
+  int   n_time_limit = static_cast<int>(50.0/dz); // The smaller sampling density, the more values are needed.
+  int   n_low_limit  = 10;                        // Require minimum 10
+  int   n_data_min   = std::max(n_low_limit, std::max(n_time_limit, int(fraction * i_wells)));
 
-  bool  use_weights = true;
-  bool  errorMid    = false;
-  bool  errorHead   = false;
-  bool  errorTrail  = false;
+  bool  use_weights  = true;
+  bool  error_mid    = false;
+  bool  error_head   = false;
+  bool  error_trail  = false;
 
   //
   // Copy the average values (stored in array 'trend') to the array 'mean'.
   //
   float * mean = new float[nz];
-  for (int k = 0 ; k < nz ; k++) {
-    mean[k] = trend[k];
+  for (int k = 0; k < nz; k++) {
+    mean[k] = static_cast<float>(trend[k]);
   }
 
   //
   // Find first non-missing value
   //
-  int firstNonmissing = 0;
-  for (int k = 0 ; k < nz ; k++) {
+  int first_nonmissing = 0;
+  for (int k = 0; k < nz; k++) {
     if (trend[k] > 0.0f) {
-      firstNonmissing = k;
+      first_nonmissing = k;
       break;
     }
   }
@@ -2291,10 +2286,10 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
   //
   // Find last non-missing value
   //
-  int lastNonmissing = nz - 1;
-  for (int k = nz - 1 ; k > 0 ; k--) {
+  int last_nonmissing = nz - 1;
+  for (int k = nz - 1; k > 0; k--) {
     if (trend[k] > 0.0f) {
-      lastNonmissing = k;
+      last_nonmissing = k;
       break;
     }
   }
@@ -2303,14 +2298,14 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
   float * y = new float[nz];  // Log values
   float * w = new float[nz];  // Weights (number of data behind each avg.)
 
-  for (int k = 0 ; k < nz ; k++) {
-    int nCurDataMin = nDataMin;
-    if (k < firstNonmissing || k > lastNonmissing) {
-      nCurDataMin *= 2;
+  for (int k = 0; k < nz; k++) {
+    int n_cur_data_min = n_data_min;
+    if (k < first_nonmissing || k > last_nonmissing) {
+      n_cur_data_min *= 2;
     }
 
-    int n = 0;
-    int nData = 0;
+    int n      = 0;
+    int n_data = 0;
     if (debug)
       LogKit::LogFormatted(LogKit::Low,"k=%d\n",k);
     //
@@ -2319,8 +2314,8 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
     if (count[k] > 0) {
       w[0]   = static_cast<float>(count[k]);
       x[0]   = static_cast<float>(k);
-      y[0]   = trend[k];
-      nData += count[k];
+      y[0]   = static_cast<float>(trend[k]);
+      n_data += count[k];
       if (debug)
         LogKit::LogFormatted(LogKit::Low,"   A:t=%.2f   x[0] y[0]  %d   %.2f\n",dz*(x[0] + 0.5f),int(x[0]),y[0]);
       n++;
@@ -2331,22 +2326,22 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
     //    value. Note that the bandwidth varies
     //
     int i = 0;
-    while (nData < nCurDataMin) {
+    while (n_data < n_cur_data_min) {
       i++;
       if (k - i >= 0 && count[k - i] > 0) {
-        w[n]   = static_cast<float>(count[k - i]);
-        x[n]   = static_cast<float>(k - i);
-        y[n]   = mean [k - i];
-        nData += count[k - i];
+        w[n]    = static_cast<float>(count[k - i]);
+        x[n]    = static_cast<float>(k - i);
+        y[n]    = mean [k - i];
+        n_data += count[k - i];
         if (debug)
           LogKit::LogFormatted(LogKit::Low,"   B:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
         n++;
       }
       if (k + i < nz  && count[k + i] > 0) {
-        w[n]   = static_cast<float>(count[k + i]);
-        x[n]   = static_cast<float>(k + i);
-        y[n]   = mean [k + i];
-        nData += count[k + i];
+        w[n]    = static_cast<float>(count[k + i]);
+        x[n]    = static_cast<float>(k + i);
+        y[n]    = mean [k + i];
+        n_data += count[k + i];
         if (debug)
           LogKit::LogFormatted(LogKit::Low,"   C:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
         n++;
@@ -2360,10 +2355,10 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
     // Calculate normalised weights
     //
     if (use_weights)
-      for (i = 0 ; i < n ; i++)
-        w[i] /= nData;
+      for (i = 0; i < n; i++)
+        w[i] /= n_data;
     else
-      for (i = 0 ; i < n ; i++)
+      for (i = 0; i < n; i++)
         w[i] = 1.0f/n;
 
     //
@@ -2395,12 +2390,12 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
       if (value < min_value || value > max_value) {
         if (debug)
           LogKit::LogFormatted(LogKit::Low,"   TREND: trend[k] = %.2f\n",value);
-        if (k < firstNonmissing)
-          errorHead = true;
-        else if (k > lastNonmissing)
-          errorTrail = true;
+        if (k < first_nonmissing)
+          error_head = true;
+        else if (k > last_nonmissing)
+          error_trail = true;
         else {
-          errorMid   = true;
+          error_mid   = true;
           break;
         }
       }
@@ -2413,56 +2408,56 @@ Background::smoothTrendWithLocalLinearRegression(std::vector<double> & trend,
       LogKit::LogFormatted(LogKit::Low,"   TREND: trend[k] = %.2f        (minLog/maxLog = %.2f / %.2f)\n",exp(trend[k]),min_value,max_value);
   }
 
-  if (errorMid) {
+  if (error_mid) {
     // Big problem ...
-    LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+par_name+" using local linear\n");
     LogKit::LogFormatted(LogKit::Low,"          regression failed - trying global mean instead. Possible causes: \n");
     LogKit::LogFormatted(LogKit::Low,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
     LogKit::LogFormatted(LogKit::Low,"          2) There are too many layers in grid compared to well logs available.\n");
-    float sum = 0.0f;
-    int nData = 0;
-    for (int k = 0 ; k < nz ; k++) {
+    float sum  = 0.0f;
+    int n_data = 0;
+    for (int k = 0; k < nz; k++) {
       if (count[k] > 0) {
         if (use_weights) {
-          sum   += mean[k]*count[k];
-          nData += count[k];
+          sum    += mean[k]*count[k];
+          n_data += count[k];
           if (debug)
             LogKit::LogFormatted(LogKit::Low,"k=%d  count[k], mean[k]  nData, sum  %d  %8.3f     %d  %8.3f\n",
-                                 k,count[k],mean[k],nData,sum);
+                                 k,count[k],mean[k],n_data,sum);
         }
         else {
-          sum += mean[k];
-          nData += 1;
+          sum    += mean[k];
+          n_data += 1;
         }
       }
     }
-    float global_mean = sum/nData;
-    for (int k = 0 ; k < nz ; k++) {
+    float global_mean = sum/n_data;
+    for (int k = 0; k < nz; k++) {
       trend[k] = log(global_mean);
       if (debug)
         LogKit::LogFormatted(LogKit::Low,"   TREND: k = %d   trend[k] = %.2f\n",k,exp(trend[k]));
     }
-    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
+    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean for parameter %s = %.2f\n\n",par_name.c_str(),global_mean);
   }
   else {
-    if (errorHead) {
+    if (error_head) {
       // Fix first part of trend containing missing-values.
-      double firstValue = trend[firstNonmissing];
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
-      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(firstValue),firstNonmissing);
-      for (int k = 0 ; k < firstNonmissing ; k++) {
-        trend[k] = firstValue;
+      double first_value = trend[first_nonmissing];
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+par_name+"\' using local linear\n");
+      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",first_nonmissing-1);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(first_value),first_nonmissing);
+      for (int k = 0 ; k < first_nonmissing ; k++) {
+        trend[k] = first_value;
       }
     }
-    if (errorTrail) {
+    if (error_trail) {
       // Fix last part of trend containing missing-values.
-      double lastValue = trend[lastNonmissing];
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
-      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(lastValue),lastNonmissing);
-      for (int k = lastNonmissing + 1 ; k < nz ; k++) {
-        trend[k] = lastValue;
+      double last_value = trend[last_nonmissing];
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+par_name+" using local linear\n");
+      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",last_nonmissing+1,nz-1);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d will be used throughout this region.\n",exp(last_value),last_nonmissing);
+      for (int k = last_nonmissing + 1; k < nz; k++) {
+        trend[k] = last_value;
       }
     }
   }
@@ -2480,11 +2475,11 @@ Background::writeVerticalTrend(std::vector<double> & trend,
                                std::string           name)
 {
   float z0 = dz/2.0f;
-  std::string baseName = IO::PrefixBackground() + IO::PrefixTrend() + name + IO::SuffixAsciiIrapClassic();
-  std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
+  std::string base_name = IO::PrefixBackground() + IO::PrefixTrend() + name + IO::SuffixAsciiIrapClassic();
+  std::string file_name = IO::makeFullFileName(IO::PathToBackground(), base_name);
   std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  for (int i=0 ; i<nz ; i++) {
+  NRLib::OpenWrite(file, file_name);
+  for (int i = 0; i < nz; i++) {
     file << std::fixed
          << std::setprecision(2)
          << std::setw(8) << (z0 + i*dz)     << " "
@@ -2497,21 +2492,21 @@ Background::writeVerticalTrend(std::vector<double> & trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & wellTrend,
-                                                const std::vector<double>         & globalTrend,
+Background::calculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & well_trend,
+                                                const std::vector<double>         & global_trend,
                                                 std::vector<double>               & avg_dev,
                                                 const int                           nz)
 {
-  int nWells = static_cast<int>(wellTrend.size());
+  int n_wells = static_cast<int>(well_trend.size());
 
-  for (int w = 0 ; w < nWells ; w++) {
-    if (wellTrend[w].size() > 0) {
-      std::vector<double> & well_trend = wellTrend[w];
+  for (int w = 0; w < n_wells; w++) {
+    if (well_trend[w].size() > 0) {
+      std::vector<double> & w_trend = well_trend[w];
       double sum_dev = 0.0f;
       int count = 0;
       for (int k = 0 ; k < nz ; k++) {
-        if (well_trend[k] != RMISSING) {
-          double diff = exp(well_trend[k]) - exp(globalTrend[k]);
+        if (w_trend[k] != RMISSING) {
+          double diff = exp(w_trend[k]) - exp(global_trend[k]);
           sum_dev += diff*diff;
           count++;
         }
@@ -2534,15 +2529,14 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
                                              const std::vector<double>      & trend_vs,
                                              const std::vector<double>      & trend_rho,
                                              const std::vector<NRLib::Well> & wells,
-                                             const int                        nWells,
+                                             const int                        n_wells,
                                              const int                        nz)
 {
   double global_mean_vp  = 0.0;
   double global_mean_vs  = 0.0;
   double global_mean_rho = 0.0;
 
-  for (int k=0 ; k<nz ; k++)
-  {
+  for (int k = 0; k < nz; k++) {
     global_mean_vp  += exp(trend_vp[k]);
     global_mean_vs  += exp(trend_vs[k]);
     global_mean_rho += exp(trend_rho[k]);
@@ -2554,9 +2548,8 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
   //
   // Find the relative average deviations (mean of Vp,Vs and Rho deviations).
   //
-  double * rel_avg_dev = new double[nWells];
-  for (int i=0 ; i<nWells ; i++)
-  {
+  double * rel_avg_dev = new double[n_wells];
+  for (int i = 0; i < n_wells; i++) {
     double rel_dev_vp  = avg_dev_vp[i]/global_mean_vp;
     double rel_dev_vs  = avg_dev_vs[i]/global_mean_vs;
     double rel_dev_rho = avg_dev_rho[i]/global_mean_rho;
@@ -2566,16 +2559,13 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
   // Sort deviations to find worst well.
   //
 
-  int * index = new int[nWells];
-  for (int i=0;i<nWells;i++)
+  int * index = new int[n_wells];
+  for (int i = 0; i < n_wells; i++)
     index[i] = i;
 
-  for (int i=0 ; i<nWells ; i++)
-  {
-    for (int j=i; j<nWells ; j++)
-    {
-      if (rel_avg_dev[index[j]] > rel_avg_dev[index[i]])
-      {
+  for (int i = 0; i < n_wells; i++) {
+    for (int j = i; j < n_wells; j++) {
+      if (rel_avg_dev[index[j]] > rel_avg_dev[index[i]]) {
         int tmp = index[i];
         index[i] = index[j];
         index[j] = tmp;
@@ -2585,14 +2575,12 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
   //
   // Print results
   //
-  if (nWells > 0)
-  {
+  if (n_wells > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nSummary of average deviation from vertical trend (well with largest misfit listed first):\n\n");
     LogKit::LogFormatted(LogKit::Low,"Well                        Vp       Vs      Rho\n");
     LogKit::LogFormatted(LogKit::Low,"------------------------------------------------\n");
   }
-  for (int i=0 ; i<nWells ; i++)
-  {
+  for (int i = 0; i < n_wells; i++) {
     int ii = index[i];
     if (avg_dev_vp[ii] != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii].GetWellName().c_str(),
@@ -2600,8 +2588,7 @@ Background::writeDeviationsFromVerticalTrend(const std::vector<double>      & av
     }
   }
 
-  if (nWells == 1)
-  {
+  if (n_wells == 1) {
     LogKit::LogFormatted(LogKit::High,"\nNOTE: A deviation may be observed even with one well since the global trend is");
     LogKit::LogFormatted(LogKit::High,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
   }
@@ -2766,14 +2753,14 @@ Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
   double * b = new double[nx*ny];
 
   int ij = 0;
-  for (int j=0;j<ny;j++) {
-    for (int i=0;i<nx;i++) {
-      double dzNew = simbox_new->getdz(i,j);
-      double dzOld = simbox_old->getdz(i,j);
-      double z0New = simbox_new->getTop(i,j);
-      double z0Old = simbox_old->getTop(i,j);
-        a[ij] = dzNew/dzOld;
-      b[ij] = (z0New - z0Old)/dzOld;
+  for (int j = 0; j < ny; j++) {
+    for (int i = 0; i < nx; i++) {
+      double dz_new = simbox_new->getdz(i,j);
+      double dz_old = simbox_old->getdz(i,j);
+      double z0_new = simbox_new->getTop(i,j);
+      double z0_old = simbox_old->getTop(i,j);
+        a[ij] = dz_new/dz_old;
+      b[ij] = (z0_new - z0_old)/dz_old;
       ij++;
     }
   }
@@ -2785,13 +2772,13 @@ Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
 
   double * layer = new double[nx*ny];
 
-  for (int k=0 ; k<nz; k++) {
+  for (int k = 0; k < nz; k++) {
     //
     // Map a layer
     //
     int ij=0;
-    for (int j=0 ; j<ny; j++) {
-      for (int i=0 ; i<nx; i++) {
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0; i < nx; i++) {
         int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
         layer[ij] = p_old->GetValue(i, j, k_old);
         ij++;
@@ -2801,31 +2788,31 @@ Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
     // Smooth the layer (equal weighting of all neighbouring cells)
     //
     double value = 0.0;
-    for (int j=0 ; j<ny; j++) {
-      for (int i=0 ; i<nx; i++) {
+    for (int j = 0; j < ny; j++) {
+      for (int i = 0; i < nx; i++) {
         int n = 1;
         double sum = layer[j*nx + i];
-        if (i>1) {
+        if (i > 1) {
           sum += layer[j*nx + i - 1];
           n++;
         }
-        if (j>1) {
+        if (j > 1) {
           sum += layer[(j - 1)*nx + i];
           n++;
         }
-        if (i>1 && j>1) {
+        if (i > 1 && j > 1) {
           sum += layer[(j - 1)*nx + i - 1];
           n++;
         }
-        if (i<nx-1) {
+        if (i < nx-1) {
           sum += layer[j*nx + i + 1];
           n++;
         }
-        if (j<ny-1) {
+        if (j < ny-1) {
           sum += layer[(j + 1)*nx + i];
           n++;
         }
-        if (i<nx-1 && j<ny-1) {
+        if (i < nx-1 && j < ny-1) {
           sum += layer[(j + 1)*nx + i + 1];
           n++;
         }
@@ -2970,18 +2957,18 @@ Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
 //}
 
 FFTGrid *
-Background::copyFFTGrid(FFTGrid   * origGrid,
-                        const bool  expTrans,
-                        const bool  fileGrid) const
+Background::copyFFTGrid(FFTGrid   * orig_grid,
+                        const bool  exp_trans,
+                        const bool  file_grid) const
 {
-  FFTGrid * newGrid;
+  FFTGrid * new_grid;
 
-  if (fileGrid)
-    newGrid = new FFTFileGrid(static_cast<FFTFileGrid *>(origGrid), expTrans);
+  if (file_grid)
+    new_grid = new FFTFileGrid(static_cast<FFTFileGrid *>(orig_grid), exp_trans);
   else
-    newGrid = new FFTGrid(origGrid, expTrans);
+    new_grid = new FFTGrid(orig_grid, exp_trans);
 
-  return (newGrid);
+  return (new_grid);
 }
 
 //---------------------------------------------------------------------------
@@ -3006,8 +2993,8 @@ Background::ErodeSurface(Surface       *& surface,
   double z_priority;
 
   double missing = surface->GetMissingValue();
-  for (int i=0; i<nx; i++) {
-    for (int j=0; j<ny; j++) {
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
       simbox->getXYCoord(i,j,x,y);
 
       z_priority = priority_surface->GetZ(x,y);
