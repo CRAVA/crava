@@ -94,15 +94,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
-  //H-TEST
-  //MultiIntervalGrid::EstimateZPaddingSize(&estimation_simbox_, model_settings);
-
-  //H-TEST for test_cast 15: Cholesky error in wavelet3D
-  //estimation_simbox_ = multiple_interval_grid_->GetIntervalSimbox(0);
-  //estimation_simbox_.SetNXpad(315);
-  //estimation_simbox_.SetNYpad(105);
-  //estimation_simbox_.SetNZpad(224);
-
   // 7. Wavelet Handling
   wavelet_handling_ = WaveletHandling(model_settings, input_files, err_text);
 
@@ -754,6 +745,10 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
   }
 
   int n_wells  = model_settings->getNumberOfWells();
+
+  if (n_wells == 0)
+    return true;
+
   int n_facies = facies_names_.size();
   try {
     if (n_wells > 0)
@@ -1590,7 +1585,7 @@ void CommonData::ResampleLog(std::vector<double>       & log_resampled,
     double       value = 0.0;
     unsigned int count = 0;
 
-    while ((time[j] < time_resampled[i] + 0.5*dt) && (j<nd-1)) {
+    while ((time[j] < time_resampled[i] + 0.5*dt) && (j < nd-1)) {
       if (log[j] != RMISSING) {
         value += log[j];
         count++;

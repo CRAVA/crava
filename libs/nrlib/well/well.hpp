@@ -132,8 +132,8 @@ namespace NRLib {
     /// Return length of log with name logname
     size_t GetContLogLength(const std::string& logname) const;
     /// Return all continuous logs
-    const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
-    const std::map<std::string,std::vector<double> > & GetContLogSeismicResolution() const { return cont_log_seismic_resolution_; };
+    const std::map<std::string,std::vector<double> > & GetContLog()                     const { return cont_log_; };
+    const std::map<std::string,std::vector<double> > & GetContLogSeismicResolution()    const { return cont_log_seismic_resolution_; };
     const std::map<std::string,std::vector<double> > & GetContLogBackgroundResolution() const { return cont_log_background_resolution_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };

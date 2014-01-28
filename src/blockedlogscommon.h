@@ -93,10 +93,6 @@ public:
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoSeismicResolution(void) const { return cont_logs_seismic_resolution_.find("Rho")->second               ;}
 
-  //const std::vector<double>            & GetVpBackgroundResolution(void)  const { return cont_logs_background_resolution_.find("Vp")->second          ;}
-  //const std::vector<double>            & GetVsBackgroundResolution(void)  const { return cont_logs_background_resolution_.find("Vs")->second          ;}
-  //const std::vector<double>            & GetRhoBackgroundResolution(void) const { return cont_logs_background_resolution_.find("Rho")->second         ;}
-
   const std::vector<double>            & GetVpHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoHighCutBackground(void) const { return cont_logs_highcut_background_.find("Rho")->second               ;}
@@ -239,13 +235,6 @@ public:
                                                           int         n_facies,
                                                           int         block_index);
 
-  //void                                   FilterLogs(float max_hz_background,
-  //                                                  float max_hz_seismic);
-
-  //void                                   CreateHighCutBackground(std::vector<int> b_ind);
-
-  //void                                   CreateHighCutSeismic(std::vector<int> b_ind);
-
   void                                   WriteWell(int                      formats,
                                                    float                    max_hz_background,
                                                    float                    max_hz_seismic,
@@ -255,7 +244,6 @@ public:
   void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
                                                                   int                     n_angles,
                                                                   std::vector<Wavelet *> & wavelet,
-                                                                  //Wavelet **              wavelet,
                                                                   int                     nz,
                                                                   int                     nzp,
                                                                   const Simbox          * timeSimbox);
@@ -274,12 +262,6 @@ public:
                                                       const NRLib::Surface<double> & bot,
                                                       double                         mean_vs_vp,
                                                       int                            n_vs_vp);
-
-  //static void                            ApplyFilter(std::vector<double> & log_filtered,
-  //                                                   std::vector<double> & log_interpolated,
-  //                                                   int                   n_time_samples,
-  //                                                   double                dt_milliseconds,
-  //                                                   float                 max_hz);
 
 private:
 
@@ -439,21 +421,6 @@ private:
                                   double       dzVt,
                                   int          nz);
 
-  //bool    ResampleTime(std::vector<double> & time_resampled,
-  //                     int                   nd,
-  //                     double              & dt);
-
-  //void    ResampleLog(std::vector<double>       & log_resampled,
-  //                    const std::vector<double> & log,
-  //                    const std::vector<double> & time,
-  //                    const std::vector<double> & time_resampled,
-  //                    int                         nd,
-  //                    double                      dt);
-
-  //void    InterpolateLog(std::vector<double>       & log_interpolated,
-  //                       const std::vector<double> & log_resampled,
-  //                       int                         nd);
-
   void    WriteRMSWell(float                    max_hz_background,
                        float                    max_hz_seismic,
                        std::vector<std::string> facies_name,
@@ -494,16 +461,8 @@ private:
   std::map<std::string, std::vector<int> >    discrete_logs_blocked_;           // Map between variable name and blocked discrete log
 
   std::map<std::string, std::vector<double> > cont_logs_seismic_resolution_;    // Continuous logs filtered to resolution of inversion result
-  std::map<std::string, std::vector<int> >    disc_logs_seismic_resolution_;    // Discrete logs filtered to resolution of inversion result
-
-  //std::map<std::string, std::vector<double> > cont_logs_background_resolution_; // Map between variable name and blocked continuous log
-  //std::map<std::string, std::vector<int> >    disc_logs_background_resolution_; // Map between variable name and blocked discrete log
-
   std::map<std::string, std::vector<double> > cont_logs_highcut_background_;    // Continuous logs high-cut filtered to background resolution (log-domain)
-  //std::map<std::string, std::vector<int> >    disc_logs_highcut_background_;    // Discrete logs high-cut filtered to background resolution (log-domain)
-
   std::map<std::string, std::vector<double> > cont_logs_highcut_seismic_;       // Continuous logs high-cut filtered to approx. seismic resolution (log-domain)
-  //std::map<std::string, std::vector<int> >    disc_logs_highcut_seismic_;       // Discrete logs high-cut filtered to approx. seismic resolution (log-domain)
 
   std::vector<std::vector<double> >           actual_synt_seismic_data_;        ///< Forward modelled seismic data using local wavelet
   std::vector<std::vector<double> >           well_synt_seismic_data_;          ///< Forward modelled seismic data using wavelet estimated in well
