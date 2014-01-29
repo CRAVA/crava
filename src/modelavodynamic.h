@@ -216,11 +216,17 @@ private:
   //                                      std::string & errText);
   //double           vsvpFromWells(const std::vector<WellData *> & wells,
   //                               int                     nWells);
-  void             VsVpFromWells(const std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                 CommonData                                     * common_data,
-                                 int                                              i_interval,
-                                 double                                         & vsvp,
-                                 int                                            & N);
+  void             VsVpFromWells(CommonData * common_data,
+                                 int          i_interval,
+                                 double     & vsvp,
+                                 int        & N);
+
+  void             FindMeanVsVp(const NRLib::Well            & well,
+                                const NRLib::Surface<double> & top,
+                                const NRLib::Surface<double> & bot,
+                                double                       & mean_vs_vp,
+                                int                          & n_vs_vp);
+
   //void             readAndWriteLocalGridsToFile(const std::string   & fileName,
   //                                              const std::string   & type,
   //                                              const float           scaleFactor,
@@ -234,10 +240,12 @@ private:
   //void             resampleGrid2DToSurface(const Simbox  * simbox,
   //                                         const Grid2D  * grid,
   //                                         Surface      *& surface);
+
   bool             FindTimeGradientSurface(const std::string     & refTimeFile,
                                            const Simbox          * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
+
   //void             computeStructureDepthGradient(double                 v0,
   //                                               double                 radius,
   //                                               const Simbox         * timeSimbox,
