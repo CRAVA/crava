@@ -111,40 +111,45 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 }
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
-                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
-                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
-                                     const Simbox                     * const estimation_simbox,
-                                     bool                               interpolate,
-                                     std::string                      & err_text) {
-  n_angles_ = 0;
-  well_name_ = well_data->GetWellName();
-  n_layers_ = estimation_simbox->getnz();
-  n_blocks_ = 0;
-  interpolate_ = interpolate;
-
-  bool failed = false;
-
-  // Missing data are removed upon construction of a well_data object, whereas
-  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
-                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
-  if(failed)
-    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
-
-  if (!failed)
-    BlockWell(estimation_simbox, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
-
-  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-  n_discrete_logs_ = static_cast<int>(discrete_logs_blocked_.size());
-}
+//BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data, //H-Removed: It is now similar to the first one, except for constant well.
+//                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
+//                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
+//                                     const Simbox                     * const estimation_simbox,
+//                                     bool                               interpolate,
+//                                     std::string                      & err_text) {
+//  n_angles_           = 0;
+//  well_name_          = well_data->GetWellName();
+//  n_layers_           = estimation_simbox->getnz();
+//  n_blocks_           = 0;
+//  interpolate_        = interpolate;
+//  facies_log_defined_ = false;
+//
+//  bool failed = false;
+//
+//  // FACIES
+//  if (well_data->HasFaciesLog()) {
+//    facies_log_defined_ = true;
+//    facies_map_ = well_data->GetFaciesMap();
+//  }
+//
+//  // Missing data are removed upon construction of a well_data object, whereas
+//  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
+//  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
+//                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
+//                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+//  if(failed)
+//    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+//
+//  if (!failed)
+//    BlockWell(estimation_simbox, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
+//              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
+//
+//  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
+//  n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
+//}
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
-                                     const StormContGrid & stormgrid,
-                                     float                 max_hz_background,
-                                     float                 max_hz_seismic)
+                                     const StormContGrid & stormgrid)
 : first_M_(IMISSING),
   last_M_(IMISSING)
 {

@@ -185,8 +185,7 @@ CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
 
     for(int grid_number=0; grid_number<n_trend_cubes_; grid_number++) {
 
-      NRLib::Grid<double> * trend_cube = NULL;
-      trend_cube->Resize(nx, ny, nz, 0.0);
+      NRLib::Grid<double> * trend_cube = new NRLib::Grid<double>(nx, ny, nz, 0.0);
 
       // 1 Trend cube from file ------------------------------------------------
       if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {

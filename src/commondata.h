@@ -38,6 +38,7 @@ public:
   const Simbox                            & GetEstimationSimbox()               const { return estimation_simbox_      ;}
   const NRLib::Volume                     & GetFullInversionVolume()            const { return full_inversion_volume_  ;}
   const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
+        std::vector<NRLib::Well>          & GetWells()                                { return wells_                  ;}
   const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
   MultiIntervalGrid                       * GetMultipleIntervalGrid(void)             { return multiple_interval_grid_ ;}
   const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
@@ -624,7 +625,7 @@ private:
                              const std::vector<std::string>                               & facies_names,
                              const std::vector<CravaTrend>                                & trend_cubes,
                              const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
-                             const std::vector<std::vector<NRLib::Grid<double> > >        & background,
+                             const std::vector<std::vector<NRLib::Grid<double> *> >       & background,
                              std::string                                                  & err_text);
 
   void  CalculateCorrelationsFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,

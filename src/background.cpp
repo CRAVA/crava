@@ -1480,7 +1480,7 @@ Background::getKrigingWellTrends(std::vector<std::vector<double> >          & bl
     bl_rho[i] = std::vector<double>(max_blocks);
   }
 
-  for (int w = 0 ; w < n_wells ; w++) {
+  for (int w = 0; w < n_wells; w++) {
     BlockedLogsCommon * bg_blocked_log  = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     bl_vp[w]  = bg_blocked_log->GetVpHighCutBackground();
@@ -1668,7 +1668,7 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
   for (int w = 0; w < n_wells; w++) {
     if (hit_zone[w] == true) {
 
-      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone, model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
+      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone); //model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
       n_valid_wells_in_zone++;
     }
     else

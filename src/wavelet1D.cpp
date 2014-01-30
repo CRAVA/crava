@@ -738,11 +738,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   int         nWells                = modelSettings->getNumberOfWells();
   bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
-
-  //H-TEST
-  dz_;
-  dz_ = simbox->getdz();
-
   //Noise estimation
   fftw_real    ** cpp_r           = new fftw_real*[nWells];
   fftw_complex ** cpp_c           = reinterpret_cast<fftw_complex**>(cpp_r);

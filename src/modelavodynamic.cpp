@@ -660,6 +660,41 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
 
+
+        //H-TEST
+        //Nye blocked logs for dette intervallet
+        //BlockedLogsCommon * bl                 = NULL;
+        //std::map<std::string, BlockedLogsCommon *> mapped_bl;
+        //std::vector<NRLib::Well> & wells = common_data->GetWells();
+        //for (size_t j = 0; j < wells.size(); j++) {
+        //  bl = NULL;
+
+        //  // Get all continuous and discrete logs
+        //  std::vector<std::string> cont_logs_to_be_blocked;
+        //  std::vector<std::string> disc_logs_to_be_blocked;
+
+        //  const std::map<std::string,std::vector<double> > & cont_logs = wells[j].GetContLog();
+        //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[j].GetDiscLog();
+
+        //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+        //    cont_logs_to_be_blocked.push_back(it->first);
+        //  }
+        //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+        //    disc_logs_to_be_blocked.push_back(it->first);
+        //  }
+
+        //   bl = new BlockedLogsCommon(&wells[j],
+        //                                  cont_logs_to_be_blocked,
+        //                                  disc_logs_to_be_blocked,
+        //                                  simbox,
+        //                                  false,
+        //                                  err_text);
+
+        //  mapped_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bl));
+
+        //}
+        //End H-TEST
+
         std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
         int w = 0;
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
@@ -675,7 +710,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
         sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox,
                                                                      seis_logs,
-                                                                     mapped_blocked_logs,
+                                                                     mapped_blocked_logs, //H-TEST mapped_bl
                                                                      model_settings,
                                                                      err_text,
                                                                      error,
@@ -683,8 +718,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                      noise_scaled_tmp,
                                                                      shift_grid_tmp,
                                                                      gain_grid_tmp,
-                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i], //Just input? new value is returned?
-                                                                     wavelets_[i]->getScale(), //Just input? scale_ is updated inside?
+                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i], //Just input? new value is returned
+                                                                     wavelets_[i]->getScale(), //Just input? scale_ is updated inside
                                                                      true,   // doEstimateSNRatio
                                                                      true,   // doEstimateGlobalScale
                                                                      false,  // doEstimateLocalNoise
@@ -777,7 +812,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
   //H-DEBUGGING
-  //fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
+  fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
@@ -822,9 +857,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   // Compute variation in wavelet
   //H-DEBUGGING
-  //for (int l=0; l < number_of_angles_; l++) {
-  //  wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
-  //}
+  for (int l=0; l < number_of_angles_; l++) {
+    wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
+  }
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
   for (int l=0; l < number_of_angles_; l++) {

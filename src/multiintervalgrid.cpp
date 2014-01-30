@@ -663,7 +663,7 @@ void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<do
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
-                                             ModelSettings   * model_settings) {// const { //H-TEST
+                                             ModelSettings   * model_settings) const {
   int    nz             = simbox->getnz();
   double min_lz         = simbox->getlz()*simbox->getMinRelThick();
   double z_pad_fac      = model_settings->getZPadFac();

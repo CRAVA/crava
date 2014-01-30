@@ -139,12 +139,12 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
-  /* //H-DEBUGGING
+   //H-DEBUGGING
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
       if(read_wells_ && setup_multigrid_){
           setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetParametersAllIntervals(), err_text);
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
@@ -152,12 +152,12 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
     else{
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetParametersAllIntervals(), err_text);
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
     }
   }
   else{
     err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  }*/
+  }
 
 
   // 14. Set up TimeLine class
@@ -477,7 +477,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
 
       std::vector<SeismicStorage> seismic_data_angle;
 
-      for (int i = 0 ; i < n_angles; i++) {
+      for (int i = 0; i < n_angles; i++) {
 
         if (offset[i] < 0)
           offset[i] = model_settings->getSegyOffset(this_timelapse);
@@ -3012,7 +3012,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       //Wavelets are resampled per interval (with padding) in ModelAVODynamic
 
       //H problem: When wavelet is resampled, inFFTorder is set to true (central point moved to the start)
-      //Want to resample the wavelet to each interval in ModelAVODynamic, but you can't resample a wavelet inFFTorder with the current resample algorithm.
+      //Want to resample the wavelet to each interval in ModelAVODynamic, but you can't resample a wavelet inFFTorder (with the current resample algorithm).
       if (error == 0)
         wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
                           estimation_simbox_.getnz(),
@@ -4137,7 +4137,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   continuous_logs_to_be_blocked_.push_back("Vs");
   continuous_logs_to_be_blocked_.push_back("Rho");
   continuous_logs_to_be_blocked_.push_back("MD");
-  //continuous_logs_to_be_blocked_.push_back("TWT");
 
   // Discrete parameters that are to be used in BlockedLogs
 
@@ -4164,7 +4163,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     try{
       for (unsigned int i=0; i<wells.size(); i++){
         mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
-          new BlockedLogsCommon(&wells[i],continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
+          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
                                 model_settings->getRunFromPanel(), err_text)));
       }
     }
@@ -4486,6 +4485,13 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   // Initialize values
   std::vector<std::vector<NRLib::Grid<double> *> > trend_cubes_tmp;  //Vector(trends) vector(intervals)
   trend_cubes_tmp.resize(trend_cube_parameters.size());
+
+  for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
+    trend_cubes_tmp[i].resize(interval_names.size());
+    for (size_t j = 0; j < interval_names.size(); j++) {
+      trend_cubes_tmp[i][j] = new NRLib::Grid<double>();
+    }
+  }
 
   try{
 
@@ -6736,10 +6742,6 @@ CommonData::ReadStormFile(const std::string                  & file_name,
         err_text += std::string(e.what());
       }
 
-      if (stormgrid != NULL)
-        delete stormgrid;
-
-
       if (missing_traces_simbox > 0) { //outsideTraces
         if (missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
           err_text += "Error: Data in file \'"+file_name+"\' was completely outside the inversion area.\n";
@@ -6787,6 +6789,10 @@ CommonData::ReadStormFile(const std::string                  & file_name,
       //  }
       //}
     } //i_interval
+
+    if (stormgrid != NULL)
+      delete stormgrid;
+
   }
 }
 
@@ -6799,8 +6805,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
   std::string err_text = "";
 
   NRLib::Grid<double> * velocity = NULL;
-  std::string velocity_field = input_files->getVelocityField();
-  //velocity_from_inversion_ = false;
+  std::string velocity_field     = input_files->getVelocityField();
 
   LoadVelocity(velocity,
                &estimation_simbox_,
@@ -6815,7 +6820,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
     time_depth_mapping_ = new GridMapping();
     time_depth_mapping_->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
 
-    if (velocity->GetN() != 0) {
+    if (velocity != NULL) {
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &estimation_simbox_);
       time_depth_mapping_->setDepthSimbox(&estimation_simbox_, estimation_simbox_.getnz(),
                                         model_settings->getOutputGridFormat(),
@@ -6838,7 +6843,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
           delete velocity_fft;
       }
     }
-    else if (velocity->GetN() == 0 && velocity_from_inversion_ ==false) {
+    else if (velocity == NULL && velocity_from_inversion_ ==false) {
       time_depth_mapping_->setDepthSimbox(&estimation_simbox_,
                                           estimation_simbox_.getnz(),
                                           model_settings->getOutputGridFormat(),
@@ -6879,7 +6884,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
     if (model_settings->getGenerateBackgroundFromRockPhysics() == false) {
 
-      //NRLib::Grid<double> * velocity = NULL;
       NRLib::Grid<double> * velocity = new NRLib::Grid<double>();
       std::string back_vel_file = input_files->getBackVelFile();
       if (back_vel_file != "") {
@@ -6972,7 +6976,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid_->GetBackgroundParameters(); //interval vector(parameter)
 
           if (model_settings->getMultizoneBackground() == true)
-            Background(parameters[0], wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Not multiple intervals but multizone background model
+            Background(parameters[0], wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
           else //Neither multizone or multiinterval
             Background(parameters[0], wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings, err_text);
 
@@ -7804,7 +7808,7 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
                                        const std::vector<std::string>                               & facies_names,
                                        const std::vector<CravaTrend>                                & trend_cubes,
                                        const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
-                                       const std::vector<std::vector<NRLib::Grid<double> > >        & background,
+                                       const std::vector<std::vector<NRLib::Grid<double> *> >       & background,
                                        std::string                                                  & err_text_common){
   (void) seismic_data, facies_names, background, prior_facies_prob, mapped_blocked_logs_for_correlation, wells;
 

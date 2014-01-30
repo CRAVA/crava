@@ -75,9 +75,6 @@ public:
   void SetBackgroundVsVpRatios(std::vector<double> vs_vp_ratios)                                 { background_vs_vp_ratios_                   = vs_vp_ratios ;}
   void SetBackgroundVsVpRatio(int i_interval, double vs_vp_ratio)                                { background_vs_vp_ratios_[i_interval]       = vs_vp_ratio  ;}
 
-  static void  EstimateZPaddingSize(Simbox          * simbox,
-                             ModelSettings   * model_settings);// const;
-
 private:
 
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
@@ -138,9 +135,9 @@ private:
                                       std::vector<NRLib::Grid<double> > & rho_interval,
                                       const std::vector<Simbox>         & interval_simboxes,
                                       std::vector<double>               & relative_grid_resolution) const;
-  //H-TEST
-  //void  EstimateZPaddingSize(Simbox          * simbox,
-  //                           ModelSettings   * model_settings) const;
+
+  void  EstimateZPaddingSize(Simbox          * simbox,
+                             ModelSettings   * model_settings) const;
 
   void  LogIntervalInformation(const Simbox         & simbox,
                                const std::string    & interval_name,
