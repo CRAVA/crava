@@ -509,7 +509,6 @@ void SpatialWellFilter::doFilteringSyntWells(std::vector<SyntWellData *>        
 //}
 
 void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
-                                    //int                                        nWells,
                                     bool                                       useVpRhoFilter,
                                     int                                        nAngles,
                                     const AVOInversion                       * avoInversionResult,
@@ -549,19 +548,14 @@ void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> b
   bool no_wells_filtered = true;
   int w1 = 0;
 
-  //for(int w1=0 ; w1 < nWells ; w1++)
-  //{
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
     n = blocked_log->GetNumberOfBlocks();
 
-    //if (wells[w1]->getUseForFiltering() == true)
     if (blocked_log->GetUseForFiltering() == true)
     {
-      //LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
       LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+blocked_log->GetWellName());
       no_wells_filtered = false;
 
@@ -573,9 +567,6 @@ void SpatialWellFilter::doFiltering(std::map<std::string, BlockedLogsCommon *> b
       for(int i=0;i<3*n;i++)
         sigmapri[i] = new double[3*n];
 
-      //const int *ipos = wells[w1]->getBlockedLogsOrigThick()->getIpos();
-      //const int *jpos = wells[w1]->getBlockedLogsOrigThick()->getJpos();
-      //const int *kpos = wells[w1]->getBlockedLogsOrigThick()->getKpos();
       const std::vector<int> & ipos = blocked_log->GetIposVector();
       const std::vector<int> & jpos = blocked_log->GetJposVector();
       const std::vector<int> & kpos = blocked_log->GetKposVector();
@@ -1284,50 +1275,41 @@ void SpatialWellFilter::calculateFilteredLogs(const NRLib::Matrix & Aw,
   NRLib::Vector residuals(nLogs*n);
 
   int currentEnd = 0;
-  const std::vector<double> alpha = blockedlogs->GetVpBlocked();
-  const std::vector<double> bgAlpha = blockedlogs->GetVpHighCutBackground();
-//  const float * alpha   = blockedlogs->getAlpha();
-//  const float * bgAlpha = blockedlogs->getAlphaHighCutBackground();
-  MakeInterpolatedResiduals(alpha, bgAlpha, n, currentEnd, residuals);
+  const std::vector<double> & vp    = blockedlogs->GetVpBlocked();
+  const std::vector<double> & bg_vp = blockedlogs->GetVpHighCutBackground();
+  MakeInterpolatedResiduals(vp, bg_vp, n, currentEnd, residuals);
   currentEnd += n;
 
-  const std::vector<double> beta = blockedlogs->GetVsBlocked();
-  const std::vector<double> bgBeta = blockedlogs->GetVsHighCutBackground();
-  //const float * beta    = blockedlogs->getBeta();
-  //const float * bgBeta  = blockedlogs->getBetaHighCutBackground();
+  const std::vector<double> & vs    = blockedlogs->GetVsBlocked();
+  const std::vector<double> & bg_vs = blockedlogs->GetVsHighCutBackground();
   if(useVs == true) {
-    MakeInterpolatedResiduals(beta, bgBeta, n, currentEnd, residuals);
+    MakeInterpolatedResiduals(vs, bg_vs, n, currentEnd, residuals);
     currentEnd += n;
   }
-  const std::vector<double> rho = blockedlogs->GetRhoBlocked();
-  const std::vector<double> bgRho = blockedlogs->GetRhoHighCutBackground();
-  //const float * rho     = blockedlogs->getRho();
-  //const float * bgRho   = blockedlogs->getRhoHighCutBackground();
-  MakeInterpolatedResiduals(rho, bgRho, n, currentEnd, residuals);
+  const std::vector<double> & rho    = blockedlogs->GetRhoBlocked();
+  const std::vector<double> & bg_rho = blockedlogs->GetRhoHighCutBackground();
+  MakeInterpolatedResiduals(rho, bg_rho, n, currentEnd, residuals);
 
   NRLib::Vector filteredVal = Aw * residuals;
 
-  //float * alphaFiltered = new float[n];
-  //float * betaFiltered  = new float[n];
-  //float * rhoFiltered   = new float[n];
-  std::vector<double> alphaFiltered(n);
-  std::vector<double> betaFiltered(n);
+  std::vector<double> vpFiltered(n);
+  std::vector<double> vsFiltered(n);
   std::vector<double> rhoFiltered(n);
 
   for(int i=0;i<n;i++)
   {
     int offset = 0;
-    if(alpha[i] == RMISSING)
-      alphaFiltered[i] = 0.0;
+    if(vp[i] == RMISSING)
+      vpFiltered[i] = 0.0;
     else
-      alphaFiltered[i] = static_cast<double>(filteredVal(i+offset));
+      vpFiltered[i] = static_cast<double>(filteredVal(i+offset));
     offset += n;
 
     if(useVs == true) {
-      if(beta[i] == RMISSING)
-        betaFiltered[i] = 0.0;
+      if(vs[i] == RMISSING)
+        vsFiltered[i] = 0.0;
       else
-        betaFiltered[i] = static_cast<double>(filteredVal(i+offset));
+        vsFiltered[i] = static_cast<double>(filteredVal(i+offset));
       offset += n;
     }
 
@@ -1338,18 +1320,15 @@ void SpatialWellFilter::calculateFilteredLogs(const NRLib::Matrix & Aw,
   }
 
   if(useVs == true) {
-    blockedlogs->SetSpatialFilteredLogs(alphaFiltered, n, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
-    blockedlogs->SetSpatialFilteredLogs(betaFiltered , n, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
-    blockedlogs->SetSpatialFilteredLogs(rhoFiltered  , n, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
+    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "ALPHA_SEISMIC_RESOLUTION", bg_vp);
+    blockedlogs->SetSpatialFilteredLogs(vsFiltered,  n, "BETA_SEISMIC_RESOLUTION",  bg_vs);
+    blockedlogs->SetSpatialFilteredLogs(rhoFiltered, n, "RHO_SEISMIC_RESOLUTION",   bg_rho);
   }
   else {
-    blockedlogs->SetSpatialFilteredLogs(alphaFiltered, n, "ALPHA_FOR_FACIES",bgAlpha);
-    blockedlogs->SetSpatialFilteredLogs(rhoFiltered  , n, "RHO_FOR_FACIES"  ,bgRho);
+    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "ALPHA_FOR_FACIES", bg_vp);
+    blockedlogs->SetSpatialFilteredLogs(rhoFiltered, n, "RHO_FOR_FACIES"  , bg_rho);
   }
 
-  //delete [] alphaFiltered;
-  //delete [] betaFiltered;
-  //delete [] rhoFiltered;
 }
 
 //--------------------------------------------------------------------------

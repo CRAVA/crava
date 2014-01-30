@@ -54,23 +54,16 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   coeff_[2]   = reflCoef[2];
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
-  //theta_      = seisCube->getTheta();
   theta_      = seismic_data->GetAngle();
   //nzp_        = seisCube->getNzp();
-  //cnzp_       = nzp_/2+1;
-  //rnzp_       = 2*cnzp_;
+  nzp_        = simbox->getnz(); //H
+  cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
   cz_         = 0;
   inFFTorder_ = true;
   isReal_     = true;
   formats_    = modelSettings->getWaveletFormatFlag();
-
-  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  //nzp_ = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
-  nzp_        = seismic_data->GetNz();
-
-  cnzp_       = nzp_/2+1;
-  rnzp_       = 2*cnzp_;
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -159,9 +152,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       // Check seismic data outside estimation interval missing
       //
       if (estimInterval.size() > 0) {
-        const std::vector<double> xPos = blocked_log->GetXposBlocked();
-        const std::vector<double> yPos = blocked_log->GetYposBlocked();
-        const std::vector<double> zPos = blocked_log->GetZposBlocked();
+        const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+        const std::vector<double> & yPos = blocked_log->GetYposBlocked();
+        const std::vector<double> & zPos = blocked_log->GetZposBlocked();
         for (int k = 0 ; k < blocked_log->GetNumberOfBlocks(); k++) {
           const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
           const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
@@ -647,11 +640,6 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 //The reason why the next three variables are not taken from the class variables is that this function is called
 //before resample in Model::processWavelets. This means that at this point nz_, nzp_ and rnzp_ are not properly set.
   int nz              = simbox->getnz();
-
-  //int nzp             = seisCube->getNzp();
-  //std::vector<float> tmp_trace = seismic_data->GetTraceData(0);
-  //int nzp = tmp_trace.size(); ///H Correct? nzp_ is "size of padded FFT grid in depth (time)" All traces equal in length?
-
   int nzp             = seismic_data->GetNz();
   int rnzp            = 2*(nzp/2+1);
 
@@ -726,7 +714,6 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 
 float
 Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * simbox,
-                                           //const SeismicStorage                             * seismic_data,
                                            const std::vector<std::vector<double> >          & seis_logs,
                                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                            const ModelSettings                              * modelSettings,
@@ -751,7 +738,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   int         nWells                = modelSettings->getNumberOfWells();
   bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
-
   //Noise estimation
   fftw_real    ** cpp_r           = new fftw_real*[nWells];
   fftw_complex ** cpp_c           = reinterpret_cast<fftw_complex**>(cpp_r);
@@ -1336,6 +1322,7 @@ Wavelet1D::estimateLocalShift(const CovGrid2D                                  &
       const std::vector<double> & xPos = blocked_log->GetXposBlocked();
       const std::vector<double> & yPos = blocked_log->GetXposBlocked();
       int xInd, yInd;
+
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       shiftData.addData(xInd,yInd,shiftWell[i]);
     }

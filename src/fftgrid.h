@@ -25,7 +25,7 @@ public:
 
   FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
   FFTGrid(FFTGrid * fftGrid, bool expTrans = false);
-  FFTGrid(const NRLib::Grid<double> & grid, int nxp, int nyp, int nzp);
+  FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp);
   FFTGrid() {} //Dummy constructor needed for FFTFileGrid
   virtual ~FFTGrid();
 

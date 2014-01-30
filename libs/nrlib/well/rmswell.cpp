@@ -74,22 +74,31 @@ RMSWell::RMSWell(const std::string& filename)
     getline(file,dummy);
     std::istringstream ist(dummy);
     lognames_[i+3] = NRLib::Uppercase(ReadNext<std::string>(ist, line));
-    token = ReadNext<std::string>(ist, line);
-    if (token=="DISC") { // discrete log
-      isDiscrete_[i+3] = true;
-      std::map<int, std::string> disc;
-      while(ReadNextToken(ist,token,line)) {
-        ident = ParseType<int>(token);
-        identstr = ReadNext<std::string>(ist, line);
-        disc.insert(std::pair<int, std::string> (ident, identstr));
+
+    //token = ReadNext<std::string>(ist, line); //H Error if line only containts log-name (test_case 19).
+    ReadNextToken(ist, token, line);
+
+    if (token != "") {
+      if (token=="DISC") { // discrete log
+        isDiscrete_[i+3] = true;
+        std::map<int, std::string> disc;
+        while(ReadNextToken(ist,token,line)) {
+          ident = ParseType<int>(token);
+          identstr = ReadNext<std::string>(ist, line);
+          disc.insert(std::pair<int, std::string> (ident, identstr));
+        }
+        discnames_[lognames_[i+3]] = disc;
+        j++;
       }
-      discnames_[lognames_[i+3]] = disc;
-      j++;
+      else {
+        isDiscrete_[i+3] = false;
+        unit_[k] = token;
+        scale_[k] = ReadNext<std::string>(ist, line);
+        k++;
+      }
     }
     else {
       isDiscrete_[i+3] = false;
-      unit_[k] = token;
-      scale_[k] = ReadNext<std::string>(ist, line);
       k++;
     }
   }
@@ -99,9 +108,6 @@ RMSWell::RMSWell(const std::string& filename)
   std::vector<std::vector<int> > disclogs(ndisc);
   std::vector<std::vector<double> > contlogs(ncont);
 
-  //int legal_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
-  //double dummy_z = WELLMISSING;
-
   int count = 0;
 
   while(NRLib::CheckEndOfFile(file)==false && getline(file,dummy)) {
@@ -110,29 +116,21 @@ RMSWell::RMSWell(const std::string& filename)
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y
     contlogs[2].push_back(ReadNext<double>(ist, line)); //z
-    //dummy_z = ReadNext<double>(ist, line);
-    //contlogs[2].push_back(dummy_z); //z
-
-    //if(dummy_z != WELLMISSING)
-    //  legal_data++;
 
     j = 0;
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
-        //H problem with ReadNext<int> and facies on the form -9.9900000e+002. Add in solution from WellData::readRMSWell.
-        double dummy = ReadNext<double>(ist, line);
+        double dummy = ReadNext<double>(ist, line); //H Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
         if(dummy != WELLMISSING)
           disclogs[j].push_back(static_cast<int>(dummy));
         else
           disclogs[j].push_back(IMISSING);
 
-        //disclogs[j].push_back(ReadNext<int>(ist, line));
-        j++;
+         j++;
       }
       else {
         contlogs[k].push_back(ReadNext<double>(ist, line));
-        //if(k==3 && contlogs[k]!= WELLMISSING)
         k++;
       }
     }
@@ -154,11 +152,9 @@ RMSWell::RMSWell(const std::string& filename)
    }
   }
 
-  // find n_data including WELLMISSING values
+  // Find n_data including WELLMISSING values
   unsigned int n_data = GetContLog("TWT").size();
   this->SetNumberOfData(n_data);
-  //this->SetNumberOfLegalData(legal_data);
-
 }
 
 

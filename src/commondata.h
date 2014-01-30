@@ -24,7 +24,6 @@ class MultiIntervalGrid;
 class CravaTrend;
 class BlockedLogsCommon;
 
-
 class CommonData{
 public:
   CommonData(ModelSettings                            * model_settings,
@@ -39,6 +38,7 @@ public:
   const Simbox                            & GetEstimationSimbox()               const { return estimation_simbox_      ;}
   const NRLib::Volume                     & GetFullInversionVolume()            const { return full_inversion_volume_  ;}
   const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
+        std::vector<NRLib::Well>          & GetWells()                                { return wells_                  ;}
   const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
   MultiIntervalGrid                       * GetMultipleIntervalGrid(void)             { return multiple_interval_grid_ ;}
   const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
@@ -50,7 +50,7 @@ public:
 
   TimeLine                               * GetTimeLine()                        { return time_line_       ;}
   const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
-  const std::vector<int>                 & GetFaciesLabels()              const { return facies_labels_   ;}
+  const std::vector<int>                 & GetFaciesNr()                  const { return facies_nr_       ;}
   const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
   const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
@@ -96,7 +96,7 @@ public:
                                      int                    number_of_angles,
                                      int                    this_time_lapse);
 
-  void FillInData(NRLib::Grid<double> & grid,
+  void FillInData(NRLib::Grid<double> * grid,
                   FFTGrid             * fft_grid_new,
                   const Simbox        & simbox,
                   StormContGrid       * storm_grid,
@@ -115,6 +115,12 @@ public:
                                 float         & corr_grad_J,
                                 const Simbox  * simbox) const;
 
+  static   void ApplyFilter(std::vector<double> & log_filtered,
+                   std::vector<double> & log_interpolated,
+                   int                   n_time_samples,
+                   double                dt_milliseconds,
+                   float                 max_hz);
+
 private:
 
   void LoadWellMoveInterval(const InputFiles             * input_files,
@@ -131,16 +137,22 @@ private:
                               std::map<int, float **>                       & reflection_matrix,
                               std::string                                   & err_text);
 
-  void MoveWell(const NRLib::Well & well,
-                const Simbox      * simbox,
-                double              delta_X,
-                double              delta_Y,
-                double              k_move);
+  void MoveWell( NRLib::Well & well,
+                const Simbox * simbox,
+                double         delta_X,
+                double         delta_Y,
+                double         k_move);
 
-  void  CalculateDeviation(NRLib::Well            & new_well,
-                           const ModelSettings    * const model_settings,
-                           float                  & dev_angle,
-                           Simbox                 * simbox);
+  void  CalculateDeviation(NRLib::Well         & new_well,
+                           const ModelSettings * const model_settings,
+                           float               & dev_angle,
+                           Simbox              * simbox);
+
+  void CountFaciesInWell(NRLib::Well            & well,
+                         Simbox                 * simbox,
+                         int                      n_facies,
+                         const std::vector<int> & facies_nr,
+                         std::vector<int>       & facies_count);
 
   void GetGeometryFromGridOnFile(const std::string         grid_file,
                                  const TraceHeaderFormat * thf,
@@ -150,8 +162,8 @@ private:
   SegyGeometry * GetGeometryFromCravaFile(const std::string & file_name);
 
   SegyGeometry * GetGeometryFromStormFile(const std::string    & file_name,
-                                       std::string          & err_text,
-                                       bool                   scale = false);
+                                          std::string          & err_text,
+                                          bool                   scale = false);
 
   bool CreateOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
@@ -173,15 +185,21 @@ private:
                                    double       & x_max,
                                    double       & y_max);
 
+  int GetNzFromGridOnFile(ModelSettings     * model_settings,
+                          const std::string & grid_file,
+                          std::string       & err_text);
+
   void SetSurfacesMultipleIntervals(const ModelSettings            * const model_settings,
                                     NRLib::Volume                  & full_inversion_volume,
                                     Simbox                         & estimation_simbox,
+                                    int                              nz,
                                     const InputFiles               * input_files,
                                     std::string                    & err_text);
 
   void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
                                  NRLib::Volume                    & full_inversion_volume,
                                  Simbox                           & estimation_simbox,
+                                 int                                nz,
                                  const std::vector<std::string>   & surf_file,
                                  std::string                      & err_text);
 
@@ -205,6 +223,56 @@ private:
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
                                std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
                                std::string                                    & err_text);
+
+  bool RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
+                                         ModelSettings * model_settings,
+                                         const Simbox  * simbox,
+                                         int           & n_merges);
+
+  void MergeCells(const std::string         & name,
+                  std::vector<double>       & pos_resampled,
+                  const std::vector<double> & pos,
+                  int                         ii,
+                  int                         istart,
+                  int                         iend,
+                  bool                        print_to_screen);
+
+  void MergeCellsDiscrete(const std::string      & name,
+                          std::vector<int>       & log_resampled,
+                          const std::vector<int> & log,
+                          int                      ii,
+                          int                      istart,
+                          int                      iend,
+                          bool                     print_to_screen);
+
+  void SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
+                                         ModelSettings * model_settings,
+                                         int           & count_vp,
+                                         int           & count_vs,
+                                         int           & count_rho);
+
+  void LookForSyntheticVsLog(NRLib::Well   & well,
+                             ModelSettings * model_settings,
+                             float         & rank_correlation);
+
+  void FilterLogs(NRLib::Well   & well,
+                  ModelSettings * model_settings);
+
+  bool ResampleTime(std::vector<double>       & time_resampled,
+                    const std::vector<double> & z_pos,
+                    int                         nd,
+                    double                    & dt);
+
+  void ResampleLog(std::vector<double>       & log_resampled,
+                   const std::vector<double> & log,
+                   const std::vector<double> & time,
+                   const std::vector<double> & time_resampled,
+                   int                         nd,
+                   double                      dt);
+
+  void InterpolateLog(std::vector<double>       & log_interpolated,
+                      const std::vector<double> & log_resampled,
+                      int                         nd);
 
   void CutWell(std::string           well_file_name,
                NRLib::Well         & well,
@@ -235,14 +303,15 @@ private:
 
   bool       CheckThatDataCoverGrid(const SegY   * segy,
                                     float          offset,
-                                    const Simbox & time_cut_simbox,
+                                    const Simbox & simbox,
                                     float          guard_zone,
                                     std::string &  err_text) const;
 
   bool       CheckThatDataCoverGrid(StormContGrid * stormgrid,
                                     const Simbox  & simbox,
                                     float           guard_zone,
-                                    std::string   & err_text) const;
+                                    std::string   & err_text,
+                                    bool            scale = false) const;
 
   void ProcessLogsNorsarWell(NRLib::Well                  & new_well,
                              std::string                  & error_text,
@@ -376,11 +445,11 @@ private:
 
   void SetFaciesNamesFromRockPhysics();
 
-  void ReadPriorFaciesProbCubes(const InputFiles                                * input_files,
-                                ModelSettings                                   * model_settings,
-                                std::vector<std::vector<NRLib::Grid<double> > > & prior_facies_prob_cubes,
-                                const std::vector<Simbox>                       & interval_simboxes,
-                                std::string                                     & err_text);
+  void ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
+                                ModelSettings                                    * model_settings,
+                                std::vector<std::vector<NRLib::Grid<double> *> > & prior_facies_prob_cubes,
+                                const std::vector<Simbox>                        & interval_simboxes,
+                                std::string                                      & err_text);
 
   static FFTGrid  * CreateFFTGrid(int nx,
                                   int ny,
@@ -390,18 +459,18 @@ private:
                                   int nzp,
                                   bool file_grid);
 
-  void ReadGridFromFile(const std::string                 & file_name,
-                        const std::string                 & par_name,
-                        const float                         offset,
-                        std::vector<NRLib::Grid<double> > & grid,
-                        const SegyGeometry               *& geometry,
-                        const TraceHeaderFormat           * format,
-                        int                                 grid_type,
-                        const std::vector<Simbox>         & interval_simboxes,
-                        const Simbox                      & estimation_simbox,
-                        const ModelSettings               * model_settings,
-                        std::string                       & err_text,
-                        bool                                nopadding = true);
+  void ReadGridFromFile(const std::string                  & file_name,
+                        const std::string                  & par_name,
+                        const float                          offset,
+                        std::vector<NRLib::Grid<double> *> & grid,
+                        const SegyGeometry                *& geometry,
+                        const TraceHeaderFormat            * format,
+                        int                                  grid_type,
+                        const std::vector<Simbox>          & interval_simboxes,
+                        const Simbox                       & estimation_simbox,
+                        const ModelSettings                * model_settings,
+                        std::string                        & err_text,
+                        bool                                 nopadding = true);
 
   //void ReadCravaFile(NRLib::Grid<double> & grid,
   //                   const std::string   & file_name,
@@ -411,18 +480,18 @@ private:
                                 std::string       & err_text,
                                 int               & nz_pad);
 
-  void ReadSegyFile(const std::string                 & file_name,
-                    std::vector<NRLib::Grid<double> > & interval_grids,
-                    const std::vector<Simbox>         & interval_simboxes,
-                    const Simbox                      & simbox,
-                    const ModelSettings               * model_settings,
-                    const SegyGeometry               *& geometry,
-                    int                                 grid_type,
-                    const std::string                 & par_name,
-                    float                               offset,
-                    const TraceHeaderFormat           * format,
-                    std::string                       & err_text,
-                    bool                                nopadding = true);
+  void ReadSegyFile(const std::string                  & file_name,
+                    std::vector<NRLib::Grid<double> *> & interval_grids,
+                    const std::vector<Simbox>          & interval_simboxes,
+                    const Simbox                       & simbox,
+                    const ModelSettings                * model_settings,
+                    const SegyGeometry                *& geometry,
+                    int                                  grid_type,
+                    const std::string                  & par_name,
+                    float                                offset,
+                    const TraceHeaderFormat            * format,
+                    std::string                        & err_text,
+                    bool                                 nopadding = true);
 
   int GetFillNumber(int i, int n, int np);
 
@@ -467,12 +536,12 @@ private:
                       int nzp);
 
   void SetTrace(const std::vector<float> & trace,
-                NRLib::Grid<double>      & grid,
+                NRLib::Grid<double>      * grid,
                 size_t                     i,
                 size_t                     j);
 
   void SetTrace(float                 value,
-                NRLib::Grid<double> & grid,
+                NRLib::Grid<double> * grid,
                 size_t                i,
                 size_t                j);
 
@@ -486,15 +555,15 @@ private:
                 size_t    i,
                 size_t    j);
 
-  void ReadStormFile(const std::string                 & file_name,
-                     std::vector<NRLib::Grid<double> > & interval_grids,
-                     const int                           grid_type,
-                     const std::string                 & par_name,
-                     const std::vector<Simbox>         & interval_simboxes,
-                     const ModelSettings               * model_settings,
-                     std::string                       & err_text,
-                     bool                                is_storm = true,
-                     bool                                nopadding = true);
+  void ReadStormFile(const std::string                  & file_name,
+                     std::vector<NRLib::Grid<double> *> & interval_grids,
+                     const int                            grid_type,
+                     const std::string                  & par_name,
+                     const std::vector<Simbox>          & interval_simboxes,
+                     const ModelSettings                * model_settings,
+                     std::string                        & err_text,
+                     bool                                 is_storm = true,
+                     bool                                 nopadding = true);
 
   bool SetupDepthConversion(ModelSettings  * model_settings,
                             InputFiles     * input_files,
@@ -504,18 +573,18 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
-  double FindMeanVsVp(NRLib::Grid<double> & vp,
-                      NRLib::Grid<double> & vs);
+  double FindMeanVsVp(const NRLib::Grid<double> * vp,
+                      const NRLib::Grid<double> * vs);
 
-  void SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> & grid,
+  void SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<double> * grid,
                                             const double          avg);
 
-  void SubtractGrid(NRLib::Grid<double>       & to_grid,
-                    const NRLib::Grid<double> & from_grid);
+  void SubtractGrid(NRLib::Grid<double>       * to_grid,
+                    const NRLib::Grid<double> * from_grid);
 
-  void ChangeSignGrid(NRLib::Grid<double> & grid);
+  void ChangeSignGrid(NRLib::Grid<double> * grid);
 
-  void LoadVelocity(NRLib::Grid<double>  & velocity,
+  void LoadVelocity(NRLib::Grid<double>  * velocity,
                     const Simbox         & interval_simbox,
                     const ModelSettings  * model_settings,
                     const std::string    & velocity_field,
@@ -526,9 +595,9 @@ private:
 
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
-                                       NRLib::Grid<double>                    & vp,
-                                       NRLib::Grid<double>                    & vs,
-                                       NRLib::Grid<double>                    & rho,
+                                       NRLib::Grid<double>                    * vp,
+                                       NRLib::Grid<double>                    * vs,
+                                       NRLib::Grid<double>                    * rho,
                                        Simbox                                 & simbox,
                                        const CravaTrend                       & trend_cube);
 
@@ -556,7 +625,7 @@ private:
                              const std::vector<std::string>                               & facies_names,
                              const std::vector<CravaTrend>                                & trend_cubes,
                              const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
-                             const std::vector<std::vector<NRLib::Grid<double> > >        & background,
+                             const std::vector<std::vector<NRLib::Grid<double> *> >       & background,
                              std::string                                                  & err_text);
 
   void  CalculateCorrelationsFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
@@ -618,7 +687,6 @@ private:
                                std::string   & err_text);
 
   bool optimizeWellLocations();
-  bool estimateWaveletShape();
 
   int ComputeTime(int year, int month, int day) const;
 
@@ -634,7 +702,6 @@ private:
   bool temporary_wavelet_;
   bool optimize_well_location_;
   bool wavelet_handling_;
-  //bool wavelet_estimation_shape_;
   bool setup_multigrid_;
   bool setup_trend_cubes_;
   bool setup_estimation_rock_physics_;
@@ -665,7 +732,6 @@ private:
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
-  //std::vector<CravaTrend>                       trend_cubes_;  //Trend cubes per interval.
 
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
@@ -701,7 +767,7 @@ private:
   std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
 
   std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells.
-  std::vector<int>                              facies_labels_;
+  std::vector<int>                              facies_nr_;
 
   // Prior correlation
   std::vector<Surface *>                        prior_corr_XY_;
@@ -720,7 +786,7 @@ private:
 
   //Traveltime parameters per timelapse
   std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
-  std::vector<NRLib::Grid<double> >             rms_data_;                      ///< RMS data U^2
+  std::vector<NRLib::Grid<double> *>            rms_data_;                      ///< RMS data U^2
 
   //Depth conversion
   GridMapping                                 * time_depth_mapping_;

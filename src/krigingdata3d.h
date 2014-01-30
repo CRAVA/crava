@@ -22,20 +22,20 @@ public:
 
   CBWellPt  ** getData(void)         const { return data_ ;}
   const int    getNumberOfData(void) const { return nd_   ;}
-  void         addData(const float * blAlpha,
-                       const float * blBeta,
-                       const float * blRho,
-                       const int   * ipos,
-                       const int   * jpos,
-                       const int   * kpos,
-                       const int     nd);
-  void         addData(const double * alpha,
-                       const double * beta,
-                       const double * rho,
-                       const int   * ipos,
-                       const int   * jpos,
-                       const int   * kpos,
-                       const int     nd);
+  //void         addData(const float * blAlpha,
+  //                     const float * blBeta,
+  //                     const float * blRho,
+  //                     const int   * ipos,
+  //                     const int   * jpos,
+  //                     const int   * kpos,
+  //                     const int     nd);
+  void         addData(const std::vector<double> & alpha,
+                       const std::vector<double> & beta,
+                       const std::vector<double> & rho,
+                       const std::vector<int>    & ipos,
+                       const std::vector<int>    & jpos,
+                       const std::vector<int>    & kpos,
+                       const int                   nd);
   void         divide(void);
   void         writeToFile(const std::string type);
 

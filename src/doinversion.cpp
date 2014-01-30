@@ -56,17 +56,17 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                      i_interval);
 
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
-                                       //modelGeneral,
                                        inputFiles,
                                        commonData,
                                        modelGeneral->getTimeSimbox(),
                                        i_interval);
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
-  modelGravityStatic = new ModelGravityStatic(modelSettings,
-                                              commonData,
-                                              modelGeneral->getTimeSimbox(),
-                                              i_interval);
+  //H-DEBUGGING
+  //modelGravityStatic = new ModelGravityStatic(modelSettings,
+  //                                            commonData,
+  //                                            modelGeneral->getTimeSimbox(),
+  //                                            i_interval);
 
   //Add in ModelTravelTimeStatic when ready
 }

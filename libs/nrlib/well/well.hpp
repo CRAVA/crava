@@ -27,6 +27,7 @@
 #include <map>
 
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "src/simbox.h"
 
 namespace NRLib {
   class Well{
@@ -62,8 +63,13 @@ namespace NRLib {
 
     /// Return continuous logs
     std::vector<double> & GetContLog(const std::string& name);
+    std::vector<double> & GetContLogSeismicResolution(const std::string& name);
+    std::vector<double> & GetContLogBackgroundResolution(const std::string& name);
+
     /// Return continuous logs
     const std::vector<double> & GetContLog(const std::string& name) const;
+    const std::vector<double> & GetContLogSeismicResolution(const std::string& name) const;
+    const std::vector<double> & GetContLogBackgroundResolution(const std::string& name) const;
 
     /// Return discrete logs
     std::vector<int> & GetDiscLog(const std::string& name);
@@ -78,6 +84,8 @@ namespace NRLib {
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
     void AddContLog(const std::string& name, const std::vector<double>& log);
+    void AddContLogSeismicResolution(const std::string& name, const std::vector<double>& log);
+    void AddContLogBackgroundResolution(const std::string& name, const std::vector<double>& log);
     /// Remove continuous log
     /// Does nothing if there is no log with the given name.
     void RemoveContLog(const std::string& name);
@@ -124,7 +132,9 @@ namespace NRLib {
     /// Return length of log with name logname
     size_t GetContLogLength(const std::string& logname) const;
     /// Return all continuous logs
-    const std::map<std::string,std::vector<double> > & GetContLog() const { return cont_log_; };
+    const std::map<std::string,std::vector<double> > & GetContLog()                     const { return cont_log_; };
+    const std::map<std::string,std::vector<double> > & GetContLogSeismicResolution()    const { return cont_log_seismic_resolution_; };
+    const std::map<std::string,std::vector<double> > & GetContLogBackgroundResolution() const { return cont_log_background_resolution_; };
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
     /// Facies
@@ -135,7 +145,10 @@ namespace NRLib {
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
     /// Set number of non-missing data
-    void SetNumberOfNonMissingData(int n_data_nonmissing) {n_data_nonmissing_ = n_data_nonmissing ;}
+    void SetNumberOfNonMissingData(int n_data_nonmissing) { n_data_nonmissing_ = n_data_nonmissing ;}
+
+    /// Set number of data
+    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
@@ -151,14 +164,15 @@ namespace NRLib {
     int GetUseForWaveletEstimation(void)   const { return use_for_wavelet_estimation_   ;}
     int GetRealVsLog(void)                 const { return real_vs_log_                  ;}
 
+    bool HasSyntheticVsLog(void)           const { return(real_vs_log_)==0              ;}
+
     //bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
 
     int CheckStormgrid(StormContGrid & stormgrid) const;
 
-  protected:
-    /// Set number of data
-    void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+    int CheckSimbox(Simbox * simbox) const;
 
+  protected:
     // Number of time data including WELLMISSING values
     unsigned int              n_data_;
 
@@ -170,6 +184,10 @@ namespace NRLib {
     std::map<std::string,std::vector<double> > cont_log_;
     /// Discrete logs
     std::map<std::string,std::vector<int> >    disc_log_;
+    /// Continuous logs
+    std::map<std::string,std::vector<double> > cont_log_seismic_resolution_;
+    /// Continuous logs
+    std::map<std::string,std::vector<double> > cont_log_background_resolution_;
     /// Name of well
     std::string well_name_;
     /// Missing value for continous logs.
@@ -187,9 +205,6 @@ namespace NRLib {
     int                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
     int                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
     int                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
-
-    // Number of data excluding WELLMISSING values
-    //unsigned int              n_data_nonmissing_;
 
   };
 

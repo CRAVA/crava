@@ -253,9 +253,10 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
                             do_4D_rock_physics_vnversion_(model_settings->getDo4DRockPhysicsInversion())
 {
   simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
-  random_gen_    = NULL;
-  time_line_     = NULL;
-  multi_interval_ = false;
+  random_gen_         = NULL;
+  time_line_          = NULL;
+  time_depth_mapping_ = NULL;
+  multi_interval_     = false;
 
   {
     int debug_level = model_settings->getLogLevel();
@@ -318,16 +319,17 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
 
       //Facies-names
       facies_names_  = common_data->GetFaciesNames();
-      facies_labels_ = common_data->GetFaciesLabels();
+      facies_labels_ = common_data->GetFaciesNr();
 
       //Priorfacies
       if (common_data->GetPriorFacies().size() > 0) {
         prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
-
+      }
+      if (multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval).size() > 0) {
         prior_facies_prob_cubes_.resize(3);
-        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[0], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
-        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[1], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
-        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval)[2], simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 0), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 1), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 2), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
       }
 
       bool estimation_mode = model_settings->getEstimationMode();
@@ -3417,8 +3419,8 @@ ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<Distributions
 //}
 
 void
-ModelGeneral::CopyCorrelationsTo4DState(SeismicParametersHolder                          & seismicParameters,
-                                       State4D                                          & state4d)
+ModelGeneral::CopyCorrelationsTo4DState(SeismicParametersHolder & seismicParameters,
+                                        State4D                 & state4d)
 {
   // Allocates the static sigma grids: 6 grids.
 

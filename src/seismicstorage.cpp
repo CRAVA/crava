@@ -231,8 +231,9 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
   }
   else { //FFTGrid
 
-    int index_i = 0;
-    int index_j = 0;
+    int index_i     = 0;
+    int index_j     = 0;
+    int trace_index = 0;
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));
 
@@ -250,7 +251,9 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
         if (index_j >= fft_grid_->getNy())
           index_j = fft_grid_->getNy()-1;
 
-        trace_data.push_back(fft_grid_->getRealTrace2(index_i, index_j));
+        trace_data[trace_index] = fft_grid_->getRealTrace2(index_i, index_j);
+
+        trace_index++;
 
       }
     }
