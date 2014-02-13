@@ -6943,6 +6943,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     //
     // B Lateral correlation -------------------------------------------------------------------
     //
+
     for (size_t i = 0; i<n_intervals; i++){
       prior_corr_XY_[i] = FindCorrXYGrid(&(interval_simboxes[i]), model_settings);
     }

@@ -17,7 +17,7 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-// CRA-227: New correlation estimation routine with blocked logs within one interval
+// CRA-257: New correlation estimation routine with blocked logs within one interval
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                        const std::vector<std::vector<NRLib::Grid<double> > >    & background,
@@ -52,7 +52,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
                       err_txt);
 }
 
-// CRA-227: New correlation estimation routine with blocked logs within multiple intervals
+// CRA-257: New correlation estimation routine with blocked logs within multiple intervals
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                        const std::vector<std::vector<NRLib::Grid<double> > >    & background,
@@ -118,7 +118,7 @@ Analyzelog::~Analyzelog(void)
 {
 }
 
-// CRA-227: New implementation of correlation estimation for an interval
+// CRA-257: New implementation of correlation estimation for an interval
 void  Analyzelog::EstimateCorrelation(const ModelSettings                                       * model_settings,
                                       const std::vector<NRLib::Well>                            & wells,
                                       const std::vector<std::string>                            & well_names,
