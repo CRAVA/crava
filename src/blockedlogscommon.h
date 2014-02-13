@@ -65,6 +65,8 @@ public:
 
   //GET FUNCTIONS --------------------------------
 
+  int                                    GetNBlocksWithData(std::string s) const { return n_blocks_with_data_.find(s)->second                         ;}
+  int                                    GetNBlocksWithDataTot() const { return n_blocks_with_data_tot_                                               ;}
   std::string                            GetWellName()         const   { return well_name_                                                            ;}
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
   int                                    GetNFacies()          const   { return static_cast<int>(facies_map_.size())                                  ;}
@@ -362,7 +364,8 @@ private:
                                    std::vector<int>              & b_ind,
                                    int                             n_data,
                                    int                           & n_layers,
-                                   unsigned int                  & n_blocks);
+                                   unsigned int                  & n_blocks,
+                                   std::map<std::string, int>    & n_layers_adjusted_per_interval);
 
   void    FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
                                    std::vector<int>     & b_ind,
@@ -458,6 +461,15 @@ private:
                          const std::vector<double> & log_resampled,
                          int                         nd);
 
+  void    CountBlocksWithDataPerInterval(const MultiIntervalGrid                            * multiple_interval_grid,
+                                         const std::vector<double>                          & x_pos_blocked,
+                                         const std::vector<double>                          & y_pos_blocked,
+                                         const std::vector<double>                          & z_pos_blocked,
+                                         const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                                         std::map<std::string, int>                         & n_blocks_with_data,
+                                         int                                                & n_blocks_with_data_tot,
+                                         int                                                  n_intervals) const;
+
   void    WriteRMSWell(float                    max_hz_background,
                        float                    max_hz_seismic,
                        std::vector<std::string> facies_name,
@@ -468,10 +480,12 @@ private:
 
   // CLASS VARIABLES -----------------------------
 
-  unsigned int       n_blocks_;         // number of blocks
-  unsigned int       n_data_;           //Number of non-missing
-  std::string        well_name_;
-
+  std::map<std::string, int>  n_layers_adjusted_per_interval_;   // Number of layers per interval using dz from the first interval everywhere
+  std::map<std::string, int>  n_blocks_with_data_;               // Number of blocks with data per interval
+  int                         n_blocks_with_data_tot_;           // Total number of blocks with data
+  unsigned int                n_blocks_;                         // Number of blocks
+  unsigned int                n_data_;                           // Number of non-missing
+  std::string                 well_name_;
 
   std::map<int, std::string>  facies_map_;
   bool                        facies_log_defined_;
@@ -548,6 +562,8 @@ private:
                      
   int                       first_B_;                   ///< First block with contribution from well log
   int                       last_B_;                    ///< Last block with contribution from well log
+
+  std::vector<int>          n_well_log_obs_in_interval_;      ///< Number of well log observations in each interval
 
   bool                      is_deviated_;
 

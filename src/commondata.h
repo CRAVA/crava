@@ -603,10 +603,10 @@ private:
                                      int        other_output);
 
 
-  bool SetupPriorCorrelation(ModelSettings                                                * model_settings,
+  bool SetupPriorCorrelation(const ModelSettings                                          * model_settings,
                              const InputFiles                                             * input_files,
                              const std::vector<NRLib::Well>                               & wells,
-                             std::map<std::string, BlockedLogsCommon *>                   & mapped_blocked_logs_for_correlation,
+                             const std::map<std::string, BlockedLogsCommon *>             & mapped_blocked_logs_for_correlation,
                              const std::vector<Simbox>                                    & interval_simboxes,
                              const std::vector<std::vector<float> >                       & prior_facies_prob,
                              const std::vector<std::string>                               & facies_names,
@@ -623,7 +623,7 @@ private:
                                              const std::map<std::string, float>               & probability,
                                              const std::vector<std::string>                   & facies_names,
                                              const CravaTrend                                 & trend_cubes,
-                                             NRLib::Grid2D<double>                            & param_corr,
+                                             NRLib::Matrix                                    & param_corr,
                                              std::string                                      & err_txt);
 
   void  CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
@@ -673,6 +673,27 @@ private:
                         std::string            & err_text,
                         bool                   & failed,
                         int                      i_timelapse);
+
+  void SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
+                                const std::vector<float>  & prior_corr_t,
+                                Surface                   * prior_corr_XY,
+                                const int                 & min_int_fq,
+                                const float               & corr_grad_i,
+                                const float               & corr_grad_j,
+                                const int                 & nx,
+                                const int                 & ny,
+                                const int                 & nz,
+                                const int                 & nx_pad,
+                                const int                 & ny_pad,
+                                const int                 & nz_pad,
+                                int                         i_interval);
+
+  void  WriteFilePriorVariances(const ModelSettings      * model_settings,
+                               const std::vector<float> & prior_corr_T,
+                               const Surface            * prior_corr_XY,
+                               const float              & dt) const;
+
+  void  PrintPriorVariances() const;
 
   // EN kommentert ut fordi CRAVA ikke kompilerer så lenge den ikke er implementert
   //void ReadAngularCorrelations(ModelSettings * model_settings,
@@ -748,6 +769,7 @@ private:
   std::map<int, float **>                       reflection_matrix_; //Map timelapse
   bool                                          refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
+  // Wavelet
   std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
   std::map<int, std::vector<Grid2D *> >              local_noise_scale_;
   std::map<int, std::vector<Grid2D *> >              local_shift_;
@@ -770,8 +792,12 @@ private:
   std::vector<int>                              facies_labels_;
 
   // Prior correlation
+  bool                                          prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
+  std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
+  std::vector<NRLib::Grid<double> >             corr_params_interval_;
   std::vector<Surface *>                        prior_corr_XY_;
-  //std::vector<NRLib::Matrix>                      prior_var_0_;
+  std::vector<NRLib::Matrix>                    prior_param_corr_;
+  std::vector<std::vector<float> >              prior_corr_T_;
   //std::vector<std::vector<NRLib::Grid<double> > > prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 

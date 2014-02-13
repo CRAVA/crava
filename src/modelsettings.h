@@ -136,6 +136,7 @@ public:
   //int                              getNXpad(void)                       const { return nxPad_                                     ;}
   //int                              getNYpad(void)                       const { return nyPad_                                     ;}
   //int                              getNZpad(void)                       const { return nzPad_                                     ;}
+  int                              getMinBlocksForCorrEstimation(void)  const { return min_blocks_with_data_for_corr_estim_       ;}
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
@@ -778,6 +779,8 @@ private:
   int                               seed_;                       ///< Random seed.
 
   static int                        debugFlag_;
+
+  int                               min_blocks_with_data_for_corr_estim_; ///< Minimum number of blocks with data for correlation estimation
 };
 
 #endif
