@@ -24,6 +24,8 @@ public:
   const std::string              & getLocalNoiseFile(int i, int j)const{ return timeLapseLocalNoiseFiles_[i][j]   ;}
   const std::vector<std::string> & getTravelTimeHorizons(int i)  const { return timeLapseTravelTimeHorizons_[i]   ;}
   const std::string              & getRmsVelocities(int i)       const { return rmsVelocities_[i]                 ;}
+  const std::vector<std::string> & getWaveletEstIntFileTop(void) const { return waveletEstIntFileTop_             ;}
+  const std::vector<std::string> & getWaveletEstIntFileBase(void)const { return waveletEstIntFileBase_            ;}
   const std::string              & getWaveletEstIntFileTop(int i)const { return waveletEstIntFileTop_[i]          ;}
   const std::string              & getWaveletEstIntFileBase(int i)const{ return waveletEstIntFileBase_[i]         ;}
   const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFiles_[i];}
@@ -54,6 +56,7 @@ public:
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
   const std::string              & getGravimetricData(int i)     const { return gravimetricData_[i]   ;}
 
+  int                              getNumberOfSurveys(void)      const { return static_cast<int>(timeLapseSeismicFiles_.size());}
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
   void setSeedFile(const std::string & seedFile)                          { seedFile_             = seedFile          ;}

@@ -739,6 +739,7 @@ SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
 fftw_real *
 SeismicParametersHolder::extractParamCorrFromCovAlpha(int nzp) const
 {
+  // NBNB-PAL: Linjen nednefor kræsjer dersom vi benytter estimation mode
   assert(covAlpha_->getIsTransformed() == false);
 
   covAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);

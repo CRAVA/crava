@@ -188,6 +188,7 @@ public:
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
   bool                             getUseLocalWavelet(void)             const { return useLocalWavelet_                           ;}
   bool                             getUseLocalNoise(int i)              const { return timeLapseUseLocalNoise_[i]                 ;}
+  const std::vector<bool>        & getUseLocalNoise(void)               const { return timeLapseUseLocalNoise_                    ;}
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_                      ;}
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
