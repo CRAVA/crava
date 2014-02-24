@@ -632,8 +632,16 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
-    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL)
-      gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
+    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL) {
+      if (inputFiles->getNumberOfSurveys() > 0) {
+        gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
+      }
+      else {
+        errText += "Seismic data are needed for the inversion area, but there are no surveys present.\n";
+        errText += "Are you running in estimation mode and asking for SegY output?\n";
+        failed = true;
+      }
+    }
   }
   SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
 
@@ -776,6 +784,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
+      failed = true;
     }
     else
     {
@@ -1944,20 +1953,21 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
      LogKit::LogFormatted(LogKit::Low,"  Velocity field                           : "+velocityField+"\n");
   }
 
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0);
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);
+  const std::vector<std::string> & topWEI  = inputFiles->getWaveletEstIntFileTop();
+  const std::vector<std::string> & baseWEI = inputFiles->getWaveletEstIntFileBase();
 
-  if (topWEI != "" || baseWEI != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
-    if (NRLib::IsNumber(topWEI))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topWEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topWEI+"\n");
-
-    if (NRLib::IsNumber(baseWEI))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseWEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+baseWEI+"\n");
+  if (topWEI.size() > 0 && baseWEI.size() > 0) {
+    if (topWEI[0] != "" && baseWEI[0] != "") {
+      LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
+      if (NRLib::IsNumber(topWEI[0]))
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topWEI[0].c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topWEI[0]+"\n");
+      if (NRLib::IsNumber(baseWEI[0]))
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseWEI[0].c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+baseWEI[0]+"\n");
+    }
   }
 
   const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);

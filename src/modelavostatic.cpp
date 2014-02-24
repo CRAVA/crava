@@ -107,6 +107,10 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
 
   if (failedLoadingModel) {
     LogKit::WriteHeader("Error(s) while loading data");
+    if (failedExtraSurf)
+      LogKit::LogFormatted(LogKit::Error,"Failed to load the extra surfaces (wavelet estimation intervals, etc ...)\n");
+    if (failedPriorFacies)
+      LogKit::LogFormatted(LogKit::Error,"Failed when loading prior facies model\n");
     LogKit::LogFormatted(LogKit::Error,"\n"+errText);
     LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
   }
@@ -115,7 +119,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
   failed_details_.push_back(failedExtraSurf);
   failed_details_.push_back(failedPriorFacies);
 }
-
 
 ModelAVOStatic::~ModelAVOStatic(void)
 {
@@ -178,7 +181,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
   // Find the size of first seismic volume
   //
   float memOneSeis = 0.0f;
-  if (inputFiles->getNumberOfSeismicFiles(0) > 0 && inputFiles->getSeismicFile(0,0) != "") {
+  if (inputFiles->getNumberOfSurveys() > 0 && inputFiles->getNumberOfSeismicFiles(0) > 0 && inputFiles->getSeismicFile(0,0) != "") {
     memOneSeis = static_cast<float> (NRLib::FindFileSize(inputFiles->getSeismicFile(0,0)));
   }
 
@@ -205,8 +208,10 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
   int nGridParameters  = 3;                                      // Vp + Vs + Rho, padded
   int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
   int nGridCovariances = 6;                                      // Covariances, padded
-  int nGridSeismicData = modelSettings->getNumberOfAngles(0);     // One for each angle stack, padded
-
+  int nGridSeismicData = 0;
+  if (inputFiles->getNumberOfSurveys() > 0) {
+    nGridSeismicData = modelSettings->getNumberOfAngles(0);      // One for each angle stack, padded
+  }
   std::map<std::string, float> facies_prob = modelSettings->getPriorFaciesProb(); //Used to find number of facies grids needed
 
   int nGridFacies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
@@ -240,10 +245,8 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       gridMem = nGrids*gridSizePad;
     }
     else {
-      //baseP and baseU are the padded and unpadde grids allocated at each peak.
-      int baseP = nGridParameters + nGridCovariances;
-      if(modelSettings->getUseLocalNoise(0) == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
-        baseP += nGridBackground;
+      //baseP and baseU are the padded and unpadded grids allocated at each peak.
+      int baseP = nGridBackground + nGridParameters + nGridCovariances;
       int baseU = 0;
       if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
         baseU += static_cast<int>(facies_prob.size());
@@ -253,7 +256,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       int peak1U = baseU;
 
       long long int peakGridMem = peak1P*gridSizePad + peak1U*gridSizeBase; //First peak must be currently largest.
-      int peakNGrid   = peak1P;                                             //Also in number of padded grids
+      int peakNGrid = peak1P;                                               //Also in number of padded grids
 
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
@@ -289,6 +292,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       gridMem = peakGridMem;
     }
   }
+
   FFTGrid::setMaxAllowedGrids(nGrids);
   if(modelSettings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
@@ -297,8 +301,11 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
 
   float mem0        = 4.0f * workSize;
   float mem1        = static_cast<float>(gridMem);
-  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles(0))*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
 
+  float mem2        = 0.0f;
+  if (inputFiles->getNumberOfSurveys() > 0) {
+    mem2 = static_cast<float>(modelSettings->getNumberOfAngles(0))*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
+  }
   float neededMem   = mem0 + std::max(mem1, mem2);
 
   float megaBytes   = neededMem/(1024.f*1024.f);
@@ -359,35 +366,38 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   //
   // Get wavelet estimation interval
   //
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0); //Same for all time lapses
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);//Same for all time lapses
+  const std::vector<std::string> & topWEI  = inputFiles->getWaveletEstIntFileTop();
+  const std::vector<std::string> & baseWEI = inputFiles->getWaveletEstIntFileBase();
 
-  if (topWEI != "" && baseWEI != "") {
-    waveletEstimInterval.resize(2);
-    try {
-      if (NRLib::IsNumber(topWEI))
-        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
-      else {
-        Surface tmpSurf(topWEI);
-        waveletEstimInterval[0] = new Surface(tmpSurf);
-      }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
-    }
+  if (topWEI.size() > 0 && baseWEI.size() > 0) {
+    if (topWEI[0] != "" && baseWEI[0] != "") {
 
-    try {
-      if (NRLib::IsNumber(baseWEI))
-        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
-      else {
-        Surface tmpSurf(baseWEI);
-        waveletEstimInterval[1] = new Surface(tmpSurf);
+      waveletEstimInterval.resize(2);
+      try {
+        if (NRLib::IsNumber(topWEI[0]))  // Use same for all time lapses
+          waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI[0].c_str()));
+        else {
+          Surface tmpSurf(topWEI[0]);
+          waveletEstimInterval[0] = new Surface(tmpSurf);
+        }
       }
-    }
-    catch (NRLib::Exception & e) {
-      errText += e.what();
-      failed = true;
+      catch (NRLib::Exception & e) {
+        errText += e.what();
+        failed = true;
+      }
+
+      try {
+        if (NRLib::IsNumber(baseWEI[0]))  // Use same for all time lapses
+          waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI[0].c_str()));
+        else {
+          Surface tmpSurf(baseWEI[0]);
+          waveletEstimInterval[1] = new Surface(tmpSurf);
+        }
+      }
+      catch (NRLib::Exception & e) {
+        errText += e.what();
+        failed = true;
+      }
     }
   }
   //

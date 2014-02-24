@@ -186,7 +186,6 @@ int main(int argc, char** argv)
     ModelGravityStatic    * modelGravityStatic    = NULL;
     NRLib::Random::Initialize();
 
-
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
       LogKit::EndBuffering();
@@ -224,6 +223,7 @@ int main(int argc, char** argv)
     }
 
     if(modelGeneral->getTimeLine() == NULL) { //Forward modelling.
+
       bool failed = doFirstAVOInversion(modelSettings,
                                         modelGeneral,
                                         modelAVOstatic,
@@ -291,8 +291,10 @@ int main(int argc, char** argv)
         break;
       }
 
-      if(failedFirst == true || errTxt != "")
+      if(failedFirst == true || errTxt != "") {
+        std::cout << errTxt << std::endl;
         return(1);
+      }
 
       delete timeBGSimbox;
 
