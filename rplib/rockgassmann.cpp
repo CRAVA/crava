@@ -17,9 +17,13 @@ RockGassmann::RockGassmann(const Fluid                * fluid,
 
 }
 
-RockGassmann::RockGassmann() : Rock()
+RockGassmann::RockGassmann()
+: Rock()
 {
-   k_ = mu_ = 0;
+  dryrock_ = NULL;
+  fluid_   = NULL;
+  k_       = 0;
+  mu_      = 0;
 }
 
 RockGassmann::~RockGassmann()

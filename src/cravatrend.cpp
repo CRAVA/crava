@@ -209,7 +209,7 @@ CravaTrend::writeToFile(const Simbox        * timeSimbox,
   grid ->setAccessMode(FFTGrid::RANDOMACCESS);
 
   grid->writeFile(fileName,
-                  IO::PathToInversionResults(),
+                  IO::PathToRockPhysics(),
                   timeSimbox,
                   sgriLabel);
 

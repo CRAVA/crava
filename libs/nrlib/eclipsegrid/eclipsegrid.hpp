@@ -1,4 +1,4 @@
-// $Id: eclipsegrid.hpp 1136 2013-01-21 13:13:56Z georgsen $
+// $Id: eclipsegrid.hpp 1187 2013-06-14 13:34:45Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -72,6 +72,9 @@ public:
   size_t GetNJ() const    { return geometry_.GetNJ(); }
   size_t GetNK() const    { return geometry_.GetNK(); }
   size_t GetN()  const    { return geometry_.GetN();  }
+
+  inline void   GetIJK(size_t index, size_t& i, size_t& j, size_t& k) const   { geometry_.GetIJK(index, i ,j, k); }
+  inline size_t GetIndex(size_t i, size_t j, size_t k) const                  { return geometry_.GetIndex(i, j, k); }
 
   const Line& GetPillar(size_t i, size_t j) const {return geometry_.GetPillar(i, j); }
 

@@ -1,4 +1,4 @@
-// $Id: plane.cpp 882 2011-09-23 13:10:16Z perroe $
+// $Id: plane.cpp 1195 2013-09-04 13:45:58Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -109,7 +109,7 @@ bool Plane::IsParallel(const Line& line_in, double min_in) const
 {
   Point pt_12 = line_in.GetPt2() - line_in.GetPt1();
   double dot  = nvec1_.Dot( pt_12 );
-  if (std::fabs(dot) < min_in)
+  if (std::fabs(dot) <= min_in)
     return true;
   else
     return false;
@@ -131,7 +131,7 @@ double Plane::FindDistance(const Point& p_in) const
 
 bool Plane::IsPointOnPlane(const Point& p_in, double min_in) const
 {
-  if (FindDistance(p_in) < min_in)
+  if (FindDistance(p_in) <= min_in)
     return true;
   return false;
 }

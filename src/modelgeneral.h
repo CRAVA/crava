@@ -61,7 +61,7 @@ public:
 
   void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
-  State4D                    getState4D()               const { return state4d_                ;}
+  const State4D            & getState4D()               const { return state4d_                ;}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
   std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
@@ -92,6 +92,19 @@ public:
                                            std::string        & errText,
                                            bool                 isStorm  = true,
                                            bool                 nopadding = true);
+  void                      mergeState4D(SeismicParametersHolder &  seismicParameters);
+  void                      updateState4D(SeismicParametersHolder &  seismicParameters);
+
+  void                      updateState4DWithSingleParameter(FFTGrid * EPost,
+                                                             FFTGrid * CovPost,
+                                                             int       parameterNumber);
+
+  void                      updateState4DMu(FFTGrid * mu_vp_static,
+                                            FFTGrid * mu_vs_static,
+                                            FFTGrid * mu_rho_static,
+                                            FFTGrid * mu_vp_dynamic,
+                                            FFTGrid * mu_vs_dynamic,
+                                            FFTGrid * mu_rho_dynamic);
 
   std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
 
@@ -201,7 +214,7 @@ public:
 
   void              complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
-  //void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
+  //void            getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
   bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
@@ -213,7 +226,7 @@ public:
 
   void              setTimeSimbox(Simbox * new_timeSimbox);
 
-  void              lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
+  void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
   void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 

@@ -23,9 +23,11 @@ DryRockDEM::DryRockDEM(const DryRock                       * dryrock,
 
 }
 
-DryRockDEM::DryRockDEM() : DryRock()
+DryRockDEM::DryRockDEM()
+: DryRock(),
+  dryrock_inc_(0)
 {
-  rho_ = k_ = mu_ = 0;
+  dryrock_ = NULL;
 }
 
 DryRockDEM::~DryRockDEM()

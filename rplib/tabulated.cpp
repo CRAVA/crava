@@ -31,11 +31,13 @@ Tabulated::~Tabulated()
 }
 
 std::vector<double>
-Tabulated::GetQuantileValues(const std::vector<double> u, double s1, double s2)
+Tabulated::GetQuantileValues(const std::vector<double> & u,
+                             double                      s1,
+                             double                      s2)
 {
 
   NRLib::Vector ind_normal_samples(n_variables_);
-  for(size_t i=0; i<u.size(); i++) {
+  for (int i=0; i < static_cast<int>(u.size()); ++i) {
     double sample = normal_->Quantile(u[i]);
     ind_normal_samples(i) = sample;
   }

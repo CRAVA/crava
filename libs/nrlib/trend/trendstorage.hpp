@@ -1,4 +1,4 @@
-// $Id: trendstorage.hpp 1166 2013-05-03 11:34:58Z ulvmoen $
+// $Id: trendstorage.hpp 1217 2013-11-14 14:13:29Z gudmundh $
 #ifndef NRLIB_TRENDSTORAGE_HPP
 #define NRLIB_TRENDSTORAGE_HPP
 
@@ -20,7 +20,14 @@ public:
                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                 const std::vector<std::vector<float> >  & /*blocked_logs*/,
+                                const std::vector<std::vector<double> > & /*s1*/,
+                                const std::vector<std::vector<double> > & /*s2*/,
+                                const int                               & /*type, mean or var */,
+                                const NRLib::Trend                      * /*mean_trend*/,
                                 std::string                             & /*errTxt*/) const = 0;
+  enum type{MEAN,
+            VAR,
+            SD};
 
 };
 
@@ -37,14 +44,18 @@ public:
 
   virtual ~TrendConstantStorage();
 
-  virtual TrendStorage * Clone()       const { return new TrendConstantStorage(*this) ;}
-  virtual double         GetMean()     const { return mean_value_                     ;}
-  virtual bool           GetEstimate() const { return estimate_                       ;}
+  virtual TrendStorage * Clone()   const { return new TrendConstantStorage(*this) ;}
+  virtual double         GetMean() const { return mean_value_                     ;}
+  virtual bool           GetEstimate()                                                                 const { return estimate_                 ;}
 
   virtual Trend * GenerateTrend(const std::string                       & path,
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt) const;
 
 private:
@@ -73,6 +84,10 @@ public:
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt) const;
 
 private:
@@ -101,6 +116,10 @@ public:
                                 const std::vector<std::string>          & trend_cube_parameters,
                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                const std::vector<std::vector<double> > & s1,
+                                const std::vector<std::vector<double> > & s2,
+                                const int                               & type,
+                                const NRLib::Trend                      * mean_trend,
                                 std::string                             & errTxt)   const;
 
 private:

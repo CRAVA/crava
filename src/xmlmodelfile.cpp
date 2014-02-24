@@ -49,7 +49,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   }
   catch (NRLib::IOError e) {
     LogKit::LogMessage(LogKit::Error,"\nERROR: "+std::string(e.what()));
-    exit(1);
+    failed_ = true;
   }
 
   //Remove all comments, since this convention is outside xml.
@@ -680,13 +680,19 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addDefaultWaveletEstIntFileBase();
   }
 
-  inputFiles_->clearTimeLapseTravelTime();
-  if(parseTravelTime(root, errTxt) == false) {
-    inputFiles_->addTravelTimeHorizon("");
-    inputFiles_->addRmsVelocity("");
-    modelSettings_->addTimeLapseTravelTime(false);
+  modelSettings_->clearTimeLapseTravelTime();
+  inputFiles_   ->clearTimeLapseTravelTime();
+  if (parseTravelTime(root, errTxt) == false) {
+    modelSettings_->addTimeLapseTravelTimeGiven(false);
+    modelSettings_->addRMSStandardDeviation(RMISSING);
+    modelSettings_->addTravelTimeHorizonName("");
+    modelSettings_->addTravelTimeHorizonSD(RMISSING);
+    modelSettings_->addLateralTravelTimeErrorCorr(NULL);
+    inputFiles_   ->addRmsVelocity("");
+    inputFiles_   ->addTravelTimeHorizon("");
   }
-  inputFiles_->addTimeLapseTravelTime();
+  modelSettings_->addTimeLapseTravelTime();
+  inputFiles_   ->addTimeLapseTravelTime();
 
   if(parseTimeGradientSettings(root,errTxt) == false)
     modelSettings_->addDefaultTimeGradientSettings();
@@ -1127,26 +1133,45 @@ bool
 XmlModelFile::parseTravelTime(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("travel-time");
-  if(root == 0)
+  if (root == 0)
     return(false);
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("rms-data");
-  legalCommands.push_back("horizon-file");
+  legalCommands.push_back("horizon");
+  legalCommands.push_back("lateral-correlation-stationary-data");
 
-  if(parseRMSVelocities(root, errTxt) == false)
-    errTxt += "<travel-time><rms-data> needs to be given in <survey>\n";
-
-  std::string horizon;
-  int n_horizons = 0;
-  while(parseFileName(root, "horizon-file", horizon, errTxt, true) == true) {
-    inputFiles_->addTravelTimeHorizon(horizon);
-    n_horizons++;
+  bool rms_given = false;
+  if (parseRMSVelocities(root, errTxt) == true)
+    rms_given = true;
+  else {
+    inputFiles_->addRmsVelocity("");
+    modelSettings_->addRMSStandardDeviation(RMISSING);
   }
-  if(n_horizons == 0)
-    inputFiles_->addTravelTimeHorizon("");
 
-  modelSettings_->addTimeLapseTravelTime(true);
+  int n_horizons = 0;
+  while (parseHorizonData(root, errTxt) == true)
+    n_horizons++;
+
+  if (n_horizons == 0) {
+    inputFiles_->addTravelTimeHorizon("");
+    modelSettings_->addTravelTimeHorizonName("");
+    modelSettings_->addTravelTimeHorizonSD(RMISSING);
+  }
+
+  if (rms_given == false && n_horizons == 0)
+    errTxt += "At least one of <rms-data> and <horizon> needs to be given in <survey><travel-time>\n";
+  else
+    modelSettings_->addTimeLapseTravelTimeGiven(true);
+
+  Vario * vario = NULL;
+  if (parseVariogram(root, "lateral-correlation-stationary-data", vario, errTxt) == true) {
+    if (vario != NULL)
+      modelSettings_->addLateralTravelTimeErrorCorr(vario);
+  }
+  else
+    modelSettings_->addDefaultLateralTravelTimeErrorCorr();
+
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1171,11 +1196,46 @@ XmlModelFile::parseRMSVelocities(TiXmlNode * node, std::string & errTxt)
 
   double value;
   if(parseValue(root, "standard-deviation", value, errTxt) == true)
-    modelSettings_->setRMSStandardDeviation(value);
+    modelSettings_->addRMSStandardDeviation(value);
   else
     errTxt += "<standard-deviation> needs to be given in <travel-time><rms-data>\n";
 
   checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseHorizonData(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("horizon");
+  if (root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("horizon-name");
+  legalCommands.push_back("standard-deviation");
+
+  std::string file_name;
+  if (parseFileName(root, "file-name", file_name, errTxt, true) == true)
+    inputFiles_->addTravelTimeHorizon(file_name);
+  else
+    errTxt += "<travel-time><horizon><file-name> needs to be given\n";
+
+  std::string horizon_name;
+  if (parseValue(root, "horizon-name", horizon_name, errTxt) == true)
+    modelSettings_->addTravelTimeHorizonName(horizon_name);
+  else
+    errTxt += "<travel-time><horizon><horizon-name> needs to be given\n";
+
+  double value;
+  if(parseValue(root, "standard-deviation", value, errTxt) == true)
+    modelSettings_->addTravelTimeHorizonSD(value);
+  else
+    errTxt += "<standard-deviation> needs to be given in <travel-time><horizon>\n";
+
+
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -3346,7 +3406,7 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
 
   std::vector<DistributionWithTrendStorage *> vs;
   if(parseDistributionWithTrend(root, "vs", vs, dummy, false, errTxt, true) == false && use_vp == true)
-    errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
+    errTxt +="Both <vp> and <vs> need to be given in <tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> bulk_modulus;
   if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, false, errTxt, true) == true)
@@ -3354,16 +3414,16 @@ XmlModelFile::parseTabulated(TiXmlNode                                   * node,
 
   std::vector<DistributionWithTrendStorage *> shear_modulus;
   if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, false, errTxt, true) == false && use_modulus == true)
-    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
+    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <tabulated>\n";
 
   if(use_vp == true && use_modulus == true)
-    errTxt += "Both <vp> and <bulk-modulus> can not be used in <solid><tabulated>\n";
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <tabulated>\n";
   else if(use_vp == false && use_modulus == false)
-    errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <tabulated>\n";
 
   std::vector<DistributionWithTrendStorage *> density;
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
-    errTxt += "<density> needs to be specified in <solid><tabulated>\n";
+    errTxt += "<density> needs to be specified in <tabulated>\n";
 
   if(use_vp) {
     std::vector<DistributionWithTrendStorage *> correlation_vp_vs;
@@ -4193,13 +4253,13 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
 
   if(from_file == true) {
     if(estimate > 0)
-      errTxt += "Both <file-name> and <tvd> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
+      errTxt += "Both <file-name> and <twt> and/or <stratigraphic-depth> can not be given in <trend-cube>\n";
   }
   else {
     if(estimate == 0)
-      errTxt += "One of <file-name>, <tvd> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
+      errTxt += "One of <file-name>, <twt> or <stratigraphic-depth> needs to be given in <trend-cube>\n";
     else if(estimate > 1)
-      errTxt += "Both <tvd> and <stratigraphic-depth> can not be given in <trend-cube>\n";
+      errTxt += "Both <twt> and <stratigraphic-depth> can not be given in <trend-cube>\n";
   }
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
@@ -6106,13 +6166,37 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Paramteres are set under <advanced-settings><seismic-quality-grid>, "
                         "but this grid is not set to be written under <io-settings><grid-output><other-parameters>, so these are ignored.\n";
 
-  /// RMS velocity consistency
+  /// Travel time inversion consistency
   if(modelSettings_->getTravelTimeTimeLapse(0) == true) {
-    if(modelSettings_->getRMSPriorGiven() == false)
+    if (inputFiles_->getRmsVelocities(0) != "" && modelSettings_->getRMSPriorGiven() == false)
       errTxt += "<rms-velocities> need to be given in <prior-model> when RMS data are given in <survey><travel-time>\n";
-  }
 
+    std::vector<std::string> firstTravelTimeHorizons = modelSettings_->getTimeLapseTravelTimeHorizons(0);
+    if (firstTravelTimeHorizons.size() > 0) {
+      for (int i = 1; i < static_cast<int>(modelSettings_->getNumberOfTimeLapses()); ++i) {
+        std::vector<std::string> currentTravelTimeHorizons = modelSettings_->getTimeLapseTravelTimeHorizons(i);
+        for (size_t j = 0; j < currentTravelTimeHorizons.size(); ++j) {
+          bool found = false;
+          for (size_t k = 0; k < firstTravelTimeHorizons.size(); ++k) {
+            if (currentTravelTimeHorizons[j] == firstTravelTimeHorizons[k]) {
+              found = true;
+              break;
+            }
+          }
+          if (found == false) {
+            errTxt += "The travel time horizon name \""+currentTravelTimeHorizons[j]+"\" for vintage "+NRLib::ToString(modelSettings_->getVintageYear(i))+"\n";
+            errTxt += " in <travel-time><horizon><horizon-name> does not correspond to the horizon names given for the first time lapse.\n";
+          }
+        }
+      }
+      std::vector<double> horizon_standard_deviation = modelSettings_->getTimeLapseTravelTimeHorizonSD(0);
+      for (size_t j = 0; j < horizon_standard_deviation.size(); ++j) {
+        if (horizon_standard_deviation[j] != 0)
+          errTxt += "The standard deviations for the travel time horizon for the first time lapse need to be zero\n";
+      }
+    }
   }
+}
 
 void
 XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)

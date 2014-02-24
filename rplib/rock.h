@@ -1,20 +1,21 @@
 #ifndef RPLIB_ROCK_H
 #define RPLIB_ROCK_H
 
+#include <cstddef>
 #include <vector>
 
 
 // Abstract rock class.
 class Rock {
 public:
-                                    Rock();
+  Rock();
   virtual                           ~Rock();
 
   virtual Rock                    * Clone()                                                      const = 0;
 
-  void                              GetSeismicParams(double & vp, double & vs, double & rho)     const {
-                                      vp = vp_; vs = vs_; rho = rho_;
-                                    }
+  void                              GetSeismicParams(double & vp,
+                                                     double & vs,
+                                                     double & rho) const;
 
   // Important:SetPorosity is not a "simple" set function. It triggers a recalculation of a lot of the member variables.
   // See children classes for examples.

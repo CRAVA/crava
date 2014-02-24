@@ -6,6 +6,7 @@
 class ModelSettings;
 class ModelAVODynamic;
 class ModelAVOStatic;
+class ModelTravelTimeStatic;
 class ModelGravityStatic;
 class ModelGravityDynamic;
 class ModelGeneral;
@@ -15,6 +16,7 @@ class SeismicParametersHolder;
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
                        ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
@@ -38,6 +40,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
 bool doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
                                     ModelGeneral            * modelGeneral,
+                                    ModelTravelTimeStatic   * modelTravelTimeStatic,
                                     const InputFiles        * inputFiles,
                                     const int               & vintage,
                                     SeismicParametersHolder & seismicParameters);

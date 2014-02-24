@@ -43,8 +43,12 @@ extern "C" {
 
 // ------ NR: ------
 // We only support computers that have SSE2.
-// #define HAVE_SSE2 //NBNB-Marit: Fix only for CRAVA
+#define HAVE_SSE2
 #define DSFMT_MEXP 19937
+#if defined(_MSC_VER) && _MSC_VER >= 1700
+  // Included stdint.h to prevent warning when compiling dSFMT on VS2012
+  #include <cstdint>
+#endif
 // ------ NR -------
 
 
@@ -103,15 +107,17 @@ extern "C" {
 #  if !defined(DSFMT_UINT32_DEFINED) && !defined(SFMT_UINT32_DEFINED)
 typedef unsigned int uint32_t;
 typedef unsigned __int64 uint64_t;
-#    define UINT64_C(v) (v ## ui64)
+#    ifndef UINT64_C
+#      define UINT64_C(v) (v ## ui64)
+#    endif
 #    define DSFMT_UINT32_DEFINED
-#    if !defined(inline)
+#    if !defined(inline) && !defined(__cplusplus)
 #      define inline __inline
 #    endif
 #  endif
 #else
 #  include <inttypes.h>
-#  if !defined(inline)
+#  if !defined(inline) && !defined(__cplusplus)
 #    if defined(__GNUC__)
 #      define inline __inline__
 #    else

@@ -1,4 +1,4 @@
-// $Id: surfaceio.hpp 1152 2013-04-09 12:47:11Z perroe $
+// $Id: surfaceio.hpp 1232 2014-01-13 12:22:40Z gudmundh $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.

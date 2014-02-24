@@ -999,9 +999,6 @@
     <ClCompile Include="src\rmstrace.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\rmsinversion.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\gravimetricinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1010,7 +1007,44 @@
     </ClCompile>
     <ClCompile Include="src\modelgravitystatic.cpp">
       <Filter>Source Files\src</Filter>
-    </ClCompile>  </ItemGroup>
+    </ClCompile>
+    <ClCompile Include="src\traveltimeinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modeltraveltimestatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\solid.cpp">
+      <Filter>Source Files\rplib\solid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\fluid.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\dryrock.cpp">
+      <Filter>Source Files\rplib\dryrock</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp_2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_vp_3.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho_3.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="rplib\table_rho_2.cpp">
+      <Filter>Source Files\rplib\fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\random\randomgenerator.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
       <Filter>Source Files\libs\boost</Filter>
@@ -1690,15 +1724,40 @@
     <ClInclude Include="src\rmstrace.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\rmsinversion.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\modelgravitydynamic.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\modelgravitystatic.h">
       <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>  </ItemGroup>
+    </ClInclude>
+    <ClInclude Include="src\traveltimeinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modeltraveltimestatic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp_3.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_vp_2.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho_3.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="rplib\table_rho_2.h">
+      <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\random\randomgenerator.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\NORSAR\BIP2008-2010\NSM-Projects\CRAVA_Project\INVERSION\CRAVA_INPUT\initial-model.xml">
       <Filter>Source Files\libs\nrlib</Filter>

@@ -1,4 +1,4 @@
-// $Id: traceheader.cpp 1152 2013-04-09 12:47:11Z perroe $
+// $Id: traceheader.cpp 1199 2013-10-02 08:24:02Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -567,41 +567,37 @@ void TraceHeader::WriteValues()
   }
 }
 
-float TraceHeader::GetUtmx() const
+double TraceHeader::GetUtmx() const
 {
   int loc = format_.GetUtmxLoc();
   if (loc < 0) {
     return rmissing_;
   }
- // return scalCo_ * float(getInt32(loc));
   return(scal_co_*utmx_);
 }
 
-void TraceHeader::SetUtmx(float utmx)
+void TraceHeader::SetUtmx(double utmx)
 {
   int loc = format_.GetUtmxLoc();
   if (loc > 0) {
-  //  setInt32(loc, int(utmx/scalCo_));
-    utmx_ = utmx;
+    utmx_ = utmx/scal_co_;
   }
 }
 
-float TraceHeader::GetUtmy() const
+double TraceHeader::GetUtmy() const
 {
   int loc = format_.GetUtmyLoc();
   if (loc < 0) {
     return rmissing_;
   }
- // return scalCo_ * float(getInt32(loc));
   return(scal_co_*utmy_);
 }
 
-void TraceHeader::SetUtmy(float utmy)
+void TraceHeader::SetUtmy(double utmy)
 {
   int loc = format_.GetUtmyLoc();
   if (loc > 0) {
- //   setInt32(loc, int(utmy/scalCo_));
-    utmy_ = utmy;
+    utmy_ = utmy/scal_co_;
   }
 }
 
@@ -612,7 +608,6 @@ int TraceHeader::GetInline() const
   if (loc < 0) {
     return imissing_;
   }
-//  return getInt32(loc);
   return inline_;
 }
 
@@ -621,7 +616,6 @@ void TraceHeader::SetInline(int inLine)
 {
   int loc = format_.GetInlineLoc();
   if (loc > 0) {
-  //  setInt32(loc, inLine);
     inline_ = inLine;
   }
 }
@@ -633,7 +627,6 @@ int TraceHeader::GetCrossline() const
   if (loc < 0) {
     return imissing_;
   }
-//  return getInt32(loc);
   return crossline_;
 }
 
@@ -642,27 +635,26 @@ void TraceHeader::SetCrossline(int crossLine)
 {
   int loc = format_.GetCrosslineLoc();
   if (loc > 0) {
-  //  setInt32(loc, crossLine);
     crossline_ = crossLine;
   }
 }
 
 
-float TraceHeader::GetCoord1() const
+double TraceHeader::GetCoord1() const
 {
   if(format_.GetCoordSys() == TraceHeaderFormat::UTM)
     return(GetUtmx());
   else
-    return(static_cast<float>(GetInline()));
+    return(static_cast<double>(GetInline()));
 }
 
 
-float TraceHeader::GetCoord2() const
+double TraceHeader::GetCoord2() const
 {
   if(format_.GetCoordSys() == TraceHeaderFormat::UTM)
     return(GetUtmy());
   else
-    return(static_cast<float>(GetCrossline()));
+    return(static_cast<double>(GetCrossline()));
 }
 
 
@@ -685,4 +677,30 @@ short TraceHeader::GetScalCo() const
     return 0;
   }
   return scalcoinitial_;
+}
+
+void TraceHeader::SetScalCo(short scalcoinitial)
+{
+  scalcoinitial_ = scalcoinitial;
+  switch (scalcoinitial) {
+  case -10000:
+    scal_co_ = 0.0001f;
+    break;
+  case -1000:
+    scal_co_ = 0.001f;
+    break;
+  case -100:
+    scal_co_ = 0.01f;
+    break;
+  case -10:
+    scal_co_ = 0.1f;
+    break;
+  case 10:
+  case 100:
+  case 1000:
+  case 10000:
+    scal_co_ = static_cast<float>(scalcoinitial);
+  }
+
+
 }

@@ -169,9 +169,10 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
 
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*rnxp_)*0.02f);
   float nextMonitor = monitorSize;
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-  printf("\n  ^");
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
 
   //
   // Find proper length of time samples to get N*log(N) performance in FFT.
@@ -395,7 +396,7 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
 
       if (rnxp_*j + i + 1 >= static_cast<int>(nextMonitor)) {
         nextMonitor += monitorSize;
-        printf("^");
+        std::cout << "^";
         fflush(stdout);
       }
 
@@ -845,7 +846,9 @@ FFTGrid::setTrace(float value, size_t i, size_t j)
 void
 FFTGrid::fillInConstant(float value, bool add)
 {
-  createRealGrid(add);
+  if(rvalue_ == NULL) // if(rvalue_ != NULL), the grid is already created
+    createRealGrid(add);
+
   int i,j,k;
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)

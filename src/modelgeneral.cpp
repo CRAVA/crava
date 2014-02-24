@@ -2441,6 +2441,9 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
     const std::vector<std::string>&           trend_cube_parameters = modelSettings->getTrendCubeParameters();
     const std::vector<std::vector<double> > & trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
     const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy as rock physics estimation not can be done for reservoir variables.
+    const std::vector<std::vector<double> >   dummy_s1;
+    const std::vector<std::vector<double> >   dummy_s2;
+    const int                                 dummy_output_other = -999;
 
     const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_variable = modelSettings->getReservoirVariable();
     for(std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
@@ -2449,7 +2452,15 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
       std::vector<DistributionWithTrend *> dist_vector(storage.size());
 
       for(size_t i=0; i<storage.size(); i++)
-        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, dummy_blocked_logs, errTxt);
+        dist_vector[i] = storage[i]->GenerateDistributionWithTrend(path,
+                                                                   trend_cube_parameters,
+                                                                   trend_cube_sampling,
+                                                                   dummy_blocked_logs,
+                                                                   dummy_s1,
+                                                                   dummy_s2,
+                                                                   dummy_output_other,
+                                                                   "dummy",
+                                                                   errTxt);
 
       reservoir_variables_[it->first] = dist_vector;
     }
@@ -2510,7 +2521,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(all_facies_names[it]);
           if(iter != rock_storage.end()) {
 
-
+            int output_other = modelSettings->getOtherOutputFlag();
             std::string rockErrTxt = "";
 
             std::string name = iter->first;
@@ -2526,6 +2537,7 @@ void ModelGeneral::processRockPhysics(Simbox                        * timeSimbox
                                                                                        solid_storage,
                                                                                        dry_rock_storage,
                                                                                        fluid_storage,
+                                                                                       output_other,
                                                                                        rockErrTxt);
 
             if(rockErrTxt == "") {
@@ -4427,10 +4439,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
           }
           LogKit::LogFormatted(LogKit::Medium,"\n");
 
-          for (int w = 0 ; w < nWells ; w++)
-            delete [] faciesCount[w];
-          delete [] faciesCount;
-
           //
           // Make prior facies probabilities
           //
@@ -4444,7 +4452,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
               nData[faciesLog[i]]++;
             }
           }
-          delete [] faciesLog;
 
           for(int i=0 ; i<nFacies ; i++)
             sum += nData[i];
@@ -4476,6 +4483,12 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
 
           TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
         }
+
+        for (int w = 0 ; w < nWells ; w++)
+          delete [] faciesCount[w];
+        delete [] faciesCount;
+
+        delete [] faciesLog;
       }
       else
       {
@@ -4772,34 +4785,29 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   state4d_.FFT();
 }
 
+
 void
 ModelGeneral::advanceTime(const int               & previous_vintage,
                           const double            & time_change,
                           SeismicParametersHolder & seismicParameters,
                           ModelSettings           * modelSettings)
 {
-  if(time_change > 0) { // Only split, evolve and merge at positive time change
+  if(time_change > 0) { // Only evolve and merge at positive time change
 
-    bool debug = false;
-    if (debug == true) {
-      dump4Dparameters(modelSettings,
-                       "_prior",
-                       previous_vintage);  // note this prior should be equal to
-                                           // next_prior in previous step
-      dumpSeismicParameters(modelSettings,
-                            "_posterior",
-                            previous_vintage,
-                            seismicParameters);
-    }
-
-    state4d_.split(seismicParameters);
+    bool debug = true;
 
     if (debug == true)
       dump4Dparameters(modelSettings,
-                       "_posterior",
+                       "_BeforeEvolve_",
                        previous_vintage);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
+
+    if (debug == true)
+      dump4Dparameters(modelSettings,
+                       "_AfterEvolve_",
+                       previous_vintage+1);
+
     state4d_.merge(seismicParameters);
 
 
@@ -4822,17 +4830,49 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
   timeSimbox_ = new Simbox(new_timeSimbox);
 }
 
+void
+ModelGeneral::setTimeDepthMapping(GridMapping * new_timeDepthMapping)
+{
+  if (timeDepthMapping_ != NULL)
+    delete timeDepthMapping_;
+
+  timeDepthMapping_ = new_timeDepthMapping;
+}
 
 void
-ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings)
+ModelGeneral::mergeState4D(SeismicParametersHolder &  seismicParameters)
 {
-  bool debug=true;
-  int time_step=timeEvolution_.GetNTimSteps()-1;
-  if(debug) dumpSeismicParameters(modelSettings,"_posterior", time_step,seismicParameters);
+  state4d_.merge(seismicParameters);
+}
 
+
+void
+ModelGeneral::updateState4D(SeismicParametersHolder &  seismicParameters)
+{
   state4d_.split(seismicParameters);
-  dump4Dparameters(modelSettings, "_posterior", time_step);
+}
 
+void
+ModelGeneral::updateState4DWithSingleParameter(FFTGrid * EPost,
+                                               FFTGrid * CovPost,
+                                               int       parameterNumber)
+{
+  state4d_.updateWithSingleParameter(EPost,
+                                     CovPost,
+                                     parameterNumber);
+}
+
+void
+ModelGeneral::updateState4DMu(FFTGrid * mu_vp_static,
+                              FFTGrid * mu_vs_static,
+                              FFTGrid * mu_rho_static,
+                              FFTGrid * mu_vp_dynamic,
+                              FFTGrid * mu_vs_dynamic,
+                              FFTGrid * mu_rho_dynamic)
+{
+  state4d_.updateStaticMu(mu_vp_static, mu_vs_static, mu_rho_static);
+
+  state4d_.updateDynamicMu(mu_vp_dynamic, mu_vs_dynamic, mu_rho_dynamic);
 }
 
 bool
@@ -4860,6 +4900,9 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
      fileName= outPre + labels[i];
      ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, predictions[i] , fileName, labels[i]);
   }
+
+  for (size_t i = 0; i < predictions.size(); i++)
+    delete predictions[i];
 
   return 0;
 }

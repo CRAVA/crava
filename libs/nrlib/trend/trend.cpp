@@ -1,4 +1,4 @@
-// $Id: trend.cpp 1138 2013-01-30 08:32:38Z ulvmoen $
+// $Id: trend.cpp 1224 2013-12-12 09:16:42Z ulvmoen $
 #include "trend.hpp"
 #include "trendkit.hpp"
 #include "../exception/exception.hpp"
@@ -17,6 +17,7 @@ Trend::~Trend()
 {
 }
 
+
 //-------------------------------------------------------------------//
 
 TrendConstant::TrendConstant(double trend)
@@ -25,7 +26,8 @@ TrendConstant::TrendConstant(double trend)
 }
 
 TrendConstant::TrendConstant(const TrendConstant & trend)
-: trend_(trend.trend_)
+: Trend(),
+  trend_(trend.trend_)
 {
 }
 
@@ -82,7 +84,7 @@ TrendConstant::DrawPoint(const NRLib::Volume &volume) const
 }
 //-------------------------------------------------------------------//
 
-Trend1D::Trend1D(const std::vector<double> trend, int reference)
+Trend1D::Trend1D(const std::vector<double> & trend, int reference)
 : trend_(trend)
 {
   if(trend_.empty() || reference > 3 || reference < 1)
@@ -93,7 +95,7 @@ Trend1D::Trend1D(const std::vector<double> trend, int reference)
   reference_  = reference;
 }
 
-Trend1D::Trend1D(const std::vector<double> trend, int reference, double dz)
+Trend1D::Trend1D(const std::vector<double> & trend, int reference, double dz)
 : trend_(trend)
 {
   //Use this constructor when the increment needs to be specified
@@ -107,7 +109,8 @@ Trend1D::Trend1D(const std::vector<double> trend, int reference, double dz)
 }
 
 Trend1D::Trend1D(const Trend1D & trend)
-: trend_(trend.trend_),
+: Trend(),
+  trend_(trend.trend_),
   reference_(trend.reference_),
   inv_s1_inc_(trend.inv_s1_inc_)
 {
@@ -119,7 +122,7 @@ Trend1D::Trend1D(const std::string &filename, int reference)
   int file_format = NRLib::GetTrend1DFileFormat(filename, errTxt);
   if(file_format == 0){
     double s_min, s_max;
-    NRLib::ReadTrend1DJason(filename,errTxt, trend_, s_min, s_max);
+    NRLib::ReadTrend1D(filename,errTxt, trend_, s_min, s_max);
     if(errTxt !="")
       throw NRLib::Exception(errTxt);
   }
@@ -130,7 +133,7 @@ Trend1D::Trend1D(const std::string &filename, int reference)
       throw NRLib::Exception(errTxt);
   }
   assert(trend_.size() > 1);
-  inv_s1_inc_ = 1.0 / (trend_.size() - 1);
+  inv_s1_inc_ = (trend_.size() - 1.0);
   if(reference > 3 || reference < 1){
     errTxt = "Wrong reference value in Trend1D. Reference must be either 1, 2 or 3. Value used is " + NRLib::ToString(reference) + "\n";
     throw NRLib::Exception(errTxt);
@@ -144,6 +147,30 @@ Trend1D::Trend1D() {
 
 Trend1D::~Trend1D() {
 
+}
+
+void
+Trend1D::AddConstant(double c)
+{
+  for(size_t i = 0; i < trend_.size(); i++)
+    trend_[i]+=c;
+
+}
+
+double
+Trend1D::GetTrendElement(int i, int j, int k) const
+{
+  double value = 0;
+  if (reference_ == 1)
+    value = trend_[i];
+
+  else if (reference_ == 2)
+    value = trend_[j];
+
+  else
+    value = trend_[k];
+
+  return value;
 }
 
 double
@@ -259,7 +286,9 @@ Trend1D::GetMeanValue(void) const
 
 
 //-------------------------------------------------------------------//
-Trend2D::Trend2D(const NRLib::Grid2D<double> trend, int reference1, int reference2)
+Trend2D::Trend2D(const NRLib::Grid2D<double> & trend,
+                 int                           reference1,
+                 int                           reference2)
 : trend_(trend)
 {
   // Use this constructor when the total length of the trend is one
@@ -274,7 +303,12 @@ Trend2D::Trend2D(const NRLib::Grid2D<double> trend, int reference1, int referenc
   reference2_ = reference2;
 }
 
-Trend2D::Trend2D(const NRLib::Grid2D<double> trend, int reference1, int reference2, double dz1, double dz2)
+
+Trend2D::Trend2D(const NRLib::Grid2D<double> & trend,
+                 int                           reference1,
+                 int                           reference2,
+                 double                        dz1,
+                 double                        dz2)
 : trend_(trend)
 {
   //Use this constructor when the increment needs to be specified
@@ -289,8 +323,10 @@ Trend2D::Trend2D(const NRLib::Grid2D<double> trend, int reference1, int referenc
   reference2_ = reference2;
 }
 
+
 Trend2D::Trend2D(const Trend2D & trend)
-: reference1_(trend.reference1_),
+: Trend(),
+  reference1_(trend.reference1_),
   reference2_(trend.reference2_),
   trend_(trend.trend_),
   ns1_(trend.ns1_),
@@ -300,7 +336,10 @@ Trend2D::Trend2D(const Trend2D & trend)
 {
 }
 
-Trend2D::Trend2D(const std::string &filename, int reference1, int reference2)
+
+Trend2D::Trend2D(const std::string & filename,
+                 int                 reference1,
+                 int                 reference2)
 {
   NRLib::SurfaceFileFormat file_format = FindSurfaceFileType(filename);
   if (file_format != NRLib::SURF_UNKNOWN) {
@@ -327,8 +366,20 @@ Trend2D::Trend2D(const std::string &filename, int reference1, int reference2)
 Trend2D::Trend2D() {
 }
 
+
 Trend2D::~Trend2D() {
 }
+
+
+void
+Trend2D::AddConstant(double c)
+{
+  for(size_t i = 0; i < trend_.GetNI(); i++)
+    for(size_t j = 0; j < trend_.GetNJ(); j++)
+      trend_(i, j) += c;
+
+}
+
 
 double
 Trend2D::GetTrendElement(int i, int j, int k) const
@@ -353,7 +404,10 @@ Trend2D::GetTrendElement(int i, int j, int k) const
 
 
 double
-Trend2D::GetValue(double s1, double s2, double s3, const NRLib::Volume &volume) const {
+Trend2D::GetValue(double                s1,
+                  double                s2,
+                  double                s3,
+                  const NRLib::Volume & volume) const {
   //Linear interpolation method
    double s1rel, s2rel;
    if(reference1_ == 2 && reference2_ == 3) {     //Constant in x-direction
@@ -417,6 +471,7 @@ Trend2D::GetValue(double s1, double s2, double /*s3*/) const {
   return val;
 }
 
+
 std::vector<double>
 Trend2D::GetIncrement(void) const
 {
@@ -439,6 +494,7 @@ Trend2D::GetIncrement(void) const
   return(increment);
 }
 
+
 std::vector<int>
 Trend2D::GetTrendSize(void) const
 {
@@ -449,12 +505,14 @@ Trend2D::GetTrendSize(void) const
   return(size);
 }
 
+
 int
 Trend2D::GetTrendDimension(void) const
 {
   int dim = 2;
   return(dim);
 }
+
 
 double
 Trend2D::GetMaxValue(void) const
@@ -469,6 +527,7 @@ Trend2D::GetMaxValue(void) const
   return(max);
 }
 
+
 double
 Trend2D::GetMinValue(void) const
 {
@@ -482,6 +541,7 @@ Trend2D::GetMinValue(void) const
   return(min);
 }
 
+
 double
 Trend2D::GetMeanValue(void) const
 {
@@ -489,50 +549,89 @@ Trend2D::GetMeanValue(void) const
   double mean = trend_(0);
   for (size_t i = 0; i < trend_.GetNI(); i++)
     for (size_t j = 0; j < trend_.GetNJ(); j++)
-        mean += trend_(i,j);
+      mean += trend_(i,j);
 
   return(mean/(trend_.GetNI()*trend_.GetNJ()));
 }
 
 //-------------------------------------------------------------------//
 
-Trend3D::Trend3D(NRLib::Grid<double> &values)
+Trend3D::Trend3D(NRLib::Grid<double> & values)
   : Trend()
 {
 
   trend_ = values;
 }
 
+
 Trend3D::Trend3D(const Trend3D & trend)
-: trend_(trend.trend_)
+: Trend(),
+  trend_(trend.trend_)
 {
 }
 
-Trend3D::Trend3D(const std::string & /*file_name*/)
+
+Trend3D::Trend3D(const std::string & file_name,
+                 bool                binary,
+                 Endianess           file_format)
   : Trend()
 {
+  std::string err_txt;
+  if(binary == false)
+    ReadTrend3DPlainAscii(file_name,
+                          err_txt,
+                          trend_);
+  else
+    ReadTrend3DBinary(file_name,
+                      file_format,
+                      err_txt,
+                      trend_);
+
+  if(err_txt !="")
+    throw NRLib::Exception(err_txt);
+
 }
 
-Trend3D::~Trend3D() {
+
+Trend3D::~Trend3D()
+{
+}
+
+
+void
+Trend3D::AddConstant(double c)
+{
+  for(size_t i = 0; i < trend_.GetNI(); i++)
+    for(size_t j = 0; j < trend_.GetNJ(); j++)
+      for(size_t k = 0; k < trend_.GetNK(); k++)
+        trend_(i, j, k) += c;
+
 }
 
 
 double
 Trend3D::GetValue(double /*s1*/, double /*s2*/, double /*s3*/) const
 {
+  assert(false); // not implemented yet.
   return 0;
 
 }
 
+
 double
-Trend3D::GetValue(double s1, double s2, double s3, const NRLib::Volume &volume) const {
+Trend3D::GetValue(double                /*s1*/,
+                  double                /*s2*/,
+                  double                /*s3*/,
+                  const NRLib::Volume & /*volume*/) const {
   //Linear interpolation method
-   double s1rel, s2rel, s3rel;
-   s1rel = s1/volume.GetLX();
-   s2rel = s2/volume.GetLY();
-   s3rel = s3/volume.GetLZ();
+ //  double s1rel, s2rel, s3rel;
+ //  s1rel = s1/volume.GetLX();
+ //  s2rel = s2/volume.GetLY();
+  // s3rel = s3/volume.GetLZ();
+   assert(false); // not implemented yet.
    return 0;
 }
+
 
 std::vector<double>
 Trend3D::GetIncrement(void) const
@@ -545,6 +644,7 @@ Trend3D::GetIncrement(void) const
   return(increment);
 }
 
+
 std::vector<int>
 Trend3D::GetTrendSize(void) const
 {
@@ -555,11 +655,13 @@ Trend3D::GetTrendSize(void) const
   return(size);
 }
 
+
 int
 Trend3D::GetTrendDimension(void) const {
   int dim = 3;
   return(dim);
 }
+
 
 double
 Trend3D::GetMaxValue(void) const
@@ -575,6 +677,7 @@ Trend3D::GetMaxValue(void) const
   return(max);
 }
 
+
 double
 Trend3D::GetMinValue(void) const
 {
@@ -588,6 +691,7 @@ Trend3D::GetMinValue(void) const
 
   return(min);
 }
+
 
 double
 Trend3D::GetMeanValue(void) const

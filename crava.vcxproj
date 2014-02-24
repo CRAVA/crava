@@ -255,6 +255,7 @@
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp" />
+    <ClCompile Include="libs\nrlib\random\randomgenerator.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -263,11 +264,20 @@
     </ClCompile>
     <ClCompile Include="rplib\betaendmassdistributionwithtrend.cpp" />
     <ClCompile Include="rplib\distributionsdryrockwalton.cpp" />
+    <ClCompile Include="rplib\dryrock.cpp" />
     <ClCompile Include="rplib\dryrockwalton.cpp" />
+    <ClCompile Include="rplib\fluid.cpp" />
+    <ClCompile Include="rplib\solid.cpp" />
+    <ClCompile Include="rplib\table_rho.cpp" />
     <ClCompile Include="rplib\table_rho1.cpp" />
     <ClCompile Include="rplib\table_rho2.cpp" />
+    <ClCompile Include="rplib\table_rho_2.cpp" />
+    <ClCompile Include="rplib\table_rho_3.cpp" />
+    <ClCompile Include="rplib\table_vp.cpp" />
     <ClCompile Include="rplib\table_vp1.cpp" />
     <ClCompile Include="rplib\table_vp2.cpp" />
+    <ClCompile Include="rplib\table_vp_2.cpp" />
+    <ClCompile Include="rplib\table_vp_3.cpp" />
     <ClCompile Include="src\analyzelog.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -335,6 +345,7 @@
     <ClCompile Include="src\modelgravitystatic.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
+    <ClCompile Include="src\modeltraveltimestatic.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
     <ClCompile Include="src\posteriorelasticpdf.cpp" />
     <ClCompile Include="src\posteriorelasticpdf2d.cpp" />
@@ -342,7 +353,6 @@
     <ClCompile Include="src\posteriorelasticpdf4d.cpp" />
     <ClCompile Include="src\program.cpp" />
     <ClCompile Include="src\qualitygrid.cpp" />
-    <ClCompile Include="src\rmsinversion.cpp" />
     <ClCompile Include="src\rmstrace.cpp" />
     <ClCompile Include="src\rockphysicsinversion4d.cpp" />
     <ClCompile Include="src\seismicparametersholder.cpp" />
@@ -358,6 +368,7 @@
     <ClCompile Include="src\timeevolution.cpp" />
     <ClCompile Include="src\timeline.cpp" />
     <ClCompile Include="src\timings.cpp" />
+    <ClCompile Include="src\traveltimeinversion.cpp" />
     <ClCompile Include="src\vario.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1360,16 +1371,23 @@
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
     <ClInclude Include="libs\nrlib\random\dSFMT.h" />
+    <ClInclude Include="libs\nrlib\random\randomgenerator.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="rplib\table_rho.h" />
     <ClInclude Include="rplib\table_rho1.h" />
     <ClInclude Include="rplib\table_rho2.h" />
+    <ClInclude Include="rplib\table_rho_2.h" />
+    <ClInclude Include="rplib\table_rho_3.h" />
+    <ClInclude Include="rplib\table_vp.h" />
     <ClInclude Include="rplib\table_vp1.h" />
     <ClInclude Include="rplib\table_vp2.h" />
+    <ClInclude Include="rplib\table_vp_2.h" />
+    <ClInclude Include="rplib\table_vp_3.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
-    <ClInclude Include="src\rmsinversion.h" />
+    <ClInclude Include="src\modeltraveltimestatic.h" />
     <ClInclude Include="src\rmstrace.h" />
     <ClInclude Include="src\gravimetricinversion.h" />
     <ClInclude Include="src\modelgravitydynamic.h" />
@@ -1418,6 +1436,7 @@
     <ClInclude Include="src\timeevolution.h" />
     <ClInclude Include="src\timeline.h" />
     <ClInclude Include="src\timings.h" />
+    <ClInclude Include="src\traveltimeinversion.h" />
     <ClInclude Include="src\vario.h" />
     <ClInclude Include="src\wavelet.h" />
     <ClInclude Include="src\wavelet1D.h" />

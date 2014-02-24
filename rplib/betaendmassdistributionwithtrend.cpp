@@ -13,6 +13,13 @@
 BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend()
 : DistributionWithTrend()
 {
+  beta_endmass_distribution_ = NULL;
+  mean_                      = NULL;
+  var_                       = NULL;
+  ni_                        = 0;
+  nj_                        = 0;
+  n_samples_mean_            = 0;
+  n_samples_var_             = 0;
 }
 
 BetaEndMassDistributionWithTrend::BetaEndMassDistributionWithTrend(const NRLib::Trend * mean,
@@ -143,6 +150,18 @@ BetaEndMassDistributionWithTrend::ReSample(double s1, double s2)
 
   return value;
 }
+
+double
+BetaEndMassDistributionWithTrend::GetMeanValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(mean_->GetValue(s1, s2, dummy));
+}
+double
+BetaEndMassDistributionWithTrend::GetVarianceValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(var_->GetValue(s1, s2, dummy));
+}
+
 
 double
 BetaEndMassDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)

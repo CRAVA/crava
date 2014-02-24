@@ -40,17 +40,17 @@ ModelSettings::ModelSettings(void)
     logNames_(6),
     inverseVelocity_(2)
 {
-  lateralCorr_             = new GenExpVario(1, 1000, 1000);
-  backgroundVario_         = new GenExpVario(1, 2000, 2000);
-  localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately
-  geometry_full_           =     NULL;
-  geometry_                =     NULL;
-  traceHeaderFormat_       =     NULL;
-  traceHeaderFormatOutput_ = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
-  krigingParameter_        =        0; // Indicate kriging not set.
-  nWells_                  =        0;
-  nSimulations_            =        0;
-  backgroundType_          =       "";
+  lateralCorr_                = new GenExpVario(1, 1000, 1000);
+  backgroundVario_            = new GenExpVario(1, 2000, 2000);
+  localWaveletVario_          =     NULL; // Will be set equal to backgroundVario unless it is set separately
+  geometry_full_              =     NULL;
+  geometry_                   =     NULL;
+  traceHeaderFormat_          =     NULL;
+  traceHeaderFormatOutput_    = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
+  krigingParameter_           =        0; // Indicate kriging not set.
+  nWells_                     =        0;
+  nSimulations_               =        0;
+  backgroundType_             =       "";
 
   //
   // The original ranges were provided by Nam Hoai Pham (Statoil/25.09.2007)
@@ -206,6 +206,11 @@ ModelSettings::~ModelSettings(void)
   if (localWaveletVario_ != NULL)
     delete localWaveletVario_;
 
+  for (size_t i = 0; i < timeLapseTravelTimeLateralCorrelation_.size(); i++) {
+    if (timeLapseTravelTimeLateralCorrelation_[i] != NULL)
+      delete timeLapseTravelTimeLateralCorrelation_[i];
+  }
+
   if(geometry_ != NULL)
     delete geometry_;
 
@@ -315,6 +320,19 @@ ModelSettings::setLateralCorr(Vario * vario)
   if (lateralCorr_ != NULL)
     delete lateralCorr_;
   lateralCorr_ = vario;
+}
+
+void
+ModelSettings::addDefaultLateralTravelTimeErrorCorr()
+{
+  Vario * lateralTravelTimeErrorCorr = new GenExpVario(1, 50.0, 50.0, 0.0);
+  timeLapseTravelTimeLateralCorrelation_.push_back(lateralTravelTimeErrorCorr);
+}
+
+void
+ModelSettings::addLateralTravelTimeErrorCorr(Vario * vario)
+{
+  timeLapseTravelTimeLateralCorrelation_.push_back(vario);
 }
 
 void

@@ -295,6 +295,21 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   }
 }
 
+void
+GridMapping::setTopSurface(const Surface & top_surface)
+{
+  if (z0Grid_ != NULL)
+    delete z0Grid_;
+
+  Surface tmpSurf(top_surface);
+  z0Grid_ = new Surface(tmpSurf);
+
+  if (surfaceMode_ == BOTTOMGIVEN)
+    surfaceMode_ = BOTHGIVEN;
+  else
+    surfaceMode_ = TOPGIVEN;
+}
+
 void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
                                  int            outputFormat,

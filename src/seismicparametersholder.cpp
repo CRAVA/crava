@@ -20,8 +20,6 @@ SeismicParametersHolder::SeismicParametersHolder(void)
   crCovAlphaBeta_ = NULL;
   crCovAlphaRho_  = NULL;
   crCovBetaRho_   = NULL;
-
-  priorVar0_.resize(3,3);
 }
 
 //--------------------------------------------------------------------
@@ -86,7 +84,7 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * muAlpha,
   muRho_  = new FFTGrid(muRho);
 }
 
-
+//--------------------------------------------------------------------
 
 void
 SeismicParametersHolder::setCorrelationParameters(float                    ** priorVar0,
@@ -227,37 +225,6 @@ SeismicParametersHolder::getPriorVar0(void) const
   return priorVar0_;
 }
 
-//--------------------------------------------------------------------
-
-void
-SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad)
-{
-  createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
-
-  muAlpha_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muBeta_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  muRho_   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-
-  muAlpha_->setType(FFTGrid::PARAMETER);
-  muBeta_ ->setType(FFTGrid::PARAMETER);
-  muRho_  ->setType(FFTGrid::PARAMETER);
-
-  muAlpha_->createGrid();
-  muBeta_ ->createGrid();
-  muRho_  ->createGrid();
-
-  muAlpha_->fillInConstant(0.0);
-  muBeta_ ->fillInConstant(0.0);
-  muRho_  ->fillInConstant(0.0);
-
-  covAlpha_->fillInConstant(0.0);
-  covBeta_ ->fillInConstant(0.0);
-  covRho_  ->fillInConstant(0.0);
-
-  crCovAlphaBeta_->fillInConstant(0.0);
-  crCovAlphaRho_ ->fillInConstant(0.0);
-  crCovBetaRho_  ->fillInConstant(0.0);
-}
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::invFFTAllGrids()

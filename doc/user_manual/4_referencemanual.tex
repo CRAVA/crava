@@ -1622,41 +1622,6 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsection{\hbracket{travel-time}}\newkw{travel-time}
- \slist
-   \item \Description Travel time data
-   \item \Argument The standard deviation and the minimum distance
-   \item \Default
- \elist
-
-\subsubsection{\hbracket{rms-data}}\newkw{rms-data}
- \slist
-   \item \Description Elements controlling the RMS velocities $U^2$
-   \item \Argument 
-   \item \Default 
- \elist
-
-\paragraph{\hbracket{file-name}}\rnewkw{file-name}{rms-velocities-file-name}
- \slist
-   \item \Description File name for the RMS velocities
-   \item \Argument
-   \item \Default
- \elist
-
-\paragraph{\hbracket{standard-deviation}}\newkw{standard-deviation}
- \slist
-   \item \Description Standard deviation of the RMS data
-   \item \Argument
-   \item \Default
- \elist
-
-\subsubsection{\hbracket{horizon-file}}\newkw{horizon-file}
- \slist
-   \item \Description Repeated command, one for each horizon file. File name of the horizon file corresponding a the zone log of a well
-   \item \Argument File name
-   \item \Default 
- \elist
-
 \subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}
  \slist
    \item \Description The prior standard deviation of the gradients are given, as well as the minimum distance for where gradient lines should not cross each other
@@ -1676,6 +1641,70 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description The prior standard deviation of the gradient. Equal for both x- and y-gradients
    \item \Argument Value
    \item \Default 1 ms/m
+ \elist
+
+\subsection{\hbracket{travel-time}}\newkw{travel-time}
+ \slist
+   \item \Description Travel time data
+   \item \Argument Elements controlling travel time data
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{rms-data}}\newkw{rms-data}
+ \slist
+   \item \Description Elements controlling the RMS velocities
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{rms-velocities-file-name}
+ \slist
+   \item \Description File name for the RMS velocities
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{standard-deviation}}\newkw{standard-deviation}
+ \slist
+   \item \Description Standard deviation of the RMS data
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{horizon}}\newkw{horizon}
+ \slist
+   \item \Description Repeated command, one for each horizon file.
+   \item \Argument Elements controlling the horizon data
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{horizon-velocities-file-name}
+ \slist
+   \item \Description File name for the travel time horizon
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{horizon-name}}\newkw{horizon-name}
+ \slist
+   \item \Description Horizon name used to identify the travel time horizon in different time lapses
+   \item \Argument
+   \item \Default
+ \elist
+
+
+\paragraph{\hbracket{standard-deviation}}\rnewkw{standard-deviation}{horizon-standard-deviation}
+ \slist
+   \item \Description Standard deviation of the travel time horizon
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{lateral-correlation-stationary-data}}\newkw{lateral-correlation-stationary-data}
+ \slist
+   \item \Description 2D variogram for the lateral correlation in the stationary data calculated in the travel time inversion.
+   \item \Argument 2D variogram, see \autoref{sec:variogram}.
+   \item \Default General exponential variogram with angle=0, range=50, subrange=50 and power=1.
  \elist
 
 \subsection{\hbracket{gravimetry}\newkw{gravimetry}}
@@ -3982,7 +4011,7 @@ All the properties and function parameters can use previously assigned values in
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{estimate}}\newkw{estimate}
+\subsection{\hbracket{estimate}}\newkw{estimate}
  \slist
    \item \Description Estimate a constant value from well data. The wells used in the estimation are given by \kw{use-for-rock-physics}.
    \item \Argument 'yes' or 'no'

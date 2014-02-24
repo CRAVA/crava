@@ -12,6 +12,13 @@
 BetaDistributionWithTrend::BetaDistributionWithTrend()
 : DistributionWithTrend()
 {
+  beta_distribution_ = NULL;
+  mean_              = NULL;
+  var_               = NULL;
+  ni_                = 0;
+  nj_                = 0;
+  n_samples_mean_    = 0;
+  n_samples_var_     = 0;
 }
 
 BetaDistributionWithTrend::BetaDistributionWithTrend(const NRLib::Trend * mean,
@@ -209,6 +216,18 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
 
   return(y);
 }
+
+double
+BetaDistributionWithTrend::GetMeanValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(mean_->GetValue(s1, s2, dummy));
+}
+double
+BetaDistributionWithTrend::GetVarianceValue(double s1, double s2) {
+  double dummy = 0.0;
+  return(var_->GetValue(s1, s2, dummy));
+}
+
 
 void
 BetaDistributionWithTrend::CalculateAlpha(const double & mean,

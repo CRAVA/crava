@@ -1,4 +1,4 @@
-// $Id: gaussianfield.cpp 1046 2012-08-14 11:42:12Z anner $
+// $Id: gaussianfield.cpp 1193 2013-08-19 08:23:58Z anner $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -25,6 +25,7 @@
 #include "variogram.hpp"
 #include "../grid/grid2d.hpp"
 #include "../random/random.hpp"
+
 #include "../fft/fftgrid2d.hpp"
 #include "../fft/fft.hpp"
 
@@ -34,9 +35,11 @@ using namespace NRLib;
 
 // Local function, not accessible elsewhere.
 // Using int instead of size_t, since we want negative differences.
-Grid2D<double> CovGridForFFT2D(const Variogram& variogram,
-                               int nx, double dx,
-                               int ny, double dy)
+Grid2D<double> CovGridForFFT2D(const Variogram & variogram,
+                               int               nx,
+                               double            dx,
+                               int               ny,
+                               double            dy)
 {
   Grid2D<double> cov(nx, ny);
   int nxm = (nx + 1)/2;
@@ -49,10 +52,7 @@ Grid2D<double> CovGridForFFT2D(const Variogram& variogram,
       ddx = i * dx;
       cov(i, j) = variogram.GetCov(ddx,ddy);
     }
-  }
-  // -1 - i quadrant
-  for (j = 0; j < nym; j++) {
-    ddy = j * dy;
+     // -1 - i quadrant
     for (i = nxm; i < nx; i++) {
       ddx = (i - nx) * dx;
       cov(i,j) = variogram.GetCov(ddx, ddy);
@@ -66,27 +66,23 @@ Grid2D<double> CovGridForFFT2D(const Variogram& variogram,
       ddx = (i - nx)* dx;
       cov(i,j) = variogram.GetCov(ddx, ddy);
     }
-  }
-
-  // -1 + i quadrant
-  for (j = nym; j < ny; j++) {
-    ddy = (j - ny) * dy;
-    for (i = 0; i < nxm; i++) {
+      // -1 + i quadrant
+     for (i = 0; i < nxm; i++) {
       ddx = i*dx;
       cov(i,j) = variogram.GetCov(ddx, ddy);
     }
   }
 
+
   return cov;
 }
-
 
 void NRLib::Simulate2DGaussianField(const Variogram& variogram,
                                     size_t nx, double dx,
                                     size_t ny, double dy,
                                     // double padding_fraction,
                                     // bool   user_defined_padding,
-                                    Grid2D<double>& grid_out)
+                                    Grid2D<double> & grid_out)
 {
   // Find grid size.
   double range_x, range_y;
@@ -114,9 +110,9 @@ void NRLib::Simulate2DGaussianField(const Variogram& variogram,
   // Grid with white noice.
   Grid2D<double> noise(nx_tot,ny_tot);
   size_t i,j;
-  for (i = 0; i < nx_tot; i++)
-    for (j = 0; j < ny_tot; j++)
-      noise(i,j) = NRLib::Random::Norm01();
+    for (i = 0; i < nx_tot; i++)
+      for (j = 0; j < ny_tot; j++)
+        noise(i,j) = NRLib::Random::Norm01();
 
   fftgrid.Initialize(noise);
   FFTGrid2D<double> filter(nx, ny, n_pad_x, n_pad_y, false);
@@ -125,38 +121,119 @@ void NRLib::Simulate2DGaussianField(const Variogram& variogram,
   grid_out = fftgrid.GetRealGrid();
 }
 
+// Simulation of multiple fields with the same covariance function.
+void NRLib::Simulate2DGaussianField(const Variogram              & variogram,
+                                    size_t                         nx,
+                                    double                         dx,
+                                    size_t                         ny,
+                                    double                         dy,
+                                    int                            n_fields,
+                                    std::vector<Grid2D<double> > & grid_out,
+                                    NRLib::RandomGenerator        *rg)
+{
+  // Find grid size.
+  double range_x, range_y;
+  if (variogram.GetAzimuthAngle() == 0.0) {
+    range_x = variogram.GetRangeX();
+    range_y = variogram.GetRangeY();
+  }
+  else {
+    range_x = std::max(variogram.GetRangeX(), variogram.GetRangeY());
+    range_y = range_x;
+  }
+  size_t n_pad_x = std::max(static_cast<size_t>(4.0 * range_x / dx), 2*nx) - nx;
+  size_t n_pad_y = std::max(static_cast<size_t>(4.0 * range_y / dy), 2*ny) - ny;
+
+  FFTGrid2D<double> fftgrid(nx, ny, n_pad_x, n_pad_y, true);
+
+  size_t nx_tot = fftgrid.GetNItot();
+  size_t ny_tot = fftgrid.GetNJtot();
+
+  // Covariance grid.
+  Grid2D<double> cov = CovGridForFFT2D(variogram,
+                                       static_cast<int>(nx_tot), dx,
+                                       static_cast<int>(ny_tot), dy);
+
+
+  FFTGrid2D<double> filter(nx, ny, n_pad_x, n_pad_y, false);
+  filter.Initialize(cov);
+  filter.DoFFT();
+  // Convolve with covariance grid.
+  for (size_t i = 0; i < filter.GetComplexNI()*filter.GetComplexNJ(); i++)
+    filter.ComplexData()[i] = std::sqrt(filter.ComplexData()[i]);
+
+
+  // Grid with white noice.
+  Grid2D<double> noise(nx_tot,ny_tot);
+
+  //if (seed == -999)
+  //  seed = NRLib::Random::DrawUint32();
+  // This is done to be able to do multithreading
+  //NRLib::RandomGenerator random;
+ // random.Initialize(seed);
+  if(rg == NULL) {
+    rg = new RandomGenerator();
+    rg->Initialize(NRLib::Random::DrawUint32());
+  }
+  for (int k = 0; k < n_fields; k++) {
+    for (size_t i = 0; i < nx_tot; i++)
+      for (size_t j = 0; j < ny_tot; j++)
+        noise(i,j) = rg->Norm01();
+
+    fftgrid.Initialize(noise);
+
+    fftgrid.DoFFT();
+    for(size_t i = 0; i < filter.GetComplexNI()*filter.GetComplexNJ(); i++)
+      fftgrid.ComplexData()[i] *=filter.ComplexData()[i];
+
+    fftgrid.DoInverseFFT();
+    grid_out.push_back(fftgrid.GetRealGrid());
+  }
+}
+
 void
-NRLib::Simulate1DGaussianField(const Variogram& variogram,
-                               size_t nx, double dx,
-                               std::vector<double> & grid_out)
+NRLib::Simulate1DGaussianField(const Variogram       & variogram,
+                               size_t                  nx,
+                               double                  dx,
+                               std::vector<double>   & grid_out,
+                               NRLib::RandomGenerator *rg)
 {
   double range = variogram.GetRangeX();
-  size_t nx_pad = std::max(static_cast<size_t>(4.0 * range / dx), 2*nx) - nx;
+  size_t nx_pad = std::min(static_cast<size_t>(2.0 * range / dx), nx);
+  size_t nxp = NRLib::FindNewSizeWithPadding(nx + nx_pad);
+  nx_pad =nxp-nx;
 
-  std::vector<double> cov(nx_pad);
-  size_t nxm = (nx_pad+1)/2;
-  for(size_t i = 0; i < nxm; i++){
+  std::vector<double> cov(nxp);
+  size_t nxm = (nxp+1)/2;
+  for(size_t i = 0; i < nxm; i++) {
     cov[i] = variogram.GetCov(i*dx);
   }
-  for(size_t i=nxm; i < nx_pad; i++){
-    double ddx = dx*(nx_pad - i);
+  for(size_t i=nxm; i < nxp; i++) {
+    double ddx = dx*(nxp - i);
     cov[i] = variogram.GetCov(ddx);
   }
-
-  std::vector<double> noise(2*nx_pad);
-  for(size_t i = 0; i < 2*nx_pad; i++)
-    noise[i] = NRLib::Random::Norm01();
+  if(rg == NULL) {
+    rg = new RandomGenerator();
+    rg->Initialize(NRLib::Random::DrawUint32());
+  }
+  std::vector<double> noise(nxp);
+  for(size_t i = 0; i < nxp; i++)
+    noise[i] = rg->Norm01();
   std::vector<std::complex<double> > cov_fft;
   std::vector<std::complex<double> > noise_fft;
-  NRLib::ComputeFFT1D(cov, cov_fft, true);
-  NRLib::ComputeFFT1D(noise, noise_fft, true);
+  NRLib::ComputeFFT1D(cov, cov_fft, false,0);
+  NRLib::ComputeFFT1D(noise, noise_fft, true,0);
   std::vector<std::complex<double> > convolve(cov_fft.size());
 
   for(size_t i = 0; i < cov_fft.size(); i++)
     convolve[i] = std::sqrt(cov_fft[i])*noise_fft[i];
 
+  std::vector<double> tmp(nxp);
 
-  NRLib::ComputeFFTInv1D(convolve, grid_out, true);
+  NRLib::ComputeFFTInv1D(convolve, tmp, true);
+
+  for(size_t i = 0; i < grid_out.size(); i++)
+    grid_out[i] = tmp[i];
 }
 
 

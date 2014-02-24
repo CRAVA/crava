@@ -1,11 +1,12 @@
 #include <time.h>
 
 #include "src/crava.h"
-#include "src/rmsinversion.h"
+#include "src/traveltimeinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
+#include "src/modeltraveltimestatic.h"
 #include "src/modeltraveltimedynamic.h"
 #include "src/modelgravitystatic.h"
 #include "src/modelgravitydynamic.h"
@@ -17,6 +18,7 @@
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
+                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
                        ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
@@ -34,6 +36,10 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                                        timeBGSimbox,
                                        modelGeneral->getTimeSimboxConstThick(),
                                        modelGeneral->getWells());
+
+  modelTravelTimeStatic = new ModelTravelTimeStatic(modelSettings,
+                                                    inputFiles,
+                                                    modelGeneral->getTimeSimbox());
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
   modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
@@ -110,7 +116,6 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
   if(failedLoadingModel == false) {
-
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     delete crava;
@@ -119,6 +124,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
+  modelGeneral->updateState4D(seismicParameters);
 
   return(failedLoadingModel);
 }
@@ -126,6 +132,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 bool
 doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
                                ModelGeneral            * modelGeneral,
+                               ModelTravelTimeStatic   * modelTravelTimeStatic,
                                const InputFiles        * inputFiles,
                                const int               & vintage,
                                SeismicParametersHolder & seismicParameters)
@@ -134,21 +141,22 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
 
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
                                                       inputFiles,
+                                                      modelTravelTimeStatic,
                                                       modelGeneral->getTimeSimbox(),
                                                       vintage);
 
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
 
   if(failedLoadingModel == false) {
-    RMSInversion * rms_inversion = new RMSInversion(modelGeneral,
-                                                    modelTravelTimeDynamic,
-                                                    seismicParameters);
+    TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
+                                                                          modelTravelTimeStatic,
+                                                                          modelTravelTimeDynamic,
+                                                                          seismicParameters);
 
-    delete rms_inversion;
+    delete travel_time_inversion;
   }
 
   delete modelTravelTimeDynamic;
-
   return(failedLoadingModel);
 }
 

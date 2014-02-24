@@ -1,3 +1,4 @@
+#include "src/io.h"
 
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionwithtrend.h"
@@ -9,7 +10,9 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
 #include "nrlib/trend/trendstorage.hpp"
+#include "nrlib/trend/trendkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
+
 
 DistributionWithTrendStorage::DistributionWithTrendStorage()
 {
@@ -18,7 +21,6 @@ DistributionWithTrendStorage::DistributionWithTrendStorage()
 DistributionWithTrendStorage::~DistributionWithTrendStorage()
 {
 }
-
 //--------------------------------------------------------------//
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
@@ -27,6 +29,8 @@ DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
@@ -83,11 +87,31 @@ DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::stri
                                                                  const std::vector<std::string>          & trend_cube_parameters,
                                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                  const std::vector<std::vector<float> >  & blocked_logs,
+                                                                 const std::vector<std::vector<double> > & s1,
+                                                                 const std::vector<std::vector<double> > & s2,
+                                                                 const int                                 output_other,
+                                                                 std::string                               filename_prefix,
                                                                  std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {  //Make sure shared variables are only generated one time
+    NRLib::Trend * mean_trend_dummy = NULL;
 
-    NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * mean_trend = mean_->GenerateTrend(path,
+                                                     trend_cube_parameters,
+                                                     trend_cube_sampling,
+                                                     blocked_logs,
+                                                     s1,
+                                                     s2,
+                                                     NRLib::TrendStorage::MEAN,
+                                                     mean_trend_dummy,
+                                                     errTxt);
+
+    // write mean and variance surface to file
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+    }
+
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
@@ -117,6 +141,9 @@ NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -162,12 +189,42 @@ NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::str
                                                                   const std::vector<std::string>          & trend_cube_parameters,
                                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                   const std::vector<std::vector<float> >  & blocked_logs,
+                                                                  const std::vector<std::vector<double> > & s1,
+                                                                  const std::vector<std::vector<double> > & s2,
+                                                                  const int                                 output_other,
+                                                                  std::string                               filename_prefix,
                                                                   std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
-    // Estimere forventning og varians her
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+
+    NRLib::Trend * mean_trend_dummy = NULL;
+    NRLib::Trend * mean_trend       = mean_->GenerateTrend(path,
+                                                           trend_cube_parameters,
+                                                           trend_cube_sampling,
+                                                           blocked_logs,
+                                                           s1,
+                                                           s2,
+                                                           NRLib::TrendStorage::MEAN,
+                                                           mean_trend_dummy,
+                                                           errTxt);
+
+    NRLib::Trend * variance_trend   = variance_->GenerateTrend(path,
+                                                               trend_cube_parameters,
+                                                               trend_cube_sampling,
+                                                               blocked_logs,
+                                                               s1,
+                                                               s2,
+                                                               NRLib::TrendStorage::VAR,
+                                                               mean_trend,
+                                                               errTxt);
+
+    // write mean and variance surface to file
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    }
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)
@@ -192,11 +249,16 @@ NormalDistributionWithTrendStorage::CloneMean() const
 //--------------------------------------------------------------//
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage()
-: is_shared_(false),
+: lower_limit_(0),
+  upper_limit_(0),
+  is_shared_(false),
   vintage_year_(1),
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 BetaDistributionWithTrendStorage::BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -248,12 +310,44 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
                                                                 const std::vector<std::string>          & trend_cube_parameters,
                                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                                                const std::vector<std::vector<double> > & s1,
+                                                                const std::vector<std::vector<double> > & s2,
+                                                                const int                                 output_other,
+                                                                std::string                               filename_prefix,
                                                                 std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
 
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * mean_trend_dummy = NULL;
+
+
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,
+                                                              trend_cube_parameters,
+                                                              trend_cube_sampling,
+                                                              blocked_logs,
+                                                              s1,
+                                                              s2,
+                                                              NRLib::TrendStorage::MEAN,
+                                                              mean_trend_dummy,
+                                                              errTxt);
+
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,
+                                                              trend_cube_parameters,
+                                                              trend_cube_sampling,
+                                                              blocked_logs,
+                                                              s1,
+                                                              s2,
+                                                              NRLib::TrendStorage::VAR,
+                                                              mean_trend,
+                                                              errTxt);
+
+    // write mean and variance surface to file
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    }
 
     CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
@@ -369,11 +463,18 @@ BetaDistributionWithTrendStorage::CheckBetaConsistency(NRLib::Trend * mean,
 //--------------------------------------------------------------//
 
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage()
-: is_shared_(false),
+: lower_limit_(0),
+  upper_limit_(0),
+  lower_probability_(0),
+  upper_probability_(0),
+  is_shared_(false),
   vintage_year_(1),
   one_year_correlation_(1.0),
   estimate_(false)
 {
+  mean_                    = NULL;
+  variance_                = NULL;
+  distribution_with_trend_ = NULL;
 }
 
 BetaEndMassDistributionWithTrendStorage::BetaEndMassDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
@@ -431,12 +532,43 @@ BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        const std::vector<std::vector<float> >  & blocked_logs,
+                                                                       const std::vector<std::vector<double> > & s1,
+                                                                       const std::vector<std::vector<double> > & s2,
+                                                                       const int                                 output_other,
+                                                                       std::string                               filename_prefix,
                                                                        std::string                             & errTxt)
 {
   if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
 
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,blocked_logs,errTxt);
+    NRLib::Trend * mean_trend_dummy = NULL;
+
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,
+                                                              trend_cube_parameters,
+                                                              trend_cube_sampling,
+                                                              blocked_logs,
+                                                              s1,
+                                                              s2,
+                                                              NRLib::TrendStorage::MEAN,
+                                                              mean_trend_dummy,
+                                                              errTxt);
+
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,
+                                                              trend_cube_parameters,
+                                                              trend_cube_sampling,
+                                                              blocked_logs,
+                                                              s1,
+                                                              s2,
+                                                              NRLib::TrendStorage::VAR,
+                                                              mean_trend,
+                                                              errTxt);
+
+    // write mean and variance surface to file
+    if ((output_other & IO::ROCK_PHYSICS_TRENDS) > 0) {
+      if (mean_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_mean", trend_cube_sampling, mean_trend);
+      if (variance_->GetEstimate() == true)
+        WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
+    }
 
     BetaDistributionWithTrendStorage::CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
@@ -459,4 +591,58 @@ BetaEndMassDistributionWithTrendStorage::CloneMean() const
 {
   NRLib::TrendStorage * cloned_mean = mean_->Clone();
   return(cloned_mean);
+}
+
+//--------------------------------------------------------------//
+
+void DistributionWithTrendStorage::WriteTrendToFile(const std::string                       & filename,
+                                                    const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                    const NRLib::Trend                      * trend) const
+{
+  if (typeid(*trend)  == typeid(NRLib::Trend1D)) {
+
+    int                 s_ref = trend->GetReference();
+    std::vector<double> s_tmp;
+
+    if (0 < s_ref && s_ref < 3) {
+      if (s_ref == 1)
+        s_tmp = trend_cube_sampling[0];
+      else if (s_ref == 2)
+        s_tmp = trend_cube_sampling[1];
+
+
+      std::vector<double> trend_vector(s_tmp.size(), RMISSING);
+
+      int j_dummy = -999;
+      int k_dummy = -999;
+      for (int i = 0; i < static_cast<int>(s_tmp.size()); ++i) {
+        if (s_ref == 1)
+          trend_vector[i] = trend->GetTrendElement(i, j_dummy, k_dummy);
+        else
+          trend_vector[i] = trend->GetTrendElement(j_dummy, i, k_dummy);
+      }
+      std::string full_fileName = IO::makeFullFileName(IO::PathToRockPhysics(), filename + IO::Suffix1DTrend());
+      NRLib::WriteTrend1D(full_fileName, s_tmp, trend_vector);
+    }
+  }
+
+  else if (typeid(*trend)  == typeid(NRLib::Trend2D)) {
+
+    std::vector<double> s1_tmp   = trend_cube_sampling[0];
+    std::vector<double> s2_tmp   = trend_cube_sampling[1];
+
+    NRLib::Grid2D<double> trend_grid2D(s1_tmp.size(), s2_tmp.size(), RMISSING);
+
+    int k_dummy = -999;
+    for (int i = 0; i < static_cast<int>(s1_tmp.size()); ++i) {
+      for (int j = 0; j < static_cast<int>(s2_tmp.size()); ++j) {
+        trend_grid2D(i, j) = trend->GetTrendElement(i, j, k_dummy);
+      }
+    }
+
+    NRLib::RegularSurface<double> trend_surface(s1_tmp.front(), s2_tmp.front(), s1_tmp.back() - s1_tmp.front(), s2_tmp.back() - s2_tmp.front(), trend_grid2D);
+
+    std::string full_fileName = IO::makeFullFileName(IO::PathToRockPhysics(), filename + IO::SuffixStormBinary()); //Should be able to specify suffix from model file
+    trend_surface.WriteToFile(full_fileName);
+  }
 }

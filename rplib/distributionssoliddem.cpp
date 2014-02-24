@@ -23,7 +23,7 @@ DistributionsSolidDEM::DistributionsSolidDEM(DistributionsSolid                 
 {
   assert( distr_incl_spectrum.size() + 1 == distr_incl_concentration.size() );
 
-  distr_solid      = distr_solid->Clone();
+  distr_solid_ = distr_solid->Clone();
 
   for (size_t i = 0; i < distr_solid_inc.size(); ++i)
     distr_solid_inc_[i]      = distr_solid_inc[i]->Clone();

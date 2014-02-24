@@ -60,14 +60,6 @@ public:
                                                     const int                 & nyPad,
                                                     const int                 & nzPad);
 
-  void                     allocateGrids(const int nx,
-                                         const int ny,
-                                         const int nz,
-                                         const int nxPad,
-                                         const int nyPad,
-                                         const int nzPad);
-
-
   NRLib::Matrix            getPriorVar0(void) const;
 
   float                  * getPriorCorrTFiltered(int nz, int nzp) const;
