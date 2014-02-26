@@ -172,6 +172,43 @@ In the \kw{multizone-model}, the reservoir is divided into several horizontal zo
 \subsubsection{Background model from rock physics}
 When rock physics models are used, the background model is generated using these. Each facies is defined as a \kw{rock} possibly containing trends using the rock physics template model described in \autoref{sec:rockPhysics}. The resulting background model is generated as a weighted average of the rock models, where the weights are the corresponding facies \kw{prior-probabilities}. 
 
+If well logs are available, the elastic parameters in the background model, 
+i.e.~the expectations, and the corresponding precision/variance, can be 
+modelled from data, respectively. Moreover, if there exist appropriate 
+reference parameters, like two-way-time and/or stratigraphic depth,
+ it is also possible to model the elastic parameters as 1- or 2-dimensional 
+functions of the provided reference parameters. 
+In principle, these reference parameters can be almost anything, as long as they
+provide some underlying structure to the problem at hand.
+Also, note that it is possible to combine different models, in the sense that we might 
+model the trend as constant while the variance is a two dimensional surface that 
+depends on a 2-dimensional reference parameter, see subsection
+\ref{sec:assigntrendsrockphy} for more details.
+
+The expectation is fitted using a modified version of a standard 
+local linear regression implementation with a Gaussian kernel. In short, what 
+distinguishes this implementation from those more commonly used, is that 
+it will provide more stable estimates outside the 
+main support of data.
+This is achieved by gradually increase the bandwidth in the kernel as the method  
+extrapolate  away from the main support of the observations. This happens, 
+however, at just the right rate to make a smooth transition to a standard linear model
+in regions far away from the centre of the observations.
+The bandwidth aims at, in all locations, to give a `effective sample sizes', 
+i.e.~the total weight of the kernel at a given point, that matches that
+in the main support of the data, with a bandwidth set to optimize the asymptotic
+properties (limiting minimize mean square error), under the assumption that the 
+observations are uniformly distributed over the domain.
+ 
+The estimated variances are a weighted averages between the estimated global variance  
+and estimates from a standard implementation of a kernel smoother with a Gaussian 
+kernel. The weights, used in the mixture, are the effective sample sizes. The selected 
+bandwidth is kept fixed and is the same as used to estimate the expectation 
+inside the main support of the data. This construction removes a rather undesirable 
+feature of the standard kernel smoother, which estimates a variance that is too low, or 
+zero, in regions with few observations.
+
+
 \subsection{Covariance}
 \label{sec:correstimp}
 
