@@ -1,4 +1,4 @@
-// $Id: laswell.hpp 1071 2012-09-18 11:42:51Z perroe $
+// $Id: laswell.hpp 1244 2014-02-24 15:57:16Z hauge $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -30,7 +30,7 @@
 namespace NRLib {
 
 /// Support for the LAS well format.
-/// Currently only LAS 2.0 is supported.
+/// Currently mainly LAS 2.0 is supported. Some LAS 3.0 support.
 /// \sa{http://www.cwls.org/las_info.php}
 class LasWell : public Well {
 public:
@@ -40,17 +40,7 @@ public:
   };
 
   /// Constructor with relevant parameters.
-  LasWell(const std::string & name,
-          size_t              length,
-          double              start_depth,
-          double              depth_increment,
-          DepthType           depth_type,
-          const std::string & depth_unit,
-          const std::string & company_name,
-          const std::string & field_name,
-          const std::string & location,
-          const std::string & date,
-          const std::string & unique_well_identifier);
+  LasWell(const std::string & filename);
 
   void AddLog(const std::string         & name,
               const std::string         & units,
@@ -60,6 +50,40 @@ public:
   void WriteToFile(const std::string              & filename,
                    const std::vector<std::string> & comment_header);
 private:
+  void ReadHeader(const std::string        & filename,
+                  std::ifstream            & fin,
+                  std::string              & err_txt);
+
+  void ParseInformation(std::vector<std::string>               & info,
+                        const std::string                      & text,
+                        std::ifstream                          & fin,
+                        std::string                            & line,
+                        std::string                            & err_txt);
+
+  void ParseVersionInformation(std::ifstream & fin,
+                               std::string   & line,
+                               std::string   & err_txt);
+
+  void ParseWellInformation(std::ifstream & fin,
+                            std::string   & line,
+                            std::string   & err_txt);
+
+  void ParseWellToken(const std::string & token,
+                      const std::string & value,
+                      const std::string & line,
+                      std::string       & err_txt);
+
+  void ParseCurveInformation(std::ifstream            & fin,
+                             std::string              & line,
+                             std::string              & err_txt);
+
+  void ReadLogs(std::ifstream                  & fin,
+                std::string                    & err_txt);
+
+  bool GetRecord(std:: ifstream           & fin,
+                 size_t                     n_items,
+                 std::vector<std::string> & record) const;
+
   void WriteLasLine(std::ofstream     & file,
                     const std::string & mnemonic,
                     const std::string & units,
@@ -79,6 +103,9 @@ private:
   /// on its own line and all lines of data will be no longer than 80 characters (including CR+LF).
   bool wrap_;
 
+  ///True if comma delimited file.
+  bool comma_delimited_;
+
   /// Possible depth units:
   /// For logs in depth: M (meter), F (feet) or FT (feet)
   /// For logs in time:  S (seconds), MS (milliseconds), etc.
@@ -91,19 +118,14 @@ private:
   /// Depth increment. 0 if the increment is not constant.
   double depth_increment_;
 
-  std::string company_name_;
-  std::string field_name_;
-  std::string location_;
-  std::string county_;
-  std::string state_;
-  std::string country_;
-  std::string service_company_;
-  std::string date_;
-  std::string unique_well_identifier_;
-
-  std::vector<std::string> log_name_;
-  std::vector<std::string> log_units_;
+  std::vector<std::string> log_name_;       //Needed to preserve log order, may be important in LAS-files.
+  std::vector<std::string> log_unit_;
   std::vector<std::string> log_comment_;
+
+  std::vector<std::string> version_info_;   //Unused version keywords, only read from file and rewritten.
+  std::vector<std::string> well_info_;      //Unused well keywords, only read from file and rewritten.
+  std::vector<std::string> parameter_info_; //Not used, only read from file and rewritten.
+  std::vector<std::string> other_info_;     //Not used, only read from file and rewritten.
 };
 
 }

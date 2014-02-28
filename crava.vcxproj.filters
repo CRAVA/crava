@@ -1020,6 +1020,9 @@
     <ClCompile Include="rplib\table_vp.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
+    <ClCompile Include="libs\nrlib\well\laswell.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1717,6 +1720,9 @@
     </ClInclude>
     <ClInclude Include="rplib\table_rho.h">
       <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\well\laswell.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,6 +17,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/well/norsarwell.hpp"
+#include "nrlib/well/laswell.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/surface/surface.hpp"
 #include "nrlib/surface/regularsurface.hpp"
@@ -67,6 +68,8 @@ WellData::WellData(const std::string              & wellFileName,
   errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
     readNorsarWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
+  else if(wellFileName.find(".las",0) != std::string::npos)
+    readLASWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
   else
     readRMSWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
 }
@@ -477,153 +480,200 @@ WellData::readNorsarWell(const std::string              & wellFileName,
   try
   {
     NRLib::NorsarWell well(wellFileName);
-
-    int nVar = 4;       // z,alpha,beta,rho
-
-    std::vector<std::string> parameterList;
-
-    bool vpLog = false;
-    bool vsLog = false;
-
-    if(logNames[0] != "") // Assume that all lognames are filled present if first is.
-    {
-      parameterList = logNames;
-      if(faciesLogGiven)
-        nVar = 5;           // facies
-      if(porosityLogGiven)
-        nVar = 6;           // porosity (even if the facies log is not defined, nVar is set to 6)
-      vpLog = !inverseVelocity[0];
-      vsLog = !inverseVelocity[1];
-    }
-   else
-    {
-      parameterList[0] = "TWT";
-      parameterList[1] = "DT";
-      parameterList[2] = "RHOB";
-      parameterList[3] = "DTS";
-      parameterList[4] = "FACIES";
-      nVar = 5;
-    }
-
-    int nLogs  = 2+nVar;
-    int nExtra = 1; //MD log, needed for writing.
-    std::vector<double> * filler = NULL; //to eliminate warning.
-    std::vector<std::vector<double> *> logs(nLogs+nExtra, filler);
-    if(well.HasContLog("UTMX") == false) {
-      error_ = 1;
-      errTxt_ += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
-      logs[0] = NULL;
-    }
-    else
-      logs[0] = &(well.GetContLog("UTMX"));
-    if(well.HasContLog("UTMY") == false) {
-      error_ = 1;
-      errTxt_ += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
-      logs[1] = NULL;
-    }
-    logs[1] = &(well.GetContLog("UTMY"));
-    for(int i=0;i<nVar;i++) {
-      if(well.HasContLog(parameterList[i]) == false) {
-        logs[2+i] = NULL;
-        if(!(i == 4 || i ==5) || logNames[0] != "") { // i == 4, 5 corresponds to facies log and porosity log respectively
-          error_ = 1;
-          errTxt_ += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
-        }
-        else if(i==4)
-          nLogs = nLogs-1;
-      }
-      else
-        logs[2+i] = &(well.GetContLog(parameterList[i]));
-    }
-
-    //Added MD log.
-    int mdLog = nLogs;
-    if(well.HasContLog("MD") == false) {
-      error_ = 1;
-      errTxt_ += "Could not find log 'MD' in well file "+ wellFileName+ ".\n";
-      logs[mdLog] = NULL;
-    }
-    logs[mdLog] = &(well.GetContLog("MD"));
-    nLogs++;
-
-
-    if(logs[2] == NULL)
-      timemissing_ = 1;
-    else
-      timemissing_ = 0;
-
-    if(error_ == 0) {
-      faciesok_ = 1;
-      std::vector<int> facCodes;
-      nd_ = 0;
-      for(size_t i=0;i<logs[2]->size();i++)
-        if(well.IsMissing((*logs[2])[i]) == false)
-          nd_++;
-
-      xpos_     = new double[nd_];
-      ypos_     = new double[nd_];
-      zpos_     = new double[nd_];
-      alpha_    = new float[nd_];
-      beta_     = new float[nd_];
-      rho_      = new float[nd_];
-      facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
-      md_       = new double[nd_];
-      porosity_ = new float[nd_];
-
-      int ind   = 0;
-      for(size_t i=0;i<logs[0]->size();i++) {
-        // check that the time variable is ok
-        if(well.IsMissing((*logs[2])[i]) == false) {
-          xpos_[ind]  = (*logs[0])[i]*1000;
-          ypos_[ind]  = (*logs[1])[i]*1000;
-          zpos_[ind]  = (*logs[2])[i]*1000;
-          // vp
-          if(!well.IsMissing((*logs[3])[i]))
-            alpha_[ind] = static_cast<float>((*logs[3])[i]);
-          else
-            alpha_[ind] = RMISSING;
-          // vs
-          if(!well.IsMissing((*logs[5])[i]))
-            beta_[ind]  = static_cast<float>((*logs[5])[i]);
-          else
-            beta_[ind] = RMISSING;
-          // density
-          if(!well.IsMissing((*logs[4])[i]))
-            rho_[ind]   = static_cast<float>((*logs[4])[i]);
-          else
-            rho_[ind] = RMISSING;
-          // facies
-          if(mdLog != 6 && nLogs > 6 && logs[6] != NULL &&
-            !well.IsMissing((*logs[6])[i])) {
-            facies_[ind]  = static_cast<int>((*logs[6])[i]);
-            if(find(facCodes.begin(), facCodes.end(), facies_[ind]) == facCodes.end())
-              facCodes.push_back(facies_[ind]);
-          }
-          else
-            facies_[ind] = IMISSING;
-          // porosity
-          if(porosityLogGiven && logs[7] !=NULL && mdLog!=7){
-            if(!well.IsMissing((*logs[7])[i]))
-              porosity_[ind] = static_cast<float>((*logs[7])[i]);
-            else
-              porosity_[ind] = RMISSING;
-          }
-
-          if(!well.IsMissing((*logs[mdLog])[i]))
-            md_[ind]   = static_cast<float>((*logs[mdLog])[i]);
-          else
-            md_[ind] = RMISSING;
-          ind++;
-        }
-      }
-      nFacies_ = static_cast<int>(facCodes.size());
-    }
+    processNRLibWell(well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, true);
     xpos0_ = well.GetXPosOrigin()*1000;
     ypos0_ = well.GetYPosOrigin()*1000;
   }
   catch (NRLib::Exception & e) {
     errTxt_ += "Error: " + NRLib::ToString(e.what());
     error_ = 1;
+  }
+}
+
+
+void
+WellData::readLASWell(const std::string              & wellFileName,
+                      const std::vector<std::string> & logNames,
+                      const std::vector<bool>        & inverseVelocity,
+                      bool                             porosityLogGiven,
+                      bool                             faciesLogGiven)
+{
+  error_ = 0;
+  wellfilename_ = wellFileName;
+  try
+  {
+    NRLib::LasWell well(wellFileName);
+    processNRLibWell(well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, false);
+    xpos0_ = xpos_[0];
+    ypos0_ = ypos_[0];
+    wellname_ = well.GetWellName();
+  }
+  catch (NRLib::Exception & e) {
+    errTxt_ += "Error: " + NRLib::ToString(e.what());
+    error_ = 1;
+  }
+}
+
+
+void 
+WellData::processNRLibWell(const NRLib::Well              & well, 
+                           const std::string              & wellFileName, 
+                           const std::vector<std::string> & logNames,
+                           const std::vector<bool>        & inverseVelocity, 
+                           bool                             porosityLogGiven, 
+                           bool                             faciesLogGiven,
+                           bool                             norsarWell)
+{
+
+  int nVar = 4;       // z,alpha,beta,rho
+
+  std::vector<std::string> parameterList;
+
+  bool vpLog = false;
+  bool vsLog = false;
+
+  if(logNames[0] != "") // Assume that all lognames are filled present if first is.
+  {
+    parameterList = logNames;
+    if(faciesLogGiven)
+      nVar = 5;           // facies
+    if(porosityLogGiven)
+      nVar = 6;           // porosity (even if the facies log is not defined, nVar is set to 6)
+    vpLog = !inverseVelocity[0];
+    vsLog = !inverseVelocity[1];
+  }
+  else
+  {
+    parameterList[0] = "TWT";
+    parameterList[1] = "DT";
+    parameterList[2] = "RHOB";
+    parameterList[3] = "DTS";
+    parameterList[4] = "FACIES";
+    nVar = 5;
+  }
+
+  int nLogs  = 2+nVar;
+  int nExtra = 0; 
+  if(norsarWell==true)
+    nExtra = 1; //MD log, needed for writing.
+  std::vector<double> * filler = NULL; //to eliminate warning.
+  std::vector<const std::vector<double> *> logs(nLogs+nExtra, filler);
+  if(well.HasContLog("UTMX") == false) {
+    error_ = 1;
+    errTxt_ += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
+    logs[0] = NULL;
+  }
+  else
+    logs[0] = &(well.GetContLog("UTMX"));
+  if(well.HasContLog("UTMY") == false) {
+    error_ = 1;
+    errTxt_ += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
+    logs[1] = NULL;
+  }
+  logs[1] = &(well.GetContLog("UTMY"));
+  for(int i=0;i<nVar;i++) {
+    if(well.HasContLog(parameterList[i]) == false) {
+      logs[2+i] = NULL;
+      if(!(i == 4 || i ==5) || logNames[0] != "") { // i == 4, 5 corresponds to facies log and porosity log respectively
+        error_ = 1;
+        errTxt_ += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
+      }
+      else if(i==4)
+        nLogs = nLogs-1;
+    }
+    else
+      logs[2+i] = &(well.GetContLog(parameterList[i]));
+  }
+
+  //Added MD log.
+  int mdLog = nLogs;
+  logs[mdLog] = NULL;
+  if(norsarWell==true) {
+    if(well.HasContLog("MD") == false) {
+      error_ = 1;
+      errTxt_ += "Could not find log 'MD' in well file "+ wellFileName+ ".\n";
+    }
+    logs[mdLog] = &(well.GetContLog("MD"));
+    nLogs++;
+  }
+
+  if(logs[2] == NULL)
+    timemissing_ = 1;
+  else
+    timemissing_ = 0;
+
+  if(error_ == 0) {
+    faciesok_ = 1;
+    std::vector<int> facCodes;
+    nd_ = 0;
+    for(size_t i=0;i<logs[2]->size();i++)
+      if(well.IsMissing((*logs[2])[i]) == false)
+        nd_++;
+
+    xpos_     = new double[nd_];
+    ypos_     = new double[nd_];
+    zpos_     = new double[nd_];
+    alpha_    = new float[nd_];
+    beta_     = new float[nd_];
+    rho_      = new float[nd_];
+    facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
+    porosity_ = new float[nd_];
+    if(norsarWell == true)
+      md_       = new double[nd_];
+    else
+      md_       = NULL;
+
+    double scale = 1.0;
+    if(norsarWell == true)
+      scale = 1000.0;
+    int ind   = 0;
+    for(size_t i=0;i<logs[0]->size();i++) {
+      // check that the time variable is ok
+      if(well.IsMissing((*logs[2])[i]) == false) {
+        xpos_[ind]  = (*logs[0])[i]*scale;
+        ypos_[ind]  = (*logs[1])[i]*scale;
+        zpos_[ind]  = (*logs[2])[i]*scale;
+        // vp
+        if(!well.IsMissing((*logs[3])[i]))
+          alpha_[ind] = static_cast<float>((*logs[3])[i]);
+        else
+          alpha_[ind] = RMISSING;
+        // vs
+        if(!well.IsMissing((*logs[5])[i]))
+          beta_[ind]  = static_cast<float>((*logs[5])[i]);
+        else
+          beta_[ind] = RMISSING;
+        // density
+        if(!well.IsMissing((*logs[4])[i]))
+          rho_[ind]   = static_cast<float>((*logs[4])[i]);
+        else
+          rho_[ind] = RMISSING;
+        // facies
+        if(mdLog != 6 && nLogs > 6 && logs[6] != NULL &&
+          !well.IsMissing((*logs[6])[i])) {
+          facies_[ind]  = static_cast<int>((*logs[6])[i]);
+          if(find(facCodes.begin(), facCodes.end(), facies_[ind]) == facCodes.end())
+            facCodes.push_back(facies_[ind]);
+        }
+        else
+          facies_[ind] = IMISSING;
+        // porosity
+        if(porosityLogGiven && logs[7] !=NULL && mdLog!=7){
+          if(!well.IsMissing((*logs[7])[i]))
+            porosity_[ind] = static_cast<float>((*logs[7])[i]);
+          else
+            porosity_[ind] = RMISSING;
+        }
+        if(norsarWell == true) {
+          if(logs[mdLog] != NULL && !well.IsMissing((*logs[mdLog])[i]))
+            md_[ind]   = static_cast<float>((*logs[mdLog])[i]);
+          else
+            md_[ind] = RMISSING;
+        }
+        ind++;
+      }
+    }
+    nFacies_ = static_cast<int>(facCodes.size());
   }
 }
 
