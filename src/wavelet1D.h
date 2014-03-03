@@ -169,6 +169,8 @@ private:
                            int                                 nWells,
                            int                                 nt);
 
+  void           CenterWellWavelet(std::vector<fftw_real> & wavelet) const;
+
   void           writeDebugInfo(fftw_real                   ** seis_r,
                                 fftw_real                   ** cor_cpp_r,
                                 fftw_real                   ** ccor_seis_cpp_r,
