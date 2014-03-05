@@ -418,9 +418,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
         last_M_ = m;
         break;
       }
+    } //H-Added Correct?
       if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING)
         break;
-    }
+    //} //H
   }
   //
   // Count number of blocks needed for the defined part of the well.
@@ -836,6 +837,17 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   // 3. Set IJK for the virtual part of the well in the lower simboxes
   //
   int last_I,  last_J,  last_K;
+
+  //H-Test
+  //if (interval_simboxes[last_S_].GetBotSurface().GetZ(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_]) > z_pos_raw_logs[last_M_])
+    //interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
+  //else
+    //interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], interval_simboxes[last_S_].GetBotSurface().GetZ(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_]), last_I, last_J, last_K);
+
+  //H-Problem
+  // z_pos_raw_logs[last_M_] > interval_simbox z_bot(x,y) means that last_I, last_J and last_K returns missing (-9999)
+  // Example was interval 1 3100 - 3600, interval 2 3600-3900. Wells about 3100 - 3650
+  // Example last_S_ = 0? should have been 1?
   interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
   for (int k = last_K + 1 ; k < n_layers_ ; k++) {
     b++;

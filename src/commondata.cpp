@@ -817,7 +817,6 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       //Check if well is valid
       bool well_valid = true;
       bool facies_ok  = true;
-      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
 
       if (new_well.CheckSimbox(estimation_simbox) == 1) {
         well_valid = false;
@@ -1767,9 +1766,9 @@ void CommonData::CutWell(std::string           well_file_name,
   //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
   //Possible Logs: X_pos, Y_pos, Z_pos, Dt, Vp, Dts, Vs, Rho, Facies
 
-  const std::vector<double> & x_old   = well.GetContLog("X_pos");
-  const std::vector<double> & y_old   = well.GetContLog("Y_pos");
-  const std::vector<double> & z_old   = well.GetContLog("Z_pos");
+  const std::vector<double> & x_old = well.GetContLog("X_pos");
+  const std::vector<double> & y_old = well.GetContLog("Y_pos");
+  const std::vector<double> & z_old = well.GetContLog("Z_pos");
 
   std::vector<double> x_new;
   std::vector<double> y_new;
@@ -1784,8 +1783,14 @@ void CommonData::CutWell(std::string           well_file_name,
   const NRLib::Surface<double> & top_surf = full_inversion_volume.GetTopSurface();
   const NRLib::Surface<double> & bot_surf = full_inversion_volume.GetBotSurface();
 
+  double top_surf_min = top_surf.Min();
+  double top_surf_max = top_surf.Max();
+  double bot_surf_min = bot_surf.Min();
+  double bot_surf_max = bot_surf.Max();
+
   bool need_cutting = false;
-  if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
+  //if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
+  if (z_old[0] < top_surf_max || z_old[z_old.size()-1] > bot_surf_min)
     need_cutting = true;
 
   if (need_cutting == true) { //H Cut missing values?
@@ -1794,7 +1799,16 @@ void CommonData::CutWell(std::string           well_file_name,
 
       if (z_old[i] != RMISSING) {
 
-        if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+        double top_tmp = top_surf.GetZ(x_old[i], y_old[i]);
+        if (top_tmp = WELLMISSING)
+          top_tmp = top_surf_min;
+
+        double bot_tmp = bot_surf.GetZ(x_old[i], y_old[i]);
+        if (bot_tmp = WELLMISSING)
+          bot_tmp = bot_surf_max;
+
+        //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+        if ( !(z_old[i] < top_tmp || z_old[i] > bot_tmp) ) { //Inside, keep
 
           x_new.push_back(x_old[i]);
           y_new.push_back(y_old[i]);
@@ -4479,10 +4493,10 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   //std::vector<CravaTrend> trend_cubes;
 
   // Get trend variables from model settings
-  const std::vector<std::string>  trend_cube_parameters     = model_settings->getTrendCubeParameters();
-  const std::vector<int>          trend_cube_type           = model_settings->getTrendCubeType();
+  const std::vector<std::string>  & trend_cube_parameters     = model_settings->getTrendCubeParameters();
+  const std::vector<int>          & trend_cube_type           = model_settings->getTrendCubeType();
   //trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
-  const std::vector<std::string>  interval_names            =  model_settings->getIntervalNames();
+  const std::vector<std::string>  & interval_names            =  model_settings->getIntervalNames();
 
   // Initialize values
   std::vector<std::vector<NRLib::Grid<double> *> > trend_cubes_tmp;  //Vector(trends) vector(intervals)
