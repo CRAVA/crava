@@ -812,7 +812,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
   //H-DEBUGGING
-  fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
+  //fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
@@ -857,9 +857,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   // Compute variation in wavelet
   //H-DEBUGGING
-  for (int l=0; l < number_of_angles_; l++) {
-    wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
-  }
+  //for (int l=0; l < number_of_angles_; l++) {
+  //  wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
+  //}
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
   for (int l=0; l < number_of_angles_; l++) {

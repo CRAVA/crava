@@ -139,8 +139,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       }
 
       desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
-                                                   //model_settings->getTimeNz());
-
 
     }
   }
@@ -155,9 +153,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   // 2 SET UP INTERVAL_SIMBOXES ------------------------------------------------------------
 
   //Set up a vector of simboxes, one per interval.
-
-  //interval_simboxes_.resize(interval_names_.size()); //H Removed
-
   if (!failed){
     try{
       // if multiple-intervals keyword is used in model settings

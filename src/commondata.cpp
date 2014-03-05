@@ -140,24 +140,24 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 13. Setup of prior correlation
    //H-DEBUGGING
-  if(read_seismic_){
-    if(model_settings->getEstimateCorrelations() == true){
-      if(read_wells_ && setup_multigrid_){
-          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-      }
-      else{
-        err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
-      }
-    }
-    else{
-      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-    }
-  }
-  else{
-    err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  }
+  //if(read_seismic_){
+  //  if(model_settings->getEstimateCorrelations() == true){
+  //    if(read_wells_ && setup_multigrid_){
+  //        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+  //    }
+  //    else{
+  //      err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
+  //    }
+  //  }
+  //  else{
+  //    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+  //  }
+  //}
+  //else{
+  //  err_text += "Could not set up prior correlations since this requires seismic data.\n";
+  //}
 
 
   // 14. Set up TimeLine class
@@ -767,6 +767,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     std::vector<float> dev_angle(n_wells);
 
     std::vector<std::string> well_names(n_wells);
+    std::vector<bool> well_synthetic_vs_log(n_wells);
 
     std::vector<std::vector<int> > facies_count(n_wells);
     for (int i = 0; i < n_wells; i++) {
@@ -863,7 +864,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
       }
 
-      well_names.push_back(new_well.GetWellName());
+      well_names[i]            = new_well.GetWellName();
+      well_synthetic_vs_log[i] = new_well.HasSyntheticVsLog();
 
       if (read_ok == false) {
         err_text += "Well format of file " + well_file_name + " not recognized.\n";
@@ -905,12 +907,12 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     for (int i = 0; i < n_wells; i++) {
       if (valid_index[i])
         LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
-        wells_[i].GetWellName().c_str(),
+        well_names[i].c_str(),
         n_merges[i],
         n_invalid_vp[i],
         n_invalid_vs[i],
         n_invalid_rho[i],
-        (wells_[i].HasSyntheticVsLog() ? "yes" : " no"),
+        (well_synthetic_vs_log[i] ? "yes" : " no"),
         rank_corr[i],
         (dev_angle[i] > model_settings->getMaxDevAngle() ? "yes" : " no"),
         dev_angle[i]);
