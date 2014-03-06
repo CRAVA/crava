@@ -7014,7 +7014,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
           std::string tmp_err_txt;
           // Option 1: Estimate within this interval
-          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, &interval_simboxes[i], model_settings, tmp_err_txt);
+          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background[i], &interval_simboxes[i], model_settings, tmp_err_txt);
           if (tmp_err_txt != "") {
             err_text += tmp_err_txt;
             failed_param_corr = true;

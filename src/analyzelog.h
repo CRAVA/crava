@@ -20,7 +20,8 @@ class Analyzelog {
 public:
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-             const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+             const std::vector<NRLib::Grid<double> >                  & background,
+             const std::vector<NRLib::Grid<double> >                  & background_max_Hz,
              const Simbox                                             * simbox,
              const ModelSettings                                      * model_settings,
              std::string                                              & err_txt);
@@ -28,6 +29,7 @@ public:
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
              const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+             const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_Hz,
              const std::vector<Simbox>                                & interval_simboxes,
              const ModelSettings                                      * model_settings,
              std::string                                              & err_txt);
@@ -51,11 +53,13 @@ public:
 
 private:
 
-  void            EstimateLogData(std::vector<std::vector<float> >          & log_data,
-                                  const NRLib::Grid<double>                 * background,
-                                  std::string                               & err_txt);
-
-
+  void            EstimateLnData(std::vector<std::vector<float> >                      & log_data,
+                                 const NRLib::Grid<double>                             * background,
+                                 const std::vector<std::string>                        & well_names,
+                                 const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
+                                 const std::string                                     & interval_name,
+                                 const std::string                                     & log_name,
+                                 std::string                                           & err_txt);
 
   void            EstimateCorrelation(const ModelSettings                                      * model_settings,
                                       const std::vector<NRLib::Well>                           & wells,
@@ -64,10 +68,10 @@ private:
                                       std::string                                              & interval_name,
                                       const Simbox                                             * interval_simbox,
                                       bool                                                     & enough_data_for_corr_estimation,
-                                      const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+                                      const std::vector<NRLib::Grid<double> >                  & background,
                                       std::string                                              & errTxt);
 
-    void            EstimateCorrelation(const ModelSettings                                      * model_settings,
+    void          EstimateCorrelation(const ModelSettings                                      * model_settings,
                                       const std::vector<NRLib::Well>                           & wells,
                                       const std::vector<std::string>                           & well_names,
                                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
