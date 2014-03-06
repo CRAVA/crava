@@ -99,6 +99,8 @@ Volume(*estimation_simbox){
   minRelThick_    = estimation_simbox->minRelThick_;
   topName_        = estimation_simbox->topName_;
   botName_        = estimation_simbox->botName_;
+  top_eroded_surface_  = NULL;
+  base_eroded_surface_ = NULL;
   grad_x_         = 0;
   grad_y_         = 0;
   // This should set the status to BOXOK
@@ -431,8 +433,8 @@ Simbox::getZInterpolation(double x, double y, double z,
 }
 
 bool Simbox::IsPointBetweenOriginalSurfaces(double x, double y, double z) const{
-  const Surface * top_surf = GetTopErodedSurface();
-  const Surface * base_surf = GetBaseErodedSurface();
+  const NRLib::Surface<double> * top_surf  = GetTopErodedSurface();
+  const NRLib::Surface<double> * base_surf = GetBaseErodedSurface();
   bool b = false;
   if(isInside(x, y)){
     if (top_surf->GetZ(x,y) <= z && base_surf->GetZ(x,y) > z)
@@ -861,7 +863,7 @@ Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool
 }
 
 void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
-                         const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck)
+                      const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck)
 {
   SetSurfaces(top_surf, bot_surf, skipCheck);
   nz_ = nz;
@@ -1045,12 +1047,9 @@ Surface * Simbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
   return(result);
 }
 
-void Simbox::SetErodedSurfaces(Surface * top_surf,
-                               Surface * bot_surf)
+void Simbox::SetErodedSurfaces(const Surface & top_surf,
+                               const Surface & bot_surf)
 {
-  delete top_eroded_surface_;
-  top_eroded_surface_ = top_surf;
-
-  delete base_eroded_surface_;
-  base_eroded_surface_ = bot_surf;
+  top_eroded_surface_  = top_surf.Clone();
+  base_eroded_surface_ = bot_surf.Clone();
 }

@@ -89,8 +89,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         surfaces[i+1] =  *base_surface;
       }
 
-
-
       if (!failed){
 
         for (size_t i = 0; i<n_intervals_; i++){
@@ -198,43 +196,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     }
   }
 
-
-  // 3. SET UP BACKGROUND MODEL ----------------------------------------------------------
-
-  //if (model_settings->getIntervalNames().size() > 0) {
-  //  parameters_.resize(model_settings->getIntervalNames().size());
-  //  background_vs_vp_ratios_.resize(model_settings->getIntervalNames().size());
-  //}
-
-  //std::vector<NRLib::Grid<double> > vp_intervals(n_intervals_);
-  //std::vector<NRLib::Grid<double> > vs_intervals(n_intervals_);
-  //std::vector<NRLib::Grid<double> > rho_intervals(n_intervals_);
-
-  //if (!failed){
-  //  try{
-
-  //    //dz to vector
-  //    //std::vector<float> dz;
-  //    //for (size_t i = 0; i < n_intervals_; i++)
-  //    //  dz.push_back( interval_simboxes_[i].GetDz()*interval_simboxes_[i].GetAvgRelThick() * 4 );
-  //    //float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
-
-  //    if (n_intervals_ > 0){ // It is possible to give only one interval in multiple-intervals
-  //      BuildSeismicPropertyIntervals(vp_intervals,
-  //                                    vs_intervals,
-  //                                    rho_intervals,
-  //                                    interval_simboxes_,
-  //                                    relative_grid_resolution_);
-  //    }else{
-  //      // what ?
-  //    }
-  //  }
-  //  catch(NRLib::Exception & e){
-  //  failed = true;
-  //  err_text += e.what();
-  //  }
-  //}
-
   // Add inn surface files.
   surface_files_.push_back(input_files->getTimeSurfFile(0));
 
@@ -294,14 +255,16 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
     const SegyGeometry * area_params = model_settings->getAreaParameters();
     failed = interval_simbox.setArea(area_params, err_text);
 
-    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+    //interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+    interval_simbox.SetErodedSurfaces(top_surface, base_surface);
   }
   else {
     interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
     const SegyGeometry * area_params = model_settings->getAreaParameters();
     failed = interval_simbox.setArea(area_params, err_text);
 
-    interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+    //interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
+    interval_simbox.SetErodedSurfaces(top_surface, base_surface);
   }
 
   interval_simbox.SetNXpad(estimation_simbox->GetNXpad());
@@ -358,7 +321,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         corr_dir = true;
         Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
         interval_simboxes[i]    = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, corr_surf, err_text, failed);
-        interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        //interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        interval_simboxes[i].SetErodedSurfaces(top_surface, base_surface);
       }
       // Case 2: Top and base correlation surfaces
       else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
@@ -367,13 +331,15 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 corr_surf_top, corr_surf_base);
-        interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        //interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        interval_simboxes[i].SetErodedSurfaces(top_surface, base_surface);
       }
       // Case 3: Top conform and base conform if (i) both are set conform or (ii) if no other corr surfaces have been defined
       else if ((it_top_conform->second == true && it_base_conform->second == true) ||
                (it_single == corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end())){
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed);
-        interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        //interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        interval_simboxes[i].SetErodedSurfaces(top_surface, base_surface);
       }
       // Case 4: Top correlation surface and base conform
       else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true){
@@ -381,7 +347,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 corr_surf_top, NULL);
-        interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        //interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        interval_simboxes[i].SetErodedSurfaces(top_surface, base_surface);
       }
       // Case 5: Top conform and base correlation surface
       else if (it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
@@ -389,7 +356,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 NULL, corr_surf_base);
-        interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        //interval_simboxes[i].SetTopBotErodedSurfaces(top_surface, base_surface);
+        interval_simboxes[i].SetErodedSurfaces(top_surface, base_surface);
       }
       // else something is wrong
       else{

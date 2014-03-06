@@ -568,10 +568,10 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            * bg
 //-------------------------------------------------------------------------------
 void
 Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::Grid<double> *> > & parameters, //vector(intervals) vector(parameters)
-                                                 const std::vector<NRLib::Well>    & wells,
-                                                 MultiIntervalGrid                 * multiple_interval_grid,
-                                                 const ModelSettings               * model_settings,
-                                                 std::string                       & err_text)
+                                                 const std::vector<NRLib::Well>                   & wells,
+                                                 MultiIntervalGrid                                * multiple_interval_grid,
+                                                 const ModelSettings                              * model_settings,
+                                                 std::string                                      & err_text)
 {
   LogKit::LogFormatted(LogKit::Low,"MultiInterval background models:\n");
 
@@ -752,6 +752,11 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
       }
     } //Intervals
 
+
+    //H model_settings->getSurfaceUncertainty() only given with multizone background not background created in a multi interval settings
+    // The part with zone_probability is removed. Temporary solution, send in vector with zero uncertainty. H-TODO: Rewrite MakeMultiIntervalBackground
+    std::vector<double> surface_uncertainty(n_intervals+1, 0.0);
+
     MakeMultiIntervalBackground(parameters,
                                 vp_zones, vs_zones, rho_zones,
                                 multiple_interval_grid,
@@ -908,7 +913,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
   LogKit::LogFormatted(LogKit::Low,text);
 
   int n_intervals = multiple_interval_grid->GetNIntervals();
-  const std::vector<int> & erosion_priority = multiple_interval_grid->GetErosionPriorities();
+  //const std::vector<int> & erosion_priority = multiple_interval_grid->GetErosionPriorities();
 
   for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
@@ -921,7 +926,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
     const int nxp  = nx;
     const int nyp  = ny;
     const int nzp  = nz;
-    const int rnxp = 2*(nxp/2 + 1);
+    const int rnxp = nx; //2*(nxp/2 + 1);
 
     float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
     float nextMonitor = monitorSize;
@@ -936,10 +941,10 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
 
     // Beta distributed uncertainty on each surface
     // Note that the upper and lower surfaces not are assigned Beta distributions as these have zero uncertainty
-    std::vector<NRLib::Beta> horizon_distributions(n_intervals+1);
-    for (int zone=1; zone<n_intervals; zone++) {
-      horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
-    }
+    //std::vector<NRLib::Beta> horizon_distributions(n_intervals+1);
+    //for (int zone=1; zone<n_intervals; zone++) {
+    //  horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
+    //}
 
     NRLib::Grid<double> z_surface(rnxp, nyp, n_intervals+1);
     for (int i=0; i<rnxp; i++) {
@@ -961,21 +966,21 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
 
           if (i<nx) {
 
-            double x;
-            double y;
+            double x = 0.0;
+            double y = 0.0;
 
             simbox->getXYCoord(i, j, x, y);
 
             // Calculate z directly to decrease computation time
             double z = z_surface(i,j,0)+(z_surface(i,j,n_intervals)-z_surface(i,j,0))*static_cast<double>(k+0.5)/static_cast<double>(nzp);
 
-            std::vector<double> z_relative(n_intervals+1);
-            for (int zone=0; zone<n_intervals+1; zone++)
-              z_relative[zone] = z - z_surface(i,j,zone);
+            //std::vector<double> z_relative(n_intervals+1);
+            //for (int zone=0; zone<n_intervals+1; zone++)
+            //  z_relative[zone] = z - z_surface(i,j,zone);
 
-            std::vector<double> zone_probability(n_intervals);
+            //std::vector<double> zone_probability(n_intervals);
 
-            ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
+            //ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
 
             double vp  = 0;
             double vs  = 0;
@@ -1000,7 +1005,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
             //  }
             //}
 
-            //H For multinterval. No weightings between intervals, no zone_probability. Correct?
+            //H For multinterval. No weightings between intervals, no zone_probability. Check this?
             size_t ind1;
             size_t ind2;
             double t;
@@ -1108,10 +1113,9 @@ Background::BuildErodedZones(StormContGrid                & eroded_zone,
 
 //---------------------------------------------------------------------------
 void
-Background::BuildErodedIntervals(StormContGrid                & eroded_interval,
-                                 //const std::vector<Surface>   & eroded_surfaces,
-                                 const int                    & nz,
-                                 const Simbox                 * simbox) const
+Background::BuildErodedIntervals(StormContGrid & eroded_interval,
+                                 const int     & nz,
+                                 const Simbox  * simbox) const
 {
   int    nx        = simbox->getnx();
   int    ny        = simbox->getny();
@@ -1121,8 +1125,8 @@ Background::BuildErodedIntervals(StormContGrid                & eroded_interval,
   double ly        = simbox->GetLY();
   double angle     = simbox->getAngle();
 
-  const Surface * top_eroded_surface = simbox->GetTopErodedSurface();
-  const Surface * base_eroded_surface = simbox->GetBaseErodedSurface();
+  const NRLib::Surface<double> * top_eroded_surface  = simbox->GetTopErodedSurface();
+  const NRLib::Surface<double> * base_eroded_surface = simbox->GetBaseErodedSurface();
 
   NRLib::Volume volume(x_min, y_min, lx, ly, *top_eroded_surface, *base_eroded_surface, angle);
 
