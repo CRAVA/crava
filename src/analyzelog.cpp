@@ -20,7 +20,7 @@
 // CRA-257: New correlation estimation routine with blocked logs within one interval
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                       const std::vector<NRLib::Grid<double> >                  & background,
+                       const std::vector<NRLib::Grid<double> *>                 & background,
                        //const std::vector<NRLib::Grid<double> >                  & background_max_hz,
                        const Simbox                                             * interval_simbox,
                        const ModelSettings                                      * model_settings,
@@ -56,7 +56,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
 // CRA-257: New correlation estimation routine with blocked logs within multiple intervals
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                       const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+                       const std::vector<std::vector<NRLib::Grid<double> *> >   & background,
                        //const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_hz,
                        const std::vector<Simbox>                                & interval_simboxes,
                        const ModelSettings                                      * model_settings,
@@ -130,7 +130,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
                                       std::string                                               & interval_name,
                                       const Simbox                                              * interval_simbox,
                                       bool                                                      & enough_data_for_corr_estimation,
-                                      const std::vector<NRLib::Grid<double> >                   & background,
+                                      const std::vector<NRLib::Grid<double> *>                   & background,
                                       std::string                                               & err_txt){
 
   // Covariance and correlation estimation with blocked logs
@@ -171,7 +171,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   }
 
 
-  if(background[0].GetN() == 0){
+  if(background[0]->GetN() == 0){
     //int ni = interval_simbox->getnx();
     //int nj = interval_simbox->getny();
     //int nk = interval_simbox->getnz();
@@ -183,9 +183,9 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     EstimateLnData(log_data_rho, NULL, well_names_, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
   }
   else{
-    EstimateLnData(log_data_vp, &background[0], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vp", err_txt);
-    EstimateLnData(log_data_vs, &background[1], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vs", err_txt);
-    EstimateLnData(log_data_rho, &background[2], well_names_, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
+    EstimateLnData(log_data_vp, background[0], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vp", err_txt);
+    EstimateLnData(log_data_vs, background[1], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vs", err_txt);
+    EstimateLnData(log_data_rho, background[2], well_names_, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
   }
 
   /*

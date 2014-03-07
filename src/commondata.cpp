@@ -174,7 +174,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  ReadAngularCorrelations(model_settings, err_text);
+  //ReadAngularCorrelations(model_settings, err_text);
 
   //TODO: Handle if err_text != "".
   if(err_text != "") {
@@ -619,6 +619,18 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
   }
 
   return true;
+}
+
+FFTGrid * CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
+{
+  FFTGrid* fftGrid;
+
+  if (fileGrid)
+    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+
+  return(fftGrid);
 }
 
 bool

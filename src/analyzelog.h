@@ -22,7 +22,7 @@ public:
 
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-             const std::vector<NRLib::Grid<double> >                  & background,
+             const std::vector<NRLib::Grid<double> *>                 & background,
              //const std::vector<NRLib::Grid<double> >                  & background_max_Hz,
              const Simbox                                             * simbox,
              const ModelSettings                                      * model_settings,
@@ -30,7 +30,7 @@ public:
 
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-             const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+             const std::vector<std::vector<NRLib::Grid<double> *> >   & background,
              //const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_Hz,
              const std::vector<Simbox>                                & interval_simboxes,
              const ModelSettings                                      * model_settings,
@@ -70,7 +70,7 @@ private:
                                       std::string                                              & interval_name,
                                       const Simbox                                             * interval_simbox,
                                       bool                                                     & enough_data_for_corr_estimation,
-                                      const std::vector<NRLib::Grid<double> >                  & background,
+                                      const std::vector<NRLib::Grid<double> *>                  & background,
                                       std::string                                              & errTxt);
 
     void          EstimateCorrelation(const ModelSettings                                      * model_settings,
