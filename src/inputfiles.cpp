@@ -22,7 +22,7 @@ InputFiles::InputFiles(void)
     corrDirFile_(""),
     corrDirTopFile_(""),
     corrDirBaseFile_(""),
-    paramCorrFile_(""),
+    paramCovFile_(""),
     tempCorrFile_(""),
     areaSurfaceFile_("")
 {
@@ -119,7 +119,7 @@ InputFiles::addInputPathAndCheckFiles()
   errTxt += addPathAndCheck(corrDirTopFile_);
   errTxt += addPathAndCheck(corrDirBaseFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
-  errTxt += addPathAndCheck(paramCorrFile_);
+  errTxt += addPathAndCheck(paramCovFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
   errTxt += addPathAndCheck(refSurfaceFile_,true);
   errTxt += addPathAndCheck(areaSurfaceFile_);

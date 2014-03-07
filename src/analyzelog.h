@@ -18,10 +18,12 @@ class Background;
 class Analyzelog {
 
 public:
+
+
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
              const std::vector<NRLib::Grid<double> >                  & background,
-             const std::vector<NRLib::Grid<double> >                  & background_max_Hz,
+             //const std::vector<NRLib::Grid<double> >                  & background_max_Hz,
              const Simbox                                             * simbox,
              const ModelSettings                                      * model_settings,
              std::string                                              & err_txt);
@@ -29,7 +31,7 @@ public:
   Analyzelog(const std::vector<NRLib::Well>                           & wells,
              const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
              const std::vector<std::vector<NRLib::Grid<double> > >    & background,
-             const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_Hz,
+             //const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_Hz,
              const std::vector<Simbox>                                & interval_simboxes,
              const ModelSettings                                      * model_settings,
              std::string                                              & err_txt);
@@ -111,6 +113,7 @@ private:
 
   void            CalculateNumberOfLags(int                               & numberOfLags,
                                         const std::vector<NRLib::Well>    & wells,
+                                        const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
                                         int                               & maxnd,
                                         const Simbox                      * simbox,
                                         std::string                       & errTxt);

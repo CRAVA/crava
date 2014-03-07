@@ -99,7 +99,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   use_for_filtering_            = well_data->GetUseForFiltering();
   well_name_                    = well_data->GetWellName();
   facies_log_defined_           = false;
-  n_blocks_with_data_.resize(1,0);
+  //n_blocks_with_data_.resize(1,0);
 
   // FACIES
   if (well_data->HasFaciesLog()) {
@@ -597,11 +597,11 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
   n_blocks_ = 0;
   for (int i=0; i<first_S_; i++)
-    n_blocks += n_layers_adjusted_per_interval[i];                      // 1. Add number of blocks from intervals above the first well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;                      // 1. Add number of blocks from intervals above the first well obs
   for (int i=last_S_+1; i<n_intervals; i++)
-    n_blocks += n_layers_adjusted_per_interval[i];                      // 2. Add number of blocks from intervals below the last well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
   n_blocks_ += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks_ += n_layers_adjusted_per_interval[last_S_] - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second; - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks_ += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
   
 

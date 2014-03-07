@@ -42,9 +42,9 @@ public:
   const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
   const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
   MultiIntervalGrid                       * GetMultipleIntervalGrid(void)             { return multiple_interval_grid_ ;}
-  const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
-  const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
-  const NRLib::Matrix                     & GetPriorVar0(int i_interval);
+  //const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
+  //const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
+  //const NRLib::Matrix                     & GetPriorVar0(int i_interval);
 
   const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()  const { return rock_distributions_  ;}
   const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables() const { return reservoir_variables_ ;}
@@ -90,7 +90,8 @@ public:
   const NRLib::Grid2D<float>              & GetRefTimeGradY()                     const { return ref_time_grad_y_                            ;}
 
   const Surface                           * GetPriorCorrXY(int i_interval)              { return prior_corr_XY_[i_interval]                  ;}
-
+  const NRLib::Matrix                     & GetPriorParamCov(int i_interval);
+  const std::vector<double>               & GetPriorCorrT(int i_interval)               {return prior_corr_T_[i_interval]                    ;}
 
 
   void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
@@ -619,11 +620,11 @@ private:
                                 float         & corr_grad_J,
                                 const Simbox  * simbox) const;
 
-  void  CalculateCorrelationsFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+  void  CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
                                              const std::map<std::string, float>               & probability,
                                              const std::vector<std::string>                   & facies_names,
                                              const CravaTrend                                 & trend_cubes,
-                                             NRLib::Matrix                                    & param_corr,
+                                             NRLib::Matrix                                    & param_cov,
                                              std::string                                      & err_txt);
 
   void  CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
@@ -634,7 +635,7 @@ private:
   void EstimateXYPaddingSizes(Simbox          * interval_simbox,
                               ModelSettings   * model_settings) const;
 
-  void ValidateCorrelationMatrix(float               ** C,
+  void ValidateCovarianceMatrix(float               ** C,
                                  const ModelSettings *  model_settings,
                                  std::string         &  err_txt);
 
@@ -674,22 +675,10 @@ private:
                         bool                   & failed,
                         int                      i_timelapse);
 
-  void SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
-                                const std::vector<float>  & prior_corr_t,
-                                Surface                   * prior_corr_XY,
-                                const int                 & min_int_fq,
-                                const float               & corr_grad_i,
-                                const float               & corr_grad_j,
-                                const int                 & nx,
-                                const int                 & ny,
-                                const int                 & nz,
-                                const int                 & nx_pad,
-                                const int                 & ny_pad,
-                                const int                 & nz_pad,
-                                int                         i_interval);
+  void CheckCovarianceParameters(NRLib::Matrix            & param_cov);
 
   void  WriteFilePriorVariances(const ModelSettings      * model_settings,
-                               const std::vector<float> & prior_corr_T,
+                               const std::vector<double> & prior_corr_T,
                                const Surface            * prior_corr_XY,
                                const float              & dt) const;
 
@@ -793,12 +782,12 @@ private:
 
   // Prior correlation
   bool                                          prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
-  std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
-  std::vector<NRLib::Grid<double> >             corr_params_interval_;
+  //std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
+  //std::vector<NRLib::Grid<double> >             corr_params_interval_;
   std::vector<Surface *>                        prior_corr_XY_;
-  std::vector<NRLib::Matrix>                    prior_param_corr_;
-  std::vector<std::vector<float> >              prior_corr_T_;
-  //std::vector<std::vector<NRLib::Grid<double> > > prior_cov_; //Vp, vs, rho
+  std::vector<NRLib::Matrix>                    prior_param_cov_;
+  std::vector<std::vector<double> >             prior_corr_T_;
+  //std::vector<NRLib::Grid<double> >             prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 
   std::vector<Wavelet*>                         temporary_wavelets_;            ///< Wavelet per angle

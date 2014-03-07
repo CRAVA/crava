@@ -21,7 +21,7 @@
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                        const std::vector<NRLib::Grid<double> >                  & background,
-                       const std::vector<NRLib::Grid<double> >                  & background_max_hz,
+                       //const std::vector<NRLib::Grid<double> >                  & background_max_hz,
                        const Simbox                                             * interval_simbox,
                        const ModelSettings                                      * model_settings,
                        std::string                                              & err_txt):
@@ -57,7 +57,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
 Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
                        const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                        const std::vector<std::vector<NRLib::Grid<double> > >    & background,
-                       const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_hz,
+                       //const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_hz,
                        const std::vector<Simbox>                                & interval_simboxes,
                        const ModelSettings                                      * model_settings,
                        std::string                                              & err_txt):
@@ -78,6 +78,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
     well_names_[i] = wells[i].GetWellName();
   }
 
+  /*
   EstimateCorrelation(model_settings,
                       wells,
                       well_names_,
@@ -86,6 +87,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
                       enough_data_for_corr_estimation_,
                       background,
                       err_txt);
+                      */
 }
 
 /*
@@ -169,22 +171,24 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   }
 
 
-  if(background[0][0].GetN() == 0){
+  if(background[0].GetN() == 0){
     //int ni = interval_simbox->getnx();
     //int nj = interval_simbox->getny();
     //int nk = interval_simbox->getnz();
     //background[0][0].Resize(ni, nj, nk);
     model_settings->getMaxHzBackground();
-    EstimateLnData(log_data_vp, NULL, err_txt);
-    EstimateLnData(log_data_vs, NULL, err_txt);
-    EstimateLnData(log_data_rho, NULL, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
+
+    EstimateLnData(log_data_vp, NULL, well_names_, mapped_blocked_logs_for_correlation, interval_name, "vp", err_txt);
+    EstimateLnData(log_data_vs, NULL, well_names_, mapped_blocked_logs_for_correlation, interval_name, "vs", err_txt);
+    EstimateLnData(log_data_rho, NULL, well_names_, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
   }
   else{
-    EstimateLnData(log_data_vp, &background[0], err_txt);
-    EstimateLnData(log_data_vs, &background[1], err_txt);
-    EstimateLnData(log_data_rho, &background[2], err_txt);
+    EstimateLnData(log_data_vp, &background[0], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vp", err_txt);
+    EstimateLnData(log_data_vs, &background[1], well_names_, mapped_blocked_logs_for_correlation, interval_name, "vs", err_txt);
+    EstimateLnData(log_data_rho, &background[2], well_names_, mapped_blocked_logs_for_correlation, interval_name, "rho", err_txt);
   }
 
+  /*
   EstimatePointVar0(point_var_0_, log_data_vp, log_data_vs, log_data_rho, err_txt);
 
   if (err_txt != "")
@@ -203,6 +207,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
                        err_txt);
 
   CheckVariances(model_settings, point_var_0_, var_0_, dt, err_txt);
+  */
 }
 
 //
@@ -319,7 +324,7 @@ Analyzelog::CalculateNumberOfLags(int                                           
         if(dist < 0) {             // Small negative lags were observed on Smorbukk Sor
           if (floor(dist/dt+0.5) < 0 && wellErrTxt == "") // Check that error is numerically significant
           {
-            wellErrTxt += std::string("Negative lags in well \'") + wells_[i]->getWellname() +  + "\'.z[k]=";
+            wellErrTxt += std::string("Negative lags in well \'") + wells[i].GetWellName() +  + "\'.z[k]=";
             wellErrTxt += NRLib::ToString(z[k],3) + std::string(" z[j]=") + NRLib::ToString(z[j],3) + "\n";
           }
         }
@@ -418,7 +423,7 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
     err_txt += std::string("Could not estimate globalMean for log") + NRLib::ToString(log_nr) + " (Vp=0,Vs=1,Rho=2)\n";
   }
 }
-
+/*
 void
 Analyzelog::estimateLnData(float      **& lnData,
                            FFTGrid      * background,
@@ -494,11 +499,12 @@ Analyzelog::estimateLnData(float      **& lnData,
     errTxt += std::string("Could not estimate globalMean for log") + NRLib::ToString(logNr) + " (Vp=0,Vs=1,Rho=2)\n";
   }
 }
-
+*/
 
 //
 // Read background model in well positions.
 //
+/*
 void Analyzelog::readMeanData(FFTGrid *cube, int nd,
                               const double * xpos,
                               const double * ypos,
@@ -512,10 +518,12 @@ void Analyzelog::readMeanData(FFTGrid *cube, int nd,
     meanValue[n] = cube->getRealValue(i,j,k);     //changed
   }
 }
+*/
 
 //
 // Estimate covariance matrix for alpha, beta and rho.
 //
+/*
 void
 Analyzelog::estimatePointVar0(float      ** Var0,
                               float      ** lnDataAlpha,
@@ -628,10 +636,12 @@ Analyzelog::estimatePointVar0(float      ** Var0,
       Var0[1][2] = Var0[2][1] = float (sum6/(tell6-1));
   }
 }
+*/
 
 //
 // Estimate auto correlation and variances. Use lag 0 to estimate variance.
 //
+/*
 void
 Analyzelog::estimateCorrTAndVar0(float       * CorrT,
                                  float      ** Var0,
@@ -1063,7 +1073,9 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
   delete [] nRR;
   delete [] nTT;
 }
+*/
 
+/*
 void
 Analyzelog::checkVariances(const ModelSettings  * modelSettings,
                            const float  * const * pointVar0,
@@ -1147,3 +1159,4 @@ Analyzelog::checkVariances(const ModelSettings  * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------\n");
   }
 }
+*/
