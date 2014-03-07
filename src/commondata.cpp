@@ -2967,6 +2967,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     ResampleSurfaceToGrid2D(&helpNoise, local_noise_scale);
   }
 
+  Wavelet * wavelet_pre_resampling = NULL;
+
   if (estimate_wavelet) {
     wavelet = new Wavelet1D(&estimation_simbox_,
                             seismic_data,
@@ -3002,37 +3004,40 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                                 error,
                                 err_text);
     }
-      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-      if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
-        const float lim_high  = 3.0f;
-        const float lim_low   = 0.33f;
+    // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+    if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
+      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
+      const float lim_high  = 3.0f;
+      const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
-           wavelet->multiplyRAmpByConstant(prescale);
-        else {
-          if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-            if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
-              err_text += text;
-              error++;
-            }
-            else {
-              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-            }
+      if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
+          wavelet->multiplyRAmpByConstant(prescale);
+      else {
+        if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
+            std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+          if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
+            err_text += text;
+            error++;
+          }
+          else {
+            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+            TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
           }
         }
       }
-      //Store a general wavelet here (resample because correct dz/nz is needed, same length as the blocked logs)
-      //Wavelets are resampled per interval (with padding) in ModelAVODynamic
+    }
 
-      //H problem: When wavelet is resampled, inFFTorder is set to true (central point moved to the start)
-      //Want to resample the wavelet to each interval in ModelAVODynamic, but you can't resample a wavelet inFFTorder (with the current resample algorithm).
-      if (error == 0)
-        wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
-                          estimation_simbox_.getnz(),
-                          estimation_simbox_.getnz());
+    //If wavelet isn't estimated it needs to be resampled in order to calculate SN-Ratio
+    //The wavelet also needs to be resampled in modelAVODynamic to the different intervals.
+    //Here we make a different copy to be sent to modelAVODynamic, so the same wavelet isn't resampled twice.
+    wavelet_pre_resampling = new Wavelet1D(wavelet);
+
+    if (error == 0) {
+
+      wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
+                        estimation_simbox_.getnz(),
+                        estimation_simbox_.getnz());
+    }
 
   }
 
@@ -3052,7 +3057,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
         w++;
       }
-
 
       float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
                                                                    seis_logs,
@@ -3137,6 +3141,10 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       }
     }
   }
+
+  if (wavelet_pre_resampling != NULL)
+    wavelet = new Wavelet1D(wavelet_pre_resampling);
+
   return error;
 }
 

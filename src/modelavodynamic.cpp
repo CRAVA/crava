@@ -742,15 +742,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
 
       //Resample wavelet for this interval
-
-      //H
-      //Want to resample wavelet to this interval-simbox
-      //Get an assert error since inFFTorder_ == true (this is set as true when the wavelet is resampled to estimation_simbox in CommonData).
-      //How to resample the wavelet again?
-
-      //wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
-      //                       simbox->getnz(),
-      //                       simbox->GetNZpad());
+      wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
+                             simbox->getnz(),
+                             simbox->GetNZpad());
 
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
@@ -759,7 +753,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   if (model_settings->getEstimateWaveletNoise())
     model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
-  //H TODO Move from AVODynamic, so it wont be written out per interval.
+  //H-TODO Move from AVODynamic, so it wont be written out per interval. Either to CommonData or to combined with writing of grids in the end.
   if (estimation_mode)
     model_avo_static->WriteBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
 
