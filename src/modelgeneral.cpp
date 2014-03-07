@@ -2005,18 +2005,39 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
   else
   {
     const std::string & top_name  = input_files->getTimeSurfFile(0);
-    const std::string & base_name = input_files->getTimeSurfFile(1);
 
     if (NRLib::IsNumber(top_name))
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_name.c_str()));
     else
       LogKit::LogFormatted(LogKit::Low,"  Top surface                              : "+top_name+"\n");
 
-    if (NRLib::IsNumber(base_name))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
+    if (model_settings->getIntervalNames().size() == 0) {
+
+      const std::string & base_name = input_files->getTimeSurfFile(1);
+
+      if (NRLib::IsNumber(base_name))
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
       LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
+
+    }
+    else { //Multiple intervals
+      std::vector<std::string> interval_names = model_settings->getIntervalNames();
+
+      for (int i = 0; i < interval_names.size(); i++) {
+
+        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+        const std::string & base_name = input_files->getIntervalBaseTimeSurface(interval_names[i]);
+
+        if (NRLib::IsNumber(base_name))
+          LogKit::LogFormatted(LogKit::Low,"    Stop time                              : %10.2f\n", atof(base_name.c_str()));
+        else
+          LogKit::LogFormatted(LogKit::Low,"    Base surface                           : "+base_name+"\n");
+        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNzInterval(interval_names[i]));
+
+      }
+    }
 
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
   }

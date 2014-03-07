@@ -14,7 +14,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      std::string    & err_text,
                                      bool           & failed) {
 
-  std::vector<std::string> interval_names_                        = model_settings->getIntervalNames();
+  interval_names_                                                 = model_settings->getIntervalNames();
   n_intervals_                                                    = static_cast<int>(interval_names_.size());
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();

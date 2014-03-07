@@ -508,7 +508,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           float guard_zone = model_settings->getGuardZone();
 
           bool cover_ok = false;
-          //H Move check that seismic data cover grid until interval_simboxes is made and before inversion.
+          //H-TODO Move check that seismic data cover grid until interval_simboxes are made and before inversion.
           cover_ok = CheckThatDataCoverGrid(segy,
                                             offset[i],
                                             &estimation_simbox_,
@@ -551,7 +551,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
             scale = true;
           std::string err_text_tmp = "";
 
-          //H Move this check until after interval_simboxes are made and before inversion.
+          //H-TODO Move this check until after interval_simboxes are made and before inversion.
           //This cover_check failes in test_cast 15 (against estimation_simbox)
           cover_ok = true;
           //cover_ok = CheckThatDataCoverGrid(stormgrid, //Checks that stormgrid.z > simbox.z
@@ -2071,7 +2071,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
 
-  int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
+  int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
   const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
   for (size_t i = 0; i < z_tmp.size(); i++) {
     if (z_tmp[i] != WELLMISSING)
@@ -2246,7 +2246,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 //      // facies types given here
 //      for (k=0; k < n_facies; k++)
 //      {
-//        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
+//        NRLib::ReadNextToken(file,token,line);
 //        facies_nr[k] = NRLib::ParseType<int>(token);
 //        NRLib::ReadNextToken(file,token,line);
 //        facies_names[i] = token;
@@ -7221,7 +7221,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
   }
 
-    //if (failed == false) { //H Writing of background models?
+    //if (failed == false) { //H Writing of background models missing.
     //  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
     //    background->writeBackgrounds(timeSimbox,
     //                                 timeDepthMapping,
