@@ -3877,10 +3877,10 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
   double                    lz                            = model_settings->getTimeLz();
   double                    dz                            = model_settings->getTimeDz();
 
-  Surface * top_surface = NULL;
+  Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
 
-  Surface * top_surface_flat = NULL;
+  Surface * top_surface_flat  = NULL;
   Surface * base_surface_flat = NULL;
 
   try {
@@ -4016,6 +4016,54 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
       err_text += e.what();
     }
   }
+  if (!failed) {
+    if ((output_domain & IO::TIMEDOMAIN) > 0) {
+      std::string topSurf = IO::PrefixSurface() + IO::PrefixTop() + IO::PrefixTime();
+      std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+      estimation_simbox.setTopBotName(topSurf,baseSurf,output_format);
+      if (generate_seismic) {
+        estimation_simbox.writeTopBotGrids(topSurf,
+                                  baseSurf,
+                                  IO::PathToSeismicData(),
+                                  output_format);
+      }
+      else if (!estimation_mode){
+        if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToInversionResults(),
+                                    output_format);
+      }
+      if ((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
+        if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
+            (output_grids_elastic & IO::BACKGROUND_TREND) > 0 ||
+            (estimation_mode && generate_background)) {
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToBackground(),
+                                    output_format);
+        }
+        if ((output_grids_other & IO::CORRELATION) > 0) {
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToCorrelations(),
+                                    output_format);
+        }
+        if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToSeismicData(),
+                                    output_format);
+        }
+        if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                    baseSurf,
+                                    IO::PathToVelocity(),
+                                    output_format);
+        }
+      }
+    }
+  }
 
 
 
@@ -4057,13 +4105,11 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   int                                       output_grids_other            = model_settings->getOutputGridsOther();
   int                                       output_grids_seismic          = model_settings->getOutputGridsSeismic();
   double                                    d_top                         = model_settings->getTimeDTop();
-  //double                                    lz                            = model_settings->getTimeLz();
-  //double                                    dz                            = model_settings->getTimeDz();
 
-  Surface * top_surface = NULL;
+  Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
 
-  Surface * top_surface_flat = NULL;
+  Surface * top_surface_flat  = NULL;
   Surface * base_surface_flat = NULL;
 
   try{
@@ -4135,6 +4181,54 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       failed = true;
     }
   }
+  if (!failed) {
+      if ((output_domain & IO::TIMEDOMAIN) > 0) {
+        std::string topSurf = IO::PrefixSurface() + IO::PrefixTop() + IO::PrefixTime();
+        std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+        estimation_simbox.setTopBotName(topSurf,baseSurf,output_format);
+        if (generate_seismic) {
+          estimation_simbox.writeTopBotGrids(topSurf,
+                                   baseSurf,
+                                   IO::PathToSeismicData(),
+                                   output_format);
+        }
+        else if (!estimation_mode){
+          if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
+            estimation_simbox.writeTopBotGrids(topSurf,
+                                     baseSurf,
+                                     IO::PathToInversionResults(),
+                                     output_format);
+        }
+        if ((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
+          if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
+              (output_grids_elastic & IO::BACKGROUND_TREND) > 0 ||
+              (estimation_mode && generate_background)) {
+            estimation_simbox.writeTopBotGrids(topSurf,
+                                     baseSurf,
+                                     IO::PathToBackground(),
+                                     output_format);
+          }
+          if ((output_grids_other & IO::CORRELATION) > 0) {
+            estimation_simbox.writeTopBotGrids(topSurf,
+                                     baseSurf,
+                                     IO::PathToCorrelations(),
+                                     output_format);
+          }
+          if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+            estimation_simbox.writeTopBotGrids(topSurf,
+                                     baseSurf,
+                                     IO::PathToSeismicData(),
+                                     output_format);
+          }
+          if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+            estimation_simbox.writeTopBotGrids(topSurf,
+                                     baseSurf,
+                                     IO::PathToVelocity(),
+                                     output_format);
+          }
+        }
+      }
+    }
 
   delete top_surface;
   delete base_surface;
@@ -7823,72 +7917,81 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
 }
 //}
 
-bool CommonData::SetupPriorCorrelation(ModelSettings                                                * model_settings,
-                                       const InputFiles                                             * input_files,
-                                       const std::vector<NRLib::Well>                               & wells,
-                                       std::map<std::string, BlockedLogsCommon *>                   & mapped_blocked_logs_for_correlation,
-                                       const std::vector<Simbox>                                    & interval_simboxes,
-                                       const std::vector<std::vector<float> >                       & prior_facies_prob,
-                                       const std::vector<std::string>                               & facies_names,
-                                       const std::vector<CravaTrend>                                & trend_cubes,
-                                       const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
-                                       const std::vector<std::vector<NRLib::Grid<double> *> >       & background,
-                                       std::string                                                  & err_text_common){
-  (void) seismic_data, facies_names, background, prior_facies_prob, mapped_blocked_logs_for_correlation, wells;
+bool CommonData::SetupPriorCorrelation(const ModelSettings * model_settings,
+                                       const InputFiles * input_files,
+                                       const std::vector<NRLib::Well> & wells,
+                                       const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_for_correlation,
+                                       const std::vector<Simbox> & interval_simboxes,
+                                       const std::vector<std::vector<float> > & prior_facies_prob,
+                                       const std::vector<std::string> & facies_names,
+                                       const std::vector<CravaTrend> & trend_cubes,
+                                       const std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                       const std::vector<std::vector<NRLib::Grid<double> *> > & background,
+                                       std::string & err_text_common){
 
+  (void) seismic_data, facies_names, prior_facies_prob;
   LogKit::WriteHeader("Setup of Prior Correlation");
+
   bool failed = false;
   std::string err_text = "";
-
+  Analyzelog * analyze_all = NULL;
+  int min_data_for_estimation = 100; ///< Minimum number of blocks for estimation of time and param correlation
   bool print_result = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
-                        model_settings->getEstimationMode() == true);
-
-  size_t n_intervals                      = interval_simboxes.size();
-  size_t n_facies                         = facies_names.size(); //static_cast<int>(prior_facies_[0].size()); //H Changed since prior_facies_ isn't necessarily set.
+                                              model_settings->getEstimationMode() == true);
+  size_t n_intervals = interval_simboxes.size();
+  size_t n_facies = facies_names.size(); //static_cast<int>(prior_facies_[0].size()); //H Changed since prior_facies_ isn't necessarily set.
   std::vector<std::string> interval_names = model_settings->getIntervalNames();
+
+  // Local parameters to be set in this function ----------------------------------------------------
+  prior_corr_T_.resize(n_intervals);
+  prior_param_cov_.resize(n_intervals);
+  prior_corr_XY_.resize(n_intervals);
 
   if (model_settings->getDoInversion() || print_result)
   {
-
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
-    // Parameter covariance -----------------------------------------------------------------------
+    // A Parameter covariance -----------------------------------------------------------------------
+
+    // 1. From file
+    // 2. From rock physics
+    // 3. Estimate from data
 
     // Get parameter correlation file
-    const std::string & param_corr_file    = input_files->getParamCorrFile();
+    const std::string & param_cov_file = input_files->getParamCovFile();
     // If the parameter correlation file is empty and rock physics is being used
-    bool param_corr_from_rock_physics      = (param_corr_file == "" && model_settings->getFaciesProbFromRockPhysics());
+    bool param_cov_from_rock_physics = (param_cov_file == "" && model_settings->getFaciesProbFromRockPhysics());
     // If there is no parameter corr file and no rock physics, estimate parameter correlation
-    bool estimate_param_corr = (param_corr_file == "" && !param_corr_from_rock_physics);
+    bool estimate_param_cov = (param_cov_file == "" && !param_cov_from_rock_physics);
 
     //
     // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
     // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
-    std::vector<NRLib::Grid2D<double> >     param_corr_array;
-    float                                ** temp_array;
-    bool                                    failed_param_corr  = false;
-    std::string                             tmp_err_text = "";
+    //std::vector<NRLib::Grid2D<double> > param_corr_array;
+    float ** temp_array;
+    bool failed_param_cov = false;
+    std::string tmp_err_text = "";
 
     // 1. If there is a param corr file defined, use this
-    if(param_corr_file != "") {
-      param_corr_array.resize(n_intervals);
-      temp_array = ReadMatrix(param_corr_file, 3, 3, "parameter correlation", tmp_err_text);
-      ValidateCorrelationMatrix(temp_array, model_settings, tmp_err_text);
+    if(param_cov_file != "") {
+      //prior_param_corr_.resize(n_intervals);
+      temp_array = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text);
+      ValidateCovarianceMatrix(temp_array, model_settings, tmp_err_text);
       if(temp_array == NULL || tmp_err_text != "") {
-        err_text += "Reading of file " + param_corr_file + " for parameter correlation matrix failed\n";
+        err_text += "Reading of file " + param_cov_file + " for parameter covariance matrix failed\n";
         err_text += tmp_err_text;
-        failed_param_corr = true;
+        failed_param_cov = true;
       }
       // copy
       else{
         for(size_t i = 0; i<n_intervals; i++){
-          param_corr_array[i].Resize(3,3,0);
+          prior_param_cov_[i].resize(3,3);
           for(size_t j = 0; j<3; j++){
             for(size_t k = 0; k<3; k++){
-              // parameter correlation is the same for all intervals
-              param_corr_array[i](j,k) = temp_array[j][k];
+              // parameter covariance is the same for all intervals
+              prior_param_cov_[i](j,k) = temp_array[j][k];
             }
           }
         }
@@ -7897,16 +8000,15 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
     // 2. If there is no param correlation file and rock physics is used,
     // get param corr at lag 0 from the rock physics distribution.
     // (One 3x3 correlation matrix per interval)
-    else if (param_corr_from_rock_physics) {
+    else if (param_cov_from_rock_physics) {
 
-      param_corr_array.resize(n_intervals);
       temp_array = new float * [3];
       for(size_t i=0;i<3;i++) {
           temp_array[i] = new float[3];
       }
 
       for (size_t i = 0; i<n_intervals; i++){
-        param_corr_array[i].Resize(3,3,0);
+        prior_param_cov_[i].resize(3,3);
       }
 
       std::vector<DistributionsRock *> rock_distribution(n_intervals);
@@ -7926,61 +8028,56 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
       // if multiple interval settings
       if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
-          CalculateCorrelationsFromRockPhysics(rock_distribution,
+          CalculateCovarianceFromRockPhysics(rock_distribution,
                                                model_settings->getPriorFaciesProbInterval(interval_names[i]),
                                                facies_names_,
                                                trend_cubes[i],
-                                               param_corr_array[i],
+                                               prior_param_cov_[i],
                                                err_text);
         }
       }
-      // if regular top and bottom surface
+      // if multiple interval settings is not being used
       else{
-        CalculateCorrelationsFromRockPhysics(rock_distribution,
+        CalculateCovarianceFromRockPhysics(rock_distribution,
                                              model_settings->getPriorFaciesProb(),
                                              facies_names_,
                                              trend_cubes[0],
-                                             param_corr_array[0],
+                                             prior_param_cov_[0],
                                              err_text);
       }
 
-      // cast to float
-      /*
-      for(int n = 0; n<n_intervals; n++){
-        for(int i=0; i<3; i++) {
-          for(int j=0; j<3; j++)
-            param_corr_array[n][i][j] = static_cast<float>(param_corr[n](i,j));
-        }
-      }
-      */
-
       if (tmp_err_text != "")
       {
-        err_text += "Parameter correlation matrix from rock physics failed\n";
+        err_text += "Parameter covariance matrix from rock physics failed\n";
         err_text += tmp_err_text;
-        failed_param_corr = true;
+        failed_param_cov = true;
       }
       // 3 Parameter estimation from well data -> further down
     }
 
     //
-    // Lateral correlation ------------------------------------------------------------
+    // B Lateral correlation -------------------------------------------------------------------
     //
-    for (size_t i = 0; i<n_intervals; i++){
+
+    for (size_t i = 0; i < n_intervals; i++){
       prior_corr_XY_[i] = FindCorrXYGrid(&(interval_simboxes[i]), model_settings);
     }
 
-    // Temporal correlation --------------------------------------------------------------------
+    //
+    // C Temporal correlation -------------------------------------------------------------------
 
-    const std::string & corr_time_file    = input_files->getTempCorrFile();
-    bool temporal_corr_range_given        = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
-    bool estimate_temp_corr               = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
-    bool failed_temp_corr                 = false;
-    failed_param_corr                     = false;
+    // 1. From file
+    // 2. Correlation range
+    // 3. Estimate from data
 
+    const std::string & corr_time_file = input_files->getTempCorrFile();
+    bool temporal_corr_range_given = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
+    bool estimate_temp_corr = (corr_time_file == "" && model_settings->getUseVerticalVariogram() == false);
+    bool failed_temp_corr = false;
+    failed_param_cov = false;
 
     for (size_t i = 0; i<n_intervals; i++){
-      if(!failed_temp_corr && !failed_param_corr){
+      if(!failed_temp_corr && !failed_param_cov){
 
         // Number of bins
         int n_corr_T = interval_simboxes[i].GetNZpad();
@@ -7989,19 +8086,17 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
         else
           n_corr_T = n_corr_T/2;
 
-        std::vector<float> corr_T;
-
-        // Use variogram
+        // 2. Use variogram with correlation range
         if(temporal_corr_range_given == true) {
-          corr_T.resize(n_corr_T+1);
+          prior_corr_T_[i].resize(n_corr_T+1,0);
           float temp_corr_range = model_settings->getTemporalCorrelationRange();
           float dz = static_cast<float>(interval_simboxes[i].getdz());
-          for(int i=0; i<=n_corr_T; i++){
+          for(int j=0; j<=n_corr_T; j++){
             //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
-            corr_T[i] = exp(-3*dz*i/temp_corr_range);
+            prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
           }
         }
-        // Defined in text file
+        // 1. Defined in text file
         else{
           std::string tmp_err_text("");
           float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
@@ -8011,92 +8106,100 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
             err_text += tmp_err_text;
             failed_temp_corr = true;
           }
-          corr_T.resize(n_corr_T);
+          prior_corr_T_[i].resize(n_corr_T,0);
           if (!failed_temp_corr)
           {
-            for(int i=0;i<n_corr_T;i++)
-              corr_T[i] = corr_mat[0][i+1];
+            for(int j=0;j<n_corr_T;j++)
+              prior_corr_T_[i][j] = corr_mat[0][j+1];
             delete [] corr_mat[0];
             delete [] corr_mat;
           }
         }
 
+        //
+        // Estimation of parameter and temporal correlation ----------------------------------------
+        //
+
+        // A.3 Estimation of parameter correlation from data
+        // C.3 Estimation of temporal correlation from data
 
 
-        float ** point_var_0 = NULL;
-        if (estimate_param_corr || estimate_temp_corr) //Need well estimation
-        {
-          /*
+        //float ** point_var_0 = NULL;
+        if (estimate_param_cov || estimate_temp_corr){
+
           std::string tmp_err_txt;
-          Analyzelog * analyze = new Analyzelog;
+          // Option 1: Estimate within this interval
+          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background[i], &interval_simboxes[i], model_settings, tmp_err_txt);
           if (tmp_err_txt != "") {
             err_text += tmp_err_txt;
-            failed_param_corr = true;
+            failed_param_cov = true;
           }
-
-          if(estimate_param_corr)
-            param_corr_array[i] = analyze->getVar0();
-          else
-            delete [] analyze->getVar0();
-
-          point_var_0 = analyze->getPointVar0();
-
-          float * est_corr_T = analyze->getCorrT();
-          if(estimate_temp_corr) {
-            corr_T.resize(n_corr_T);
-            int nEst = analyze->getNumberOfLags();
-            int i, max = nEst;
-            if(max > n_corr_T)
-              max = n_corr_T;
-            for(i=0;i<max;i++)
-              corr_T[i] = est_corr_T[i];
-            if(i<n_corr_T) {
-              LogKit::LogFormatted(LogKit::High,
-                "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, n_corr_T);
-              for(;i<n_corr_T;i++)
-                corr_T[i] = 0.0f;
+          // Option 2: Estimate over all intervals if the multiple interval setting is being used
+          else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL){
+            analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, interval_simboxes, model_settings, tmp_err_txt);
+            if(analyze_all->GetEnoughData() == false){
+              err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
+              failed_param_cov = true;
+              failed_temp_corr = true;
             }
           }
-          delete [] est_corr_T;
 
+          if(err_text == ""){
+            NRLib::Matrix param_cov_array_temp;
+            if(estimate_param_cov){
+              if (analyze->GetEnoughData() == true){
+                param_cov_array_temp = analyze->GetVar0();
+              }
+              else{
+                param_cov_array_temp = analyze_all->GetVar0();
+              }
+            }
+
+            for (int j=0; j<3; j++){
+              for (int k=0; k<3; k++)
+                prior_param_cov_[i](j,k) = param_cov_array_temp(j,k);
+            }
+
+            //prior_var_0_[i] = analyze->getPointVar0();
+
+            std::vector<float> est_corr_T;
+            if (analyze->GetEnoughData() == true){
+              est_corr_T = analyze->GetCorrT();
+            }
+            else{
+              est_corr_T = analyze_all->GetCorrT();
+            }
+            if(estimate_temp_corr) {
+              //corr_T.resize(n_corr_T);
+              int n_est = analyze->GetNumberOfLags();
+              int j, max = n_est;
+              if(max > n_corr_T)
+                max = n_corr_T;
+              for(j = 0; j < max; j++)
+                prior_corr_T_[i][j] = est_corr_T[j];
+              if(j<n_corr_T) {
+                LogKit::LogFormatted(LogKit::High,
+                  "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", n_est, n_corr_T);
+                for(;j<n_corr_T;j++)
+                  prior_corr_T_[i][j] = 0.0f;
+              }
+            }
+          }
           delete analyze;
-          */
+
         }
 
-        if (failed_param_corr || failed_temp_corr)
+        if (failed_param_cov || failed_temp_corr)
           failed = true;
+
 
         if (!failed) {
 
-          const int nx        = interval_simboxes[i].getnx();
-          const int ny        = interval_simboxes[i].getny();
-          const int nz        = interval_simboxes[i].getnz();
-          const int nx_pad     = interval_simboxes[i].GetNXpad();
-          const int ny_pad     = interval_simboxes[i].GetNYpad();
-          const int nz_pad     = interval_simboxes[i].GetNZpad();
+          CheckCovarianceParameters(prior_param_cov_[i]);
 
-          float dt = static_cast<float>(interval_simboxes[i].getdz());
-          float low_cut = model_settings->getLowCut();
-          int low_int_cut = int(floor(low_cut*(nz_pad*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
-
-          float corr_grad_I;
-          float corr_grad_J;
-          GetCorrGradIJ(corr_grad_I, corr_grad_J, &interval_simboxes[i]);
-
-          /*
-          seismic_parameters.setCorrelationParameters(param_corr_array[i],
-                                                      corr_T,
-                                                      prior_corr_XY_,
-                                                      lowIntCut,
-                                                      corrGradI,
-                                                      corrGradJ,
-                                                      nx,
-                                                      ny,
-                                                      nz,
-                                                      nx_pad,
-                                                      ny_pad,
-                                                      nz_pad);
-                                                      */
+          //if(print_result)
+          // WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_[i], dt);
+          //PrintPriorVariances();
 
         }
       }
@@ -8108,13 +8211,8 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
       delete [] temp_array[j];
     delete [] temp_array;
 
-    /*
-    if(print_result)
-      WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_, dt);
-    PrintPriorVariances();
-    */
 
-    if(failed_temp_corr == true || failed_param_corr == true)
+    if(failed_temp_corr == true || failed_param_cov == true)
     {
       err_text += "Could not construct prior correlation. Unknown why...\n";
       failed = true;
@@ -8123,6 +8221,8 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
     Timings::setTimePriorCorrelation(wall,cpu);
   }
 
+  delete analyze_all;
+
   if (err_text != "") {
     err_text_common += err_text;
     return false;
@@ -8130,21 +8230,44 @@ bool CommonData::SetupPriorCorrelation(ModelSettings                            
 
   return true;
 }
-
+ /*
   const std::vector<NRLib::Grid<double> > & CommonData::GetCovParametersInterval(int i_interval){
-    std::vector<NRLib::Grid<double> > cov_params_interval;
-    return cov_params_interval;
+    return cov_params_interval_;
   }
 
   const std::vector<NRLib::Grid<double> > & CommonData::GetCorrParametersInterval(int i_interval){
-    std::vector<NRLib::Grid<double> > corr_params_interval;
-    return corr_params_interval;
+    return corr_params_interval_;
   }
 
   const NRLib::Matrix                     & CommonData::GetPriorVar0(int i_interval){
-    NRLib::Matrix prior_var_0;
-    return prior_var_0;
+    return prior_var_0_;
   }
+  */
+
+void CommonData::CheckCovarianceParameters(NRLib::Matrix & param_cov)
+{
+  // check that covariance is well conditioned and robustify
+  NRLib::Vector e_vals(3);
+  NRLib::Matrix e_vec(3,3);
+  NRLib::Matrix tmp(3,3);
+  tmp = param_cov;
+  NRLib::ComputeEigenVectors(tmp, e_vals,e_vec);
+
+  double max_val = e_vals(0);
+
+  for(int i=1;i<3;i++)
+    if(max_val<e_vals(i))
+      max_val=e_vals(i);
+
+  for(int k=0;k<3;k++){
+    if(e_vals(k)<max_val*0.001){
+      for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+          param_cov(i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
+    }
+  }
+
+}
 
 // -------------------------------------------------------------------------------------------------
 void  CommonData::GetCorrGradIJ(float         & corr_grad_I,
@@ -8165,9 +8288,9 @@ void  CommonData::GetCorrGradIJ(float         & corr_grad_I,
   corr_grad_J = float(cJ/simbox->getdz());
 }
 
-void CommonData::ValidateCorrelationMatrix(float               ** C,
-                                           const ModelSettings *  model_settings,
-                                           std::string         &  err_txt){
+void CommonData::ValidateCovarianceMatrix(float               ** C,
+                                           const ModelSettings * model_settings,
+                                           std::string         & err_txt){
   float minAlpha = model_settings->getVarAlphaMin();
   float maxAlpha = model_settings->getVarAlphaMax();
   float minBeta  = model_settings->getVarBetaMin();
@@ -8235,12 +8358,12 @@ void CommonData::ValidateCorrelationMatrix(float               ** C,
   }
 }
 
-void  CommonData::CalculateCorrelationsFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                       const std::map<std::string, float>               & probability,
-                                                       const std::vector<std::string>                   & facies_names,
-                                                       const CravaTrend                                 & trend_cubes,
-                                                       NRLib::Grid2D<double>                            & param_corr,
-                                                       std::string                                      & err_txt){
+void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+                                                     const std::map<std::string, float>               & probability,
+                                                     const std::vector<std::string>                   & facies_names,
+                                                     const CravaTrend                                 & trend_cubes,
+                                                     NRLib::Matrix                                    & param_cov,
+                                                     std::string                                      & err_txt){
 
   LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
 
@@ -8319,7 +8442,7 @@ void  CommonData::CalculateCorrelationsFromRockPhysics(const std::vector<Distrib
     if (n_samples > 0) {
       for (int i=0; i<3; i++) {
         for (int j=0; j<3; j++)
-          param_corr(i,j) = sumVariance(i,j)/n_samples;
+          param_cov(i,j) = sumVariance(i,j)/n_samples;
       }
     }
 
@@ -8340,7 +8463,7 @@ void  CommonData::CalculateCorrelationsFromRockPhysics(const std::vector<Distrib
 
     for (int i=0; i<3; i++) {
       for (int j=0; j<3; j++)
-        param_corr(i,j) = sigma_sum(i,j);
+        param_cov(i,j) = sigma_sum(i,j);
     }
 
   }
@@ -8958,3 +9081,78 @@ void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
   }
 }
 
+
+/*
+void CommonData::WriteFilePriorVariances(const ModelSettings * model_settings,
+const std::vector<float> & prior_corr_T,
+const Surface * prior_corr_XY,
+const float & dt) const
+{
+std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
+std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
+std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
+std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
+std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
+
+std::ofstream file;
+NRLib::OpenWrite(file, fileName1);
+file << std::fixed
+<< std::right
+<< std::setprecision(10);
+for(int i=0 ; i<3 ; i++) {
+for(int j=0 ; j<3 ; j++) {
+file << std::setw(13) << prior_var0_(i,j) << " ";
+}
+file << "\n";
+}
+file.close();
+
+NRLib::OpenWrite(file, fileName2);
+file << std::fixed
+<< std::right
+<< std::setprecision(8)
+<< dt << "\n";
+for(int i=0 ; i<static_cast<int>(prior_corr_T.size()); i++) {
+file << std::setw(11) << prior_corr_T[i] << "\n";
+}
+file.close();
+
+IO::writeSurfaceToFile(*prior_corr_XY, baseName3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+}
+*/
+
+//--------------------------------------------------------------------
+/*
+void CommonData::PrintPriorVariances() const{
+
+LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
+LogKit::LogFormatted(LogKit::Low,"\n");
+LogKit::LogFormatted(LogKit::Low,"Variances ln Vp ln Vs ln Rho \n");
+LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+LogKit::LogFormatted(LogKit::Low,"Inversion grid: %.1e %.1e %.1e (used by program)\n",prior_var_0(0,0),prior_var_0(1,1),prior_var_0(2,2));
+
+float corr01 = static_cast<float>(priorVar0_(0,1)/(sqrt(priorVar0_(0,0)*priorVar0_(1,1))));
+float corr02 = static_cast<float>(priorVar0_(0,2)/(sqrt(priorVar0_(0,0)*priorVar0_(2,2))));
+float corr12 = static_cast<float>(priorVar0_(1,2)/(sqrt(priorVar0_(1,1)*priorVar0_(2,2))));
+LogKit::LogFormatted(LogKit::Low,"\n");
+LogKit::LogFormatted(LogKit::Low,"Corr | ln Vp ln Vs ln Rho \n");
+LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+LogKit::LogFormatted(LogKit::Low,"ln Vp | %5.2f %5.2f %5.2f \n",1.0f, corr01, corr02);
+LogKit::LogFormatted(LogKit::Low,"ln Vs | %5.2f %5.2f \n",1.0f, corr12);
+LogKit::LogFormatted(LogKit::Low,"ln Rho | %5.2f \n",1.0f);
+LogKit::LogFormatted(LogKit::Low,"\n");
+
+if (std::abs(corr01) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+}
+if (std::abs(corr02) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+}
+if (std::abs(corr12) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
+}
+}
+*/

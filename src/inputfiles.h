@@ -48,7 +48,7 @@ public:
   const std::map<std::string, std::string> & getCorrDirIntervalBaseSurfaceFiles(void)             const { return interval_corrDirBaseFiles_ ;}
   const std::string                        & getCorrDirIntervalBaseSurfaceFile(std::string name)  const { return interval_corrDirBaseFiles_.find(name)->second ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
-  const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
+  const std::string              & getParamCovFile(void)         const { return paramCovFile_        ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
   const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
@@ -96,7 +96,7 @@ public:
   void setCorrDirIntervalFile(const std::string & interval_name, const std::string & file_name)            { interval_corrDirFiles_[interval_name]     = file_name ;}
   void setCorrDirIntervalTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { interval_corrDirTopFiles_[interval_name]  = file_name ;}
   void setCorrDirIntervalBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { interval_corrDirBaseFiles_[interval_name] = file_name ;}
-  void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
+  void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_        = paramCovFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
@@ -152,7 +152,7 @@ private:
   std::string                corrDirFile_;           ///< File name for correlation direction
   std::string                corrDirTopFile_;        ///< File name for correlation direction for top-surface
   std::string                corrDirBaseFile_;       ///< File name for correlation direction for base-surface
-  std::string                paramCorrFile_;         ///< File name for correlation between parameters.
+  std::string                paramCovFile_;          ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 

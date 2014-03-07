@@ -42,8 +42,8 @@ public:
   const NRLib::Grid<double>                              * GetVpInterval(int i)                   const { return background_parameters_[i][0] ;}
   const NRLib::Grid<double>                              * GetVsInterval(int i)                   const { return background_parameters_[i][1] ;}
   const NRLib::Grid<double>                              * GetRhoInterval(int i)                  const { return background_parameters_[i][2] ;}
-  const std::string                                      & GetIntervalName(int i)                       { return interval_names_[i]           ;}
-  const std::vector<std::string>                         & GetIntervalNames()                           { return interval_names_              ;}
+  const std::string                                      & GetIntervalName(int i)                 const { return interval_names_[i]           ;}
+  const std::vector<std::string>                         & GetIntervalNames()                     const { return interval_names_              ;}
   const std::vector<int>                                 & GetErosionPriorities()                 const { return erosion_priorities_          ;}
   const std::vector<std::string>                         & GetSurfaceFiles()                      const { return surface_files_               ;}
   const std::vector<double>                              & GetRelativeGridResolution()            const { return relative_grid_resolution_    ;}

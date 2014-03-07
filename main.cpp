@@ -228,10 +228,17 @@ int main(int argc, char** argv)
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());
       //korrelasjonsgrid (2m)
-      float corr_grad_I = 0.0f;
-      float corr_grad_J = 0.0f;
-      common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
+      //float corr_grad_I = 0.0f;
+      //float corr_grad_J = 0.0f;
+      //common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
+      /*
+      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
+                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
+                                                 */
+      /*
       //H-DEBUGGING
       //seismicParametersInterval.setCorrelationParameters(paramCorr, //From CommonData
       //                                                   corrT,     //From CommonData
@@ -245,6 +252,9 @@ int main(int argc, char** argv)
       //                                                   simbox->GetNXpad(),
       //                                                   simbox->GetNYpad(),
       //                                                   simbox->GetNZpad());
+                                                   */
+
+      //seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,
