@@ -140,24 +140,24 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 13. Setup of prior correlation
    //H-DEBUGGING
-  if(read_seismic_){
-    if(model_settings->getEstimateCorrelations() == true){
-      if(read_wells_ && setup_multigrid_){
-          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-      }
-      else{
-        err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
-      }
-    }
-    else{
-      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-    }
-  }
-  else{
-    err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  }
+  //if(read_seismic_){
+  //  if(model_settings->getEstimateCorrelations() == true){
+  //    if(read_wells_ && setup_multigrid_){
+  //        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+  //    }
+  //    else{
+  //      err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
+  //    }
+  //  }
+  //  else{
+  //    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+  //  }
+  //}
+  //else{
+  //  err_text += "Could not set up prior correlations since this requires seismic data.\n";
+  //}
 
 
   // 14. Set up TimeLine class
@@ -508,7 +508,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
           float guard_zone = model_settings->getGuardZone();
 
           bool cover_ok = false;
-          //H Move check that seismic data cover grid until interval_simboxes is made and before inversion.
+          //H-TODO Move check that seismic data cover grid until interval_simboxes are made and before inversion.
           cover_ok = CheckThatDataCoverGrid(segy,
                                             offset[i],
                                             &estimation_simbox_,
@@ -551,7 +551,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
             scale = true;
           std::string err_text_tmp = "";
 
-          //H Move this check until after interval_simboxes are made and before inversion.
+          //H-TODO Move this check until after interval_simboxes are made and before inversion.
           //This cover_check failes in test_cast 15 (against estimation_simbox)
           cover_ok = true;
           //cover_ok = CheckThatDataCoverGrid(stormgrid, //Checks that stormgrid.z > simbox.z
@@ -767,6 +767,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     std::vector<float> dev_angle(n_wells);
 
     std::vector<std::string> well_names(n_wells);
+    std::vector<bool> well_synthetic_vs_log(n_wells);
 
     std::vector<std::vector<int> > facies_count(n_wells);
     for (int i = 0; i < n_wells; i++) {
@@ -816,7 +817,6 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
       //Check if well is valid
       bool well_valid = true;
       bool facies_ok  = true;
-      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
 
       if (new_well.CheckSimbox(estimation_simbox) == 1) {
         well_valid = false;
@@ -863,7 +863,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
       }
 
-      well_names.push_back(new_well.GetWellName());
+      well_names[i]            = new_well.GetWellName();
+      well_synthetic_vs_log[i] = new_well.HasSyntheticVsLog();
 
       if (read_ok == false) {
         err_text += "Well format of file " + well_file_name + " not recognized.\n";
@@ -905,12 +906,12 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
     for (int i = 0; i < n_wells; i++) {
       if (valid_index[i])
         LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
-        wells_[i].GetWellName().c_str(),
+        well_names[i].c_str(),
         n_merges[i],
         n_invalid_vp[i],
         n_invalid_vs[i],
         n_invalid_rho[i],
-        (wells_[i].HasSyntheticVsLog() ? "yes" : " no"),
+        (well_synthetic_vs_log[i] ? "yes" : " no"),
         rank_corr[i],
         (dev_angle[i] > model_settings->getMaxDevAngle() ? "yes" : " no"),
         dev_angle[i]);
@@ -1765,9 +1766,9 @@ void CommonData::CutWell(std::string           well_file_name,
   //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
   //Possible Logs: X_pos, Y_pos, Z_pos, Dt, Vp, Dts, Vs, Rho, Facies
 
-  const std::vector<double> & x_old   = well.GetContLog("X_pos");
-  const std::vector<double> & y_old   = well.GetContLog("Y_pos");
-  const std::vector<double> & z_old   = well.GetContLog("Z_pos");
+  const std::vector<double> & x_old = well.GetContLog("X_pos");
+  const std::vector<double> & y_old = well.GetContLog("Y_pos");
+  const std::vector<double> & z_old = well.GetContLog("Z_pos");
 
   std::vector<double> x_new;
   std::vector<double> y_new;
@@ -1782,8 +1783,14 @@ void CommonData::CutWell(std::string           well_file_name,
   const NRLib::Surface<double> & top_surf = full_inversion_volume.GetTopSurface();
   const NRLib::Surface<double> & bot_surf = full_inversion_volume.GetBotSurface();
 
+  double top_surf_min = top_surf.Min();
+  double top_surf_max = top_surf.Max();
+  double bot_surf_min = bot_surf.Min();
+  double bot_surf_max = bot_surf.Max();
+
   bool need_cutting = false;
-  if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
+  //if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
+  if (z_old[0] < top_surf_max || z_old[z_old.size()-1] > bot_surf_min)
     need_cutting = true;
 
   if (need_cutting == true) { //H Cut missing values?
@@ -1792,7 +1799,16 @@ void CommonData::CutWell(std::string           well_file_name,
 
       if (z_old[i] != RMISSING) {
 
-        if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+        double top_tmp = top_surf.GetZ(x_old[i], y_old[i]);
+        if (top_tmp = WELLMISSING)
+          top_tmp = top_surf_min;
+
+        double bot_tmp = bot_surf.GetZ(x_old[i], y_old[i]);
+        if (bot_tmp = WELLMISSING)
+          bot_tmp = bot_surf_max;
+
+        //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
+        if ( !(z_old[i] < top_tmp || z_old[i] > bot_tmp) ) { //Inside, keep
 
           x_new.push_back(x_old[i]);
           y_new.push_back(y_old[i]);
@@ -2055,7 +2071,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
   }
 
-  int nonmissing_data = 0; ///H to count number of data not Missing (nd_ in welldata.h)
+  int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
   const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
   for (size_t i = 0; i < z_tmp.size(); i++) {
     if (z_tmp[i] != WELLMISSING)
@@ -2230,7 +2246,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 //      // facies types given here
 //      for (k=0; k < n_facies; k++)
 //      {
-//        NRLib::ReadNextToken(file,token,line); //H Add in a while(ReadToken) and remove n_facies above?
+//        NRLib::ReadNextToken(file,token,line);
 //        facies_nr[k] = NRLib::ParseType<int>(token);
 //        NRLib::ReadNextToken(file,token,line);
 //        facies_names[i] = token;
@@ -4477,10 +4493,10 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   //std::vector<CravaTrend> trend_cubes;
 
   // Get trend variables from model settings
-  const std::vector<std::string>  trend_cube_parameters     = model_settings->getTrendCubeParameters();
-  const std::vector<int>          trend_cube_type           = model_settings->getTrendCubeType();
+  const std::vector<std::string>  & trend_cube_parameters     = model_settings->getTrendCubeParameters();
+  const std::vector<int>          & trend_cube_type           = model_settings->getTrendCubeType();
   //trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
-  const std::vector<std::string>  interval_names            =  model_settings->getIntervalNames();
+  const std::vector<std::string>  & interval_names            =  model_settings->getIntervalNames();
 
   // Initialize values
   std::vector<std::vector<NRLib::Grid<double> *> > trend_cubes_tmp;  //Vector(trends) vector(intervals)
@@ -7205,7 +7221,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
   }
 
-    //if (failed == false) { //H Writing of background models?
+    //if (failed == false) { //H Writing of background models missing.
     //  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
     //    background->writeBackgrounds(timeSimbox,
     //                                 timeDepthMapping,

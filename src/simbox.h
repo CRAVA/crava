@@ -102,8 +102,8 @@ public:
   bool           getIsConstantThick()            const { return constThick_              ;}
   std::string    GetIntervalName()               const { return interval_name_           ;}
   double         getMinRelThick()                const { return minRelThick_             ;} // Returns minimum relative thickness.
-  const Surface* GetTopErodedSurface()           const { return top_eroded_surface_      ;}
-  const Surface* GetBaseErodedSurface()          const { return base_eroded_surface_     ;}
+  const NRLib::Surface<double>* GetTopErodedSurface()   const { return top_eroded_surface_      ;}
+  const NRLib::Surface<double>* GetBaseErodedSurface()  const { return base_eroded_surface_     ;}
 
   double         getRelThick(int i, int j)       const;                                     // Local relative thickness.
   double         getRelThick(double x, double y) const;                                     // Local relative thickness.
@@ -141,9 +141,8 @@ public:
   // SET functions ------------------------------------------------------
 
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
-  //void           SetTopBotErodedSurfaces(const Surface * top_surf, const Surface base_surf);
-  void           SetTopBotErodedSurfaces(Surface top_surf, Surface base_surf) { top_eroded_surface_ = &top_surf; base_eroded_surface_ = &base_surf;};
-  void           SetErodedSurfaces(Surface * top_surf, Surface * bot_surf);
+  //void           SetTopBotErodedSurfaces(Surface top_surf, Surface base_surf) { top_eroded_surface_ = &top_surf; base_eroded_surface_ = &base_surf;};
+  void           SetErodedSurfaces(const Surface & top_surf, const Surface & bot_surf);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
@@ -170,12 +169,12 @@ public:
                                     Surface             * templateSurf) const;
 
 private:
-  int                               nx_pad_;                      ///< Number of cells to pad in x direction
-  int                               ny_pad_;
-  int                               nz_pad_;
-  double                            x_pad_fac_;
-  double                            y_pad_fac_;
-  double                            z_pad_fac_;
+  int            nx_pad_;                      ///< Number of cells to pad in x direction
+  int            ny_pad_;
+  int            nz_pad_;
+  double         x_pad_fac_;
+  double         y_pad_fac_;
+  double         z_pad_fac_;
   double         grad_x_;
   double         grad_y_;
   double         dx_, dy_, dz_;            // Working resolution.
@@ -186,8 +185,8 @@ private:
   std::string    botName_;
   std::string    interval_name_;
 
-  Surface      * top_eroded_surface_;      // Original top surface before padding (eroded if there are multiple intervals)
-  Surface      * base_eroded_surface_;     // Original base surface before padding (eroded if there are multiple intervals)
+  NRLib::Surface<double> * top_eroded_surface_;      // Original top surface before padding (eroded if there are multiple intervals)
+  NRLib::Surface<double> * base_eroded_surface_;     // Original base surface before padding (eroded if there are multiple intervals)
 
   //Note: IL/XL information is just carried passively by this class.
   double         inLine0_, crossLine0_;    // XL, IL at origin, not necessarily int.

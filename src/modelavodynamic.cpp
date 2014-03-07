@@ -397,20 +397,16 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                  CommonData              * common_data,
                                  SeismicParametersHolder & seismic_parameters,
                                  const Simbox            * simbox,
-                                 //const GridMapping       * timeDepthMapping,
-                                 //const GridMapping       * timeCutMapping,
                                  int                       t,
                                  int                       i_interval)
 { //Time lapse constructor
-
-  //H Earlier two versions of ModelAVODynamic, one from doFirstTimeLapseInversion and one from doTimeLapseInversion. Now combine to only one.
 
   reflection_matrix_        = NULL;
   failed_                   = false;
   this_timelapse_           = t;
   bool failed_loading_model = false;
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
-  bool estimation_mode      = model_settings->getEstimationMode();  //H Handle estimation mode here? or just in commonData? Is estimationMode is possible with multiinterval?
+  bool estimation_mode      = model_settings->getEstimationMode();
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
 
@@ -431,7 +427,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   theo_sn_ratio_   = new float[number_of_angles_];
   err_theta_cov_   = new double*[number_of_angles_];
 
-  const std::vector<SeismicStorage> & seismic_data  = common_data->GetSeismicDataTimeLapse(this_timelapse_);
+  const std::vector<SeismicStorage> & seismic_data = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
   angle_.resize(number_of_angles_);
   for (int i = 0; i < number_of_angles_; i++)
@@ -443,7 +439,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
 
-  //const Simbox * interval_simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
   int nx  = simbox->getnx();
   int ny  = simbox->getny();
   int nz  = simbox->getnz();
@@ -532,7 +527,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Logging from processSeismic
 
-
   bool segy_volumes_read = false;
   for (int i = 0; i < number_of_angles_ ; i++) {
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
@@ -555,10 +549,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       }
     }
   }
-  //LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-  //                     storm->GetXMin(), storm->GetYMin(),
-  //                     storm->GetLX(),   storm->GetLY(), geo_angle,
-  //                     storm->GetDX(),   storm->GetDY());
 
   //H Missing from processSeismic:
   //seisCube[i]->writeFile
@@ -594,7 +584,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
-    interval_text = "for interval " + common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval) + " ";
+    interval_text = "for interval " + model_settings->getIntervalName(i_interval) + " ";
 
   //Reflection matrix: From file or global vp/vs: do not change per interval
   if (common_data->GetRefMatFromFileGlobalVpVs() == true) {
@@ -660,41 +650,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
 
-
-        //H-TEST
-        //Nye blocked logs for dette intervallet
-        //BlockedLogsCommon * bl                 = NULL;
-        //std::map<std::string, BlockedLogsCommon *> mapped_bl;
-        //std::vector<NRLib::Well> & wells = common_data->GetWells();
-        //for (size_t j = 0; j < wells.size(); j++) {
-        //  bl = NULL;
-
-        //  // Get all continuous and discrete logs
-        //  std::vector<std::string> cont_logs_to_be_blocked;
-        //  std::vector<std::string> disc_logs_to_be_blocked;
-
-        //  const std::map<std::string,std::vector<double> > & cont_logs = wells[j].GetContLog();
-        //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[j].GetDiscLog();
-
-        //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-        //    cont_logs_to_be_blocked.push_back(it->first);
-        //  }
-        //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-        //    disc_logs_to_be_blocked.push_back(it->first);
-        //  }
-
-        //   bl = new BlockedLogsCommon(&wells[j],
-        //                                  cont_logs_to_be_blocked,
-        //                                  disc_logs_to_be_blocked,
-        //                                  simbox,
-        //                                  false,
-        //                                  err_text);
-
-        //  mapped_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bl));
-
-        //}
-        //End H-TEST
-
         std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
         int w = 0;
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
@@ -707,10 +662,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           w++;
         }
 
-
         sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox,
                                                                      seis_logs,
-                                                                     mapped_blocked_logs, //H-TEST mapped_bl
+                                                                     mapped_blocked_logs,
                                                                      model_settings,
                                                                      err_text,
                                                                      error,
@@ -718,8 +672,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                      noise_scaled_tmp,
                                                                      shift_grid_tmp,
                                                                      gain_grid_tmp,
-                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i], //Just input? new value is returned
-                                                                     wavelets_[i]->getScale(), //Just input? scale_ is updated inside
+                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i],
+                                                                     wavelets_[i]->getScale(),
                                                                      true,   // doEstimateSNRatio
                                                                      true,   // doEstimateGlobalScale
                                                                      false,  // doEstimateLocalNoise
@@ -776,7 +730,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         LogKit::LogFormatted(LogKit::Error, "\n"+err_text);
       }
 
-      if (sn_ratio_[i] < 1.1f) { //H Moved here from setupErrorCorrelations
+      if (sn_ratio_[i] < 1.1f) {
         LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",i+1,sn_ratio_[i]);
         LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
         LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
@@ -805,14 +759,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   if (model_settings->getEstimateWaveletNoise())
     model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
-  //H Move from AVODynamic, so it wont be written out per interval. Where to?
+  //H TODO Move from AVODynamic, so it wont be written out per interval.
   if (estimation_mode)
     model_avo_static->WriteBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
 
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
   //H-DEBUGGING
-  fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
+  //fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
@@ -857,9 +811,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   // Compute variation in wavelet
   //H-DEBUGGING
-  for (int l=0; l < number_of_angles_; l++) {
-    wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
-  }
+  //for (int l=0; l < number_of_angles_; l++) {
+  //  wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
+  //}
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
   for (int l=0; l < number_of_angles_; l++) {

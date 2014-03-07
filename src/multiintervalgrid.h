@@ -161,7 +161,7 @@ private:
   std::vector<std::string>                             surface_files_;
 
   std::vector<Simbox>                                  interval_simboxes_;        // extended simbox with padding and correlation direction, must have same size as the parameters vector
-  std::vector<std::vector<NRLib::Grid<double> *> >     background_parameters_;    // must have same size as the simbox vector
+  std::vector<std::vector<NRLib::Grid<double> *> >     background_parameters_;    // must have same size as the simbox vector. Vector (intervals) vector (parameters)
   //std::vector<std::vector<NRLib::Grid<double> > >      background_parameters_;    // must have same size as the simbox vector
 
   std::vector<double>                                  background_vs_vp_ratios_;  //vs_vp_ratios from generation of backgroundmodel for multiinteval

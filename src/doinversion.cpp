@@ -174,8 +174,6 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                                         commonData,
                                         seismicParameters,
                                         modelGeneral->getTimeSimbox(),
-                                        //modelGeneral->getTimeDepthMapping(),
-                                        //modelGeneral->getTimeCutMapping(),
                                         vintage,
                                         i_interval);
 

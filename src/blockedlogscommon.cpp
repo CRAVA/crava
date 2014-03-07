@@ -111,43 +111,6 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 }
 
-//BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data, //H-Removed: It is now similar to the first one, except for constant well.
-//                                     const std::vector<std::string>   & cont_logs_to_be_blocked,
-//                                     const std::vector<std::string>   & disc_logs_to_be_blocked,
-//                                     const Simbox                     * const estimation_simbox,
-//                                     bool                               interpolate,
-//                                     std::string                      & err_text) {
-//  n_angles_           = 0;
-//  well_name_          = well_data->GetWellName();
-//  n_layers_           = estimation_simbox->getnz();
-//  n_blocks_           = 0;
-//  interpolate_        = interpolate;
-//  facies_log_defined_ = false;
-//
-//  bool failed = false;
-//
-//  // FACIES
-//  if (well_data->HasFaciesLog()) {
-//    facies_log_defined_ = true;
-//    facies_map_ = well_data->GetFaciesMap();
-//  }
-//
-//  // Missing data are removed upon construction of a well_data object, whereas
-//  // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
-//  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
-//                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-//                         disc_logs_to_be_blocked, n_data_, failed, err_text);
-//  if(failed)
-//    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
-//
-//  if (!failed)
-//    BlockWell(estimation_simbox, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
-//              discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
-//
-//  n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
-//  n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
-//}
-
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
                                      const StormContGrid & stormgrid)
 : first_M_(IMISSING),
@@ -204,6 +167,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
     continuous_logs_blocked_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
   }
 
+  //Create HighCutBackground blocked logs
+  const std::map<std::string, std::vector<double> > & background_resolution_logs = well_data->GetContLogBackgroundResolution();
+  for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
+    std::vector<double> temp_vector_blocked;
+    BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+    cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+  }
+
 }
 
 BlockedLogsCommon::~BlockedLogsCommon(){
@@ -238,7 +209,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
     BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
 
     //Extrapolates if missing values in the beginning or end.
-    //FindXYZForVirtualPart(estimation_simbox); //TODO: Adjust for multiple_intervals
+    //FindXYZForVirtualPart(estimation_simbox); //TODO (CRA-660): Adjust for multiple_intervals
 
     // Continuous logs
     for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
@@ -338,7 +309,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
 
     //Extrapolates if missing values in the beginning or end.
-    FindXYZForVirtualPart(estimation_simbox); //H Added
+    FindXYZForVirtualPart(estimation_simbox);
 
     // Continuous logs
     for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++) {
@@ -455,9 +426,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
         last_M_ = m;
         break;
       }
+    } //H-Added Correct?
       if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING)
         break;
-    }
+    //} //H
   }
   //
   // Count number of blocks needed for the defined part of the well.
@@ -873,6 +845,10 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   // 3. Set IJK for the virtual part of the well in the lower simboxes
   //
   int last_I,  last_J,  last_K;
+
+  //H-Problem. Ok now after last_S_ fix?
+  // z_pos_raw_logs[last_M_] > interval_simbox z_bot(x,y) means that last_I, last_J and last_K returns missing (-9999)
+  // Example was interval 1 3100 - 3600, interval 2 3600-3900. Wells about 3100 - 3650
   interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
   for (int k = last_K + 1 ; k < n_layers_ ; k++) {
     b++;
