@@ -1311,7 +1311,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     errTxt += "Both a temporal correlation file and a temporal variogram range are given as input. Please specify only one of them.\n";
 
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
-    inputFiles_->setParamCorrFile(filename);
+    inputFiles_->setParamCovFile(filename);
 
   parseCorrelationDirection(root, errTxt);
 
@@ -6034,10 +6034,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       okWithoutWells = false;
       notOk += "- Vertical correlation must be given.\n";
     }
-    //4. Parameter correlation
-    if(inputFiles_->getParamCorrFile() == "" && modelSettings_->getGenerateBackgroundFromRockPhysics() == false) {
+    //4. Parameter covariance
+    if(inputFiles_->getParamCovFile() == "" && modelSettings_->getGenerateBackgroundFromRockPhysics() == false) {
       okWithoutWells = false;
-      notOk += "- Parameter correlation must be given.\n";
+      notOk += "- Parameter covariance must be given.\n";
     }
     if(okWithoutWells == true)
       modelSettings_->setNoWellNeeded(true);
@@ -6110,10 +6110,10 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
   }
 
   if(modelSettings_->getGenerateBackgroundFromRockPhysics()) {
-    // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
+    // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCovFile() should not be set.
     // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
-    if(inputFiles_->getParamCorrFile()!=""){
-      errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.\n";
+    if(inputFiles_->getParamCovFile()!=""){
+      errTxt += "Parameter covariance should not be specified in file when background/prior model is build from rock physics.\n";
     }
 
     if(modelSettings_->getGenerateBackground() == false) {
@@ -6122,7 +6122,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     }
 
     if((modelSettings_->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0)
-      errTxt += "The backround trend can not be written to file when rock physics models are used.\n";
+      errTxt += "The background trend can not be written to file when rock physics models are used.\n";
   }
 
 

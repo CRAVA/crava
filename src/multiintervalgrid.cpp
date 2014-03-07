@@ -214,7 +214,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const{
 
   int simbox_num = -1;
   for (size_t i = 0; i<interval_simboxes_.size(); i++){
-    if (interval_simboxes_[i].IsInside(x,y,z)){
+    if (interval_simboxes_[i].IsPointBetweenOriginalSurfaces(x,y,z)){
       simbox_num = i;
       break;
     }
