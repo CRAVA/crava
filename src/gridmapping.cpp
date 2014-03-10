@@ -9,6 +9,7 @@
 #include <time.h>
 #include <assert.h>
 
+#include "src/modelgeneral.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/simbox.h"
@@ -267,8 +268,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
     try {
       if(z0Grid_ != NULL)
         delete z0Grid_;
-      Surface tmpSurf(surfFile[0]);
-      z0Grid_ = new Surface(tmpSurf);
+      ModelGeneral::loadSurface(surfFile[0], z0Grid_);
       surfaceMode_ = TOPGIVEN;
     }
     catch (NRLib::Exception & e) {
@@ -281,8 +281,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
     try {
       if(z1Grid_ != NULL)
         delete z1Grid_;
-      Surface tmpSurf(surfFile[1]);
-      z1Grid_ = new Surface(tmpSurf);
+      ModelGeneral::loadSurface(surfFile[1], z1Grid_);
       if(surfaceMode_ == TOPGIVEN)
         surfaceMode_ = BOTHGIVEN;
       else
