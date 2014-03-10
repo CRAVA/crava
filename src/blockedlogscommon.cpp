@@ -2870,9 +2870,9 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() != 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);
   bool got_cpp                 = (cpp_.size() > 0);
-  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0); //(alpha_seismic_resolution_ != NULL);
-  bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0); //alpha_for_facies_ != NULL);
-  bool got_predicted           = (GetVpPredicted().size() > 0); //alpha_predicted_ != NULL);
+  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0);
+  bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0);
+  bool got_predicted           = (GetVpPredicted().size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (got_filtered_log)
@@ -2957,11 +2957,11 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   // Write LOGS
   //
 
-  const std::vector<double> & vp  = GetVpBlocked(); //Replaces alpha_
+  const std::vector<double> & vp  = GetVpBlocked();
   const std::vector<double> & vs  = GetVsBlocked();
   const std::vector<double> & rho = GetRhoBlocked();
 
-  const std::vector<double> & vp_highcut_background  = GetVpHighCutBackground(); //alpha_highcut_background_
+  const std::vector<double> & vp_highcut_background  = GetVpHighCutBackground();
   const std::vector<double> & vs_highcut_background  = GetVsHighCutBackground();
   const std::vector<double> & rho_highcut_background = GetRhoHighCutBackground();
 
@@ -2977,9 +2977,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
   const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
 
-  //const std::vector<int> & facies = GetFaciesBlocked(); //facies_
-
-  for (int i=first_B_ ; i<last_B_ + 1 ; i++) {
+  for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
          << std::fixed
          << std::setprecision(2)
@@ -3014,38 +3012,28 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << (facies_blocked_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
     file << std::scientific;
     if (got_facies_prob) {
-      for (int a=0 ; a<n_facies ; a++) {
+      for (int a = 0; a < n_facies; a++)
         file << std::setw(12) << (GetFaciesProb(a)[i]==RMISSING ? WELLMISSING : GetFaciesProb(a)[i])          << " ";
-        //file << std::setw(12) << (facies_prob_[a][i]==RMISSING ? WELLMISSING : facies_prob_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_real_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (GetRealSeismicData(a)[i]==RMISSING ? WELLMISSING : GetRealSeismicData(a)[i])          << " ";
-        //file << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_actual_synt_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
-        //file << std::setw(12) << (GetActualSyntSeismicData(a)[i]==RMISSING ? WELLMISSING : GetActualSyntSeismicData(a)[i])          << " ";
+      for (int a=0 ; a<n_angles_ ; a++)
         file << std::setw(12) << (actual_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : actual_synt_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_well_synt_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
-        //file << std::setw(12) << (GetWellSyntSeismicData(a)[i]==RMISSING ? WELLMISSING : GetWellSyntSeismicData(a)[i])          << " ";
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (well_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : well_synt_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_cpp)
-      for (int a=0 ; a<n_angles_ ; a++) {
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (GetCpp(a)[i]==RMISSING               ? WELLMISSING : GetCpp(a)[i])                        << " ";
-        //file << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
-      }
     file << "\n";
   }
   file.close();

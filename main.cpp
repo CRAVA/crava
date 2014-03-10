@@ -228,9 +228,13 @@ int main(int argc, char** argv)
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());
       //korrelasjonsgrid (2m)
-      //float corr_grad_I = 0.0f;
-      //float corr_grad_J = 0.0f;
-      //common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
+      float corr_grad_I = 0.0f;
+      float corr_grad_J = 0.0f;
+      common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
+
+      float dt        = static_cast<float>(simbox->getdz());
+      float low_cut   = modelSettings->getLowCut();
+      int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
       /*
       seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
@@ -238,21 +242,21 @@ int main(int argc, char** argv)
                                                  common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
                                                  common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
                                                  */
-      /*
+
       //H-DEBUGGING
-      //seismicParametersInterval.setCorrelationParameters(paramCorr, //From CommonData
-      //                                                   corrT,     //From CommonData
-      //                                                   common_data->GetPriorCorrXY(), //priorCorrXY_, //From CommonData
-      //                                                   lowIntCut, //From CommonData
-      //                                                   corr_grad_I,
-      //                                                   corr_grad_J,
-      //                                                   simbox->getnx(),
-      //                                                   simbox->getny(),
-      //                                                   simbox->getnz(),
-      //                                                   simbox->GetNXpad(),
-      //                                                   simbox->GetNYpad(),
-      //                                                   simbox->GetNZpad());
-                                                   */
+      seismicParametersInterval.setCorrelationParameters(common_data->GetPriorParamCov(i_interval),
+                                                         common_data->GetPriorCorrT(i_interval),
+                                                         common_data->GetPriorCorrXY(i_interval),
+                                                         low_int_cut,
+                                                         corr_grad_I,
+                                                         corr_grad_J,
+                                                         simbox->getnx(),
+                                                         simbox->getny(),
+                                                         simbox->getnz(),
+                                                         simbox->GetNXpad(),
+                                                         simbox->GetNYpad(),
+                                                         simbox->GetNZpad());
+
 
       //seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
 

@@ -139,26 +139,24 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
-   //H-DEBUGGING
-  //if(read_seismic_){
-  //  if(model_settings->getEstimateCorrelations() == true){
-  //    if(read_wells_ && setup_multigrid_){
-  //        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-  //    }
-  //    else{
-  //      err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
-  //    }
-  //  }
-  //  else{
-  //    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-  //  }
-  //}
-  //else{
-  //  err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  //}
-
+  if(read_seismic_){
+    if(model_settings->getEstimateCorrelations() == true){
+      if(read_wells_ && setup_multigrid_){
+          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+      }
+      else{
+        err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
+      }
+    }
+    else{
+      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+    }
+  }
+  else{
+    err_text += "Could not set up prior correlations since this requires seismic data.\n";
+  }
 
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
@@ -7916,17 +7914,17 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
 }
 //}
 
-bool CommonData::SetupPriorCorrelation(const ModelSettings * model_settings,
-                                       const InputFiles * input_files,
-                                       const std::vector<NRLib::Well> & wells,
-                                       const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_for_correlation,
-                                       const std::vector<Simbox> & interval_simboxes,
-                                       const std::vector<std::vector<float> > & prior_facies_prob,
-                                       const std::vector<std::string> & facies_names,
-                                       const std::vector<CravaTrend> & trend_cubes,
-                                       const std::map<int, std::vector<SeismicStorage> > & seismic_data,
+bool CommonData::SetupPriorCorrelation(const ModelSettings                                    * model_settings,
+                                       const InputFiles                                       * input_files,
+                                       const std::vector<NRLib::Well>                         & wells,
+                                       const std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs_for_correlation,
+                                       const std::vector<Simbox>                              & interval_simboxes,
+                                       const std::vector<std::vector<float> >                 & prior_facies_prob,
+                                       const std::vector<std::string>                         & facies_names,
+                                       const std::vector<CravaTrend>                          & trend_cubes,
+                                       const std::map<int, std::vector<SeismicStorage> >      & seismic_data,
                                        const std::vector<std::vector<NRLib::Grid<double> *> > & background,
-                                       std::string & err_text_common){
+                                       std::string                                            & err_text_common){
 
   (void) seismic_data, facies_names, prior_facies_prob;
   LogKit::WriteHeader("Setup of Prior Correlation");
@@ -8028,21 +8026,21 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings * model_settings,
       if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                               model_settings->getPriorFaciesProbInterval(interval_names[i]),
-                                               facies_names_,
-                                               trend_cubes[i],
-                                               prior_param_cov_[i],
-                                               err_text);
+                                             model_settings->getPriorFaciesProbInterval(interval_names[i]),
+                                             facies_names_,
+                                             trend_cubes[i],
+                                             prior_param_cov_[i],
+                                             err_text);
         }
       }
       // if multiple interval settings is not being used
       else{
         CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(),
-                                             facies_names_,
-                                             trend_cubes[0],
-                                             prior_param_cov_[0],
-                                             err_text);
+                                           model_settings->getPriorFaciesProb(),
+                                           facies_names_,
+                                           trend_cubes[0],
+                                           prior_param_cov_[0],
+                                           err_text);
       }
 
       if (tmp_err_text != "")

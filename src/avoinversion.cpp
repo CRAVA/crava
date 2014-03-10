@@ -142,23 +142,23 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     modelAVOdynamic_->ReleaseGrids();
 
     //H-DEBUGGING
-    //if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
-    //  spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
+    if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
+      spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
-    //  FFTGrid * covVp = seismicParameters.GetCovVp();
-    //  covVp->setAccessMode(FFTGrid::RANDOMACCESS);
+      FFTGrid * covVp = seismicParameters.GetCovVp();
+      covVp->setAccessMode(FFTGrid::RANDOMACCESS);
 
-    //  int i = 0;
-    //  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
-    //    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
-    //    BlockedLogsCommon * blocked_log = iter->second;
+      int i = 0;
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
 
-    //    spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
-    //    i++;
-    //  }
+        spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
+        i++;
+      }
 
-    //  covVp->endAccess();
-    //}
+      covVp->endAccess();
+    }
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
