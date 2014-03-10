@@ -41,6 +41,7 @@
 #include "src/cravatrend.h"
 #include "src/seismicparametersholder.h"
 #include "src/parameteroutput.h"
+#include "src/surfacefrompoints.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -858,9 +859,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                         errText,
                         failed);
 
-      if(!failed)
+      if (!failed)
       {
-        if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
+        if (modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
         {
           LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
           TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
@@ -878,19 +879,19 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
           errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
         }
 
-        if(status == Simbox::BOXOK)
+        if (status == Simbox::BOXOK)
         {
           logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
           //
           // Make extended time simbox
           //
-          if(inputFiles->getCorrDirFile() != "") {
+          if (inputFiles->getCorrDirFile() != "") {
             //
             // Get correlation direction
             //
             try {
               Surface tmpSurf(inputFiles->getCorrDirFile());
-              if(timeSimbox->CheckSurface(tmpSurf) == true)
+              if (timeSimbox->CheckSurface(tmpSurf))
                 correlationDirection = new Surface(tmpSurf);
               else {
                 errText += "Error: Correlation surface does not cover volume.\n";
@@ -902,7 +903,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               failed = true;
             }
 
-            if(failed == false && modelSettings->getForwardModeling() == false) {
+            if (failed == false && modelSettings->getForwardModeling() == false) {
               //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
               setupExtendedTimeSimbox(timeSimbox, correlationDirection,
                                       timeCutSimbox,
@@ -1058,8 +1059,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
     }
     else {
-      Surface tmpSurf(topName);
-      z0Grid = new Surface(tmpSurf);
+      loadSurface(topName, z0Grid);
     }
   }
   catch (NRLib::Exception & e) {
@@ -1086,8 +1086,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
           z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
         }
         else {
-          Surface tmpSurf(baseName);
-          z1Grid = new Surface(tmpSurf);
+          loadSurface(baseName, z1Grid);
         }
       }
       catch (NRLib::Exception & e) {
@@ -1158,6 +1157,37 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
   delete z0Grid;
   delete z1Grid;
 }
+
+
+void
+ModelGeneral::loadSurface(const std::string  & surfFile,
+                          Surface           *& grid)
+{
+  std::string errTxt;
+
+  try {
+    Surface tmpSurf(surfFile);
+    grid = new Surface(tmpSurf);
+  }
+  catch (NRLib::Exception & e) {
+    errTxt = e.what();
+  }
+
+  if (errTxt != "") { // Surface format could not be identified. Try point based format.
+    try {
+      SurfaceFromPoints sfp(surfFile);
+      grid = sfp.GetGriddedSurface();
+    }
+    catch (NRLib::Exception & e) {
+      errTxt = e.what();
+    }
+  }
+
+  if (errTxt != "") {
+    throw NRLib::FileFormatError(errTxt);
+  }
+}
+
 
 void
 ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
