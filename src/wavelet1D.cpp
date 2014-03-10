@@ -240,12 +240,11 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
     // to simplify comparison
     for(int w=0; w<nWells; w++) {
-      wellWavelets[w].resize(nzp_);
-      for(int i=0;i<nzp_;i++) {
-        if(wellWeight[w] > 0)
+      wellWavelets[w].resize(nzp_,0);
+      if(wellWeight[w] > 0) {
+        for(int i=0;i<nzp_;i++)
           wellWavelets[w][i] = wavelet_r[w][i];
-        else
-          wellWavelets[w][i] = 0;
+        CenterWellWavelet(wellWavelets[w]);
       }
     }
 
@@ -1581,6 +1580,19 @@ Wavelet1D::findWavelet(fftw_real               ** ccor_seis_cpp_r,
   }
 }
 
+
+void
+Wavelet1D::CenterWellWavelet(std::vector<fftw_real> & wavelet) const
+{
+  std::vector<fftw_real>::iterator min_it = std::min_element(wavelet.begin(), wavelet.end());
+  std::vector<fftw_real>::iterator max_it = std::max_element(wavelet.begin(), wavelet.end());
+  std::vector<fftw_real>::iterator center;
+  if(*max_it > -1.0*(*min_it))
+    center = max_it;
+  else
+    center = min_it;
+  std::rotate(wavelet.begin(),center,wavelet.end());
+}
 
 
 

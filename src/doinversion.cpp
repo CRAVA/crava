@@ -78,7 +78,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
 
-  if(failedLoadingModel == false){
+  if(failedLoadingModel == false && modelSettings->getEstimationMode() == false){
 
     Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
