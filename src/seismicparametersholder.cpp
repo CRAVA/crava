@@ -271,9 +271,9 @@ SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz,
 {
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  meanVp_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  meanVs_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  meanRho_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVp_  = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVs_  = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanRho_ = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
   meanVp_ ->setType(FFTGrid::PARAMETER);
   meanVs_ ->setType(FFTGrid::PARAMETER);

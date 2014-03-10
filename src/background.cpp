@@ -1771,7 +1771,7 @@ Background::writeTrendsToFile(std::vector<double> & trend,
   if (write3D == true && !(name=="Vp" && has_velocity_trend)) {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    FFTGrid * trend_grid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
+    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
     fillInVerticalTrend(trend_grid, trend);
     FFTGrid * exp_trend = copyFFTGrid(trend_grid, true, is_file);
     delete trend_grid;

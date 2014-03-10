@@ -1015,7 +1015,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     sigma[3] = postCovVs;
     sigma[4] = postCrCovVsRho;
     sigma[5] = postCovRho;
-    modelGeneral->mergeCovariance(sigma); //To avoid a second FFT of these.
+    modelGeneral->MergeCovariance(sigma); //To avoid a second FFT of these.
   }
   else
     seismicParameters.FFTCovGrids();

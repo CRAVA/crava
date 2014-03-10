@@ -289,7 +289,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
     if (model_settings->getNumberOfSimulations() == 0)
       model_settings->setWritePrediction(true); //write predicted grids.
 
-    printSettings(model_settings, input_files);
+    PrintSettings(model_settings, input_files);
 
     //Set output for all FFTGrids.
     FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
@@ -698,7 +698,7 @@ ModelGeneral::~ModelGeneral(void)
 //}
 
 int
-ModelGeneral::setPaddingSize(int nx, double px)
+ModelGeneral::SetPaddingSize(int nx, double px)
 {
   int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
   int closestprod = FFTGrid::findClosestFactorableNumber(leastint);
@@ -1110,7 +1110,7 @@ ModelGeneral::logIntervalInformation(const Simbox      * simbox,
                        simbox->getdz()*simbox->getMinRelThick());
 }
 */
-void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
+void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
                                      const std::vector<std::string> & surfFile,
                                      ModelSettings                  * model_settings,
                                      std::string                    & errText,
@@ -1140,7 +1140,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       // we use only four nodes (nx=ny=2).
       double xMin, xMax;
       double yMin, yMax;
-      findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+      FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
                                   simbox->getlx(), simbox->getly(),
                                   simbox->getAngle(),
                                   xMin,yMin,xMax,yMax);
@@ -1168,7 +1168,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
           // we use only four nodes (nx=ny=2).
           double xMin, xMax;
           double yMin, yMax;
-          findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+          FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
                                       simbox->getlx(), simbox->getly(),
                                       simbox->getAngle(),
                                       xMin,yMin,xMax,yMax);
@@ -1190,7 +1190,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
         catch (NRLib::Exception & e) {
           errText += e.what();
           std::string text("Seismic data");
-          writeAreas(model_settings->getAreaParameters(),simbox,text);
+          WriteAreas(model_settings->getAreaParameters(),simbox,text);
           failed = true;
         }
       }
@@ -1419,7 +1419,7 @@ void ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 //}
 
 NRLib::Vector
-ModelGeneral::findPlane(Surface * surf)
+ModelGeneral::FindPlane(Surface * surf)
 {
   NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
   NRLib::Vector b(3);
@@ -1455,7 +1455,7 @@ ModelGeneral::findPlane(Surface * surf)
 
 
 Surface *
-ModelGeneral::createPlaneSurface(const NRLib::Vector & planeParams,
+ModelGeneral::CreatePlaneSurface(const NRLib::Vector & planeParams,
                                  Surface             * templateSurf)
 {
   Surface * result = new Surface(*templateSurf);
@@ -1469,7 +1469,7 @@ ModelGeneral::createPlaneSurface(const NRLib::Vector & planeParams,
 
 
 void
-ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
+ModelGeneral::EstimateXYPaddingSizes(Simbox         * timeSimbox,
                                      ModelSettings *& model_settings)
 {
   double dx      = timeSimbox->getdx();
@@ -1500,8 +1500,8 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
     yPadFac       = std::min(1.0, yPad/ly);
   }
 
-  int nxPad = setPaddingSize(nx, xPadFac);
-  int nyPad = setPaddingSize(ny, yPadFac);
+  int nxPad = SetPaddingSize(nx, xPadFac);
+  int nyPad = SetPaddingSize(ny, yPadFac);
   int nzPad = timeSimbox->GetNZpad();
 
   double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
@@ -1539,7 +1539,7 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
 }
 
 void
-ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
+ModelGeneral::EstimateZPaddingSize(Simbox         * timeSimbox,
                                    ModelSettings *& model_settings)
 {
   int    nz          = timeSimbox->getnz();
@@ -1554,7 +1554,7 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
     zPad           = wLength/pfac;                             // Use half a wavelet as padding
     zPadFac        = std::min(1.0, zPad/minLz);                // More than 100% padding is not sensible
   }
-  int nzPad        = setPaddingSize(nz, zPadFac);
+  int nzPad        = SetPaddingSize(nz, zPadFac);
   zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
 
   timeSimbox->SetNZpad(nzPad);
@@ -1619,7 +1619,7 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
 //}
 
 void
-ModelGeneral::printSettings(ModelSettings     * model_settings,
+ModelGeneral::PrintSettings(ModelSettings     * model_settings,
                             const InputFiles  * input_files)
 {
   LogKit::WriteHeader("Model settings");
@@ -2861,7 +2861,7 @@ ModelGeneral::printSettings(ModelSettings     * model_settings,
 //}
 
 void
-ModelGeneral::writeAreas(const SegyGeometry * areaParams,
+ModelGeneral::WriteAreas(const SegyGeometry * areaParams,
                          Simbox             * timeSimbox,
                          std::string        & text)
 {
@@ -2877,7 +2877,7 @@ ModelGeneral::writeAreas(const SegyGeometry * areaParams,
   double areaYmin = RMISSING;
   double areaYmax = RMISSING;
 
-  findSmallestSurfaceGeometry(areaX0, areaY0, areaLx, areaLy, areaRot,
+  FindSmallestSurfaceGeometry(areaX0, areaY0, areaLx, areaLy, areaRot,
                               areaXmin, areaYmin, areaXmax, areaYmax);
 
   LogKit::LogFormatted(LogKit::Low,"\nThe top and/or base time surfaces do not cover the area specified by the "+text);
@@ -2903,7 +2903,7 @@ ModelGeneral::writeAreas(const SegyGeometry * areaParams,
 }
 
 void
-ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
+ModelGeneral::FindSmallestSurfaceGeometry(const double   x0,
                                           const double   y0,
                                           const double   lx,
                                           const double   ly,
@@ -2926,7 +2926,7 @@ ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void
-ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
+ModelGeneral::GetGeometryFromGridOnFile(const std::string         gridFile,
                                         const TraceHeaderFormat * thf,
                                         SegyGeometry           *& geometry,
                                         std::string             & errText)
@@ -2936,7 +2936,7 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
   if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
     int fileType = IO::findGridType(gridFile);
     if (fileType == IO::CRAVA) {
-      geometry = geometryFromCravaFile(gridFile);
+      geometry = GeometryFromCravaFile(gridFile);
     }
     else if (fileType == IO::SEGY) {
       try
@@ -2949,10 +2949,10 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
       }
     }
     else if (fileType == IO::STORM)
-      geometry = geometryFromStormFile(gridFile, errText);
+      geometry = GeometryFromStormFile(gridFile, errText);
     else if (fileType==IO::SGRI) {
       bool scale = true;
-      geometry = geometryFromStormFile(gridFile, errText, scale);
+      geometry = GeometryFromStormFile(gridFile, errText, scale);
     }
     else {
       errText = "Trying to read grid dimensions from unknown file format.\n";
@@ -2964,7 +2964,7 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
 }
 
 SegyGeometry *
-ModelGeneral::geometryFromCravaFile(const std::string & fileName)
+ModelGeneral::GeometryFromCravaFile(const std::string & fileName)
 {
   std::ifstream binFile;
   NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
@@ -2995,7 +2995,7 @@ ModelGeneral::geometryFromCravaFile(const std::string & fileName)
 }
 
 SegyGeometry *
-ModelGeneral::geometryFromStormFile(const std::string & fileName,
+ModelGeneral::GeometryFromStormFile(const std::string & fileName,
                                     std::string       & errText,
                                     bool scale)
 {
@@ -3066,7 +3066,7 @@ ModelGeneral::GetRockDistributionTime0() const
 }
 
 FFTGrid*
-ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
+ModelGeneral::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
 {
   FFTGrid* fftGrid;
 
@@ -3079,7 +3079,7 @@ ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, b
 }
 
 int
-ModelGeneral::computeTime(int year, int month, int day) const
+ModelGeneral::ComputeTime(int year, int month, int day) const
 {
   if (year == IMISSING)
     return(0);
@@ -3242,7 +3242,7 @@ ModelGeneral::computeTime(int year, int month, int day) const
 //}
 
 void
-ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
+ModelGeneral::CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
                                                   const std::vector<float>                         & probability,
                                                   NRLib::Grid2D<double>                            & param_corr,
                                                   std::string                                      & errTxt)
@@ -3293,7 +3293,7 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
 
             NRLib::Grid2D<double> sigma_sum(3,3,0);
 
-            calculateCovarianceInTrendPosition(rock_distribution,
+            CalculateCovarianceInTrendPosition(rock_distribution,
                                                probability,
                                                trend_position,
                                                sigma_sum);
@@ -3333,7 +3333,7 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
 
     NRLib::Grid2D<double> sigma_sum(3,3,0);
 
-    calculateCovarianceInTrendPosition(rock_distribution,
+    CalculateCovarianceInTrendPosition(rock_distribution,
                                        probability,
                                        trend_position,
                                        sigma_sum);
@@ -3348,7 +3348,7 @@ ModelGeneral::calculateCovariancesFromRockPhysics(const std::vector<Distribution
 }
 
 void
-ModelGeneral::calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+ModelGeneral::CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                  const std::vector<float>               & probability,
                                                  const std::vector<double>              & trend_position,
                                                  NRLib::Grid2D<double>                  & sigma_sum) const
@@ -4784,7 +4784,7 @@ ModelGeneral::CopyCorrelationsTo4DState(SeismicParametersHolder & seismicParamet
 //  }
 //}
 
-void ModelGeneral::validateCorrelationMatrix(float               ** C,
+void ModelGeneral::ValidateCorrelationMatrix(float               ** C,
                                              const ModelSettings *  model_settings,
                                              std::string         &  errTxt)
 {
@@ -4932,7 +4932,7 @@ void ModelGeneral::validateCorrelationMatrix(float               ** C,
 //}
 
 void
-ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,
+ModelGeneral::EstimateCorrXYFromSeismic(Surface *& corrXY,
                                         FFTGrid ** seisCube,
                                         int numberOfAngles)
 {
@@ -4966,7 +4966,7 @@ ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,
   delete [] grid;
 }
 
-void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& model_settings,
+void ModelGeneral::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
                                                const InputFiles   * input_files,
                                                std::string        & tmpErrText) const
 {
@@ -5624,35 +5624,35 @@ ModelGeneral::Complete4DBackground(const int nx, const int ny, const int nz, con
   FFTGrid *staticDynamicRhoVs;
   FFTGrid *staticDynamicRhoRho;
 
-  dynamicVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVp->fillInConstant(0.0);
   dynamicVp->setType(FFTGrid::PARAMETER);
-  dynamicVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVs->fillInConstant(0.0);
   dynamicVs->setType(FFTGrid::PARAMETER);
-  dynamicRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicRho->fillInConstant(0.0);
   dynamicRho->setType(FFTGrid::PARAMETER);
 
   state4d_.setDynamicMu(dynamicVp, dynamicVs, dynamicRho);
   initial_mean=state4d_.GetFullMean000();
 
-  dynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVpVp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpVp->fillInConstant(0.0);
   dynamicVpVp->setType(FFTGrid::COVARIANCE);
-  dynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVpVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpVs->fillInConstant(0.0);
   dynamicVpVs->setType(FFTGrid::COVARIANCE);
-  dynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVpRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVpRho->fillInConstant(0.0);
   dynamicVpRho->setType(FFTGrid::COVARIANCE);
-  dynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVsVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVsVs->fillInConstant(0.0);
   dynamicVsVs->setType(FFTGrid::COVARIANCE);
-  dynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicVsRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicVsRho->fillInConstant(0.0);
   dynamicVsRho->setType(FFTGrid::COVARIANCE);
-  dynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  dynamicRhoRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   dynamicRhoRho->fillInConstant(0.0);
   dynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
@@ -5660,31 +5660,31 @@ ModelGeneral::Complete4DBackground(const int nx, const int ny, const int nz, con
                                         dynamicVsVs, dynamicVsRho,
                                                      dynamicRhoRho);
 
-  staticDynamicVpVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVpVp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpVp->fillInConstant(0.0);
   staticDynamicVpVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicVpVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVpVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpVs->fillInConstant(0.0);
   staticDynamicVpVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicVpRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVpRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVpRho->fillInConstant(0.0);
   staticDynamicVpRho->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVsVp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsVp->fillInConstant(0.0);
   staticDynamicVsVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVsVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsVs->fillInConstant(0.0);
   staticDynamicVsVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicVsRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicVsRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicVsRho->fillInConstant(0.0);
   staticDynamicVsRho->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoVp = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicRhoVp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoVp->fillInConstant(0.0);
   staticDynamicRhoVp->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoVs = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicRhoVs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoVs->fillInConstant(0.0);
   staticDynamicRhoVs->setType(FFTGrid::COVARIANCE);
-  staticDynamicRhoRho = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  staticDynamicRhoRho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
   staticDynamicRhoRho->fillInConstant(0.0);
   staticDynamicRhoRho->setType(FFTGrid::COVARIANCE);
 
@@ -5698,36 +5698,36 @@ ModelGeneral::Complete4DBackground(const int nx, const int ny, const int nz, con
 }
 
 void
-ModelGeneral::advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* model_settings)
+ModelGeneral::AdvanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* model_settings)
 {
   bool debug=false;
-  if (debug) dump4Dparameters(model_settings, "_prior", time_step);  // note this prior should be equal to
+  if (debug) Dump4Dparameters(model_settings, "_prior", time_step);  // note this prior should be equal to
                                                                     // next_prior in previous step
-  if (debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
+  if (debug) DumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
   state4d_.split(seismicParameters);
-  if (debug) dump4Dparameters(model_settings, "_posterior", time_step);
+  if (debug) Dump4Dparameters(model_settings, "_posterior", time_step);
   state4d_.evolve(time_step, time_evolution_); //NBNB grad I grad J
   //if (debug) dump4Dparameters(model_settings, "_next_prior", time_step+1);
   state4d_.merge(seismicParameters);
-  if (debug) dumpSeismicParameters(model_settings,"_next_prior", time_step+1,seismicParameters);
+  if (debug) DumpSeismicParameters(model_settings,"_next_prior", time_step+1,seismicParameters);
   seismicParameters.invFFTAllGrids(); //merge gives FFT-transformed version, need the standard for now.
 }
 
 
 void
-ModelGeneral::lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* model_settings)
+ModelGeneral::LastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* model_settings)
 {
   bool debug=true;
   int time_step=time_evolution_.GetNTimSteps()-1;
-  if (debug) dumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
+  if (debug) DumpSeismicParameters(model_settings,"_posterior", time_step,seismicParameters);
 
   state4d_.split(seismicParameters);
-  dump4Dparameters(model_settings, "_posterior", time_step);
+  Dump4Dparameters(model_settings, "_posterior", time_step);
 
 }
 
 bool
-ModelGeneral::do4DRockPhysicsInversion(ModelSettings* model_settings)
+ModelGeneral::Do4DRockPhysicsInversion(ModelSettings* model_settings)
 {
 
   std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*time_line_, rock_distributions_.begin()->second,  time_evolution_);
@@ -5757,7 +5757,7 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* model_settings)
 
 
 void
-ModelGeneral::dumpSeismicParameters(ModelSettings* model_settings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
+ModelGeneral::DumpSeismicParameters(ModelSettings* model_settings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
 {
 
   std::string  label;
@@ -5800,7 +5800,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* model_settings, std::string i
 }
 
 void
-ModelGeneral::dump4Dparameters(ModelSettings* model_settings, std::string identifyer, int timestep)
+ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identifyer, int timestep)
 {
   state4d_.iFFT();
 
@@ -5885,7 +5885,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* model_settings, std::string identi
 }
 
 void
-ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
+ModelGeneral::MakeCorr2DPositiveDefinite(Surface         * corrXY)
 {
   int      nxp    = corrXY->GetNI();
   int      nyp    = corrXY->GetNJ();

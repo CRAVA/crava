@@ -312,7 +312,7 @@ int main(int argc, char** argv)
         double time;
         int time_index = 0;
         while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-          modelGeneral->advanceTime(time_index, seismicParametersInterval, modelSettings);
+          modelGeneral->AdvanceTime(time_index, seismicParametersInterval, modelSettings);
           time_index++;
           bool failed;
           switch(eventType) {
@@ -472,7 +472,7 @@ int main(int argc, char** argv)
       if(modelSettings->getDo4DRockPhysicsInversion())
       {
 
-        failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
+        failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
 
         if(failed)
           return(1);
