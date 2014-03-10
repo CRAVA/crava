@@ -3052,7 +3052,7 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
 }
 
 std::map<std::string, DistributionsRock *>
-ModelGeneral::getRockDistributionTime0() const
+ModelGeneral::GetRockDistributionTime0() const
 {
   std::map<std::string, DistributionsRock *> rock_dist_t0;
 

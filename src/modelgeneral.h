@@ -59,24 +59,24 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                             * getTimeSimbox()            const { return simbox_                  ;}
-  RandomGen                                * getRandomGen()             const { return random_gen_              ;}
-  GridMapping                              * getTimeDepthMapping()      const { return time_depth_mapping_      ;}
-  CravaTrend                               & getTrendCubes()                  { return trend_cubes_             ;}
-  CravaTrend                                 getTrendCubes()            const { return trend_cubes_             ;}
-  bool                                       getVelocityFromInversion() const { return velocity_from_inversion_ ;}
-  bool                                       getMultiInterval()         const { return multi_interval_          ;}
-  State4D                                    getState4D()               const { return state4d_                 ;}
-  TimeLine                                 * getTimeLine()              const { return time_line_               ;}
-  std::map<std::string, BlockedLogsCommon *> getBlockedWells()                { return blocked_logs_            ;}
-  const std::vector<float>                 & getPriorFacies()       /*const*/ { return prior_facies_            ;}
-  const std::vector<FFTGrid *>             & getPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
-  const std::vector<std::string>           & getFaciesNames(void)       const { return facies_names_            ;}
-  std::vector<int>                           getFaciesLabel()           const { return facies_labels_           ;}
-  bool                                       getIs4DActive()            const { return(do_4D_inversion_)        ;}
+  const Simbox                             * GetTimeSimbox()            const { return simbox_                  ;}
+  RandomGen                                * GetRandomGen()             const { return random_gen_              ;}
+  GridMapping                              * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
+  CravaTrend                               & GetTrendCubes()                  { return trend_cubes_             ;}
+  CravaTrend                                 GetTrendCubes()            const { return trend_cubes_             ;}
+  bool                                       GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
+  bool                                       GetMultiInterval()         const { return multi_interval_          ;}
+  State4D                                    GetState4D()               const { return state4d_                 ;}
+  TimeLine                                 * GetTimeLine()              const { return time_line_               ;}
+  std::map<std::string, BlockedLogsCommon *> GetBlockedWells()                { return blocked_logs_            ;}
+  const std::vector<float>                 & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>             & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string>           & GetFaciesNames(void)       const { return facies_names_            ;}
+  std::vector<int>                           GetFaciesLabel()           const { return facies_labels_           ;}
+  bool                                       GetIs4DActive()            const { return(do_4D_inversion_)        ;}
 
-  void addFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
-  void addFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
+  void AddFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
+  void AddFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
 
   //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
@@ -114,7 +114,7 @@ public:
   //                                         bool                 isStorm  = true,
   //                                         bool                 nopadding = true);
 
-  std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
+  std::map<std::string, DistributionsRock *> GetRockDistributionTime0() const;
 
   static FFTGrid  * createFFTGrid(int nx,
                                   int ny,

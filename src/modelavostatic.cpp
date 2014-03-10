@@ -523,7 +523,7 @@ void ModelAVOStatic::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *
                                        std::vector<std::string>                   facies_name,
                                        std::vector<int>                           facies_label) const
 {
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 

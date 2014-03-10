@@ -4266,10 +4266,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
 
-
-      //blocked_log->FilterLogs(model_settings->getMaxHzBackground(),
-      //                        model_settings->getMaxHzSeismic());
-
     }
   }
   catch(NRLib::Exception & e){
@@ -4279,7 +4275,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   // Block logs to interval simboxes for estimation
   if(err_text == ""){
     try{
-      for (unsigned int i=0; i<wells.size(); i++){
+      for (unsigned int i = 0; i < wells.size(); i++){
         mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
           new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
                                 model_settings->getRunFromPanel(), err_text)));

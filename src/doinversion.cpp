@@ -58,7 +58,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
                                        inputFiles,
                                        commonData,
-                                       modelGeneral->getTimeSimbox(),
+                                       modelGeneral->GetTimeSimbox(),
                                        i_interval);
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
@@ -173,11 +173,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                                         modelGeneral,
                                         commonData,
                                         seismicParameters,
-                                        modelGeneral->getTimeSimbox(),
+                                        modelGeneral->GetTimeSimbox(),
                                         vintage,
                                         i_interval);
 
-  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
+  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->GetFailed();
 
   if(failedLoadingModel == false) {
 

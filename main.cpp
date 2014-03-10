@@ -274,7 +274,7 @@ int main(int argc, char** argv)
       //Skal ikke være en egen doFirstAVOInversion (det som er spesielt i denne skal være gjort i CommonData eller flyttes til doAVOInversion)
       //Må skille ut forward-modelling her et sted.
 
-      if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+      if(modelGeneral->GetTimeLine() == NULL) {//Forward modelling.
 
 
       }
@@ -283,8 +283,8 @@ int main(int argc, char** argv)
         int  eventIndex;
         double  oldTime;
         bool failedFirst = false;
-        modelGeneral->getTimeLine()->ReSet();
-        modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
+        modelGeneral->GetTimeLine()->ReSet();
+        modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
         switch(eventType) {
 
         case TimeLine::AVO :
@@ -311,7 +311,7 @@ int main(int argc, char** argv)
 
         double time;
         int time_index = 0;
-        while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+        while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
           modelGeneral->advanceTime(time_index, seismicParametersInterval, modelSettings);
           time_index++;
           bool failed;

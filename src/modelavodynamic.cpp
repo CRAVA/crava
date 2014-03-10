@@ -556,8 +556,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
   //Or should this have been set in CommonData::ReadWellData?
-  if (model_general->getMultiInterval() == false) {
-    model_avo_static->AddSeismicLogs(model_general->getBlockedWells(),
+  if (model_general->GetMultiInterval() == false) {
+    model_avo_static->AddSeismicLogs(model_general->GetBlockedWells(),
                                      seis_cubes_,
                                      number_of_angles_);
   }
@@ -751,11 +751,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
+    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
   //H-TODO Move from AVODynamic, so it wont be written out per interval. Either to CommonData or to combined with writing of grids in the end.
   if (estimation_mode)
-    model_avo_static->WriteBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
+    model_avo_static->WriteBlockedWells(model_general->GetBlockedWells(), model_settings, model_general->GetFaciesNames(), model_general->GetFaciesLabel());
 
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
@@ -1243,7 +1243,7 @@ ModelAVODynamic::~ModelAVODynamic(void)
 }
 
 void
-ModelAVODynamic::releaseGrids(void)
+ModelAVODynamic::ReleaseGrids(void)
 {
   //seisCube_ = NULL;
 }
@@ -1303,7 +1303,7 @@ ModelAVODynamic::releaseGrids(void)
 //}
 
 void
-ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
+ModelAVODynamic::ProcessSeismic(FFTGrid             **& seisCube,
                                 const Simbox          * timeSimbox,
                                 const GridMapping     * timeDepthMapping,
                                 const GridMapping     * timeCutMapping,

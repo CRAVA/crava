@@ -39,7 +39,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  State4D state4d         = modelGeneral->getState4D();
+  State4D state4d         = modelGeneral->GetState4D();
 //  Simbox * upscaledSimbox = modelGravityStatic->GetUpscaledSimbox();
   lag_index_              = modelGravityStatic->GetLagIndex();
 
