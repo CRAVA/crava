@@ -199,7 +199,7 @@ void SurfaceFromPoints::CreateGriddedSurface(Surface                   *& surfac
     dx_il = (x21 - x11)/d_il;
     dy_il = (y21 - y11)/d_il;
     dy_xl = (y11 - y12)/d_xl;
-    std::cout << "Nontested surface ASCII XYZ format configuration\n";
+    std::cout << "1: Nontested surface ASCII XYZ format configuration\n";
   }
   else {                              // Swap IL and XL information
     x0    = x22;
@@ -207,7 +207,7 @@ void SurfaceFromPoints::CreateGriddedSurface(Surface                   *& surfac
     dx_il = (x11 - x21)/d_il;
     dy_il = (y11 - y21)/d_il;
     dy_xl = (y11 - y12)/d_xl;
-    std::cout << "Nontested surface ASCII XYZ format configuration\n";
+    std::cout << "2: Nontested surface ASCII XYZ format configuration\n";
   }
 
   double rot  = std::atan(dy_il/dx_il);
@@ -265,14 +265,8 @@ void SurfaceFromPoints::CreateGriddedSurface(Surface                   *& surfac
   double xLen = dxu*ceil((xMax - xMin)/dxu);
   double yLen = dyu*ceil((yMax - yMin)/dyu);
 
-  int    nx   = xLen/dxu + 1;
-  int    ny   = yLen/dyu + 1;
-
-  std::cout << "xMin = " << xMin << std::endl;
-  std::cout << "yMin = " << yMin << std::endl;
-  std::cout << "xLen = " << xLen << std::endl;
-  std::cout << "yLen = " << yLen << std::endl;
-
+  int    nx   = static_cast<int>(xLen/dxu) + 1;
+  int    ny   = static_cast<int>(yLen/dyu) + 1;
 
   surface = new Surface(xMin, yMin, xLen, yLen, nx, ny, RMISSING);
 
