@@ -57,10 +57,10 @@ public:
 
   //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
   //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
-  void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                     ModelSettings                            * model_settings,
-                                     std::vector<std::string>                   facies_name,
-                                     std::vector<int>                           facies_label) const;
+  //void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  //                                   ModelSettings                            * model_settings,
+  //                                   std::vector<std::string>                   facies_name,
+  //                                   std::vector<int>                           facies_label) const;
 
   void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                   std::vector<FFTGrid *>                     seis_cube,

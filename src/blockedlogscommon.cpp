@@ -2825,11 +2825,11 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
 
 
 //------------------------------------------------------------------------------
-void BlockedLogsCommon::WriteWell(int                      formats,
-                                  float                    max_hz_background,
-                                  float                    max_hz_seismic,
-                                  std::vector<std::string> facies_name,
-                                  std::vector<int>         facies_label)
+void BlockedLogsCommon::WriteWell(const int                        formats,
+                                  const float                      max_hz_background,
+                                  const float                      max_hz_seismic,
+                                  const std::vector<std::string> & facies_name,
+                                  const std::vector<int>         & facies_label)
 {
   //int formats = modelSettings->getWellFormatFlag();
   if ((formats & IO::RMSWELL) > 0) {
@@ -2843,14 +2843,11 @@ void BlockedLogsCommon::WriteWell(int                      formats,
                     max_hz_seismic);
 }
 
-void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
-                                     float                    max_hz_seismic,
-                                     std::vector<std::string> facies_name,
-                                     std::vector<int>         facies_label)
+void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_background,
+                                     const float                      max_hz_seismic,
+                                     const std::vector<std::string> & facies_name,
+                                     const std::vector<int>         & facies_label)
 {
-  //float maxHz_background = modelSettings->getMaxHzBackground();
-  //float maxHz_seismic    = modelSettings->getMaxHzSeismic();
-
   std::string well_name(well_name_);
   NRLib::Substitute(well_name,"/","_");
   NRLib::Substitute(well_name," ","_");
@@ -3054,15 +3051,13 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
   file.close();
 }
 
-void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
-                                        float max_hz_seismic) {
+void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
+                                        const float max_hz_seismic) {
 
   double vert_scale = 0.001;
   double hor_scale  = 0.001;
 
   //Note: At current, only write Vp, Vs and Rho, as others are not supported.
-  //float maxHz_background = modelSettings->getMaxHzBackground();
-  //float maxHz_seismic    = modelSettings->getMaxHzSeismic();
 
   std::string well_name(well_name_);
   NRLib::Substitute(well_name,"/","_");

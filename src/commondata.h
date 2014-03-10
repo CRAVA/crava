@@ -118,10 +118,17 @@ public:
                                 const Simbox  * simbox) const;
 
   static   void ApplyFilter(std::vector<double> & log_filtered,
-                   std::vector<double> & log_interpolated,
-                   int                   n_time_samples,
-                   double                dt_milliseconds,
-                   float                 max_hz);
+                            std::vector<double> & log_interpolated,
+                            int                   n_time_samples,
+                            double                dt_milliseconds,
+                            float                 max_hz);
+
+  static   void WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                  const ModelSettings                      * model_settings,
+                                  std::vector<std::string>                   facies_name,
+                                  std::vector<int>                           facies_label);
+
+
 
 private:
 

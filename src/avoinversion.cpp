@@ -272,7 +272,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     //H Writing of wells? Why is this done for each timelapse?
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
-      modelAVOstatic->WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
+      //modelAVOstatic->WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
+      CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");

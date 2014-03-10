@@ -4291,6 +4291,9 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     return false;
   }
 
+  if (model_settings->getEstimationMode())
+    WriteBlockedWells(mapped_blocked_logs_common, model_settings, facies_names_, facies_nr_);
+
   return true;
 }
 
@@ -9152,3 +9155,21 @@ TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.
 }
 }
 */
+
+void CommonData::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                   const ModelSettings                      * model_settings,
+                                   std::vector<std::string>                   facies_name,
+                                   std::vector<int>                           facies_label)
+{
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
+                           model_settings->getMaxHzBackground(),
+                           model_settings->getMaxHzSeismic(),
+                           facies_name,
+                           facies_label);
+
+  }
+}

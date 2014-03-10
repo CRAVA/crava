@@ -754,8 +754,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
   //H-TODO Move from AVODynamic, so it wont be written out per interval. Either to CommonData or to combined with writing of grids in the end.
-  if (estimation_mode)
-    model_avo_static->WriteBlockedWells(model_general->GetBlockedWells(), model_settings, model_general->GetFaciesNames(), model_general->GetFaciesLabel());
+  //H Moved to CommonData, so it won't be writter per interval
+  //if (estimation_mode)
+  //  model_avo_static->WriteBlockedWells(model_general->GetBlockedWells(), model_settings, model_general->GetFaciesNames(), model_general->GetFaciesLabel());
 
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
