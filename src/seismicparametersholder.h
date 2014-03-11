@@ -75,6 +75,7 @@ public:
   void                     printPostVariances(const NRLib::Matrix & postVar0) const;
 
   void                     getNextParameterCovariance(fftw_complex **& parVar) const;
+  void                     getNextParameterCovariance2(fftw_complex **& parVar) const;
 
   static fftw_complex      getParameterCovariance(const NRLib::Matrix & prior_var,
                                                   const int           & i,

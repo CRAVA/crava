@@ -1088,6 +1088,32 @@ FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
   endAccess();
 }
 
+
+
+void
+FFTGrid::fillInTimeCov(const fftw_real * circCorrT)
+{
+  assert(istransformed_== false);
+
+  int baseK,cycleI,cycleJ;
+  float value,subK;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+          if(i==0 && j==0)
+             value=circCorrT[k];
+          else
+            value=0.0;
+
+          setNextReal(value);
+      }
+    }
+  }
+  endAccess();
+}
+
 void
 FFTGrid::fillInGenExpCorr(double Rx,
                           double Ry,

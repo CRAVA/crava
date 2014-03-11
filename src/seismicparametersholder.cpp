@@ -318,9 +318,55 @@ SeismicParametersHolder::FFTCovGrids()
   LogKit::LogFormatted(LogKit::High,"...done\n");
 }
 //--------------------------------------------------------------------
-
 void
 SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) const
+{
+
+  fftw_complex iiTmp = covAlpha_      ->getNextComplex();
+  fftw_complex jjTmp = covBeta_       ->getNextComplex();
+  fftw_complex kkTmp = covRho_        ->getNextComplex();
+  fftw_complex ijTmp = crCovAlphaBeta_->getNextComplex();
+  fftw_complex ikTmp = crCovAlphaRho_ ->getNextComplex();
+  fftw_complex jkTmp = crCovBetaRho_  ->getNextComplex();
+
+  fftw_complex ii;
+  fftw_complex jj;
+  fftw_complex kk;
+  fftw_complex ij;
+  fftw_complex ik;
+  fftw_complex jk;
+
+  ii = getParameterCovariance(priorVar0_, 0, 0, iiTmp);
+  jj = getParameterCovariance(priorVar0_, 1, 1, jjTmp);
+  kk = getParameterCovariance(priorVar0_, 2, 2, kkTmp);
+  ij = getParameterCovariance(priorVar0_, 0, 1, ijTmp);
+  ik = getParameterCovariance(priorVar0_, 0, 2, ikTmp);
+  jk = getParameterCovariance(priorVar0_, 1, 2, jkTmp);
+
+  parVar[0][0] = ii;
+  parVar[1][1] = jj;
+  parVar[2][2] = kk;
+
+  parVar[0][1].re =  ij.re;
+  parVar[0][1].im =  ij.im;
+  parVar[1][0].re =  ij.re;
+  parVar[1][0].im = -ij.im;
+
+  parVar[0][2].re =  ik.re;
+  parVar[0][2].im =  ik.im;
+  parVar[2][0].re =  ik.re;
+  parVar[2][0].im = -ik.im;
+
+  parVar[1][2].re =  jk.re;
+  parVar[1][2].im =  jk.im;
+  parVar[2][1].re =  jk.re;
+  parVar[2][1].im = -jk.im;
+}
+
+//----------------------
+
+void
+SeismicParametersHolder::getNextParameterCovariance2(fftw_complex **& parVar) const
 {
 
   fftw_complex ii = covAlpha_      ->getNextComplex();

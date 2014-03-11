@@ -47,6 +47,7 @@ public:
   ~ModelGeneral();
 
   Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
+ // Simbox                   * getTimeSimboxInitial()     const { return timeSimboxInitial_      ;}
   Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   RandomGen                * getRandomGen()             const { return randomGen_              ;}
   GridMapping              * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
@@ -62,6 +63,7 @@ public:
   void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
   const State4D            & getState4D()               const { return state4d_                ;}
+  FFTGrid                  * getRelativeVelocity()            { return state4d_.getRelativeVelocity();}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
   std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
@@ -218,6 +220,7 @@ public:
   bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
+  void              updateState4DAllignment(FFTGrid* mu_log_vp_dynamic);
 
   void              advanceTime(const int               & previous_vintage,
                                 const double            & time_change,
@@ -380,7 +383,8 @@ private:
   void              makeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  Simbox                  * timeSimbox_;                 ///< Information about simulation area.
+  Simbox                  * timeSimbox_;                 ///< Information about current simulation area.
+ // Simbox                  * timeSimboxInitial_;         ///< Information about initial simulation area.  (Used for 4D inversion when the current simBox change)
   Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness
 
   Surface                 * correlationDirection_;       ///< Grid giving the correlation direction.

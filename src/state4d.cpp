@@ -33,6 +33,7 @@ State4D::State4D()
   for (int i = 0; i < 9; i++)
     sigma_static_dynamic_[i] = NULL;
 
+  velocity_relative_to_base_ = NULL;
 }
 
 State4D::~State4D()
@@ -51,6 +52,8 @@ State4D::~State4D()
 
   for (int i = 0; i < 9; i++)
     delete sigma_static_dynamic_[i];
+
+  delete velocity_relative_to_base_;
 }
 
 void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
@@ -124,6 +127,12 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
   sigma_static_dynamic_[6] = rhovp;
   sigma_static_dynamic_[7] = rhovs;
   sigma_static_dynamic_[8] = rhorho;
+}
+
+void State4D::setRelativeGridBase(int nx, int ny, int nz, int nxPad, int nyPad, int nzPad)
+{
+  velocity_relative_to_base_= new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
+  velocity_relative_to_base_->fillInConstant(1.0f,true);
 }
 
 
@@ -766,7 +775,22 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
 
 }
 
+ void
+ State4D::updateAllignment(FFTGrid* new_vp_relative_to_base)
+ {
+   // new_vp_relative_to_base is the new vp used for allignment
+   // At input it is in the new time frame Vp_Current(t_current)/Vp_Initial(t_current);
+   // We have:  dt_current =  (Vp_Current / Vp_prev) *dt_prev
+   //
+   int nx=new_vp_relative_to_base->getNx();
+   int ny=new_vp_relative_to_base->getNy();
+   int nz=new_vp_relative_to_base->getNz();
 
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+       for(int k=0;k<nz;k++)
+         velocity_relative_to_base_->setRealValue(i,j,k,new_vp_relative_to_base->getRealValue(i,j,k));
+ }
 
 void State4D::evolve(int                   time_step,
                      const TimeEvolution & timeEvolution )
@@ -1062,7 +1086,7 @@ State4D::doRockPhysicsInversion(TimeLine                               & time_li
   iFFT();
 
   // Note rockSample contains rock sample for all time steps.
-  int nSim=10000; // NBNB OK 10000->1000 for speed during debug
+  int nSim=10000; // NBNB OK 100000->10000 for speed during debug
 
   LogKit::LogFormatted(LogKit::Low,"\nSampling rock physics distribution...");
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);

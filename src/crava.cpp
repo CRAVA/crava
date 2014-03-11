@@ -1093,7 +1093,9 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
           ijkRes[l]  = ijkData[l];
         }
 
-        seismicParameters.getNextParameterCovariance(parVar);
+
+        seismicParameters.getNextParameterCovariance2(parVar);// NBNB disturbes test suite usle line under
+        //seismicParameters.getNextParameterCovariance(parVar);
         bool invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_;
 
         priorVarVp = parVar[0][0].re;

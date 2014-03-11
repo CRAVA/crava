@@ -38,9 +38,10 @@ private:
                                                    ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                    SeismicParametersHolder & seismicParameters) const;
 
-  void                          do1DHorizonInversion(FFTGrid                     * mu_log_vp_dynamic,
-                                                     const NRLib::Grid2D<double> & Sigma_log_vp_dynamic,
+  void                          do1DHorizonInversion(FFTGrid               * mu_prior,
+                                                     const NRLib::Grid2D<double> & Sigma_log_vp,
                                                      const Simbox                * timeSimbox,
+                                                     const FFTGrid               * relativeVelocityPrev,
                                                      const std::vector<Surface>  & initial_horizons,
                                                      const std::vector<Surface>  & push_down_horizons,
                                                      const std::vector<double>   & standard_deviation,
@@ -48,14 +49,14 @@ private:
                                                      const Surface               & base_simbox,
                                                      int                           i_ind,
                                                      int                           j_ind,
-                                                     std::vector<double>         & mu_post_log_vp,
-                                                     NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
+                                                     std::vector<double>         & mu_post,
+                                                     NRLib::Grid2D<double>       & Sigma_post_log_vp,
+                                                     bool                          logTransMean) const;  // true if the mean is logarithmic transformed fals if mu_prior is E(V_P)
 
   void                          doRMSInversion(ModelGeneral            * modelGeneral,
                                                ModelTravelTimeStatic   * modelTravelTimeStatic,
                                                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
-                                               SeismicParametersHolder & seismicParameters,
-                                               const int               & inversion_number) const;
+                                               SeismicParametersHolder & seismicParameters) const;
 
   void                          do1DRMSInversion(const double                & mu_vp_base,
                                                  const NRLib::Grid2D<double> & Sigma_m_below,
@@ -80,6 +81,7 @@ private:
                                                         NRLib::Grid2D<double>       & Sigma_post) const;
 
   NRLib::Grid2D<double>         calculateGHorizon(double                      dt,
+                                                  std::vector<double>         relativeVelocity,
                                                   double                      top,
                                                   double                      missing_value,
                                                   int                         n_nonmissing,
@@ -133,7 +135,7 @@ private:
                                                           FFTGrid                     *& mu_log_vp_above,
                                                           FFTGrid                     *& Sigma_log_vp_above) const;
 
-  std::vector<double>           generateMuLogVpFromGrid(FFTGrid   * mu_log_vp,
+  std::vector<double>           generateMuFromGrid(FFTGrid   * muGrid,
                                                         const int & i_ind,
                                                         const int & j_ind) const;
 
@@ -171,6 +173,11 @@ private:
                                                          std::vector<double>         & mu_log_vp,
                                                          NRLib::Grid2D<double>       & Sigma_log_vp) const;
 
+  void                          getMuFromLogMu(std::vector<double>   & mu , const std::vector<double>   &mu_log, const NRLib::Grid2D<double> &Sigma_log) const;
+  void                          getLogMuFromMu(std::vector<double>   & mu_log,  const std::vector<double>   &mu_, const NRLib::Grid2D<double> &Sigma_log) const;
+  void                          getSigmaFromLogSigma(std::vector<double>   & mu,const NRLib::Grid2D<double> &Sigma_log, NRLib::Grid2D<double> & Sigma) const;
+  FFTGrid*                      getCovFunkFromLogCovFunk(FFTGrid*  cov_log,double meanVpRelative) const;
+
   void                          transformVpMinusToLogVp(const std::vector<double>   & mu_vp_minus,
                                                         const NRLib::Grid2D<double> & Sigma_vp_minus,
                                                         std::vector<double>         & mu_log_vp,
@@ -204,11 +211,15 @@ private:
   void                          addCovariance(const NRLib::Grid2D<double> & Sigma_post,
                                               std::vector<double>         & cov_stationary,
                                               int                           n_nopad) const;
+  void                          addCovarianceMat(const NRLib::Grid2D<double> & Sigma_post,
+                                                  NRLib::Matrix         & cov_cum) const;
 
+  std::vector<double>           makeCirculantCovariance(const NRLib::Matrix & cov,
+                                                        const int                   & n_nopad) const;
   std::vector<double>           makeCirculantCovariance(const NRLib::Grid2D<double> & cov,
                                                         const int                   & n_nopad) const;
 
- void                           krigeExpectation3D(const Simbox                * simbox,
+  void                           krigeExpectation3D(const Simbox                * simbox,
                                                    std::vector<KrigingData2D>  & kriging_post,
                                                    const int                   & nxp,
                                                    const int                   & nyp,
@@ -217,11 +228,11 @@ private:
   void                          generateStationaryDistribution(const Simbox                * timeSimbox,
                                                                std::vector<KrigingData2D>  & kriging_post,
                                                                const std::vector<double>   & pri_circulant_cov,
-                                                               const std::vector<double>   & post_circulant_cov,
+                                                               NRLib::Matrix                 post_cov,
                                                                const int                   & n_rms_traces,
-                                                               const Surface               * errorCorrXY,
-                                                               const float                 & corrGradI,
-                                                               const float                 & corrGradJ,
+                                                               const Surface   * errorCorrXY,
+                                                               const float & corrGradI,
+                                                               const float & corrGradJ,
                                                                FFTGrid                     * pri_mu,
                                                                FFTGrid                    *& stationary_observations,
                                                                FFTGrid                    *& stationary_covariance,
@@ -243,6 +254,13 @@ private:
                                                 const fftw_complex * post_cov_c,
                                                 const int          & nzp,
                                                 std::vector<int>   & filter) const;
+
+  void                          calculateFilterAndErrorVariance(const fftw_complex * pri_cov_c,
+                                                                const NRLib::Matrix post_cov,
+                                                                const int       &  nz,
+                                                                fftw_complex       * var_e_c_lo,
+                                                                fftw_complex       * var_e_c_hi,
+                                                                std::vector<int>   & filter) const;
 
   void                          multiplyComplex(const fftw_complex * z1,
                                                 const fftw_complex * z2,
@@ -277,17 +295,17 @@ private:
                                                             FFTGrid                 * stationary_observations,
                                                             FFTGrid                 * stationary_observation_covariance) const;
 
-  void                          calculateLogVpExpectation(const std::vector<int>  & observation_filter,
-                                                          FFTGrid                 * mu_vp,
-                                                          FFTGrid                 * cov_vp,
+  void                          calculateExpectation(const std::vector<int>  & observation_filter,
+                                                          FFTGrid                 * prior_mu,
+                                                          FFTGrid                 * prior_cov,
                                                           FFTGrid                 * stationary_observations,
                                                           FFTGrid                 * stationary_observation_covariance,
-                                                          FFTGrid                *& post_mu_vp) const;
+                                                          FFTGrid                *& post_mu) const;
 
   void                          calculateLogVpCovariance(const std::vector<int>  & observation_filter,
-                                                         FFTGrid                 * mu_vp,
+                                                      //   FFTGrid                 * mu_vp,
                                                          FFTGrid                 * cov_vp,
-                                                         FFTGrid                 * stationary_observations,
+                                                       //  FFTGrid                 * stationary_observations,
                                                          FFTGrid                 * stationary_observation_covariance,
                                                          FFTGrid                *& post_cov_vp) const;
 
@@ -298,6 +316,8 @@ private:
   void                          calculateEVpGrid(FFTGrid  * mu_log_vp,
                                                  FFTGrid  * cov_log_vp,
                                                  FFTGrid *& mu_vp) const;
+ NRLib::Grid<double>            calculateRelativeVelocityUpdate(FFTGrid *relativeVelocityGridNew,
+                                                                FFTGrid *relativeVelocityPrev) const;
 
  NRLib::Grid<double>            calculateDividedGridRMS(FFTGrid * pri_vp,
                                                         FFTGrid * post_vp) const;
@@ -321,7 +341,7 @@ private:
                                                      Surface                   & base_surface) const;
 
   void                          resampleState4D(const NRLib::Grid<double> &  resample_grid,
-                                                const Simbox              *  old_simbox,
+                                                const Simbox              *  previous_simbox,
                                                 FFTGrid                   *& mu_vp_static,
                                                 FFTGrid                   *& mu_vs_static,
                                                 FFTGrid                   *& mu_rho_static,

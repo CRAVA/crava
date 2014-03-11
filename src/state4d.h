@@ -40,13 +40,13 @@ public:
   void setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
 
   void setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
-
+  void setRelativeGridBase(int nx, int ny, int nz, int nxPad, int nyPad, int nzPad);
   NRLib::Matrix GetFullCov();
   NRLib::Vector GetFullMean000();
 
   void   merge(SeismicParametersHolder & current_state );
   void   updateWithSingleParameter(FFTGrid * Epost, FFTGrid * CovPost, int parameterNumber);
-
+  void   updateAllignment(FFTGrid* mu_log_vp_dynamic);
   void   mergeCov(std::vector<FFTGrid * > & sigma);
   void   split(SeismicParametersHolder & current_state );
   void   evolve(int time_step, const TimeEvolution & timeEvolution );
@@ -81,15 +81,16 @@ public:
   FFTGrid * getCovRhoRhoDynamicDynamic(void) const { return sigma_dynamic_dynamic_[5]; }
 
   // Note the order in private data stucture
-  FFTGrid * getCovVpVpStaticDynamic(void)  const { return sigma_static_dynamic_[0]; }
-  FFTGrid * getCovVpVsStaticDynamic(void)  const { return sigma_static_dynamic_[1]; }
-  FFTGrid * getCovVpRhoStaticDynamic(void) const { return sigma_static_dynamic_[2]; }
-  FFTGrid * getCovVsVpStaticDynamic(void)  const { return sigma_static_dynamic_[3]; }
-  FFTGrid * getCovVsVsStaticDynamic(void)  const { return sigma_static_dynamic_[4]; }
-  FFTGrid * getCovVsRhoStaticDynamic(void) const { return sigma_static_dynamic_[5]; }
-  FFTGrid * getCovRhoVpStaticDynamic(void) const { return sigma_static_dynamic_[6]; }
-  FFTGrid * getCovRhoVsStaticDynamic(void) const { return sigma_static_dynamic_[7]; }
-  FFTGrid * getCovRhoRhoStaticDynamic(void)const { return sigma_static_dynamic_[8]; }
+  FFTGrid * getCovVpVpStaticDynamic(void)  const { return sigma_static_dynamic_[0];  }
+  FFTGrid * getCovVpVsStaticDynamic(void)  const { return sigma_static_dynamic_[1];  }
+  FFTGrid * getCovVpRhoStaticDynamic(void) const { return sigma_static_dynamic_[2];  }
+  FFTGrid * getCovVsVpStaticDynamic(void)  const { return sigma_static_dynamic_[3];  }
+  FFTGrid * getCovVsVsStaticDynamic(void)  const { return sigma_static_dynamic_[4];  }
+  FFTGrid * getCovVsRhoStaticDynamic(void) const { return sigma_static_dynamic_[5];  }
+  FFTGrid * getCovRhoVpStaticDynamic(void) const { return sigma_static_dynamic_[6];  }
+  FFTGrid * getCovRhoVsStaticDynamic(void) const { return sigma_static_dynamic_[7];  }
+  FFTGrid * getCovRhoRhoStaticDynamic(void)const { return sigma_static_dynamic_[8];  }
+  FFTGrid * getRelativeVelocity(void)      const { return velocity_relative_to_base_;}
 
 
   void      FFT();
@@ -99,6 +100,7 @@ public:
 
 private:
   bool allGridsAreTransformed();
+  FFTGrid *              velocity_relative_to_base_;  //  V_current/V_initial
   std::vector<FFTGrid *> mu_static_;            // [0] = vp, [1] = vs, [2] = rho
   std::vector<FFTGrid *> mu_dynamic_;           // [0] = vp, [1] = vs, [2] = rho
   std::vector<FFTGrid *> sigma_static_static_;  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all static)

@@ -72,7 +72,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 {
   timeSimbox_             = new Simbox();
   timeSimboxConstThick_   = NULL;
-
+//  timeSimboxInitial_       =NULL;
   correlationDirection_   = NULL;
   randomGen_              = NULL;
   failed_                 = false;
@@ -147,6 +147,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                      correlationDirection_, modelSettings, inputFiles,
                      errText, failedSimbox);
 
+//    timeSimboxInitial_=new Simbox(timeSimbox_);
     if(!failedSimbox)
     {
       //
@@ -277,6 +278,7 @@ ModelGeneral::~ModelGeneral(void)
 
   delete randomGen_;
   delete timeSimbox_;
+//  delete timeSimboxInitial_;
   delete timeSimboxConstThick_;
 
    if(!forwardModeling_)
@@ -4019,7 +4021,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-      makeCorr2DPositiveDefinite( priorCorrXY_);
+      makeCorr2DPositiveDefinite( priorCorrXY_); //NBNB OK disturbes testsuite comment out
 
       seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
@@ -4773,6 +4775,13 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   initial_cov=state4d_.GetFullCov();
 
   state4d_.FFT();
+  state4d_.setRelativeGridBase(nx, ny, nz, nxPad, nyPad, nzPad);
+}
+
+void
+ModelGeneral::updateState4DAllignment(FFTGrid* mu_log_vp_dynamic)
+{
+  state4d_.updateAllignment(mu_log_vp_dynamic);
 }
 
 
