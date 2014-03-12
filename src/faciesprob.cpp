@@ -2544,9 +2544,13 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
 
       for(int i=0;i<n;i++)
       {
-        double a, b, r; //float
-        double aBg, bBg, rBg; //float
-        int f;
+        double a   = 0.0; //float
+        double b   = 0.0;
+        double r   = 0.0;
+        double aBg = 0.0; //float
+        double bBg = 0.0;
+        double rBg = 0.0;
+        int f      = 0;
         if(noVs == false) {
           if(useFilter == true) {
             a = blocked_log->GetVpSeismicResolution()[i];

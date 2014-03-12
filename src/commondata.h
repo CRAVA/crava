@@ -54,7 +54,8 @@ public:
   const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
   const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
-  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()       const { return mapped_blocked_logs_ ;}
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()        const { return mapped_blocked_logs_                 ;}
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogsForCorr() const { return mapped_blocked_logs_for_correlation_ ;}
 
   std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
 
@@ -88,8 +89,8 @@ public:
   const NRLib::Grid2D<float>              & GetRefTimeGradY()                     const { return ref_time_grad_y_                            ;}
 
   const Surface                           * GetPriorCorrXY(int i_interval)              { return prior_corr_XY_[i_interval]                  ;}
-  const NRLib::Matrix                     & GetPriorParamCov(int i_interval);
-  const std::vector<double>               & GetPriorCorrT(int i_interval)               {return prior_corr_T_[i_interval]                    ;}
+  const NRLib::Matrix                     & GetPriorParamCov(int i_interval)            { return prior_param_cov_[i_interval]                ;}
+  const std::vector<double>               & GetPriorCorrT(int i_interval)               { return prior_corr_T_[i_interval]                   ;}
 
 
   void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
@@ -118,10 +119,17 @@ public:
                                 const Simbox  * simbox) const;
 
   static   void ApplyFilter(std::vector<double> & log_filtered,
-                   std::vector<double> & log_interpolated,
-                   int                   n_time_samples,
-                   double                dt_milliseconds,
-                   float                 max_hz);
+                            std::vector<double> & log_interpolated,
+                            int                   n_time_samples,
+                            double                dt_milliseconds,
+                            float                 max_hz);
+
+  static   void WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                  const ModelSettings                      * model_settings,
+                                  std::vector<std::string>                   facies_name,
+                                  std::vector<int>                           facies_label);
+
+
 
 private:
 
@@ -689,14 +697,13 @@ private:
 
   void  WriteFilePriorVariances(const ModelSettings      * model_settings,
                                const std::vector<double> & prior_corr_T,
-                               const Surface            * prior_corr_XY,
-                               const float              & dt) const;
+                               const Surface             * prior_corr_XY,
+                               const float               & dt) const;
 
   void  PrintPriorVariances() const;
 
-  // EN kommentert ut fordi CRAVA ikke kompilerer så lenge den ikke er implementert
-  //void ReadAngularCorrelations(ModelSettings * model_settings,
-  //                             std::string   & err_text);
+  void ReadAngularCorrelations(ModelSettings * model_settings,
+                               std::string   & err_text);
 
   bool optimizeWellLocations();
 

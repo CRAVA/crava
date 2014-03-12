@@ -289,10 +289,10 @@ private:
                                            int                                          outputFlag,
                                            int                                          nWells);
 
-  void         resampleParameter(NRLib::Grid<double> * p_new, // Resample to
-                                 NRLib::Grid<double> * p_old, // Resample from
-                                 const Simbox        * simbox_new,
-                                 const Simbox        * simbox_old);
+  void         resampleParameter(NRLib::Grid<double> *& p_new, // Resample to
+                                 NRLib::Grid<double> *  p_old, // Resample from
+                                 const Simbox        *  simbox_new,
+                                 const Simbox        *  simbox_old);
 
   void         calculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
                                       std::vector<double>               & trend,

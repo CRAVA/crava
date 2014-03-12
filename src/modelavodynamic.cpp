@@ -406,7 +406,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   this_timelapse_           = t;
   bool failed_loading_model = false;
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
-  bool estimation_mode      = model_settings->getEstimationMode();
+  //bool estimation_mode      = model_settings->getEstimationMode();
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
 
@@ -453,7 +453,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     seis_cubes_[i] = ModelAVOStatic::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
     seis_cubes_[i]->createRealGrid();
-    seis_cubes_[i]->setType(FFTGrid::PARAMETER);
+    seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
     bool is_segy           = false;
@@ -556,8 +556,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
   //Or should this have been set in CommonData::ReadWellData?
-  if (model_general->getMultiInterval() == false) {
-    model_avo_static->AddSeismicLogs(model_general->getBlockedWells(),
+  if (model_general->GetMultiInterval() == false) {
+    model_avo_static->AddSeismicLogs(model_general->GetBlockedWells(),
                                      seis_cubes_,
                                      number_of_angles_);
   }
@@ -627,7 +627,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //local_scale
   //global_noise_estimate
   //sn_ratio
-  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = common_data->GetBlockedLogs();
+  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = model_general->GetBlockedWells();
 
   for (int i = 0; i < number_of_angles_; i++) {
 
@@ -742,31 +742,24 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
 
       //Resample wavelet for this interval
-
-      //H
-      //Want to resample wavelet to this interval-simbox
-      //Get an assert error since inFFTorder_ == true (this is set as true when the wavelet is resampled to estimation_simbox in CommonData).
-      //How to resample the wavelet again?
-
-      //wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
-      //                       simbox->getnz(),
-      //                       simbox->GetNZpad());
+      wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
+                             simbox->getnz(),
+                             simbox->GetNZpad());
 
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->getBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
+    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
 
-  //H TODO Move from AVODynamic, so it wont be written out per interval.
-  if (estimation_mode)
-    model_avo_static->WriteBlockedWells(model_general->getBlockedWells(), model_settings, model_general->getFaciesNames(), model_general->getFaciesLabel());
-
+  //H-TODO Move from AVODynamic, so it wont be written out per interval. Either to CommonData or to combined with writing of grids in the end.
+  //H Moved to CommonData, so it won't be writter per interval
+  //if (estimation_mode)
+  //  model_avo_static->WriteBlockedWells(model_general->GetBlockedWells(), model_settings, model_general->GetFaciesNames(), model_general->GetFaciesLabel());
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
-  //H-DEBUGGING
-  //fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
+  fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
@@ -800,7 +793,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   // Compute variation in parameters
   NRLib::Matrix prior_var_0 = seismic_parameters.getPriorVar0();
 
-  for (int i=0; i < number_of_angles_; i++) {
+  for (int i = 0; i < number_of_angles_; i++) {
     param_var[i]=0.0;
     for (int l=0; l<3 ; l++) {
       for (int m=0 ; m<3 ; m++) {
@@ -810,10 +803,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   // Compute variation in wavelet
-  //H-DEBUGGING
-  //for (int l=0; l < number_of_angles_; l++) {
-  //  wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
-  //}
+  for (int l = 0; l < number_of_angles_; l++) {
+    wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
+  }
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
   for (int l=0; l < number_of_angles_; l++) {
@@ -823,7 +815,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   std::vector<bool> match_energies = model_settings->getMatchEnergies(this_timelapse_);
 
-  for (int l=0; l < number_of_angles_; l++) {
+  for (int l = 0; l < number_of_angles_; l++) {
     if (match_energies[l]) {
       LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((error_variance_[l]/model_variance_[l])*(sn_ratio_[l] - 1.0f));
@@ -848,7 +840,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   delete [] param_var;
   delete [] wd_corr_mvar;
-  for (int i=0; i < number_of_angles_; i++)
+  for (int i = 0; i < number_of_angles_; i++)
     delete error_smooth[i];
   delete [] error_smooth;
 
@@ -1249,7 +1241,7 @@ ModelAVODynamic::~ModelAVODynamic(void)
 }
 
 void
-ModelAVODynamic::releaseGrids(void)
+ModelAVODynamic::ReleaseGrids(void)
 {
   //seisCube_ = NULL;
 }
@@ -1309,7 +1301,7 @@ ModelAVODynamic::releaseGrids(void)
 //}
 
 void
-ModelAVODynamic::processSeismic(FFTGrid             **& seisCube,
+ModelAVODynamic::ProcessSeismic(FFTGrid             **& seisCube,
                                 const Simbox          * timeSimbox,
                                 const GridMapping     * timeDepthMapping,
                                 const GridMapping     * timeCutMapping,

@@ -239,7 +239,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
     << "\n | | | | | | | | | | | "
     << "\n ^";
 
-  grid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   grid->createRealGrid();
   grid->setType(FFTGrid::PARAMETER);
   grid->setAccessMode(FFTGrid::WRITE);

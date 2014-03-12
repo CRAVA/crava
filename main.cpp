@@ -228,30 +228,26 @@ int main(int argc, char** argv)
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());
       //korrelasjonsgrid (2m)
-      
-      /*
-      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
-                                                 */
-      /*
-      //H-DEBUGGING
-      //seismicParametersInterval.setCorrelationParameters(paramCorr, //From CommonData
-      //                                                   corrT,     //From CommonData
-      //                                                   common_data->GetPriorCorrXY(), //priorCorrXY_, //From CommonData
-      //                                                   lowIntCut, //From CommonData
-      //                                                   corr_grad_I,
-      //                                                   corr_grad_J,
-      //                                                   simbox->getnx(),
-      //                                                   simbox->getny(),
-      //                                                   simbox->getnz(),
-      //                                                   simbox->GetNXpad(),
-      //                                                   simbox->GetNYpad(),
-      //                                                   simbox->GetNZpad());
-                                                   */
+      float corr_grad_I = 0.0f;
+      float corr_grad_J = 0.0f;
+      common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
-      //seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
+      float dt        = static_cast<float>(simbox->getdz());
+      float low_cut   = modelSettings->getLowCut();
+      int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+
+      seismicParametersInterval.setCorrelationParameters(common_data->GetPriorParamCov(i_interval),
+                                                         common_data->GetPriorCorrT(i_interval),
+                                                         common_data->GetPriorCorrXY(i_interval),
+                                                         low_int_cut,
+                                                         corr_grad_I,
+                                                         corr_grad_J,
+                                                         simbox->getnx(),
+                                                         simbox->getny(),
+                                                         simbox->getnz(),
+                                                         simbox->GetNXpad(),
+                                                         simbox->GetNYpad(),
+                                                         simbox->GetNZpad());
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,
@@ -271,7 +267,7 @@ int main(int argc, char** argv)
       //Skal ikke være en egen doFirstAVOInversion (det som er spesielt i denne skal være gjort i CommonData eller flyttes til doAVOInversion)
       //Må skille ut forward-modelling her et sted.
 
-      if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+      if(modelGeneral->GetTimeLine() == NULL) {//Forward modelling.
 
 
       }
@@ -280,8 +276,8 @@ int main(int argc, char** argv)
         int  eventIndex;
         double  oldTime;
         bool failedFirst = false;
-        modelGeneral->getTimeLine()->ReSet();
-        modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
+        modelGeneral->GetTimeLine()->ReSet();
+        modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
         switch(eventType) {
 
         case TimeLine::AVO :
@@ -308,8 +304,8 @@ int main(int argc, char** argv)
 
         double time;
         int time_index = 0;
-        while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-          modelGeneral->advanceTime(time_index, seismicParametersInterval, modelSettings);
+        while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+          modelGeneral->AdvanceTime(time_index, seismicParametersInterval, modelSettings);
           time_index++;
           bool failed;
           switch(eventType) {
@@ -469,7 +465,7 @@ int main(int argc, char** argv)
       if(modelSettings->getDo4DRockPhysicsInversion())
       {
 
-        failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
+        failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
 
         if(failed)
           return(1);

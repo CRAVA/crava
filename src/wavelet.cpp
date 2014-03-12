@@ -125,12 +125,13 @@ Wavelet::Wavelet(const std::string   & fileName,
     }//end for i
   }
 }
-Wavelet::Wavelet(const ModelSettings     * modelSettings,
-                 const float             * reflCoef,
-                 float               theta,
-                 int                 dim,
-                 float               peakFrequency,
-                 int               & errCode)
+
+Wavelet::Wavelet(const ModelSettings * modelSettings,
+                 const float         * reflCoef,
+                 float                 theta,
+                 int                   dim,
+                 float                 peakFrequency,
+                 int                 & errCode)
   : theta_(theta),
     inFFTorder_(false),
     isReal_(true),

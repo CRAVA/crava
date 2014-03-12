@@ -1771,7 +1771,7 @@ Background::writeTrendsToFile(std::vector<double> & trend,
   if (write3D == true && !(name=="Vp" && has_velocity_trend)) {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    FFTGrid * trend_grid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
+    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
     fillInVerticalTrend(trend_grid, trend);
     FFTGrid * exp_trend = copyFFTGrid(trend_grid, true, is_file);
     delete trend_grid;
@@ -2697,9 +2697,9 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
   //  delete exp_rho;
   //}
 
-  NRLib::Grid<double> * res_bg_vp  = NULL;
-  NRLib::Grid<double> * res_bg_vs  = NULL;
-  NRLib::Grid<double> * res_bg_rho = NULL;
+  NRLib::Grid<double> * res_bg_vp  = new NRLib::Grid<double>();
+  NRLib::Grid<double> * res_bg_vs  = new NRLib::Grid<double>();
+  NRLib::Grid<double> * res_bg_rho = new NRLib::Grid<double>();
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
   resampleParameter(res_bg_vp,  bg_vp,  time_simbox, time_bg_simbox);
@@ -2724,16 +2724,16 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
   //  delete exp_res_rho;
   //}
 
-  bg_vp = res_bg_vp;
-  bg_vs = res_bg_vs;
+  bg_vp  = res_bg_vp;
+  bg_vs  = res_bg_vs;
   bg_rho = res_bg_rho;
  }
 
 void
-Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
-                              NRLib::Grid<double> * p_old, // Resample from
-                              const Simbox        * simbox_new,
-                              const Simbox        * simbox_old)
+Background::resampleParameter(NRLib::Grid<double> *& p_new, // Resample to
+                              NRLib::Grid<double> *  p_old, // Resample from
+                              const Simbox        *  simbox_new,
+                              const Simbox        *  simbox_old)
 {
   int nx  = simbox_new->getnx();
   int ny  = simbox_new->getny();

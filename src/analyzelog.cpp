@@ -193,7 +193,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
   if (err_txt != "")
     return;
-  
+
   int max_nd;
   CalculateNumberOfLags(n_lags_, max_nd, interval_simbox, err_txt);
 
@@ -375,7 +375,7 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
       blocked_well_log     = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetRhoBlocked();
       log_nr               = 2;
     }
-    
+
     std::vector<double> mean(nd);
     std::vector<double> mean_max_hz(nd);
 

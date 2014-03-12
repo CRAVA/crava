@@ -42,25 +42,25 @@ public:
 
   ~ModelAVOStatic();
 
-  const std::vector<Surface*>      & getFaciesEstimInterval()       const { return facies_estim_interval_  ;}
+  const std::vector<Surface*>      & GetFaciesEstimInterval()       const { return facies_estim_interval_  ;}
 
-  /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return wavelet_estim_interval_ ;}
-  /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return facies_estim_interval_  ;}
-  /*const*/ std::vector<Surface *> & getWellMoveInterval()      /*const*/ { return well_move_interval_     ;}
+  /*const*/ std::vector<Surface *> & GetWaveletEstimInterval()  /*const*/ { return wavelet_estim_interval_ ;}
+  /*const*/ std::vector<Surface *> & GetFaciesEstimInterval()   /*const*/ { return facies_estim_interval_  ;}
+  /*const*/ std::vector<Surface *> & GetWellMoveInterval()      /*const*/ { return well_move_interval_     ;}
 
-  FFTGrid                          * getErrCorr()                         { return err_corr_               ;}
+  FFTGrid                          * GetErrCorr()                         { return err_corr_               ;}
 
-  bool                               getForwardModeling()                 { return forward_modeling_       ;}
+  bool                               GetForwardModeling()                 { return forward_modeling_       ;}
 
   //bool                          getFailed()                const { return failed_                 ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
   //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
-  void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                     ModelSettings                            * model_settings,
-                                     std::vector<std::string>                   facies_name,
-                                     std::vector<int>                           facies_label) const;
+  //void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  //                                   ModelSettings                            * model_settings,
+  //                                   std::vector<std::string>                   facies_name,
+  //                                   std::vector<int>                           facies_label) const;
 
   void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                   std::vector<FFTGrid *>                     seis_cube,

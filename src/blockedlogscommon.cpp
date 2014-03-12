@@ -280,6 +280,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
     //Extrapolates if missing values in the beginning or end.
     //FindXYZForVirtualPart(estimation_simbox); //TODO (CRA-660): Adjust for multiple_intervals
 
+    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
+                                    n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
+
     // Continuous logs
     for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
       std::vector<double> temp_vector_blocked;
@@ -287,7 +290,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
     }
 
-    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked, 
+    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
                                     n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
 
     // Discrete logs
@@ -449,9 +452,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   int   n_intervals                           = static_cast<int>(interval_simboxes.size());
-  const std::vector<double> x_pos             = GetXposRawLogs();
-  const std::vector<double> y_pos             = GetYposRawLogs();
-  const std::vector<double> z_pos             = GetZposRawLogs();
+  const std::vector<double> & x_pos             = GetXposRawLogs();
+  const std::vector<double> & y_pos             = GetYposRawLogs();
+  const std::vector<double> & z_pos             = GetZposRawLogs();
 
   std::vector<int> nz(n_intervals);           // nz is the number of layers in each simbox
   for(size_t s = 0; s < interval_simboxes.size(); s++){
@@ -555,7 +558,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 
     // Add the previous zones multiplied by relative vertical grid size
     double temp_K = new_K*dz_rel[simbox_number];      // temp_K is the adjusted vertical block number
-    for (int n = 0; n<simbox_number; n++){        
+    for (int n = 0; n<simbox_number; n++){
       temp_K += static_cast<int>(nz[n]*dz_rel[n]);    // add number of blocks in simboxes above
     }
     int tot_K = static_cast<int>(temp_K);
@@ -602,9 +605,9 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   for (int i=last_S_+1; i<n_intervals; i++)
     n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
   n_blocks_ += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second; - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks_ += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
-  
+
 
   bool debug = false;
   if (debug) {
@@ -2871,11 +2874,11 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
 
 
 //------------------------------------------------------------------------------
-void BlockedLogsCommon::WriteWell(int                      formats,
-                                  float                    max_hz_background,
-                                  float                    max_hz_seismic,
-                                  std::vector<std::string> facies_name,
-                                  std::vector<int>         facies_label)
+void BlockedLogsCommon::WriteWell(const int                        formats,
+                                  const float                      max_hz_background,
+                                  const float                      max_hz_seismic,
+                                  const std::vector<std::string> & facies_name,
+                                  const std::vector<int>         & facies_label)
 {
   //int formats = modelSettings->getWellFormatFlag();
   if ((formats & IO::RMSWELL) > 0) {
@@ -2889,14 +2892,11 @@ void BlockedLogsCommon::WriteWell(int                      formats,
                     max_hz_seismic);
 }
 
-void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
-                                     float                    max_hz_seismic,
-                                     std::vector<std::string> facies_name,
-                                     std::vector<int>         facies_label)
+void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_background,
+                                     const float                      max_hz_seismic,
+                                     const std::vector<std::string> & facies_name,
+                                     const std::vector<int>         & facies_label)
 {
-  //float maxHz_background = modelSettings->getMaxHzBackground();
-  //float maxHz_seismic    = modelSettings->getMaxHzSeismic();
-
   std::string well_name(well_name_);
   NRLib::Substitute(well_name,"/","_");
   NRLib::Substitute(well_name," ","_");
@@ -2919,9 +2919,9 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() != 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);
   bool got_cpp                 = (cpp_.size() > 0);
-  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0); //(alpha_seismic_resolution_ != NULL);
-  bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0); //alpha_for_facies_ != NULL);
-  bool got_predicted           = (GetVpPredicted().size() > 0); //alpha_predicted_ != NULL);
+  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0);
+  bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0);
+  bool got_predicted           = (GetVpPredicted().size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (got_filtered_log)
@@ -3006,11 +3006,11 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
   // Write LOGS
   //
 
-  const std::vector<double> & vp  = GetVpBlocked(); //Replaces alpha_
+  const std::vector<double> & vp  = GetVpBlocked();
   const std::vector<double> & vs  = GetVsBlocked();
   const std::vector<double> & rho = GetRhoBlocked();
 
-  const std::vector<double> & vp_highcut_background  = GetVpHighCutBackground(); //alpha_highcut_background_
+  const std::vector<double> & vp_highcut_background  = GetVpHighCutBackground();
   const std::vector<double> & vs_highcut_background  = GetVsHighCutBackground();
   const std::vector<double> & rho_highcut_background = GetRhoHighCutBackground();
 
@@ -3026,9 +3026,7 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
   const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
   const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
 
-  //const std::vector<int> & facies = GetFaciesBlocked(); //facies_
-
-  for (int i=first_B_ ; i<last_B_ + 1 ; i++) {
+  for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
          << std::fixed
          << std::setprecision(2)
@@ -3063,52 +3061,40 @@ void BlockedLogsCommon::WriteRMSWell(float                    max_hz_background,
       file << (facies_blocked_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
     file << std::scientific;
     if (got_facies_prob) {
-      for (int a=0 ; a<n_facies ; a++) {
+      for (int a = 0; a < n_facies; a++)
         file << std::setw(12) << (GetFaciesProb(a)[i]==RMISSING ? WELLMISSING : GetFaciesProb(a)[i])          << " ";
-        //file << std::setw(12) << (facies_prob_[a][i]==RMISSING ? WELLMISSING : facies_prob_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_real_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (GetRealSeismicData(a)[i]==RMISSING ? WELLMISSING : GetRealSeismicData(a)[i])          << " ";
-        //file << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_actual_synt_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
-        //file << std::setw(12) << (GetActualSyntSeismicData(a)[i]==RMISSING ? WELLMISSING : GetActualSyntSeismicData(a)[i])          << " ";
+      for (int a=0 ; a<n_angles_ ; a++)
         file << std::setw(12) << (actual_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : actual_synt_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_well_synt_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++) {
-        //file << std::setw(12) << (GetWellSyntSeismicData(a)[i]==RMISSING ? WELLMISSING : GetWellSyntSeismicData(a)[i])          << " ";
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (well_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : well_synt_seismic_data_[a][i])          << " ";
-      }
       file << " ";
     }
     if (got_cpp)
-      for (int a=0 ; a<n_angles_ ; a++) {
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (GetCpp(a)[i]==RMISSING               ? WELLMISSING : GetCpp(a)[i])                        << " ";
-        //file << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
-      }
     file << "\n";
   }
   file.close();
 }
 
-void BlockedLogsCommon::WriteNorsarWell(float max_hz_background,
-                                        float max_hz_seismic) {
+void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
+                                        const float max_hz_seismic) {
 
   double vert_scale = 0.001;
   double hor_scale  = 0.001;
 
   //Note: At current, only write Vp, Vs and Rho, as others are not supported.
-  //float maxHz_background = modelSettings->getMaxHzBackground();
-  //float maxHz_seismic    = modelSettings->getMaxHzSeismic();
 
   std::string well_name(well_name_);
   NRLib::Substitute(well_name,"/","_");

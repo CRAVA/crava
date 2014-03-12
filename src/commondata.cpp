@@ -158,7 +158,6 @@ CommonData::CommonData(ModelSettings * model_settings,
     err_text += "Could not set up prior correlations since this requires seismic data.\n";
   }
 
-
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
 
@@ -173,7 +172,8 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  //ReadAngularCorrelations(model_settings, err_text);
+  ReadAngularCorrelations(model_settings, err_text);
+  //CheckThatDataCoverGrid()
 
   //TODO: Handle if err_text != "".
   if(err_text != "") {
@@ -1811,11 +1811,11 @@ void CommonData::CutWell(std::string           well_file_name,
       if (z_old[i] != RMISSING) {
 
         double top_tmp = top_surf.GetZ(x_old[i], y_old[i]);
-        if (top_tmp = WELLMISSING)
+        if (top_tmp == WELLMISSING)
           top_tmp = top_surf_min;
 
         double bot_tmp = bot_surf.GetZ(x_old[i], y_old[i]);
-        if (bot_tmp = WELLMISSING)
+        if (bot_tmp == WELLMISSING)
           bot_tmp = bot_surf_max;
 
         //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
@@ -2978,6 +2978,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     ResampleSurfaceToGrid2D(&helpNoise, local_noise_scale);
   }
 
+  Wavelet * wavelet_pre_resampling = NULL;
+
   if (estimate_wavelet) {
     wavelet = new Wavelet1D(&estimation_simbox_,
                             seismic_data,
@@ -3013,37 +3015,40 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                                 error,
                                 err_text);
     }
-      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-      if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
-        float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
-        const float lim_high  = 3.0f;
-        const float lim_low   = 0.33f;
+    // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+    if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
+      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox_, seismic_data, mapped_blocked_logs);
+      const float lim_high  = 3.0f;
+      const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
-           wavelet->multiplyRAmpByConstant(prescale);
-        else {
-          if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-            if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
-              err_text += text;
-              error++;
-            }
-            else {
-              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-            }
+      if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
+          wavelet->multiplyRAmpByConstant(prescale);
+      else {
+        if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
+            std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+          if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
+            err_text += text;
+            error++;
+          }
+          else {
+            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+            TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
           }
         }
       }
-      //Store a general wavelet here (resample because correct dz/nz is needed, same length as the blocked logs)
-      //Wavelets are resampled per interval (with padding) in ModelAVODynamic
+    }
 
-      //H problem: When wavelet is resampled, inFFTorder is set to true (central point moved to the start)
-      //Want to resample the wavelet to each interval in ModelAVODynamic, but you can't resample a wavelet inFFTorder (with the current resample algorithm).
-      if (error == 0)
-        wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
-                          estimation_simbox_.getnz(),
-                          estimation_simbox_.getnz());
+    //If wavelet isn't estimated it needs to be resampled in order to calculate SN-Ratio
+    //The wavelet also needs to be resampled in modelAVODynamic to the different intervals.
+    //Here we make a different copy to be sent to modelAVODynamic, so the same wavelet isn't resampled twice.
+    wavelet_pre_resampling = new Wavelet1D(wavelet);
+
+    if (error == 0) {
+
+      wavelet->resample(static_cast<float>(estimation_simbox_.getdz()),
+                        estimation_simbox_.getnz(),
+                        estimation_simbox_.getnz());
+    }
 
   }
 
@@ -3063,7 +3068,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
         w++;
       }
-
 
       float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox_,
                                                                    seis_logs,
@@ -3148,6 +3152,10 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       }
     }
   }
+
+  if (wavelet_pre_resampling != NULL)
+    wavelet = new Wavelet1D(wavelet_pre_resampling);
+
   return error;
 }
 
@@ -3880,10 +3888,10 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
   double                    lz                            = model_settings->getTimeLz();
   double                    dz                            = model_settings->getTimeDz();
 
-  Surface * top_surface = NULL;
+  Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
 
-  Surface * top_surface_flat = NULL;
+  Surface * top_surface_flat  = NULL;
   Surface * base_surface_flat = NULL;
 
   try {
@@ -4021,7 +4029,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
   }
   if (!failed) {
     if ((output_domain & IO::TIMEDOMAIN) > 0) {
-      std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+      std::string topSurf = IO::PrefixSurface() + IO::PrefixTop() + IO::PrefixTime();
       std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
       estimation_simbox.setTopBotName(topSurf,baseSurf,output_format);
       if (generate_seismic) {
@@ -4107,10 +4115,10 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   int                                       output_grids_seismic          = model_settings->getOutputGridsSeismic();
   double                                    d_top                         = model_settings->getTimeDTop();
 
-  Surface * top_surface = NULL;
+  Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
 
-  Surface * top_surface_flat = NULL;
+  Surface * top_surface_flat  = NULL;
   Surface * base_surface_flat = NULL;
 
   try{
@@ -4154,7 +4162,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       err_text += e.what();
       failed = true;
     }
-    
+
   }
   if (!failed){
     try{ // initialize full_inversion_volume and set the flat top and base surfaces of the simbox
@@ -4188,7 +4196,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   }
   if (!failed) {
       if ((output_domain & IO::TIMEDOMAIN) > 0) {
-        std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+        std::string topSurf = IO::PrefixSurface() + IO::PrefixTop() + IO::PrefixTime();
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
         estimation_simbox.setTopBotName(topSurf,baseSurf,output_format);
         if (generate_seismic) {
@@ -4271,10 +4279,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
 
-
-      //blocked_log->FilterLogs(model_settings->getMaxHzBackground(),
-      //                        model_settings->getMaxHzSeismic());
-
     }
   }
   catch(NRLib::Exception & e){
@@ -4284,7 +4288,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   // Block logs to interval simboxes for estimation
   if(err_text == ""){
     try{
-      for (unsigned int i=0; i<wells.size(); i++){
+      for (unsigned int i = 0; i < wells.size(); i++){
         mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
           new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
                                 model_settings->getRunFromPanel(), err_text)));
@@ -4299,6 +4303,9 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     err_text_common += err_text;
     return false;
   }
+
+  if (model_settings->getEstimationMode())
+    WriteBlockedWells(mapped_blocked_logs_common, model_settings, facies_names_, facies_nr_);
 
   return true;
 }
@@ -8121,7 +8128,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             }
           }
         }
-        
+
         //
         // Estimation of parameter and temporal correlation ----------------------------------------
         //
@@ -8202,11 +8209,11 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         if (!failed) {
 
           CheckCovarianceParameters(prior_param_cov_[i]);
-          
+
           //if(print_result)
           //  WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_[i], dt);
           //PrintPriorVariances();
-          
+
         }
       }
     }
@@ -8246,11 +8253,11 @@ const std::vector<NRLib::Grid<double> > & CommonData::GetCorrParametersInterval(
   return corr_params_interval_;
 }
 */
-
+/*
 const NRLib::Matrix                     & CommonData::GetPriorParamCov(int i_interval){
   return prior_param_cov_[i_interval];
 }
-
+*/
 /*
 const NRLib::Matrix                     & CommonData::GetPriorVar0(int i_interval){
   return prior_var_0_;
@@ -8277,8 +8284,8 @@ void  CommonData::GetCorrGradIJ(float         & corr_grad_I,
 }
 
 void CommonData::ValidateCovarianceMatrix(float               ** C,
-                                           const ModelSettings *  model_settings,
-                                           std::string         &  err_txt){
+                                           const ModelSettings * model_settings,
+                                           std::string         & err_txt){
   float minAlpha = model_settings->getVarAlphaMin();
   float maxAlpha = model_settings->getVarAlphaMax();
   float minBeta  = model_settings->getVarBetaMin();
@@ -8347,11 +8354,11 @@ void CommonData::ValidateCovarianceMatrix(float               ** C,
 }
 
 void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                       const std::map<std::string, float>               & probability,
-                                                       const std::vector<std::string>                   & facies_names,
-                                                       const CravaTrend                                 & trend_cubes,
-                                                       NRLib::Matrix                                    & param_cov,
-                                                       std::string                                      & err_txt){
+                                                     const std::map<std::string, float>               & probability,
+                                                     const std::vector<std::string>                   & facies_names,
+                                                     const CravaTrend                                 & trend_cubes,
+                                                     NRLib::Matrix                                    & param_cov,
+                                                     std::string                                      & err_txt){
 
   LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
 
@@ -8561,7 +8568,7 @@ void CommonData::CheckCovarianceParameters(NRLib::Matrix            & param_cov)
           param_cov(i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
     }
   }
-  
+
 }
 
 
@@ -8999,6 +9006,8 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   //                     true_zPad, true_z_pad_factor, nz, nz_pad);
 }
 
+
+
 //--------------------------------------------------------------------
 /*
 void  CommonData::WriteFilePriorVariances(const ModelSettings      * model_settings,
@@ -9073,4 +9082,118 @@ void  CommonData::PrintPriorVariances() const{
     TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
   }
 }
+
+
+/*
+void CommonData::WriteFilePriorVariances(const ModelSettings * model_settings,
+const std::vector<float> & prior_corr_T,
+const Surface * prior_corr_XY,
+const float & dt) const
+{
+std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
+std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
+std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
+std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
+std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
+
+std::ofstream file;
+NRLib::OpenWrite(file, fileName1);
+file << std::fixed
+<< std::right
+<< std::setprecision(10);
+for(int i=0 ; i<3 ; i++) {
+for(int j=0 ; j<3 ; j++) {
+file << std::setw(13) << prior_var0_(i,j) << " ";
+}
+file << "\n";
+}
+file.close();
+
+NRLib::OpenWrite(file, fileName2);
+file << std::fixed
+<< std::right
+<< std::setprecision(8)
+<< dt << "\n";
+for(int i=0 ; i<static_cast<int>(prior_corr_T.size()); i++) {
+file << std::setw(11) << prior_corr_T[i] << "\n";
+}
+file.close();
+
+IO::writeSurfaceToFile(*prior_corr_XY, baseName3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+}
 */
+
+//--------------------------------------------------------------------
+/*
+void CommonData::PrintPriorVariances() const{
+
+LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
+LogKit::LogFormatted(LogKit::Low,"\n");
+LogKit::LogFormatted(LogKit::Low,"Variances ln Vp ln Vs ln Rho \n");
+LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+LogKit::LogFormatted(LogKit::Low,"Inversion grid: %.1e %.1e %.1e (used by program)\n",prior_var_0(0,0),prior_var_0(1,1),prior_var_0(2,2));
+
+float corr01 = static_cast<float>(priorVar0_(0,1)/(sqrt(priorVar0_(0,0)*priorVar0_(1,1))));
+float corr02 = static_cast<float>(priorVar0_(0,2)/(sqrt(priorVar0_(0,0)*priorVar0_(2,2))));
+float corr12 = static_cast<float>(priorVar0_(1,2)/(sqrt(priorVar0_(1,1)*priorVar0_(2,2))));
+LogKit::LogFormatted(LogKit::Low,"\n");
+LogKit::LogFormatted(LogKit::Low,"Corr | ln Vp ln Vs ln Rho \n");
+LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+LogKit::LogFormatted(LogKit::Low,"ln Vp | %5.2f %5.2f %5.2f \n",1.0f, corr01, corr02);
+LogKit::LogFormatted(LogKit::Low,"ln Vs | %5.2f %5.2f \n",1.0f, corr12);
+LogKit::LogFormatted(LogKit::Low,"ln Rho | %5.2f \n",1.0f);
+LogKit::LogFormatted(LogKit::Low,"\n");
+
+if (std::abs(corr01) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+}
+if (std::abs(corr02) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+}
+if (std::abs(corr12) > 1.0) {
+LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
+}
+}
+*/
+
+void CommonData::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                   const ModelSettings                      * model_settings,
+                                   std::vector<std::string>                   facies_name,
+                                   std::vector<int>                           facies_label)
+{
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
+                           model_settings->getMaxHzBackground(),
+                           model_settings->getMaxHzSeismic(),
+                           facies_name,
+                           facies_label);
+
+  }
+}
+
+void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
+                                         std::string   & err_text) {
+
+  for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
+
+    Vario * vario = model_settings->getAngularCorr(t);
+    int n_angles = model_settings->getNumberOfAngles(t);
+    const std::vector<float> & angles = model_settings->getAngle(t);
+
+    std::vector<std::vector<float> > angle_corr(n_angles);
+    for (int i = 0; i < n_angles; i++) {
+      angle_corr[i].resize(n_angles);
+      for (int j = 0; j < n_angles; j++) {
+        float d_angle = angles[i] - angles[j];
+        angle_corr[i][i] = vario->corr(d_angle, 0);
+      }
+    }
+    angular_correlations_.push_back(angle_corr);
+  }
+}

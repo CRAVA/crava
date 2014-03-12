@@ -107,35 +107,35 @@ public:
 
   //FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
   //Wavelet                    ** getWavelets()              const { return wavelet_                ;}
-  std::vector<FFTGrid *>        getSeisCubes()             const { return seis_cubes_                     ;}
-  std::vector<Wavelet *>        getWavelets()              const { return wavelets_                       ;}
+  std::vector<FFTGrid *>        GetSeisCubes()             const { return seis_cubes_                     ;}
+  std::vector<Wavelet *>        GetWavelets()              const { return wavelets_                       ;}
 
-  float                      ** getAMatrix()               const { return reflection_matrix_              ;}
-  Grid2D                      * getLocalNoiseScale(int i)  const { return local_noise_scale_[i]           ;}
-  const std::vector<Grid2D *> & getLocalNoiseScales()      const { return local_noise_scale_              ;}
+  float                      ** GetAMatrix()               const { return reflection_matrix_              ;}
+  Grid2D                      * GetLocalNoiseScale(int i)  const { return local_noise_scale_[i]           ;}
+  const std::vector<Grid2D *> & GetLocalNoiseScales()      const { return local_noise_scale_              ;}
 
-  bool                          getFailed()                const { return failed_                         ;}
+  bool                          GetFailed()                const { return failed_                         ;}
   //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
-  const std::vector<std::vector<float> > & getAngularCorr() const { return angular_corr_                  ;}
+  const std::vector<std::vector<float> > & GetAngularCorr() const { return angular_corr_                  ;}
 
-  float                         getSNRatioAngle(int i)     const { return sn_ratio_[i]                    ;}
-  std::vector<float>            getSNRatio()               const { return sn_ratio_                       ;}
-  bool                          getUseLocalNoise()         const { return use_local_noise_                ;}
-  float                         getAngle(int i)            const { return angle_[i]                       ;}
+  float                         GetSNRatioAngle(int i)     const { return sn_ratio_[i]                    ;}
+  std::vector<float>            GetSNRatio()               const { return sn_ratio_                       ;}
+  bool                          GetUseLocalNoise()         const { return use_local_noise_                ;}
+  float                         GetAngle(int i)            const { return angle_[i]                       ;}
   //bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
   //bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
-  int                           getNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+  int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
 
-  float                       * getThetaDeg()              const { return theta_deg_                      ;}
-  float                       * getDataVariance()          const { return data_variance_                  ;}
-  float                       * getErrorVariance()         const { return error_variance_                 ;}
-  float                       * getModelVariance()         const { return model_variance_                 ;}
-  float                       * getSignalVariance()        const { return signal_variance_                ;}
-  float                       * getTheoSNRatio()           const { return theo_sn_ratio_                  ;}
-  double                     ** getErrThetaCov()           const { return err_theta_cov_                  ;}
+  float                       * GetThetaDeg()              const { return theta_deg_                      ;}
+  float                       * GetDataVariance()          const { return data_variance_                  ;}
+  float                       * GetErrorVariance()         const { return error_variance_                 ;}
+  float                       * GetModelVariance()         const { return model_variance_                 ;}
+  float                       * GetSignalVariance()        const { return signal_variance_                ;}
+  float                       * GetTheoSNRatio()           const { return theo_sn_ratio_                  ;}
+  double                     ** GetErrThetaCov()           const { return err_theta_cov_                  ;}
 
-  void                          releaseGrids();                        // Cuts connection to SeisCube_
+  void                          ReleaseGrids();                        // Cuts connection to SeisCube_
 
   //static float  ** readMatrix(const std::string & fileName,
   //                            int                 n1,
@@ -156,7 +156,7 @@ public:
   //                                          std::string                    & errText,
   //                                          bool                           & failed);
 private:
-  void             processSeismic(FFTGrid         **& seisCube,
+  void             ProcessSeismic(FFTGrid         **& seisCube,
                                   const Simbox      * timeSimbox,
                                   const GridMapping * timeDepthMapping,
                                   const GridMapping * timeCutMapping,
