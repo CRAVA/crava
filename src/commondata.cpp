@@ -62,9 +62,6 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   forward_modeling_ = model_settings->getForwardModeling();
 
-  NRLib::Grid<double> * test_grid = new NRLib::Grid<double>();
-  test_grid->Resize(100,100,100,401);
-
   // 1. set up outer simbox
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 

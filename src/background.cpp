@@ -2697,9 +2697,9 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
   //  delete exp_rho;
   //}
 
-  NRLib::Grid<double> * res_bg_vp  = NULL;
-  NRLib::Grid<double> * res_bg_vs  = NULL;
-  NRLib::Grid<double> * res_bg_rho = NULL;
+  NRLib::Grid<double> * res_bg_vp  = new NRLib::Grid<double>();
+  NRLib::Grid<double> * res_bg_vs  = new NRLib::Grid<double>();
+  NRLib::Grid<double> * res_bg_rho = new NRLib::Grid<double>();
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
   resampleParameter(res_bg_vp,  bg_vp,  time_simbox, time_bg_simbox);
