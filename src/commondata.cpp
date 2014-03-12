@@ -139,25 +139,24 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
-   //H-DEBUGGING
-  //if(read_seismic_){
-  //  if(model_settings->getEstimateCorrelations() == true){
-  //    if(read_wells_ && setup_multigrid_){
-  //        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-  //    }
-  //    else{
-  //      err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
-  //    }
-  //  }
-  //  else{
-  //    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-  //          prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
-  //  }
-  //}
-  //else{
-  //  err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  //}
+  if(read_seismic_){
+    if(model_settings->getEstimateCorrelations() == true){
+      if(read_wells_ && setup_multigrid_){
+          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+      }
+      else{
+        err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
+      }
+    }
+    else{
+      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+    }
+  }
+  else{
+    err_text += "Could not set up prior correlations since this requires seismic data.\n";
+  }
 
 
   // 14. Set up TimeLine class
@@ -7936,7 +7935,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        std::string                                                  & err_text_common){
 
   (void) seismic_data, facies_names, prior_facies_prob;
-  LogKit::WriteHeader("Setup of Prior Correlation");
 
   bool failed                             = false;
   std::string err_text                    = "";
@@ -7955,6 +7953,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
   if (model_settings->getDoInversion() || print_result)
   {
+    LogKit::WriteHeader("Setup of Prior Correlation");
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
@@ -8084,7 +8083,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
-
         // Number of bins
         int n_corr_T = interval_simboxes[i].GetNZpad();
         if((n_corr_T % 2) == 0)
@@ -8092,33 +8090,35 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         else
           n_corr_T = n_corr_T/2;
 
-        // 2. Use variogram with correlation range
-        if(temporal_corr_range_given == true) {
-          prior_corr_T_[i].resize(n_corr_T+1,0);
-          float temp_corr_range = model_settings->getTemporalCorrelationRange();
-          float dz = static_cast<float>(interval_simboxes[i].getdz());
-          for(int j=0; j<=n_corr_T; j++){
-            //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
-            prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
+        if(!estimate_temp_corr){
+          // 2. Use variogram with correlation range
+          if(temporal_corr_range_given == true) {
+            prior_corr_T_[i].resize(n_corr_T+1,0);
+            float temp_corr_range = model_settings->getTemporalCorrelationRange();
+            float dz = static_cast<float>(interval_simboxes[i].getdz());
+            for(int j=0; j<=n_corr_T; j++){
+              //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
+              prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
+            }
           }
-        }
-        // 1. Defined in text file
-        else{
-          std::string tmp_err_text("");
-          float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
-          if(corr_mat == NULL)
-          {
-            err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
-            err_text += tmp_err_text;
-            failed_temp_corr = true;
-          }
-          prior_corr_T_[i].resize(n_corr_T,0);
-          if (!failed_temp_corr)
-          {
-            for(int j=0;j<n_corr_T;j++)
-              prior_corr_T_[i][j] = corr_mat[0][j+1];
-            delete [] corr_mat[0];
-            delete [] corr_mat;
+          // 1. Defined in text file
+          else{
+            std::string tmp_err_text("");
+            float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
+            if(corr_mat == NULL)
+            {
+              err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
+              err_text += tmp_err_text;
+              failed_temp_corr = true;
+            }
+            prior_corr_T_[i].resize(n_corr_T,0);
+            if (!failed_temp_corr)
+            {
+              for(int j=0;j<n_corr_T;j++)
+                prior_corr_T_[i][j] = corr_mat[0][j+1];
+              delete [] corr_mat[0];
+              delete [] corr_mat;
+            }
           }
         }
         
