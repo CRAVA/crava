@@ -54,7 +54,8 @@ public:
   const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
   const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
-  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()       const { return mapped_blocked_logs_ ;}
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()        const { return mapped_blocked_logs_                 ;}
+  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogsForCorr() const { return mapped_blocked_logs_for_correlation_ ;}
 
   std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
 

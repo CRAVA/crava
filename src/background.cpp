@@ -2724,16 +2724,16 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
   //  delete exp_res_rho;
   //}
 
-  bg_vp = res_bg_vp;
-  bg_vs = res_bg_vs;
+  bg_vp  = res_bg_vp;
+  bg_vs  = res_bg_vs;
   bg_rho = res_bg_rho;
  }
 
 void
-Background::resampleParameter(NRLib::Grid<double> * p_new, // Resample to
-                              NRLib::Grid<double> * p_old, // Resample from
-                              const Simbox        * simbox_new,
-                              const Simbox        * simbox_old)
+Background::resampleParameter(NRLib::Grid<double> *& p_new, // Resample to
+                              NRLib::Grid<double> *  p_old, // Resample from
+                              const Simbox        *  simbox_new,
+                              const Simbox        *  simbox_old)
 {
   int nx  = simbox_new->getnx();
   int ny  = simbox_new->getny();

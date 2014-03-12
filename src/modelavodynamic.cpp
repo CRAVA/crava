@@ -406,7 +406,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   this_timelapse_           = t;
   bool failed_loading_model = false;
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
-  bool estimation_mode      = model_settings->getEstimationMode();
+  //bool estimation_mode      = model_settings->getEstimationMode();
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
 
@@ -453,7 +453,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     seis_cubes_[i] = ModelAVOStatic::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
     seis_cubes_[i]->createRealGrid();
-    seis_cubes_[i]->setType(FFTGrid::PARAMETER);
+    seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
     bool is_segy           = false;
@@ -627,7 +627,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //local_scale
   //global_noise_estimate
   //sn_ratio
-  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = common_data->GetBlockedLogs();
+  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = model_general->GetBlockedWells();
 
   for (int i = 0; i < number_of_angles_; i++) {
 
@@ -758,9 +758,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //if (estimation_mode)
   //  model_avo_static->WriteBlockedWells(model_general->GetBlockedWells(), model_settings, model_general->GetFaciesNames(), model_general->GetFaciesLabel());
 
-
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
-  //H-DEBUGGING
   fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
 
   for (int i=0; i < number_of_angles_; i++) {
@@ -795,7 +793,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   // Compute variation in parameters
   NRLib::Matrix prior_var_0 = seismic_parameters.getPriorVar0();
 
-  for (int i=0; i < number_of_angles_; i++) {
+  for (int i = 0; i < number_of_angles_; i++) {
     param_var[i]=0.0;
     for (int l=0; l<3 ; l++) {
       for (int m=0 ; m<3 ; m++) {
@@ -805,8 +803,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   // Compute variation in wavelet
-  //H-DEBUGGING
-  for (int l=0; l < number_of_angles_; l++) {
+  for (int l = 0; l < number_of_angles_; l++) {
     wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
   }
 
@@ -818,7 +815,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   std::vector<bool> match_energies = model_settings->getMatchEnergies(this_timelapse_);
 
-  for (int l=0; l < number_of_angles_; l++) {
+  for (int l = 0; l < number_of_angles_; l++) {
     if (match_energies[l]) {
       LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((error_variance_[l]/model_variance_[l])*(sn_ratio_[l] - 1.0f));
@@ -843,7 +840,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   delete [] param_var;
   delete [] wd_corr_mvar;
-  for (int i=0; i < number_of_angles_; i++)
+  for (int i = 0; i < number_of_angles_; i++)
     delete error_smooth[i];
   delete [] error_smooth;
 

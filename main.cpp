@@ -236,14 +236,6 @@ int main(int argc, char** argv)
       float low_cut   = modelSettings->getLowCut();
       int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
-      /*
-      seismicParametersInterval.setCovParameters(common_data->GetCovParametersInterval(i_interval),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNXpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNYpad(),
-                                                 common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetNZpad());
-                                                 */
-
-      //H-DEBUGGING
       seismicParametersInterval.setCorrelationParameters(common_data->GetPriorParamCov(i_interval),
                                                          common_data->GetPriorCorrT(i_interval),
                                                          common_data->GetPriorCorrXY(i_interval),
@@ -256,9 +248,6 @@ int main(int argc, char** argv)
                                                          simbox->GetNXpad(),
                                                          simbox->GetNYpad(),
                                                          simbox->GetNZpad());
-
-
-      //seismicParametersInterval.setPriorVar0(common_data->GetPriorVar0(i_interval));
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,

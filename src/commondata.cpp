@@ -62,6 +62,9 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   forward_modeling_ = model_settings->getForwardModeling();
 
+  NRLib::Grid<double> * test_grid = new NRLib::Grid<double>();
+  test_grid->Resize(100,100,100,401);
+
   // 1. set up outer simbox
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 
@@ -139,6 +142,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
+  //H-DEBUGGING
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
       if(read_wells_ && setup_multigrid_){
@@ -173,6 +177,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   //Punkt o: diverse:
   ReadAngularCorrelations(model_settings, err_text);
+  //CheckThatDataCoverGrid()
 
   //TODO: Handle if err_text != "".
   if(err_text != "") {
@@ -1798,11 +1803,11 @@ void CommonData::CutWell(std::string           well_file_name,
       if (z_old[i] != RMISSING) {
 
         double top_tmp = top_surf.GetZ(x_old[i], y_old[i]);
-        if (top_tmp = WELLMISSING)
+        if (top_tmp == WELLMISSING)
           top_tmp = top_surf_min;
 
         double bot_tmp = bot_surf.GetZ(x_old[i], y_old[i]);
-        if (bot_tmp = WELLMISSING)
+        if (bot_tmp == WELLMISSING)
           bot_tmp = bot_surf_max;
 
         //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
@@ -8083,35 +8088,38 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         else
           n_corr_T = n_corr_T/2;
 
-        // 2. Use variogram with correlation range
-        if(temporal_corr_range_given == true) {
-          prior_corr_T_[i].resize(n_corr_T+1,0);
-          float temp_corr_range = model_settings->getTemporalCorrelationRange();
-          float dz = static_cast<float>(interval_simboxes[i].getdz());
-          for(int j=0; j<=n_corr_T; j++){
-            //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
-            prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
+        if (!estimate_temp_corr) { //H-added
+
+          // 2. Use variogram with correlation range
+          if(temporal_corr_range_given == true) {
+            prior_corr_T_[i].resize(n_corr_T+1,0);
+            float temp_corr_range = model_settings->getTemporalCorrelationRange();
+            float dz = static_cast<float>(interval_simboxes[i].getdz());
+            for(int j=0; j<=n_corr_T; j++){
+              //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
+              prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
+            }
           }
-        }
-        // 1. Defined in text file
-        else{
-          std::string tmp_err_text("");
-          float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
-          if(corr_mat == NULL)
-          {
-            err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
-            err_text += tmp_err_text;
-            failed_temp_corr = true;
+          // 1. Defined in text file
+          else{
+            std::string tmp_err_text("");
+            float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
+            if(corr_mat == NULL)
+            {
+              err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
+              err_text += tmp_err_text;
+              failed_temp_corr = true;
+            }
+            prior_corr_T_[i].resize(n_corr_T,0);
+            if (!failed_temp_corr)
+            {
+              for(int j=0;j<n_corr_T;j++)
+                prior_corr_T_[i][j] = corr_mat[0][j+1];
+              delete [] corr_mat[0];
+              delete [] corr_mat;
+            }
           }
-          prior_corr_T_[i].resize(n_corr_T,0);
-          if (!failed_temp_corr)
-          {
-            for(int j=0;j<n_corr_T;j++)
-              prior_corr_T_[i][j] = corr_mat[0][j+1];
-            delete [] corr_mat[0];
-            delete [] corr_mat;
-          }
-        }
+        } //H-added
 
         //
         // Estimation of parameter and temporal correlation ----------------------------------------

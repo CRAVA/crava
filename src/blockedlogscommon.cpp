@@ -556,7 +556,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   for (int i=last_S_+1; i<n_intervals; i++)
     n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
   n_blocks_ += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second; - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks_ += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
 
 

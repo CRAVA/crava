@@ -141,7 +141,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seisData_       = modelAVOdynamic_->GetSeisCubes();
     modelAVOdynamic_->ReleaseGrids();
 
-    //H-DEBUGGING
     if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
       spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
@@ -240,18 +239,17 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
-    //H
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
-      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-      seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
-    }
+    //H-Writing
+    //if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
+    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
+    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
+    //}
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      spatwellfilter->doFiltering(modelGeneral->GetBlockedWells(), //modelGeneral->getWells()
-                                  //modelSettings->getNumberOfWells(),
+      spatwellfilter->doFiltering(modelGeneral->GetBlockedWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
                                   this,
@@ -270,14 +268,13 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // Temporary placement.
     //
 
-    //H Writing of wells? Why is this done for each timelapse?
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
-      //modelAVOstatic->WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
-      CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
-    }
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
-    }
+    //H-Writing of wells: Why is this done for each timelapse? Move to after multiinterval
+    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
+    //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
+    //}
+    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
+    //  LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
+    //}
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
@@ -1258,14 +1255,15 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     correctVpVsRho(modelSettings_);
   }
 
-  if (doing4DInversion_==false)
-  {
-    if(writePrediction_ == true )
-      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-                                       outputGridsElastic_, fileGrid_, -1, false);
+  //H-writing
+  //if (doing4DInversion_==false)
+  //{
+  //  if(writePrediction_ == true )
+  //    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+  //                                     outputGridsElastic_, fileGrid_, -1, false);
 
-    writeBWPredicted();
-  }
+  //  writeBWPredicted();
+  //}
 
   //delete [] seisData_;
   delete [] kW;
@@ -1427,8 +1425,9 @@ AVOInversion::doPredictionKriging(SeismicParametersHolder & seismicParameters)
     TimeKit::getTime(wall2,cpu2);
     doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_);
     Timings::setTimeKrigingPred(wall2,cpu2);
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-                                     outputGridsElastic_, fileGrid_, -1, true);
+    //H-Writing
+    //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+    //                                 outputGridsElastic_, fileGrid_, -1, true);
   }
 }
 
@@ -1599,10 +1598,13 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           }
 
           //Only write simulated results if there is one interval
-          if(multiinterval_ == false) {
-            ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-                                             outputGridsElastic_, fileGrid_, simNr, kriging);
-          }
+          //H-Writing not working, need to change so it uses the new simboxes instead of timecutmapping (CRA-653)
+          //  Also move it to after multiinterval is ready for writing.
+          //if(multiinterval_ == false) {
+          //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
+          //                                   outputGridsElastic_, fileGrid_, simNr, kriging);
+          //}
+
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     }
