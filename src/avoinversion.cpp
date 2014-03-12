@@ -218,7 +218,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     printEnergyToScreen();
 
     time(&timeend);
-    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);<
 
     computePostMeanResidAndFFTCov(modelGeneral, seismicParameters);
 

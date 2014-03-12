@@ -357,9 +357,9 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
     //const std::vector<double> x_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetXposBlocked();
     //const std::vector<double> y_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetYposBlocked();
     //const std::vector<double> z_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
-    const std::vector<int>    i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
-    const std::vector<int>    j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
-    const std::vector<int>    k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
+    const std::vector<int>    & i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
+    const std::vector<int>    & j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
+    const std::vector<int>    & k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
 
     std::vector<double> blocked_well_log;
 

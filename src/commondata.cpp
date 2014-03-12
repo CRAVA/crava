@@ -4182,10 +4182,6 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         model_settings->getAreaParameters()->GetNx(), model_settings->getAreaParameters()->GetNy(), z_max);
-      int nz = 0;  //nz for estimation simbox is set to the sum of interval layers
-      for (size_t n = 0; n<model_settings->getIntervalNames().size(); n++){
-        nz += model_settings->getTimeNzInterval(model_settings->getIntervalName(n));
-      }
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
       estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
