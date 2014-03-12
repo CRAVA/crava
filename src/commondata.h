@@ -697,8 +697,8 @@ private:
 
   void  WriteFilePriorVariances(const ModelSettings      * model_settings,
                                const std::vector<double> & prior_corr_T,
-                               const Surface            * prior_corr_XY,
-                               const float              & dt) const;
+                               const Surface             * prior_corr_XY,
+                               const float               & dt) const;
 
   void  PrintPriorVariances() const;
 

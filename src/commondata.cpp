@@ -139,7 +139,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 13. Setup of prior correlation
-  //H-DEBUGGING
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
       if(read_wells_ && setup_multigrid_){
@@ -173,7 +172,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  ReadAngularCorrelations(model_settings, err_text);
+  //ReadAngularCorrelations(model_settings, err_text);
   //CheckThatDataCoverGrid()
 
   //TODO: Handle if err_text != "".
@@ -619,6 +618,18 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
   }
 
   return true;
+}
+
+FFTGrid * CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
+{
+  FFTGrid* fftGrid;
+
+  if (fileGrid)
+    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+
+  return(fftGrid);
 }
 
 bool
@@ -4065,8 +4076,6 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
     }
   }
 
-
-
   delete top_surface;
   delete base_surface;
   delete top_surface_flat;
@@ -4153,6 +4162,7 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       err_text += e.what();
       failed = true;
     }
+
   }
   if (!failed){
     try{ // initialize full_inversion_volume and set the flat top and base surfaces of the simbox
@@ -4172,7 +4182,10 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
       base_surface_flat = new Surface(base_surface->GetXMin(), base_surface->GetYMin(),
         base_surface->GetXMax()-base_surface->GetXMin(), base_surface->GetYMax()-base_surface->GetYMin(),
         model_settings->getAreaParameters()->GetNx(), model_settings->getAreaParameters()->GetNy(), z_max);
-
+      int nz = 0;  //nz for estimation simbox is set to the sum of interval layers
+      for (size_t n = 0; n<model_settings->getIntervalNames().size(); n++){
+        nz += model_settings->getTimeNzInterval(model_settings->getIntervalName(n));
+      }
       estimation_simbox.setDepth(*top_surface_flat, *base_surface_flat, nz, model_settings->getRunFromPanel());
       estimation_simbox.calculateDz(model_settings->getLzLimit(), err_text);
     }
@@ -7916,29 +7929,28 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
 }
 //}
 
-bool CommonData::SetupPriorCorrelation(const ModelSettings                                    * model_settings,
-                                       const InputFiles                                       * input_files,
-                                       const std::vector<NRLib::Well>                         & wells,
-                                       const std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs_for_correlation,
-                                       const std::vector<Simbox>                              & interval_simboxes,
-                                       const std::vector<std::vector<float> >                 & prior_facies_prob,
-                                       const std::vector<std::string>                         & facies_names,
-                                       const std::vector<CravaTrend>                          & trend_cubes,
-                                       const std::map<int, std::vector<SeismicStorage> >      & seismic_data,
-                                       const std::vector<std::vector<NRLib::Grid<double> *> > & background,
-                                       std::string                                            & err_text_common){
+bool CommonData::SetupPriorCorrelation(const ModelSettings                                          * model_settings,
+                                       const InputFiles                                             * input_files,
+                                       const std::vector<NRLib::Well>                               & wells,
+                                       const std::map<std::string, BlockedLogsCommon *>             & mapped_blocked_logs_for_correlation,
+                                       const std::vector<Simbox>                                    & interval_simboxes,
+                                       const std::vector<std::vector<float> >                       & prior_facies_prob,
+                                       const std::vector<std::string>                               & facies_names,
+                                       const std::vector<CravaTrend>                                & trend_cubes,
+                                       const std::map<int, std::vector<SeismicStorage> >            & seismic_data,
+                                       const std::vector<std::vector<NRLib::Grid<double> *> >       & background,
+                                       std::string                                                  & err_text_common){
 
   (void) seismic_data, facies_names, prior_facies_prob;
-  LogKit::WriteHeader("Setup of Prior Correlation");
 
-  bool failed = false;
-  std::string err_text = "";
-  Analyzelog * analyze_all = NULL;
-  int min_data_for_estimation = 100; ///< Minimum number of blocks for estimation of time and param correlation
-  bool print_result = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
+  bool failed                             = false;
+  std::string err_text                    = "";
+  Analyzelog * analyze_all                = NULL;
+  int min_data_for_estimation             = 100;  ///< Minimum number of blocks for estimation of time and param correlation
+  bool print_result                       = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                                               model_settings->getEstimationMode() == true);
-  size_t n_intervals = interval_simboxes.size();
-  size_t n_facies = facies_names.size(); //static_cast<int>(prior_facies_[0].size()); //H Changed since prior_facies_ isn't necessarily set.
+  size_t n_intervals                      = interval_simboxes.size();
+  size_t n_facies                         = facies_names.size(); //static_cast<int>(prior_facies_[0].size()); //H Changed since prior_facies_ isn't necessarily set.
   std::vector<std::string> interval_names = model_settings->getIntervalNames();
 
   // Local parameters to be set in this function ----------------------------------------------------
@@ -7948,6 +7960,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
   if (model_settings->getDoInversion() || print_result)
   {
+    LogKit::WriteHeader("Setup of Prior Correlation");
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
@@ -7958,9 +7971,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     // 3. Estimate from data
 
     // Get parameter correlation file
-    const std::string & param_cov_file = input_files->getParamCovFile();
+    const std::string & param_cov_file    = input_files->getParamCovFile();
     // If the parameter correlation file is empty and rock physics is being used
-    bool param_cov_from_rock_physics = (param_cov_file == "" && model_settings->getFaciesProbFromRockPhysics());
+    bool param_cov_from_rock_physics      = (param_cov_file == "" && model_settings->getFaciesProbFromRockPhysics());
     // If there is no parameter corr file and no rock physics, estimate parameter correlation
     bool estimate_param_cov = (param_cov_file == "" && !param_cov_from_rock_physics);
 
@@ -7968,10 +7981,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
     // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
-    //std::vector<NRLib::Grid2D<double> > param_corr_array;
-    float ** temp_array;
-    bool failed_param_cov = false;
-    std::string tmp_err_text = "";
+    //std::vector<NRLib::Grid2D<double> >     param_corr_array;
+    float                                ** temp_array;
+    bool                                    failed_param_cov  = false;
+    std::string                             tmp_err_text = "";
 
     // 1. If there is a param corr file defined, use this
     if(param_cov_file != "") {
@@ -8028,21 +8041,21 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProbInterval(interval_names[i]),
-                                             facies_names_,
-                                             trend_cubes[i],
-                                             prior_param_cov_[i],
-                                             err_text);
+                                               model_settings->getPriorFaciesProbInterval(interval_names[i]),
+                                               facies_names_,
+                                               trend_cubes[i],
+                                               prior_param_cov_[i],
+                                               err_text);
         }
       }
       // if multiple interval settings is not being used
       else{
         CalculateCovarianceFromRockPhysics(rock_distribution,
-                                           model_settings->getPriorFaciesProb(),
-                                           facies_names_,
-                                           trend_cubes[0],
-                                           prior_param_cov_[0],
-                                           err_text);
+                                             model_settings->getPriorFaciesProb(),
+                                             facies_names_,
+                                             trend_cubes[0],
+                                             prior_param_cov_[0],
+                                             err_text);
       }
 
       if (tmp_err_text != "")
@@ -8069,15 +8082,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     // 2. Correlation range
     // 3. Estimate from data
 
-    const std::string & corr_time_file = input_files->getTempCorrFile();
-    bool temporal_corr_range_given = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
-    bool estimate_temp_corr = (corr_time_file == "" && model_settings->getUseVerticalVariogram() == false);
-    bool failed_temp_corr = false;
-    failed_param_cov = false;
+    const std::string & corr_time_file    = input_files->getTempCorrFile();
+    bool temporal_corr_range_given        = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
+    bool estimate_temp_corr               = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
+    bool failed_temp_corr                 = false;
+    failed_param_cov                     = false;
 
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
-
         // Number of bins
         int n_corr_T = interval_simboxes[i].GetNZpad();
         if((n_corr_T % 2) == 0)
@@ -8085,8 +8097,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         else
           n_corr_T = n_corr_T/2;
 
-        if (!estimate_temp_corr) { //H-added
-
+        if(!estimate_temp_corr){
           // 2. Use variogram with correlation range
           if(temporal_corr_range_given == true) {
             prior_corr_T_[i].resize(n_corr_T+1,0);
@@ -8116,7 +8127,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               delete [] corr_mat;
             }
           }
-        } //H-added
+        }
 
         //
         // Estimation of parameter and temporal correlation ----------------------------------------
@@ -8200,7 +8211,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           CheckCovarianceParameters(prior_param_cov_[i]);
 
           //if(print_result)
-          // WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_[i], dt);
+          //  WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_[i], dt);
           //PrintPriorVariances();
 
         }
@@ -8232,44 +8243,26 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
   return true;
 }
- /*
-  const std::vector<NRLib::Grid<double> > & CommonData::GetCovParametersInterval(int i_interval){
-    return cov_params_interval_;
-  }
 
-  const std::vector<NRLib::Grid<double> > & CommonData::GetCorrParametersInterval(int i_interval){
-    return corr_params_interval_;
-  }
-
-  const NRLib::Matrix                     & CommonData::GetPriorVar0(int i_interval){
-    return prior_var_0_;
-  }
-  */
-
-void CommonData::CheckCovarianceParameters(NRLib::Matrix & param_cov)
-{
-  // check that covariance is well conditioned and robustify
-  NRLib::Vector e_vals(3);
-  NRLib::Matrix e_vec(3,3);
-  NRLib::Matrix tmp(3,3);
-  tmp = param_cov;
-  NRLib::ComputeEigenVectors(tmp, e_vals,e_vec);
-
-  double max_val = e_vals(0);
-
-  for(int i=1;i<3;i++)
-    if(max_val<e_vals(i))
-      max_val=e_vals(i);
-
-  for(int k=0;k<3;k++){
-    if(e_vals(k)<max_val*0.001){
-      for(int i=0;i<3;i++)
-        for(int j=0;j<3;j++)
-          param_cov(i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
-    }
-  }
-
+/*
+const std::vector<NRLib::Grid<double> > & CommonData::GetCovParametersInterval(int i_interval){
+  return cov_params_interval_;
 }
+
+const std::vector<NRLib::Grid<double> > & CommonData::GetCorrParametersInterval(int i_interval){
+  return corr_params_interval_;
+}
+*/
+/*
+const NRLib::Matrix                     & CommonData::GetPriorParamCov(int i_interval){
+  return prior_param_cov_[i_interval];
+}
+*/
+/*
+const NRLib::Matrix                     & CommonData::GetPriorVar0(int i_interval){
+  return prior_var_0_;
+}
+*/
 
 // -------------------------------------------------------------------------------------------------
 void  CommonData::GetCorrGradIJ(float         & corr_grad_I,
@@ -8553,65 +8546,30 @@ Surface * CommonData::FindCorrXYGrid(const Simbox           * time_simbox,
   return(grid);
 }
 
-//void CommonData::SetCorrelationParameters(NRLib::Grid2D<double>     & param_corr,
-//                                          const std::vector<float>  & prior_corr_t,
-//                                          Surface                   * prior_corr_XY,
-//                                          const int                 & min_int_fq,
-//                                          const float               & corr_grad_i,
-//                                          const float               & corr_grad_j,
-//                                          const int                 & nx,
-//                                          const int                 & ny,
-//                                          const int                 & nz,
-//                                          const int                 & nx_pad,
-//                                          const int                 & ny_pad,
-//                                          const int                 & nz_pad,
-//                                          int                         i_interval)
-//{
-//  prior_var_0_[i_interval].resize(3,3);
-//
-//  prior_var_0_[i_interval](0,0) = static_cast<double>(param_corr(0,0));
-//  prior_var_0_[i_interval](1,0) = static_cast<double>(param_corr(1,0));
-//  prior_var_0_[i_interval](2,0) = static_cast<double>(param_corr(2,0));
-//  prior_var_0_[i_interval](0,1) = static_cast<double>(param_corr(0,1));
-//  prior_var_0_[i_interval](1,1) = static_cast<double>(param_corr(1,1));
-//  prior_var_0_[i_interval](2,1) = static_cast<double>(param_corr(2,1));
-//  prior_var_0_[i_interval](0,2) = static_cast<double>(param_corr(0,2));
-//  prior_var_0_[i_interval](1,2) = static_cast<double>(param_corr(1,2));
-//  prior_var_0_[i_interval](2,2) = static_cast<double>(param_corr(2,2));
-//
-//
-//  // check if covariance is well conditioned and robustify
-//  NRLib::Vector e_vals(3);
-//  NRLib::Matrix e_vec(3,3);
-//  NRLib::Matrix tmp(3,3);
-//  tmp=prior_var_0_;
-//  NRLib::ComputeEigenVectors(tmp, e_vals,e_vec);
-//
-//  double max_val = e_vals(0);
-//
-//  for(int i=1;i<3;i++)
-//    if(max_val<e_vals(i))
-//      max_val=e_vals(i);
-//
-//  for(int k=0;k<3;k++){
-//    if(e_vals(k)<max_val*0.001){
-//      for(int i=0;i<3;i++)
-//        for(int j=0;j<3;j++)
-//          prior_var_0_[i_interval](i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
-//    }
-//  }
-//  //tmp=priorVar0_;
-//  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
-//
-//  createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
-//
-//  initializeCorrelations(priorCorrXY,
-//                         priorCorrT,
-//                         corrGradI,
-//                         corrGradJ,
-//                         minIntFq,
-//                         nzPad);
-//}
+void CommonData::CheckCovarianceParameters(NRLib::Matrix            & param_cov)
+{
+  // check that covariance is well conditioned and robustify
+  NRLib::Vector e_vals(3);
+  NRLib::Matrix e_vec(3,3);
+  NRLib::Matrix tmp(3,3);
+  tmp = param_cov;
+  NRLib::ComputeEigenVectors(tmp, e_vals,e_vec);
+
+  double max_val = e_vals(0);
+
+  for(int i=1;i<3;i++)
+    if(max_val<e_vals(i))
+      max_val=e_vals(i);
+
+  for(int k=0;k<3;k++){
+    if(e_vals(k)<max_val*0.001){
+      for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+          param_cov(i,j)+= e_vec(k,i)*e_vec(k,j)*(max_val*0.0011-e_vals(k));
+    }
+  }
+
+}
 
 
 bool CommonData::SetupTimeLine(ModelSettings * model_settings,
@@ -8986,7 +8944,7 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   double ly      = interval_simbox->getly();
   int    nx      = interval_simbox->getnx();
   int    ny      = interval_simbox->getny();
-  //int    nz      = interval_simbox->getnz();
+  int    nz      = interval_simbox->getnz();
 
   // The padding factor in model settings is the user specified padding factor
   double x_pad_factor = model_settings->getXPadFac();
@@ -9011,7 +8969,6 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
 
   int nx_pad = MultiIntervalGrid::FindPaddingSize(nx, x_pad_factor);
   int ny_pad = MultiIntervalGrid::FindPaddingSize(ny, y_pad_factor);
-  //int nz_pad = interval_simbox->GetNZpad();
 
   double true_x_pad_factor = static_cast<double>(nx_pad - nx)/static_cast<double>(nx);
   double true_y_pad_factor = static_cast<double>(ny_pad - ny)/static_cast<double>(ny);
@@ -9024,6 +8981,8 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   interval_simbox->SetNYpad(ny_pad);
   interval_simbox->SetXPadFactor(true_x_pad_factor);
   interval_simbox->SetYPadFactor(true_y_pad_factor);
+  interval_simbox->SetZPadFactor(0.0);
+  interval_simbox->SetNZpad(interval_simbox->getnz());
 
   std::string text1;
   std::string text2;
@@ -9047,39 +9006,78 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   //                     true_zPad, true_z_pad_factor, nz, nz_pad);
 }
 
-FFTGrid*
-CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool file_grid)
+//--------------------------------------------------------------------
+/*
+void  CommonData::WriteFilePriorVariances(const ModelSettings      * model_settings,
+                                          const std::vector<float> & prior_corr_T,
+                                          const Surface            * prior_corr_XY,
+                                          const float              & dt) const
 {
+  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
+  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
+  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
+  std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
+  std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
 
-  FFTGrid* fft_grid;
-
-  if (file_grid)
-    fft_grid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
-  else
-    fft_grid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
-
-  return(fft_grid);
-
-}
-
-void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
-                                         std::string   & err_text) {
-
-  for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
-
-    Vario * vario                     = model_settings->getAngularCorr(t);
-    int n_angles                      = model_settings->getNumberOfAngles(t);
-    const std::vector<float> & angles = model_settings->getAngle(t);
-
-    std::vector<std::vector<float> > angle_corr(n_angles);
-    for (int i = 0; i < n_angles; i++) {
-      angle_corr[i].resize(n_angles);
-      for (int j = 0; j < n_angles; j++) {
-        float d_angle = angles[i] - angles[j];
-        angle_corr[i][i] = vario->corr(d_angle, 0);
-      }
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName1);
+  file << std::fixed
+       << std::right
+       << std::setprecision(10);
+  for(int i=0 ; i<3 ; i++) {
+    for(int j=0 ; j<3 ; j++) {
+      file << std::setw(13) << prior_var0_(i,j) << " ";
     }
-    angular_correlations_.push_back(angle_corr);
+    file << "\n";
+  }
+  file.close();
+
+  NRLib::OpenWrite(file, fileName2);
+  file << std::fixed
+       << std::right
+       << std::setprecision(8)
+       << dt << "\n";
+  for(int i=0 ; i<static_cast<int>(prior_corr_T.size()); i++) {
+    file << std::setw(11) << prior_corr_T[i] << "\n";
+  }
+  file.close();
+
+  IO::writeSurfaceToFile(*prior_corr_XY, baseName3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+}
+*/
+
+//--------------------------------------------------------------------
+/*
+void  CommonData::PrintPriorVariances() const{
+
+  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",prior_var_0(0,0),prior_var_0(1,1),prior_var_0(2,2));
+
+  float corr01 = static_cast<float>(priorVar0_(0,1)/(sqrt(priorVar0_(0,0)*priorVar0_(1,1))));
+  float corr02 = static_cast<float>(priorVar0_(0,2)/(sqrt(priorVar0_(0,0)*priorVar0_(2,2))));
+  float corr12 = static_cast<float>(priorVar0_(1,2)/(sqrt(priorVar0_(1,1)*priorVar0_(2,2))));
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
   }
 }
 
