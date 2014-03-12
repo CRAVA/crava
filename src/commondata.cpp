@@ -172,7 +172,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
 
   //Punkt o: diverse:
-  //ReadAngularCorrelations(model_settings, err_text);
+  ReadAngularCorrelations(model_settings, err_text);
   //CheckThatDataCoverGrid()
 
   //TODO: Handle if err_text != "".
@@ -9006,6 +9006,8 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   //                     true_zPad, true_z_pad_factor, nz, nz_pad);
 }
 
+
+
 //--------------------------------------------------------------------
 /*
 void  CommonData::WriteFilePriorVariances(const ModelSettings      * model_settings,
@@ -9172,5 +9174,26 @@ void CommonData::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> bl
                            facies_name,
                            facies_label);
 
+  }
+}
+
+void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
+                                         std::string   & err_text) {
+
+  for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
+
+    Vario * vario = model_settings->getAngularCorr(t);
+    int n_angles = model_settings->getNumberOfAngles(t);
+    const std::vector<float> & angles = model_settings->getAngle(t);
+
+    std::vector<std::vector<float> > angle_corr(n_angles);
+    for (int i = 0; i < n_angles; i++) {
+      angle_corr[i].resize(n_angles);
+      for (int j = 0; j < n_angles; j++) {
+        float d_angle = angles[i] - angles[j];
+        angle_corr[i][i] = vario->corr(d_angle, 0);
+      }
+    }
+    angular_correlations_.push_back(angle_corr);
   }
 }
