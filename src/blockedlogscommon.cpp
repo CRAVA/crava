@@ -246,6 +246,92 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
 
 }
 
+
+BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)
+{
+  n_layers_adjusted_per_interval_ = logs.n_layers_adjusted_per_interval_;
+  n_blocks_with_data_             = logs.n_blocks_with_data_;
+  n_blocks_with_data_tot_         = logs.n_blocks_with_data_tot_;
+  n_blocks_                       = logs.n_blocks_;
+  n_data_                         = logs.n_data_;
+  well_name_                      = logs.well_name_;
+
+  facies_map_         = logs.facies_map_;
+  facies_log_defined_ = logs.facies_log_defined_;
+
+  // Blocked values
+  x_pos_blocked_  = logs.x_pos_blocked_;
+  y_pos_blocked_  = logs.y_pos_blocked_;
+  z_pos_blocked_  = logs.z_pos_blocked_;
+  facies_blocked_ = logs.facies_blocked_;
+
+  s_pos_ = logs.s_pos_;
+  i_pos_ = logs.i_pos_;
+  j_pos_ = logs.j_pos_;
+  k_pos_ = logs.k_pos_;
+
+  n_continuous_logs_ = logs.n_continuous_logs_;
+  n_discrete_logs_   = logs.n_discrete_logs_;
+
+  continuous_logs_blocked_ = logs.continuous_logs_blocked_;
+  discrete_logs_blocked_   = logs.discrete_logs_blocked_;
+
+  cont_logs_seismic_resolution_ = logs.cont_logs_seismic_resolution_;
+  cont_logs_highcut_background_ = logs.cont_logs_highcut_background_;
+  cont_logs_highcut_seismic_    = logs.cont_logs_highcut_seismic_;
+
+  actual_synt_seismic_data_ = logs.actual_synt_seismic_data_;
+  well_synt_seismic_data_   = logs.well_synt_seismic_data_;
+
+  lateral_threshold_gradient_ = logs.lateral_threshold_gradient_;
+  sigma_m_                    = logs.sigma_m_;
+
+  // Logs from well, not blocked
+  x_pos_raw_logs_  = logs.x_pos_raw_logs_;
+  y_pos_raw_logs_  = logs.y_pos_raw_logs_;
+  z_pos_raw_logs_  = logs.z_pos_raw_logs_;
+  facies_raw_logs_ = logs.facies_raw_logs_;
+
+  continuous_raw_logs_ = logs.continuous_raw_logs_;
+  discrete_raw_logs_   = logs.discrete_raw_logs_;
+
+  //Variables needed in SetLogFromGrid and later used in WriteWell
+  cpp_                       = logs.cpp_;
+  continuous_logs_predicted_ = logs.continuous_logs_predicted_;
+  real_seismic_data_         = logs.real_seismic_data_;
+  facies_prob_               = logs.facies_prob_;
+
+  vp_for_facies_  = logs.vp_for_facies_;
+  rho_for_facies_ = logs.rho_for_facies_;
+
+  n_angles_                   = logs.n_angles_;
+
+  interpolate_                = logs.interpolate_;
+
+  n_layers_                   = logs.n_layers_;
+  dz_                         = logs.dz_;
+
+  first_S_                    = logs.first_S_;
+  last_S_                     = logs.last_S_;
+
+  first_M_                    = logs.first_M_;
+  last_M_                     = logs.last_M_;
+
+  first_B_                    = logs.first_B_;
+  last_B_                     = logs.last_B_;
+
+  n_well_log_obs_in_interval_ = logs.n_well_log_obs_in_interval_;
+
+  is_deviated_                = logs.is_deviated_;
+
+  //Used in logging in crava.cpp. Copied from well
+  real_vs_log_                  = logs.real_vs_log_;
+  use_for_facies_probabilities_ = logs.use_for_facies_probabilities_;
+  use_for_background_trend_     = logs.use_for_background_trend_;
+  use_for_filtering_            = logs.use_for_filtering_;
+  use_for_wavelet_estimation_   = logs.use_for_wavelet_estimation_;
+}
+
 BlockedLogsCommon::~BlockedLogsCommon(){
 
 }
@@ -287,7 +373,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
     }
 
-    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked, 
+    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
                                     n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
 
     // Discrete logs
@@ -555,7 +641,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 
     // Add the previous zones multiplied by relative vertical grid size
     double temp_K = new_K*dz_rel[simbox_number];      // temp_K is the adjusted vertical block number
-    for (int n = 0; n<simbox_number; n++){        
+    for (int n = 0; n<simbox_number; n++){
       temp_K += static_cast<int>(nz[n]*dz_rel[n]);    // add number of blocks in simboxes above
     }
     int tot_K = static_cast<int>(temp_K);
@@ -604,7 +690,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   n_blocks_ += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
   n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second; - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks_ += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
-  
+
 
   bool debug = false;
   if (debug) {
@@ -3442,6 +3528,107 @@ void BlockedLogsCommon::FindMeanVsVp(const NRLib::Surface<double> & top,
 
   mean_vs_vp /= n_vs_vp;
 }
+
+
+bool
+BlockedLogsCommon::VolumeFocus(const NRLib::Volume & volume)
+{
+  size_t first_index = 0;
+  bool   first_found = 0;
+
+  std::vector<std::pair<size_t, size_t> > intervals;
+  for(size_t i=0;(i<x_pos_blocked_.size());i++) {
+    bool inside = volume.IsInside(x_pos_blocked_[i], y_pos_blocked_[i], z_pos_blocked_[i]);
+    if(first_found == false) {
+      if(inside == true) {
+        first_index = i;
+        first_found = true;
+      }
+    }
+    else if(inside == false) {
+      std::pair<size_t, size_t> interval(first_index,i);
+      intervals.push_back(interval);
+      first_found = false;
+    }
+  }
+  if(first_found == true || intervals.size() > 0) {
+    if(first_found == true) {
+      std::pair<size_t, size_t> interval(first_index,x_pos_blocked_.size());
+      intervals.push_back(interval);
+    }
+    UpdateLog(x_pos_blocked_, intervals);
+    UpdateLog(y_pos_blocked_, intervals);
+    UpdateLog(z_pos_blocked_, intervals);
+    UpdateLog(facies_blocked_, intervals);
+
+    UpdateLog(s_pos_, intervals);
+    UpdateLog(i_pos_, intervals);
+    UpdateLog(j_pos_, intervals);
+    UpdateLog(k_pos_, intervals);
+
+    std::map<std::string, std::vector<double> >::iterator map_ci;
+    for(map_ci = continuous_logs_blocked_.begin(); map_ci != continuous_logs_blocked_.end(); ++map_ci)
+      UpdateLog(map_ci->second, intervals);
+
+    std::map<std::string, std::vector<int> >::iterator map_di;
+    for(map_di = discrete_logs_blocked_.begin(); map_di != discrete_logs_blocked_.end(); ++map_di)
+      UpdateLog(map_di->second, intervals);
+
+    for(map_ci = cont_logs_seismic_resolution_.begin(); map_ci != cont_logs_seismic_resolution_.end(); ++map_ci)
+      UpdateLog(map_ci->second, intervals);
+
+    for(map_ci = cont_logs_highcut_background_.begin(); map_ci != cont_logs_highcut_background_.end(); ++map_ci)
+      UpdateLog(map_ci->second, intervals);
+
+    for(map_ci = cont_logs_highcut_seismic_.begin(); map_ci != cont_logs_highcut_seismic_.end(); ++map_ci)
+      UpdateLog(map_ci->second, intervals);
+
+    for(size_t i=0;i<actual_synt_seismic_data_.size();i++)
+      UpdateLog(actual_synt_seismic_data_[i], intervals);
+
+    for(size_t i=0;i<well_synt_seismic_data_.size();i++)
+      UpdateLog(well_synt_seismic_data_[i], intervals);
+  }
+  if(intervals.size() > 0)
+    return(true);
+  else
+    return(false);
+}
+
+
+void
+BlockedLogsCommon::UpdateLog(std::vector<double>                           & data,
+                             const std::vector<std::pair<size_t, size_t> > & intervals)
+{
+  if(data.size() > 0) {
+    size_t start = 0;
+    size_t end;
+    for(size_t index=0;index <intervals.size();index++) {
+      end = intervals[index].first;
+      fill(data.begin()+start, data.begin()+end, RMISSING);
+      start = intervals[index].second;
+    }
+    fill(data.begin()+start, data.end(), RMISSING);
+  }
+}
+
+
+void
+BlockedLogsCommon::UpdateLog(std::vector<int>                              & data,
+                             const std::vector<std::pair<size_t, size_t> > & intervals)
+{
+  if(data.size() > 0) {
+    size_t start = 0;
+    size_t end;
+    for(size_t index=0;index <intervals.size();index++) {
+      end = intervals[index].first;
+      fill(data.begin()+start, data.begin()+end, IMISSING);
+      start = intervals[index].second;
+    }
+    fill(data.begin()+start, data.end(), IMISSING);
+  }
+}
+
 
 void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox * simbox)
 {
