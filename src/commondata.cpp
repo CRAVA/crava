@@ -95,7 +95,8 @@ CommonData::CommonData(ModelSettings * model_settings,
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
 
   // 7. Wavelet Handling
-  wavelet_handling_ = WaveletHandling(model_settings, input_files, err_text);
+  wavelet_handling_ = WaveletHandling(model_settings, input_files, wavelets_, local_noise_scales_, local_shifts_,
+                                      local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, synt_seis_, err_text);
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
@@ -130,12 +131,12 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_) {
     if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, &estimation_simbox_, wells_, multiple_interval_grid_, err_text);
       else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, &estimation_simbox_, wells_, multiple_interval_grid_, err_text);
     }
     else //Not estimation
-      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, err_text);
+      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, &estimation_simbox_, wells_, multiple_interval_grid_, err_text);
   }
 
   // 13. Setup of prior correlation
@@ -2598,11 +2599,11 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
 
 
 void
-CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix,
-                                         double                vsvp,
-                                         const ModelSettings * model_settings,
-                                         int                   n_angles,
-                                         int                   this_timelapse)
+CommonData::SetupDefaultReflectionMatrix(float                                           **& reflection_matrix,
+                                         double                                              vsvp,
+                                         const ModelSettings                               * model_settings,
+                                         int                                                 n_angles,
+                                         int                                                 this_timelapse)
 {
   int i;
   float ** A = new float * [n_angles];
@@ -2652,9 +2653,17 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix
   }
 }
 
-bool CommonData::WaveletHandling(ModelSettings * model_settings,
-                                 InputFiles    * input_files,
-                                 std::string   & err_text_common) {
+bool CommonData::WaveletHandling(ModelSettings                                     * model_settings,
+                                 InputFiles                                        * input_files,
+                                 std::map<int, std::vector<Wavelet *> >            & wavelets,
+                                 std::map<int, std::vector<Grid2D *> >             & local_noise_scales,
+                                 std::map<int, std::vector<Grid2D *> >             & local_shifts,
+                                 std::map<int, std::vector<Grid2D *> >             & local_scales,
+                                 std::map<int, std::vector<float> >                & global_noise_estimates,
+                                 std::map<int, std::vector<float> >                & sn_ratios,
+                                 bool                                              & use_local_noise,
+                                 std::map<int, std::vector<std::vector<double> > > & synt_seis,
+                                 std::string                                       & err_text_common) {
 
   int n_timeLapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
@@ -2676,7 +2685,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
 
     std::vector<float> sn_ratio = model_settings->getSNRatio(i);
     std::vector<float> angles   = model_settings->getAngle(i);
-    use_local_noise_            = model_settings->getUseLocalNoise(i);
+    use_local_noise             = model_settings->getUseLocalNoise(i);
 
     //Fra ModelAvoDynamic::processSeismic:
     std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
@@ -2832,7 +2841,7 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
                                   sn_ratio[j],
                                   estimate_wavelets[j],
                                   use_ricker_wavelet[j],
-                                  use_local_noise_);
+                                  use_local_noise);
       else
         error += Process3DWavelet(model_settings,
                                   input_files,
@@ -2866,15 +2875,14 @@ bool CommonData::WaveletHandling(ModelSettings * model_settings,
       }
     }
 
-    wavelets_[i]              = wavelet;
-    local_noise_scale_[i]     = local_noise_scale;
-    local_shift_[i]           = local_shift;
-    local_scale_[i]           = local_scale;
-    global_noise_estimate_[i] = sn_ratio;
-    sn_ratio_[i]              = sn_ratio;
-    synt_seis_[i]             = synt_seis_angles;
+    wavelets[i]               = wavelet;
+    local_noise_scales[i]     = local_noise_scale;
+    local_shifts[i]           = local_shift;
+    local_scales[i]           = local_scale;
+    global_noise_estimates[i] = sn_ratio;
+    sn_ratios[i]              = sn_ratio;
+    synt_seis[i]              = synt_seis_angles;
   } //timelapse
-
 
 
   Timings::setTimeWavelets(wall,cpu);
@@ -6990,9 +6998,12 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
 }
 
 
-bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
-                                      InputFiles     * input_files,
-                                      std::string    & err_text_common) {
+bool CommonData::SetupBackgroundModel(ModelSettings            * model_settings,
+                                      InputFiles               * input_files,
+                                      const Simbox             * estimation_simbox,
+                                      std::vector<NRLib::Well> & wells,
+                                      MultiIntervalGrid        * multiple_interval_grid,
+                                      std::string              & err_text_common) {
 
   std::string err_text = "";
 
@@ -7018,7 +7029,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
       if (back_vel_file != "") {
         bool dummy;
         LoadVelocity(velocity,
-                     &estimation_simbox_,
+                     estimation_simbox,
                      model_settings,
                      back_vel_file,
                      dummy,
@@ -7038,7 +7049,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         if (input_files->getCorrDirFile() != "") {
 
           Surface tmpSurf(input_files->getCorrDirFile());
-          if (estimation_simbox_.CheckSurface(tmpSurf) == true)
+          if (estimation_simbox->CheckSurface(tmpSurf) == true)
             correlation_direction = new Surface(tmpSurf);
           else {
             err_text += "Error: Correlation surface does not cover volume.\n";
@@ -7047,7 +7058,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           //Create a sepeate background simbox based on correlation_direction
           //H In ModelGeneral setupExtendedTimeSimbox and setupExtendedBackgroundSimbox were created seperatly
           //  Could extended_background_simbox we covered/included by the new simbox-format?
-          SetupExtendedBackgroundSimbox(&estimation_simbox_, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
+          SetupExtendedBackgroundSimbox(estimation_simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
           std::string err_text_tmp = "";
           int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
           if(status != Simbox::BOXOK) {
@@ -7064,15 +7075,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
         }
 
-        for (size_t i = 0; i < wells_.size(); i++) {
+        for (size_t i = 0; i < wells.size(); i++) {
           bl_bg = NULL;
 
           // Get all continuous and discrete logs
           std::vector<std::string> cont_logs_to_be_blocked;
           std::vector<std::string> disc_logs_to_be_blocked;
 
-          const std::map<std::string,std::vector<double> > & cont_logs = wells_[i].GetContLog();
-          const std::map<std::string,std::vector<int> >    & disc_logs = wells_[i].GetDiscLog();
+          const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
+          const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
 
           for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
             cont_logs_to_be_blocked.push_back(it->first);
@@ -7082,68 +7093,68 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           }
 
           if (bg_simbox == NULL)
-            bl_bg = new BlockedLogsCommon(&wells_[i],
+            bl_bg = new BlockedLogsCommon(wells[i],
                                           cont_logs_to_be_blocked,
                                           disc_logs_to_be_blocked,
-                                          &estimation_simbox_,
+                                          estimation_simbox,
                                           false,
                                           err_text);
           else
-            bl_bg = new BlockedLogsCommon(&wells_[i],
+            bl_bg = new BlockedLogsCommon(wells[i],
                                           cont_logs_to_be_blocked,
                                           disc_logs_to_be_blocked,
                                           bg_simbox,
                                           false,
                                           err_text);
 
-          mapped_bg_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells_[i].GetWellName(), bl_bg));
+          mapped_bg_bl.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
 
         }
 
 
         if (model_settings->getIntervalNames().size() == 0) {
-          std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid_->GetBackgroundParameters(); //interval vector(parameter)
+          std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //interval vector(parameter)
 
           //H changed the creation of background models to interval_simbox since in the inversion the simbox and background model must have the same dimensions
           //if (model_settings->getMultizoneBackground() == true)
-          //  Background(parameters[0], wells_, multiple_interval_grid_->GetIntervalSimbox(0), model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
+          //  Background(parameters[0], wells, multiple_interval_grid->GetIntervalSimbox(0), model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
           //else //Neither multizone or multiinterval
-          //  Background(parameters[0], wells_, velocity, multiple_interval_grid_->GetIntervalSimbox(0), bg_simbox, mapped_blocked_logs_for_correlation_, mapped_bg_bl, model_settings, err_text);
+          //  Background(parameters[0], wells, velocity, multiple_interval_grid->GetIntervalSimbox(0), bg_simbox, mapped_blocked_logs_for_correlation_, mapped_bg_bl, model_settings, err_text);
 
           if (model_settings->getMultizoneBackground() == true)
-            Background(parameters[0], wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
+            Background(parameters[0], wells, estimation_simbox, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
           else //Neither multizone or multiinterval
-            Background(parameters[0], wells_, velocity, &estimation_simbox_, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings, err_text);
+            Background(parameters[0], wells, velocity, estimation_simbox, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings, err_text);
 
           double vs_vp_ratio = FindMeanVsVp(parameters[0][0], parameters[0][1]);
 
           for (int j = 0; j < 3; j++)
-            multiple_interval_grid_->AddBackgroundParameterForInterval(0, j, parameters[0][j]);
+            multiple_interval_grid->AddBackgroundParameterForInterval(0, j, parameters[0][j]);
 
-          multiple_interval_grid_->SetBackgroundVsVpRatio(0, vs_vp_ratio);
+          multiple_interval_grid->SetBackgroundVsVpRatio(0, vs_vp_ratio);
         }
         else { //Multiple intervals, not multizone background
-          std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid_->GetBackgroundParameters(); //vector(intervals) vector(parameters)
+          std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //vector(intervals) vector(parameters)
           std::vector<double> vs_vp_ratios(model_settings->getIntervalNames().size());
 
-          Background(parameters, wells_, multiple_interval_grid_, model_settings, err_text);
+          Background(parameters, wells, multiple_interval_grid, model_settings, err_text);
 
           for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
             //for (int j = 0; j < 3; j++)
-            //  multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, &parameters[j][i]);
+            //  multiple_interval_grid->AddBackgroundParameterForInterval(i, j, &parameters[j][i]);
 
             vs_vp_ratios[i] = FindMeanVsVp(parameters[i][0], parameters[i][1]);
           }
 
-          multiple_interval_grid_->SetBackgroundVsVpRatios(vs_vp_ratios);
+          multiple_interval_grid->SetBackgroundVsVpRatios(vs_vp_ratios);
         }
       }
     }
     else {
 
-      std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid_->GetBackgroundParameters();
+      std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid->GetBackgroundParameters();
 
-      for (int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
+      for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
 
         // Get prior probabilities for the facies in a vector
         std::vector<std::string> facies_names = facies_names_;
@@ -7168,21 +7179,21 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                                         parameters[i_interval][0],
                                         parameters[i_interval][1],
                                         parameters[i_interval][2],
-                                        estimation_simbox_,
-                                        multiple_interval_grid_->GetTrendCube(i_interval));
+                                        estimation_simbox,
+                                        multiple_interval_grid->GetTrendCube(i_interval));
         double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
 
         //for (int j = 0; j < 3; j++)
-        //  multiple_interval_grid_->AddBackgroundParameterForInterval(i_interval, j, parameters[j]);
+        //  multiple_interval_grid->AddBackgroundParameterForInterval(i_interval, j, parameters[j]);
 
-        multiple_interval_grid_->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
+        multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
 
       }
     }
   }
   else {
 
-    int n_intervals = multiple_interval_grid_->GetNIntervals();
+    int n_intervals = multiple_interval_grid->GetNIntervals();
 
     std::vector<std::vector<NRLib::Grid<double> *> > parameters; //vector(parameters) vector(intervals). Parameters on the outside due to reading grid from file.
     parameters.resize(3);
@@ -7225,8 +7236,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
                            dummy1,
                            dummy2,
                            PARAMETER,
-                           multiple_interval_grid_->GetIntervalSimboxes(),
-                           &estimation_simbox_,
+                           multiple_interval_grid->GetIntervalSimboxes(),
+                           estimation_simbox,
                            model_settings,
                            err_text_tmp);
 
@@ -7258,15 +7269,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
           int nz = 0;
 
           if (model_settings->getIntervalNames().size() > 0) {
-            const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(j);
+            const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(j);
             nx = simbox->getnx();
             ny = simbox->getny();
             nz = simbox->getnz();
           }
           else {
-            nx = estimation_simbox_.getnx();
-            ny = estimation_simbox_.getny();
-            nz = estimation_simbox_.getnz();
+            nx = estimation_simbox->getnx();
+            ny = estimation_simbox->getny();
+            nz = estimation_simbox->getnz();
           }
 
           double log_value = log(const_back_value);
@@ -7287,8 +7298,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
       for (int j = 0; j < n_intervals; j++) {
 
-        if (multiple_interval_grid_->GetIntervalNames().size() > 0)
-          LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid_->GetIntervalName(j) + "\n");
+        if (multiple_interval_grid->GetIntervalNames().size() > 0)
+          LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid->GetIntervalName(j) + "\n");
         LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
         LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
 
@@ -7331,12 +7342,12 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
 
     for (int i = 0; i < n_intervals; i++) {
      for (int j = 0; j < 3; j++) {
-       multiple_interval_grid_->AddBackgroundParameterForInterval(i, j, parameters[j][i]);
+       multiple_interval_grid->AddBackgroundParameterForInterval(i, j, parameters[j][i]);
      }
 
      vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
     }
-    multiple_interval_grid_->SetBackgroundVsVpRatios(vs_vp_ratios);
+    multiple_interval_grid->SetBackgroundVsVpRatios(vs_vp_ratios);
 
   }
 
@@ -7431,7 +7442,7 @@ void CommonData::SubtractGrid(NRLib::Grid<double>       * to_grid,
   for (int i = 0; i < ni; i++) {
     for (int j = 0; j < nj; j++) {
       for (int k = 0; k < nk; k++) {
-        double value_tmp = from_grid->GetValue(i, j, k);
+        double value_tmp = to_grid->GetValue(i, j, k) - from_grid->GetValue(i, j, k);
         to_grid->SetValue(i, j, k, value_tmp);
         //to_grid(i,j,k) -= from_grid(i,j,k);
       }
@@ -7599,13 +7610,11 @@ CommonData::GetRockDistributionTime0() const
 
 void CommonData::GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                                  const std::vector<float>               & probability,
-                                                 //std::vector<NRLib::Grid<double> >      & parameters,
                                                  NRLib::Grid<double>                    * vp,
                                                  NRLib::Grid<double>                    * vs,
                                                  NRLib::Grid<double>                    * rho,
-                                                 Simbox                                 & simbox,
+                                                 const Simbox                           & simbox,
                                                  const CravaTrend                       & trend_cube)
-                                                 //int                                      i_interval)
 {
   // Set up of expectations grids
 
@@ -7770,12 +7779,12 @@ void CommonData::PrintExpectationAndCovariance(const std::vector<double>   & exp
   LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
-void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
-                                               Surface  * corr_surf,
-                                               Simbox  *& bg_simbox,
-                                               int        output_format,
-                                               int        output_domain,
-                                               int        other_output)
+void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                               Surface      * corr_surf,
+                                               Simbox      *& bg_simbox,
+                                               int            output_format,
+                                               int            output_domain,
+                                               int            other_output)
 {
   //
   // Move correlation surface for easier handling.
@@ -7845,13 +7854,13 @@ void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
   }
 }
 
-void CommonData::SetupExtendedBackgroundSimbox(Simbox   * simbox,
-                                               Surface  * top_corr_surf,
-                                               Surface  * base_corr_surf,
-                                               Simbox  *& bg_simbox,
-                                               int        output_format,
-                                               int        output_domain,
-                                               int        other_output)
+void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                               Surface      * top_corr_surf,
+                                               Surface      * base_corr_surf,
+                                               Simbox      *& bg_simbox,
+                                               int            output_format,
+                                               int            output_domain,
+                                               int            other_output)
 {
   (void) output_format;
   (void) output_domain;

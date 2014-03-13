@@ -68,12 +68,12 @@ public:
   GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
   bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
 
-  bool                                    GetUseLocalNoise()                            { return use_local_noise_                            ;}
-  std::map<int, std::vector<Grid2D *> > & GetLocalNoiseScale()                          { return local_noise_scale_                          ;}
-  std::vector<Grid2D *>                 & GetLocalNoiseScaleTimeLapse(int time_lapse)   { return local_noise_scale_.find(time_lapse)->second ;}
-  std::vector<SeismicStorage>           & GetSeismicDataTimeLapse(int time_lapse)       { return seismic_data_.find(time_lapse)->second      ;}
-  std::map<int, std::vector<float> >    & GetSNRatio()                                  { return sn_ratio_                                   ;}
-  std::vector<float>                    & GetSNRatioTimeLapse(int time_lapse)           { return sn_ratio_.find(time_lapse)->second          ;}
+  bool                                    GetUseLocalNoise()                            { return use_local_noises_                            ;}
+  std::map<int, std::vector<Grid2D *> > & GetLocalNoiseScale()                          { return local_noise_scales_                          ;}
+  std::vector<Grid2D *>                 & GetLocalNoiseScaleTimeLapse(int time_lapse)   { return local_noise_scales_.find(time_lapse)->second ;}
+  std::vector<SeismicStorage>           & GetSeismicDataTimeLapse(int time_lapse)       { return seismic_data_.find(time_lapse)->second       ;}
+  std::map<int, std::vector<float> >    & GetSNRatio()                                  { return sn_ratios_                                   ;}
+  std::vector<float>                    & GetSNRatioTimeLapse(int time_lapse)           { return sn_ratios_.find(time_lapse)->second          ;}
 
   bool                                    GetRefMatFromFileGlobalVpVs()                 { return refmat_from_file_global_vpvs_               ;}
   float **                                GetReflectionMatrixTimeLapse(int time_lapse)  { return reflection_matrix_.find(time_lapse)->second ;}
@@ -309,9 +309,17 @@ private:
   bool  SetupTemporaryWavelet(ModelSettings * model_settings,
                               std::string   & err_text);
 
-  bool  WaveletHandling(ModelSettings * model_settings,
-                        InputFiles    * input_files,
-                        std::string   & err_text);
+  bool  WaveletHandling(ModelSettings                                     * model_settings,
+                        InputFiles                                        * input_files,
+                        std::map<int, std::vector<Wavelet *> >            & wavelets,
+                        std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
+                        std::map<int, std::vector<Grid2D *> >             & local_shift,
+                        std::map<int, std::vector<Grid2D *> >             & local_scale,
+                        std::map<int, std::vector<float> >                & global_noise_estimate,
+                        std::map<int, std::vector<float> >                & sn_ratio,
+                        bool                                              & use_local_noise,
+                        std::map<int, std::vector<std::vector<double> > > & synt_seis,
+                        std::string                                       & err_text_common);
 
   bool       CheckThatDataCoverGrid(const SegY   * segy,
                                     float          offset,
@@ -581,9 +589,12 @@ private:
                             InputFiles     * input_files,
                             std::string    & err_text);
 
-  bool SetupBackgroundModel(ModelSettings  * model_settings,
-                            InputFiles     * input_files,
-                            std::string    & err_text);
+  bool SetupBackgroundModel(ModelSettings            * model_settings,
+                            InputFiles               * input_files,
+                            const Simbox             * estimation_simbox,
+                            std::vector<NRLib::Well> & wells,
+                            MultiIntervalGrid        * multiple_interval_grid,
+                            std::string              & err_text_common);
 
   double FindMeanVsVp(const NRLib::Grid<double> * vp,
                       const NRLib::Grid<double> * vs);
@@ -610,23 +621,23 @@ private:
                                        NRLib::Grid<double>                    * vp,
                                        NRLib::Grid<double>                    * vs,
                                        NRLib::Grid<double>                    * rho,
-                                       Simbox                                 & simbox,
+                                       const Simbox                           & simbox,
                                        const CravaTrend                       & trend_cube);
 
-  void SetupExtendedBackgroundSimbox(Simbox   * simbox,
-                                     Surface  * corr_surf,
-                                     Simbox  *& bg_simbox,
-                                     int        output_format,
-                                     int        output_domain,
-                                     int        other_output);
+  void SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                     Surface      * corr_surf,
+                                     Simbox      *& bg_simbox,
+                                     int            output_format,
+                                     int            output_domain,
+                                     int            other_output);
 
-  void SetupExtendedBackgroundSimbox(Simbox   * simbox,
-                                     Surface  * top_corr_surf,
-                                     Surface  * base_corr_surf,
-                                     Simbox  *& bg_simbox,
-                                     int        output_format,
-                                     int        output_domain,
-                                     int        other_output);
+  void SetupExtendedBackgroundSimbox(const Simbox   * simbox,
+                                     Surface        * top_corr_surf,
+                                     Surface        * base_corr_surf,
+                                     Simbox        *& bg_simbox,
+                                     int              output_format,
+                                     int              output_domain,
+                                     int              other_output);
 
   bool SetupPriorCorrelation(const ModelSettings                                          * model_settings,
                              const InputFiles                                             * input_files,
@@ -771,12 +782,12 @@ private:
 
   // Wavelet
   std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >              local_noise_scale_;
-  std::map<int, std::vector<Grid2D *> >              local_shift_;
-  std::map<int, std::vector<Grid2D *> >              local_scale_;
-  std::map<int, std::vector<float> >                 global_noise_estimate_;
-  std::map<int, std::vector<float> >                 sn_ratio_;
-  bool                                               use_local_noise_;
+  std::map<int, std::vector<Grid2D *> >              local_noise_scales_;
+  std::map<int, std::vector<Grid2D *> >              local_shifts_;
+  std::map<int, std::vector<Grid2D *> >              local_scales_;
+  std::map<int, std::vector<float> >                 global_noise_estimates_;
+  std::map<int, std::vector<float> >                 sn_ratios_;
+  bool                                               use_local_noises_;
   std::map<int, std::vector<std::vector<double> > >  synt_seis_; //Map time_lapse, vector angles
 
   std::vector<std::vector<double> >             t_grad_x_;
