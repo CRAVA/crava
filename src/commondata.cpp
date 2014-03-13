@@ -7093,14 +7093,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings            * model_settings,
           }
 
           if (bg_simbox == NULL)
-            bl_bg = new BlockedLogsCommon(wells[i],
+            bl_bg = new BlockedLogsCommon(&wells[i],
                                           cont_logs_to_be_blocked,
                                           disc_logs_to_be_blocked,
                                           estimation_simbox,
                                           false,
                                           err_text);
           else
-            bl_bg = new BlockedLogsCommon(wells[i],
+            bl_bg = new BlockedLogsCommon(&wells[i],
                                           cont_logs_to_be_blocked,
                                           disc_logs_to_be_blocked,
                                           bg_simbox,
@@ -7114,12 +7114,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings            * model_settings,
 
         if (model_settings->getIntervalNames().size() == 0) {
           std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //interval vector(parameter)
-
-          //H changed the creation of background models to interval_simbox since in the inversion the simbox and background model must have the same dimensions
-          //if (model_settings->getMultizoneBackground() == true)
-          //  Background(parameters[0], wells, multiple_interval_grid->GetIntervalSimbox(0), model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
-          //else //Neither multizone or multiinterval
-          //  Background(parameters[0], wells, velocity, multiple_interval_grid->GetIntervalSimbox(0), bg_simbox, mapped_blocked_logs_for_correlation_, mapped_bg_bl, model_settings, err_text);
 
           if (model_settings->getMultizoneBackground() == true)
             Background(parameters[0], wells, estimation_simbox, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
