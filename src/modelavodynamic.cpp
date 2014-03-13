@@ -434,7 +434,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     angle_[i] = seismic_data[i].GetAngle();
 
   //AngulurCorr between angle i and j
-  angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
+  common_data->GetAngularCorrelation(this_timelapse_);
 
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
@@ -627,14 +627,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //local_scale
   //global_noise_estimate
   //sn_ratio
-  const std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs = common_data->GetBlockedLogs();
+  const std::map<std::string, BlockedLogsCommon *> orig_blocked_logs = common_data->GetBlockedLogs();
 
   for (int i = 0; i < number_of_angles_; i++) {
 
     wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
+    std::vector<SeismicStorage> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
-    if (wavelet_estimated[i] == true) { //Reestimate scale and noise with vp/vs for this interval.
-
+    if (wavelet_estimated[i] == true) {
       std::string err_text;
       int error = 0;
       Grid2D * noise_scaled_tmp;
@@ -648,16 +648,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
 
-      if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) {
-
-        std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
+      if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) { //Reestimate scale and noise with vp/vs for this interval.
+        std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
-          BlockedLogsCommon * blocked_log = iter->second;
-
+        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs;
+        Simbox estimation_box = common_data->GetEstimationSimbox();
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = orig_blocked_logs.find(it->first);
+          BlockedLogsCommon * blocked_log = new BlockedLogsCommon(*(iter->second));
+          blocked_log->VolumeFocus(*simbox);
           seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
-          blocked_log->GetBlockedGrid(seis_cubes_[i], seis_logs[w]);
+          blocked_log->GetBlockedGrid(&(orig_seis[i]), &estimation_box, seis_logs[w]);
+          mapped_blocked_logs[iter->first] = blocked_log;
 
           w++;
         }
@@ -699,59 +701,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           w++;
         }
       }
-      else { //3D wavelet
-
-        const std::vector<std::vector<double> > & ref_time_grad_x = common_data->GetTGradX();
-        const std::vector<std::vector<double> > & ref_time_grad_y = common_data->GetTGradY();
-        const NRLib::Grid2D<float>              & t_grad_x        = common_data->GetRefTimeGradX();
-        const NRLib::Grid2D<float>              & t_grad_y        = common_data->GetRefTimeGradY();
-
-        sn_ratio_new = wavelets_[i]->calculateSNRatio(common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
-                                                      &seismic_data[i],
-                                                      mapped_blocked_logs,
-                                                      model_settings,
-                                                      err_text,
-                                                      error,
-                                                      t_grad_x,
-                                                      t_grad_y,
-                                                      ref_time_grad_x,
-                                                      ref_time_grad_y,
-                                                      i, //angle
-                                                      common_data->GetSNRatioTimeLapse(this_timelapse_)[i],
-                                                      true,   //estimateSNRatio
-                                                      false); //estimateWavelet
-      }
-
-      sn_ratio_[i] = sn_ratio_new;
-
-      if (err_text != "" || error > 0) {
-        failed_loading_model = true;
-        LogKit::LogFormatted(LogKit::Error, "\nError when reestimating scale and noise: ");
-        LogKit::LogFormatted(LogKit::Error, "\n"+err_text);
-      }
-
-      if (sn_ratio_[i] < 1.1f) {
-        LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",i+1,sn_ratio_[i]);
-        LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-        LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
-        exit(1);
-      }
-
     }
     else {
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
-
-      //Resample wavelet for this interval
-
-      //H
-      //Want to resample wavelet to this interval-simbox
-      //Get an assert error since inFFTorder_ == true (this is set as true when the wavelet is resampled to estimation_simbox in CommonData).
-      //How to resample the wavelet again?
-
-      //wavelets_[i]->resample(static_cast<float>(simbox->getdz()),
-      //                       simbox->getnz(),
-      //                       simbox->GetNZpad());
-
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
   }

@@ -1811,11 +1811,11 @@ void CommonData::CutWell(std::string           well_file_name,
       if (z_old[i] != RMISSING) {
 
         double top_tmp = top_surf.GetZ(x_old[i], y_old[i]);
-        if (top_tmp = WELLMISSING)
+        if (top_tmp == WELLMISSING)
           top_tmp = top_surf_min;
 
         double bot_tmp = bot_surf.GetZ(x_old[i], y_old[i]);
-        if (bot_tmp = WELLMISSING)
+        if (bot_tmp == WELLMISSING)
           bot_tmp = bot_surf_max;
 
         //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep

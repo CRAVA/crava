@@ -26,6 +26,10 @@ public:
   //                  float               max_hz_background = 0.0,
   //                  float               max_hz_seismic = 0.0);
 
+
+  //Copy constructor
+  BlockedLogsCommon(const BlockedLogsCommon & logs);
+
   // Constructor for correlation estimation blocking
   BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
@@ -254,6 +258,9 @@ public:
                                                       double                         mean_vs_vp,
                                                       int                            n_vs_vp);
 
+  bool                                   VolumeFocus(const NRLib::Volume     & volume); //Sets all observations outside volume to missing.
+                                                                                        //Returns false if none left - in that case, object is not modified.
+
 private:
 
   // FUNCTIONS------------------------------------
@@ -431,6 +438,12 @@ private:
                           float max_hz_seismic);
 
   void    FindXYZForVirtualPart(const Simbox * simbox);
+
+  void    UpdateLog(std::vector<double>                           & data,
+                    const std::vector<std::pair<size_t, size_t> > & intervals);
+
+  void    UpdateLog(std::vector<int>                              & data,
+                    const std::vector<std::pair<size_t, size_t> > & intervals);
 
   // CLASS VARIABLES -----------------------------
 
