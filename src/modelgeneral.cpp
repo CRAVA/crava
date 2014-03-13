@@ -344,10 +344,9 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //Replace wells with blocked_logs
       //blocked_logs_ = common_data->GetBlockedLogs();
 
-      //H-Test Block wells for this interval (works for test-case 6)
+      //H Block well for this interval_simbox (blocked wells in commondata is blocked to estimation_simbox)
+      //  blocked logs need to have the same dimension as simbox in avoinversion and GenerateSyntheticSeismic (test_case 6)
       std::vector<NRLib::Well> & wells = common_data->GetWells();
-      //std::map<std::string, BlockedLogsCommon *> mapped_bl;
-
       for (size_t i = 0; i < wells.size(); i++) {
         BlockedLogsCommon * bl_bg = NULL;
 
@@ -373,8 +372,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
 
         blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
       }
-      //blocked_logs_ = mapped_bl;
-
 
       if(multiple_interval_grid->GetTrendCubes().size() > 0)
         trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);

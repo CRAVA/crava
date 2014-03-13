@@ -1168,7 +1168,6 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
                                 const std::vector<NRLib::Matrix>         & sigmaEOrig,
                                 bool                                       useFilter,
                                 std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                //int                                        nWells,
                                 const std::vector<Surface *>             & faciesEstimInterval,
                                 const double                               dz,
                                 bool                                       relative,
@@ -1507,7 +1506,6 @@ FaciesProb::createExpVol(const Simbox * volume)
 }
 
 void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                                //int                                        nWells,
                                                 const std::vector<Surface *>             & faciesEstimInterval,
                                                 const std::vector<std::string>           & faciesNames,
                                                 const double                               dz)
