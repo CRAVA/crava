@@ -66,10 +66,10 @@ CommonData::CommonData(ModelSettings * model_settings,
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, estimation_simbox_, full_inversion_volume_, err_text);
 
   // 2. read seismic data
-  read_seismic_ = ReadSeismicData(model_settings, input_files, err_text);
+  read_seismic_ = ReadSeismicData(model_settings, input_files, err_text, seismic_data_);
 
   // 3. read well data
-  read_wells_ = ReadWellData(model_settings, &estimation_simbox_, input_files, log_names_, model_settings->getLogNames(),
+  read_wells_ = ReadWellData(model_settings, &estimation_simbox_, input_files, wells_, log_names_, model_settings->getLogNames(),
                              model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
   // 8. Setup of multiple interval grid
@@ -434,9 +434,10 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 }
 
 
-bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
-                                 InputFiles     * input_files,
-                                 std::string    & err_text_common) {
+bool CommonData::ReadSeismicData(ModelSettings                               * model_settings,
+                                 InputFiles                                  * input_files,
+                                 std::string                                 & err_text_common,
+                                 std::map<int, std::vector<SeismicStorage> > & seismic_data) {
 
   std::string err_text = "";
 
@@ -607,7 +608,7 @@ bool CommonData::ReadSeismicData(ModelSettings  * model_settings,
         }
       } //nAngles
 
-      seismic_data_[this_timelapse] = seismic_data_angle;
+      seismic_data[this_timelapse] = seismic_data_angle;
 
     }//ifSeismicFiles
   } //n_timeLapses
@@ -741,6 +742,7 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
 bool CommonData::ReadWellData(ModelSettings                  * model_settings,
                               Simbox                         * estimation_simbox,
                               InputFiles                     * input_files,
+                              std::vector<NRLib::Well>       & wells,
                               std::vector<std::string>       & log_names,
                               const std::vector<std::string> & log_names_from_user,
                               const std::vector<bool>        & inverse_velocity,
@@ -891,7 +893,7 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         if (n_facies > 0)
           CountFaciesInWell(new_well, estimation_simbox, n_facies, facies_nr, facies_count[i]);
 
-        wells_.push_back(new_well);
+        wells.push_back(new_well);
 
         if (model_settings->getFaciesLogGiven())
           facies_log_wells_.push_back(true);
@@ -2483,6 +2485,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
       int n_trace_fft = ((n_trace / 2) + 1)*2;
 
       fftw_real * seis_r    = new fftw_real[n_trace_fft];
+
       fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
 
       for (int kk=0; kk < n_trace; kk++)
@@ -2492,7 +2495,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
 
       float peak_tmp = 0.0;
       float length_tmp = 0.0;
-      for (int kk = 0; kk < n_trace; kk++) {
+      for (int kk = 0; kk < n_trace/2; kk++) {
         //fftw_complex value = seis_c[kk];
         length_tmp = std::sqrt( (seis_c[kk].re)*(seis_c[kk].re) + (seis_c[kk].im)*(seis_c[kk].im) );
         if (length_tmp > peak_tmp && length_tmp != std::numeric_limits<float>::infinity())
@@ -7101,6 +7104,12 @@ bool CommonData::SetupBackgroundModel(ModelSettings  * model_settings,
         if (model_settings->getIntervalNames().size() == 0) {
           std::vector<std::vector<NRLib::Grid<double> *> > & parameters = multiple_interval_grid_->GetBackgroundParameters(); //interval vector(parameter)
 
+          //H changed the creation of background models to interval_simbox since in the inversion the simbox and background model must have the same dimensions
+          //if (model_settings->getMultizoneBackground() == true)
+          //  Background(parameters[0], wells_, multiple_interval_grid_->GetIntervalSimbox(0), model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
+          //else //Neither multizone or multiinterval
+          //  Background(parameters[0], wells_, velocity, multiple_interval_grid_->GetIntervalSimbox(0), bg_simbox, mapped_blocked_logs_for_correlation_, mapped_bg_bl, model_settings, err_text);
+
           if (model_settings->getMultizoneBackground() == true)
             Background(parameters[0], wells_, &estimation_simbox_, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
           else //Neither multizone or multiinterval
@@ -7939,6 +7948,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
   (void) seismic_data, facies_names, prior_facies_prob;
 
+  if (model_settings->getForwardModeling()) //H Added
+    return true;
+
   bool failed                             = false;
   std::string err_text                    = "";
   Analyzelog * analyze_all                = NULL;
@@ -8216,9 +8228,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
     // Delete parameter correlation matrices
 
-    for(int j=0; j<3; j++)
-      delete [] temp_array[j];
-    delete [] temp_array;
+    //H-failed in test_case 18
+    //for(int j=0; j<3; j++)
+    //  delete [] temp_array[j];
+    //delete [] temp_array;
 
 
     if(failed_temp_corr == true || failed_param_cov == true)

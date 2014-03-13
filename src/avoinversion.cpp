@@ -71,12 +71,19 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic_    = modelAVOstatic;
   modelAVOdynamic_   = modelAVOdynamic;
 
-  nx_                = seismicParameters.GetMeanVp()->getNx();
-  ny_                = seismicParameters.GetMeanVp()->getNy();
-  nz_                = seismicParameters.GetMeanVp()->getNz();
-  nxp_               = seismicParameters.GetMeanVp()->getNxp();
-  nyp_               = seismicParameters.GetMeanVp()->getNyp();
-  nzp_               = seismicParameters.GetMeanVp()->getNzp();
+  simbox_            = modelGeneral_->GetTimeSimbox();
+  nx_                = simbox_->getnx();  //H seismicParameters are from background based on estimation_simbox and can differ from seismic data.
+  ny_                = simbox_->getny();
+  nz_                = simbox_->getnz();
+  nxp_               = simbox_->GetNXpad();
+  nyp_               = simbox_->GetNYpad();
+  nzp_               = simbox_->GetNZpad();
+  //nx_                = seismicParameters.GetMeanVp()->getNx();
+  //ny_                = seismicParameters.GetMeanVp()->getNy();
+  //nz_                = seismicParameters.GetMeanVp()->getNz();
+  //nxp_               = seismicParameters.GetMeanVp()->getNxp();
+  //nyp_               = seismicParameters.GetMeanVp()->getNyp();
+  //nzp_               = seismicParameters.GetMeanVp()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see avoinversion.h
@@ -92,7 +99,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   nSim_              = modelSettings_->getNumberOfSimulations();
   //wells_             = modelGeneral_->getWells();
   blocked_wells_     = modelGeneral_->GetBlockedWells();
-  simbox_            = modelGeneral_->GetTimeSimbox();
   random_            = modelGeneral_->GetRandomGen();
   seisWavelet_       = modelAVOdynamic_->GetWavelets();
   A_                 = modelAVOdynamic_->GetAMatrix();
@@ -218,7 +224,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     printEnergyToScreen();
 
     time(&timeend);
-    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);<
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     computePostMeanResidAndFFTCov(modelGeneral, seismicParameters);
 
@@ -1255,15 +1261,15 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     correctVpVsRho(modelSettings_);
   }
 
-  //H-writing
-  //if (doing4DInversion_==false)
-  //{
-  //  if(writePrediction_ == true )
-  //    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-  //                                     outputGridsElastic_, fileGrid_, -1, false);
+  if (doing4DInversion_==false)
+  {
+    //H-Writing
+    //if(writePrediction_ == true )
+    //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+    //                                   outputGridsElastic_, fileGrid_, -1, false);
 
-  //  writeBWPredicted();
-  //}
+    writeBWPredicted();
+  }
 
   //delete [] seisData_;
   delete [] kW;

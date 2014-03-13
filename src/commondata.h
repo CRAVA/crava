@@ -213,14 +213,16 @@ private:
                                  const std::vector<std::string>   & surf_file,
                                  std::string                      & err_text);
 
-  bool ReadSeismicData(ModelSettings  * modelSettings,
-                       InputFiles     * inputFiles,
-                       std::string    & err_text);
+  bool ReadSeismicData(ModelSettings                               * modelSettings,
+                       InputFiles                                  * inputFiles,
+                       std::string                                 & err_text,
+                       std::map<int, std::vector<SeismicStorage> > & seismic_data);
 
   bool ReadWellData(ModelSettings                   * model_settings,
                     Simbox                          * estimation_simbox,
                     InputFiles                      * input_files,
-                    std::vector<std::string>          & log_names,
+                    std::vector<NRLib::Well>        & wells,
+                    std::vector<std::string>        & log_names,
                     const std::vector<std::string>  & log_names_from_user,
                     const std::vector<bool>         & inverse_velocity,
                     bool                              facies_log_given,

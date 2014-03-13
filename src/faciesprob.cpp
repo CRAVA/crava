@@ -2561,9 +2561,9 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
             //r = bw->getRhoSeismicResolution()[i];
           }
           else {
-            a = blocked_log->GetVpSeismicResolution()[i];
-            b = blocked_log->GetVsSeismicResolution()[i];
-            r = blocked_log->GetRhoSeismicResolution()[i];
+            a = blocked_log->GetVpPredicted()[i];
+            b = blocked_log->GetVsPredicted()[i];
+            r = blocked_log->GetRhoPredicted()[i];
             //a = bw->getAlphaPredicted()[i];
             //b = bw->getBetaPredicted()[i];
             //r = bw->getRhoPredicted()[i];

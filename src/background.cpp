@@ -982,9 +982,9 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
 
             //ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
 
-            double vp  = 0;
-            double vs  = 0;
-            double rho = 0;
+            double vp  = 0.0;
+            double vs  = 0.0;
+            double rho = 0.0;
 
             //for (int zone=0; zone<n_intervals; zone++) { //H For Multizone background this is used to create a a weighted vp from all zones (?). In Multiinterval we store vp per interval, remove these weightings?
 
@@ -1008,7 +1008,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
             //H For multinterval. No weightings between intervals, no zone_probability. Check this?
             size_t ind1;
             size_t ind2;
-            double t;
+            double t = 0.0;
 
             vp_zones[i_interval].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
             vp  = vp_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
