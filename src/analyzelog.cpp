@@ -193,7 +193,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
   if (err_txt != "")
     return;
-  
+
   int max_nd;
   CalculateNumberOfLags(n_lags_, max_nd, interval_simbox, err_txt);
 
@@ -357,9 +357,9 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
     //const std::vector<double> x_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetXposBlocked();
     //const std::vector<double> y_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetYposBlocked();
     //const std::vector<double> z_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
-    const std::vector<int>    i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
-    const std::vector<int>    j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
-    const std::vector<int>    k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
+    const std::vector<int>    & i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
+    const std::vector<int>    & j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
+    const std::vector<int>    & k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
 
     std::vector<double> blocked_well_log;
 
@@ -375,7 +375,7 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
       blocked_well_log     = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetRhoBlocked();
       log_nr               = 2;
     }
-    
+
     std::vector<double> mean(nd);
     std::vector<double> mean_max_hz(nd);
 

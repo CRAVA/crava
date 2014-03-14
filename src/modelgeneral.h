@@ -59,24 +59,24 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                             * getTimeSimbox()            const { return simbox_                  ;}
-  RandomGen                                * getRandomGen()             const { return random_gen_              ;}
-  GridMapping                              * getTimeDepthMapping()      const { return time_depth_mapping_      ;}
-  CravaTrend                               & getTrendCubes()                  { return trend_cubes_             ;}
-  CravaTrend                                 getTrendCubes()            const { return trend_cubes_             ;}
-  bool                                       getVelocityFromInversion() const { return velocity_from_inversion_ ;}
-  bool                                       getMultiInterval()         const { return multi_interval_          ;}
-  State4D                                    getState4D()               const { return state4d_                 ;}
-  TimeLine                                 * getTimeLine()              const { return time_line_               ;}
-  std::map<std::string, BlockedLogsCommon *> getBlockedWells()                { return blocked_logs_            ;}
-  const std::vector<float>                 & getPriorFacies()       /*const*/ { return prior_facies_            ;}
-  const std::vector<FFTGrid *>             & getPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
-  const std::vector<std::string>           & getFaciesNames(void)       const { return facies_names_            ;}
-  std::vector<int>                           getFaciesLabel()           const { return facies_labels_           ;}
-  bool                                       getIs4DActive()            const { return(do_4D_inversion_)        ;}
+  const Simbox                             * GetTimeSimbox()            const { return simbox_                  ;}
+  RandomGen                                * GetRandomGen()             const { return random_gen_              ;}
+  GridMapping                              * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
+  CravaTrend                               & GetTrendCubes()                  { return trend_cubes_             ;}
+  CravaTrend                                 GetTrendCubes()            const { return trend_cubes_             ;}
+  bool                                       GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
+  bool                                       GetMultiInterval()         const { return multi_interval_          ;}
+  State4D                                    GetState4D()               const { return state4d_                 ;}
+  TimeLine                                 * GetTimeLine()              const { return time_line_               ;}
+  std::map<std::string, BlockedLogsCommon *> GetBlockedWells()                { return blocked_logs_            ;}
+  const std::vector<float>                 & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>             & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string>           & GetFaciesNames(void)       const { return facies_names_            ;}
+  std::vector<int>                           GetFaciesLabel()           const { return facies_labels_           ;}
+  bool                                       GetIs4DActive()            const { return(do_4D_inversion_)        ;}
 
-  void addFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
-  void addFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
+  void AddFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
+  void AddFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
 
   //Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   //GridMapping              * getTimeCutMapping()        const { return timeCutMapping_         ;}
@@ -114,9 +114,9 @@ public:
   //                                         bool                 isStorm  = true,
   //                                         bool                 nopadding = true);
 
-  std::map<std::string, DistributionsRock *> getRockDistributionTime0() const;
+  std::map<std::string, DistributionsRock *> GetRockDistributionTime0() const;
 
-  static FFTGrid  * createFFTGrid(int nx,
+  static FFTGrid  * CreateFFTGrid(int nx,
                                   int ny,
                                   int nz,
                                   int nxp,
@@ -204,7 +204,7 @@ public:
   //                                                  FFTGrid                                          & vs,
   //                                                  FFTGrid                                          & rho);
 
-  void              calculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
+  void              CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
                                                         const std::vector<float>                         & probability,
                                                         NRLib::Grid2D<double>                            & param_corr,
                                                         std::string                                      & errTxt);
@@ -212,14 +212,14 @@ public:
   void              Complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
   //void              getInitial3DPriorFrom4D(SeismicParametersHolder & seismicParameters);
-  bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
+  bool              Do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
-  void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
+  void              MergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
 
-  void              advanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings);
-  void              lastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
-  void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
-  void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
+  void              AdvanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings);
+  void              LastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
+  void              Dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
+  void              DumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:
   //void              processWells(std::vector<WellData *> & wells,
@@ -260,7 +260,7 @@ private:
                                  NRLib::Vector            & initialMean,
                                  NRLib::Matrix            & initialCov);
 
-  void              calculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+  void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<float>               & probability,
                                                        const std::vector<double>              & trend_position,
                                                        NRLib::Grid2D<double>                  & sigma_sum) const;
@@ -307,29 +307,29 @@ private:
   //                                                const NRLib::Grid2D<double> & covariance,
   //                                                const bool                  & has_trend) const;
 
-  void              setSimboxSurfaces(Simbox                        *& simbox,
+  void              SetSimboxSurfaces(Simbox                        *& simbox,
                                       const std::vector<std::string> & surfFile,
                                       ModelSettings                  * modelSettings,
                                       std::string                    & errText,
                                       bool                           & failed);
-  void              estimateXYPaddingSizes(Simbox         * timeSimbox,
+  void              EstimateXYPaddingSizes(Simbox         * timeSimbox,
                                            ModelSettings *& modelSettings);
-  void              estimateZPaddingSize(Simbox         * timeSimbox,
+  void              EstimateZPaddingSize(Simbox         * timeSimbox,
                                          ModelSettings *& modelSettings);
-  int               setPaddingSize(int    nx,
+  int               SetPaddingSize(int    nx,
                                    double px);
 
-  void              printSettings(ModelSettings    * modelSettings,
+  void              PrintSettings(ModelSettings    * modelSettings,
                                   const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  NRLib::Vector      findPlane(Surface * surf); //Finds plane l2-closest to surface.
+  NRLib::Vector      FindPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface          * createPlaneSurface(const NRLib::Vector & planeParams,
+  Surface          * CreatePlaneSurface(const NRLib::Vector & planeParams,
                                         Surface             * templateSurf);
-  void               writeAreas(const SegyGeometry * areaParams,
+  void               WriteAreas(const SegyGeometry * areaParams,
                                 Simbox             * timeSimbox,
                                 std::string        & text);
-  void               findSmallestSurfaceGeometry(const double   x0,
+  void               FindSmallestSurfaceGeometry(const double   x0,
                                                  const double   y0,
                                                  const double   lx,
                                                  const double   ly,
@@ -338,22 +338,22 @@ private:
                                                  double       & yMin,
                                                  double       & xMax,
                                                  double       & yMax);
-  void              getGeometryFromGridOnFile(const std::string         seismicFile,
+  void              GetGeometryFromGridOnFile(const std::string         seismicFile,
                                               const TraceHeaderFormat * thf,
                                               SegyGeometry           *& geometry,
                                               std::string             & errText);
-  SegyGeometry    * geometryFromCravaFile(const std::string & fileName);
-  SegyGeometry    * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
+  SegyGeometry    * GeometryFromCravaFile(const std::string & fileName);
+  SegyGeometry    * GeometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
   //void            processStructureParameters();
 
-  void              estimateCorrXYFromSeismic(Surface *& CorrXY,
+  void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
                                               FFTGrid ** seisCube,
                                               int numberOfAngles);
   //Surface         * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
 
-  int               computeTime(int year, int month, int day) const;
+  int               ComputeTime(int year, int month, int day) const;
 
-  void              checkFaciesNamesConsistency(ModelSettings     *& modelSettings,
+  void              CheckFaciesNamesConsistency(ModelSettings     *& modelSettings,
                                                 const InputFiles   * inputFiles,
                                                 std::string        & tmpErrText) const;
 
@@ -365,10 +365,10 @@ private:
   //                                           std::string             & errTxt,
   //                                           bool                    & failed);
 
-  void              validateCorrelationMatrix(float              ** C,
+  void              ValidateCorrelationMatrix(float              ** C,
                                               const ModelSettings *  modelSettings,
                                               std::string         &  errTxt);
-  void              makeCorr2DPositiveDefinite(Surface         * corrXY);
+  void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
   const Simbox                  * simbox_;                 ///< Information about simulation area.

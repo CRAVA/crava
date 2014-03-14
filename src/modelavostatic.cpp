@@ -154,8 +154,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     float corr_grad_J = 0.0f;
     common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
-    //H-DEBUGGING
-    //err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
+    err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
     CheckAvailableMemory(simbox, model_settings, input_files);
 
@@ -518,23 +517,23 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
 //    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
 //}
 
-void ModelAVOStatic::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                       ModelSettings                            * model_settings,
-                                       std::vector<std::string>                   facies_name,
-                                       std::vector<int>                           facies_label) const
-{
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
-                           model_settings->getMaxHzBackground(),
-                           model_settings->getMaxHzSeismic(),
-                           facies_name,
-                           facies_label);
-
-  }
-}
+//void ModelAVOStatic::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+//                                       ModelSettings                            * model_settings,
+//                                       std::vector<std::string>                   facies_name,
+//                                       std::vector<int>                           facies_label) const
+//{
+//  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+//    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+//    BlockedLogsCommon * blocked_log = iter->second;
+//
+//    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
+//                           model_settings->getMaxHzBackground(),
+//                           model_settings->getMaxHzSeismic(),
+//                           facies_name,
+//                           facies_label);
+//
+//  }
+//}
 
 //void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
 //                                    FFTGrid              ** seisCube,

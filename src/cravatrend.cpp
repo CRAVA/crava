@@ -77,7 +77,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
         trend_cube->createRealGrid();
         trend_cube->setAccessMode(FFTGrid::WRITE);
 
@@ -99,7 +99,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
         trend_cube->createRealGrid();
         trend_cube->setAccessMode(FFTGrid::WRITE);
 

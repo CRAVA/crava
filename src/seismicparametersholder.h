@@ -39,8 +39,6 @@ public:
   void                          FFTAllGrids();
   void                          updatePriorVar();
 
-  //void                          setPriorVar0(NRLib::Matrix priorVar0)   { priorVar0_ = priorVar0 ;}
-
   void                          setBackgroundParameters(FFTGrid  * meanVp,
                                                         FFTGrid  * meanVs,
                                                         FFTGrid  * meanRho);
@@ -50,25 +48,13 @@ public:
                                                                 int                                         ny_pad,
                                                                 int                                         nz_pad);
 
-  //void                          setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters,
-  //                                               int                                       nx_pad,
-  //                                               int                                       ny_pad,
-  //                                               int                                       nz_pad);
-
-  //void                          setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
-  //                                                 const NRLib::Grid<double> & cr_cov_vp_rho,
-  //                                                 const NRLib::Grid<double> & cr_cov_vs_rho,
-  //                                                 int                         nx_pad,
-  //                                                 int                         ny_pad,
-  //                                                 int                         nz_pad);
-
   void                          copyBackgroundParameters(FFTGrid  * meanVp,
                                                          FFTGrid  * meanVs,
                                                          FFTGrid  * meanRho);
 
-  void                          setCorrelationParameters(float                    ** priorVar0,
-                                                         const std::vector<float>  & priorCorrT,
-                                                         Surface                   * priorCorrXY,
+  void                          setCorrelationParameters(const NRLib::Matrix       & priorVar0,
+                                                         const std::vector<double> & priorCorrT,
+                                                         const Surface             * priorCorrXY,
                                                          const int                 & minIntFq,
                                                          const float               & corrGradI,
                                                          const float               & corrGradJ,
@@ -91,9 +77,9 @@ public:
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real                   * computeCircCorrT(const std::vector<float> & priorCorrT,
-                                                 const int                & minIntFq,
-                                                 const int                & nzp) const;
+  fftw_real                   * computeCircCorrT(const std::vector<double> & priorCorrT,
+                                                 const int                 & minIntFq,
+                                                 const int                 & nzp) const;
 
   fftw_real                   * extractParamCorrFromCovVp(int nzp) const;
 
@@ -124,12 +110,12 @@ public:
 private:
   void                          createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
 
-  void                          initializeCorrelations(const Surface            * priorCorrXY,
-                                                       const std::vector<float> & priorCorrT,
-                                                       const float              & corrGradI,
-                                                       const float              & corrGradJ,
-                                                       const int                & lowIntCut,
-                                                       const int                & nzp);
+  void                          initializeCorrelations(const Surface             * priorCorrXY,
+                                                       const std::vector<double> & priorCorrT,
+                                                       const float               & corrGradI,
+                                                       const float               & corrGradJ,
+                                                       const int                 & lowIntCut,
+                                                       const int                 & nzp);
 
   FFTGrid                     * createFFTGrid(int nx,  int ny,  int nz,
                                               int nxp, int nyp, int nzp,

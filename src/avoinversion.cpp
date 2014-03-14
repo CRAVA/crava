@@ -55,7 +55,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 {
 
 
-  if(modelAVOstatic->getForwardModeling())
+  if(modelAVOstatic->GetForwardModeling())
     LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
   LogKit::WriteHeader("Building Stochastic Model");
@@ -71,17 +71,24 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic_    = modelAVOstatic;
   modelAVOdynamic_   = modelAVOdynamic;
 
-  nx_                = seismicParameters.GetMeanVp()->getNx();
-  ny_                = seismicParameters.GetMeanVp()->getNy();
-  nz_                = seismicParameters.GetMeanVp()->getNz();
-  nxp_               = seismicParameters.GetMeanVp()->getNxp();
-  nyp_               = seismicParameters.GetMeanVp()->getNyp();
-  nzp_               = seismicParameters.GetMeanVp()->getNzp();
+  simbox_            = modelGeneral_->GetTimeSimbox();
+  nx_                = simbox_->getnx();  //H seismicParameters are from background based on estimation_simbox and can differ from seismic data.
+  ny_                = simbox_->getny();
+  nz_                = simbox_->getnz();
+  nxp_               = simbox_->GetNXpad();
+  nyp_               = simbox_->GetNYpad();
+  nzp_               = simbox_->GetNZpad();
+  //nx_                = seismicParameters.GetMeanVp()->getNx();
+  //ny_                = seismicParameters.GetMeanVp()->getNy();
+  //nz_                = seismicParameters.GetMeanVp()->getNz();
+  //nxp_               = seismicParameters.GetMeanVp()->getNxp();
+  //nyp_               = seismicParameters.GetMeanVp()->getNyp();
+  //nzp_               = seismicParameters.GetMeanVp()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see avoinversion.h
   energyTreshold_    = modelSettings_->getEnergyThreshold();
-  ntheta_            = modelAVOdynamic->getNumberOfAngles();
+  ntheta_            = modelAVOdynamic->GetNumberOfAngles();
   doing4DInversion_  = modelSettings->getDo4DInversion();
   fileGrid_          = modelSettings_->getFileGrid();
   outputGridsSeismic_= modelSettings_->getOutputGridsSeismic();
@@ -91,11 +98,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   //nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
   //wells_             = modelGeneral_->getWells();
-  blocked_wells_     = modelGeneral_->getBlockedWells();
-  simbox_            = modelGeneral_->getTimeSimbox();
-  random_            = modelGeneral_->getRandomGen();
-  seisWavelet_       = modelAVOdynamic_->getWavelets();
-  A_                 = modelAVOdynamic_->getAMatrix();
+  blocked_wells_     = modelGeneral_->GetBlockedWells();
+  random_            = modelGeneral_->GetRandomGen();
+  seisWavelet_       = modelAVOdynamic_->GetWavelets();
+  A_                 = modelAVOdynamic_->GetAMatrix();
   meanVp_            = seismicParameters.GetMeanVp();
   meanVs_            = seismicParameters.GetMeanVs();
   meanRho_           = seismicParameters.GetMeanRho();
@@ -115,59 +121,58 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   //errThetaCov_       = new double*[ntheta_];
   sigmamdnew_        = NULL;
 
-  errThetaCov_       = modelAVOdynamic->getErrThetaCov();
-  thetaDeg_          = modelAVOdynamic->getThetaDeg();
+  errThetaCov_       = modelAVOdynamic->GetErrThetaCov();
+  thetaDeg_          = modelAVOdynamic->GetThetaDeg();
   //for (int i=0;i<ntheta_;i++) {
   //  errThetaCov_[i]  = new double[ntheta_];
   //  thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
   //}
-  empSNRatio_        = modelAVOdynamic->getSNRatio();
-  dataVariance_      = modelAVOdynamic->getDataVariance();
-  errorVariance_     = modelAVOdynamic->getErrorVariance();
-  modelVariance_     = modelAVOdynamic->getModelVariance();
-  signalVariance_    = modelAVOdynamic->getSignalVariance();
-  theoSNRatio_       = modelAVOdynamic->getTheoSNRatio();
+  empSNRatio_        = modelAVOdynamic->GetSNRatio();
+  dataVariance_      = modelAVOdynamic->GetDataVariance();
+  errorVariance_     = modelAVOdynamic->GetErrorVariance();
+  modelVariance_     = modelAVOdynamic->GetModelVariance();
+  signalVariance_    = modelAVOdynamic->GetSignalVariance();
+  theoSNRatio_       = modelAVOdynamic->GetTheoSNRatio();
 
   SpatialWellFilter * spatwellfilter = NULL;
 
-  multiinterval_ = modelGeneral->getMultiInterval();
+  multiinterval_ = modelGeneral->GetMultiInterval();
 
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-  if(!modelAVOstatic->getForwardModeling()) {
+  if(!modelAVOstatic->GetForwardModeling()) {
     priorVar0_      = seismicParameters.getPriorVar0();
-    seisData_       = modelAVOdynamic_->getSeisCubes();
-    modelAVOdynamic_->releaseGrids();
+    seisData_       = modelAVOdynamic_->GetSeisCubes();
+    modelAVOdynamic_->ReleaseGrids();
 
-    //H-DEBUGGING
-    //if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
-    //  spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
+    if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
+      spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
 
-    //  FFTGrid * covVp = seismicParameters.GetCovVp();
-    //  covVp->setAccessMode(FFTGrid::RANDOMACCESS);
+      FFTGrid * covVp = seismicParameters.GetCovVp();
+      covVp->setAccessMode(FFTGrid::RANDOMACCESS);
 
-    //  int i = 0;
-    //  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
-    //    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
-    //    BlockedLogsCommon * blocked_log = iter->second;
+      int i = 0;
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
 
-    //    spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
-    //    i++;
-    //  }
+        spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
+        i++;
+      }
 
-    //  covVp->endAccess();
-    //}
+      covVp->endAccess();
+    }
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
     //Do not write correlation grids with multiple intervals
-    float dt = static_cast<float>(modelGeneral->getTimeSimbox()->getdz());
+    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
     if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multiinterval_ == false)
       seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
-    errCorr_ = modelAVOstatic->getErrCorr();
+    errCorr_ = modelAVOstatic->GetErrCorr();
 
     for (int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -192,7 +197,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       seisData_[i]->endAccess();
     }
 
-    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->getUseLocalNoise())
+    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->GetUseLocalNoise())
     {
       meanVp2_  = copyFFTGrid(meanVp_);
       meanVs2_  = copyFFTGrid(meanVs_);
@@ -204,7 +209,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     meanRho_->fftInPlace();
   }
   else{
-    modelAVOdynamic_->releaseGrids();
+    modelAVOdynamic_->ReleaseGrids();
   }
 
   Timings::setTimeStochasticModel(wall,cpu);
@@ -227,12 +232,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     if(modelSettings->getNumberOfSimulations() > 0)
-      simulate(seismicParameters, modelGeneral->getRandomGen());
+      simulate(seismicParameters, modelGeneral->GetRandomGen());
 
     seismicParameters.invFFTCovGrids();
     seismicParameters.updatePriorVar();
 
-    if (!modelAVOdynamic->getUseLocalNoise()) {// Already done in crava.cpp if local noise
+    if (!modelAVOdynamic->GetUseLocalNoise()) {// Already done in crava.cpp if local noise
       postVar0_     = seismicParameters.getPriorVar0(); //Updated variables
       postCovVp00_  = seismicParameters.createPostCov00(seismicParameters.GetCovVp());
       postCovVs00_  = seismicParameters.createPostCov00(seismicParameters.GetCovVs());
@@ -240,22 +245,21 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
-    //H
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
-      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-      seismicParameters.writeFilePostCovGrids(modelGeneral->getTimeSimbox());
-    }
+    //H-Writing
+    //if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
+    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
+    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
+    //}
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-    if(modelAVOdynamic->getUseLocalNoise()==true)
-      activeAngles = modelAVOdynamic->getNumberOfAngles();
+    if(modelAVOdynamic->GetUseLocalNoise()==true)
+      activeAngles = modelAVOdynamic->GetNumberOfAngles();
     if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      spatwellfilter->doFiltering(modelGeneral->getBlockedWells(), //modelGeneral->getWells()
-                                  //modelSettings->getNumberOfWells(),
+      spatwellfilter->doFiltering(modelGeneral->GetBlockedWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
                                   this,
-                                  modelAVOdynamic->getLocalNoiseScales(),
+                                  modelAVOdynamic->GetLocalNoiseScales(),
                                   seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
@@ -270,13 +274,13 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // Temporary placement.
     //
 
-    //H Writing of wells? Why is this done for each timelapse?
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
-      modelAVOstatic->WriteBlockedWells(modelGeneral->getBlockedWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
-    }
-    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
-    }
+    //H-Writing of wells: Why is this done for each timelapse? Move to after multiinterval
+    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
+    //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
+    //}
+    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
+    //  LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
+    //}
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
@@ -1006,7 +1010,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   FFTGrid * postCrCovVpRho = seismicParameters.GetCrCovVpRho();
   FFTGrid * postCrCovVsRho = seismicParameters.GetCrCovVsRho();
 
-  if (modelGeneral->getIs4DActive() == true) {
+  if (modelGeneral->GetIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
     sigma[0] = postCovVp;
     sigma[1] = postCrCovVpVs;
@@ -1014,7 +1018,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     sigma[3] = postCovVs;
     sigma[4] = postCrCovVsRho;
     sigma[5] = postCovRho;
-    modelGeneral->mergeCovariance(sigma); //To avoid a second FFT of these.
+    modelGeneral->MergeCovariance(sigma); //To avoid a second FFT of these.
   }
   else
     seismicParameters.FFTCovGrids();
@@ -1226,12 +1230,12 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it. //True implies multiinterval not used
+  if (modelGeneral_->GetVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it. //True implies multiinterval not used
     LogKit::WriteHeader("Setup time-to-depth relationship");
     LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
     postVp_->expTransf();
-    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
+    GridMapping       * tdMap      = modelGeneral_->GetTimeDepthMapping();
     //const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping(); //H Should be covered by the new simbox format. Need to change inside tdMap->setMappingFromVelocity?
     const Simbox      * timeSimbox = simbox_;
     //if(dcMap != NULL)
@@ -1243,7 +1247,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if (modelAVOdynamic_->getUseLocalNoise()) {
+  if (modelAVOdynamic_->GetUseLocalNoise()) {
     seismicParameters.invFFTCovGrids();
     seismicParameters.updatePriorVar();
 
@@ -1259,9 +1263,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
   if (doing4DInversion_==false)
   {
-    if(writePrediction_ == true )
-      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-                                       outputGridsElastic_, fileGrid_, -1, false);
+    //H-Writing
+    //if(writePrediction_ == true )
+    //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+    //                                   outputGridsElastic_, fileGrid_, -1, false);
 
     writeBWPredicted();
   }
@@ -1426,8 +1431,9 @@ AVOInversion::doPredictionKriging(SeismicParametersHolder & seismicParameters)
     TimeKit::getTime(wall2,cpu2);
     doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_);
     Timings::setTimeKrigingPred(wall2,cpu2);
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-                                     outputGridsElastic_, fileGrid_, -1, true);
+    //H-Writing
+    //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+    //                                 outputGridsElastic_, fileGrid_, -1, true);
   }
 }
 
@@ -1562,7 +1568,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace();
 
-          if(modelAVOdynamic_->getUseLocalNoise()==true)
+          if(modelAVOdynamic_->GetUseLocalNoise()==true)
           {
             float vp, vs, rho;
             float vpnew, vsnew, rhonew;
@@ -1598,10 +1604,13 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           }
 
           //Only write simulated results if there is one interval
-          if(multiinterval_ == false) {
-            ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-                                             outputGridsElastic_, fileGrid_, simNr, kriging);
-          }
+          //H-Writing not working, need to change so it uses the new simboxes instead of timecutmapping (CRA-653)
+          //  Also move it to after multiinterval is ready for writing.
+          //if(multiinterval_ == false) {
+          //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
+          //                                   outputGridsElastic_, fileGrid_, simNr, kriging);
+          //}
+
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     }
@@ -1918,14 +1927,14 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
-    std::vector<std::string> facies_names = modelGeneral_->getFaciesNames();
+    std::vector<std::string> facies_names = modelGeneral_->GetFaciesNames();
     int nfac = static_cast<int>(facies_names.size());
-    if(modelGeneral_->getPriorFacies().size() != 0){
+    if(modelGeneral_->GetPriorFacies().size() != 0){
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       LogKit::LogFormatted(LogKit::Low,"\n");
       LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
       LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-      const std::vector<float> priorFacies = modelGeneral_->getPriorFacies();
+      const std::vector<float> priorFacies = modelGeneral_->GetPriorFacies();
       for (int i=0 ; i<nfac; i++) {
         LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names[i].c_str(),priorFacies[i]);
       }
@@ -1988,27 +1997,26 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       //float corrGradI, corrGradJ; //H Not used?
       //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
 
-      FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      FindSamplingMinMax(modelGeneral_->GetTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(meanVp2_,
                               meanVs2_,
                               meanRho2_,
                               nfac,
                               modelSettings->getPundef(),
-                              modelGeneral_->getPriorFacies(),
-                              modelGeneral_->getPriorFaciesCubes(),
+                              modelGeneral_->GetPriorFacies(),
+                              modelGeneral_->GetPriorFaciesCubes(),
                               likelihood,
-                              modelGeneral_->getRockDistributionTime0(),
-                              modelGeneral_->getFaciesNames(),
-                              modelAVOstatic_->getFaciesEstimInterval(),
+                              modelGeneral_->GetRockDistributionTime0(),
+                              modelGeneral_->GetFaciesNames(),
+                              modelAVOstatic_->GetFaciesEstimInterval(),
                               this,
                               seismicParameters,
-                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelAVOdynamic_->GetLocalNoiseScales(),
                               modelSettings_,
                               filteredlogs,
                               blocked_wells_,
-                              modelGeneral_->getTrendCubes(),
-                              //nWells_,
+                              modelGeneral_->GetTrendCubes(),
                               simbox_->getdz(),
                               useFilter,
                               true,
@@ -2029,26 +2037,26 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;
-      FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+      FindSamplingMinMax(modelGeneral_->GetTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(postVp_,
                               postVs_,
                               postRho_,
                               nfac,
                               modelSettings->getPundef(),
-                              modelGeneral_->getPriorFacies(),
-                              modelGeneral_->getPriorFaciesCubes(),
+                              modelGeneral_->GetPriorFacies(),
+                              modelGeneral_->GetPriorFaciesCubes(),
                               likelihood,
-                              modelGeneral_->getRockDistributionTime0(),
-                              modelGeneral_->getFaciesNames(),
-                              modelAVOstatic_->getFaciesEstimInterval(),
+                              modelGeneral_->GetRockDistributionTime0(),
+                              modelGeneral_->GetFaciesNames(),
+                              modelAVOstatic_->GetFaciesEstimInterval(),
                               this,
                               seismicParameters,
-                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelAVOdynamic_->GetLocalNoiseScales(),
                               modelSettings_,
                               filteredlogs,
                               blocked_wells_,
-                              modelGeneral_->getTrendCubes(),
+                              modelGeneral_->GetTrendCubes(),
                               //nWells_,
                               simbox_->getdz(),
                               useFilter,
@@ -2062,7 +2070,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     if(!modelSettings->getFaciesProbFromRockPhysics()){
       fprob_->calculateConditionalFaciesProb(blocked_wells_, //wells_
                                              //nWells_,
-                                             modelAVOstatic_->getFaciesEstimInterval(),
+                                             modelAVOstatic_->GetFaciesEstimInterval(),
                                              facies_names,
                                              simbox_->getdz());
     }
@@ -2081,8 +2089,8 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
     }
 
-    fprob_->calculateFaciesProbGeomodel(modelGeneral_->getPriorFacies(),
-                                        modelGeneral_->getPriorFaciesCubes());
+    fprob_->calculateFaciesProbGeomodel(modelGeneral_->GetPriorFacies(),
+                                        modelGeneral_->GetPriorFaciesCubes());
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for (int i=0;i<nfac;i++)
@@ -2094,7 +2102,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     }
     if(modelSettings->getFaciesProbFromRockPhysics() == false) {
       fprob_->writeBWFaciesProb(blocked_wells_);
-      std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, modelAVOstatic_->getFaciesEstimInterval());
+      std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, modelAVOstatic_->GetFaciesEstimInterval());
 
       if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
         QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, modelGeneral_);
@@ -2103,7 +2111,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     if(likelihood != NULL) {
       for (int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
-                                              modelGeneral_->getPriorFacies(), modelGeneral_->getPriorFaciesCubes());
+                                              modelGeneral_->GetPriorFacies(), modelGeneral_->GetPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + facies_names[i];
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         delete grid;
@@ -2423,10 +2431,10 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   else
     sigmamdnew_ = NULL;
 
-  std::vector<double> minScale(modelAVOdynamic_->getNumberOfAngles());
+  std::vector<double> minScale(modelAVOdynamic_->GetNumberOfAngles());
 
-  for (int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
-    minScale[angle] = modelAVOdynamic_->getLocalNoiseScale(angle)->FindMin(RMISSING);
+  for (int angle=0;angle<modelAVOdynamic_->GetNumberOfAngles();angle++)
+    minScale[angle] = modelAVOdynamic_->GetLocalNoiseScale(angle)->FindMin(RMISSING);
 
   postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
   postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2439,9 +2447,9 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   {
     for (j=0;j<ny_;j++)
     {
-      NRLib::Vector scales(modelAVOdynamic_->getNumberOfAngles());
-      for (int angle=0 ; angle<modelAVOdynamic_->getNumberOfAngles() ; angle++)
-        scales(angle) = (*(modelAVOdynamic_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
+      NRLib::Vector scales(modelAVOdynamic_->GetNumberOfAngles());
+      for (int angle=0 ; angle<modelAVOdynamic_->GetNumberOfAngles() ; angle++)
+        scales(angle) = (*(modelAVOdynamic_->GetLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
       newPosteriorCovPointwise(sigmanew,
                                G,

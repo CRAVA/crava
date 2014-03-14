@@ -230,11 +230,11 @@ public:
                                                           int         n_facies,
                                                           int         block_index);
 
-  void                                   WriteWell(int                      formats,
-                                                   float                    max_hz_background,
-                                                   float                    max_hz_seismic,
-                                                   std::vector<std::string> facies_name,
-                                                   std::vector<int>         facies_label);
+  void                                   WriteWell(const int                        formats,
+                                                   const float                      max_hz_background,
+                                                   const float                      max_hz_seismic,
+                                                   const std::vector<std::string> & facies_name,
+                                                   const std::vector<int>         & facies_label);
 
   void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
                                                                   int                     n_angles,
@@ -429,13 +429,13 @@ private:
                                          int                                                & n_blocks_with_data_tot,
                                          int                                                  n_intervals) const;
 
-  void    WriteRMSWell(float                    max_hz_background,
-                       float                    max_hz_seismic,
-                       std::vector<std::string> facies_name,
-                       std::vector<int>         facies_label);
+  void    WriteRMSWell(const float                      max_hz_background,
+                       const float                      max_hz_seismic,
+                       const std::vector<std::string> & facies_name,
+                       const std::vector<int>         & facies_label);
 
-  void    WriteNorsarWell(float max_hz_background,
-                          float max_hz_seismic);
+  void    WriteNorsarWell(const float max_hz_background,
+                          const float max_hz_seismic);
 
   void    FindXYZForVirtualPart(const Simbox * simbox);
 

@@ -78,31 +78,6 @@ SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib
   meanRho_ = new FFTGrid(mean_parameters[2], nx_pad, ny_pad, nz_pad);
 }
 
-//void
-//SeismicParametersHolder::setCovParameters(const std::vector<NRLib::Grid<double> > & cov_parameters,
-//                                          int                                       nx_pad,
-//                                          int                                       ny_pad,
-//                                          int                                       nz_pad)
-//{
-//  covVp_  = new FFTGrid(cov_parameters[0], nx_pad, ny_pad, nz_pad);
-//  covVs_  = new FFTGrid(cov_parameters[1], nx_pad, ny_pad, nz_pad);
-//  covRho_ = new FFTGrid(cov_parameters[2], nx_pad, ny_pad, nz_pad);
-//}
-
-//void
-//SeismicParametersHolder::setCrCovParameters(const NRLib::Grid<double> & cr_cov_vp_vs,
-//                                            const NRLib::Grid<double> & cr_cov_vp_rho,
-//                                            const NRLib::Grid<double> & cr_cov_vs_rho,
-//                                            int                         nx_pad,
-//                                            int                         ny_pad,
-//                                            int                         nz_pad)
-//{
-//  crCovVpVs_  = new FFTGrid(cr_cov_vp_vs,  nx_pad, ny_pad, nz_pad);
-//  crCovVpRho_ = new FFTGrid(cr_cov_vp_rho, nx_pad, ny_pad, nz_pad);
-//  crCovVsRho_ = new FFTGrid(cr_cov_vs_rho, nx_pad, ny_pad, nz_pad);
-//}
-
-
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
@@ -126,9 +101,9 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
 
 
 void
-SeismicParametersHolder::setCorrelationParameters(float                    ** priorVar0,
-                                                  const std::vector<float>  & priorCorrT,
-                                                  Surface                   * priorCorrXY,
+SeismicParametersHolder::setCorrelationParameters(const NRLib::Matrix       & priorVar0,
+                                                  const std::vector<double> & priorCorrT,
+                                                  const Surface             * priorCorrXY,
                                                   const int                 & minIntFq,
                                                   const float               & corrGradI,
                                                   const float               & corrGradJ,
@@ -139,39 +114,40 @@ SeismicParametersHolder::setCorrelationParameters(float                    ** pr
                                                   const int                 & nyPad,
                                                   const int                 & nzPad)
 {
-  priorVar0_.resize(3,3);
+  //priorVar0_.resize(3,3);
+  priorVar0_ = priorVar0;
 
-  priorVar0_(0,0) = static_cast<double>(priorVar0[0][0]);
-  priorVar0_(1,0) = static_cast<double>(priorVar0[1][0]);
-  priorVar0_(2,0) = static_cast<double>(priorVar0[2][0]);
-  priorVar0_(0,1) = static_cast<double>(priorVar0[0][1]);
-  priorVar0_(1,1) = static_cast<double>(priorVar0[1][1]);
-  priorVar0_(2,1) = static_cast<double>(priorVar0[2][1]);
-  priorVar0_(0,2) = static_cast<double>(priorVar0[0][2]);
-  priorVar0_(1,2) = static_cast<double>(priorVar0[1][2]);
-  priorVar0_(2,2) = static_cast<double>(priorVar0[2][2]);
+  //priorVar0_(0,0) = static_cast<double>(priorVar0[0][0]);
+  //priorVar0_(1,0) = static_cast<double>(priorVar0[1][0]);
+  //priorVar0_(2,0) = static_cast<double>(priorVar0[2][0]);
+  //priorVar0_(0,1) = static_cast<double>(priorVar0[0][1]);
+  //priorVar0_(1,1) = static_cast<double>(priorVar0[1][1]);
+  //priorVar0_(2,1) = static_cast<double>(priorVar0[2][1]);
+  //priorVar0_(0,2) = static_cast<double>(priorVar0[0][2]);
+  //priorVar0_(1,2) = static_cast<double>(priorVar0[1][2]);
+  //priorVar0_(2,2) = static_cast<double>(priorVar0[2][2]);
 
 
   // check if covariance is well conditioned and robustify
-  NRLib::Vector eVals(3);
-  NRLib::Matrix eVec(3,3);
-  NRLib::Matrix tmp(3,3);
-  tmp=priorVar0_;
-  NRLib::ComputeEigenVectors(tmp,eVals,eVec);
+  //NRLib::Vector eVals(3);
+  //NRLib::Matrix eVec(3,3);
+  //NRLib::Matrix tmp(3,3);
+  //tmp=priorVar0_;
+  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
 
-  double maxVal = eVals(0);
+  //double maxVal = eVals(0);
 
-  for(int i=1;i<3;i++)
-    if(maxVal<eVals(i))
-      maxVal=eVals(i);
+  //for(int i=1;i<3;i++)
+  //  if(maxVal<eVals(i))
+  //    maxVal=eVals(i);
 
-  for(int k=0;k<3;k++){
-    if(eVals(k)<maxVal*0.001){
-      for(int i=0;i<3;i++)
-        for(int j=0;j<3;j++)
-          priorVar0_(i,j)+= eVec(k,i)*eVec(k,j)*(maxVal*0.0011-eVals(k));
-    }
-  }
+  //for(int k=0;k<3;k++){
+  //  if(eVals(k)<maxVal*0.001){
+  //    for(int i=0;i<3;i++)
+  //      for(int j=0;j<3;j++)
+  //        priorVar0_(i,j)+= eVec(k,i)*eVec(k,j)*(maxVal*0.0011-eVals(k));
+  //  }
+  //}
   //tmp=priorVar0_;
   //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
 
@@ -231,12 +207,12 @@ SeismicParametersHolder::createFFTGrid(int nx,  int ny,  int nz,
 }
 //-------------------------------------------------------------------
 void
-SeismicParametersHolder::initializeCorrelations(const Surface            * priorCorrXY,
-                                                const std::vector<float> & priorCorrT,
-                                                const float              & corrGradI,
-                                                const float              & corrGradJ,
-                                                const int                & lowIntCut,
-                                                const int                & nzp)
+SeismicParametersHolder::initializeCorrelations(const Surface             * priorCorrXY,
+                                                const std::vector<double> & priorCorrT,
+                                                const float               & corrGradI,
+                                                const float               & corrGradJ,
+                                                const int                 & lowIntCut,
+                                                const int                 & nzp)
 {
   fftw_real * circCorrT = computeCircCorrT(priorCorrT, lowIntCut, nzp);
 
@@ -271,9 +247,9 @@ SeismicParametersHolder::allocateGrids(const int nx, const int ny, const int nz,
 {
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  meanVp_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  meanVs_  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
-  meanRho_ = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVp_  = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanVs_  = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
+  meanRho_ = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
   meanVp_ ->setType(FFTGrid::PARAMETER);
   meanVs_ ->setType(FFTGrid::PARAMETER);
@@ -465,9 +441,9 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 
 //--------------------------------------------------------------------
 fftw_real *
-SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT,
-                                          const int                & minIntFq,
-                                          const int                & nzp) const
+SeismicParametersHolder::computeCircCorrT(const std::vector<double> & priorCorrT,
+                                          const int                 & minIntFq,
+                                          const int                 & nzp) const
 {
   assert(priorCorrT[0] != 0);
 
@@ -485,7 +461,7 @@ SeismicParametersHolder::computeCircCorrT(const std::vector<float> & priorCorrT,
         refk = nzp - k;
 
       if(refk < n)
-        circCorrT[k] = priorCorrT[refk];
+        circCorrT[k] = static_cast<fftw_real>(priorCorrT[refk]);
       else
         circCorrT[k] = 0.0;
     }

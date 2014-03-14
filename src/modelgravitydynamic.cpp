@@ -171,7 +171,7 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
 
   const Simbox * fullSizeTimeSimbox = NULL;
   if(simbox == NULL)
-    fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
+    fullSizeTimeSimbox = modelGeneral_->GetTimeSimbox();
   else
     fullSizeTimeSimbox = simbox;
 
