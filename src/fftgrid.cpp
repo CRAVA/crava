@@ -1094,9 +1094,7 @@ void
 FFTGrid::fillInTimeCov(const fftw_real * circCorrT)
 {
   assert(istransformed_== false);
-
-  int baseK,cycleI,cycleJ;
-  float value,subK;
+  float value;
 
   setAccessMode(WRITE);
   for(int k = 0; k < nzp_; k++) {
@@ -1412,7 +1410,7 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
   // k index in z direction
   float value;
 
-  // assert(istransformed_==false);
+  assert(istransformed_==false);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
     ((i < nx_) && (j < ny_) && (k < nz_)));

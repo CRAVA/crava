@@ -331,10 +331,15 @@ private:
                                                   Simbox                    *& new_simbox,
                                                   std::string                & errTxt) const;
 
-  void                          generateResampleGrid(const NRLib::Grid<double> & distance,
+  void                          generateResampleGrid(const NRLib::Grid<double> & v2v1,
                                                      const Simbox              * old_simbox,
                                                      const Simbox              * new_simbox,
                                                      NRLib::Grid<double>       & resample_grid) const;
+
+  FFTGrid *                    generateResampleAveragePreserve( FFTGrid        * v2v0_1,          //  v2v0  contains Vp_2(t1)/Vp_0(t1)    in the previous timeframe (t1)
+                                                          const FFTGrid        * v1v0_1,          //  v1v0_1  contains Vp_1(t1)/Vp_0(t1)  in the previous timeframe (t1)
+                                                          const Simbox         * simbox1,         //  simbox in the previous timeframe (t1)
+                                                          const Simbox         * simbox2) const;  //  simbox in the current timeframe (t2)
 
   void                          calculateBaseSurface(const NRLib::Grid<double> & distance,
                                                      const Simbox              * simbox,

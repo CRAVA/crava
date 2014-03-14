@@ -133,6 +133,7 @@ void State4D::setRelativeGridBase(int nx, int ny, int nz, int nxPad, int nyPad, 
 {
   velocity_relative_to_base_= new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
   velocity_relative_to_base_->fillInConstant(1.0f,true);
+  velocity_relative_to_base_->setType(FFTGrid::PARAMETER);
 }
 
 
@@ -580,7 +581,7 @@ void State4D::split(SeismicParametersHolder & current_state )
 void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
 {
   // parameterNumber: 0 = VpStatic, 1=VsStatic 2 = RhoStatic, 3 = VpDynamic, 4=VsDynamic 5 = RhoDynamic
-  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...\n");
+  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...");
   // initializing
   assert(allGridsAreTransformed());
   for(int i = 0; i<3; i++){
@@ -772,6 +773,7 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
   delete [] sigmaFullPrior;
   delete [] sigmaFullPosterior;
   delete [] sigmaFullVsCurrentPrior;
+  LogKit::LogFormatted(LogKit::Low, "done.\n");
 
 }
 

@@ -46,7 +46,7 @@ public:
 
   void   merge(SeismicParametersHolder & current_state );
   void   updateWithSingleParameter(FFTGrid * Epost, FFTGrid * CovPost, int parameterNumber);
-  void   updateAllignment(FFTGrid* mu_log_vp_dynamic);
+  void   updateAllignment(FFTGrid* new_vp_relative_to_base);
   void   mergeCov(std::vector<FFTGrid * > & sigma);
   void   split(SeismicParametersHolder & current_state );
   void   evolve(int time_step, const TimeEvolution & timeEvolution );

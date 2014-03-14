@@ -4021,7 +4021,8 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-      makeCorr2DPositiveDefinite( priorCorrXY_); //NBNB OK disturbes testsuite comment out
+      if(getIs4DActive() )
+        makeCorr2DPositiveDefinite( priorCorrXY_);   //NBNB OK  should remove if(getIs4DActive() ), but this disturbes test suite
 
       seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
@@ -4779,9 +4780,9 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
 }
 
 void
-ModelGeneral::updateState4DAllignment(FFTGrid* mu_log_vp_dynamic)
+ModelGeneral::updateState4DAllignment(FFTGrid* new_vp_relative_to_base)
 {
-  state4d_.updateAllignment(mu_log_vp_dynamic);
+  state4d_.updateAllignment(new_vp_relative_to_base);
 }
 
 
@@ -4827,6 +4828,21 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
     delete timeSimbox_;
 
   timeSimbox_ = new Simbox(new_timeSimbox);
+  double zmin,zmax;
+
+  timeSimbox_->getMinMaxZ(zmin,zmax);
+  LogKit::LogFormatted(LogKit::Low,"\nNew time interval:\n");
+  LogKit::LogFormatted(LogKit::Low,"  Absolute time limits avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       zmin+ timeSimbox_->getlz()* timeSimbox_->getAvgRelThick()*0.5,
+                       zmin, zmax);
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       timeSimbox_->getlz()*timeSimbox_->getAvgRelThick(),
+                        timeSimbox_->getlz()*timeSimbox_->getMinRelThick(),
+                        timeSimbox_->getlz());
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
+                        timeSimbox_->getdz()*timeSimbox_->getAvgRelThick(),
+                        timeSimbox_->getdz()*timeSimbox_->getMinRelThick(),
+                        timeSimbox_->getdz());
 }
 
 void

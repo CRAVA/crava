@@ -47,7 +47,6 @@ public:
   ~ModelGeneral();
 
   Simbox                   * getTimeSimbox()            const { return timeSimbox_             ;}
- // Simbox                   * getTimeSimboxInitial()     const { return timeSimboxInitial_      ;}
   Simbox                   * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   RandomGen                * getRandomGen()             const { return randomGen_              ;}
   GridMapping              * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
