@@ -5607,7 +5607,7 @@ void ModelGeneral::CheckFaciesNamesConsistency(ModelSettings     *& model_settin
 
 void
 ModelGeneral::SetupState4D(SeismicParametersHolder & seismicParameters,
-                           Simbox                  * simbox,
+                           const Simbox            * simbox,
                            State4D                 & state4d,
                            NRLib::Vector           & initialMean,
                            NRLib::Matrix           & initialCov)

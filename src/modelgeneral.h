@@ -256,7 +256,7 @@ private:
   //                                      NRLib::Matrix            & initialCov);
 
   void              SetupState4D(SeismicParametersHolder & seismicParameters,
-                                 Simbox                  * simbox,
+                                 const Simbox            * simbox,
                                  State4D                 & state4d,
                                  NRLib::Vector           & initialMean,
                                  NRLib::Matrix           & initialCov);
@@ -372,7 +372,7 @@ private:
   void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  Simbox                  * simbox_;                 ///< Information about simulation area.
+  const Simbox                  * simbox_;                 ///< Information about simulation area.
 
   RandomGen               * random_gen_;             ///< Random generator.
 
