@@ -435,9 +435,9 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            * bg
 
       std::string err_text_tmp = "";
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
       if (err_text_tmp != "") {
         err_text += err_text_tmp;
@@ -648,9 +648,9 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
 
       std::string err_text_tmp = "";
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
       if (err_text_tmp != "") {
         err_text += err_text_tmp;
@@ -754,15 +754,12 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
 
 
     //H model_settings->getSurfaceUncertainty() only given with multizone background not background created in a multi interval settings
-    // The part with zone_probability is removed. Temporary solution, send in vector with zero uncertainty. H-TODO: Rewrite MakeMultiIntervalBackground
-    std::vector<double> surface_uncertainty(n_intervals+1, 0.0);
-
+    // The part with zone_probability is removed.
     MakeMultiIntervalBackground(parameters,
                                 vp_zones, vs_zones, rho_zones,
                                 multiple_interval_grid,
                                 surfaces,
-                                model_settings->getSurfaceUncertainty(),
-                                model_settings->getFileGrid(),
+                                //model_settings->getSurfaceUncertainty(),
                                 "multiinterval");
 
 
@@ -773,7 +770,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
                                      vp_zones, vs_zones, rho_zones,
                                      multiple_interval_grid,
                                      surfaces,
-                                     model_settings->getSurfaceUncertainty(),
+                                     //model_settings->getSurfaceUncertainty(),
                                      model_settings->getFileGrid());
 
     }
@@ -904,8 +901,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
                                         const std::vector<StormContGrid>                 & rho_zones,
                                         MultiIntervalGrid                                * multiple_interval_grid,
                                         std::vector<const NRLib::Surface<double> *>        surfaces,
-                                        const std::vector<double>                        & surface_uncertainty,
-                                        const bool                                         is_file,
+                                        //const std::vector<double>                        & surface_uncertainty,
                                         const std::string                                & type) const
 {
 
@@ -923,7 +919,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
     int ny = simbox->getny();
     int nz = simbox->getnz();
 
-    const int nxp  = nx;
+    //const int nxp  = nx;
     const int nyp  = ny;
     const int nzp  = nz;
     const int rnxp = nx; //2*(nxp/2 + 1);
@@ -1651,8 +1647,7 @@ Background::getWellTrends(std::vector<std::vector<double> >          & well_tren
 
 //---------------------------------------------------------------------------
 void
-Background::getWellTrendsZone(const ModelSettings               * model_settings,
-                              std::vector<BlockedLogsCommon *>  & bl,
+Background::getWellTrendsZone(std::vector<BlockedLogsCommon *>  & bl,
                               std::vector<std::vector<double> > & well_trend,
                               std::vector<std::vector<double> > & high_cut_well_trend,
                               const std::vector<NRLib::Well>    & wells,
@@ -1672,7 +1667,7 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
   for (int w = 0; w < n_wells; w++) {
     if (hit_zone[w] == true) {
 
-      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone); //model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
+      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone);
       n_valid_wells_in_zone++;
     }
     else
@@ -1850,7 +1845,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
                                            std::vector<StormContGrid>                & rho_trend_zone,
                                            MultiIntervalGrid                         * multiple_interval_grid,
                                            std::vector<const NRLib::Surface<double> *> surfaces,
-                                           const std::vector<double>                 & surface_uncertainty,
+                                           //const std::vector<double>                 & surface_uncertainty,
                                            const bool                                  is_file) const
 {
   int n_intervals = multiple_interval_grid->GetNIntervals();
@@ -1871,14 +1866,14 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
                               rho_trend_zone,
                               multiple_interval_grid,
                               surfaces,
-                              surface_uncertainty,
-                              is_file,
+                              //surface_uncertainty,
+                              //is_file,
                               "trend in multiinterval");
 
-  for (int i=0; i < n_intervals; i++) {
+  //for (int i=0; i < n_intervals; i++) {
 
-    std::string interval_name = multiple_interval_grid->GetIntervalName(i);
-    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
+  //  std::string interval_name = multiple_interval_grid->GetIntervalName(i);
+  //  const Simbox * simbox     = multiple_interval_grid->GetIntervalSimbox(i);
 
     //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp[i], true, is_file);
     //FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs[i], true, is_file);
@@ -1900,7 +1895,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
     //delete trend_vs[i];
     //delete trend_rho[i];
 
-  }
+  //}
 }
 
 //-------------------------------------------------------------------------------
@@ -2676,7 +2671,7 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
                                     const Simbox        * time_simbox,
                                     const ModelSettings * model_settings)
 {
-  bool is_file = model_settings->getFileGrid();
+  //bool is_file = model_settings->getFileGrid();
 
   //H Writing of grids missing
   //if ((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {

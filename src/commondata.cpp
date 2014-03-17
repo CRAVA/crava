@@ -160,7 +160,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   // 14. Set up TimeLine class
-  setup_timeline_ = SetupTimeLine(model_settings, input_files, err_text);
+  setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
 
   // 15. Data for gravity inversion
   setup_gravity_inversion_ = SetupGravityInversion(model_settings, input_files, err_text);
@@ -170,14 +170,14 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 17. Depth Conversion
   if (multiple_interval_grid_->GetNIntervals() == 1 && model_settings->getDoDepthConversion())
-    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, err_text);
+    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, &estimation_simbox_, time_depth_mapping_, err_text);
 
   //Punkt o: diverse:
-  ReadAngularCorrelations(model_settings, err_text);
+  ReadAngularCorrelations(model_settings, angular_correlations_);
   CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
   //TODO: Handle if err_text != "".
-  if(err_text != "") {
+  if (err_text != "") {
     LogKit::LogFormatted(LogKit::Error,"\n Error when loading and processing data: \n");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
@@ -1302,7 +1302,7 @@ void CommonData::SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
 }
 
 //----------------------------------------------
-bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
+bool compare(const std::pair<int, double>& i1, const std::pair<int, double>& i2)
 {
   return (i1.second < i2.second);
 }
@@ -1317,7 +1317,7 @@ void CommonData::LookForSyntheticVsLog(NRLib::Well   & well,
   // Estimate the correlation between Vp and Vs logs. To be able to identify
   // nonlinear relationships between the logs we use rank correlation.
   //
-  typedef std::pair<int, float> Item;
+  typedef std::pair<int, double> Item;
   std::vector<Item> sorted_vp;
   std::vector<Item> sorted_vs;
 
@@ -3931,7 +3931,7 @@ void CommonData::SetSurfacesSingleInterval(const ModelSettings              * co
   int                       output_grids_seismic          = model_settings->getOutputGridsSeismic();
   double                    d_top                         = model_settings->getTimeDTop();
   double                    lz                            = model_settings->getTimeLz();
-  double                    dz                            = model_settings->getTimeDz();
+  //double                    dz                            = model_settings->getTimeDz();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
@@ -4151,14 +4151,14 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
   bool                                      generate_seismic              = forward_modeling_;
   bool                                      estimation_mode               = model_settings->getEstimationMode();
   bool                                      generate_background           = model_settings->getGenerateBackground();
-  bool                                      parallel_surfaces             = model_settings->getParallelTimeSurfaces();
+  //bool                                      parallel_surfaces             = model_settings->getParallelTimeSurfaces();
   //int                                       nz                            = model_settings->getTimeNz();
   int                                       output_format                 = model_settings->getOutputGridFormat();
   int                                       output_domain                 = model_settings->getOutputGridDomain();
   int                                       output_grids_elastic          = model_settings->getOutputGridsElastic();
   int                                       output_grids_other            = model_settings->getOutputGridsOther();
   int                                       output_grids_seismic          = model_settings->getOutputGridsSeismic();
-  double                                    d_top                         = model_settings->getTimeDTop();
+  //double                                    d_top                         = model_settings->getTimeDTop();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
@@ -5614,7 +5614,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   par_name,
                   offset,
                   format,
-                  err_text);
+                  err_text,
+                  nopadding);
   else if (fileType == IO::STORM)
     ReadStormFile(file_name,
                   interval_grids,
@@ -5623,7 +5624,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   interval_simboxes,
                   model_settings,
                   err_text,
-                  false);
+                  false,
+                  nopadding);
   else if (fileType == IO::SGRI)
     ReadStormFile(file_name,
                   interval_grids,
@@ -5632,7 +5634,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   interval_simboxes,
                   model_settings,
                   err_text,
-                  true);
+                  true,
+                  nopadding);
   else {
     err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
   }
@@ -6968,9 +6971,11 @@ CommonData::ReadStormFile(const std::string                  & file_name,
   }
 }
 
-bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
-                                      InputFiles     * input_files,
-                                      std::string    & err_text_common) {
+bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
+                                      InputFiles    * input_files,
+                                      Simbox        * estimation_simbox,
+                                      GridMapping   * time_depth_mapping,
+                                      std::string   & err_text_common) {
 
 
   //From ModelGeneral::ProcessDepthConversion
@@ -6980,7 +6985,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
   std::string velocity_field     = input_files->getVelocityField();
 
   LoadVelocity(velocity,
-               &estimation_simbox_,
+               estimation_simbox,
                model_settings,
                velocity_field,
                velocity_from_inversion_,
@@ -6989,15 +6994,15 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
   if (err_text == "") {
     bool failed_dummy = false;
 
-    time_depth_mapping_ = new GridMapping();
-    time_depth_mapping_->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
+    time_depth_mapping = new GridMapping();
+    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
 
     if (velocity != NULL) {
-      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &estimation_simbox_);
-      time_depth_mapping_->setDepthSimbox(&estimation_simbox_, estimation_simbox_.getnz(),
+      time_depth_mapping->calculateSurfaceFromVelocity(velocity, &estimation_simbox_);
+      time_depth_mapping->setDepthSimbox(&estimation_simbox_, estimation_simbox_.getnz(),
                                         model_settings->getOutputGridFormat(),
                                         failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
-      time_depth_mapping_->makeTimeDepthMapping(velocity, &estimation_simbox_);
+      time_depth_mapping->makeTimeDepthMapping(velocity, &estimation_simbox_);
 
       if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp. Add writing-functions to NRLib::Grid?
         std::string base_name  = IO::FileTimeToDepthVelocity();
@@ -7016,7 +7021,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
       }
     }
     else if (velocity == NULL && velocity_from_inversion_ ==false) {
-      time_depth_mapping_->setDepthSimbox(&estimation_simbox_,
+      time_depth_mapping->setDepthSimbox(&estimation_simbox_,
                                           estimation_simbox_.getnz(),
                                           model_settings->getOutputGridFormat(),
                                           failed_dummy,
@@ -8620,11 +8625,11 @@ void CommonData::CheckCovarianceParameters(NRLib::Matrix            & param_cov)
 
 
 bool CommonData::SetupTimeLine(ModelSettings * model_settings,
-                               InputFiles    * input_files,
+                               TimeLine      * time_line,
                                std::string   & err_text_common) {
 
   //Set up timeline.
-  time_line_ = new TimeLine();
+  time_line            = new TimeLine();
   std::string err_text = "";
   //Activate below when gravity data are ready.
   //Do gravity first.
@@ -8635,21 +8640,21 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
 
   bool first_gravimetric_event = true;
-  for (int i=0; i < model_settings->getNumberOfVintages(); i++) {
+  for (int i = 0; i < model_settings->getNumberOfVintages(); i++) {
     //Vintages may have both travel time and AVO
 
     try {
       int time = ComputeTime(model_settings->getVintageYear(i),
-                              model_settings->getVintageMonth(i),
-                              model_settings->getVintageDay(i));
+                             model_settings->getVintageMonth(i),
+                             model_settings->getVintageDay(i));
         // Do gravity first
-        if (model_settings->getGravityTimeLapse(i)){
-          if (first_gravimetric_event){
+        if (model_settings->getGravityTimeLapse(i)) {
+          if (first_gravimetric_event) {
             // Do not save first gravity event in timeline
             first_gravimetric_event = false;
           }
           else{
-            time_line_->AddEvent(time, TimeLine::GRAVITY, i);
+            time_line->AddEvent(time, TimeLine::GRAVITY, i);
           }
       }
 
@@ -8660,9 +8665,9 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
       //Travel time before AVO for same vintage.
 
       if (model_settings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
-        time_line_->AddEvent(time, TimeLine::AVO, i);
+        time_line->AddEvent(time, TimeLine::AVO, i);
     }
-    catch(NRLib::Exception & e) {
+    catch (NRLib::Exception & e) {
       err_text += "Error setting up TimeLine: " + std::string(e.what());
     }
 
@@ -8688,8 +8693,8 @@ bool CommonData::SetupGravityInversion(ModelSettings * model_settings,
 
   std::string err_text = "";
 
-  bool failed                 = false;
-  bool before_injection_start = false; // When do we know what this should be??
+  //bool failed                 = false;
+  //bool before_injection_start = false; // When do we know what this should be??
 
   bool do_gravity_inversion = true;
   int number_gravity_files  = 0;
@@ -9019,7 +9024,7 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
 
   double true_x_pad_factor = static_cast<double>(nx_pad - nx)/static_cast<double>(nx);
   double true_y_pad_factor = static_cast<double>(ny_pad - ny)/static_cast<double>(ny);
-  double true_z_pad_factor = interval_simbox->GetZPadFactor();
+  //double true_z_pad_factor = interval_simbox->GetZPadFactor();
   double true_xPad    = true_x_pad_factor*lx;
   double true_yPad    = true_y_pad_factor*ly;
   //double true_zPad    = true_z_pad_factor*(interval_simbox->getlz()*interval_simbox->getMinRelThick());
@@ -9029,7 +9034,7 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   interval_simbox->SetXPadFactor(true_x_pad_factor);
   interval_simbox->SetYPadFactor(true_y_pad_factor);
   interval_simbox->SetZPadFactor(0.0);
-  interval_simbox->SetNZpad(interval_simbox->getnz());
+  interval_simbox->SetNZpad(nz);
 
   std::string text1;
   std::string text2;
@@ -9224,9 +9229,9 @@ void CommonData::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> bl
   }
 }
 
-void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
-                                         std::string   & err_text) {
-
+void CommonData::ReadAngularCorrelations(ModelSettings                                  * model_settings,
+                                         std::vector<std::vector<std::vector<float> > > & angular_correlations)
+{
   for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
 
     Vario * vario = model_settings->getAngularCorr(t);
@@ -9241,6 +9246,6 @@ void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
         angle_corr[i][i] = vario->corr(d_angle, 0);
       }
     }
-    angular_correlations_.push_back(angle_corr);
+    angular_correlations.push_back(angle_corr);
   }
 }

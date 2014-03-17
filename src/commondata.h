@@ -592,9 +592,11 @@ private:
                      bool                                 is_storm = true,
                      bool                                 nopadding = true);
 
-  bool SetupDepthConversion(ModelSettings  * model_settings,
-                            InputFiles     * input_files,
-                            std::string    & err_text);
+  bool SetupDepthConversion(ModelSettings * model_settings,
+                            InputFiles    * input_files,
+                            Simbox        * estimation_simbox,
+                            GridMapping   * time_depth_mapping,
+                            std::string   & err_text_common);
 
   bool SetupBackgroundModel(ModelSettings            * model_settings,
                             InputFiles               * input_files,
@@ -681,7 +683,7 @@ private:
                            const ModelSettings    * model_settings) const;
 
   bool  SetupTimeLine(ModelSettings * model_settings,
-                      InputFiles    * input_files,
+                      TimeLine      * time_line,
                       std::string   & err_text_common);
 
   bool  SetupGravityInversion(ModelSettings * model_settings,
@@ -722,8 +724,8 @@ private:
 
   void  PrintPriorVariances() const;
 
-  void ReadAngularCorrelations(ModelSettings * model_settings,
-                               std::string   & err_text);
+  void ReadAngularCorrelations(ModelSettings                                  * model_settings,
+                               std::vector<std::vector<std::vector<float> > > & angular_correlations);
 
   bool optimizeWellLocations();
 

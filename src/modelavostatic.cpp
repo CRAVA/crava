@@ -594,11 +594,10 @@ void ModelAVOStatic::GenerateSyntheticSeismic(std::vector<Wavelet *>            
                                               std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                               const float *                      const * reflection_matrix,
                                               const Simbox                             * time_simbox,
-                                              const ModelSettings                      * model_settings,
                                               int                                        n_angles)
 {
-  int nzp     = time_simbox->GetNZpad();
-  int nz      = time_simbox->getnz();
+  int nzp = time_simbox->GetNZpad();
+  int nz  = time_simbox->getnz();
 
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);

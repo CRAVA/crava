@@ -77,7 +77,6 @@ public:
                                             std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                             const float *                      const * reflection_matrix,
                                             const Simbox                             * time_simbox,
-                                            const ModelSettings                      * model_settings,
                                             int                                        n_angles);
 
   static FFTGrid *        CreateFFTGrid(int nx,  int ny,  int nz,

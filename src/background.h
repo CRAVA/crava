@@ -168,8 +168,7 @@ private:
                              const std::string                          & name,
                              std::string                                & err_text) const;
 
-  void         getWellTrendsZone(const ModelSettings               * modelSettings,
-                                 std::vector<BlockedLogsCommon *>  & bl,
+  void         getWellTrendsZone(std::vector<BlockedLogsCommon *>  & bl,
                                  std::vector<std::vector<double> > & wellTrend,
                                  std::vector<std::vector<double> > & highCutWellTrend,
                                  const std::vector<NRLib::Well>    & wells,
@@ -213,7 +212,7 @@ private:
                                               std::vector<StormContGrid>                & rho_trend_zone,
                                               MultiIntervalGrid                         * multiple_interval_grid,
                                               std::vector<const NRLib::Surface<double> *> surfaces,
-                                              const std::vector<double>                 & surface_uncertainty,
+                                              //const std::vector<double>                 & surface_uncertainty,
                                               const bool                                  isFile) const;
 
   const CovGrid2D & makeCovGrid2D(const Simbox * simbox,
@@ -274,8 +273,7 @@ private:
                                            const std::vector<StormContGrid>                 & rho_zones,
                                            MultiIntervalGrid                                * multiple_interval_grid,
                                            std::vector<const NRLib::Surface<double> *>        surfaces,
-                                           const std::vector<double>                        & surface_uncertainty,
-                                           const bool                                         is_file,
+                                           //const std::vector<double>                        & surface_uncertainty,
                                            const std::string                                & type) const;
 
   void         calculateVelocityDeviations(NRLib::Grid<double>                        * velocity,

@@ -130,11 +130,11 @@ private:
                                     double       & x_max,
                                     double       & y_max) const;
 
-  void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> > & vp_interval,
-                                      std::vector<NRLib::Grid<double> > & vs_interval,
-                                      std::vector<NRLib::Grid<double> > & rho_interval,
-                                      const std::vector<Simbox>         & interval_simboxes,
-                                      std::vector<double>               & relative_grid_resolution) const;
+  //void  BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> > & vp_interval,
+  //                                    std::vector<NRLib::Grid<double> > & vs_interval,
+  //                                    std::vector<NRLib::Grid<double> > & rho_interval,
+  //                                    const std::vector<Simbox>         & interval_simboxes,
+  //                                    std::vector<double>               & relative_grid_resolution) const;
 
   void  EstimateZPaddingSize(Simbox          * simbox,
                              ModelSettings   * model_settings) const;

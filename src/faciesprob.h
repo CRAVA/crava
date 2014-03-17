@@ -235,9 +235,9 @@ private:
                                             const std::vector<double> & vs,
                                             const std::vector<double> & rho,
                                             const std::vector<int>    & facies,
-                                            float                     & varVp,
-                                            float                     & varVs,
-                                            float                     & varRho);
+                                            double                    & varVp,
+                                            double                    & varVs,
+                                            double                    & varRho);
 
   float                  findDensity(float                                       vp,
                                      float                                       vs,

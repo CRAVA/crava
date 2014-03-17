@@ -372,7 +372,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
     if (!failed){
       // calculated dz should be the same as the desired grid resolution?
-      int status = interval_simboxes[i].calculateDz(model_settings->getLzLimit(),err_text);
+      interval_simboxes[i].calculateDz(model_settings->getLzLimit(),err_text);
       relative_grid_resolution[i] = interval_simboxes[i].getdz() / desired_grid_resolution[i];
       EstimateZPaddingSize(&interval_simboxes[i], model_settings);
 
@@ -564,65 +564,65 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   surface = Surface(x0, y0, lx, ly, eroded_surface);
 }
 
-void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
-                                                      std::vector<NRLib::Grid<double> >          & vs_interval,
-                                                      std::vector<NRLib::Grid<double> >          & rho_interval,
-                                                      const std::vector<Simbox>                 & interval_simboxes,
-                                                      std::vector<double>                       & relative_grid_resolution) const{
-
-  for (size_t i=0; i<n_intervals_; i++) {
-    int    nx        = interval_simboxes[i].getnx();
-    int    ny        = interval_simboxes[i].getny();
-    //double x_min     = interval_simboxes[i].GetXMin();
-    //double y_min     = interval_simboxes[i].GetYMin();
-    //double lx        = interval_simboxes[i].GetLX();
-    //double ly        = interval_simboxes[i].GetLY();
-    //double angle     = interval_simboxes[i].GetAngle();
-
-    double  x;
-    double  y;
-    double  z_top;
-    double  z_base;
-
-    //Find maximum distance between the surfaces
-    double max_distance = 0;
-
-    for (int j=0; j<nx; j++) {
-      for (int k=0; k<ny; k++) {
-        interval_simboxes[i].getXYCoord(j,k,x,y);
-
-        z_top  = interval_simboxes[i].getTop(x,y);
-        z_base = interval_simboxes[i].getBot(x,y);
-
-        if (z_top == RMISSING) {
-          LogKit::LogFormatted(LogKit::Low,"ERROR: The top surface for interval \'"+interval_simboxes_[i].GetIntervalName()+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
-        }
-        else if (z_base == RMISSING) {
-          LogKit::LogFormatted(LogKit::Low,"ERROR: The base surface for interval \'"+interval_simboxes_[i].GetIntervalName()+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
-        }
-
-        if (z_base-z_top > max_distance) {
-          if (z_top != RMISSING && z_base != RMISSING)
-            max_distance = z_base-z_top;
-        }
-      }
-    }
-
-    if (max_distance == 0) {
-      LogKit::LogFormatted(LogKit::Low,"ERROR: Interval \'"+interval_simboxes_[i].GetIntervalName()+"\' has size zero. Check that its top surface is above the base surface.\n");
-      exit(1);
-    }
-
-    //NRLib::Volume volume(x_min, y_min, lx, ly, interval_simboxes[i].GetTopSurface(), interval_simboxes[i].GetBotSurface(), angle);
-    int nz_zone = 1;// static_cast<int>(std::ceil(max_distance/dz[i-1]));
-
-    vp_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
-    vs_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
-    rho_interval[i] = NRLib::Grid<double>(nx, ny, nz_zone, 0);
-  }
-}
+//void MultiIntervalGrid::BuildSeismicPropertyIntervals(std::vector<NRLib::Grid<double> >          & vp_interval,
+//                                                      std::vector<NRLib::Grid<double> >          & vs_interval,
+//                                                      std::vector<NRLib::Grid<double> >          & rho_interval,
+//                                                      const std::vector<Simbox>                 & interval_simboxes,
+//                                                      std::vector<double>                       & relative_grid_resolution) const{
+//
+//  for (size_t i=0; i<n_intervals_; i++) {
+//    int    nx        = interval_simboxes[i].getnx();
+//    int    ny        = interval_simboxes[i].getny();
+//    //double x_min     = interval_simboxes[i].GetXMin();
+//    //double y_min     = interval_simboxes[i].GetYMin();
+//    //double lx        = interval_simboxes[i].GetLX();
+//    //double ly        = interval_simboxes[i].GetLY();
+//    //double angle     = interval_simboxes[i].GetAngle();
+//
+//    double  x;
+//    double  y;
+//    double  z_top;
+//    double  z_base;
+//
+//    //Find maximum distance between the surfaces
+//    double max_distance = 0;
+//
+//    for (int j=0; j<nx; j++) {
+//      for (int k=0; k<ny; k++) {
+//        interval_simboxes[i].getXYCoord(j,k,x,y);
+//
+//        z_top  = interval_simboxes[i].getTop(x,y);
+//        z_base = interval_simboxes[i].getBot(x,y);
+//
+//        if (z_top == RMISSING) {
+//          LogKit::LogFormatted(LogKit::Low,"ERROR: The top surface for interval \'"+interval_simboxes_[i].GetIntervalName()+"\' does not cover the inversion grid, or it contains missing values.\n");
+//          exit(1);
+//        }
+//        else if (z_base == RMISSING) {
+//          LogKit::LogFormatted(LogKit::Low,"ERROR: The base surface for interval \'"+interval_simboxes_[i].GetIntervalName()+"\' does not cover the inversion grid, or it contains missing values.\n");
+//          exit(1);
+//        }
+//
+//        if (z_base-z_top > max_distance) {
+//          if (z_top != RMISSING && z_base != RMISSING)
+//            max_distance = z_base-z_top;
+//        }
+//      }
+//    }
+//
+//    if (max_distance == 0) {
+//      LogKit::LogFormatted(LogKit::Low,"ERROR: Interval \'"+interval_simboxes_[i].GetIntervalName()+"\' has size zero. Check that its top surface is above the base surface.\n");
+//      exit(1);
+//    }
+//
+//    //NRLib::Volume volume(x_min, y_min, lx, ly, interval_simboxes[i].GetTopSurface(), interval_simboxes[i].GetBotSurface(), angle);
+//    int nz_zone = 1;// static_cast<int>(std::ceil(max_distance/dz[i-1]));
+//
+//    vp_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
+//    vs_interval[i]  = NRLib::Grid<double>(nx, ny, nz_zone, 0);
+//    rho_interval[i] = NRLib::Grid<double>(nx, ny, nz_zone, 0);
+//  }
+//}
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,

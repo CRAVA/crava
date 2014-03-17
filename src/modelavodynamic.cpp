@@ -709,7 +709,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
+    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, number_of_angles_);
 
   //H Moved to CommonData, so it won't be writter per interval
   //if (estimation_mode)
