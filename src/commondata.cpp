@@ -174,7 +174,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   //Punkt o: diverse:
   ReadAngularCorrelations(model_settings, err_text);
-  //CheckThatDataCoverGrid()
+  CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
   //TODO: Handle if err_text != "".
   if(err_text != "") {
@@ -508,30 +508,19 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
           float guard_zone = model_settings->getGuardZone();
 
-          bool cover_ok = false;
-          //H-TODO Move check that seismic data cover grid until interval_simboxes are made and before inversion.
-          cover_ok = CheckThatDataCoverGrid(segy,
-                                            offset[i],
-                                            &estimation_simbox_,
-                                            guard_zone,
-                                            err_text);
-          if (cover_ok) {
-            float padding = 2*guard_zone;
-            bool relative_padding = false;
-            bool only_volume = true;
+          //Check that data cover grid is moved to after interval_simboxes are made
+          float padding         = 2*guard_zone;
+          bool relative_padding = false;
+          bool only_volume      = true;
 
-            segy->ReadAllTraces(&full_inversion_volume_,
-                                padding,
-                                only_volume,
-                                relative_padding);
-            segy->CreateRegularGrid(); //sets geometry
+          segy->ReadAllTraces(&full_inversion_volume_,
+                              padding,
+                              only_volume,
+                              relative_padding);
+          segy->CreateRegularGrid(); //sets geometry
 
-            SeismicStorage seismicdata(file_name, SeismicStorage::SEGY, angles[i], segy);
-            seismic_data_angle.push_back(seismicdata);
-          }
-          else {
-            err_text += "Data from segy-file " + file_name + " is not read.\n";
-          }
+          SeismicStorage seismicdata(file_name, SeismicStorage::SEGY, angles[i], segy);
+          seismic_data_angle.push_back(seismicdata);
 
         } //SEGY
         else if (file_type == IO::STORM || file_type == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -546,36 +535,19 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             break;
           }
 
-          bool cover_ok = false;
           bool scale    = false;
           if (file_type == IO::SGRI)
             scale = true;
           std::string err_text_tmp = "";
 
-          //H-TODO Move this check until after interval_simboxes are made and before inversion.
-          //This cover_check failes in test_cast 15 (against estimation_simbox)
-          cover_ok = true;
-          //cover_ok = CheckThatDataCoverGrid(stormgrid, //Checks that stormgrid.z > simbox.z
-          //                                  &estimation_simbox_,
-          //                                  model_settings->getGuardZone(),
-          //                                  err_text_tmp,
-          //                                  scale);
+          SeismicStorage seismicdata_tmp;
 
-          if (cover_ok == false) {
-            err_text += "Data from storm file " + file_name + " is not read.\n";
-            err_text += err_text_tmp;
-          }
+          if (file_type == IO::STORM)
+            seismicdata_tmp = SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
+          else
+            seismicdata_tmp = SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
 
-          if (cover_ok) {
-            SeismicStorage seismicdata_tmp;
-
-            if (file_type == IO::STORM)
-              seismicdata_tmp = SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
-            else
-              seismicdata_tmp = SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
-
-            seismic_data_angle.push_back(seismicdata_tmp);
-          }
+          seismic_data_angle.push_back(seismicdata_tmp);
         } //STORM / SGRI
         else if (file_type == IO::CRAVA) {
 
@@ -585,13 +557,13 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
           GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
 
-          FFTGrid *  grid = CreateFFTGrid(estimation_simbox_.getnx(),
-                                          estimation_simbox_.getny(),
-                                          estimation_simbox_.getnz(),
-                                          nx_pad,
-                                          ny_pad,
-                                          nz_pad,
-                                          model_settings->getFileGrid());
+          FFTGrid * grid = CreateFFTGrid(estimation_simbox_.getnx(),
+                                         estimation_simbox_.getny(),
+                                         estimation_simbox_.getnz(),
+                                         nx_pad,
+                                         ny_pad,
+                                         nz_pad,
+                                         model_settings->getFileGrid());
 
           std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
           std::string par_name = "Seismic data angle stack "+angle;
@@ -607,11 +579,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         else {
           err_text += "Error when reading file " + file_name +". File type not recognized.\n";
         }
-      } //nAngles
+      } //n_angles
 
       seismic_data[this_timelapse] = seismic_data_angle;
 
-    }//ifSeismicFiles
+    }//if seismicFiles
   } //n_timeLapses
 
   if (err_text != "") {
@@ -634,24 +606,86 @@ FFTGrid * CommonData::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, in
   return(fftGrid);
 }
 
+void CommonData::CheckThatDataCoverGrid(ModelSettings                               * model_settings,
+                                        std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                        MultiIntervalGrid                           * multiple_interval_grid,
+                                        std::string                                 & err_text)
+{
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
+  int n_intervals  = multiple_interval_grid->GetNIntervals();
+  bool cover_ok    = false;
+  double top_grid  = multiple_interval_grid->GetIntervalSimbox(0)->getTopZMin();
+  double bot_grid  = multiple_interval_grid->GetIntervalSimbox(n_intervals-1)->getBotZMax();
+  float guard_zone = model_settings->getGuardZone();
+
+  for (int this_timelapse = 0; this_timelapse < n_timelapses; this_timelapse++) {
+
+    int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
+    std::vector<float> angles = model_settings->getAngle(this_timelapse);
+    std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
+
+    for (int i = 0; i < n_angles; i++) {
+
+      SeismicStorage & seismic_data_angle = (seismic_data.find(this_timelapse)->second)[i];
+      std::string err_text_tmp            = "";
+
+      if (seismic_data_angle.GetSeismicType() == IO::SEGY) {
+
+        SegY * segy = seismic_data_angle.GetSegY();
+
+        cover_ok = CheckThatDataCoverGrid(segy,
+                                          offset[i],
+                                          top_grid,
+                                          bot_grid,
+                                          guard_zone,
+                                          err_text_tmp);
+
+      }
+      else if (seismic_data_angle.GetSeismicType() == IO::STORM || seismic_data_angle.GetSeismicType() == IO::SGRI) {
+
+        StormContGrid * stormgrid = seismic_data_angle.GetStorm();
+
+        bool scale = false;
+        if (seismic_data_angle.GetSeismicType() == IO::SGRI)
+          scale = true;
+
+        cover_ok = CheckThatDataCoverGrid(stormgrid,
+                                          top_grid,
+                                          bot_grid,
+                                          guard_zone,
+                                          err_text_tmp,
+                                          scale);
+
+      }
+
+      if (err_text_tmp != "") {
+        err_text += "Error with seismic data for time lapse " + NRLib::ToString(this_timelapse) + " and angle " + NRLib::ToString(angles[i]) +":\n";
+        err_text += err_text_tmp;
+      }
+    }
+  }
+}
+
 bool
-CommonData::CheckThatDataCoverGrid(const SegY   * segy,
-                                   float          offset,
-                                   const Simbox & time_simbox,
-                                   float          guard_zone,
-                                   std::string &  err_text) const {
+CommonData::CheckThatDataCoverGrid(const SegY  * segy,
+                                   float         offset,
+                                   double        top_grid,
+                                   double        bot_grid,
+                                   float         guard_zone,
+                                   std::string & err_text) const
+{
   // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
   float dz = segy->GetDz();
   float z0 = offset + 0.5f*dz;
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = static_cast<float>(time_simbox.getTopZMin());
-  float bot_grid = static_cast<float>(time_simbox.getBotZMax());
+  //float top_grid = static_cast<float>(simbox.getTopZMin());
+  //float bot_grid = static_cast<float>(simbox.getBotZMax());
 
   // Find guard zone
-  float top_guard = top_grid - guard_zone;
-  float bot_guard = bot_grid + guard_zone;
+  float top_guard = static_cast<float>(top_grid) - guard_zone;
+  float bot_guard = static_cast<float>(bot_grid) + guard_zone;
 
   if (top_guard < z0) {
     float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
@@ -687,11 +721,12 @@ CommonData::CheckThatDataCoverGrid(const SegY   * segy,
 
 bool
 CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
-                                   const Simbox  & simbox,
+                                   double          top_grid,
+                                   double          bot_grid,
                                    float           guard_zone,
                                    std::string   & err_text,
-                                   bool            scale) const {
-
+                                   bool            scale) const
+{
   double storm_top = stormgrid->GetTopZMin(stormgrid->GetNI(), stormgrid->GetNJ());
   double storm_bot = stormgrid->GetBotZMax(stormgrid->GetNI(), stormgrid->GetNJ());
 
@@ -701,12 +736,12 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
   }
 
   // Top and base of interval of interest
-  double top_grid = simbox.getTopZMin();
-  double bot_grid = simbox.getBotZMax();
+  //double top_grid = simbox.getTopZMin();
+  //double bot_grid = simbox.getBotZMax();
 
   // Find guard zone
-  double top_guard = top_grid - guard_zone;
-  double bot_guard = bot_grid + guard_zone;
+  double top_guard = top_grid - static_cast<double>(guard_zone);
+  double bot_guard = bot_grid + static_cast<double>(guard_zone);
 
   if (top_guard < storm_top) {
     err_text += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
@@ -738,7 +773,6 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
 
   return true;
 }
-
 
 bool CommonData::ReadWellData(ModelSettings                  * model_settings,
                               Simbox                         * estimation_simbox,
@@ -5757,7 +5791,8 @@ CommonData::ReadSegyFile(const std::string                  & file_name,
     bool cover_ok = false;
     cover_ok = CheckThatDataCoverGrid(segy,
                                       offset,
-                                      estimation_simbox,
+                                      estimation_simbox.getTopZMin(),
+                                      estimation_simbox.getBotZMax(),
                                       guard_zone,
                                       err_text);
 
@@ -6033,7 +6068,7 @@ void CommonData::FillInData(NRLib::Grid<double> * grid_new,
           simbox.getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
           simbox.getZCoord(fft_grid_old->getNz(), xf, yf, z_max);
 
-          dz_data = (z_max- z_min) / fft_grid_old->getNz();
+          dz_data = static_cast<float>((z_max- z_min) / fft_grid_old->getNz());
           dz_min = dz_data/4.0f;
           z0_data = static_cast<float>(z_min);
         }
@@ -9195,14 +9230,14 @@ void CommonData::ReadAngularCorrelations(ModelSettings * model_settings,
   for (int t = 0; t < model_settings->getNumberOfTimeLapses(); t++) {
 
     Vario * vario = model_settings->getAngularCorr(t);
-    int n_angles = model_settings->getNumberOfAngles(t);
+    int n_angles  = model_settings->getNumberOfAngles(t);
     const std::vector<float> & angles = model_settings->getAngle(t);
 
     std::vector<std::vector<float> > angle_corr(n_angles);
     for (int i = 0; i < n_angles; i++) {
       angle_corr[i].resize(n_angles);
       for (int j = 0; j < n_angles; j++) {
-        float d_angle = angles[i] - angles[j];
+        float d_angle    = angles[i] - angles[j];
         angle_corr[i][i] = vario->corr(d_angle, 0);
       }
     }

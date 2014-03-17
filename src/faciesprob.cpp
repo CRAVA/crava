@@ -1604,9 +1604,9 @@ void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLog
     for (int i = 0 ; i < nActiveWells ; i++)
     {
       const int   nBlocks = bw[i]->GetNumberOfBlocks();
-      const std::vector<int> ipos = bw[i]->GetIposVector();
-      const std::vector<int> jpos = bw[i]->GetJposVector();
-      const std::vector<int> kpos = bw[i]->GetKposVector();
+      const std::vector<int> & ipos = bw[i]->GetIposVector();
+      const std::vector<int> & jpos = bw[i]->GetJposVector();
+      const std::vector<int> & kpos = bw[i]->GetKposVector();
       //const int * ipos    = bw[i]->getIpos();
       //const int * jpos    = bw[i]->getJpos();
       //const int * kpos    = bw[i]->getKpos();

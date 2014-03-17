@@ -2616,7 +2616,7 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     int nyp  = NRLib::ReadBinaryInt(binFile);
     int nzp  = NRLib::ReadBinaryInt(binFile);
 
-    if(rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
+    if (rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
       LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The grid has different dimensions than the model grid. Check the padding settings");
       LogKit::LogFormatted(LogKit::Low,"\n                rnxp   nyp   nzp");
       LogKit::LogFormatted(LogKit::Low,"\n--------------------------------");

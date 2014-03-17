@@ -321,14 +321,21 @@ private:
                         std::map<int, std::vector<std::vector<double> > > & synt_seis,
                         std::string                                       & err_text_common);
 
-  bool       CheckThatDataCoverGrid(const SegY   * segy,
-                                    float          offset,
-                                    const Simbox & simbox,
-                                    float          guard_zone,
-                                    std::string &  err_text) const;
+  void CheckThatDataCoverGrid(ModelSettings                               * model_settings,
+                              std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                              MultiIntervalGrid                           * multiple_interval_grid,
+                              std::string                                 & err_text);
+
+  bool       CheckThatDataCoverGrid(const SegY  * segy,
+                                    float         offset,
+                                    double        top_grid,
+                                    double        bot_grid,
+                                    float         guard_zone,
+                                    std::string & err_text) const;
 
   bool       CheckThatDataCoverGrid(StormContGrid * stormgrid,
-                                    const Simbox  & simbox,
+                                    double          top_grid,
+                                    double          bot_grid,
                                     float           guard_zone,
                                     std::string   & err_text,
                                     bool            scale = false) const;
