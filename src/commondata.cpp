@@ -2802,11 +2802,13 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                         model_settings->getGradientSmoothingRange(),
                                         &t0_surf,
                                         correlation_direction,
+                                        estimation_simbox_,
                                         structure_depth_grad_x,
                                         structure_depth_grad_y);
           Wavelet3D::setGradientMaps(structure_depth_grad_x,
                                      structure_depth_grad_y);
           ComputeReferenceTimeGradient(&t0_surf,
+                                       estimation_simbox_,
                                        ref_time_grad_x_,
                                        ref_time_grad_y_);
         }
@@ -3332,13 +3334,14 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
                                           double                 radius,
                                           const Surface        * t0_surf,
                                           const Surface        * correlation_direction,
+                                          Simbox               & estimation_simbox,
                                           NRLib::Grid2D<float> & structure_depth_grad_x,
                                           NRLib::Grid2D<float> & structure_depth_grad_y)
  {
    double ds = 12.5;
 
-   int nx = estimation_simbox_.getnx();
-   int ny = estimation_simbox_.getny();
+   int nx = estimation_simbox.getnx();
+   int ny = estimation_simbox.getny();
    structure_depth_grad_x.Resize(nx,ny);
    structure_depth_grad_y.Resize(nx,ny);
    double mp=v0*0.001*0.5; // 0.001 is due to s vs ms convension
@@ -3349,7 +3352,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
        double gx,gy,gxTmp,gyTmp;
        gx=0.0;
        gy=0.0;
-       estimation_simbox_.getXYCoord(i,j,x,y);
+       estimation_simbox.getXYCoord(i,j,x,y);
        CalculateSmoothGrad(t0_surf, x, y, radius, ds,gxTmp, gyTmp);
        gx=-gxTmp;
        gy=-gyTmp;
@@ -3359,10 +3362,10 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
          gy+=gyTmp;
        }
        else {
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox_.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox_.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
        }
@@ -3454,21 +3457,22 @@ CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double
 }
 
 void
-CommonData::ComputeReferenceTimeGradient(const Surface       * t0_surf,
-                                         NRLib::Grid2D<float> &ref_time_grad_x,
-                                         NRLib::Grid2D<float> &ref_time_grad_y)
+CommonData::ComputeReferenceTimeGradient(const Surface        * t0_surf,
+                                         Simbox               & estimation_simbox,
+                                         NRLib::Grid2D<float> & ref_time_grad_x,
+                                         NRLib::Grid2D<float> & ref_time_grad_y)
  {
    double radius = 50.0;
    double ds     = 12.5;
-   int nx        = estimation_simbox_.getnx();
-   int ny        = estimation_simbox_.getny();
+   int nx        = estimation_simbox.getnx();
+   int ny        = estimation_simbox.getny();
    ref_time_grad_x.Resize(nx,ny);
    ref_time_grad_y.Resize(nx,ny);
    for (int i = 0; i < nx; i++) {
      for (int j = 0; j < ny; j++) {
        double x,y;
        double gx,gy;
-       estimation_simbox_.getXYCoord(i,j,x,y);
+       estimation_simbox.getXYCoord(i,j,x,y);
        CalculateSmoothGrad(t0_surf, x, y, radius, ds,gx, gy);
        ref_time_grad_x(i,j) =float(gx);
        ref_time_grad_y(i,j) =float(gy);

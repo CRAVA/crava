@@ -413,12 +413,14 @@ private:
                                      double                 radius,
                                      const Surface        * t0_surf,
                                      const Surface        * correlation_direction,
+                                     Simbox               & estimation_simbox,
                                      NRLib::Grid2D<float> & structure_depth_grad_x,
                                      NRLib::Grid2D<float> & structure_depth_grad_y);
 
-  void ComputeReferenceTimeGradient(const Surface       * t0_surf,
-                                    NRLib::Grid2D<float> &ref_time_grad_x,
-                                    NRLib::Grid2D<float> &ref_time_grad_y);
+  void ComputeReferenceTimeGradient(const Surface        * t0_surf,
+                                    Simbox               & estimation_simbox,
+                                    NRLib::Grid2D<float> & ref_time_grad_x,
+                                    NRLib::Grid2D<float> & ref_time_grad_y);
 
   void CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 

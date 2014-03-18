@@ -1822,7 +1822,7 @@ ModelGeneral::PrintSettings(ModelSettings     * model_settings,
   LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", model_settings->getMinSamplingDensity());
 
   if (model_settings->getKrigingParameter()>0) { // We are doing kriging
-    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2f\n", model_settings->getKrigingParameter());
+    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2d\n", model_settings->getKrigingParameter());
     LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (model_settings->getDoSmoothKriging() ? "yes" : "no"));
   }
 
