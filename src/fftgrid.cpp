@@ -119,7 +119,7 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   }
 }
 
-FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
+FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
   theta_          = RMISSING;
@@ -176,7 +176,7 @@ FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
         float value = RMISSING;
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
 
-          value = static_cast<float>(grid->GetValue(i, j, k)); //H grid(i,j,k) not working when a pointer is used?
+          value = grid->GetValue(i, j, k);
           //value = pOld->getRealValue(i, j, k);
         }
         else {

@@ -480,7 +480,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     int missing_traces_padding = 0;
     int dead_traces_simbox     = 0;
 
-    NRLib::Grid<double> * grid_tmp = new NRLib::Grid<double>();
+    NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
 
     seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,

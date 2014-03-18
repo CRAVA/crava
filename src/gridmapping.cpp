@@ -115,8 +115,8 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
 }
 
 void
-GridMapping::makeTimeDepthMapping(NRLib::Grid<double> * velocity,
-                                  const Simbox        * timeSimbox)
+GridMapping::makeTimeDepthMapping(NRLib::Grid<float> * velocity,
+                                  const Simbox       * timeSimbox)
 {
   Simbox * depthSimbox = simbox_; // For readability
 
@@ -124,7 +124,7 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<double> * velocity,
   int ny  = depthSimbox->getny();
   int nz  = depthSimbox->getnz();
   mapping_ = new StormContGrid(*depthSimbox, nx, ny, nz);
- // velocity->setAccessMode(FFTGrid::RANDOMACCESS);
+
   for(int i=0;i<nx;i++)
   {
     for(int j=0;j<ny;j++)
@@ -140,7 +140,7 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<double> * velocity,
       double sum    = 0.0;
       double sumz   = 0.0;
       for(int k=0 ; k<timeSimbox->getnz() ; k++)
-        sumz +=deltaT*velocity->GetValue(i,j,k);
+        sumz +=deltaT*static_cast<double>(velocity->GetValue(i,j,k));
       double c = (zBase-zTop)/sumz;
       (*mapping_)(i,j,0) = static_cast<float>(tTop);
       int kk = 0;
@@ -150,7 +150,7 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<double> * velocity,
         while(sum<z && kk<nz)
         {
           kk++;
-          sum+=deltaT*c*velocity->GetValue(i,j,kk-1);
+          sum+=deltaT*c*static_cast<double>(velocity->GetValue(i,j,kk-1));
         }
         double v   = velocity->GetValue(i,j,kk-1);
         double z0  = tTop;
@@ -300,8 +300,8 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
 }
 
 void
-GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> * velocity,
-                                          const Simbox        * timeSimbox)
+GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<float> * velocity,
+                                          const Simbox       * timeSimbox)
 {
   if(z0Grid_==NULL || z1Grid_==NULL)
   {
@@ -366,7 +366,7 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> * velocity,
             isochore->SetMissing(i,j);
           else
           {
-            double sum = 0.0;
+            float sum = 0.0f;
             for(int k=0 ; k<nz ; k++) {
               if(i1!=IMISSING && j1!=IMISSING)
                 sum += velocity->GetValue(i1,j1,k);
@@ -377,7 +377,7 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<double> * velocity,
               if(i4!=IMISSING && j4!=IMISSING)
                 sum += velocity->GetValue(i4,j4,k);
             }
-            (*isochore)(i,j) = sum*dt/static_cast<double>(n);
+            (*isochore)(i,j) = static_cast<double>(sum)*dt/static_cast<double>(n);
           }
         }
       }

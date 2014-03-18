@@ -44,7 +44,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     for (size_t i = 0; i < n_intervals_; i++) {
       background_parameters_[i].resize(3);
       for (int j = 0; j < 3; j++)
-        background_parameters_[i][j] = new NRLib::Grid<double>();
+        background_parameters_[i][j] = new NRLib::Grid<float>();
     }
 
     background_vs_vp_ratios_.resize(n_intervals_);
@@ -63,7 +63,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     background_parameters_.resize(1);
     background_parameters_[0].resize(3);
     for (size_t i = 0; i < 3; i++)
-      background_parameters_[0][i] = new NRLib::Grid<double>();
+      background_parameters_[0][i] = new NRLib::Grid<float>();
     background_vs_vp_ratios_.resize(1);
     prior_facies_prob_cubes_.resize(1);
   }
