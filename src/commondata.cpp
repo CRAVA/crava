@@ -7034,7 +7034,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings            * model_settings,
                                       InputFiles               * input_files,
                                       const Simbox             * estimation_simbox,
                                       std::vector<NRLib::Well> & wells,
-                                      MultiIntervalGrid        * multiple_interval_grid,
+                                      MultiIntervalGrid       *& multiple_interval_grid,
                                       std::string              & err_text_common) {
 
   std::string err_text = "";
@@ -8595,7 +8595,7 @@ void CommonData::CheckCovarianceParameters(NRLib::Matrix            & param_cov)
 
 
 bool CommonData::SetupTimeLine(ModelSettings * model_settings,
-                               TimeLine      * time_line,
+                               TimeLine     *& time_line,
                                std::string   & err_text_common) {
 
   //Set up timeline.

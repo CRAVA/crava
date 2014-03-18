@@ -146,7 +146,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
     //H-Writing
-    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz() && multi_interval);
+    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz() && !multi_interval);
     if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
@@ -162,7 +162,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     fftw_free(corrT);
 
     //H-Writing
-    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multi_interval) {
+    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
       delete [] corrTFiltered;
@@ -226,7 +226,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seismicParameters.printPostVariances(postVar0_);
 
     //H-Writing
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) && multi_interval){
+    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) && !multi_interval){
       seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
       seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
     }

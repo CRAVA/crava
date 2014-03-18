@@ -604,7 +604,7 @@ private:
                             InputFiles               * input_files,
                             const Simbox             * estimation_simbox,
                             std::vector<NRLib::Well> & wells,
-                            MultiIntervalGrid        * multiple_interval_grid,
+                            MultiIntervalGrid       *& multiple_interval_grid,
                             std::string              & err_text_common);
 
   double FindMeanVsVp(const NRLib::Grid<float> * vp,
@@ -685,7 +685,7 @@ private:
                            const ModelSettings    * model_settings) const;
 
   bool  SetupTimeLine(ModelSettings * model_settings,
-                      TimeLine      * time_line,
+                      TimeLine     *& time_line,
                       std::string   & err_text_common);
 
   bool  SetupGravityInversion(ModelSettings * model_settings,
