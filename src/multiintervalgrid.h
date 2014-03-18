@@ -112,13 +112,14 @@ private:
 
   void ErodeSurface(Surface       &  surface,
                     const Surface &  priority_surface,
-                    const Simbox  &  simbox,
+                    const Surface &  resolution_surface,
                     const bool    &  compare_upward) const;
 
   void ErodeAllSurfaces(std::vector<Surface>            & eroded_surfaces,
                         const std::vector<int>          & erosion_priorities,
                         const std::vector<Surface>      & surface,
-                        const Simbox                    & simbox) const;
+                        const Simbox                    & simbox,
+                        std::string                     & err_text) const;
 
   void  FindSmallestSurfaceGeometry(const double   x0,
                                     const double   y0,
