@@ -99,7 +99,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         ErodeAllSurfaces(eroded_surfaces,
                          erosion_priorities_,
                          surfaces,
-                         *estimation_simbox);
+                         *estimation_simbox,
+                         err_text);
       }
       else {
         err_text += "Erosion of surfaces failed because the interval surfaces could not be set up correctly.\n";
@@ -490,45 +491,80 @@ void MultiIntervalGrid::FindSmallestSurfaceGeometry(const double   x0,
 void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_surfaces,
                                           const std::vector<int>     & erosion_priorities,
                                           const std::vector<Surface> & surfaces,
-                                          const Simbox               & simbox) const{
-  int    n_surf     = static_cast<int>(eroded_surfaces.size());
+                                          const Simbox               & simbox,
+                                          std::string                & err_text) const{
+  double    min_product     = 1000000000;
+  bool      simbox_covered  = true;
+  int       surf_max_res    = 0;
+  int       n_surf          = static_cast<int>(eroded_surfaces.size());
 
-  for (int i=0; i<n_surf; i++) {
-    int l=0;
-    while(i+1 != erosion_priorities[l])
-      l++;
+  for(int i = 0; i < n_surf; i++){
+    if(!simbox.CheckSurface(surfaces[i])){
+      simbox_covered = false;
+      err_text += "Surface " + surfaces[i].GetName() + " does not cover the inversion volume.";
+    }
+  }
 
-    Surface temp_surface = Surface(surfaces[l]);
-
-    //Find closest eroded surface downward
-    for (int k=l+1; k<n_surf; k++) {
-      if (eroded_surfaces[k].GetN() > 0) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, false);
-        break;
+  if(simbox_covered){
+    // Find the surface with the highest resolution
+    for (int i = 0; i < n_surf; i++){
+      if (surfaces[i].GetDX()*surfaces[i].GetDY() < min_product) {
+        min_product     = surfaces[i].GetDX()*surfaces[i].GetDY();
+        surf_max_res    = i;
       }
     }
-    //Find closest eroded surface upward
-    for (int k=l-1; k>=0; k--) {
-      if (eroded_surfaces[k].GetN() > 0) {
-        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, true);
-        break;
+
+    for (int i=0; i<n_surf; i++) {
+      int l=0;
+      //For surface[0] find the priority 1 surface, for surface[1] find the priority 2 surface etc.
+      //All priority 1 to i surfaces have been found at this point
+      while(i+1 != erosion_priorities[l])
+        l++;
+
+      Surface temp_surface = Surface(surfaces[l]);
+
+      //Find closest eroded surface downward
+      for (int k=l+1; k<n_surf; k++) {
+        if (eroded_surfaces[k].GetN() > 0) {
+          ErodeSurface(temp_surface, eroded_surfaces[k], surfaces[surf_max_res], false);
+          break;
+        }
       }
+      //Find closest eroded surface upward
+      for (int k=l-1; k>=0; k--) {
+        if (eroded_surfaces[k].GetN() > 0) {
+          ErodeSurface(temp_surface, eroded_surfaces[k], surfaces[surf_max_res], true);
+          break;
+        }
+      }
+      eroded_surfaces[l] = temp_surface;
     }
-    eroded_surfaces[l] = temp_surface;
+  }
+  else{
+    err_text += "Could not process surface erosion since one or more of the surfaces does not cover the inversion area.";
   }
 }
 
 // --------------------------------------------------------------------------------
 void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
                                       const Surface &  priority_surface,
-                                      const Simbox  &  simbox,
+                                      const Surface &  resolution_surface,
                                       const bool    &  compare_upward) const{
+  /*
   int nx    = simbox.getnx();
   int ny    = simbox.getny();
   double x0 = simbox.GetXMin();
   double y0 = simbox.GetYMin();
   double lx = simbox.GetLX();
   double ly = simbox.GetLY();
+  */
+ 
+  int nx    = static_cast<int>(resolution_surface.GetNI());
+  int ny    = static_cast<int>(resolution_surface.GetNJ());
+  double x0 = resolution_surface.GetXMin();
+  double y0 = resolution_surface.GetYMin();
+  double lx = resolution_surface.GetLengthX();
+  double ly = resolution_surface.GetLengthY();
 
   NRLib::Grid2D<double> eroded_surface(nx,ny,0);
   double x;
@@ -539,7 +575,9 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   double missing = surface.GetMissingValue();
   for (int i=0; i<nx; i++) {
     for (int j=0; j<ny; j++) {
-      simbox.getXYCoord(i,j,x,y);
+      x = resolution_surface.GetX(i);
+      y = resolution_surface.GetY(j);
+      //simbox.getXYCoord(i,j,x,y);
 
       z_priority = priority_surface.GetZ(x,y);
       z          = surface.GetZ(x,y);
