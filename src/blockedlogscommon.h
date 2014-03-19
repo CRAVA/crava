@@ -420,11 +420,20 @@ private:
                                   double       dzVt,
                                   int          nz);
 
+  void    CountBlocksWithData(const std::vector<double>                          & x_pos_blocked,
+                              const std::vector<double>                          & y_pos_blocked,
+                              const std::vector<double>                          & z_pos_blocked,
+                              const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                              unsigned int                                         n_blocks,
+                              std::map<std::string, int>                         & n_blocks_with_data,
+                              int                                                & n_blocks_with_data_tot);
+
   void    CountBlocksWithDataPerInterval(const MultiIntervalGrid                            * multiple_interval_grid,
                                          const std::vector<double>                          & x_pos_blocked,
                                          const std::vector<double>                          & y_pos_blocked,
                                          const std::vector<double>                          & z_pos_blocked,
                                          const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                                         unsigned int                                         n_blocks,
                                          std::map<std::string, int>                         & n_blocks_with_data,
                                          int                                                & n_blocks_with_data_tot,
                                          int                                                  n_intervals) const;
