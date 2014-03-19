@@ -37,8 +37,6 @@
 #include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsrock.h"
 
-//#include "src/blockedlogscommon.h"
-
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #define _USE_MATH_DEFINES
@@ -72,18 +70,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   modelAVOdynamic_   = modelAVOdynamic;
 
   simbox_            = modelGeneral_->GetTimeSimbox();
-  nx_                = simbox_->getnx();  //H seismicParameters are from background based on estimation_simbox and can differ from seismic data.
-  ny_                = simbox_->getny();
-  nz_                = simbox_->getnz();
-  nxp_               = simbox_->GetNXpad();
-  nyp_               = simbox_->GetNYpad();
-  nzp_               = simbox_->GetNZpad();
-  //nx_                = seismicParameters.GetMeanVp()->getNx();
-  //ny_                = seismicParameters.GetMeanVp()->getNy();
-  //nz_                = seismicParameters.GetMeanVp()->getNz();
-  //nxp_               = seismicParameters.GetMeanVp()->getNxp();
-  //nyp_               = seismicParameters.GetMeanVp()->getNyp();
-  //nzp_               = seismicParameters.GetMeanVp()->getNzp();
+  nx_                = seismicParameters.GetMeanVp()->getNx();
+  ny_                = seismicParameters.GetMeanVp()->getNy();
+  nz_                = seismicParameters.GetMeanVp()->getNz();
+  nxp_               = seismicParameters.GetMeanVp()->getNxp();
+  nyp_               = seismicParameters.GetMeanVp()->getNyp();
+  nzp_               = seismicParameters.GetMeanVp()->getNzp();
   lowCut_            = modelSettings_->getLowCut();
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see avoinversion.h
@@ -95,9 +87,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   outputGridsElastic_= modelSettings_->getOutputGridsElastic();
   writePrediction_   = modelSettings_->getWritePrediction();
   krigingParameter_  = modelSettings_->getKrigingParameter();
-  //nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
-  //wells_             = modelGeneral_->getWells();
   blocked_wells_     = modelGeneral_->GetBlockedWells();
   random_            = modelGeneral_->GetRandomGen();
   seisWavelet_       = modelAVOdynamic_->GetWavelets();
@@ -109,24 +99,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   postVs_            = meanVs_;         // Write over the input to save memory
   postRho_           = meanRho_;        // Write over the input to save memory
   fprob_             = NULL;
-  //thetaDeg_          = new float[ntheta_];
-  //empSNRatio_        = new float[ntheta_];
-  //theoSNRatio_       = new float[ntheta_];
-  //modelVariance_     = new float[ntheta_];
-  //signalVariance_    = new float[ntheta_];
-  //errorVariance_     = new float[ntheta_];
-  //dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
   scaleWarningText_  = "";
-  //errThetaCov_       = new double*[ntheta_];
   sigmamdnew_        = NULL;
 
   errThetaCov_       = modelAVOdynamic->GetErrThetaCov();
   thetaDeg_          = modelAVOdynamic->GetThetaDeg();
-  //for (int i=0;i<ntheta_;i++) {
-  //  errThetaCov_[i]  = new double[ntheta_];
-  //  thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
-  //}
   empSNRatio_        = modelAVOdynamic->GetSNRatio();
   dataVariance_      = modelAVOdynamic->GetDataVariance();
   errorVariance_     = modelAVOdynamic->GetErrorVariance();
@@ -136,7 +114,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   SpatialWellFilter * spatwellfilter = NULL;
 
-  multiinterval_ = modelGeneral->GetMultiInterval();
+  bool multi_interval = modelGeneral->GetMultiInterval();
 
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -167,9 +145,9 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
-    //Do not write correlation grids with multiple intervals
-    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
-    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multiinterval_ == false)
+    //H-Writing
+    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz() && !multi_interval);
+    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
     errCorr_ = modelAVOstatic->GetErrCorr();
@@ -177,12 +155,14 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     for (int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
+    //Moved to modelavodynamic
     //computeVariances(corrT, modelSettings_);
 
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);
 
-    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && multiinterval_ == false) {
+    //H-Writing
+    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
       seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
       delete [] corrTFiltered;
@@ -246,10 +226,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seismicParameters.printPostVariances(postVar0_);
 
     //H-Writing
-    //if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0 && multiinterval_ == false){
-    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
-    //}
+    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) && !multi_interval){
+      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
+      seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
+    }
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
@@ -275,7 +255,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //
 
     //H-Writing of wells: Why is this done for each timelapse? Move to after multiinterval
-    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0 && multiinterval_ == false) {
+    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
     //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
     //}
     //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
@@ -1606,7 +1586,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           //Only write simulated results if there is one interval
           //H-Writing not working, need to change so it uses the new simboxes instead of timecutmapping (CRA-653)
           //  Also move it to after multiinterval is ready for writing.
-          //if(multiinterval_ == false) {
+          //if(modelGeneral_->GetMultiInterval() == false) {
           //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
           //                                   outputGridsElastic_, fileGrid_, simNr, kriging);
           //}

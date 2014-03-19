@@ -146,10 +146,10 @@ public:
                                                         int                   i_offset = 0,
                                                         int                   j_offset = 0);
 
-  void                                   GetBlockedGrid(const NRLib::Grid<double> * grid,
-                                                        std::vector<double>       & blocked_log,
-                                                        int                         i_offset = 0,
-                                                        int                         j_offset = 0);
+  void                                   GetBlockedGrid(const NRLib::Grid<float> * grid,
+                                                        std::vector<double>      & blocked_log,
+                                                        int                        i_offset = 0,
+                                                        int                        j_offset = 0);
 
 
   //SET FUNCTIONS --------------------------------

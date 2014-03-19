@@ -119,7 +119,7 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   }
 }
 
-FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
+FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
   theta_          = RMISSING;
@@ -176,7 +176,7 @@ FFTGrid::FFTGrid(const NRLib::Grid<double> * grid, int nxp, int nyp, int nzp)
         float value = RMISSING;
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
 
-          value = static_cast<float>(grid->GetValue(i, j, k)); //H grid(i,j,k) not working when a pointer is used?
+          value = grid->GetValue(i, j, k);
           //value = pOld->getRealValue(i, j, k);
         }
         else {
@@ -2616,7 +2616,7 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     int nyp  = NRLib::ReadBinaryInt(binFile);
     int nzp  = NRLib::ReadBinaryInt(binFile);
 
-    if(rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
+    if (rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
       LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The grid has different dimensions than the model grid. Check the padding settings");
       LogKit::LogFormatted(LogKit::Low,"\n                rnxp   nyp   nzp");
       LogKit::LogFormatted(LogKit::Low,"\n--------------------------------");

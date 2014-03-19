@@ -333,7 +333,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
         prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 2), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
       }
 
-      bool estimation_mode = model_settings->getEstimationMode();
+      //bool estimation_mode = model_settings->getEstimationMode();
 
       //TimeDepthMapping if intervals isn't used.
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() == 1 && model_settings->getDoDepthConversion()) {
@@ -388,7 +388,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
         NRLib::Vector initial_mean(6);
         NRLib::Matrix initial_cov(6,6);
 
-        SetupState4D(model_settings, seismic_parameters, initial_mean, initial_cov);
+        SetupState4D(seismic_parameters, simbox_, state4d_, initial_mean, initial_cov);
 
         time_evolution_ = TimeEvolution(10000, *time_line_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
         time_evolution_.SetInitialMean(initial_mean);
@@ -1822,7 +1822,7 @@ ModelGeneral::PrintSettings(ModelSettings     * model_settings,
   LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", model_settings->getMinSamplingDensity());
 
   if (model_settings->getKrigingParameter()>0) { // We are doing kriging
-    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2f\n", model_settings->getKrigingParameter());
+    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2d\n", model_settings->getKrigingParameter());
     LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (model_settings->getDoSmoothKriging() ? "yes" : "no"));
   }
 
@@ -2055,7 +2055,7 @@ ModelGeneral::PrintSettings(ModelSettings     * model_settings,
     else { //Multiple intervals
       std::vector<std::string> interval_names = model_settings->getIntervalNames();
 
-      for (int i = 0; i < interval_names.size(); i++) {
+      for (size_t i = 0; i < interval_names.size(); i++) {
 
         LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
         const std::string & base_name = input_files->getIntervalBaseTimeSurface(interval_names[i]);
@@ -5606,23 +5606,24 @@ void ModelGeneral::CheckFaciesNamesConsistency(ModelSettings     *& model_settin
 //}
 
 void
-ModelGeneral::SetupState4D(ModelSettings           *& modelSettings,
-                           SeismicParametersHolder  & seismicParameters,
-                           NRLib::Vector            & initialMean,
-                           NRLib::Matrix            & initialCov)
+ModelGeneral::SetupState4D(SeismicParametersHolder & seismicParameters,
+                           const Simbox            * simbox,
+                           State4D                 & state4d,
+                           NRLib::Vector           & initialMean,
+                           NRLib::Matrix           & initialCov)
 {
   //H Difference: Earlier a background was made from rockphysics3d, which was copied to seismicParameters and state4d.
   //Now, use background created in CommonData
-  state4d_.setStaticMu(seismicParameters.GetMeanVp(), seismicParameters.GetMeanVs(), seismicParameters.GetMeanRho());
+  state4d.setStaticMu(seismicParameters.GetMeanVp(), seismicParameters.GetMeanVs(), seismicParameters.GetMeanRho());
 
   CopyCorrelationsTo4DState(seismicParameters, state4d_);
 
-  const int nx    = simbox_->getnx();
-  const int ny    = simbox_->getny();
-  const int nz    = simbox_->getnz();
-  const int nxPad = simbox_->GetNXpad();
-  const int nyPad = simbox_->GetNYpad();
-  const int nzPad = simbox_->GetNZpad();
+  const int nx    = simbox->getnx();
+  const int ny    = simbox->getny();
+  const int nz    = simbox->getnz();
+  const int nxPad = simbox->GetNXpad();
+  const int nyPad = simbox->GetNYpad();
+  const int nzPad = simbox->GetNZpad();
 
   Complete4DBackground(nx, ny, nz, nxPad, nyPad, nzPad, initialMean, initialCov);
 }

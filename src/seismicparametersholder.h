@@ -43,10 +43,10 @@ public:
                                                         FFTGrid  * meanVs,
                                                         FFTGrid  * meanRho);
 
-  void                          setBackgroundParametersInterval(const std::vector<NRLib::Grid<double> *>  & mean_parameters,
-                                                                int                                         nx_pad,
-                                                                int                                         ny_pad,
-                                                                int                                         nz_pad);
+  void                          setBackgroundParametersInterval(const std::vector<NRLib::Grid<float> *>  & mean_parameters,
+                                                                int                                        nx_pad,
+                                                                int                                        ny_pad,
+                                                                int                                        nz_pad);
 
   void                          copyBackgroundParameters(FFTGrid  * meanVp,
                                                          FFTGrid  * meanVs,

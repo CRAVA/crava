@@ -31,9 +31,9 @@
 #include "src/gridmapping.h"
 #include "src/io.h"
 
-Background::Background(std::vector<NRLib::Grid<double> *>         & parameters,
+Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
                        const std::vector<NRLib::Well>             & wells,
-                       NRLib::Grid<double>                        * velocity,
+                       NRLib::Grid<float>                         * velocity,
                        const Simbox                               * time_simbox,
                        const Simbox                               * time_bg_simbox,
                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -92,12 +92,12 @@ Background::Background(std::vector<NRLib::Grid<double> *>         & parameters,
 }
 
 //-------------------------------------------------------------------------------
-Background::Background(std::vector<NRLib::Grid<double> *> & parameters,
-                       const std::vector<NRLib::Well>     & wells,
-                       const Simbox                       * interval_simbox,
-                       const ModelSettings                * model_settings,
-                       const std::vector<std::string>     & surface_files,
-                       std::string                        & err_text)
+Background::Background(std::vector<NRLib::Grid<float> *> & parameters,
+                       const std::vector<NRLib::Well>    & wells,
+                       const Simbox                      * interval_simbox,
+                       const ModelSettings               * model_settings,
+                       const std::vector<std::string>    & surface_files,
+                       std::string                       & err_text)
   : DataTarget_(250) // For kriging: Increase surrounding until 250 data points is aquired
 {
 
@@ -123,11 +123,11 @@ Background::Background(std::vector<NRLib::Grid<double> *> & parameters,
 }
 
 //-------------------------------------------------------------------------------
-Background::Background(std::vector<std::vector<NRLib::Grid<double> *> > & parameters, //vector(intervals) vector(parameter)
-                       const std::vector<NRLib::Well>                   & wells,
-                       MultiIntervalGrid                                * multiple_interval_grid,
-                       const ModelSettings                              * model_settings,
-                       std::string                                      & err_text)
+Background::Background(std::vector<std::vector<NRLib::Grid<float> *> > & parameters, //vector(intervals) vector(parameter)
+                       const std::vector<NRLib::Well>                  & wells,
+                       MultiIntervalGrid                               * multiple_interval_grid,
+                       const ModelSettings                             * model_settings,
+                       std::string                                     & err_text)
   : DataTarget_(250) // For kriging: Increase surrounding until 250 data points is aquired
 {
 
@@ -179,10 +179,10 @@ Background::releaseGrids()
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(NRLib::Grid<double>                        * bg_vp,
-                                    NRLib::Grid<double>                        * bg_vs,
-                                    NRLib::Grid<double>                        * bg_rho,
-                                    NRLib::Grid<double>                        * velocity,
+Background::generateBackgroundModel(NRLib::Grid<float>                         * bg_vp,
+                                    NRLib::Grid<float>                         * bg_vs,
+                                    NRLib::Grid<float>                         * bg_rho,
+                                    NRLib::Grid<float>                         * velocity,
                                     const std::vector<NRLib::Well>             & wells,
                                     const Simbox                               * simbox,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -347,9 +347,9 @@ Background::generateBackgroundModel(NRLib::Grid<double>                        *
 
 //-------------------------------------------------------------------------------
 void
-Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            * bg_vp,
-                                             NRLib::Grid<double>            * bg_vs,
-                                             NRLib::Grid<double>            * bg_rho,
+Background::GenerateMultizoneBackgroundModel(NRLib::Grid<float>             * bg_vp,
+                                             NRLib::Grid<float>             * bg_vs,
+                                             NRLib::Grid<float>             * bg_rho,
                                              const std::vector<NRLib::Well> & wells,
                                              const Simbox                   * simbox,
                                              const ModelSettings            * model_settings,
@@ -435,9 +435,9 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            * bg
 
       std::string err_text_tmp = "";
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
       if (err_text_tmp != "") {
         err_text += err_text_tmp;
@@ -567,11 +567,11 @@ Background::GenerateMultizoneBackgroundModel(NRLib::Grid<double>            * bg
 
 //-------------------------------------------------------------------------------
 void
-Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::Grid<double> *> > & parameters, //vector(intervals) vector(parameters)
-                                                 const std::vector<NRLib::Well>                   & wells,
-                                                 MultiIntervalGrid                                * multiple_interval_grid,
-                                                 const ModelSettings                              * model_settings,
-                                                 std::string                                      & err_text)
+Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::Grid<float> *> > & parameters, //vector(intervals) vector(parameters)
+                                                 const std::vector<NRLib::Well>                  & wells,
+                                                 MultiIntervalGrid                               * multiple_interval_grid,
+                                                 const ModelSettings                             * model_settings,
+                                                 std::string                                     & err_text)
 {
   LogKit::LogFormatted(LogKit::Low,"MultiInterval background models:\n");
 
@@ -648,9 +648,9 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
 
       std::string err_text_tmp = "";
 
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
-      getWellTrendsZone(model_settings, blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vp,  high_cut_well_trend_vp,  wells, eroded_zone, hit_zone, nz, name_vp,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_vs,  high_cut_well_trend_vs,  wells, eroded_zone, hit_zone, nz, name_vs,  i, err_text_tmp);
+      getWellTrendsZone(blocked_logs, well_trend_rho, high_cut_well_trend_rho, wells, eroded_zone, hit_zone, nz, name_rho, i, err_text_tmp);
 
       if (err_text_tmp != "") {
         err_text += err_text_tmp;
@@ -754,15 +754,12 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
 
 
     //H model_settings->getSurfaceUncertainty() only given with multizone background not background created in a multi interval settings
-    // The part with zone_probability is removed. Temporary solution, send in vector with zero uncertainty. H-TODO: Rewrite MakeMultiIntervalBackground
-    std::vector<double> surface_uncertainty(n_intervals+1, 0.0);
-
+    // The part with zone_probability is removed.
     MakeMultiIntervalBackground(parameters,
                                 vp_zones, vs_zones, rho_zones,
                                 multiple_interval_grid,
                                 surfaces,
-                                model_settings->getSurfaceUncertainty(),
-                                model_settings->getFileGrid(),
+                                //model_settings->getSurfaceUncertainty(),
                                 "multiinterval");
 
 
@@ -773,7 +770,7 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
                                      vp_zones, vs_zones, rho_zones,
                                      multiple_interval_grid,
                                      surfaces,
-                                     model_settings->getSurfaceUncertainty(),
+                                     //model_settings->getSurfaceUncertainty(),
                                      model_settings->getFileGrid());
 
     }
@@ -785,9 +782,9 @@ Background::GenerateMultiIntervalBackgroundModel(std::vector<std::vector<NRLib::
 }
 
 void
-Background::MakeMultizoneBackground(NRLib::Grid<double>              * bg_vp,
-                                    NRLib::Grid<double>              * bg_vs,
-                                    NRLib::Grid<double>              * bg_rho,
+Background::MakeMultizoneBackground(NRLib::Grid<float>               * bg_vp,
+                                    NRLib::Grid<float>               * bg_vs,
+                                    NRLib::Grid<float>               * bg_rho,
                                     const std::vector<StormContGrid> & vp_zones,
                                     const std::vector<StormContGrid> & vs_zones,
                                     const std::vector<StormContGrid> & rho_zones,
@@ -882,9 +879,9 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              * bg_vp,
           }
         }
 
-        bg_vp->SetValue(i, j, k, vp);
-        bg_vs->SetValue(i, j, k, vs);
-        bg_rho->SetValue(i, j, k, rho);
+        bg_vp->SetValue(i, j, k, static_cast<float>(vp));
+        bg_vs->SetValue(i, j, k, static_cast<float>(vs));
+        bg_rho->SetValue(i, j, k, static_cast<float>(rho));
       }
     }
 
@@ -898,15 +895,14 @@ Background::MakeMultizoneBackground(NRLib::Grid<double>              * bg_vp,
 }
 
 void
-Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<double> *> > & parameters, //vector(intervals) vector(parameters)
-                                        const std::vector<StormContGrid>                 & vp_zones,
-                                        const std::vector<StormContGrid>                 & vs_zones,
-                                        const std::vector<StormContGrid>                 & rho_zones,
-                                        MultiIntervalGrid                                * multiple_interval_grid,
-                                        std::vector<const NRLib::Surface<double> *>        surfaces,
-                                        const std::vector<double>                        & surface_uncertainty,
-                                        const bool                                         is_file,
-                                        const std::string                                & type) const
+Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<float> *> > & parameters, //vector(intervals) vector(parameters)
+                                        const std::vector<StormContGrid>                & vp_zones,
+                                        const std::vector<StormContGrid>                & vs_zones,
+                                        const std::vector<StormContGrid>                & rho_zones,
+                                        MultiIntervalGrid                               * multiple_interval_grid,
+                                        std::vector<const NRLib::Surface<double> *>       surfaces,
+                                        //const std::vector<double>                       & surface_uncertainty,
+                                        const std::string                               & type) const
 {
 
   std::string text = "\nBuilding "+type+" background:";
@@ -923,7 +919,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
     int ny = simbox->getny();
     int nz = simbox->getnz();
 
-    const int nxp  = nx;
+    //const int nxp  = nx;
     const int nyp  = ny;
     const int nzp  = nz;
     const int rnxp = nx; //2*(nxp/2 + 1);
@@ -986,7 +982,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
             double vs  = 0.0;
             double rho = 0.0;
 
-            //for (int zone=0; zone<n_intervals; zone++) { //H For Multizone background this is used to create a a weighted vp from all zones (?). In Multiinterval we store vp per interval, remove these weightings?
+            //for (int zone=0; zone<n_intervals; zone++) {
 
             //  if (zone_probability[zone] > 0) {
             //    size_t ind1;
@@ -1005,7 +1001,7 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
             //  }
             //}
 
-            //H For multinterval. No weightings between intervals, no zone_probability. Check this?
+            //H For multinterval. No weightings between intervals, no zone_probability. Store each interval grid seperatly.
             size_t ind1;
             size_t ind2;
             double t = 0.0;
@@ -1015,15 +1011,15 @@ Background::MakeMultiIntervalBackground(std::vector<std::vector<NRLib::Grid<doub
             vs  = vs_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
             rho = rho_zones[i_interval].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
 
-            parameters[i_interval][0]->SetValue(i, j, k, vp);
-            parameters[i_interval][1]->SetValue(i, j, k, vs);
-            parameters[i_interval][2]->SetValue(i, j, k, rho);
+            parameters[i_interval][0]->SetValue(i, j, k, static_cast<float>(vp));
+            parameters[i_interval][1]->SetValue(i, j, k, static_cast<float>(vs));
+            parameters[i_interval][2]->SetValue(i, j, k, static_cast<float>(rho));
 
           }
           else {
-            parameters[i_interval][0]->SetValue(i, j, k, 0.0);
-            parameters[i_interval][1]->SetValue(i, j, k, 0.0);
-            parameters[i_interval][2]->SetValue(i, j, k, 0.0);
+            parameters[i_interval][0]->SetValue(i, j, k, 0.0f);
+            parameters[i_interval][1]->SetValue(i, j, k, 0.0f);
+            parameters[i_interval][2]->SetValue(i, j, k, 0.0f);
           }
         }
       }
@@ -1352,7 +1348,7 @@ Background::BuildSeismicPropertyIntervals(std::vector<StormContGrid> & vp_zones,
 }
 
 void
-Background::calculateVelocityDeviations(NRLib::Grid<double>                        * velocity,
+Background::calculateVelocityDeviations(NRLib::Grid<float>                         * velocity,
                                         const std::vector<NRLib::Well>             & wells,
                                         const Simbox                               * simbox,
                                         std::map<std::string, BlockedLogsCommon *> & bl,
@@ -1651,8 +1647,7 @@ Background::getWellTrends(std::vector<std::vector<double> >          & well_tren
 
 //---------------------------------------------------------------------------
 void
-Background::getWellTrendsZone(const ModelSettings               * model_settings,
-                              std::vector<BlockedLogsCommon *>  & bl,
+Background::getWellTrendsZone(std::vector<BlockedLogsCommon *>  & bl,
                               std::vector<std::vector<double> > & well_trend,
                               std::vector<std::vector<double> > & high_cut_well_trend,
                               const std::vector<NRLib::Well>    & wells,
@@ -1672,7 +1667,7 @@ Background::getWellTrendsZone(const ModelSettings               * model_settings
   for (int w = 0; w < n_wells; w++) {
     if (hit_zone[w] == true) {
 
-      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone); //model_settings->getMaxHzBackground(), model_settings->getMaxHzSeismic());
+      bl[w] = new BlockedLogsCommon(&wells[w], eroded_zone);
       n_valid_wells_in_zone++;
     }
     else
@@ -1802,9 +1797,9 @@ Background::writeMultizoneTrendsToFile(const std::vector<std::vector<double> > &
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
 
-  NRLib::Grid<double> * trend_vp  = NULL;
-  NRLib::Grid<double> * trend_vs  = NULL;
-  NRLib::Grid<double> * trend_rho = NULL;
+  NRLib::Grid<float> * trend_vp  = new NRLib::Grid<float>();
+  NRLib::Grid<float> * trend_vs  = new NRLib::Grid<float>();
+  NRLib::Grid<float> * trend_rho = new NRLib::Grid<float>();
 
   MakeMultizoneBackground(trend_vp,
                           trend_vs,
@@ -1850,7 +1845,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
                                            std::vector<StormContGrid>                & rho_trend_zone,
                                            MultiIntervalGrid                         * multiple_interval_grid,
                                            std::vector<const NRLib::Surface<double> *> surfaces,
-                                           const std::vector<double>                 & surface_uncertainty,
+                                           //const std::vector<double>                 & surface_uncertainty,
                                            const bool                                  is_file) const
 {
   int n_intervals = multiple_interval_grid->GetNIntervals();
@@ -1861,7 +1856,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
     makeTrendZone(rho_zones[i], rho_trend_zone[i]);
   }
 
-  std::vector<std::vector<NRLib::Grid<double> *> > trend_parameters(n_intervals);
+  std::vector<std::vector<NRLib::Grid<float> *> > trend_parameters(n_intervals);
   for (int i = 0; i < n_intervals; i++)
     trend_parameters[i].resize(3);
 
@@ -1871,14 +1866,14 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
                               rho_trend_zone,
                               multiple_interval_grid,
                               surfaces,
-                              surface_uncertainty,
-                              is_file,
+                              //surface_uncertainty,
+                              //is_file,
                               "trend in multiinterval");
 
-  for (int i=0; i < n_intervals; i++) {
+  //for (int i=0; i < n_intervals; i++) {
 
-    std::string interval_name = multiple_interval_grid->GetIntervalName(i);
-    const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
+  //  std::string interval_name = multiple_interval_grid->GetIntervalName(i);
+  //  const Simbox * simbox     = multiple_interval_grid->GetIntervalSimbox(i);
 
     //FFTGrid * exp_trend_vp = copyFFTGrid(trend_vp[i], true, is_file);
     //FFTGrid * exp_trend_vs = copyFFTGrid(trend_vs[i], true, is_file);
@@ -1900,7 +1895,7 @@ Background::writeMultiIntervalTrendsToFile(const std::vector<std::vector<double>
     //delete trend_vs[i];
     //delete trend_rho[i];
 
-  }
+  //}
 }
 
 //-------------------------------------------------------------------------------
@@ -2022,7 +2017,7 @@ Background::makeCovGrid2D(const Simbox * simbox,
 
 void
 Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
-                                 NRLib::Grid<double>              * bg_grid,
+                                 NRLib::Grid<float>               * bg_grid,
                                  std::vector<double>              & trend,
                                  const Simbox                     * simbox,
                                  const CovGrid2D                  & cov_grid_2D,
@@ -2064,7 +2059,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
     // Set layer in background model from surface
     for (int j = 0; j < ny; j++) {
       for (int i = 0 ; i < nx ; i++) {
-        bg_grid->SetValue(i, j, k, surface(i,j));
+        bg_grid->SetValue(i, j, k, static_cast<float>(surface(i,j)));
       }
     }
 
@@ -2669,14 +2664,14 @@ Background::fillInVerticalTrend(FFTGrid                   * grid,
 
 //-------------------------------------------------------------------------------
 void
-Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
-                                    NRLib::Grid<double> * bg_vs,
-                                    NRLib::Grid<double> * bg_rho,
+Background::resampleBackgroundModel(NRLib::Grid<float>  * bg_vp,
+                                    NRLib::Grid<float>  * bg_vs,
+                                    NRLib::Grid<float>  * bg_rho,
                                     const Simbox        * time_bg_simbox,
                                     const Simbox        * time_simbox,
                                     const ModelSettings * model_settings)
 {
-  bool is_file = model_settings->getFileGrid();
+  //bool is_file = model_settings->getFileGrid();
 
   //H Writing of grids missing
   //if ((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
@@ -2697,9 +2692,9 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
   //  delete exp_rho;
   //}
 
-  NRLib::Grid<double> * res_bg_vp  = new NRLib::Grid<double>();
-  NRLib::Grid<double> * res_bg_vs  = new NRLib::Grid<double>();
-  NRLib::Grid<double> * res_bg_rho = new NRLib::Grid<double>();
+  NRLib::Grid<float> * res_bg_vp  = new NRLib::Grid<float>();
+  NRLib::Grid<float> * res_bg_vs  = new NRLib::Grid<float>();
+  NRLib::Grid<float> * res_bg_rho = new NRLib::Grid<float>();
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
   resampleParameter(res_bg_vp,  bg_vp,  time_simbox, time_bg_simbox);
@@ -2730,10 +2725,10 @@ Background::resampleBackgroundModel(NRLib::Grid<double> * bg_vp,
  }
 
 void
-Background::resampleParameter(NRLib::Grid<double> *& p_new, // Resample to
-                              NRLib::Grid<double> *  p_old, // Resample from
-                              const Simbox        *  simbox_new,
-                              const Simbox        *  simbox_old)
+Background::resampleParameter(NRLib::Grid<float> *& p_new, // Resample to
+                              NRLib::Grid<float> *  p_old, // Resample from
+                              const Simbox       *  simbox_new,
+                              const Simbox       *  simbox_old)
 {
   int nx  = simbox_new->getnx();
   int ny  = simbox_new->getny();
@@ -2822,7 +2817,7 @@ Background::resampleParameter(NRLib::Grid<double> *& p_new, // Resample to
         }
         value = sum/static_cast<double>(n);
 
-        p_new->SetValue(i, j, k, value);
+        p_new->SetValue(i, j, k, static_cast<float>(value));
       }
     }
   }

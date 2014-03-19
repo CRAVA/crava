@@ -27,8 +27,8 @@ public:
                                    std::string                    & errText);
   void            calculateSurfaceFromVelocity(FFTGrid      * velocity,
                                                const Simbox * simbox);
-  void            calculateSurfaceFromVelocity(NRLib::Grid<double> * velocity,
-                                               const Simbox        * simbox);
+  void            calculateSurfaceFromVelocity(NRLib::Grid<float> * velocity,
+                                               const Simbox       * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
                                  int            outputFormat,
@@ -36,8 +36,8 @@ public:
                                  std::string  & errText);
   void            makeTimeDepthMapping(FFTGrid      * velocity,
                                        const Simbox * timeSimbox);
-  void            makeTimeDepthMapping(NRLib::Grid<double> * velocity,
-                                       const Simbox        * timeSimbox);
+  void            makeTimeDepthMapping(NRLib::Grid<float> * velocity,
+                                       const Simbox       * timeSimbox);
   void            makeTimeTimeMapping(const Simbox * timeCutSimbox);
 
   void            setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox);

@@ -512,7 +512,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   }
   const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the first simbox
 
-  for(size_t s = 0; s < n_intervals; s++){
+  for(int s = 0; s < n_intervals; s++){
     std::string interval_name = multiple_interval_grid->GetIntervalName(s);
     int n_lay = static_cast<int>(nz[s]*dz_rel[s]);
     n_layers_adjusted_per_interval.insert(std::pair<std::string, int>(interval_name, n_lay)) ; // number of blocks per interval. Casting double to int cuts the decimals
@@ -533,7 +533,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if(interval_simboxes[n].IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
         interval_simboxes[n].getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
         if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
-          first_K = first_K*dz_rel[n]; // the vertical blocks must be equally spaced for corr estimation
+          first_K = first_K*static_cast<int>(dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
           first_S_ = n;
           first_M_ = m;
           break;
@@ -555,7 +555,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if(interval_simboxes[n].IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
         interval_simboxes[n].getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
         if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
-          last_K = last_K*dz_rel[n];
+          last_K = last_K*static_cast<int>(dz_rel[n]);
           last_S_ = n;
           last_M_ = m;
           break;
@@ -1014,7 +1014,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     max_m = last_M_+1;                              // 1. If the last well obs is in interval number first_S_
   }
   else{
-    for(size_t s = 0; s<=first_S_; s++)
+    for(int s = 0; s<=first_S_; s++)
       max_m += n_well_log_obs_in_interval_[s];      // 2. If the last well obs is in another interval
   }
   // loop over the first simbox where the well is observed
@@ -2727,19 +2727,19 @@ void BlockedLogsCommon::GetBlockedGrid(const FFTGrid       * grid,
                                        std::vector<double> & blocked_log,
                                        int                   i_offset,
                                        int                   j_offset) {
-  for (int m = 0 ; m < n_blocks_ ; m++) {
+  for (size_t m = 0 ; m < n_blocks_ ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blocked_log[m] = grid->getRealValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
   }
 }
 
-void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<double> * grid,
-                                       std::vector<double>       & blocked_log,
-                                       int                         i_offset,
-                                       int                         j_offset) {
+void BlockedLogsCommon::GetBlockedGrid(const NRLib::Grid<float> * grid,
+                                       std::vector<double>      & blocked_log,
+                                       int                        i_offset,
+                                       int                        j_offset) {
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
-    blocked_log[m] = grid->GetValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
+    blocked_log[m] = static_cast<float>(grid->GetValue(i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]));
   }
 }
 
@@ -3604,7 +3604,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox * simbox)
   // If the ends have undefined coordinates we use the nearest defined
   // coordinate for x and y and the block cell centre for z
   //
-  for (size_t b = 0 ; b < first_B_ ; b++) {
+  for (int b = 0 ; b < first_B_ ; b++) {
     double x,y,z;
     simbox->getCoord(i_pos_[b], j_pos_[b], k_pos_[b], x, y, z);
     x_pos_blocked_[b] = x_pos_blocked_[first_B_];

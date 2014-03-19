@@ -766,8 +766,8 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     cor_seis_synt_r[w]          = new fftw_real[rnzp_];
     wavelet_r[w]                = new fftw_real[rnzp_];
     synt_r[w]                   = new fftw_real[rnzp_];
-    const std::vector<int> ipos = blocked_log->GetIposVector();
-    const std::vector<int> jpos = blocked_log->GetJposVector();
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
     dzWell[w]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
     w++;
   }

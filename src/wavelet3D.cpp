@@ -89,8 +89,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 
-      const std::vector<int> iPos = blocked_log->GetIposVector();
-      const std::vector<int> jPos = blocked_log->GetJposVector();
+      const std::vector<int> & iPos = blocked_log->GetIposVector();
+      const std::vector<int> & jPos = blocked_log->GetJposVector();
 
       std::vector<double> az(nz_);
       std::vector<double> bz(nz_);
@@ -513,8 +513,8 @@ Wavelet3D::calculateSNRatio(const Simbox                                     * s
     if(blocked_log->GetUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", blocked_log->GetWellName().c_str());
 
-      const std::vector<int> iPos = blocked_log->GetIposVector();
-      const std::vector<int> jPos = blocked_log->GetJposVector();
+      const std::vector<int> & iPos = blocked_log->GetIposVector();
+      const std::vector<int> & jPos = blocked_log->GetJposVector();
 
       std::vector<double> az(nz_);
       std::vector<double> bz(nz_);

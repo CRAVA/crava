@@ -118,7 +118,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
         trend_cube->endAccess();
       }
 
-      NRLib::Grid<double> * grid_cube = NULL;
+      NRLib::Grid<float> * grid_cube = new NRLib::Grid<float>();
       grid_cube->Resize(nx, ny, nz);
 
       for(int k=0; k<nzp; k++) {
@@ -163,14 +163,14 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
   }
 }
 
-CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
-                       const ModelSettings                * model_settings,
-                       const InputFiles                   * input_files,
-                       const std::string                  & interval_name,
-                       const std::vector<int>             & trend_cube_type,
-                       const std::vector<std::string>     & trend_cube_parameters,
-                       std::vector<NRLib::Grid<double> *> & trend_cubes,
-                       std::string                        & err_txt) {
+CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
+                       const ModelSettings               * model_settings,
+                       const InputFiles                  * input_files,
+                       const std::string                 & interval_name,
+                       const std::vector<int>            & trend_cube_type,
+                       const std::vector<std::string>    & trend_cube_parameters,
+                       std::vector<NRLib::Grid<float> *> & trend_cubes,
+                       std::string                       & err_txt) {
   // Class variables
   n_samples_      = 1000;
   n_trend_cubes_  = static_cast<int>(trend_cube_parameters.size());
@@ -185,7 +185,7 @@ CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
 
     for(int grid_number=0; grid_number<n_trend_cubes_; grid_number++) {
 
-      NRLib::Grid<double> * trend_cube = new NRLib::Grid<double>(nx, ny, nz, 0.0);
+      NRLib::Grid<float> * trend_cube = new NRLib::Grid<float>(nx, ny, nz, 0.0);
 
       // 1 Trend cube from file ------------------------------------------------
       if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {
@@ -201,7 +201,7 @@ CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
         for(int k=0; k<nz; k++) {
           for(int j=0; j<ny; j++) {
             for(int i=0; i<nx; i++) {
-              trend_cube->SetValue(i, j, k, k);
+              trend_cube->SetValue(i, j, k, static_cast<float>(k));
             }
           }
         }
@@ -217,7 +217,7 @@ CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
             for(int i=0; i<nx; i++) { //rnxp
               //if(i < nx) {
                 // value is set to depth from simbox
-                double value = static_cast<double>(interval_simbox->getTop(i,j) + interval_simbox->getdz(i,j)*k);
+                float value = static_cast<float>(interval_simbox->getTop(i,j) + interval_simbox->getdz(i,j)*k);
                 trend_cube->SetValue(i, j, k, value);
               //}
               //else
@@ -235,16 +235,16 @@ CravaTrend::CravaTrend(const Simbox                       * interval_simbox,
       //trend_cube->calculateStatistics();
       //const float  max       = trend_cube->getMaxReal();
       //const float  min       = trend_cube->getMinReal();
-      double avg = 0.0;
-      double min = 0.0;
-      double max = 0.0;
+      float avg = 0.0f;
+      float min = 0.0f;
+      float max = 0.0f;
       trend_cube->GetAvgMinMax(avg, min, max);
-      const double increment = (max-min)/(n_samples_-1);
+      const double increment = static_cast<double>((max-min)/(n_samples_-1));
 
       std::vector<double> sampling(n_samples_);
 
       for(int j=0; j<n_samples_-1; j++)
-        sampling[j] = min + j*increment;
+        sampling[j] = static_cast<double>(min) + j*increment;
 
       sampling[n_samples_-1] = max;
 

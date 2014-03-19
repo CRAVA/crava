@@ -18,7 +18,6 @@ class Wavelet;
 class Wavelet1D;
 class Simbox;
 class RandomGen;
-//class WellData;
 class CKrigingAdmin;
 class CovGridSeparated;
 class KrigingData3D;
@@ -205,12 +204,8 @@ private:
   FFTGrid          * postRho_;
   FFTGrid          * errCorr_;
 
-  bool               multiinterval_;
-
   int                                        krigingParameter_;
-  //std::vector<WellData *> wells_;
   std::map<std::string, BlockedLogsCommon *> blocked_wells_;
-  //int                                        nWells_;
 
   int                scaleWarning_;
   std::string        scaleWarningText_;
