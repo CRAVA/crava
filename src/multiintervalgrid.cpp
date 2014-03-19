@@ -60,6 +60,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     LogKit::WriteHeader("Setting up grid");
     surfaces.resize(1);
     interval_simboxes_.resize(1);
+    interval_names_.push_back("");
     background_parameters_.resize(1);
     background_parameters_[0].resize(3);
     for (size_t i = 0; i < 3; i++)
@@ -252,7 +253,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   // Case 1: Single correlation surface
   if (corr_dir_single_surf != "") {
     Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
-    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+    interval_simbox = Simbox(estimation_simbox, "", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
     const SegyGeometry * area_params = model_settings->getAreaParameters();
     failed = interval_simbox.setArea(area_params, err_text);
 
@@ -260,7 +261,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
     interval_simbox.SetErodedSurfaces(top_surface, base_surface);
   }
   else {
-    interval_simbox = Simbox(estimation_simbox, "test_interval", n_layers, top_surface, base_surface, err_text, failed);
+    interval_simbox = Simbox(estimation_simbox, "", n_layers, top_surface, base_surface, err_text, failed);
     const SegyGeometry * area_params = model_settings->getAreaParameters();
     failed = interval_simbox.setArea(area_params, err_text);
 
