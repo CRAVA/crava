@@ -255,10 +255,11 @@ private:
   //                                      NRLib::Vector            & initialMean,
   //                                      NRLib::Matrix            & initialCov);
 
-  void              SetupState4D(ModelSettings           *& modelSettings,
-                                 SeismicParametersHolder  & seismicParameters,
-                                 NRLib::Vector            & initialMean,
-                                 NRLib::Matrix            & initialCov);
+  void              SetupState4D(SeismicParametersHolder & seismicParameters,
+                                 const Simbox            * simbox,
+                                 State4D                 & state4d,
+                                 NRLib::Vector           & initialMean,
+                                 NRLib::Matrix           & initialCov);
 
   void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
                                                        const std::vector<float>               & probability,
@@ -373,7 +374,7 @@ private:
 
   const Simbox                  * simbox_;                 ///< Information about simulation area.
 
-  RandomGen               * random_gen_;                  ///< Random generator.
+  RandomGen               * random_gen_;             ///< Random generator.
 
   CravaTrend                                                    trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
   std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model

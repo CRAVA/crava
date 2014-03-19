@@ -18,13 +18,13 @@
 #include "src/io.h"
 
 // CRA-257: New correlation estimation routine with blocked logs within one interval
-Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
-                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                       const std::vector<NRLib::Grid<double> *>                 & background,
-                       //const std::vector<NRLib::Grid<double> >                  & background_max_hz,
-                       const Simbox                                             * interval_simbox,
-                       const ModelSettings                                      * model_settings,
-                       std::string                                              & err_txt):
+Analyzelog::Analyzelog(const std::vector<NRLib::Well>                          & wells,
+                       const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
+                       const std::vector<NRLib::Grid<float> *>                 & background,
+                       //const std::vector<NRLib::Grid<double> >                 & background_max_hz,
+                       const Simbox                                            * interval_simbox,
+                       const ModelSettings                                     * model_settings,
+                       std::string                                             & err_txt):
 min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimation()){
 
   enough_data_for_corr_estimation_  = false;
@@ -54,13 +54,13 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
 }
 
 // CRA-257: New correlation estimation routine with blocked logs within multiple intervals
-Analyzelog::Analyzelog(const std::vector<NRLib::Well>                           & wells,
-                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                       const std::vector<std::vector<NRLib::Grid<double> *> >   & background,
-                       //const std::vector<std::vector<NRLib::Grid<double> > >    & background_max_hz,
-                       const std::vector<Simbox>                                & interval_simboxes,
-                       const ModelSettings                                      * model_settings,
-                       std::string                                              & err_txt):
+Analyzelog::Analyzelog(const std::vector<NRLib::Well>                          & wells,
+                       const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
+                       const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
+                       //const std::vector<std::vector<NRLib::Grid<double> > >   & background_max_hz,
+                       const std::vector<Simbox>                               & interval_simboxes,
+                       const ModelSettings                                     * model_settings,
+                       std::string                                             & err_txt):
 min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimation()){
 
   enough_data_for_corr_estimation_  = false;
@@ -130,7 +130,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
                                       std::string                                               & interval_name,
                                       const Simbox                                              * interval_simbox,
                                       bool                                                      & enough_data_for_corr_estimation,
-                                      const std::vector<NRLib::Grid<double> *>                   & background,
+                                      const std::vector<NRLib::Grid<float> *>                   & background,
                                       std::string                                               & err_txt){
 
   // Covariance and correlation estimation with blocked logs
@@ -336,13 +336,13 @@ Analyzelog::CalculateNumberOfLags(int                                           
   n_lags = int(maxdist/dt)+1;
 }
 
-void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                     & ln_data,
-                                const NRLib::Grid<double>                            * background,
-                                const std::vector<std::string>                       & well_names,
-                                const std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
-                                const std::string                                    & interval_name,
-                                const std::string                                    & log_name,
-                                std::string                                          & err_txt){
+void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                    & ln_data,
+                                const NRLib::Grid<float>                            * background,
+                                const std::vector<std::string>                      & well_names,
+                                const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs_for_correlation,
+                                const std::string                                   & interval_name,
+                                const std::string                                   & log_name,
+                                std::string                                         & err_txt){
 
   float global_mean = 0.0;
   int   count       = 0;
@@ -381,7 +381,7 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
 
     if (background != NULL){
         for(int n = 0; n < nd; n++){
-          mean[n]         = background[log_nr](i_pos[n], j_pos[n], k_pos[n]);
+          mean[n]         = static_cast<double>(background[log_nr](i_pos[n], j_pos[n], k_pos[n]));
           mean_max_hz[n]  = 0;
         }
     }

@@ -305,7 +305,7 @@ void FaciesProb::makeFaciesDens(int                                nfac,
 
   nFacies_ = nfac;
 
-  float kstda, kstdb, kstdr, hopt;
+  double kstda, kstdb, kstdr, hopt;
   int nbinsa = 100;
   int nbinsb = 100;
   if(noVs == true)
@@ -375,15 +375,15 @@ void FaciesProb::makeFaciesDens(int                                nfac,
   }
 
   // Make bins.
-  float varVp = 0.0f;
-  float varVs  = 0.0f;
-  float varRho   = 0.0f;
+  double varVp  = 0.0;
+  double varVs  = 0.0;
+  double varRho = 0.0;
   CalculateVariances(vpFilteredNew, vsFilteredNew, rhoFilteredNew, faciesLog,
                      varVp, varVs, varRho);//sets varvp etc....
   if(noVs == true)
     varVs = 5*varVp; //Must be large enough to make surface span possible vs values.
 
-  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
+  hopt  = pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7);
   kstda = hopt*sqrt(varVp);
   kstdb = hopt*sqrt(varVs);
   kstdr = hopt*sqrt(varRho);
@@ -716,8 +716,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   int nBinsY = 100;
   int nBinsZ = 50;
 
-  float kstda, kstdb, kstdr, hopt;
-  float varVp = 0.0f, varVs = 0.0f, varRho = 0.0f;
+  double kstda, kstdb, kstdr, hopt;
+  double varVp = 0.0, varVs = 0.0, varRho = 0.0;
 
   // CALCULATE VARIANCES FOR ELASTIC PARAMETERS -------------------------------------------
 
@@ -778,7 +778,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 
   assert(nobs == static_cast<int>(facies.size()));
 
-  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
+  hopt  = pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7);
   kstda = hopt*sqrt(varVp);
   kstdb = hopt*sqrt(varVs);
   kstdr = hopt*sqrt(varRho);
@@ -1018,14 +1018,14 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
       }
     }
 
-    float kstda, kstdb, kstdr, hopt;
-    float varVp = 0.0f, varVs = 0.0f, varRho = 0.0f;
+    double kstda, kstdb, kstdr, hopt;
+    double varVp = 0.0, varVs = 0.0, varRho = 0.0;
     CalculateVariances(vpFilteredNew, vsFilteredNew, rhoFilteredNew, faciesLog,
                      varVp, varVs, varRho);//sets varVp etc....
     if(noVs == true)
       varVs = 5*varVp; //Must be large enough to make surface span possible vs values.
 
-    hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
+    hopt  = pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7);
     kstda = hopt*sqrt(varVp);
     kstdb = hopt*sqrt(varVs);
     kstdr = hopt*sqrt(varRho);
@@ -1604,9 +1604,9 @@ void FaciesProb::calculateConditionalFaciesProb(std::map<std::string, BlockedLog
     for (int i = 0 ; i < nActiveWells ; i++)
     {
       const int   nBlocks = bw[i]->GetNumberOfBlocks();
-      const std::vector<int> ipos = bw[i]->GetIposVector();
-      const std::vector<int> jpos = bw[i]->GetJposVector();
-      const std::vector<int> kpos = bw[i]->GetKposVector();
+      const std::vector<int> & ipos = bw[i]->GetIposVector();
+      const std::vector<int> & jpos = bw[i]->GetJposVector();
+      const std::vector<int> & kpos = bw[i]->GetKposVector();
       //const int * ipos    = bw[i]->getIpos();
       //const int * jpos    = bw[i]->getJpos();
       //const int * kpos    = bw[i]->getKpos();
@@ -2338,9 +2338,9 @@ void FaciesProb::CalculateVariances(const std::vector<double> & vp, //float
                                     const std::vector<double> & vs,
                                     const std::vector<double> & rho,
                                     const std::vector<int>    & facies,
-                                    float                     & varVp,
-                                    float                     & varVs,
-                                    float                     & varRho)
+                                    double                    & varVp,
+                                    double                    & varVs,
+                                    double                    & varRho)
 {
   int i;
   //bool validA, validB, validR;
@@ -2371,14 +2371,14 @@ void FaciesProb::CalculateVariances(const std::vector<double> & vp, //float
   {
     if(facies[i]!=IMISSING)
     {
-      varVp += pow(vp[i]-meanA,2);
+      varVp  += pow(vp[i]-meanA,2);
       varVs  += pow(vs[i]-meanB,2);
-      varRho   += pow(rho[i]-meanR,2);
+      varRho += pow(rho[i]-meanR,2);
     }
   }
-  varVp /= nA-1;
+  varVp  /= nA-1;
   varVs  /= nB-1;
-  varRho   /= nR-1;
+  varRho /= nR-1;
 }
 
 

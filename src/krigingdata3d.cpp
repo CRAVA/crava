@@ -51,27 +51,27 @@ KrigingData3D::KrigingData3D(int ntot)
 //    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
 //    const int nBlocks = bl->getNumberOfBlocks();
 //
-//    const float * alpha;
-//    const float * beta;
+//    const float * vp;
+//    const float * vs;
 //    const float * rho;
 //    if (type == 1) {
-//      alpha = bl->getAlpha();
-//      beta  = bl->getBeta();
+//      vp = bl->getVp();
+//      vs  = bl->getVs();
 //      rho   = bl->getRho();
 //    }
 //    else if (type == 2) {
-//      alpha = bl->getAlphaHighCutBackground();
-//      beta  = bl->getBetaHighCutBackground();
+//      vp = bl->getVpHighCutBackground();
+//      vs  = bl->getVsHighCutBackground();
 //      rho   = bl->getRhoHighCutBackground();
 //    }
 //    else if (type == 3) {
-//      alpha = bl->getAlphaHighCutSeismic();
-//      beta  = bl->getBetaHighCutSeismic();
+//      vp = bl->getVpHighCutSeismic();
+//      vs  = bl->getVsHighCutSeismic();
 //      rho   = bl->getRhoHighCutSeismic();
 //    }
 //    else if (type == 4) {
-//      alpha = bl->getAlphaSeismicResolution();
-//      beta  = bl->getBetaSeismicResolution();
+//      vp = bl->getVpSeismicResolution();
+//      vs  = bl->getVsSeismicResolution();
 //      rho   = bl->getRhoSeismicResolution();
 //    }
 //    else {
@@ -83,7 +83,7 @@ KrigingData3D::KrigingData3D(int ntot)
 //    const int * jpos = bl->getJpos();
 //    const int * kpos = bl->getKpos();
 //
-//    addData(alpha, beta, rho, ipos, jpos, kpos, nBlocks);
+//    addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
 //  }
 //  divide();
 //}
@@ -171,8 +171,8 @@ KrigingData3D::~KrigingData3D(void)
 
 //---------------------------------------------------------------------
 //void
-//KrigingData3D::addData(const float * alpha,
-//                       const float * beta,
+//KrigingData3D::addData(const float * vp,
+//                       const float * vs,
 //                       const float * rho,
 //                       const int   * ipos,
 //                       const int   * jpos,
@@ -185,17 +185,17 @@ KrigingData3D::~KrigingData3D(void)
 //    const int j = jpos[m];
 //    const int k = kpos[m];
 //
-//    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING)
+//    if (vp[m] != RMISSING || vs[m] != RMISSING || rho[m] != RMISSING)
 //    {
 //      float a,b,r;
 //
-//      if (alpha[m] != RMISSING)
-//        a = exp(alpha[m]);
+//      if (vp[m] != RMISSING)
+//        a = exp(vp[m]);
 //      else
 //        a = RMISSING;
 //
-//      if (beta[m] != RMISSING)
-//        b = exp(beta[m]);
+//      if (vs[m] != RMISSING)
+//        b = exp(vs[m]);
 //      else
 //        b = RMISSING;
 //
@@ -228,8 +228,8 @@ KrigingData3D::~KrigingData3D(void)
 
 //---------------------------------------------------------------------
 void
-KrigingData3D::addData(const std::vector<double> & alpha,
-                       const std::vector<double> & beta,
+KrigingData3D::addData(const std::vector<double> & vp,
+                       const std::vector<double> & vs,
                        const std::vector<double> & rho,
                        const std::vector<int>    & ipos,
                        const std::vector<int>    & jpos,
@@ -242,17 +242,17 @@ KrigingData3D::addData(const std::vector<double> & alpha,
     const int j = jpos[m];
     const int k = kpos[m];
 
-    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING)
+    if (vp[m] != RMISSING || vs[m] != RMISSING || rho[m] != RMISSING)
     {
       double a,b,r;
 
-      if (alpha[m] != RMISSING)
-        a = exp(alpha[m]);
+      if (vp[m] != RMISSING)
+        a = exp(vp[m]);
       else
         a = RMISSING;
 
-      if (beta[m] != RMISSING)
-        b = exp(beta[m]);
+      if (vs[m] != RMISSING)
+        b = exp(vs[m]);
       else
         b = RMISSING;
 
@@ -265,12 +265,12 @@ KrigingData3D::addData(const std::vector<double> & alpha,
       if (index == -1)
       {
         data_[nd_] = new CBWellPt(i, j, k);
-        data_[nd_]->AddLog(a, b, r);
+        data_[nd_]->AddLog(static_cast<float>(a), static_cast<float>(b), static_cast<float>(r));
         nd_++;
       }
       else
       {
-        data_[index]->AddLog(a, b, r);
+        data_[index]->AddLog(static_cast<float>(a), static_cast<float>(b), static_cast<float>(r));
         //
         // This is not a problem for CRAVA, but normally two wells should not share the same
         // set of blocks (with the possible exception of side-tracks).
@@ -321,21 +321,21 @@ KrigingData3D::writeToFile(const std::string fileName)
 
   for (int m = 0 ; m < nd_ ; m++)
   {
-    float  alpha, beta, rho;
-    bool   hasAlpha, hasBeta, hasRho;
+    float  vp, vs, rho;
+    bool   hasVp, hasVs, hasRho;
     int    i, j, k;
     data_[m]->GetIJK(i, j, k);
-    data_[m]->IsValidObs(hasAlpha, hasBeta, hasRho);
-    data_[m]->GetAlphaBetaRho(alpha, beta, rho);
+    data_[m]->IsValidObs(hasVp, hasVs, hasRho);
+    data_[m]->GetAlphaBetaRho(vp, vs, rho);
 
-    if (hasAlpha)
-      alpha = exp(alpha);
+    if (hasVp)
+      vp = exp(vp);
     else
-      alpha = WELLMISSING;
-    if (hasBeta)
-      beta = exp(beta);
+      vp = WELLMISSING;
+    if (hasVs)
+      vs = exp(vs);
     else
-      beta = WELLMISSING;
+      vs = WELLMISSING;
     if (hasRho)
       rho = exp(rho);
     else
@@ -346,8 +346,8 @@ KrigingData3D::writeToFile(const std::string fileName)
          << std::setw(3) << j << " "
          << std::setw(3) << k << "   "
          << std::setprecision(2)
-         << std::setw(8) << alpha << "  "
-         << std::setw(8) << beta  << "  "
+         << std::setw(8) << vp << "  "
+         << std::setw(8) << vs  << "  "
          << std::setprecision(5)
          << std::setw(8) << rho   << "\n";
   }
