@@ -170,7 +170,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     return;
   }
 
-
+  size_t test = background.size();
   if(background[0]->GetN() == 0){
     //int ni = interval_simbox->getnx();
     //int nj = interval_simbox->getny();
@@ -381,7 +381,7 @@ void Analyzelog::EstimateLnData(std::vector<std::vector<float> >                
 
     if (background != NULL){
         for(int n = 0; n < nd; n++){
-          mean[n]         = background[log_nr](i_pos[n], j_pos[n], k_pos[n]);
+          mean[n]         = (*background)(i_pos[n], j_pos[n], k_pos[n]);
           mean_max_hz[n]  = 0;
         }
     }
