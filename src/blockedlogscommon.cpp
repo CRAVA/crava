@@ -85,7 +85,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
-  for (size_t i = 0; i < multiple_interval_grid->GetNIntervals(); i++){
+  for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++){
     n_blocks_with_data_.insert(std::pair<std::string, int>(multiple_interval_grid->GetIntervalName(i), 0));
   }
 

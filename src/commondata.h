@@ -460,9 +460,12 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings                               * model_settings,
-                            InputFiles                                  * input_files,
-                            std::string                                 & err_text);
+  bool SetupPriorFaciesProb(ModelSettings                                    * model_settings,
+                            InputFiles                                       * input_files,
+                            std::vector<Surface *>                           & facies_estim_interval,
+                            MultiIntervalGrid                               *& multiple_interval_grid,
+                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                            std::string                                      & err_text_common);
 
   void FindFaciesEstimationInterval(InputFiles             * input_files,
                                     std::vector<Surface *> & facies_estim_interval,

@@ -121,10 +121,10 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_) {
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (read_wells_)
-        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, err_text);
+        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, facies_estim_interval_, multiple_interval_grid_, mapped_blocked_logs_, err_text);
     }
     else
-      setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, err_text);
+      setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, facies_estim_interval_, multiple_interval_grid_, mapped_blocked_logs_, err_text);
   }
 
   // 12. Set up background model
@@ -3025,7 +3025,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     ResampleSurfaceToGrid2D(&helpNoise, local_noise_scale);
   }
 
-  Wavelet * wavelet_pre_resampling = NULL;
+  //H removed storing of wavelet_pre_resampling since wavelet no longer needs to be resampled in modelavodynamic (CRA-666).
+  //Wavelet * wavelet_pre_resampling = NULL;
 
   if (estimate_wavelet) {
     wavelet = new Wavelet1D(&estimation_simbox_,
@@ -3088,7 +3089,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     //If wavelet isn't estimated it needs to be resampled in order to calculate SN-Ratio
     //The wavelet also needs to be resampled in modelAVODynamic to the different intervals.
     //Here we make a different copy to be sent to modelAVODynamic, so the same wavelet isn't resampled twice.
-    wavelet_pre_resampling = new Wavelet1D(wavelet);
+    //wavelet_pre_resampling = new Wavelet1D(wavelet);
 
     if (error == 0) {
 
@@ -3200,8 +3201,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     }
   }
 
-  if (wavelet_pre_resampling != NULL)
-    wavelet = new Wavelet1D(wavelet_pre_resampling);
+  //if (wavelet_pre_resampling != NULL)
+  //  wavelet = new Wavelet1D(wavelet_pre_resampling);
 
   return error;
 }
@@ -4994,10 +4995,13 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   return true;
 }
 
-bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
-                                      InputFiles    * input_files,
-                                      std::string   & err_text_common) {
-
+bool CommonData::SetupPriorFaciesProb(ModelSettings                                    * model_settings,
+                                      InputFiles                                       * input_files,
+                                      std::vector<Surface *>                           & facies_estim_interval,
+                                      MultiIntervalGrid                               *& multiple_interval_grid,
+                                      const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                      std::string                                      & err_text_common)
+{
   //std::vector<Surface *> outer_facies_estim_interval; // Whole facies interval for all zones/intervals
   std::string err_text = "";
 
@@ -5019,7 +5023,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
     int n_facies = static_cast<int>(facies_names_.size());
 
     tmp_err_text = "";
-    FindFaciesEstimationInterval(input_files, facies_estim_interval_, tmp_err_text);
+    FindFaciesEstimationInterval(input_files, facies_estim_interval, tmp_err_text);
 
     if (tmp_err_text != "") {
       err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
@@ -5027,9 +5031,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
 
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (n_facies > 0) {
-        prior_facies_.resize(multiple_interval_grid_->GetNIntervals());
+        prior_facies_.resize(multiple_interval_grid->GetNIntervals());
 
-        for (int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
+        for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
 
           int   nz      = estimation_simbox_.getnz();
           float dz      = static_cast<float>(estimation_simbox_.getdz());
@@ -5056,8 +5060,8 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
           int n_used_wells = 0;
 
           int w_well = 0;
-          for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
-            std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_.find(it->first);
+          for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+            std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
 
             if (facies_log_wells_[w_well] == true) { // Well has facies log //if (wells[w]->getNFacies() > 0)
               //
@@ -5078,13 +5082,13 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
               std::vector<int> bl_facies_log = blocked_log->GetFaciesBlocked();
 
               // Outside this interval
-              if (multiple_interval_grid_->GetNIntervals() > 1) {
+              if (multiple_interval_grid->GetNIntervals() > 1) {
                 const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
                 const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
                 const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
-                  const Simbox * interval_simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
+                  const Simbox * interval_simbox = multiple_interval_grid->GetIntervalSimbox(i_interval);
 
                   const double z_top  = interval_simbox->GetTopSurface().GetZ(x_pos[i], y_pos[i]);
                   const double z_base = interval_simbox->GetBotSurface().GetZ(x_pos[i], y_pos[i]);
@@ -5093,14 +5097,14 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
                 }
               }
 
-              if (facies_estim_interval_.size() > 0) {
+              if (facies_estim_interval.size() > 0) {
                 const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
                 const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
                 const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
 
                 for (int i = 0 ; i < n_blocks ; i++) {
-                  const double z_top  = facies_estim_interval_[0]->GetZ(x_pos[i], y_pos[i]);
-                  const double z_base = facies_estim_interval_[1]->GetZ(x_pos[i], y_pos[i]);
+                  const double z_top  = facies_estim_interval[0]->GetZ(x_pos[i], y_pos[i]);
+                  const double z_base = facies_estim_interval[1]->GetZ(x_pos[i], y_pos[i]);
                   if ( (z_pos[i] - 0.5*dz) < z_top || (z_pos[i] + 0.5*dz) > z_base)
                     bl_facies_log[i] = IMISSING;
                 }
@@ -5242,9 +5246,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
       }
     }
     else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
-      for (int i_interval = 0; i_interval < multiple_interval_grid_->GetNIntervals(); i_interval++) {
+      for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
 
-        prior_facies_.resize(multiple_interval_grid_->GetNIntervals());
+        prior_facies_.resize(multiple_interval_grid->GetNIntervals());
         typedef std::map<std::string,float> map_type;
         map_type my_map;
 
@@ -5274,7 +5278,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
     }
     else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
       //If intervals, send in vector of simboxes and grids to ReadPriorFaciesProbCubes. Splitting of intervals is done in ReadGridFromFile.
-      std::vector<Simbox> & interval_simboxes = multiple_interval_grid_->GetIntervalSimboxes();
+      std::vector<Simbox> & interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
       std::vector<std::vector<NRLib::Grid<float> *> > prior_facies_prob_cubes;
 
       if (model_settings->getIntervalNames().size() == 0)
@@ -5292,10 +5296,10 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings * model_settings,
         //Store as vector(intervals) vector(facies)
         int n_facies = facies_names_.size();
         for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
-          multiple_interval_grid_->GetPriorFaciesProbCubesInterval(i).resize(n_facies);
+          multiple_interval_grid->GetPriorFaciesProbCubesInterval(i).resize(n_facies);
 
           for (int j = 0; j < n_facies; j++) {
-            multiple_interval_grid_->AddPriorFaciesCube(i, j, prior_facies_prob_cubes[j][i]);
+            multiple_interval_grid->AddPriorFaciesCube(i, j, prior_facies_prob_cubes[j][i]);
           }
         }
 
@@ -8087,6 +8091,11 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
       // 3 Parameter estimation from well data -> further down
     }
+    else { //H Added
+      for (size_t i = 0; i < n_intervals; i++) {
+        prior_param_cov_[i].resize(3,3);
+      }
+    }
 
     //
     // B Lateral correlation -------------------------------------------------------------------
@@ -8148,6 +8157,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               delete [] corr_mat;
             }
           }
+        }
+        else { //H Added
+          prior_corr_T_[i].resize(n_corr_T,0);
         }
 
         //
