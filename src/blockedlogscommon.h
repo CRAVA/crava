@@ -39,7 +39,7 @@ public:
                     std::string                      & err_text);
 
   // Constructor for blocking in the surrounding estimation simbox
-  BlockedLogsCommon(NRLib::Well                      * well_data,
+  BlockedLogsCommon(const NRLib::Well                * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,

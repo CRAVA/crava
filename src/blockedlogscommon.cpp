@@ -14,7 +14,7 @@
 //#include "fftw.h"
 //#include "rfftw.h"
 
-BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_data,
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
@@ -51,7 +51,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
-  well_data->SetNumberOfNonMissingData(n_data_);
+  //well_data->SetNumberOfNonMissingData(n_data_); //H This is set in ProcessLogsNorsarWell and ProcessLogsRMSWell.
 
   if (failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
@@ -894,7 +894,7 @@ void    BlockedLogsCommon::CountBlocksWithData(const std::vector<double>        
                                                const std::vector<double>                          & y_pos_blocked,
                                                const std::vector<double>                          & z_pos_blocked,
                                                const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
-                                               unsigned int                                         n_blocks,                          
+                                               unsigned int                                         n_blocks,
                                                std::map<std::string, int>                         & n_blocks_with_data,
                                                int                                                & n_blocks_with_data_tot){
 
