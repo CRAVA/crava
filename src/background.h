@@ -85,8 +85,7 @@ private:
                                        NRLib::Grid<float>                         * velociy,
                                        const std::vector<NRLib::Well>             & wells,
                                        const Simbox                               * simbox,
-                                       std::map<std::string, BlockedLogsCommon *> & bl,
-                                       std::map<std::string, BlockedLogsCommon *> & bg_bl,
+                                       std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                        const ModelSettings                        * model_settings,
                                        std::string                                & err_text);
 
@@ -278,8 +277,7 @@ private:
   void         calculateVelocityDeviations(NRLib::Grid<float>                         * velocity,
                                            const std::vector<NRLib::Well>             & wells,
                                            const Simbox                               * simbox,
-                                           std::map<std::string, BlockedLogsCommon *> & bl,
-                                           std::map<std::string, BlockedLogsCommon *> & bg_bl,
+                                           std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                            std::vector<double>                        & trend_vel,
                                            std::vector<double>                        & avg_dev_vel,
                                            std::vector<double>                        & avg_dev_vp,

@@ -32,7 +32,7 @@
 #include "src/io.h"
 
 Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
-                       const std::vector<NRLib::Well>             & wells, //H Check: Do we need wells and blocked logs?
+                       const std::vector<NRLib::Well>             & wells, //H Check: Do we need wells when we have blocked logs?
                        NRLib::Grid<float>                         * velocity,
                        const Simbox                               * simbox,
                        const Simbox                               * bg_simbox,
@@ -66,7 +66,6 @@ Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
                             velocity, wells,
                             simbox,
                             blocked_logs,
-                            bg_blocked_logs,
                             model_settings,
                             err_text);
   }
@@ -74,7 +73,6 @@ Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
     generateBackgroundModel(parameters[0], parameters[1], parameters[2],
                             velocity, wells,
                             bg_simbox,
-                            blocked_logs,
                             bg_blocked_logs,
                             model_settings,
                             err_text);
@@ -186,7 +184,6 @@ Background::generateBackgroundModel(NRLib::Grid<float>                         *
                                     const std::vector<NRLib::Well>             & wells,
                                     const Simbox                               * simbox,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                    std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                                     const ModelSettings                        * model_settings,
                                     std::string                                & err_text)
 {
@@ -207,9 +204,9 @@ Background::generateBackgroundModel(NRLib::Grid<float>                         *
 
   std::string err_text_tmp = "";
 
-  getWellTrends(well_trend_vp,  high_cut_well_trend_vp,  wells, bg_blocked_logs, nz, name_vp, err_text_tmp);
-  getWellTrends(well_trend_vs,  high_cut_well_trend_vs,  wells, bg_blocked_logs, nz, name_vs, err_text_tmp);
-  getWellTrends(well_trend_rho, high_cut_well_trend_rho, wells, bg_blocked_logs, nz, name_rho, err_text_tmp);
+  getWellTrends(well_trend_vp,  high_cut_well_trend_vp,  wells, blocked_logs, nz, name_vp, err_text_tmp);
+  getWellTrends(well_trend_vs,  high_cut_well_trend_vs,  wells, blocked_logs, nz, name_vs, err_text_tmp);
+  getWellTrends(well_trend_rho, high_cut_well_trend_rho, wells, blocked_logs, nz, name_rho, err_text_tmp);
 
   if (err_text_tmp != "") {
     err_text += err_text_tmp;
@@ -274,7 +271,7 @@ Background::generateBackgroundModel(NRLib::Grid<float>                         *
       // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
       // good as or better than that calculated by crava.
       //
-      calculateVelocityDeviations(velocity, wells, simbox, blocked_logs, bg_blocked_logs,
+      calculateVelocityDeviations(velocity, wells, simbox, blocked_logs,
                                   trend_vel, avg_dev_vel, avg_dev_vp,
                                   model_settings->getOutputGridsElastic(),
                                   n_wells);
@@ -309,7 +306,7 @@ Background::generateBackgroundModel(NRLib::Grid<float>                         *
     std::vector<const std::vector<int> > jpos(n_wells);
     std::vector<const std::vector<int> > kpos(n_wells);
 
-    for (int i=0; i<n_wells; i++) {
+    for (int i=0; i < n_wells; i++) {
       vt_vp[i]  = std::vector<double>(nz);
       vt_vs[i]  = std::vector<double>(nz);
       vt_rho[i] = std::vector<double>(nz);
@@ -322,7 +319,7 @@ Background::generateBackgroundModel(NRLib::Grid<float>                         *
                          vt_vp,vt_vs,vt_rho,
                          ipos,jpos,kpos,
                          n_blocks,tot_blocks,
-                         wells, bg_blocked_logs,
+                         wells, blocked_logs,
                          n_wells);
 
     setupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
@@ -1352,7 +1349,6 @@ Background::calculateVelocityDeviations(NRLib::Grid<float>                      
                                         const std::vector<NRLib::Well>             & wells,
                                         const Simbox                               * simbox,
                                         std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                        std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                                         std::vector<double>                        & trend_vel,
                                         std::vector<double>                        & avg_dev_vel,
                                         std::vector<double>                        & avg_dev_vp,
@@ -1384,8 +1380,8 @@ Background::calculateVelocityDeviations(NRLib::Grid<float>                      
   for (int k=0 ; k<nz ; k++)
     trend_vel[k]=0.0;
 
-  for (int w = 0 ; w < n_wells ; w++) {
-    BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
+  for (int w = 0; w < n_wells ; w++) {
+    BlockedLogsCommon * blocked_log = blocked_logs.find(wells[w].GetWellName())->second;
 
     const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground();
     blocked_log->GetVerticalTrend(vp_log, vt_vp);
@@ -1406,14 +1402,14 @@ Background::calculateVelocityDeviations(NRLib::Grid<float>                      
     avg_dev_vel[w] = sqrt(sumDev);
   }
 
-  for (int k=0 ; k<nz ; k++)
+  for (int k = 0; k < nz ; k++)
     trend_vel[k] /= n_wells;
 
   LogKit::LogFormatted(LogKit::Low,"\nAverage deviations of type well-log-Vp-minus-velocity-read-from-file and ");
   LogKit::LogFormatted(LogKit::Low,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");
   LogKit::LogFormatted(LogKit::Low,"Well             TrendFromFile  TrendFromData\n");
   LogKit::LogFormatted(LogKit::Low,"---------------------------------------------\n");
-  for (int i=0 ; i<n_wells ; i++)
+  for (int i = 0; i < n_wells; i++)
     LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f          %5.1f\n",
                          wells[i].GetWellName().c_str(),avg_dev_vel[i],avg_dev_vp[i]);
 }
