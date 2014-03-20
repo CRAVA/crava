@@ -345,7 +345,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //blocked_logs_ = common_data->GetBlockedLogs();
 
       //H Block well for this interval_simbox (blocked wells in commondata is blocked to estimation_simbox)
-      //  blocked logs need to have the same dimension as simbox in avoinversion and GenerateSyntheticSeismic (test_case 6)
+      //  blocked logs need to have the same dimension as interval simbox in avoinversion. Crashes in GenerateSyntheticSeismic (test_case 6).
+      //H-Todo: Move this to blockedlogscommon / commondata?
       std::vector<NRLib::Well> & wells = common_data->GetWells();
       for (size_t i = 0; i < wells.size(); i++) {
         BlockedLogsCommon * bl_bg = NULL;

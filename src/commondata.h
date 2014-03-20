@@ -499,7 +499,7 @@ private:
                         const TraceHeaderFormat           * format,
                         int                                 grid_type,
                         const std::vector<Simbox>         & interval_simboxes,
-                        const Simbox                      & estimation_simbox,
+                        //const Simbox                      & estimation_simbox,
                         const ModelSettings               * model_settings,
                         std::string                       & err_text,
                         bool                                nopadding = true);
@@ -515,7 +515,7 @@ private:
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<float> *> & interval_grids,
                     const std::vector<Simbox>         & interval_simboxes,
-                    const Simbox                      & simbox,
+                    //const Simbox                      & estimation_simbox,
                     const ModelSettings               * model_settings,
                     const SegyGeometry               *& geometry,
                     int                                 grid_type,
@@ -603,12 +603,12 @@ private:
                             GridMapping   * time_depth_mapping,
                             std::string   & err_text_common);
 
-  bool SetupBackgroundModel(ModelSettings            * model_settings,
-                            InputFiles               * input_files,
-                            const Simbox             * estimation_simbox,
-                            std::vector<NRLib::Well> & wells,
-                            MultiIntervalGrid       *& multiple_interval_grid,
-                            std::string              & err_text_common);
+  bool SetupBackgroundModel(ModelSettings                              * model_settings,
+                            InputFiles                                 * input_files,
+                            const std::vector<NRLib::Well>             & wells,
+                            std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                            MultiIntervalGrid                         *& multiple_interval_grid,
+                            std::string                                & err_text_common);
 
   double FindMeanVsVp(const NRLib::Grid<float> * vp,
                       const NRLib::Grid<float> * vs);

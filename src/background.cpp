@@ -32,10 +32,10 @@
 #include "src/io.h"
 
 Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
-                       const std::vector<NRLib::Well>             & wells,
+                       const std::vector<NRLib::Well>             & wells, //H Check: Do we need wells and blocked logs?
                        NRLib::Grid<float>                         * velocity,
-                       const Simbox                               * time_simbox,
-                       const Simbox                               * time_bg_simbox,
+                       const Simbox                               * simbox,
+                       const Simbox                               * bg_simbox,
                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                        std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                        const ModelSettings                        * model_settings,
@@ -47,24 +47,24 @@ Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
   int ny = 0;
   int nz = 0;
 
-  if (time_bg_simbox == NULL) {
-    nx = time_simbox->getnx();
-    ny = time_simbox->getny();
-    nz = time_simbox->getnz();
+  if (bg_simbox == NULL) {
+    nx = simbox->getnx();
+    ny = simbox->getny();
+    nz = simbox->getnz();
   }
   else {
-    nx = time_bg_simbox->getnx();
-    ny = time_bg_simbox->getny();
-    nz = time_bg_simbox->getnz();
+    nx = bg_simbox->getnx();
+    ny = bg_simbox->getny();
+    nz = bg_simbox->getnz();
   }
 
   for (int i=0 ; i<3 ; i++)
     parameters[i]->Resize(nx, ny, nz);
 
-  if (time_bg_simbox == NULL) {
+  if (bg_simbox == NULL) {
     generateBackgroundModel(parameters[0], parameters[1], parameters[2],
                             velocity, wells,
-                            time_simbox,
+                            simbox,
                             blocked_logs,
                             bg_blocked_logs,
                             model_settings,
@@ -73,15 +73,15 @@ Background::Background(std::vector<NRLib::Grid<float> *>          & parameters,
   else {
     generateBackgroundModel(parameters[0], parameters[1], parameters[2],
                             velocity, wells,
-                            time_bg_simbox,
+                            bg_simbox,
                             blocked_logs,
                             bg_blocked_logs,
                             model_settings,
                             err_text);
 
     resampleBackgroundModel(parameters[0], parameters[1], parameters[2],
-                            time_bg_simbox,
-                            time_simbox,
+                            bg_simbox,
+                            simbox,
                             model_settings);
   }
 
@@ -1351,8 +1351,8 @@ void
 Background::calculateVelocityDeviations(NRLib::Grid<float>                         * velocity,
                                         const std::vector<NRLib::Well>             & wells,
                                         const Simbox                               * simbox,
-                                        std::map<std::string, BlockedLogsCommon *> & bl,
-                                        std::map<std::string, BlockedLogsCommon *> & bg_bl,
+                                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                                        std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                                         std::vector<double>                        & trend_vel,
                                         std::vector<double>                        & avg_dev_vel,
                                         std::vector<double>                        & avg_dev_vp,
@@ -1370,7 +1370,7 @@ Background::calculateVelocityDeviations(NRLib::Grid<float>                      
   //
   int max_blocks = 0;
   for (int w = 0 ; w < n_wells ; w++) {
-    int n_blocks = bl.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
+    int n_blocks = blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
     if (n_blocks > max_blocks)
       max_blocks = n_blocks;
   }
@@ -1385,7 +1385,7 @@ Background::calculateVelocityDeviations(NRLib::Grid<float>                      
     trend_vel[k]=0.0;
 
   for (int w = 0 ; w < n_wells ; w++) {
-    BlockedLogsCommon * blocked_log = bg_bl.find(wells[w].GetWellName())->second;
+    BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground();
     blocked_log->GetVerticalTrend(vp_log, vt_vp);
