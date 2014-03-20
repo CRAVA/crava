@@ -6974,13 +6974,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       InputFiles    * input_files,
                                       Simbox        * estimation_simbox,
                                       GridMapping   * time_depth_mapping,
-                                      std::string   & err_text_common) {
-
-
-  //From ModelGeneral::ProcessDepthConversion
+                                      std::string   & err_text_common)
+{
   std::string err_text = "";
 
-  NRLib::Grid<float> * velocity = new NRLib::Grid<float>();
+  NRLib::Grid<float> * velocity = NULL;
   std::string velocity_field    = input_files->getVelocityField();
 
   LoadVelocity(velocity,
