@@ -25,6 +25,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   well_name_                    = well_data->GetWellName();
   n_layers_                     = estimation_simbox->getnz();
   n_blocks_                     = 0;
+  n_blocks_with_data_.insert(std::pair<std::string, int>("",0));
+  n_blocks_with_data_tot_       = 0;
   interpolate_                  = interpolate;
   bool failed                   = false;
   is_deviated_                  = well_data->IsDeviated();
@@ -83,6 +85,9 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
+  for (size_t i = 0; i < multiple_interval_grid->GetNIntervals(); i++){
+    n_blocks_with_data_.insert(std::pair<std::string, int>(multiple_interval_grid->GetIntervalName(i), 0));
+  }
 
   bool failed = false;
 
@@ -101,14 +106,18 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
   if(!failed){
     if(interval_simboxes.size() == 1){
-      // If there is only one interval, the well can be blocked as before.
+      //
+      // If there is only one interval
+      //
       n_layers_ = interval_simboxes[0].getnz();
       BlockWell(&interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
                 discrete_logs_blocked_, n_data_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
     }
     else {
-      // If there are multiple intervals, special treatment is required. Neighbouring cells vertically
-      // must have the same correlation within each trace.
+      //
+      // If there are multiple intervals: Neighbouring cells vertically
+      // must have the same correlation within each trace for correlation estimation.
+      //
       BlockWellForCorrelationEstimation(multiple_interval_grid, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_,
                                         discrete_logs_blocked_, n_data_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
     }
@@ -328,7 +337,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
     }
 
     CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
-                                    n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
+                                    n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
 
     // Discrete logs
     if (facies_log_defined)
@@ -429,6 +438,9 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
       BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
       cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
     }
+
+    CountBlocksWithData(x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
+                                    n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_);
 
     // Discrete logs
     if (facies_log_defined)
@@ -878,22 +890,41 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgr
   n_blocks = static_cast<int>(first_K) + n_defined_blocks + (n_layers_ - static_cast<int>(last_K) - 1);
 }
 
+void    BlockedLogsCommon::CountBlocksWithData(const std::vector<double>                          & x_pos_blocked,
+                                               const std::vector<double>                          & y_pos_blocked,
+                                               const std::vector<double>                          & z_pos_blocked,
+                                               const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                                               unsigned int                                         n_blocks,                          
+                                               std::map<std::string, int>                         & n_blocks_with_data,
+                                               int                                                & n_blocks_with_data_tot){
+
+  const std::vector<double> vp_log_blocked = continuous_logs_blocked.find("Vp")->second;
+  n_blocks_with_data_tot = 0;
+
+  for (size_t i = 0; i < n_blocks; i++){
+    if(vp_log_blocked[i] != RMISSING && x_pos_blocked[i] != RMISSING && y_pos_blocked[i] != RMISSING && z_pos_blocked[i] != RMISSING){
+      n_blocks_with_data.find("")->second++;
+      n_blocks_with_data_tot++;
+    }
+  }
+
+}
+
 // Counts the number of blocks with data per interval --------------------------
 void    BlockedLogsCommon::CountBlocksWithDataPerInterval(const MultiIntervalGrid                            * multiple_interval_grid,
                                                           const std::vector<double>                          & x_pos_blocked,
                                                           const std::vector<double>                          & y_pos_blocked,
                                                           const std::vector<double>                          & z_pos_blocked,
                                                           const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                                                          unsigned int                                         n_blocks,
                                                           std::map<std::string, int>                         & n_blocks_with_data,
                                                           int                                                & n_blocks_with_data_tot,
                                                           int                                                  n_intervals) const{
   // Use Vp to test that data is not missing
   const std::vector<double> vp_log_blocked = continuous_logs_blocked.find("Vp")->second;
-  for (int i = 0; i < n_intervals; i++) {
-    n_blocks_with_data.insert(std::pair<std::string, int>(multiple_interval_grid->GetIntervalName(i), 0));
-  }
   n_blocks_with_data_tot = 0;
-  for(size_t i = 0; i < n_blocks_; i++) {
+
+  for(size_t i = 0; i < n_blocks; i++){
     if (vp_log_blocked[i] != RMISSING && x_pos_blocked[i] != RMISSING && y_pos_blocked[i] != RMISSING && z_pos_blocked[i] != RMISSING){
       int s = multiple_interval_grid->WhichSimbox(x_pos_blocked[i], y_pos_blocked[i], z_pos_blocked[i]);
       const std::string interval_name = multiple_interval_grid->GetIntervalName(s);
