@@ -611,6 +611,9 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
                                         MultiIntervalGrid                           * multiple_interval_grid,
                                         std::string                                 & err_text)
 {
+  if (model_settings->getForwardModeling())
+    return;
+
   int n_timelapses = model_settings->getNumberOfTimeLapses();
   int n_intervals  = multiple_interval_grid->GetNIntervals();
   bool cover_ok    = false;
