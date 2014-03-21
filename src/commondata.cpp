@@ -5530,8 +5530,8 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
                              //const Simbox                      & estimation_simbox,
                              const ModelSettings               * model_settings,
                              std::string                       & err_text,
-                             bool                                nopadding) {
-
+                             bool                                nopadding)
+{
   int fileType = IO::findGridType(file_name);
 
   LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
@@ -5578,59 +5578,59 @@ CommonData::ReadGridFromFile(const std::string                 & file_name,
     //  }
     //}
     //else {
-      for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+    for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
 
-        int nx = interval_simboxes[i_interval].getnx();
-        int ny = interval_simboxes[i_interval].getny();
-        int nz = interval_simboxes[i_interval].getnz();
+      int nx = interval_simboxes[i_interval].getnx();
+      int ny = interval_simboxes[i_interval].getny();
+      int nz = interval_simboxes[i_interval].getnz();
 
-        interval_grids[i_interval]->Resize(nx, ny, nz);
+      interval_grids[i_interval]->Resize(nx, ny, nz);
 
-        FFTGrid       * fft_grid_tmp = NULL;
-        SegY          * segy_tmp     = NULL;
-        StormContGrid * storm_tmp    = NULL;
+      FFTGrid       * fft_grid_tmp = NULL;
+      SegY          * segy_tmp     = NULL;
+      StormContGrid * storm_tmp    = NULL;
 
-        int missing_traces_simbox  = 0;
-        int missing_traces_padding = 0;
-        int dead_traces_simbox     = 0;
+      int missing_traces_simbox  = 0;
+      int missing_traces_padding = 0;
+      int dead_traces_simbox     = 0;
 
-        int file_type = IO::findGridType(file_name);
-        bool is_segy  = false;
-        bool is_storm = false;
-        bool scale    = false;
+      int file_type = IO::findGridType(file_name);
+      bool is_segy  = false;
+      bool is_storm = false;
+      bool scale    = false;
 
-        if (file_type == IO::SEGY)
-          is_segy = true;
-        else if (file_type == IO::STORM)
-          is_storm = true;
-        else if (file_type == IO::SGRI) {
-          is_storm = true;
-          scale    = true;
-        }
-
-        FillInData(interval_grids[i_interval],
-                   fft_grid_tmp,
-                   interval_simboxes[i_interval],
-                   storm_tmp,
-                   segy_tmp,
-                   crava_grid,
-                   model_settings->getSmoothLength(),
-                   missing_traces_simbox,
-                   missing_traces_padding,
-                   dead_traces_simbox,
-                   grid_type,
-                   scale,
-                   is_segy,
-                   is_storm);
-
-        if (fft_grid_tmp != NULL)
-          delete fft_grid_tmp;
-        if (storm_tmp != NULL)
-          delete storm_tmp;
-        if (segy_tmp != NULL)
-          delete segy_tmp;
-
+      if (file_type == IO::SEGY)
+        is_segy = true;
+      else if (file_type == IO::STORM)
+        is_storm = true;
+      else if (file_type == IO::SGRI) {
+        is_storm = true;
+        scale    = true;
       }
+
+      FillInData(interval_grids[i_interval],
+                 fft_grid_tmp,
+                 interval_simboxes[i_interval],
+                 storm_tmp,
+                 segy_tmp,
+                 crava_grid,
+                 model_settings->getSmoothLength(),
+                 missing_traces_simbox,
+                 missing_traces_padding,
+                 dead_traces_simbox,
+                 grid_type,
+                 scale,
+                 is_segy,
+                 is_storm);
+
+      if (fft_grid_tmp != NULL)
+        delete fft_grid_tmp;
+      if (storm_tmp != NULL)
+        delete storm_tmp;
+      if (segy_tmp != NULL)
+        delete segy_tmp;
+
+    }
     //}
 
     if (crava_grid != NULL)

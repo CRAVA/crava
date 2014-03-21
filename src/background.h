@@ -32,15 +32,15 @@ class Background
 {
 public:
 
-  Background(std::vector<NRLib::Grid<float> *>          & parameters,
-             const std::vector<NRLib::Well>             & wells,
-             NRLib::Grid<float>                         * velocity,
-             const Simbox                               * time_simbox,
-             const Simbox                               * time_bg_simbox,
-             std::map<std::string, BlockedLogsCommon *> & bl,
-             std::map<std::string, BlockedLogsCommon *> & bg_bl,
-             const ModelSettings                        * modelSettings,
-             std::string                                & err_text);
+  Background(std::vector<NRLib::Grid<float> *>                & parameters,
+             //const std::vector<NRLib::Well>                   & wells,
+             NRLib::Grid<float>                               * velocity,
+             const Simbox                                     * time_simbox,
+             const Simbox                                     * time_bg_simbox,
+             const std::map<std::string, BlockedLogsCommon *> & bl,
+             const std::map<std::string, BlockedLogsCommon *> & bg_bl,
+             const ModelSettings                              * modelSettings,
+             std::string                                      & err_text);
 
   //Background(std::vector<NRLib::Grid<float> *> & parameters,
   //           const std::vector<NRLib::Well>    & wells,
@@ -79,15 +79,15 @@ public:
 
 private:
 
-  void         GenerateBackgroundModel(NRLib::Grid<float>                         * bg_vp,
-                                       NRLib::Grid<float>                         * bg_vs,
-                                       NRLib::Grid<float>                         * bg_rho,
-                                       NRLib::Grid<float>                         * velociy,
-                                       const std::vector<NRLib::Well>             & wells,
-                                       const Simbox                               * simbox,
-                                       std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                       const ModelSettings                        * model_settings,
-                                       std::string                                & err_text);
+  void         GenerateBackgroundModel(NRLib::Grid<float>                               * bg_vp,
+                                       NRLib::Grid<float>                               * bg_vs,
+                                       NRLib::Grid<float>                               * bg_rho,
+                                       NRLib::Grid<float>                               * velociy,
+                                       //const std::vector<NRLib::Well>             & wells,
+                                       const Simbox                                     * simbox,
+                                       const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                                       const ModelSettings                              * model_settings,
+                                       std::string                                      & err_text);
 
   //void         GenerateMultizoneBackgroundModel(NRLib::Grid<float>             * bg_vp,
   //                                              NRLib::Grid<float>             * bg_vs,
@@ -129,20 +129,20 @@ private:
                                         std::vector<std::vector<double> > & highCutWellTrend,
                                         const std::string                 & name);
 
-  void         GetKrigingWellTrends(std::vector<std::vector<double> >          & bl_vp,
-                                    std::vector<std::vector<double> >          & bl_vs,
-                                    std::vector<std::vector<double> >          & bl_rho,
-                                    std::vector<std::vector<double> >          & vt_vp,
-                                    std::vector<std::vector<double> >          & vt_vs,
-                                    std::vector<std::vector<double> >          & vt_rho,
-                                    std::vector<const std::vector<int> >       & ipos,
-                                    std::vector<const std::vector<int> >       & jpos,
-                                    std::vector<const std::vector<int> >       & kpos,
-                                    std::vector<int>                           & n_blocks,
-                                    int                                        & tot_blocks,
-                                    const std::vector<NRLib::Well>             & wells,
-                                    std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                                    const int                                  & n_wells) const;
+  void         GetKrigingWellTrends(std::vector<std::vector<double> >                & bl_vp,
+                                    std::vector<std::vector<double> >                & bl_vs,
+                                    std::vector<std::vector<double> >                & bl_rho,
+                                    std::vector<std::vector<double> >                & vt_vp,
+                                    std::vector<std::vector<double> >                & vt_vs,
+                                    std::vector<std::vector<double> >                & vt_rho,
+                                    std::vector<const std::vector<int> >             & ipos,
+                                    std::vector<const std::vector<int> >             & jpos,
+                                    std::vector<const std::vector<int> >             & kpos,
+                                    std::vector<int>                                 & n_blocks,
+                                    int                                              & tot_blocks,
+                                    //const std::vector<NRLib::Well>             & wells,
+                                    const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                                    const int                                        & n_wells) const;
 
   //void         getKrigingWellTrendsZone(std::vector<BlockedLogsCommon *>     & blocked_logs,
   //                                      std::vector<std::vector<double> >    & bl_vp,
@@ -158,13 +158,13 @@ private:
   //                                      int                                  & tot_blocks,
   //                                      const int                            & nz) const;
 
-  void         GetWellTrends(std::vector<std::vector<double> >          & well_trend,
-                             std::vector<std::vector<double> >          & high_cut_Well_trend,
-                             const std::vector<NRLib::Well>             & wells,
-                             std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                             const int                                  & nz,
-                             const std::string                          & name,
-                             std::string                                & err_text) const;
+  void         GetWellTrends(std::vector<std::vector<double> >                & well_trend,
+                             std::vector<std::vector<double> >                & high_cut_Well_trend,
+                             //const std::vector<NRLib::Well>             & wells,
+                             const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
+                             const int                                        & nz,
+                             const std::string                                & name,
+                             std::string                                      & err_text) const;
 
   //void         getWellTrendsZone(std::vector<BlockedLogsCommon *>  & bl,
   //                               std::vector<std::vector<double> > & wellTrend,
@@ -274,15 +274,15 @@ private:
   //                                         //const std::vector<double>                       & surface_uncertainty,
   //                                         const std::string                               & type) const;
 
-  void         CalculateVelocityDeviations(NRLib::Grid<float>                         * velocity,
-                                           const std::vector<NRLib::Well>             & wells,
-                                           const Simbox                               * simbox,
-                                           std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                           std::vector<double>                        & trend_vel,
-                                           std::vector<double>                        & avg_dev_vel,
-                                           std::vector<double>                        & avg_dev_vp,
-                                           int                                          outputFlag,
-                                           int                                          nWells);
+  void         CalculateVelocityDeviations(NRLib::Grid<float>                               * velocity,
+                                           //const std::vector<NRLib::Well>             & wells,
+                                           const Simbox                                     * simbox,
+                                           const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                                           std::vector<double>                              & trend_vel,
+                                           std::vector<double>                              & avg_dev_vel,
+                                           std::vector<double>                              & avg_dev_vp,
+                                           int                                                outputFlag,
+                                           int                                                n_wells);
 
   void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
                                  NRLib::Grid<float> *  p_old, // Resample from
@@ -308,15 +308,16 @@ private:
                                                    std::vector<double>               & avg_dev,
                                                    const int                           nd);
 
-  void         WriteDeviationsFromVerticalTrend(const std::vector<double>      & avg_dev_vp,
-                                                const std::vector<double>      & avg_dev_vs,
-                                                const std::vector<double>      & avg_dev_rho,
-                                                const std::vector<double>      & trend_vp,
-                                                const std::vector<double>      & trend_vs,
-                                                const std::vector<double>      & trend_rho,
-                                                const std::vector<NRLib::Well> & wells,
-                                                const int                        nWells,
-                                                const int                        nz);
+  void         WriteDeviationsFromVerticalTrend(const std::vector<double>                        & avg_dev_vp,
+                                                const std::vector<double>                        & avg_dev_vs,
+                                                const std::vector<double>                        & avg_dev_rho,
+                                                const std::vector<double>                        & trend_vp,
+                                                const std::vector<double>                        & trend_vs,
+                                                const std::vector<double>                        & trend_rho,
+                                                //const std::vector<NRLib::Well> & wells,
+                                                const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                                                const int                                          n_wells,
+                                                const int                                          nz);
 
   void         SmoothTrendWithLocalLinearRegression(std::vector<double> & trend,
                                                     int                 * count,
