@@ -242,9 +242,9 @@ Analyzelog::estimate(const ModelSettings * modelSettings,
     estimateLnData(lnDataRho,   NULL, 2, errTxt);
   }
   else{
-    //estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt); //H Commented out with reorganizing of background
-    //estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
-    //estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
+    estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
+    estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
+    estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
   }
   if (errTxt != "")
     return;

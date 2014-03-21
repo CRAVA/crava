@@ -83,7 +83,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   // if correlations should be estimated
   if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
     block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
-                                            wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_, err_text);
+                                           wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_,
+                                           mapped_blocked_logs_intervals_, err_text);
 
   // 5. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
@@ -4300,14 +4301,15 @@ void CommonData::SetSurfacesMultipleIntervals(const ModelSettings             * 
 }
 
 
-bool CommonData::BlockWellsForEstimation(const ModelSettings                            * const model_settings,
-                                         const Simbox                                   & estimation_simbox,
-                                         const MultiIntervalGrid                        * multiple_interval_grid,
-                                         std::vector<NRLib::Well>                       & wells,
-                                         std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
-                                         std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
-                                         std::string                                    & err_text_common) {
-
+bool CommonData::BlockWellsForEstimation(const ModelSettings                                                * const model_settings,
+                                         const Simbox                                                       & estimation_simbox,
+                                         const MultiIntervalGrid                                            * multiple_interval_grid,
+                                         std::vector<NRLib::Well>                                           & wells,
+                                         std::map<std::string, BlockedLogsCommon *>                         & mapped_blocked_logs_common,
+                                         std::map<std::string, BlockedLogsCommon *>                         & mapped_blocked_logs_for_correlation,
+                                         std::map<std::string, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                         std::string                                                        & err_text_common)
+{
   std::string err_text = "";
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   LogKit::WriteHeader("Blocking wells for estimation");
@@ -4346,6 +4348,27 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     catch(NRLib::Exception & e){
     err_text += e.what();
     }
+  }
+
+  // Block logs to each interval simbox
+  try {
+    for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
+      const Simbox * simbox     = multiple_interval_grid->GetIntervalSimbox(i);
+      std::string interval_name = multiple_interval_grid->GetIntervalName(i);
+      std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
+
+      for (size_t j = 0; j < wells.size(); j++) {
+        blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
+          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, simbox, model_settings->getRunFromPanel(), err_text)));
+
+      }
+
+      mapped_blocked_logs_intervals.insert(std::pair<std::string, std::map<std::string, BlockedLogsCommon *> >(interval_name, blocked_log_interval));
+
+    }
+  }
+  catch (NRLib::Exception & e) {
+    err_text += e.what();
   }
 
   if(err_text != "") {
@@ -7038,12 +7061,12 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 }
 
 
-  bool CommonData::SetupBackgroundModel(ModelSettings                              * model_settings,
-                                        InputFiles                                 * input_files,
-                                        const std::vector<NRLib::Well>             & wells,
-                                        std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                        MultiIntervalGrid                         *& multiple_interval_grid,
-                                        std::string                                & err_text_common)
+  bool CommonData::SetupBackgroundModel(ModelSettings                                                      * model_settings,
+                                        InputFiles                                                         * input_files,
+                                        const std::vector<NRLib::Well>                                     & wells,
+                                        std::map<std::string, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                        MultiIntervalGrid                                                 *& multiple_interval_grid,
+                                        std::string                                                        & err_text_common)
 {
   std::string err_text = "";
 
@@ -7056,9 +7079,9 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
   TimeKit::getTime(wall,cpu);
 
   //Skip if background is specified as false in estimation mode
-  if(model_settings->getEstimationMode()     == true  && model_settings->getEstimateWaveletNoise() == true &&
-     model_settings->getEstimateBackground() == false && model_settings->getEstimateCorrelations() == false)
-     return true;
+  if (model_settings->getEstimationMode()     == true  && model_settings->getEstimateWaveletNoise() == true &&
+      model_settings->getEstimateBackground() == false && model_settings->getEstimateCorrelations() == false)
+      return true;
 
   if (model_settings->getGenerateBackground()) {
 
@@ -7077,11 +7100,14 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
             interval_text = " for interval " + model_settings->getIntervalName(i_interval);
 
           const Simbox       * simbox                = multiple_interval_grid->GetIntervalSimbox(i_interval);
+          std::string interval_name                  = multiple_interval_grid->GetIntervalName(i_interval);
           NRLib::Grid<float> * velocity              = new NRLib::Grid<float>();
           Surface            * correlation_direction = NULL;
           Simbox             * bg_simbox             = NULL;
           BlockedLogsCommon  * bg_blocked_log        = NULL;
           std::string back_vel_file                  = input_files->getBackVelFile();
+
+          std::map<std::string, BlockedLogsCommon *> & blocked_logs = mapped_blocked_logs_intervals_.find(interval_name)->second;
 
           if (back_vel_file != "") {
             bool dummy;
@@ -7122,8 +7148,9 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
           //H-TODO block wells to each interval in blocked_logs common and store them in commondata
           // They are needed in modelGeneral (currently we block them again there).
           // But need to block them to bg_simbox
+
           std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
-          for (size_t i = 0; i < wells.size(); i++) {
+          if (bg_simbox != NULL) {
             bg_blocked_log = NULL;
 
             // Get all continuous and discrete logs
@@ -7140,24 +7167,52 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
               disc_logs_to_be_blocked.push_back(it->first);
             }
 
-            if (bg_simbox == NULL)
-              bg_blocked_log = new BlockedLogsCommon(&wells[i],
-                                                     cont_logs_to_be_blocked,
-                                                     disc_logs_to_be_blocked,
-                                                     simbox,
-                                                     false,
-                                                     err_text);
-            else
-              bg_blocked_log = new BlockedLogsCommon(&wells[i],
-                                                     cont_logs_to_be_blocked,
-                                                     disc_logs_to_be_blocked,
-                                                     bg_simbox,
-                                                     false,
-                                                     err_text);
+            bg_blocked_log = new BlockedLogsCommon(&wells[i],
+                                                   cont_logs_to_be_blocked,
+                                                   disc_logs_to_be_blocked,
+                                                   bg_simbox,
+                                                   false,
+                                                   err_text);
 
             bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
           }
 
+
+
+          //for (size_t i = 0; i < wells.size(); i++) {
+          //  bg_blocked_log = NULL;
+
+          //  // Get all continuous and discrete logs
+          //  std::vector<std::string> cont_logs_to_be_blocked;
+          //  std::vector<std::string> disc_logs_to_be_blocked;
+
+          //  const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
+          //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
+
+          //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+          //    cont_logs_to_be_blocked.push_back(it->first);
+          //  }
+          //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+          //    disc_logs_to_be_blocked.push_back(it->first);
+          //  }
+
+          //  if (bg_simbox == NULL)
+          //    bg_blocked_log = new BlockedLogsCommon(&wells[i],
+          //                                           cont_logs_to_be_blocked,
+          //                                           disc_logs_to_be_blocked,
+          //                                           simbox,
+          //                                           false,
+          //                                           err_text);
+          //  else
+          //    bg_blocked_log = new BlockedLogsCommon(&wells[i],
+          //                                           cont_logs_to_be_blocked,
+          //                                           disc_logs_to_be_blocked,
+          //                                           bg_simbox,
+          //                                           false,
+          //                                           err_text);
+
+          //  bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
+          //}
 
 
           //Create background

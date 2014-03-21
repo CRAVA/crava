@@ -228,13 +228,14 @@ private:
                     bool                              facies_log_given,
                     std::string                     & err_text);
 
-  bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
-                               const Simbox                                   & estimation_simbox,
-                               const MultiIntervalGrid                        * multiple_interval_grid,
-                               std::vector<NRLib::Well>                       & wells,
-                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
-                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
-                               std::string                                    & err_text);
+  bool BlockWellsForEstimation(const ModelSettings                                                * const model_settings,
+                               const Simbox                                                       & estimation_simbox,
+                               const MultiIntervalGrid                                            * multiple_interval_grid,
+                               std::vector<NRLib::Well>                                           & wells,
+                               std::map<std::string, BlockedLogsCommon *>                         & mapped_blocked_logs_common,
+                               std::map<std::string, BlockedLogsCommon *>                         & mapped_blocked_logs_for_correlation,
+                               std::map<std::string, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                               std::string                                                        & err_text);
 
   bool RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
                                          ModelSettings * model_settings,
@@ -606,7 +607,7 @@ private:
   bool SetupBackgroundModel(ModelSettings                              * model_settings,
                             InputFiles                                 * input_files,
                             const std::vector<NRLib::Well>             & wells,
-                            std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                            std::map<std::string, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                             MultiIntervalGrid                         *& multiple_interval_grid,
                             std::string                                & err_text_common);
 
@@ -771,10 +772,11 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
-  std::vector<std::string>                      continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
+  std::map<std::string, BlockedLogsCommon *>                         mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>                         mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
+  std::map<std::string, std::map<std::string, BlockedLogsCommon *> > mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
+  std::vector<std::string>                                           continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
+  std::vector<std::string>                                           discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;
