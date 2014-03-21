@@ -347,32 +347,35 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //H Block well for this interval_simbox (blocked wells in commondata is blocked to estimation_simbox)
       //  blocked logs need to have the same dimension as interval simbox in avoinversion. Crashes in GenerateSyntheticSeismic (test_case 6).
       //H-Todo: Move this to blockedlogscommon / commondata?
-      std::vector<NRLib::Well> & wells = common_data->GetWells();
-      for (size_t i = 0; i < wells.size(); i++) {
-        BlockedLogsCommon * bl_bg = NULL;
 
-        // Get all continuous and discrete logs
-        std::vector<std::string> cont_logs_to_be_blocked;
-        std::vector<std::string> disc_logs_to_be_blocked;
+      blocked_logs_ = common_data->GetBlockedLogsInterval(i_interval);
 
-        const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-        const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
+      //std::vector<NRLib::Well> & wells = common_data->GetWells();
+      //for (size_t i = 0; i < wells.size(); i++) {
+      //  BlockedLogsCommon * bl_bg = NULL;
 
-        for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++)
-          cont_logs_to_be_blocked.push_back(it->first);
-        for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++)
-          disc_logs_to_be_blocked.push_back(it->first);
+      //  // Get all continuous and discrete logs
+      //  std::vector<std::string> cont_logs_to_be_blocked;
+      //  std::vector<std::string> disc_logs_to_be_blocked;
 
-        std::string err_text_tmp = "";
-        bl_bg = new BlockedLogsCommon(&wells[i],
-                                      cont_logs_to_be_blocked,
-                                      disc_logs_to_be_blocked,
-                                      simbox_,
-                                      false,
-                                      err_text_tmp);
+      //  const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
+      //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
 
-        blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
-      }
+      //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++)
+      //    cont_logs_to_be_blocked.push_back(it->first);
+      //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++)
+      //    disc_logs_to_be_blocked.push_back(it->first);
+
+      //  std::string err_text_tmp = "";
+      //  bl_bg = new BlockedLogsCommon(&wells[i],
+      //                                cont_logs_to_be_blocked,
+      //                                disc_logs_to_be_blocked,
+      //                                simbox_,
+      //                                false,
+      //                                err_text_tmp);
+
+      //  blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
+      //}
 
       if(multiple_interval_grid->GetTrendCubes().size() > 0)
         trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
