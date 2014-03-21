@@ -31,10 +31,11 @@ void Kriging2D::krigSurface(Grid2D              & trend,
 
   if (md > 0 && md <= nx*ny) {
 
-    NRLib::SymmetricMatrix K(md);
     NRLib::Vector residual(md);
-    NRLib::Vector k(md);
-    NRLib::Vector x(md);
+
+    NRLib::SymmetricMatrix K;
+    NRLib::Vector k;
+    NRLib::Vector x;
 
     subtractTrend(residual, data, trend, indexi, indexj);
 
@@ -58,6 +59,10 @@ void Kriging2D::krigSurface(Grid2D              & trend,
         {
           if(first)
           {
+             K.resize(md);
+             k.resize(md);
+             x.resize(md);
+
              fillKrigingMatrix(K, cov, indexi, indexj);
              NRLib::CholeskySolve(K, residual, x);
              first = false;

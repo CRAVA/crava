@@ -76,21 +76,21 @@ private:
   float                  getSignalVariance(int l) const { return signalVariance_[l] ;}
   float                  getErrorVariance(int l)  const { return errorVariance_[l]  ;}
   float                  getDataVariance(int l)   const { return dataVariance_[l]   ;}
-  int                simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
-  int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
-  void               printEnergyToScreen();
-  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
-  void               computeFaciesProb(SpatialWellFilter       * filteredlogs,
+  int                    simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
+  int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
+  void                   printEnergyToScreen();
+  void                   computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  void                   computeFaciesProb(SpatialWellFilter       * filteredlogs,
                                        bool                      useFilter,
                                        SeismicParametersHolder & seismicParameters);
-  void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
-  //void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
-  void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
-  void               computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
+  void                   computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
+  //void                 filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
+  void                   doPredictionKriging(SeismicParametersHolder & seismicParameters);
+  void                   computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
                                                            float     * corrT,
                                                            float     * A) const;
 
-  void               computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
+  void                   computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
                                                                 float     * corrT,
                                                                 float     * A ) const ;
 

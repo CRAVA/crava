@@ -2211,8 +2211,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     {
       LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
       LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
-      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
-      LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
+      LogKit::LogFormatted(LogKit::Low,"  Low cut for amplitude inversion          : %10.1f\n",modelSettings->getLowCut());
+      LogKit::LogFormatted(LogKit::Low,"  High cut for amplitude inversion         : %10.1f\n",modelSettings->getHighCut());
       LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",modelSettings->getGuardZone());
       LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",modelSettings->getSmoothLength());
       LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",modelSettings->getEnergyThreshold());
@@ -4015,7 +4015,7 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       const int nzPad     = modelSettings->getNZpad();
 
       float dt = static_cast<float>(timeSimbox->getdz());
-      float lowCut = modelSettings->getLowCut();
+      float lowCut = -1.0f;// modelSettings->getLowCut();//NBNB OK quick fix
       int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
       float corrGradI;
@@ -4831,7 +4831,7 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
   double zmin,zmax;
 
   timeSimbox_->getMinMaxZ(zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low,"\nNew time interval:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n\nNew time interval:\n");
   LogKit::LogFormatted(LogKit::Low,"  Absolute time limits avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        zmin+ timeSimbox_->getlz()* timeSimbox_->getAvgRelThick()*0.5,
                        zmin, zmax);
@@ -4839,10 +4839,12 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
                        timeSimbox_->getlz()*timeSimbox_->getAvgRelThick(),
                         timeSimbox_->getlz()*timeSimbox_->getMinRelThick(),
                         timeSimbox_->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n\n",
                         timeSimbox_->getdz()*timeSimbox_->getAvgRelThick(),
                         timeSimbox_->getdz()*timeSimbox_->getMinRelThick(),
                         timeSimbox_->getdz());
+
+
 }
 
 void
@@ -4967,7 +4969,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
 }
 
 void
-ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding)
+ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding)
 {
   state4d_.iFFT();
 
@@ -4979,7 +4981,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),printPadding);
-  // /*
+  /*
   tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -4988,7 +4990,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
   // write mu dynamic
   tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),printPadding);
-  // /*
+   /*
   tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();

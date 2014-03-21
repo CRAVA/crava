@@ -177,7 +177,6 @@ Crava::Crava(ModelSettings           * modelSettings,
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
     }
-
     if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->getUseLocalNoise())
     {
       meanAlpha2_ = copyFFTGrid(meanAlpha_);
@@ -190,6 +189,7 @@ Crava::Crava(ModelSettings           * modelSettings,
     meanRho_  ->fftInPlace();
   }
   else{
+     LogKit::WriteHeader("Mark 4");
     modelAVOdynamic_->releaseGrids();
   }
 

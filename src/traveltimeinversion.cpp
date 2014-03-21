@@ -35,10 +35,12 @@ TravelTimeInversion::TravelTimeInversion(ModelGeneral            * modelGeneral,
   bool rms_data_given     = modelTravelTimeDynamic->getRMSDataGiven();
 
   if (horizon_data_given == true && this_time_lapse > 0)
+  {
     doHorizonInversion(modelGeneral,
                        modelTravelTimeStatic,
                        modelTravelTimeDynamic,
                        seismicParameters);
+  }
 
   if (rms_data_given == true){
      doRMSInversion(modelGeneral,
@@ -320,10 +322,15 @@ TravelTimeInversion::doHorizonInversion(ModelGeneral            * modelGeneral,
                             stationary_covariance,
                             relativeVelocityGridNew);
 
+
     relativeVelocityGridNew->invFFTInPlace();
     relativeVelocityPrev->invFFTInPlace();
+    relativeVelocityGridNew->writeAsciiFile("relativeVelocityGridNew.ascii");
+    relativeVelocityPrev->writeAsciiFile("relativeVelocityPrev.ascii");
+
     NRLib::Grid<double> divided_grid = calculateRelativeVelocityUpdate(relativeVelocityGridNew,relativeVelocityPrev);
     // divided_grid = (Vp_current/Vp_previous) in the previous timeframe
+
 
     Simbox * new_simbox = NULL;
     std::string errTxt  = "";
@@ -743,10 +750,16 @@ TravelTimeInversion::do1DHorizonInversion(FFTGrid                     * mu_prior
     std::vector<double>   d(n_nonmissing);
     NRLib::Grid2D<double> Sigma_d(n_nonmissing, n_nonmissing, 0);
 
+    int dataInd=0;
     for (int k = 0; k < n_horizons; ++k) {
       if (time_P0[k] != missing_value && push_down[k] != missing_value) {
-        d[k]          = time_P0[k] + push_down[k] - top;
-        Sigma_d(k, k) = std::pow(standard_deviation[k], 2);
+        d[dataInd]          = time_P0[k] + push_down[k] - top;
+        Sigma_d(dataInd,dataInd) = std::pow(standard_deviation[k], 2);
+        dataInd++;
+      }
+      else
+      {
+        double dummy=0.0; // NBNB OK to check during debug
       }
     }
 
@@ -1166,7 +1179,7 @@ TravelTimeInversion::calculateGHorizon(double                      dt,  // time 
   NRLib::Grid2D<double> G(n_nonmissing, nzp, 0);
 
   for (int l = 0; l < n_horizons; ++l) {
-
+    int indData=0;
     if (time_P0[l] != missing_value && push_down[l] != missing_value) {
       double time0Start = missing_value;
       double time0End   = top;
@@ -1178,8 +1191,9 @@ TravelTimeInversion::calculateGHorizon(double                      dt,  // time 
         // returns 1 if time_P0[l] is below cell end,
         // returns 0 if time_P0[l] is above cell start,
         // returns percentage distance from cell top to time_P0[l] otherwise
-        G(l, k)     = p*relativeVelocity[k]*dt;
+        G(indData, k)     = p*relativeVelocity[k]*dt;
       }
+      indData++;
     }
   }
   // sum over k in G, will give the traveltime to horizon  for time t0, i.e time_P0[l].
@@ -1823,7 +1837,7 @@ TravelTimeInversion::krigeExpectation3D(const Simbox                * simbox,
   const double lx   = simbox->getlx();
   const double ly   = simbox->getly();
 
-  Vario * lateralVario = new GenExpVario(1, 2000, 2000);
+  Vario * lateralVario = new GenExpVario(1, 500, 500);
   const CovGrid2D & covGrid2D = Kriging2D::makeCovGrid2D(simbox, lateralVario, 0);
 
   FFTGrid * bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, false); // Grid without padding
@@ -1885,7 +1899,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
                                                     std::vector<KrigingData2D>  & kriging_post,
                                                     const std::vector<double>   & pri_circulant_cov,
                                                     NRLib::Matrix                 post_cov,
-                                                    const int                   & n_rms_traces,
+                                                    const int                   & n_traces,
                                                     const Surface  * errorCorrXY,
                                                     const float & corrGradI,
                                                     const float & corrGradJ,
@@ -1895,7 +1909,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
                                                     std::vector<int>            & observation_filter) const
 {
   assert(!pri_mu->getIsTransformed());
-   // Checked 27.january 2014 by Odd Kolbjørnsen
+   // Checked
   int nx   = pri_mu->getNx();
   int ny   = pri_mu->getNy();
   int nz   = pri_mu->getNz();
@@ -1988,7 +2002,7 @@ TravelTimeInversion::generateStationaryDistribution(const Simbox                
   // Multiply var_e_c with  factor below to increase the variance as the RMS data are only observed in some of the traces
   // Note that the information in one profile is distributed to all neighbours, thus there is no "loss" of information
   // just redistribution/reinterpretation.
-  float factor = static_cast<float>(nx * ny) / static_cast<float>(n_rms_traces);
+  float factor = static_cast<float>(nx * ny) / static_cast<float>(n_traces);
   for (int i = 0; i < cnzp; i++)
     var_e_c_hi[i].re *= factor;
 
@@ -2213,7 +2227,7 @@ TravelTimeInversion::calculateFilterAndErrorVariance(const fftw_complex * pri_co
     for(int j=0;j<nzp;j++)
       pri_cov(i,j)=pri_cov_r[std::min(std::abs(j-i),std::abs(i-j))];
 
-  NRLib::WriteMatrixToFile("priCovMat.dat",pri_cov);
+ // NRLib::WriteMatrixToFile("priCovMat.dat",pri_cov);
 
   // constant  term
   double priVarRe=0.0;
@@ -2242,7 +2256,7 @@ TravelTimeInversion::calculateFilterAndErrorVariance(const fftw_complex * pri_co
   }
   else
   {
-     LogKit::LogFormatted(LogKit::Low,"\n Warning: TraveltimeInversion has no or little  effect :-( \n");
+     LogKit::LogFormatted(LogKit::Low,"\n Warning: TraveltimeInversion has no or little  effect. \nCheck:\n  1)Error variance in inversion of traveltime data \n  2) Low cut for inversion should be -1.0 when inverting traveltime and RMS \n");
      var_e_c_lo[0].re = 0.0;
      var_e_c_lo[0].im = 0.0;
      var_e_c_hi[0].re = 0.0;
@@ -2427,7 +2441,7 @@ TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & obser
   FFTGrid * cr_cov_vp_rho = seismic_parameters.GetCrCovAlphaRho();
   FFTGrid * cr_cov_vs_rho = seismic_parameters.GetCrCovBetaRho();
 
-  ///*  print out for debug
+  /*  print out for debug
 
   mu_vp->invFFTInPlace();
   cov_vp->invFFTInPlace();
@@ -2582,7 +2596,7 @@ TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & obser
   for (int i = 0; i < 3; ++i)
     delete [] Sigma_post[i];
   delete [] Sigma_post;
-  ///*  print out for debug
+  /*  print out for debug
   mu_vp->invFFTInPlace();
   cov_vp->invFFTInPlace();
   mu_vp->writeAsciiRaw("post_meanVp.dat");
@@ -3168,16 +3182,17 @@ TravelTimeInversion::generateResampleAveragePreserve( FFTGrid        * v2v0_1,  
         t0_1[k+1] = t0_1[k] + v1v0_1->getRealValue(i,j,k)*d1;
         t2_1[k+1] = t2_1[k] + v1v0_1->getRealValue(i,j,k)/v2v0_1->getRealValue(i,j,k)*d1;
       }
+      t2_1[nz]= static_cast<double>(nz)*d2;
 
       std::vector<double> t1_2(nz + 1, 0); // edges of t1 as a function of t2, i.e. t1_2[k]=t1_2(k*d2)
 
-      int l = 0;// Largest integer satisfying t2(l) <= tk
-      for (int k = 0; k < nz; k++) {
-        double tkend = (k+1) * d2;
+      int l = 0;// Largest integer satisfying t2(l) <  tkend  but still <= nz, purely mathematically
+      for (int k = 0; k < nz; k++) {  // the last tkend = t2[nz] =(nz)*d2;
+        double tkend = static_cast<double>(k+1) * d2;
 
-        while(tkend >= t2_1[l] && l<=nz)
+        while(l<=nz && tkend > t2_1[l] )
           l++;
-        l--;  int indHi= std::max(nz,l+1);
+        l--;  int indHi= std::min(nz,l+1);
         r = (tkend - t2_1[l]) / (t2_1[indHi] - t2_1[l]);
         t1_2[k+1] =  (l + r) * d1;
       }
@@ -3300,6 +3315,7 @@ TravelTimeInversion::resampleState4D(const NRLib::Grid<double> &  resample_grid,
                   mu_rho_dynamic);
 
   LogKit::LogFormatted(LogKit::Low,"done\n\n");
+
 }
 
 //-----------------------------------------------------------------------------------------//

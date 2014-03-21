@@ -880,7 +880,7 @@ void State4D::evolve(int                   time_step,
    timeIncSpatialCorr.createGrid();
    // NBNB this isa quick fix
    if(time_step==0)
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // longer vertical range in first go
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // l
    else
      timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); //
    //NBNB OK  this correlation should come from interface and be more like:
