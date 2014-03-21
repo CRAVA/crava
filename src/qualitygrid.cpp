@@ -93,33 +93,10 @@ QualityGrid::QualityGrid(const std::vector<double>                  pValue,
   delete grid;
 }
 
-//void QualityGrid::generateProbField(FFTGrid *& grid,
-//                                    std::vector<WellData *> wells,
-//                                    const Simbox * simbox,
-//                                    const ModelSettings * modelSettings) const
-//{
-//
-//  const int nz = simbox->getnz();
-//  const int nWells = modelSettings->getNumberOfWells();
-//
-//  std::vector<KrigingData2D> krigingData(nz);
-//  setupKrigingData2D(krigingData, wells, simbox, nWells);
-//
-//  Vario * vario = modelSettings->getBackgroundVario();
-//  const CovGrid2D & cov = makeCovGrid2D(simbox, vario);
-//
-//  const bool isFile = modelSettings->getFileGrid();
-//
-//  makeKrigedProbField(krigingData, grid, simbox, cov, isFile);
-//
-//  delete &cov;
-//
-//}
-
 void QualityGrid::generateProbField(FFTGrid                                 *& grid,
                                     std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                     const Simbox                             * simbox,
-                                    const ModelSettings                      * modelSettings) const
+                                    const ModelSettings                      * model_settings) const
 {
 
   const int nz = simbox->getnz();
@@ -129,10 +106,10 @@ void QualityGrid::generateProbField(FFTGrid                                 *& g
 
   setupKrigingData2D(krigingData, blocked_wells, simbox);
 
-  Vario * vario = modelSettings->getBackgroundVario();
-  const CovGrid2D & cov = makeCovGrid2D(simbox, vario);
+  Vario * vario = model_settings->getBackgroundVario();
+  const CovGrid2D & cov = MakeCovGrid2D(simbox, vario);
 
-  const bool isFile = modelSettings->getFileGrid();
+  const bool isFile = model_settings->getFileGrid();
 
   makeKrigedProbField(krigingData, grid, simbox, cov, isFile);
 
@@ -173,14 +150,11 @@ void QualityGrid::generateProbField(FFTGrid                                 *& g
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D>               & krigingData,
                                      std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                      const Simbox                             * simbox) const
-                                     //const int                                  nWells) const
 {
   int w = 0;
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
-
-    //const BlockedLogs * bl = wells[w]->getBlockedLogsConstThick();
 
     const int nBlocks = blocked_log->GetNumberOfBlocks();
     const std::vector<int> & ipos = blocked_log->GetIposVector();
@@ -274,7 +248,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
   grid->endAccess();
 }
 
-CovGrid2D & QualityGrid::makeCovGrid2D(const Simbox * simbox,
+CovGrid2D & QualityGrid::MakeCovGrid2D(const Simbox * simbox,
                                        Vario * vario) const
 {
   const int nx = simbox->getnx();

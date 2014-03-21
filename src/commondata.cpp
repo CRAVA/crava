@@ -2140,7 +2140,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     std::vector<double> vp(vp_temp.size());
     if (inverse_velocity[0]) {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
-        if (vp_temp[i] != WELLMISSING) //H Added check if vp-log had missing. Later it is checked against RMISSING
+        if (vp_temp[i] != WELLMISSING)
           vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
         else
           vp[i] = RMISSING;
@@ -6008,8 +6008,8 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
   missing_traces_padding = 0; // Part of padding is outside seismic data
   dead_traces_simbox     = 0; // Simbox is inside seismic data but trace is missing
 
-  for (int j = 0 ; j < nyp ; j++) {
-    for (int i = 0 ; i < rnxp ; i++) {
+  for (int j = 0; j < nyp; j++) {
+    for (int i = 0; i < rnxp; i++) {
 
       int refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
       int refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
@@ -7119,7 +7119,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
           }
 
-          //H-Todo block wells to each interval in blocked_logs common and store them in commondata
+          //H-TODO block wells to each interval in blocked_logs common and store them in commondata
           // They are needed in modelGeneral (currently we block them again there).
           // But need to block them to bg_simbox
           std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
