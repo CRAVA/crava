@@ -4711,7 +4711,6 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                          dummy2,
                          PARAMETER,
                          multiple_interval_grid->GetIntervalSimboxes(),
-                         //estimation_simbox_,
                          model_settings,
                          err_text_tmp,
                          true);
@@ -5437,7 +5436,6 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
                        dummy2,
                        PARAMETER,
                        interval_simboxes,
-                       //estimation_simbox_,
                        model_settings,
                        error_text);
 
@@ -7142,10 +7140,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
           }
 
-          //H-TODO block wells to each interval in blocked_logs common and store them in commondata
-          // They are needed in modelGeneral (currently we block them again there).
-          // But need to block them to bg_simbox
-
+          //Block logs to bg_simbox
           std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
           if (bg_simbox != NULL) {
             for (size_t i = 0; i < wells.size(); i++) {
@@ -7176,46 +7171,8 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
             }
           }
 
-
-
-          //for (size_t i = 0; i < wells.size(); i++) {
-          //  bg_blocked_log = NULL;
-
-          //  // Get all continuous and discrete logs
-          //  std::vector<std::string> cont_logs_to_be_blocked;
-          //  std::vector<std::string> disc_logs_to_be_blocked;
-
-          //  const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-          //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
-
-          //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-          //    cont_logs_to_be_blocked.push_back(it->first);
-          //  }
-          //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-          //    disc_logs_to_be_blocked.push_back(it->first);
-          //  }
-
-          //  if (bg_simbox == NULL)
-          //    bg_blocked_log = new BlockedLogsCommon(&wells[i],
-          //                                           cont_logs_to_be_blocked,
-          //                                           disc_logs_to_be_blocked,
-          //                                           simbox,
-          //                                           false,
-          //                                           err_text);
-          //  else
-          //    bg_blocked_log = new BlockedLogsCommon(&wells[i],
-          //                                           cont_logs_to_be_blocked,
-          //                                           disc_logs_to_be_blocked,
-          //                                           bg_simbox,
-          //                                           false,
-          //                                           err_text);
-
-          //  bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
-          //}
-
-
           //Create background
-          Background(parameters[i_interval], wells, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
+          Background(parameters[i_interval], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
 
           double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
           multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
@@ -7230,35 +7187,10 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
         // Create background grids with interval_simbox(es) and not estimation_simbox.
 
         // extended bg_simboxes for each interval
-        // velocity resampled for intervals?
+        // velocity resampled for intervals
 
-        //if (model_settings->getIntervalNames().size() == 0) {
-        //  std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //interval vector(parameter)
-
-        //  if (model_settings->getMultizoneBackground() == true)
-        //    Background(parameters[0], wells, estimation_simbox, model_settings, input_files->getMultizoneSurfaceFiles(), err_text); //Multizone background model (not multiple intervals)
-        //  else //Neither multizone or multiinterval
-        //    Background(parameters[0], wells, velocity, estimation_simbox, bg_simbox, mapped_blocked_logs_, mapped_bg_bl, model_settings, err_text);
-
-        //  double vs_vp_ratio = FindMeanVsVp(parameters[0][0], parameters[0][1]);
-
-        //  for (int j = 0; j < 3; j++)
-        //    multiple_interval_grid->AddBackgroundParameterForInterval(0, j, parameters[0][j]);
-
-        //  multiple_interval_grid->SetBackgroundVsVpRatio(0, vs_vp_ratio);
-        //}
-        //else { //Multiple intervals, not multizone background
-        //  std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //vector(intervals) vector(parameters)
-        //  std::vector<double> vs_vp_ratios(model_settings->getIntervalNames().size());
-
-        //  Background(parameters, wells, multiple_interval_grid, model_settings, err_text);
-
-        //  for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++)
-        //    vs_vp_ratios[i] = FindMeanVsVp(parameters[i][0], parameters[i][1]);
-
-        //  multiple_interval_grid->SetBackgroundVsVpRatios(vs_vp_ratios);
-        //}
-      //}
+        //H-TODO
+        // xmlreader and multizone background
     }
     else {
 
@@ -7345,7 +7277,6 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                            dummy2,
                            PARAMETER,
                            multiple_interval_grid->GetIntervalSimboxes(),
-                           //estimation_simbox_,
                            model_settings,
                            err_text_tmp);
 
@@ -7617,11 +7548,8 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
                      dummy2,
                      PARAMETER,
                      simboxes, //estimation_simbox,
-                     //estimation_simbox,
                      model_settings,
                      err_text_tmp);
-
-    //velocity = grids[0];
 
     if (err_text_tmp == "") { // No errors
       //
@@ -7716,18 +7644,6 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
 
   const size_t number_of_facies = probability.size();
 
-  // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
-  //NRLib::Grid2D<float> top_vp  (nx, ny, 0.0);
-  //NRLib::Grid2D<float> top_vs  (nx, ny, 0.0);
-  //NRLib::Grid2D<float> top_rho (nx, ny, 0.0);
-  //NRLib::Grid2D<float> base_vp (nx ,ny, 0.0);
-  //NRLib::Grid2D<float> base_vs (nx, ny, 0.0);
-  //NRLib::Grid2D<float> base_rho(nx, ny, 0.0);
-
-  //vp.setAccessMode(FFTGrid::WRITE);
-  //vs.setAccessMode(FFTGrid::WRITE);
-  //rho.setAccessMode(FFTGrid::WRITE);
-
   // Loop through all cells in the FFTGrids
   for (int k = 0; k < nz; k++) {
     for (int j = 0; j < ny; j++) {
@@ -7769,7 +7685,6 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
 
         // Otherwise use trend values to get expectation values for each facies from the rock
         //else {
-        //std::vector<double> trend_position = trend_cubes_[i_interval].GetTrendPosition(i,j,k);
         std::vector<double> trend_position = trend_cube.GetTrendPosition(i,j,k);
 
         std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
@@ -7786,9 +7701,6 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
         }
 
         // Set values in expectation grids
-        //vp.setNextReal(expectations[0]);
-        //vs.setNextReal(expectations[1]);
-        //rho.setNextReal(expectations[2]);
         float value_tmp = expectations[0];
         vp->SetValue(i, j, k, value_tmp);
         value_tmp = expectations[1];
@@ -7819,9 +7731,6 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
     }
   }
 
-  //vp.endAccess();
-  //vs.endAccess();
-  //rho.endAccess();
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -8933,9 +8842,9 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
     std::string         data_name = "RMS data";
     std::string         tmp_err_text = "";
 
-    std::vector<NRLib::Grid<float> *> rms_data_grids(1); //Vector because of ReadGridFromFile, only first element used.
+    //ReadGrifFromFile is based on vector of simboxes and grids
+    std::vector<NRLib::Grid<float> *> rms_data_grids(1);
     rms_data_grids[0] = new NRLib::Grid<float>();
-    //grids[0] = rms_data;
     std::vector<Simbox> simboxes;
     simboxes.push_back(estimation_simbox_);
 
@@ -8947,11 +8856,8 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                      model_settings->getTravelTimeTraceHeaderFormat(i_timelapse),
                      DATA,
                      simboxes,
-                     //estimation_simbox_,
                      model_settings,
                      tmp_err_text);
-
-    //rms_data = grids[0];
 
     if (tmp_err_text != "") {
       tmp_err_text += "\nReading of file \'"+file_name+"\' for "+data_name+" for timelapse " + NRLib::ToString(i_timelapse) + "failed.\n";

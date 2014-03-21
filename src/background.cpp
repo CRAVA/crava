@@ -32,7 +32,6 @@
 #include "src/io.h"
 
 Background::Background(std::vector<NRLib::Grid<float> *>                & parameters,
-                       //const std::vector<NRLib::Well>                   & wells, //H Check: Do we need wells when we have blocked logs?
                        NRLib::Grid<float>                               * velocity,
                        const Simbox                                     * simbox,
                        const Simbox                                     * bg_simbox,
@@ -63,7 +62,7 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
 
   if (bg_simbox == NULL) {
     GenerateBackgroundModel(parameters[0], parameters[1], parameters[2],
-                            velocity, //wells,
+                            velocity,
                             simbox,
                             blocked_logs,
                             model_settings,
@@ -71,7 +70,7 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
   }
   else {
     GenerateBackgroundModel(parameters[0], parameters[1], parameters[2],
-                            velocity, //wells,
+                            velocity,
                             bg_simbox,
                             bg_blocked_logs,
                             model_settings,
@@ -181,7 +180,6 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                                     NRLib::Grid<float>                               * bg_vs,
                                     NRLib::Grid<float>                               * bg_rho,
                                     NRLib::Grid<float>                               * velocity,
-                                    //const std::vector<NRLib::Well>             & wells,
                                     const Simbox                                     * simbox,
                                     const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                     const ModelSettings                              * model_settings,
@@ -271,7 +269,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
       // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
       // good as or better than that calculated by crava.
       //
-      CalculateVelocityDeviations(velocity, //wells,
+      CalculateVelocityDeviations(velocity,
                                   simbox, blocked_logs,
                                   trend_vel, avg_dev_vel, avg_dev_vp,
                                   model_settings->getOutputGridsElastic(),
@@ -284,13 +282,11 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
       velocity->Resize(0, 0, 0, 0.0);
       WriteDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
                                        trend_vel, trend_vs, trend_rho,
-                                       //wells,
                                        blocked_logs, n_wells, nz);
     }
     else {
       WriteDeviationsFromVerticalTrend(avg_dev_vp, avg_dev_vs, avg_dev_rho,
                                        trend_vp, trend_vs, trend_rho,
-                                       //wells,
                                        blocked_logs, n_wells, nz);
     }
 
@@ -322,9 +318,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                          vt_vp,vt_vs,vt_rho,
                          ipos,jpos,kpos,
                          n_blocks,tot_blocks,
-                         //wells,
-                         blocked_logs,
-                         n_wells);
+                         blocked_logs, n_wells);
 
     SetupKrigingData2D(kriging_data_vp,kriging_data_vs,kriging_data_rho,
                        trend_vp,trend_vs,trend_rho,
@@ -1350,7 +1344,6 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
 
 void
 Background::CalculateVelocityDeviations(NRLib::Grid<float>                               * velocity,
-                                        //const std::vector<NRLib::Well>             & wells,
                                         const Simbox                                     * simbox,
                                         const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                         std::vector<double>                              & trend_vel,
@@ -1369,13 +1362,11 @@ Background::CalculateVelocityDeviations(NRLib::Grid<float>                      
   // Calculate deviation between well data and trend
   //
   int max_blocks = 0;
-  //for (int w = 0; w < n_wells; w++) {
   int w = 0;
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //BlockedLogsCommon * blocked_log = iter->second;
     int n_blocks = iter->second->GetNumberOfBlocks();
-    //int n_blocks = blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
+
     if (n_blocks > max_blocks)
       max_blocks = n_blocks;
 
@@ -1391,12 +1382,10 @@ Background::CalculateVelocityDeviations(NRLib::Grid<float>                      
   for (int k=0 ; k<nz ; k++)
     trend_vel[k]=0.0;
 
-  //for (int w = 0; w < n_wells ; w++) {
   w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
-    //BlockedLogsCommon * blocked_log = blocked_logs.find(wells[w].GetWellName())->second;
 
     const std::vector<double> & vp_log = blocked_log->GetVpHighCutBackground();
     blocked_log->GetVerticalTrend(vp_log, vt_vp);
@@ -1426,18 +1415,15 @@ Background::CalculateVelocityDeviations(NRLib::Grid<float>                      
   LogKit::LogFormatted(LogKit::Low,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");
   LogKit::LogFormatted(LogKit::Low,"Well             TrendFromFile  TrendFromData\n");
   LogKit::LogFormatted(LogKit::Low,"---------------------------------------------\n");
+
   w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //BlockedLogsCommon * blocked_log = iter->second;
     LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f          %5.1f\n",
                          iter->second->GetWellName().c_str(),avg_dev_vel[w],avg_dev_vp[w]);
 
     w++;
   }
-  //for (int i = 0; i < n_wells; i++)
-    //LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f          %5.1f\n",
-    //                     wells[i].GetWellName().c_str(),avg_dev_vel[i],avg_dev_vp[i]);
 }
 
 //---------------------------------------------------------------------------
@@ -1482,19 +1468,16 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
                                  std::vector<const std::vector<int> >             & kpos,
                                  std::vector<int>                                 & n_blocks,
                                  int                                              & tot_blocks,
-                                 //const std::vector<NRLib::Well>             & wells,
                                  const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                  const int                                        & n_wells) const
 {
   int max_blocks = 0;
   tot_blocks     = 0;
 
-  //for (int w = 0; w < n_wells; w++) {
   int w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //BlockedLogsCommon * blocked_log = iter->second;
-    //n_blocks[w] = bg_blocked_logs.find(wells[w].GetWellName())->second->GetNumberOfBlocks();
+
     n_blocks[w] = iter->second->GetNumberOfBlocks();
     tot_blocks += n_blocks[w];
     if (n_blocks[w] > max_blocks)
@@ -1509,12 +1492,10 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
     bl_rho[i] = std::vector<double>(max_blocks);
   }
 
-  //for (int w = 0; w < n_wells; w++) {
   w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
-    //BlockedLogsCommon * bg_blocked_log  = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     bl_vp[w]  = blocked_log->GetVpHighCutBackground();
     bl_vs[w]  = blocked_log->GetVsHighCutBackground();
@@ -1619,7 +1600,6 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
 void
 Background::GetWellTrends(std::vector<std::vector<double> >                & well_trend,
                           std::vector<std::vector<double> >                & high_cut_well_trend,
-                          //const std::vector<NRLib::Well>             & wells,
                           const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                           const int                                        & nz,
                           const std::string                                & name,
@@ -1632,9 +1612,6 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
-
-  //for (int w = 0; w < n_wells; w++) {
-    //BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
 
     if (blocked_log->GetUseForBackgroundTrend()) {
 
@@ -1666,13 +1643,11 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
     err_text += "available for the estimation of background trend.\n";
   }
 
-  //for (int w = 0; w < n_wells; w++) {
   w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    //BlockedLogsCommon * blocked_log = bg_blocked_logs.find(wells[w].GetWellName())->second;
     if (blocked_log != NULL) {
       high_cut_well_trend[w].resize(nz);
       if (name == "Vp")
@@ -2575,7 +2550,6 @@ Background::WriteDeviationsFromVerticalTrend(const std::vector<double>          
                                              const std::vector<double>                        & trend_vp,
                                              const std::vector<double>                        & trend_vs,
                                              const std::vector<double>                        & trend_rho,
-                                             //const std::vector<NRLib::Well> & wells,
                                              const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                              const int                                          n_wells,
                                              const int                                          nz)
@@ -2607,21 +2581,17 @@ Background::WriteDeviationsFromVerticalTrend(const std::vector<double>          
   // Sort deviations to find worst well.
   //
 
-  std::vector<int> index(n_wells); //int * index = new int[n_wells];
+  std::vector<int> index(n_wells);
   std::vector<std::string> well_names(n_wells);
 
   int w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //BlockedLogsCommon * blocked_log = iter->second;
 
     index[w]      = w;
     well_names[w] = iter->second->GetWellName();
     w++;
   }
-
-  //for (int i = 0; i < n_wells; i++)
-  //  index[i] = i;
 
   for (int i = 0; i < n_wells; i++) {
     for (int j = i; j < n_wells; j++) {
@@ -2641,17 +2611,11 @@ Background::WriteDeviationsFromVerticalTrend(const std::vector<double>          
     LogKit::LogFormatted(LogKit::Low,"------------------------------------------------\n");
   }
   for (int i = 0; i < n_wells; i++) {
-  //int w = 0;
-  //for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
-    //std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //BlockedLogsCommon * blocked_log = iter->second;
 
     int ii = index[i];
     if (avg_dev_vp[ii] != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f    %5.1f    %5.3f\n", well_names[ii].c_str(),
                            avg_dev_vp[ii], avg_dev_vs[ii], avg_dev_rho[ii]);
-      //LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii].GetWellName().c_str(),
-      //                     avg_dev_vp[ii], avg_dev_vs[ii], avg_dev_rho[ii]);
     }
   }
 
@@ -2660,7 +2624,6 @@ Background::WriteDeviationsFromVerticalTrend(const std::vector<double>          
     LogKit::LogFormatted(LogKit::High,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
   }
   delete [] rel_avg_dev;
-  //delete [] index;
 }
 
 //-------------------------------------------------------------------------------

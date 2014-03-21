@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #include "nrlib/random/beta.hpp"
-#include "nrlib/well/well.hpp"
 
 #include "src/blockedlogscommon.h"
 #include "src/multiintervalgrid.h"
@@ -22,7 +21,6 @@ class KrigingData3D;
 class KrigingData2D;
 class ModelSettings;
 class BlockedLogsCommon;
-//class BlockedLogs;
 class MultiIntervalGrid;
 
 //Special note on the use of Background:
@@ -33,7 +31,6 @@ class Background
 public:
 
   Background(std::vector<NRLib::Grid<float> *>                & parameters,
-             //const std::vector<NRLib::Well>                   & wells,
              NRLib::Grid<float>                               * velocity,
              const Simbox                                     * time_simbox,
              const Simbox                                     * time_bg_simbox,
@@ -83,7 +80,6 @@ private:
                                        NRLib::Grid<float>                               * bg_vs,
                                        NRLib::Grid<float>                               * bg_rho,
                                        NRLib::Grid<float>                               * velociy,
-                                       //const std::vector<NRLib::Well>             & wells,
                                        const Simbox                                     * simbox,
                                        const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                        const ModelSettings                              * model_settings,
@@ -140,7 +136,6 @@ private:
                                     std::vector<const std::vector<int> >             & kpos,
                                     std::vector<int>                                 & n_blocks,
                                     int                                              & tot_blocks,
-                                    //const std::vector<NRLib::Well>             & wells,
                                     const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                     const int                                        & n_wells) const;
 
@@ -160,7 +155,6 @@ private:
 
   void         GetWellTrends(std::vector<std::vector<double> >                & well_trend,
                              std::vector<std::vector<double> >                & high_cut_Well_trend,
-                             //const std::vector<NRLib::Well>             & wells,
                              const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                              const int                                        & nz,
                              const std::string                                & name,
@@ -275,7 +269,6 @@ private:
   //                                         const std::string                               & type) const;
 
   void         CalculateVelocityDeviations(NRLib::Grid<float>                               * velocity,
-                                           //const std::vector<NRLib::Well>             & wells,
                                            const Simbox                                     * simbox,
                                            const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                            std::vector<double>                              & trend_vel,
@@ -314,7 +307,6 @@ private:
                                                 const std::vector<double>                        & trend_vp,
                                                 const std::vector<double>                        & trend_vs,
                                                 const std::vector<double>                        & trend_rho,
-                                                //const std::vector<NRLib::Well> & wells,
                                                 const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                                 const int                                          n_wells,
                                                 const int                                          nz);
