@@ -4357,8 +4357,8 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
 
       for (size_t j = 0; j < wells.size(); j++) {
-        blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
-          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, simbox, model_settings->getRunFromPanel(), err_text)));
+        blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(),
+          new BlockedLogsCommon(&wells[j], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, simbox, model_settings->getRunFromPanel(), err_text)));
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
