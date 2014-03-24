@@ -65,7 +65,7 @@ private:
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
   bool parseMultizoneModel(TiXmlNode * node, std::string & errTxt);
-  bool parseZone(TiXmlNode * node, std::string & errTxt);
+  //bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
@@ -175,7 +175,7 @@ private:
   void checkTimeLapseConsistency(std::string & errTxt);
   void checkRockPhysicsConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
-  void checkMultizoneBackgroundConsistency(std::string & errTxt);
+  //void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

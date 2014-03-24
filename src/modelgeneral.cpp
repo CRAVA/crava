@@ -2149,28 +2149,28 @@ ModelGeneral::PrintSettings(ModelSettings     * model_settings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    if (model_settings->getMultizoneBackground() == true) {
-      std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
-      std::vector<int> erosion               = model_settings->getErosionPriority();
-      std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
-      std::vector<int> structure             = model_settings->getCorrelationStructure();
-      int nZones = static_cast<int>(surface_files.size()-1);
-      LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
-      LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-      for (int i=0; i<nZones; i++) {
-        LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
-        LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
-        LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
-        LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-        if (structure[i+1] == ModelSettings::TOP)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-        else if (structure[i+1] == ModelSettings::BASE)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-        else if (structure[i+1] == ModelSettings::COMPACTION)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
-      }
-    }
+    //if (model_settings->getMultizoneBackground() == true) {
+    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
+    //  std::vector<int> erosion               = model_settings->getErosionPriority();
+    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
+    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
+    //  int nZones = static_cast<int>(surface_files.size()-1);
+    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
+    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
+    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
+    //  for (int i=0; i<nZones; i++) {
+    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
+    //    if (structure[i+1] == ModelSettings::TOP)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
+    //    else if (structure[i+1] == ModelSettings::BASE)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
+    //    else if (structure[i+1] == ModelSettings::COMPACTION)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
+    //  }
+    //}
   }
   else
   {
