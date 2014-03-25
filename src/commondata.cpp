@@ -536,7 +536,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             break;
           }
 
-          bool scale    = false;
+          bool scale = false;
           if (file_type == IO::SGRI)
             scale = true;
           std::string err_text_tmp = "";
@@ -633,7 +633,7 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
       SeismicStorage & seismic_data_angle = (seismic_data.find(this_timelapse)->second)[i];
       std::string err_text_tmp            = "";
 
-      if (seismic_data_angle.GetSeismicType() == IO::SEGY) {
+      if (seismic_data_angle.GetSeismicType() == SeismicStorage::SEGY) {
 
         SegY * segy = seismic_data_angle.GetSegY();
 
@@ -645,12 +645,12 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
                                           err_text_tmp);
 
       }
-      else if (seismic_data_angle.GetSeismicType() == IO::STORM || seismic_data_angle.GetSeismicType() == IO::SGRI) {
+      else if (seismic_data_angle.GetSeismicType() == SeismicStorage::STORM || seismic_data_angle.GetSeismicType() == SeismicStorage::SGRI) {
 
         StormContGrid * stormgrid = seismic_data_angle.GetStorm();
 
         bool scale = false;
-        if (seismic_data_angle.GetSeismicType() == IO::SGRI)
+        if (seismic_data_angle.GetSeismicType() == SeismicStorage::SGRI)
           scale = true;
 
         cover_ok = CheckThatDataCoverGrid(stormgrid,
@@ -7245,6 +7245,8 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       }
     }
 
+    std::vector<std::vector<std::vector<float> > > grid_statistics(3); // parameters intervals avg,min,max
+
     std::vector<std::string> par_name;
     if (model_settings->getUseAIBackground())
       par_name.push_back("AI "+model_settings->getBackgroundType());
@@ -7261,6 +7263,8 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
     for (int i = 0; i < 3; i++) {
       float const_back_value        = model_settings->getConstBackValue(i);
       const std::string & back_file = input_files->getBackFile(i);
+
+      grid_statistics[i].resize(n_intervals);
 
       if (const_back_value < 0) {
         if (back_file.size() > 0) {
@@ -7286,12 +7290,16 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
           }
           else {
             for (int j = 0; j < n_intervals; j++) {
+              float avg = 0.0f;
               float min = 0.0f;
               float max = 0.0f;
-              float avg = 0.0f;
               parameters[i][j]->GetAvgMinMax(avg, min, max);
               SetUndefinedCellsToGlobalAverageGrid(parameters[i][j], avg);
               parameters[i][j]->LogTransform(RMISSING);
+
+              grid_statistics[i][j].push_back(avg);
+              grid_statistics[i][j].push_back(min);
+              grid_statistics[i][j].push_back(max);
             }
           }
         }
@@ -7310,6 +7318,10 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
           float log_value = log(const_back_value);
           parameters[i][j]->Resize(nx, ny, nz, log_value);
+
+          grid_statistics[i][j].push_back(const_back_value); //avg
+          grid_statistics[i][j].push_back(const_back_value); //min
+          grid_statistics[i][j].push_back(const_back_value); //max
 
           //back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
           //back_model[i]->setType(FFTGrid::PARAMETER);
@@ -7333,16 +7345,16 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
         for (int i = 0; i < 3; i++) {
 
-          float avg = 0.0f;
-          float min = 0.0f;
-          float max = 0.0f;
-          parameters[i][j]->GetAvgMinMax(avg, min, max);
+          //float avg = 0.0f;
+          //float min = 0.0f;
+          //float max = 0.0f;
+          //parameters[i][j]->GetAvgMinMax(avg, min, max);
 
           LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
                                par_name[i].c_str(),
-                               avg,
-                               min,
-                               max);
+                               grid_statistics[i][j][0], //avg
+                               grid_statistics[i][j][1], //min
+                               grid_statistics[i][j][2]);//max
 
         }
         if (model_settings->getUseAIBackground()) { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
