@@ -61,10 +61,14 @@ public:
   std::vector<NRLib::Grid<float> *>                    & GetPriorFaciesProbCubesInterval(int interval)                   { return prior_facies_prob_cubes_[interval]         ;}
   const std::vector<NRLib::Grid<float> *>              & GetPriorFaciesProbCubesInterval(int interval)             const { return prior_facies_prob_cubes_[interval]         ;}
   const NRLib::Grid<float>                             * GetPriorFaciesProbCube(int interval, int facies)          const { return prior_facies_prob_cubes_[interval][facies] ;}
-  double                                                  GetBackgroundVsVpRatioInterval(int i_interval)           const { return background_vs_vp_ratios_[i_interval]       ;}
+  double                                                 GetBackgroundVsVpRatioInterval(int i_interval)            const { return background_vs_vp_ratios_[i_interval]       ;}
 
   // SET FUNCTIONS
-  void AddBackgroundParameterForInterval(int i, int j, NRLib::Grid<float> * parameter)           { background_parameters_[i][j]               = parameter    ;}
+  //void AddBackgroundParameterForInterval(int i, int j, NRLib::Grid<float> * parameter);
+  void AddBackgroundParameterForInterval(int i, int j, NRLib::Grid<float> * parameter)           { background_parameters_[i][j]               = new NRLib::Grid<float>(*parameter)   ;}
+
+  //void AddBackgroundParameterForInterval(int i, int j, NRLib::Grid<float> * parameter);           { background_parameters_[i][j]               = parameter   ;}
+
   void AddParametersCovForInterval(int i, std::vector<NRLib::Grid<double> > cov)                 { prior_cov_[i]                              = cov          ;}
   void AddParametersCorrForInterval(int i, std::vector<NRLib::Grid<double> > corr)               { prior_corr_[i]                             = corr         ;}
   void AddPriorFaciesCube(int interval, int facies, NRLib::Grid<float> * prior_cube)             { prior_facies_prob_cubes_[interval][facies] = prior_cube   ;}

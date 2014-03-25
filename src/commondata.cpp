@@ -7345,11 +7345,6 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
         for (int i = 0; i < 3; i++) {
 
-          //float avg = 0.0f;
-          //float min = 0.0f;
-          //float max = 0.0f;
-          //parameters[i][j]->GetAvgMinMax(avg, min, max);
-
           LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
                                par_name[i].c_str(),
                                grid_statistics[i][j][0], //avg
@@ -7386,9 +7381,15 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
      }
 
      vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
+
     }
     multiple_interval_grid->SetBackgroundVsVpRatios(vs_vp_ratios);
 
+    for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < n_intervals; i++) {
+        delete parameters[j][i];
+      }
+    }
   }
 
     //if (failed == false) { //H Writing of background models missing.

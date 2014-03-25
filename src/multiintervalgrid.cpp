@@ -208,7 +208,13 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
 }
 
-MultiIntervalGrid::~MultiIntervalGrid(){
+MultiIntervalGrid::~MultiIntervalGrid() {
+
+  //for (int i = 0; i < n_intervals_; i++) {
+  //  for (int j = 0; j < 3; j++) {
+  //    delete background_parameters_[i][j];
+  //  }
+  //}
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -793,3 +799,10 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
 
   return max_resolution;
 }
+
+//void MultiIntervalGrid::AddBackgroundParameterForInterval(int                  i,
+//                                                          int                  j,
+//                                                          NRLib::Grid<float> * parameter)
+//{
+//  background_parameters_[i][j] = new NRLib::Grid<float>(*parameter);
+//}
