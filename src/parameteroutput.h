@@ -29,13 +29,14 @@ public:
                                    bool            fileGrid,
                                    int             simNum,
                                    bool            kriged);
-  static void      writeToFile(const Simbox      * simbox,
-                               ModelGeneral      * modelGeneral,
-                               const ModelSettings     * modelSettings,
-                               FFTGrid           * grid,
-                               const std::string & fileName,
-                               const std::string & sgriLabel,
-                               bool padding=false);
+
+  static void      writeToFile(const Simbox        * simbox,
+                               ModelGeneral        * modelGeneral,
+                               const ModelSettings * modelSettings,
+                               FFTGrid             * grid,
+                               const std::string   & fileName,
+                               const std::string   & sgriLabel,
+                               bool                  padding=false);
 
 
 private:

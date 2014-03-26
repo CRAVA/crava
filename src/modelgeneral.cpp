@@ -252,7 +252,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
                            :do_4D_inversion_(model_settings->getDo4DInversion()),
                             do_4D_rock_physics_vnversion_(model_settings->getDo4DRockPhysicsInversion())
 {
-  simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+  simbox_                  = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
   random_gen_              = NULL;
   time_line_               = NULL;
   time_depth_mapping_      = NULL;
@@ -401,7 +401,7 @@ ModelGeneral::~ModelGeneral(void)
     delete time_line_;
 
   delete random_gen_;
-  delete simbox_;
+  //delete simbox_;
   //delete timeSimboxConstThick_;
 
   // if (!forwardModeling_)

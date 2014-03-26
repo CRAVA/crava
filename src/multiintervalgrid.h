@@ -36,7 +36,7 @@ public:
   const std::vector<Simbox>                              & GetIntervalSimboxes()                  const { return interval_simboxes_           ;}
   std::vector<Simbox>                                    & GetIntervalSimboxes()                        { return interval_simboxes_           ;}
   const Simbox                                           * GetIntervalSimbox(int i)               const { return &interval_simboxes_[i]       ;}
-  //Simbox                                                 & GetIntervalSimboxE(int i)                    { return interval_simboxes_[i]        ;}
+  Simbox                                                 * GetIntervalSimbox(int i)                     { return &interval_simboxes_[i]       ;}
   const std::vector<NRLib::Grid<float> *>                & GetBackgroundParametersInterval(int i) const { return background_parameters_[i]    ;}
   std::vector<std::vector<NRLib::Grid<float> *> >        & GetBackgroundParameters()                    { return background_parameters_       ;}
   const NRLib::Grid<float>                               * GetVpInterval(int i)                   const { return background_parameters_[i][0] ;}

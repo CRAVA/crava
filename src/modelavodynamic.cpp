@@ -510,8 +510,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     if(grid_tmp != NULL)
       delete grid_tmp;
-    if (fft_grid_old != NULL)
-      delete fft_grid_old;
+
+    if (i_interval == (common_data->GetMultipleIntervalGrid()->GetNIntervals() - 1)) { //Only delete grid if it is the last interval
+      if (fft_grid_old != NULL)
+        delete fft_grid_old;
+    }
 
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
