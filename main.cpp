@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 
       std::string interval_text = "";
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
-        interval_text = " for interval" + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
+        interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
       LogKit::WriteHeader("Setting up models" + interval_text);
 
       //Priormodell i 3D
@@ -278,39 +278,40 @@ int main(int argc, char** argv)
       else {
         int  eventType;
         int  eventIndex;
-        double  oldTime;
-        bool failedFirst = false;
+        //double  oldTime;
+        //bool failedFirst = false;
         modelGeneral->GetTimeLine()->ReSet();
-        modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-        switch(eventType) {
+        //modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
+        //
+        //
+        //switch(eventType) {
+        //case TimeLine::AVO :
+        //  failedFirst = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, common_data, seismicParametersInterval, eventIndex, i_interval);
+        //  break;
+        //case TimeLine::TRAVEL_TIME :
+        //  failedFirst = doTimeLapseTravelTimeInversion(modelSettings, modelGeneral, inputFiles, eventIndex, seismicParametersInterval);
+        //  break;
+        //case TimeLine::GRAVITY :
+        //  failedFirst = doTimeLapseGravimetricInversion(modelSettings, modelGeneral, modelGravityStatic, common_data, inputFiles, eventIndex, seismicParametersInterval);
+        //  break;
+        //default :
+        //  errTxt += "Error: Unknown inverstion type.\n";
+        //  break;
+        //}
 
-        case TimeLine::AVO :
-          failedFirst = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, common_data, seismicParametersInterval, eventIndex, i_interval);
-          break;
-        case TimeLine::TRAVEL_TIME :
-          failedFirst = doTimeLapseTravelTimeInversion(modelSettings, modelGeneral, inputFiles, eventIndex, seismicParametersInterval);
-          break;
-        case TimeLine::GRAVITY :
-          failedFirst = doTimeLapseGravimetricInversion(modelSettings, modelGeneral, modelGravityStatic, common_data, inputFiles, eventIndex, seismicParametersInterval);
-          break;
-        default :
-          errTxt += "Error: Unknown inverstion type.\n";
-          break;
-        }
-
-        //H Why must/is the first run be seperate from the loop below?
-
-
-        if(failedFirst == true || errTxt != "")
-          return(1);
+        //if(failedFirst == true || errTxt != "")
+        //  return(1);
 
         //delete timeBGSimbox;
 
         double time;
         int time_index = 0;
+        bool first     = true;
         while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-          modelGeneral->AdvanceTime(time_index, seismicParametersInterval, modelSettings);
-          time_index++;
+          if (first == false) {
+             modelGeneral->AdvanceTime(time_index, seismicParametersInterval, modelSettings);
+             time_index++;
+          }
           bool failed;
           switch(eventType) {
           case TimeLine::AVO :
@@ -344,124 +345,11 @@ int main(int argc, char** argv)
           }
           if(failed)
             return(1);
+
+          first = false;
         }
       }
     } //interval_loop
-
-
-
-
-
-
-
-
-    //Simbox * timeBGSimbox = NULL;
-    //SeismicParametersHolder seismicParameters;
-
-    //setupStaticModels(modelGeneral,
-    //                  modelAVOstatic,
-    //                  modelGravityStatic,
-    //                  modelSettings,
-    //                  inputFiles,
-    //                  seismicParameters,
-    //                  timeBGSimbox);
-
-    //if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
-    //   modelAVOstatic == NULL || modelAVOstatic->getFailed())
-    //  return(1);
-
-    //if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
-      //bool failed = doFirstAVOInversion(modelSettings,
-                                        //modelGeneral,
-                                        //modelAVOstatic,
-                                        //seismicParameters,
-                                        //inputFiles,
-                                        //0,
-                                        //timeBGSimbox);
-      //if(failed)
-      //  return(1);
-    //}
-    //else {
-    //  int  eventType;
-    //  int  eventIndex;
-    //  double  oldTime;
-    //  bool failedFirst = false;
-    //  modelGeneral->getTimeLine()->ReSet();
-    //  modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-    //  switch(eventType) {
-
-    //  case TimeLine::AVO :
-    //    // In case of 4D inversion
-    //    if(modelSettings->getDo4DInversion()){
-    //      failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-
-    //    }
-        // In case of 3D inversion
-        //else{
-          //failedFirst = doFirstAVOInversion(modelSettings,
-          //                                  modelGeneral,
-          //                                  modelAVOstatic,
-          //                                  seismicParameters,
-          //                                  inputFiles,
-          //                                  eventIndex,
-          //                                  timeBGSimbox);
-      //  }
-      //  break;
-
-      //case TimeLine::TRAVEL_TIME :
-      //  failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
-      //                                               modelGeneral,
-      //                                               inputFiles,
-      //                                               eventIndex,
-      //                                               seismicParameters);
-      //  break;
-
-      //case TimeLine::GRAVITY :
-      // errTxt += "Error: Asked for 3D gravimetric inversion: Not available.\n";
-      //  break;
-      //default :
-      //  errTxt += "Error: Unknown inverstion type.\n";
-      //  break;
-      //}
-
-      //if(failedFirst == true || errTxt != "")
-      //  return(1);
-
-      //delete timeBGSimbox;
-
-      //double time;
-      //int time_index = 0;
-      //while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-      //  modelGeneral->advanceTime(time_index, seismicParameters,modelSettings);
-      //  time_index++;
-      //  bool failed;
-      //  switch(eventType) {
-      //  case TimeLine::AVO :
-      //    failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-      //    break;
-      //  case TimeLine::TRAVEL_TIME :
-      //    failed = doTimeLapseTravelTimeInversion(modelSettings,
-      //                                            modelGeneral,
-      //                                            inputFiles,
-      //                                            eventIndex,
-      //                                            seismicParameters);
-        //  break;
-        //case TimeLine::GRAVITY :
-        //  failed = doTimeLapseGravimetricInversion(modelSettings,
-        //                                           modelGeneral,
-        //                                           modelGravityStatic,
-        //                                           inputFiles,
-        //                                           eventIndex,
-        //                                           seismicParameters);
-        //  break;
-        //default :
-        //  failed = true;
-        //  break;
-        //}
-        //if(failed)
-        //  return(1);
-    //  }
-    //}
 
     if(modelSettings->getDo4DInversion())
     {
