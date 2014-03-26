@@ -637,6 +637,9 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
       if (seismic_data_angle.GetSeismicType() == SeismicStorage::SEGY) {
 
+        if (offset[i] < 0)
+          offset[i] = model_settings->getSegyOffset(this_timelapse);
+
         SegY * segy = seismic_data_angle.GetSegY();
 
         cover_ok = CheckThatDataCoverGrid(segy,
@@ -7093,8 +7096,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
         for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
 
           std::string interval_text = "";
-          if (multiple_interval_grid->GetNIntervals() > 1)
+          if (multiple_interval_grid->GetNIntervals() > 1) {
+            LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multiple_interval_grid->GetIntervalName(i_interval) + "\n");
+
             interval_text = " for interval " + model_settings->getIntervalName(i_interval);
+          }
 
           const Simbox       * simbox                = multiple_interval_grid->GetIntervalSimbox(i_interval);
           std::string interval_name                  = multiple_interval_grid->GetIntervalName(i_interval);
@@ -7340,7 +7346,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
       for (int j = 0; j < n_intervals; j++) {
 
-        if (multiple_interval_grid->GetIntervalNames().size() > 0)
+        if (multiple_interval_grid->GetNIntervals() > 1)
           LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid->GetIntervalName(j) + "\n");
         LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
         LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
