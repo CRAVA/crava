@@ -94,11 +94,11 @@ public:
   const std::vector<double>               & GetPriorCorrT(int i_interval)               { return prior_corr_T_[i_interval]                   ;}
 
 
-  void  SetupDefaultReflectionMatrix(float              **& reflection_matrix,
-                                     double                 vsvp,
-                                     const ModelSettings  * model_settings,
-                                     int                    number_of_angles,
-                                     int                    this_time_lapse);
+  void  SetupDefaultReflectionMatrix(float             **& reflection_matrix,
+                                     double                vsvp,
+                                     const ModelSettings * model_settings,
+                                     int                   number_of_angles,
+                                     int                   this_time_lapse);
 
   void FillInData(NRLib::Grid<float> * grid,
                   FFTGrid            * fft_grid_new,
@@ -737,6 +737,9 @@ private:
   bool optimizeWellLocations();
 
   int ComputeTime(int year, int month, int day) const;
+
+  void PrintSettings(ModelSettings    * model_settings,
+                     const InputFiles * input_files);
 
   // CLASS VARIABLES ---------------------------------------------------
 

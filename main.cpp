@@ -208,12 +208,16 @@ int main(int argc, char** argv)
     common_data = new CommonData(modelSettings, inputFiles);
 
     //Loop over intervals
-    for(int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
+    for (int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
 
       modelGeneral       = NULL;
       modelAVOstatic     = NULL;
       modelGravityStatic = NULL;
 
+      std::string interval_text = "";
+      if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
+        interval_text = " for interval" + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
+      LogKit::WriteHeader("Setting up models" + interval_text);
 
       //Priormodell i 3D
 
