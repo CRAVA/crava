@@ -1123,7 +1123,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
                                      IO::PathToInversionResults(),
                                      outputFormat);
         }
-        if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
+        if((outputFormat & IO::STORM) + (outputFormat & IO::ASCII) > 0) { // These copies are only needed with the STORM format
           if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
               (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
               (estimationMode && generateBackground)) {

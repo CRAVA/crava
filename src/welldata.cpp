@@ -514,13 +514,12 @@ WellData::readLASWell(const std::string              & wellFileName,
   }
 }
 
-
-void 
-WellData::processNRLibWell(const NRLib::Well              & well, 
-                           const std::string              & wellFileName, 
+void
+WellData::processNRLibWell(const NRLib::Well              & well,
+                           const std::string              & wellFileName,
                            const std::vector<std::string> & logNames,
-                           const std::vector<bool>        & inverseVelocity, 
-                           bool                             porosityLogGiven, 
+                           const std::vector<bool>        & inverseVelocity,
+                           bool                             porosityLogGiven,
                            bool                             faciesLogGiven,
                            bool                             norsarWell)
 {
@@ -553,7 +552,7 @@ WellData::processNRLibWell(const NRLib::Well              & well,
   }
 
   int nLogs  = 2+nVar;
-  int nExtra = 0; 
+  int nExtra = 0;
   if(norsarWell==true)
     nExtra = 1; //MD log, needed for writing.
   std::vector<double> * filler = NULL; //to eliminate warning.
