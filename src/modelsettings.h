@@ -215,9 +215,9 @@ public:
   const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_    ;}
   const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_      ;}
   const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_      ;}
-  std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
-  std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
-  std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  //std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
+  //std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
+  //std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
@@ -280,9 +280,9 @@ public:
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
 
-  void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
-  void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
-  void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
+  //void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
+  //void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
+  //void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addTrendCubes(int trendCubeType)                                  { trendCubeType_.push_back(trendCubeType)                        ;}
@@ -761,9 +761,9 @@ private:
   std::map<std::string, bool>       intervalBaseConformCorrelation_; ///< Should base correlation direction be equal to the base inversion surface per interval
   bool                              intervalCorrelationUsed_;    ///< Whether intervals are used for correlation direction
 
-  std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
-  std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
-  std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
+  //std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
+  //std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
+  //std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<int>                  trendCubeType_;               // Type of the trend cube

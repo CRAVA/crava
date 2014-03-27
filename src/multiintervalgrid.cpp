@@ -559,7 +559,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   double lx = simbox.GetLX();
   double ly = simbox.GetLY();
   */
- 
+
   int nx    = static_cast<int>(resolution_surface.GetNI());
   int ny    = static_cast<int>(resolution_surface.GetNJ());
   double x0 = resolution_surface.GetXMin();

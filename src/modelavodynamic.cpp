@@ -627,7 +627,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //local_scale
   //global_noise_estimate
   //sn_ratio
-  const std::map<std::string, BlockedLogsCommon *> orig_blocked_logs = common_data->GetBlockedLogs();
+  const std::map<std::string, BlockedLogsCommon *> & orig_blocked_logs = common_data->GetBlockedLogs();
 
   for (int i = 0; i < number_of_angles_; i++) {
 

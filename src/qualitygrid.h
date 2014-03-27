@@ -60,7 +60,7 @@ private:
                            const bool                   isFile) const;
 
 
-  CovGrid2D & makeCovGrid2D(const Simbox * simbox,
+  CovGrid2D & MakeCovGrid2D(const Simbox * simbox,
                             Vario  * vario) const;
 
   std::vector<float>   wellValue_;

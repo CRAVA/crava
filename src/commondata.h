@@ -54,8 +54,9 @@ public:
   const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
   const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
 
-  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogs()        const { return mapped_blocked_logs_                 ;}
-  const std::map<std::string, BlockedLogsCommon *> GetBlockedLogsForCorr() const { return mapped_blocked_logs_for_correlation_ ;}
+  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogs()              const { return mapped_blocked_logs_                           ;}
+  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogsForCorr()       const { return mapped_blocked_logs_for_correlation_           ;}
+  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogsInterval(int i) const { return mapped_blocked_logs_intervals_.find(i)->second ;}
 
   std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
 
@@ -228,13 +229,14 @@ private:
                     bool                              facies_log_given,
                     std::string                     & err_text);
 
-  bool BlockWellsForEstimation(const ModelSettings                            * const model_settings,
-                               const Simbox                                   & estimation_simbox,
-                               const MultiIntervalGrid                        * multiple_interval_grid,
-                               std::vector<NRLib::Well>                       & wells,
-                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_common,
-                               std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
-                               std::string                                    & err_text);
+  bool BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
+                               const Simbox                                               & estimation_simbox,
+                               const MultiIntervalGrid                                    * multiple_interval_grid,
+                               std::vector<NRLib::Well>                                   & wells,
+                               std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
+                               std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
+                               std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                               std::string                                                & err_text);
 
   bool RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
                                          ModelSettings * model_settings,
@@ -460,9 +462,12 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings                               * model_settings,
-                            InputFiles                                  * input_files,
-                            std::string                                 & err_text);
+  bool SetupPriorFaciesProb(ModelSettings                                    * model_settings,
+                            InputFiles                                       * input_files,
+                            std::vector<Surface *>                           & facies_estim_interval,
+                            MultiIntervalGrid                               *& multiple_interval_grid,
+                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                            std::string                                      & err_text_common);
 
   void FindFaciesEstimationInterval(InputFiles             * input_files,
                                     std::vector<Surface *> & facies_estim_interval,
@@ -496,7 +501,7 @@ private:
                         const TraceHeaderFormat           * format,
                         int                                 grid_type,
                         const std::vector<Simbox>         & interval_simboxes,
-                        const Simbox                      & estimation_simbox,
+                        //const Simbox                      & estimation_simbox,
                         const ModelSettings               * model_settings,
                         std::string                       & err_text,
                         bool                                nopadding = true);
@@ -512,7 +517,7 @@ private:
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<float> *> & interval_grids,
                     const std::vector<Simbox>         & interval_simboxes,
-                    const Simbox                      & simbox,
+                    //const Simbox                      & estimation_simbox,
                     const ModelSettings               * model_settings,
                     const SegyGeometry               *& geometry,
                     int                                 grid_type,
@@ -600,12 +605,12 @@ private:
                             GridMapping   * time_depth_mapping,
                             std::string   & err_text_common);
 
-  bool SetupBackgroundModel(ModelSettings            * model_settings,
-                            InputFiles               * input_files,
-                            const Simbox             * estimation_simbox,
-                            std::vector<NRLib::Well> & wells,
-                            MultiIntervalGrid       *& multiple_interval_grid,
-                            std::string              & err_text_common);
+  bool SetupBackgroundModel(ModelSettings                                              * model_settings,
+                            InputFiles                                                 * input_files,
+                            const std::vector<NRLib::Well>                             & wells,
+                            std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                            MultiIntervalGrid                                         *& multiple_interval_grid,
+                            std::string                                                & err_text_common);
 
   double FindMeanVsVp(const NRLib::Grid<float> * vp,
                       const NRLib::Grid<float> * vs);
@@ -768,10 +773,11 @@ private:
   std::vector<NRLib::Well>                      wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
-  std::map<std::string, BlockedLogsCommon *>    mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
-  std::vector<std::string>                      continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
-  std::vector<std::string>                      discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
+  std::map<std::string, BlockedLogsCommon *>                 mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>                 mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
+  std::map<int, std::map<std::string, BlockedLogsCommon *> > mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
+  std::vector<std::string>                                   continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
+  std::vector<std::string>                                   discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
   int                                           n_trend_cubes_;

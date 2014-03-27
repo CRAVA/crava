@@ -345,33 +345,37 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //blocked_logs_ = common_data->GetBlockedLogs();
 
       //H Block well for this interval_simbox (blocked wells in commondata is blocked to estimation_simbox)
-      //  blocked logs need to have the same dimension as simbox in avoinversion and GenerateSyntheticSeismic (test_case 6)
-      std::vector<NRLib::Well> & wells = common_data->GetWells();
-      for (size_t i = 0; i < wells.size(); i++) {
-        BlockedLogsCommon * bl_bg = NULL;
+      //  blocked logs need to have the same dimension as interval simbox in avoinversion. Crashes in GenerateSyntheticSeismic (test_case 6).
+      //H-Todo: Move this to blockedlogscommon / commondata?
 
-        // Get all continuous and discrete logs
-        std::vector<std::string> cont_logs_to_be_blocked;
-        std::vector<std::string> disc_logs_to_be_blocked;
+      blocked_logs_ = common_data->GetBlockedLogsInterval(i_interval);
 
-        const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-        const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
+      //std::vector<NRLib::Well> & wells = common_data->GetWells();
+      //for (size_t i = 0; i < wells.size(); i++) {
+      //  BlockedLogsCommon * bl_bg = NULL;
 
-        for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++)
-          cont_logs_to_be_blocked.push_back(it->first);
-        for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++)
-          disc_logs_to_be_blocked.push_back(it->first);
+      //  // Get all continuous and discrete logs
+      //  std::vector<std::string> cont_logs_to_be_blocked;
+      //  std::vector<std::string> disc_logs_to_be_blocked;
 
-        std::string err_text_tmp = "";
-        bl_bg = new BlockedLogsCommon(&wells[i],
-                                      cont_logs_to_be_blocked,
-                                      disc_logs_to_be_blocked,
-                                      simbox_,
-                                      false,
-                                      err_text_tmp);
+      //  const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
+      //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
 
-        blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
-      }
+      //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++)
+      //    cont_logs_to_be_blocked.push_back(it->first);
+      //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++)
+      //    disc_logs_to_be_blocked.push_back(it->first);
+
+      //  std::string err_text_tmp = "";
+      //  bl_bg = new BlockedLogsCommon(&wells[i],
+      //                                cont_logs_to_be_blocked,
+      //                                disc_logs_to_be_blocked,
+      //                                simbox_,
+      //                                false,
+      //                                err_text_tmp);
+
+      //  blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
+      //}
 
       if(multiple_interval_grid->GetTrendCubes().size() > 0)
         trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
@@ -2145,28 +2149,28 @@ ModelGeneral::PrintSettings(ModelSettings     * model_settings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    if (model_settings->getMultizoneBackground() == true) {
-      std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
-      std::vector<int> erosion               = model_settings->getErosionPriority();
-      std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
-      std::vector<int> structure             = model_settings->getCorrelationStructure();
-      int nZones = static_cast<int>(surface_files.size()-1);
-      LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
-      LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-      for (int i=0; i<nZones; i++) {
-        LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
-        LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
-        LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
-        LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-        if (structure[i+1] == ModelSettings::TOP)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-        else if (structure[i+1] == ModelSettings::BASE)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-        else if (structure[i+1] == ModelSettings::COMPACTION)
-          LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
-      }
-    }
+    //if (model_settings->getMultizoneBackground() == true) {
+    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
+    //  std::vector<int> erosion               = model_settings->getErosionPriority();
+    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
+    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
+    //  int nZones = static_cast<int>(surface_files.size()-1);
+    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
+    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
+    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
+    //  for (int i=0; i<nZones; i++) {
+    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
+    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
+    //    if (structure[i+1] == ModelSettings::TOP)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
+    //    else if (structure[i+1] == ModelSettings::BASE)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
+    //    else if (structure[i+1] == ModelSettings::COMPACTION)
+    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
+    //  }
+    //}
   }
   else
   {
