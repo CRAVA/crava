@@ -2191,9 +2191,25 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   // Rho is always entry 2 in the log name list
   if (new_well.HasContLog(log_names_from_user[2])) {
-    new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
+    const std::vector<double> & rho_temp = new_well.GetContLog(log_names_from_user[2]);
+    std::vector<double> rho(rho_temp.size());
+
+    for (unsigned int i=0; i<rho_temp.size(); i++) {
+      if (rho_temp[i] != WELLMISSING)
+        rho[i] = static_cast<double>(rho_temp[i]);
+      else
+        rho[i] = RMISSING;
+    }
+
     new_well.RemoveContLog(log_names_from_user[2]);
+    new_well.AddContLog("Rho", rho);
   }
+
+  // Rho is always entry 2 in the log name list
+  //if (new_well.HasContLog(log_names_from_user[2])) {
+  //  new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
+  //  new_well.RemoveContLog(log_names_from_user[2]);
+  //}
 
   // If defined, Facies is always entry 4 in the log name list
   if (facies_log_given) {
