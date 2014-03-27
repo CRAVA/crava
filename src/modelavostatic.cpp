@@ -156,7 +156,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
     err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
 
-    CheckAvailableMemory(simbox, model_settings, input_files);
+    //CheckAvailableMemory(simbox, model_settings, input_files);
 
   }
   else // forward modeling

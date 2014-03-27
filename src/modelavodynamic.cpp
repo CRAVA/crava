@@ -400,7 +400,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                  int                       t,
                                  int                       i_interval)
 { //Time lapse constructor
-
   reflection_matrix_        = NULL;
   failed_                   = false;
   this_timelapse_           = t;
@@ -427,11 +426,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   theo_sn_ratio_   = new float[number_of_angles_];
   err_theta_cov_   = new double*[number_of_angles_];
 
+  LogKit::WriteHeader("Setting up models for vintage " + NRLib::ToString(t));
+
   const std::vector<SeismicStorage> & seismic_data = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
   angle_.resize(number_of_angles_);
   for (int i = 0; i < number_of_angles_; i++)
     angle_[i] = seismic_data[i].GetAngle();
+
+  for (int i=0; i < number_of_angles_; i++) {
+    err_theta_cov_[i] = new double[number_of_angles_];
+    theta_deg_[i]     = static_cast<float>(angle_[i]*180.0/NRLib::Pi);
+  }
 
   //AngulurCorr between angle i and j
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
@@ -450,6 +456,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   StormContGrid * storm = NULL;
 
   for (int i = 0; i < number_of_angles_; i++) {
+
+    LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data for angle %4.1f ", theta_deg_[i]);
 
     seis_cubes_[i] = ModelAVOStatic::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
     seis_cubes_[i]->createRealGrid();
@@ -502,8 +510,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     if(grid_tmp != NULL)
       delete grid_tmp;
-    if (fft_grid_old != NULL)
-      delete fft_grid_old;
+
+    if (i_interval == (common_data->GetMultipleIntervalGrid()->GetNIntervals() - 1)) { //Only delete grid if it is the last interval
+      if (fft_grid_old != NULL)
+        delete fft_grid_old;
+    }
 
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
@@ -717,11 +728,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Compute variances (Copied from avoinversion.cpp in order to avoid putting matchenergies there)
   fftw_real * corrT = seismic_parameters.extractParamCorrFromCovVp(nzp);
-
-  for (int i=0; i < number_of_angles_; i++) {
-    err_theta_cov_[i] = new double[number_of_angles_];
-    theta_deg_[i]     = static_cast<float>(angle_[i]*180.0/NRLib::Pi);
-  }
 
   ComputeDataVariance(seis_cubes_,
                       data_variance_,
@@ -1257,125 +1263,125 @@ ModelAVODynamic::ReleaseGrids(void)
 //  return(result);
 //}
 
-void
-ModelAVODynamic::ProcessSeismic(FFTGrid             **& seisCube,
-                                const Simbox          * timeSimbox,
-                                const GridMapping     * timeDepthMapping,
-                                const GridMapping     * timeCutMapping,
-                                const ModelSettings   * modelSettings,
-                                const InputFiles      * inputFiles,
-                                std::string           & errText,
-                                bool                  & failed)
-{
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
-
-  if (inputFiles->getNumberOfSeismicFiles(this_timelapse_) > 0)
-  {
-    LogKit::WriteHeader("Reading seismic data");
-
-    std::vector<float> offset      = modelSettings->getLocalSegyOffset(this_timelapse_);
-    const SegyGeometry ** geometry = new const SegyGeometry * [number_of_angles_];
-    seisCube                       = new FFTGrid * [number_of_angles_];
-
-    const Simbox * timeCutSimbox = NULL;
-    if (timeCutMapping != NULL)
-      timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
-    else
-      timeCutSimbox = timeSimbox;
-
-    for (int i = 0; i < number_of_angles_; i++) {
-      geometry[i] = NULL;
-      std::string tmpErrText("");
-      std::string fileName = inputFiles->getSeismicFile(this_timelapse_,i);
-      std::string angle    = NRLib::ToString(angle_[i]*(180/M_PI), 1);
-      std::string dataName = "Seismic data angle stack "+angle;
-      if (offset[i] < 0)
-        offset[i] = modelSettings->getSegyOffset(this_timelapse_);
-
-      //ModelGeneral::readGridFromFile(fileName,
-      //                               dataName,
-      //                               offset[i],
-      //                               seisCube[i],
-      //                               geometry[i],
-      //                               modelSettings->getTraceHeaderFormat(this_timelapse_, i),
-      //                               FFTGrid::DATA,
-      //                               timeSimbox,
-      //                               timeCutSimbox,
-      //                               modelSettings,
-      //                               tmpErrText);
-      if (tmpErrText != "")
-      {
-        tmpErrText += "\nReading of file \'"+fileName+"\' for "+dataName+" failed.\n";
-        errText += tmpErrText;
-        failed = true;
-      }
-      else {
-        seisCube[i]->setAngle(angle_[i]);
-      }
-    }
-
-    LogKit::LogFormatted(LogKit::Low,"\n");
-
-    if (failed == false)
-    {
-      bool segyVolumesRead = false;
-      for (int i = 0 ; i < number_of_angles_ ; i++)
-      {
-        if (geometry[i] != NULL)
-          segyVolumesRead = true;
-      }
-      if (segyVolumesRead)
-      {
-        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-        for (int i = 0 ; i < number_of_angles_ ; i++)
-        {
-          if (geometry[i] != NULL) {
-            double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
-            if (geoAngle < 0)
-              geoAngle += 360.0;
-            LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                                 geometry[i]->GetX0(), geometry[i]->GetY0(),
-                                 geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
-                                 geometry[i]->GetDx(), geometry[i]->GetDy());
-          }
-        }
-      }
-
-      if ((modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
-        for (int i=0;i<number_of_angles_;i++) {
-          std::string angle    = NRLib::ToString(angle_[i]*(180/M_PI), 1);
-          std::string baseName = IO::PrefixOriginalSeismicData() + angle;
-          std::string sgriLabel = std::string("Original seismic data for angle stack ") + angle;
-          if (offset[i] < 0)
-            offset[i] = modelSettings->getSegyOffset(this_timelapse_);
-          seisCube[i]->writeFile(baseName,
-                                 IO::PathToSeismicData(),
-                                 timeSimbox,
-                                 sgriLabel,
-                                 offset[i],
-                                 timeDepthMapping,
-                                 timeCutMapping,
-                                 *modelSettings->getTraceHeaderFormatOutput());
-        }
-      }
-      if ((modelSettings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-        for (int i=0;i<number_of_angles_;i++) {
-          std::string angle    = NRLib::ToString(i);
-          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle);
-          seisCube[i]->writeCravaFile(fileName, timeSimbox);
-        }
-      }
-
-      for (int i =0 ; i < number_of_angles_ ; i++)
-        if (geometry[i] != NULL)
-          delete geometry[i];
-      delete [] geometry;
-    }
-  }
-  Timings::setTimeSeismic(wall,cpu);
-}
+//void
+//ModelAVODynamic::ProcessSeismic(FFTGrid             **& seisCube,
+//                                const Simbox          * timeSimbox,
+//                                const GridMapping     * timeDepthMapping,
+//                                const GridMapping     * timeCutMapping,
+//                                const ModelSettings   * modelSettings,
+//                                const InputFiles      * inputFiles,
+//                                std::string           & errText,
+//                                bool                  & failed)
+//{
+//  double wall=0.0, cpu=0.0;
+//  TimeKit::getTime(wall,cpu);
+//
+//  if (inputFiles->getNumberOfSeismicFiles(this_timelapse_) > 0)
+//  {
+//    LogKit::WriteHeader("Reading seismic data");
+//
+//    std::vector<float> offset      = modelSettings->getLocalSegyOffset(this_timelapse_);
+//    const SegyGeometry ** geometry = new const SegyGeometry * [number_of_angles_];
+//    seisCube                       = new FFTGrid * [number_of_angles_];
+//
+//    const Simbox * timeCutSimbox = NULL;
+//    if (timeCutMapping != NULL)
+//      timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+//    else
+//      timeCutSimbox = timeSimbox;
+//
+//    for (int i = 0; i < number_of_angles_; i++) {
+//      geometry[i] = NULL;
+//      std::string tmpErrText("");
+//      std::string fileName = inputFiles->getSeismicFile(this_timelapse_,i);
+//      std::string angle    = NRLib::ToString(angle_[i]*(180/M_PI), 1);
+//      std::string dataName = "Seismic data angle stack "+angle;
+//      if (offset[i] < 0)
+//        offset[i] = modelSettings->getSegyOffset(this_timelapse_);
+//
+//      //ModelGeneral::readGridFromFile(fileName,
+//      //                               dataName,
+//      //                               offset[i],
+//      //                               seisCube[i],
+//      //                               geometry[i],
+//      //                               modelSettings->getTraceHeaderFormat(this_timelapse_, i),
+//      //                               FFTGrid::DATA,
+//      //                               timeSimbox,
+//      //                               timeCutSimbox,
+//      //                               modelSettings,
+//      //                               tmpErrText);
+//      if (tmpErrText != "")
+//      {
+//        tmpErrText += "\nReading of file \'"+fileName+"\' for "+dataName+" failed.\n";
+//        errText += tmpErrText;
+//        failed = true;
+//      }
+//      else {
+//        seisCube[i]->setAngle(angle_[i]);
+//      }
+//    }
+//
+//    LogKit::LogFormatted(LogKit::Low,"\n");
+//
+//    if (failed == false)
+//    {
+//      bool segyVolumesRead = false;
+//      for (int i = 0 ; i < number_of_angles_ ; i++)
+//      {
+//        if (geometry[i] != NULL)
+//          segyVolumesRead = true;
+//      }
+//      if (segyVolumesRead)
+//      {
+//        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+//        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+//        for (int i = 0 ; i < number_of_angles_ ; i++)
+//        {
+//          if (geometry[i] != NULL) {
+//            double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
+//            if (geoAngle < 0)
+//              geoAngle += 360.0;
+//            LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+//                                 geometry[i]->GetX0(), geometry[i]->GetY0(),
+//                                 geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
+//                                 geometry[i]->GetDx(), geometry[i]->GetDy());
+//          }
+//        }
+//      }
+//
+//      if ((modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
+//        for (int i=0;i<number_of_angles_;i++) {
+//          std::string angle    = NRLib::ToString(angle_[i]*(180/M_PI), 1);
+//          std::string baseName = IO::PrefixOriginalSeismicData() + angle;
+//          std::string sgriLabel = std::string("Original seismic data for angle stack ") + angle;
+//          if (offset[i] < 0)
+//            offset[i] = modelSettings->getSegyOffset(this_timelapse_);
+//          seisCube[i]->writeFile(baseName,
+//                                 IO::PathToSeismicData(),
+//                                 timeSimbox,
+//                                 sgriLabel,
+//                                 offset[i],
+//                                 timeDepthMapping,
+//                                 timeCutMapping,
+//                                 *modelSettings->getTraceHeaderFormatOutput());
+//        }
+//      }
+//      if ((modelSettings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
+//        for (int i=0;i<number_of_angles_;i++) {
+//          std::string angle    = NRLib::ToString(i);
+//          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle);
+//          seisCube[i]->writeCravaFile(fileName, timeSimbox);
+//        }
+//      }
+//
+//      for (int i =0 ; i < number_of_angles_ ; i++)
+//        if (geometry[i] != NULL)
+//          delete geometry[i];
+//      delete [] geometry;
+//    }
+//  }
+//  Timings::setTimeSeismic(wall,cpu);
+//}
 
 //void
 //ModelAVODynamic::processBackground(Background                    *& background,

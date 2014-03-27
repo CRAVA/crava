@@ -252,7 +252,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
                            :do_4D_inversion_(model_settings->getDo4DInversion()),
                             do_4D_rock_physics_vnversion_(model_settings->getDo4DRockPhysicsInversion())
 {
-  simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
+  simbox_                  = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
   random_gen_              = NULL;
   time_line_               = NULL;
   time_depth_mapping_      = NULL;
@@ -260,45 +260,45 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
   velocity_from_inversion_ = false;
 
   {
-    int debug_level = model_settings->getLogLevel();
-    if (model_settings->getDebugLevel() == 1)
-      debug_level = LogKit::L_DebugLow;
-    else if (model_settings->getDebugLevel() == 2)
-      debug_level = LogKit::L_DebugHigh;
+    //int debug_level = model_settings->getLogLevel();
+    //if (model_settings->getDebugLevel() == 1)
+    //  debug_level = LogKit::L_DebugLow;
+    //else if (model_settings->getDebugLevel() == 2)
+    //  debug_level = LogKit::L_DebugHigh;
 
-    LogKit::SetScreenLog(debug_level);
+    //LogKit::SetScreenLog(debug_level);
 
-    std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
-    LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
+    //std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
+    //LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
 
-    if (model_settings->getDebugFlag() > 0) {
-      std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
-      LogKit::SetFileLog(f_name, debug_level);
-    }
+    //if (model_settings->getDebugFlag() > 0) {
+    //  std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
+    //  LogKit::SetFileLog(f_name, debug_level);
+    //}
 
-    if (model_settings->getErrorFileFlag() == true) {
-      std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
-      LogKit::SetFileLog(f_name, LogKit::Error);
-    }
-    LogKit::EndBuffering();
+    //if (model_settings->getErrorFileFlag() == true) {
+    //  std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
+    //  LogKit::SetFileLog(f_name, LogKit::Error);
+    //}
+    //LogKit::EndBuffering();
 
     if (input_files->getSeedFile() == "")
       random_gen_ = new RandomGen(model_settings->getSeed());
     else
       random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 
-    if (model_settings->getNumberOfSimulations() == 0)
-      model_settings->setWritePrediction(true); //write predicted grids.
+    //if (model_settings->getNumberOfSimulations() == 0)
+    //  model_settings->setWritePrediction(true); //write predicted grids.
 
-    PrintSettings(model_settings, input_files);
+    //PrintSettings(model_settings, input_files);
 
-    //Set output for all FFTGrids.
-    FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
-                            model_settings->getOutputGridDomain());
+    ////Set output for all FFTGrids.
+    //FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
+    //                        model_settings->getOutputGridDomain());
 
-    std::string errText("");
+    //std::string errText("");
 
-    LogKit::WriteHeader("Defining modelling grid");
+    //LogKit::WriteHeader("Defining modelling grid");
 
     MultiIntervalGrid * multiple_interval_grid = common_data->GetMultipleIntervalGrid();
     //simbox_                                    = multiple_interval_grid->GetIntervalSimboxE(i_interval);
@@ -344,38 +344,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //Replace wells with blocked_logs
       //blocked_logs_ = common_data->GetBlockedLogs();
 
-      //H Block well for this interval_simbox (blocked wells in commondata is blocked to estimation_simbox)
-      //  blocked logs need to have the same dimension as interval simbox in avoinversion. Crashes in GenerateSyntheticSeismic (test_case 6).
-      //H-Todo: Move this to blockedlogscommon / commondata?
-
+      //Wells blocked to this interval simbox
       blocked_logs_ = common_data->GetBlockedLogsInterval(i_interval);
-
-      //std::vector<NRLib::Well> & wells = common_data->GetWells();
-      //for (size_t i = 0; i < wells.size(); i++) {
-      //  BlockedLogsCommon * bl_bg = NULL;
-
-      //  // Get all continuous and discrete logs
-      //  std::vector<std::string> cont_logs_to_be_blocked;
-      //  std::vector<std::string> disc_logs_to_be_blocked;
-
-      //  const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-      //  const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
-
-      //  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++)
-      //    cont_logs_to_be_blocked.push_back(it->first);
-      //  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++)
-      //    disc_logs_to_be_blocked.push_back(it->first);
-
-      //  std::string err_text_tmp = "";
-      //  bl_bg = new BlockedLogsCommon(&wells[i],
-      //                                cont_logs_to_be_blocked,
-      //                                disc_logs_to_be_blocked,
-      //                                simbox_,
-      //                                false,
-      //                                err_text_tmp);
-
-      //  blocked_logs_.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bl_bg));
-      //}
 
       if(multiple_interval_grid->GetTrendCubes().size() > 0)
         trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
@@ -431,7 +401,7 @@ ModelGeneral::~ModelGeneral(void)
     delete time_line_;
 
   delete random_gen_;
-  delete simbox_;
+  //delete simbox_;
   //delete timeSimboxConstThick_;
 
   // if (!forwardModeling_)
@@ -1652,834 +1622,834 @@ ModelGeneral::EstimateZPaddingSize(Simbox         * timeSimbox,
 //
 //}
 
-void
-ModelGeneral::PrintSettings(ModelSettings     * model_settings,
-                            const InputFiles  * input_files)
-{
-  LogKit::WriteHeader("Model settings");
-
-  LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
-  if (model_settings->getForwardModeling()==true)
-    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
-  else if (model_settings->getEstimationMode()==true)
-    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
-
-  else if (model_settings->getNumberOfSimulations() == 0)
-    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : prediction\n");
-  else
-  {
-    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : simulation\n");
-    if (input_files->getSeedFile()=="") {
-      if (model_settings->getSeed() == 0)
-        LogKit::LogFormatted(LogKit::Low,"  Seed                                     :          0 (default seed)\n");
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Seed                                     : %10d\n",model_settings->getSeed());
-    }
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Seed read from file                      : %10s\n",input_files->getSeedFile().c_str());
-
-
-    LogKit::LogFormatted(LogKit::Low,"  Number of realisations                   : %10d\n",model_settings->getNumberOfSimulations());
-  }
-  if (model_settings->getForwardModeling()==false)
-  {
-    LogKit::LogFormatted(LogKit::Low,"  Kriging                                  : %10s\n",(model_settings->getKrigingParameter()>0 ? "yes" : "no"));
-    LogKit::LogFormatted(LogKit::Low,"  Facies probabilities                     : %10s\n",(model_settings->getEstimateFaciesProb() ? "yes" : "no"));
-    LogKit::LogFormatted(LogKit::Low,"  Synthetic seismic                        : %10s\n",(model_settings->getGenerateSeismicAfterInv() ? "yes" : "no" ));
-  }
-
-  if (model_settings->getEstimateFaciesProb()) {
-    LogKit::LogFormatted(LogKit::Low,"\nSettings for facies probability estimation:\n");
-    LogKit::LogFormatted(LogKit::Low,"  Use elastic parameters relative to trend : %10s\n",(model_settings->getFaciesProbRelative()     ? "yes" : "no"));
-    LogKit::LogFormatted(LogKit::Low,"  Include Vs information in estimation     : %10s\n",(model_settings->getNoVsFaciesProb()         ? "no"  : "yes"));
-    LogKit::LogFormatted(LogKit::Low,"  Use filtered well logs for estimation    : %10s\n",(model_settings->getUseFilterForFaciesProb() ? "yes" : "no"));
-  }
-
-  LogKit::LogFormatted(LogKit::Low,"\nInput/Output settings:\n");
-  std::string log_text("*NONE*");
-  int log_level = model_settings->getLogLevel();
-  if (log_level == LogKit::L_Error)
-    log_text = "ERROR";
-  else if (log_level == LogKit::L_Warning)
-    log_text = "WARNING";
-  else if (log_level == LogKit::L_Low)
-    log_text = "LOW";
-  else if (log_level == LogKit::L_Medium)
-    log_text = "MEDIUM";
-  else if (log_level == LogKit::L_High)
-    log_text = "HIGH";
-  else if (log_level == LogKit::L_DebugLow)
-     log_text = "DEBUGLOW";
-  else if (log_level == LogKit::L_DebugHigh)
-    log_text = "DEBUGHIGH";
-  LogKit::LogFormatted(LogKit::Low, "  Log level                                : %10s\n",log_text.c_str());
-  if (input_files->getInputDirectory() != "")
-    LogKit::LogFormatted(LogKit::High,"  Input directory                          : %10s\n",input_files->getInputDirectory().c_str());
-  if (IO::getOutputPath() != "")
-    LogKit::LogFormatted(LogKit::High,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
-
-  int grid_format          = model_settings->getOutputGridFormat();
-  int grid_domain          = model_settings->getOutputGridDomain();
-  int output_grids_other   = model_settings->getOutputGridsOther();
-  int output_grids_elastic = model_settings->getOutputGridsElastic();
-  int output_grids_seismic = model_settings->getOutputGridsSeismic();
-
-  if (output_grids_elastic > 0  || output_grids_seismic > 0  || output_grids_other > 0) {
-    LogKit::LogFormatted(LogKit::Medium,"\nGrid output formats:\n");
-    if (grid_format & IO::SEGY) {
-      const std::string & format_name = model_settings->getTraceHeaderFormatOutput()->GetFormatName();
-      LogKit::LogFormatted(LogKit::Medium,"  Segy - %-10s                        :        yes\n",format_name.c_str());
-    }
-    if (grid_format & IO::STORM)
-      LogKit::LogFormatted(LogKit::Medium,"  Storm                                    :        yes\n");
-    if (grid_format & IO::ASCII)
-      LogKit::LogFormatted(LogKit::Medium,"  ASCII                                    :        yes\n");
-    if (grid_format & IO::SGRI)
-      LogKit::LogFormatted(LogKit::Medium,"  Norsar                                   :        yes\n");
-    if (grid_format & IO::CRAVA)
-      LogKit::LogFormatted(LogKit::Medium,"  Crava                                    :        yes\n");
-
-    LogKit::LogFormatted(LogKit::Medium,"\nGrid output domains:\n");
-    if (grid_domain & IO::TIMEDOMAIN)
-      LogKit::LogFormatted(LogKit::Medium,"  Time                                     :        yes\n");
-    if (grid_domain & IO::DEPTHDOMAIN)
-      LogKit::LogFormatted(LogKit::Medium,"  Depth                                    :        yes\n");
-  }
-
-  if (output_grids_elastic > 0 &&
-      model_settings->getForwardModeling() == false) {
-    LogKit::LogFormatted(LogKit::Medium,"\nOutput of elastic parameters:\n");
-    if ((output_grids_elastic & IO::VP) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Pressure-wave velocity  (Vp)             :        yes\n");
-    if ((output_grids_elastic & IO::VS) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Shear-wave velocity  (Vs)                :        yes\n");
-    if ((output_grids_elastic & IO::RHO) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Density  (Rho)                           :        yes\n");
-    if ((output_grids_elastic & IO::AI) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Acoustic impedance  (AI)                 :        yes\n");
-    if ((output_grids_elastic & IO::VPVSRATIO) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Vp/Vs ratio                              :        yes\n");
-    if ((output_grids_elastic & IO::SI) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Shear impedance  (SI)                    :        yes\n");
-    if ((output_grids_elastic & IO::MURHO) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  MuRho  (SI*SI)                           :        yes\n");
-    if ((output_grids_elastic & IO::LAMBDARHO) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
-    if ((output_grids_elastic & IO::LAMELAMBDA) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Lame's first parameter                   :        yes\n");
-    if ((output_grids_elastic & IO::LAMEMU) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Lame's second parameter (shear modulus)  :        yes\n");
-    if ((output_grids_elastic & IO::POISSONRATIO) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Poisson ratio  (X-1)/2(X-2), X=(Vp/Vs)^2 :        yes\n");
-    if ((output_grids_elastic & IO::BACKGROUND) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Background (Vp, Vs, Rho)                 :        yes\n");
-    if ((output_grids_elastic & IO::BACKGROUND_TREND) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Background trend (Vp, Vs, Rho)           :        yes\n");
-  }
-
-  if (model_settings->getForwardModeling() ||
-      output_grids_seismic > 0) {
-    LogKit::LogFormatted(LogKit::Medium,"\nOutput of seismic data:\n");
-    if ((output_grids_seismic & IO::SYNTHETIC_SEISMIC_DATA) > 0 || model_settings->getForwardModeling())
-      LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
-    if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
-    if ((output_grids_seismic & IO::RESIDUAL) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
-  }
-
-  if (model_settings->getEstimateFaciesProb()) {
-    LogKit::LogFormatted(LogKit::Medium,"\nOutput of facies probability volumes:\n");
-    if ((output_grids_other & IO::FACIESPROB) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Facies probabilities                     :        yes\n");
-    if ((output_grids_other & IO::FACIESPROB_WITH_UNDEF) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Facies probabilities with undefined value:        yes\n");
-  }
-
-  if ((output_grids_other & IO::CORRELATION)>0 ||
-      (output_grids_other & IO::EXTRA_GRIDS)  >0 ||
-      (output_grids_other & IO::TIME_TO_DEPTH_VELOCITY)>0) {
-    LogKit::LogFormatted(LogKit::Medium,"\nOther grid output:\n");
-    if ((output_grids_other & IO::CORRELATION) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Posterior correlations                   :        yes\n");
-    if ((output_grids_other & IO::EXTRA_GRIDS) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Help grids (see use manual)              :        yes\n");
-    if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0)
-      LogKit::LogFormatted(LogKit::Medium,"  Time-to-depth velocity                   :        yes\n");
-  }
-
-  if (model_settings->getFileGrid())
-    LogKit::LogFormatted(LogKit::Medium,"\nAdvanced settings:\n");
-  else
-    LogKit::LogFormatted(LogKit::High,"\nAdvanced settings:\n");
-
-  LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  : %10s\n", (model_settings->getFileGrid() ? "yes" : "no"));
-
-  if (input_files->getReflMatrFile() != "")
-    LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", input_files->getReflMatrFile().c_str());
-
-  if (model_settings->getVpVsRatio() != RMISSING)
-    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio());
-
-  LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (model_settings->getRunFromPanel() ? "yes" : "no"));
-  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", model_settings->getMinHorizontalRes());
-  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", model_settings->getMinSamplingDensity());
-
-  if (model_settings->getKrigingParameter()>0) { // We are doing kriging
-    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2d\n", model_settings->getKrigingParameter());
-    LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (model_settings->getDoSmoothKriging() ? "yes" : "no"));
-  }
-
-  LogKit::LogFormatted(LogKit::High,"\nUnit settings/assumptions:\n");
-  LogKit::LogFormatted(LogKit::High,"  Time                                     : %10s\n","ms TWT");
-  LogKit::LogFormatted(LogKit::High,"  Frequency                                : %10s\n","Hz");
-  LogKit::LogFormatted(LogKit::High,"  Length                                   : %10s\n","m");
-  LogKit::LogFormatted(LogKit::High,"  Velocities                               : %10s\n","m/s");
-  LogKit::LogFormatted(LogKit::High,"  Density                                  : %10s\n","g/cm3");
-  LogKit::LogFormatted(LogKit::High,"  Angles                                   : %10s\n","   degrees (clockwise relative to north when applicable)");
-
-  //
-  // WELL PROCESSING
-  //
-  if (model_settings->getNumberOfWells() > 0)
-  {
-    LogKit::LogFormatted(LogKit::High,"\nSettings for well processing:\n");
-    LogKit::LogFormatted(LogKit::High,"  Threshold for merging log entries        : %10.2f ms\n",model_settings->getMaxMergeDist());
-    LogKit::LogFormatted(LogKit::High,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",model_settings->getMaxRankCorr());
-    LogKit::LogFormatted(LogKit::High,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
-                         model_settings->getMaxDevAngle(),tan(model_settings->getMaxDevAngle()*M_PI/180.0));
-    LogKit::LogFormatted(LogKit::High,"  High cut for background modelling        : %10.1f\n",model_settings->getMaxHzBackground());
-    LogKit::LogFormatted(LogKit::High,"  High cut for seismic resolution          : %10.1f\n",model_settings->getMaxHzSeismic());
-    LogKit::LogFormatted(LogKit::High,"  Estimate Vp-Vs ratio from well data      : %10s\n", (model_settings->getVpVsRatioFromWells() ? "yes" : "no"));
-  }
-  LogKit::LogFormatted(LogKit::High,"\nRange of allowed parameter values:\n");
-  LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",model_settings->getAlphaMin());
-  LogKit::LogFormatted(LogKit::High,"  Vp  - max                                : %10.0f\n",model_settings->getAlphaMax());
-  LogKit::LogFormatted(LogKit::High,"  Vs  - min                                : %10.0f\n",model_settings->getBetaMin());
-  LogKit::LogFormatted(LogKit::High,"  Vs  - max                                : %10.0f\n",model_settings->getBetaMax());
-  LogKit::LogFormatted(LogKit::High,"  Rho - min                                : %10.1f\n",model_settings->getRhoMin());
-  LogKit::LogFormatted(LogKit::High,"  Rho - max                                : %10.1f\n",model_settings->getRhoMax());
-
-  //
-  // WELL DATA
-  //
-  if (model_settings->getNumberOfWells() > 0)
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nWell logs:\n");
-    const std::vector<std::string> & log_names = model_settings->getLogNames();
-
-    if (log_names.size() > 0)
-    {
-      LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n",  log_names[0].c_str());
-      if (NRLib::Uppercase(log_names[1])=="VP" ||
-         NRLib::Uppercase(log_names[1])=="LFP_VP")
-        LogKit::LogFormatted(LogKit::Low,"  p-wave velocity                          : %10s\n",log_names[1].c_str());
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n",log_names[1].c_str());
-      if (NRLib::Uppercase(log_names[3])=="VS" ||
-         NRLib::Uppercase(log_names[3])=="LFP_VS")
-        LogKit::LogFormatted(LogKit::Low,"  s-wave velocity                          : %10s\n",log_names[3].c_str());
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Shear sonic                              : %10s\n",log_names[3].c_str());
-      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n",  log_names[2].c_str());
-      if (model_settings->getFaciesLogGiven())
-        LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",log_names[4].c_str());
-      if (model_settings->getPorosityLogGiven())
-        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  log_names[5].c_str());
-    }
-    else
-    {
-      LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n","TWT");
-      LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n","DT");
-      LogKit::LogFormatted(LogKit::Low,"  Shear sonic                              : %10s\n","DTS");
-      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n","RHOB");
-      LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n","FACIES");
-    }
-    LogKit::LogFormatted(LogKit::Low,"\nWell files:\n");
-    for (int i = 0; i < model_settings->getNumberOfWells(); i++)
-    {
-      LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : %s\n",i+1,input_files->getWellFile(i).c_str());
-    }
-    bool generate_background  = model_settings->getGenerateBackground();
-    bool estimate_facies_prob = model_settings->getFaciesLogGiven();
-    bool estimate_wavelet     = false;
-    for (int i=0; i < model_settings->getNumberOfTimeLapses(); i++){
-      std::vector<bool> estimate_wavelet_all_traces = model_settings->getEstimateWavelet(i);
-      for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
-        estimate_wavelet = estimate_wavelet || estimate_wavelet_all_traces[j];
-    }
-    if (generate_background || estimate_facies_prob || estimate_wavelet)
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nUse well in estimation of:                   ");
-      if (generate_background)  LogKit::LogFormatted(LogKit::Low,"BackgroundTrend  ");
-      if (estimate_wavelet)     LogKit::LogFormatted(LogKit::Low,"WaveletEstimation  ");
-      if (estimate_facies_prob) LogKit::LogFormatted(LogKit::Low,"FaciesProbabilities");
-      LogKit::LogFormatted(LogKit::Low,"\n");
-      for (int i = 0; i < model_settings->getNumberOfWells(); i++)
-      {
-        LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : ",i+1);
-        if (generate_background) {
-          if (model_settings->getIndicatorBGTrend(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");
-          else if (model_settings->getIndicatorBGTrend(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","no");
-          else
-            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");
-        }
-        if (estimate_wavelet) {
-          if (model_settings->getIndicatorWavelet(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::Low,"    %-13s  ","yes");
-          else if (model_settings->getIndicatorWavelet(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::Low,"    %-13s  ","no");
-          else
-            LogKit::LogFormatted(LogKit::Low,"    %-12s  ","if possible");
-        }
-        if (estimate_facies_prob) {
-          if (model_settings->getIndicatorFacies(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::Low,"    %-12s","yes");
-          else if (model_settings->getIndicatorFacies(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::Low,"    %-12s","no");
-          else
-            LogKit::LogFormatted(LogKit::Low,"    %-12s","if possible");
-        }
-        LogKit::LogFormatted(LogKit::Low,"\n");
-      }
-    }
-    if ( model_settings->getOptimizeWellLocation() )
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nFor well, optimize position for            : Angle with Weight\n");
-      for (int i = 0; i < model_settings->getNumberOfWells(); i++)
-      {
-        int n_move_angles = model_settings->getNumberOfWellAngles(i);
-        if ( n_move_angles > 0 )
-        {
-          LogKit::LogFormatted(LogKit::Low," %2d %46.1f %10.1f\n",i+1,(model_settings->getWellMoveAngle(i,0)*180/M_PI),model_settings->getWellMoveWeight(i,0));
-          for (int j=1; j < n_move_angles; j++)
-            LogKit::LogFormatted(LogKit::Low," %49.1f %10.1f\n",(model_settings->getWellMoveAngle(i,j)*180/M_PI),model_settings->getWellMoveWeight(i,j));
-        }
-        LogKit::LogFormatted(LogKit::Low,"\n");
-      }
-    }
-  }
-
-  //
-  // AREA
-  //
-  std::string grid_file;
-  int area_specification = model_settings->getAreaSpecification();
-  if (model_settings->getForwardModeling()) {
-    LogKit::LogFormatted(LogKit::Low,"\nSeismic area:\n");
-    grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
-  }
-  else {
-    LogKit::LogFormatted(LogKit::Low,"\nInversion area");
-    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA ||
-       area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
-       area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
-      grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
-  }
-  if (area_specification == ModelSettings::AREA_FROM_GRID_DATA) {
-    const std::vector<int> & area_ILXL = model_settings->getAreaILXL();
-    LogKit::LogFormatted(LogKit::Low," taken from grid\n");
-    LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
-    if (area_ILXL.size() > 0) {
-      if (area_ILXL[0] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  In-line start                            : %10d\n", area_ILXL[0]);
-      if (area_ILXL[1] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  In-line end                              : %10d\n", area_ILXL[1]);
-      if (area_ILXL[4] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  In-line step                             : %10d\n", area_ILXL[4]);
-      if (area_ILXL[2] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  Cross-line start                         : %10d\n", area_ILXL[2]);
-      if (area_ILXL[3] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  Cross-line end                           : %10d\n", area_ILXL[3]);
-      if (area_ILXL[5] != IMISSING)
-        LogKit::LogFormatted(LogKit::Low,"  Cross-line step                          : %10d\n", area_ILXL[5]);
-    }
-  }
-  else if (area_specification == ModelSettings::AREA_FROM_UTM ||
-           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-    LogKit::LogFormatted(LogKit::Low," given as UTM coordinates\n");
-    const SegyGeometry * geometry = model_settings->getAreaParameters();
-    LogKit::LogFormatted(LogKit::Low,"  Reference point x                        : %10.1f\n", geometry->GetX0());
-    LogKit::LogFormatted(LogKit::Low,"  Reference point y                        : %10.1f\n", geometry->GetY0());
-    LogKit::LogFormatted(LogKit::Low,"  Length x                                 : %10.1f\n", geometry->Getlx());
-    LogKit::LogFormatted(LogKit::Low,"  Length y                                 : %10.1f\n", geometry->Getly());
-    if (area_specification == ModelSettings::AREA_FROM_UTM) {
-      LogKit::LogFormatted(LogKit::Low,"  Sample density x                         : %10.1f\n", geometry->GetDx());
-      LogKit::LogFormatted(LogKit::Low,"  Sample density y                         : %10.1f\n", geometry->GetDy());
-    }
-    LogKit::LogFormatted(LogKit::Low,"  Rotation                                 : %10.4f\n", geometry->GetAngle()*(180.0/NRLib::Pi)*(-1));
-    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-      LogKit::LogFormatted(LogKit::Low,"and snapped to seismic data\n");
-      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
-    }
-  }
-  else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
-    LogKit::LogFormatted(LogKit::Low," taken from surface\n");
-    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getAreaSurfaceFile()+"\n");
-    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
-      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
-    }
-  }
-
-  //
-  // SURFACES
-  //
-  LogKit::LogFormatted(LogKit::Low,"\nTime surfaces:\n");
-  if (model_settings->getParallelTimeSurfaces())
-  {
-    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfFile(0)+"\n");
-    LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
-    LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
-    LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
-    LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n",   int(model_settings->getTimeLz()/model_settings->getTimeDz()+0.5));
-  }
-  else
-  {
-    const std::string & top_name  = input_files->getTimeSurfFile(0);
-
-    if (NRLib::IsNumber(top_name))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_name.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Top surface                              : "+top_name+"\n");
-
-    if (model_settings->getIntervalNames().size() == 0) {
-
-      const std::string & base_name = input_files->getTimeSurfFile(1);
-
-      if (NRLib::IsNumber(base_name))
-        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
-      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
-
-    }
-    else { //Multiple intervals
-      std::vector<std::string> interval_names = model_settings->getIntervalNames();
-
-      for (size_t i = 0; i < interval_names.size(); i++) {
-
-        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
-        const std::string & base_name = input_files->getIntervalBaseTimeSurface(interval_names[i]);
-
-        if (NRLib::IsNumber(base_name))
-          LogKit::LogFormatted(LogKit::Low,"    Stop time                              : %10.2f\n", atof(base_name.c_str()));
-        else
-          LogKit::LogFormatted(LogKit::Low,"    Base surface                           : "+base_name+"\n");
-        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNzInterval(interval_names[i]));
-
-      }
-    }
-
-    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
-  }
-  if (input_files->getCorrDirFile() != "")
-    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirFile()+"\n");
-
-  if (model_settings->getDoDepthConversion())
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nDepth conversion:\n");
-    if (input_files->getDepthSurfFile(0) != "")
-      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : "+input_files->getDepthSurfFile(0)+"\n");
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : %s\n", "Made from base depth surface and velocity field");
-    if (input_files->getDepthSurfFile(1) != "")
-      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getDepthSurfFile(1)+"\n");
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : %s\n", "Made from top depth surface and velocity field");
-    std::string velocityField = input_files->getVelocityField();
-    if (model_settings->getVelocityFromInversion()) {
-      velocityField = "Use Vp from inversion";
-    }
-     LogKit::LogFormatted(LogKit::Low,"  Velocity field                           : "+velocityField+"\n");
-  }
-
-  const std::string & top_WEI  = input_files->getWaveletEstIntFileTop(0);
-  const std::string & base_WEI = input_files->getWaveletEstIntFileBase(0);
-
-  if (top_WEI != "" || base_WEI != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
-    if (NRLib::IsNumber(top_WEI))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_WEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_WEI+"\n");
-
-    if (NRLib::IsNumber(base_WEI))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_WEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_WEI+"\n");
-  }
-
-  const std::string & top_FEI  = input_files->getFaciesEstIntFile(0);
-  const std::string & base_FEI = input_files->getFaciesEstIntFile(1);
-
-  if (top_FEI != "" || base_FEI != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nFacies estimation interval:\n");
-    if (NRLib::IsNumber(top_FEI))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_FEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_FEI+"\n");
-
-    if (NRLib::IsNumber(base_FEI))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_FEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_FEI+"\n");
-  }
-
-  //
-  // BACKGROUND
-  //
-  if (model_settings->getGenerateBackground())
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nBackground model (estimated):\n");
-    if (input_files->getBackVelFile() != "")
-      LogKit::LogFormatted(LogKit::Low,"  Trend for p-wave velocity                : "+input_files->getBackVelFile()+"\n");
-    Vario       * vario  = model_settings->getBackgroundVario();
-    GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
-    LogKit::LogFormatted(LogKit::Low,"  Variogram\n");
-    LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(vario->getType()).c_str());
-    if (pVario != NULL)
-    LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pVario->getPower());
-    LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",vario->getRange());
-    if (vario->getAnisotropic())
-    {
-      LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",vario->getSubRange());
-      LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
-    }
-    LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    //if (model_settings->getMultizoneBackground() == true) {
-    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
-    //  std::vector<int> erosion               = model_settings->getErosionPriority();
-    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
-    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
-    //  int nZones = static_cast<int>(surface_files.size()-1);
-    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-    //  for (int i=0; i<nZones; i++) {
-    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-    //    if (structure[i+1] == ModelSettings::TOP)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-    //    else if (structure[i+1] == ModelSettings::BASE)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-    //    else if (structure[i+1] == ModelSettings::COMPACTION)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
-    //  }
-    //}
-  }
-  else
-  {
-    if (model_settings->getForwardModeling()==true)
-      LogKit::LogFormatted(LogKit::Low,"\nEarth model:\n");
-    else
-      LogKit::LogFormatted(LogKit::Low,"\nBackground model:\n");
-
-    if (model_settings->getUseAIBackground()) {
-      if (model_settings->getConstBackValue(0) > 0)
-        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance                       : %10.1f\n",model_settings->getConstBackValue(0));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance read from file        : "+input_files->getBackFile(0)+"\n");
-    }
-    else {
-      if (model_settings->getConstBackValue(0) > 0)
-        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",model_settings->getConstBackValue(0));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+input_files->getBackFile(0)+"\n");
-    }
-
-    if (model_settings->getUseSIBackground()) {
-      if (model_settings->getConstBackValue(1) > 0)
-        LogKit::LogFormatted(LogKit::Low,"  Shear impedance                          : %10.1f\n",model_settings->getConstBackValue(1));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Shear impedance read from file           : "+input_files->getBackFile(1)+"\n");
-    }
-    else if (model_settings->getUseVpVsBackground()) {
-      if (model_settings->getConstBackValue(1) > 0)
-        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs                                    : %10.1f\n",model_settings->getConstBackValue(1));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs  read from file                    : "+input_files->getBackFile(1)+"\n");
-    }
-    else {
-      if (model_settings->getConstBackValue(1) > 0)
-        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",model_settings->getConstBackValue(1));
-      else
-        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+input_files->getBackFile(1)+"\n");
-    }
-
-    if (model_settings->getConstBackValue(2) > 0)
-      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10.1f\n",model_settings->getConstBackValue(2));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Density read from file                   : "+input_files->getBackFile(2)+"\n");
-  }
-
-  TraceHeaderFormat * thf_old = model_settings->getTraceHeaderFormat();
-  if (thf_old != NULL)
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nAdditional SegY trace header format:\n");
-    if (thf_old != NULL) {
-      LogKit::LogFormatted(LogKit::Low,"  Format name                              : "+thf_old->GetFormatName()+"\n");
-      if (thf_old->GetBypassCoordScaling())
-        LogKit::LogFormatted(LogKit::Low,"  Bypass coordinate scaling                :        yes\n");
-      if (!thf_old->GetStandardType())
-      {
-        LogKit::LogFormatted(LogKit::Low,"  Start pos coordinate scaling             : %10d\n",thf_old->GetScalCoLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Start pos trace x coordinate             : %10d\n",thf_old->GetUtmxLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
-      }
-    }
-  }
-
-  if (model_settings->getForwardModeling())
-  {
-    //
-    // SEISMIC
-    //
-    LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
-    LogKit::LogFormatted(LogKit::Low,"  Generating seismic                       : %10s\n","yes");
-    std::vector<float> angle = model_settings->getAngle(0);
-    for (int i = 0; i < model_settings->getNumberOfAngles(0); i++) //Forward modeling can only be done for one time lapse
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[i]*180/M_PI));
-      LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+input_files->getWaveletFile(0,i)+"\n");
-    }
-  }
-  else
-  {
-    //
-    // PRIOR CORRELATION
-    //
-    Vario * corr = model_settings->getLateralCorr();
-    if (corr != NULL) {
-      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-      LogKit::LogFormatted(LogKit::Low,"\nPrior correlation (of residuals):\n");
-      LogKit::LogFormatted(LogKit::Low,"  Range of allowed parameter values:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - min                         : %10.1e\n",model_settings->getVarAlphaMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - max                         : %10.1e\n",model_settings->getVarAlphaMax());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - min                         : %10.1e\n",model_settings->getVarBetaMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - max                         : %10.1e\n",model_settings->getVarBetaMax());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - min                         : %10.1e\n",model_settings->getVarRhoMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - max                         : %10.1e\n",model_settings->getVarRhoMax());
-      LogKit::LogFormatted(LogKit::Low,"  Lateral correlation:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
-      if (pCorr != NULL)
-        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
-      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange());
-      if (corr->getAnisotropic())
-      {
-        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange());
-        LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - corr->getAngle()*(180/M_PI));
-      }
-    }
-    //
-    // PRIOR FACIES
-    //
-    if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE ||
-        model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-        // Can not be written when FACIES_FROM_WELLS as this information not is extracted yet
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
-      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
-      {
-        typedef std::map<std::string,float> mapType;
-        mapType myMap = model_settings->getPriorFaciesProb();
-
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
-      }
-      else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-      {
-        typedef std::map<std::string,std::string> mapType;
-        mapType myMap = input_files->getPriorFaciesProbFile();
-
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10s\n",(i->first).c_str(),(i->second).c_str());
-      }
-    }
-
-    if (model_settings->getFaciesProbFromRockPhysics()) {
-      LogKit::LogFormatted(LogKit::Low,"\nRock physics:\n");
-      {
-        const std::map<std::string, DistributionsRockStorage *>& rock_storage = model_settings->getRockStorage();
-        std::map<std::string, DistributionsRockStorage *>::const_iterator it;
-        for (it = rock_storage.begin() ; it != rock_storage.end() ; it++)
-          LogKit::LogFormatted(LogKit::Low,"  Rock                                     : %10s\n",(it->first).c_str());
-      }
-      {
-        const std::map<std::string, DistributionsDryRockStorage *>& dryrock_storage = model_settings->getDryRockStorage();
-        std::map<std::string, DistributionsDryRockStorage *>::const_iterator it;
-        for (it = dryrock_storage.begin() ; it != dryrock_storage.end() ; it++)
-          LogKit::LogFormatted(LogKit::Low,"  Dry Rock                                 : %10s\n",(it->first).c_str());
-      }
-      {
-        const std::map<std::string, DistributionsSolidStorage *>& solid_storage = model_settings->getSolidStorage();
-        std::map<std::string, DistributionsSolidStorage *>::const_iterator it;
-        for (it = solid_storage.begin() ; it != solid_storage.end() ; it++)
-          LogKit::LogFormatted(LogKit::Low,"  Solid                                    : %10s\n",(it->first).c_str());
-      }
-      {
-        const std::map<std::string, DistributionsFluidStorage *>& fluid_storage = model_settings->getFluidStorage();
-        std::map<std::string, DistributionsFluidStorage *>::const_iterator it;
-        for (it = fluid_storage.begin() ; it != fluid_storage.end() ; it++)
-          LogKit::LogFormatted(LogKit::Low,"  Fluid                                    : %10s\n",(it->first).c_str());
-      }
-      {
-        const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_storage = model_settings->getReservoirVariable();
-        std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it;
-        for (it = reservoir_storage.begin() ; it != reservoir_storage.end() ; it++)
-          LogKit::LogFormatted(LogKit::Low,"  Reservoir variable                       : %10s\n",(it->first).c_str());
-      }
-      {
-         std::vector<std::string> trend_param = model_settings->getTrendCubeParameters();
-         std::vector<int>         cube_type   = model_settings->getTrendCubeType();
-         if (trend_param.size() > 0) {
-           LogKit::LogFormatted(LogKit::Low,"  \nTrend cubes:\n");
-           for (size_t i=0; i<trend_param.size(); i++) {
-             if (cube_type[i] == ModelSettings::CUBE_FROM_FILE)
-               LogKit::LogFormatted(LogKit::Low,"   From file                               : %10s\n", (trend_param[i]).c_str());
-             else if (cube_type[i] == ModelSettings::STRATIGRAPHIC_DEPTH)
-               LogKit::LogFormatted(LogKit::Low,"   Stratigraphic                           : %10s\n", (trend_param[i]).c_str());
-             else if (cube_type[i] == ModelSettings::TWT)
-               LogKit::LogFormatted(LogKit::Low,"   TWT                                     : %10s\n", (trend_param[i]).c_str());
-           }
-         }
-      }
-    }
-
-    //
-    // SEISMIC
-    //
-    if (model_settings->getNoSeismicNeeded()==false)
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
-      LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",model_settings->getWNC());
-      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",model_settings->getLowCut());
-      LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",model_settings->getHighCut());
-      LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",model_settings->getGuardZone());
-      LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",model_settings->getSmoothLength());
-      LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",model_settings->getEnergyThreshold());
-
-      if (model_settings->getDo4DInversion())
-        LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
-
-      for (int i=0; i<model_settings->getNumberOfTimeLapses(); i++){
-        if (model_settings->getDo4DInversion())
-          LogKit::LogFormatted(LogKit::Low,"\nVintage:\n");
-        if (model_settings->getVintageMonth(i)==IMISSING && model_settings->getVintageYear(i) != IMISSING)
-          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d\n", i+1, model_settings->getVintageYear(i));
-        else if (model_settings->getVintageDay(i)==IMISSING && model_settings->getVintageMonth(i) != IMISSING && model_settings->getVintageYear(i) != IMISSING)
-          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i));
-        else if (model_settings->getVintageDay(i)!=IMISSING && model_settings->getVintageMonth(i)!=IMISSING && model_settings->getVintageYear(i) != IMISSING)
-          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i), model_settings->getVintageDay(i));
-
-      corr  = model_settings->getAngularCorr(i);
-      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-      LogKit::LogFormatted(LogKit::Low,"  Angular correlation:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
-      if (pCorr != NULL)
-        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
-      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
-      if (corr->getAnisotropic())
-      {
-        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
-        LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
-      }
-      bool estimate_noise = false;
-      for (int j = 0; j < model_settings->getNumberOfAngles(i); j++) {
-        estimate_noise = estimate_noise || model_settings->getEstimateSNRatio(i,j);
-      }
-      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
-      if (estimate_noise)
-        LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",model_settings->getMaxWaveletShift());
-      LogKit::LogFormatted(LogKit::High,  "  Minimum relative amplitude               : %10.3f\n",model_settings->getMinRelWaveletAmp());
-      LogKit::LogFormatted(LogKit::High,  "  Wavelet tapering length                  : %10.1f\n",model_settings->getWaveletTaperingL());
-      LogKit::LogFormatted(LogKit::High, "  Tuning factor for 3D wavelet estimation  : %10.1f\n", model_settings->getWavelet3DTuningFactor());
-      LogKit::LogFormatted(LogKit::High, "  Smoothing range for gradient (3D wavelet): %10.1f\n", model_settings->getGradientSmoothingRange());
-      LogKit::LogFormatted(LogKit::High, "  Estimate well gradient for seismic data  : %10s\n", (model_settings->getEstimateWellGradientFromSeismic() ? "yes" : "no"));
-
-      if (model_settings->getOptimizeWellLocation()) {
-        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
-        LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",model_settings->getMaxWellOffset());
-        LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",model_settings->getMaxWellShift());
-      }
-        std::vector<float> angle            = model_settings->getAngle(i);
-        std::vector<float> SN_ratio         = model_settings->getSNRatio(i);
-        std::vector<bool>  estimate_wavelet = model_settings->getEstimateWavelet(i);
-        std::vector<bool>  match_energies   = model_settings->getMatchEnergies(i);
-
-
-
-
-        for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
-        {
-          LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",j+1);
-          LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[j]*180/M_PI));
-          LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",model_settings->getSegyOffset(i));
-          TraceHeaderFormat * thf = model_settings->getTraceHeaderFormat(i,j);
-          if (thf != NULL)
-          {
-            LogKit::LogFormatted(LogKit::Low,"  SegY trace header format:\n");
-            LogKit::LogFormatted(LogKit::Low,"    Format name                            : "+thf->GetFormatName()+"\n");
-            if (thf->GetBypassCoordScaling())
-              LogKit::LogFormatted(LogKit::Low,"    Bypass coordinate scaling              :        yes\n");
-            if (!thf->GetStandardType())
-            {
-              LogKit::LogFormatted(LogKit::Low,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
-              LogKit::LogFormatted(LogKit::Low,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
-              LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
-              LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
-              LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
-              LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
-            }
-          }
-          LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+input_files->getSeismicFile(i,j)+"\n");
-          if (estimate_wavelet[j])
-            LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
-          else
-            LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+input_files->getWaveletFile(i,j)+"\n");
-          if (model_settings->getEstimateLocalShift(i,j))
-           LogKit::LogFormatted(LogKit::Low,"  Estimate local shift map                 : %10s\n", "yes");
-          else if (input_files->getShiftFile(i,j) != "")
-            LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+input_files->getShiftFile(i,j)+"\n");
-          if (model_settings->getEstimateLocalScale(i,j))
-            LogKit::LogFormatted(LogKit::Low,"  Estimate local scale map                 : %10s\n", "yes");
-          else if (input_files->getScaleFile(i,j) != "")
-            LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+input_files->getScaleFile(i,j)+"\n");
-          if (match_energies[j])
-            LogKit::LogFormatted(LogKit::Low,"  Match empirical and theoretical energies : %10s\n", "yes");
-          if (!estimate_wavelet[j] && !match_energies[j]){
-            if (model_settings->getEstimateGlobalWaveletScale(i,j))
-              LogKit::LogFormatted(LogKit::Low,"  Estimate global wavelet scale            : %10s\n","yes");
-            else
-              LogKit::LogFormatted(LogKit::Low,"  Global wavelet scale                     : %10.2f\n",model_settings->getWaveletScale(i,j));
-          }
-          if (model_settings->getEstimateSNRatio(i,j))
-            LogKit::LogFormatted(LogKit::Low,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
-          else
-            LogKit::LogFormatted(LogKit::Low,"  Signal-to-noise ratio                    : %10.1f\n",SN_ratio[j]);
-          if (model_settings->getEstimateLocalNoise(i,j)) {
-            if (input_files->getLocalNoiseFile(i,j) == "")
-              LogKit::LogFormatted(LogKit::Low,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
-            else
-              LogKit::LogFormatted(LogKit::Low,"  Local signal-to-noise ratio map          : "+input_files->getLocalNoiseFile(i,j)+"\n");
-          }
-          if (model_settings->getEstimateLocalNoise(i,j))
-            LogKit::LogFormatted(LogKit::Low,"  Estimate local noise                     : %10s\n", "yes");
-          if (input_files->getLocalNoiseFile(i,j) != "")
-            LogKit::LogFormatted(LogKit::Low,"  Local noise                              : "+input_files->getLocalNoiseFile(i,j)+"\n");
-        }
-      }
-    }
-  }
-}
+//void
+//ModelGeneral::PrintSettings(ModelSettings     * model_settings,
+//                            const InputFiles  * input_files)
+//{
+//  LogKit::WriteHeader("Model settings");
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
+//  if (model_settings->getForwardModeling()==true)
+//    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
+//  else if (model_settings->getEstimationMode()==true)
+//    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
+//
+//  else if (model_settings->getNumberOfSimulations() == 0)
+//    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : prediction\n");
+//  else
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : simulation\n");
+//    if (input_files->getSeedFile()=="") {
+//      if (model_settings->getSeed() == 0)
+//        LogKit::LogFormatted(LogKit::Low,"  Seed                                     :          0 (default seed)\n");
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Seed                                     : %10d\n",model_settings->getSeed());
+//    }
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Seed read from file                      : %10s\n",input_files->getSeedFile().c_str());
+//
+//
+//    LogKit::LogFormatted(LogKit::Low,"  Number of realisations                   : %10d\n",model_settings->getNumberOfSimulations());
+//  }
+//  if (model_settings->getForwardModeling()==false)
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"  Kriging                                  : %10s\n",(model_settings->getKrigingParameter()>0 ? "yes" : "no"));
+//    LogKit::LogFormatted(LogKit::Low,"  Facies probabilities                     : %10s\n",(model_settings->getEstimateFaciesProb() ? "yes" : "no"));
+//    LogKit::LogFormatted(LogKit::Low,"  Synthetic seismic                        : %10s\n",(model_settings->getGenerateSeismicAfterInv() ? "yes" : "no" ));
+//  }
+//
+//  if (model_settings->getEstimateFaciesProb()) {
+//    LogKit::LogFormatted(LogKit::Low,"\nSettings for facies probability estimation:\n");
+//    LogKit::LogFormatted(LogKit::Low,"  Use elastic parameters relative to trend : %10s\n",(model_settings->getFaciesProbRelative()     ? "yes" : "no"));
+//    LogKit::LogFormatted(LogKit::Low,"  Include Vs information in estimation     : %10s\n",(model_settings->getNoVsFaciesProb()         ? "no"  : "yes"));
+//    LogKit::LogFormatted(LogKit::Low,"  Use filtered well logs for estimation    : %10s\n",(model_settings->getUseFilterForFaciesProb() ? "yes" : "no"));
+//  }
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nInput/Output settings:\n");
+//  std::string log_text("*NONE*");
+//  int log_level = model_settings->getLogLevel();
+//  if (log_level == LogKit::L_Error)
+//    log_text = "ERROR";
+//  else if (log_level == LogKit::L_Warning)
+//    log_text = "WARNING";
+//  else if (log_level == LogKit::L_Low)
+//    log_text = "LOW";
+//  else if (log_level == LogKit::L_Medium)
+//    log_text = "MEDIUM";
+//  else if (log_level == LogKit::L_High)
+//    log_text = "HIGH";
+//  else if (log_level == LogKit::L_DebugLow)
+//     log_text = "DEBUGLOW";
+//  else if (log_level == LogKit::L_DebugHigh)
+//    log_text = "DEBUGHIGH";
+//  LogKit::LogFormatted(LogKit::Low, "  Log level                                : %10s\n",log_text.c_str());
+//  if (input_files->getInputDirectory() != "")
+//    LogKit::LogFormatted(LogKit::High,"  Input directory                          : %10s\n",input_files->getInputDirectory().c_str());
+//  if (IO::getOutputPath() != "")
+//    LogKit::LogFormatted(LogKit::High,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
+//
+//  int grid_format          = model_settings->getOutputGridFormat();
+//  int grid_domain          = model_settings->getOutputGridDomain();
+//  int output_grids_other   = model_settings->getOutputGridsOther();
+//  int output_grids_elastic = model_settings->getOutputGridsElastic();
+//  int output_grids_seismic = model_settings->getOutputGridsSeismic();
+//
+//  if (output_grids_elastic > 0  || output_grids_seismic > 0  || output_grids_other > 0) {
+//    LogKit::LogFormatted(LogKit::Medium,"\nGrid output formats:\n");
+//    if (grid_format & IO::SEGY) {
+//      const std::string & format_name = model_settings->getTraceHeaderFormatOutput()->GetFormatName();
+//      LogKit::LogFormatted(LogKit::Medium,"  Segy - %-10s                        :        yes\n",format_name.c_str());
+//    }
+//    if (grid_format & IO::STORM)
+//      LogKit::LogFormatted(LogKit::Medium,"  Storm                                    :        yes\n");
+//    if (grid_format & IO::ASCII)
+//      LogKit::LogFormatted(LogKit::Medium,"  ASCII                                    :        yes\n");
+//    if (grid_format & IO::SGRI)
+//      LogKit::LogFormatted(LogKit::Medium,"  Norsar                                   :        yes\n");
+//    if (grid_format & IO::CRAVA)
+//      LogKit::LogFormatted(LogKit::Medium,"  Crava                                    :        yes\n");
+//
+//    LogKit::LogFormatted(LogKit::Medium,"\nGrid output domains:\n");
+//    if (grid_domain & IO::TIMEDOMAIN)
+//      LogKit::LogFormatted(LogKit::Medium,"  Time                                     :        yes\n");
+//    if (grid_domain & IO::DEPTHDOMAIN)
+//      LogKit::LogFormatted(LogKit::Medium,"  Depth                                    :        yes\n");
+//  }
+//
+//  if (output_grids_elastic > 0 &&
+//      model_settings->getForwardModeling() == false) {
+//    LogKit::LogFormatted(LogKit::Medium,"\nOutput of elastic parameters:\n");
+//    if ((output_grids_elastic & IO::VP) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Pressure-wave velocity  (Vp)             :        yes\n");
+//    if ((output_grids_elastic & IO::VS) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Shear-wave velocity  (Vs)                :        yes\n");
+//    if ((output_grids_elastic & IO::RHO) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Density  (Rho)                           :        yes\n");
+//    if ((output_grids_elastic & IO::AI) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Acoustic impedance  (AI)                 :        yes\n");
+//    if ((output_grids_elastic & IO::VPVSRATIO) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Vp/Vs ratio                              :        yes\n");
+//    if ((output_grids_elastic & IO::SI) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Shear impedance  (SI)                    :        yes\n");
+//    if ((output_grids_elastic & IO::MURHO) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  MuRho  (SI*SI)                           :        yes\n");
+//    if ((output_grids_elastic & IO::LAMBDARHO) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
+//    if ((output_grids_elastic & IO::LAMELAMBDA) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Lame's first parameter                   :        yes\n");
+//    if ((output_grids_elastic & IO::LAMEMU) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Lame's second parameter (shear modulus)  :        yes\n");
+//    if ((output_grids_elastic & IO::POISSONRATIO) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Poisson ratio  (X-1)/2(X-2), X=(Vp/Vs)^2 :        yes\n");
+//    if ((output_grids_elastic & IO::BACKGROUND) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Background (Vp, Vs, Rho)                 :        yes\n");
+//    if ((output_grids_elastic & IO::BACKGROUND_TREND) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Background trend (Vp, Vs, Rho)           :        yes\n");
+//  }
+//
+//  if (model_settings->getForwardModeling() ||
+//      output_grids_seismic > 0) {
+//    LogKit::LogFormatted(LogKit::Medium,"\nOutput of seismic data:\n");
+//    if ((output_grids_seismic & IO::SYNTHETIC_SEISMIC_DATA) > 0 || model_settings->getForwardModeling())
+//      LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
+//    if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
+//    if ((output_grids_seismic & IO::RESIDUAL) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
+//  }
+//
+//  if (model_settings->getEstimateFaciesProb()) {
+//    LogKit::LogFormatted(LogKit::Medium,"\nOutput of facies probability volumes:\n");
+//    if ((output_grids_other & IO::FACIESPROB) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Facies probabilities                     :        yes\n");
+//    if ((output_grids_other & IO::FACIESPROB_WITH_UNDEF) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Facies probabilities with undefined value:        yes\n");
+//  }
+//
+//  if ((output_grids_other & IO::CORRELATION)>0 ||
+//      (output_grids_other & IO::EXTRA_GRIDS)  >0 ||
+//      (output_grids_other & IO::TIME_TO_DEPTH_VELOCITY)>0) {
+//    LogKit::LogFormatted(LogKit::Medium,"\nOther grid output:\n");
+//    if ((output_grids_other & IO::CORRELATION) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Posterior correlations                   :        yes\n");
+//    if ((output_grids_other & IO::EXTRA_GRIDS) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Help grids (see use manual)              :        yes\n");
+//    if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0)
+//      LogKit::LogFormatted(LogKit::Medium,"  Time-to-depth velocity                   :        yes\n");
+//  }
+//
+//  if (model_settings->getFileGrid())
+//    LogKit::LogFormatted(LogKit::Medium,"\nAdvanced settings:\n");
+//  else
+//    LogKit::LogFormatted(LogKit::High,"\nAdvanced settings:\n");
+//
+//  LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  : %10s\n", (model_settings->getFileGrid() ? "yes" : "no"));
+//
+//  if (input_files->getReflMatrFile() != "")
+//    LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", input_files->getReflMatrFile().c_str());
+//
+//  if (model_settings->getVpVsRatio() != RMISSING)
+//    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio());
+//
+//  LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (model_settings->getRunFromPanel() ? "yes" : "no"));
+//  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", model_settings->getMinHorizontalRes());
+//  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", model_settings->getMinSamplingDensity());
+//
+//  if (model_settings->getKrigingParameter()>0) { // We are doing kriging
+//    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2d\n", model_settings->getKrigingParameter());
+//    LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (model_settings->getDoSmoothKriging() ? "yes" : "no"));
+//  }
+//
+//  LogKit::LogFormatted(LogKit::High,"\nUnit settings/assumptions:\n");
+//  LogKit::LogFormatted(LogKit::High,"  Time                                     : %10s\n","ms TWT");
+//  LogKit::LogFormatted(LogKit::High,"  Frequency                                : %10s\n","Hz");
+//  LogKit::LogFormatted(LogKit::High,"  Length                                   : %10s\n","m");
+//  LogKit::LogFormatted(LogKit::High,"  Velocities                               : %10s\n","m/s");
+//  LogKit::LogFormatted(LogKit::High,"  Density                                  : %10s\n","g/cm3");
+//  LogKit::LogFormatted(LogKit::High,"  Angles                                   : %10s\n","   degrees (clockwise relative to north when applicable)");
+//
+//  //
+//  // WELL PROCESSING
+//  //
+//  if (model_settings->getNumberOfWells() > 0)
+//  {
+//    LogKit::LogFormatted(LogKit::High,"\nSettings for well processing:\n");
+//    LogKit::LogFormatted(LogKit::High,"  Threshold for merging log entries        : %10.2f ms\n",model_settings->getMaxMergeDist());
+//    LogKit::LogFormatted(LogKit::High,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",model_settings->getMaxRankCorr());
+//    LogKit::LogFormatted(LogKit::High,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
+//                         model_settings->getMaxDevAngle(),tan(model_settings->getMaxDevAngle()*M_PI/180.0));
+//    LogKit::LogFormatted(LogKit::High,"  High cut for background modelling        : %10.1f\n",model_settings->getMaxHzBackground());
+//    LogKit::LogFormatted(LogKit::High,"  High cut for seismic resolution          : %10.1f\n",model_settings->getMaxHzSeismic());
+//    LogKit::LogFormatted(LogKit::High,"  Estimate Vp-Vs ratio from well data      : %10s\n", (model_settings->getVpVsRatioFromWells() ? "yes" : "no"));
+//  }
+//  LogKit::LogFormatted(LogKit::High,"\nRange of allowed parameter values:\n");
+//  LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",model_settings->getAlphaMin());
+//  LogKit::LogFormatted(LogKit::High,"  Vp  - max                                : %10.0f\n",model_settings->getAlphaMax());
+//  LogKit::LogFormatted(LogKit::High,"  Vs  - min                                : %10.0f\n",model_settings->getBetaMin());
+//  LogKit::LogFormatted(LogKit::High,"  Vs  - max                                : %10.0f\n",model_settings->getBetaMax());
+//  LogKit::LogFormatted(LogKit::High,"  Rho - min                                : %10.1f\n",model_settings->getRhoMin());
+//  LogKit::LogFormatted(LogKit::High,"  Rho - max                                : %10.1f\n",model_settings->getRhoMax());
+//
+//  //
+//  // WELL DATA
+//  //
+//  if (model_settings->getNumberOfWells() > 0)
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"\nWell logs:\n");
+//    const std::vector<std::string> & log_names = model_settings->getLogNames();
+//
+//    if (log_names.size() > 0)
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n",  log_names[0].c_str());
+//      if (NRLib::Uppercase(log_names[1])=="VP" ||
+//         NRLib::Uppercase(log_names[1])=="LFP_VP")
+//        LogKit::LogFormatted(LogKit::Low,"  p-wave velocity                          : %10s\n",log_names[1].c_str());
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n",log_names[1].c_str());
+//      if (NRLib::Uppercase(log_names[3])=="VS" ||
+//         NRLib::Uppercase(log_names[3])=="LFP_VS")
+//        LogKit::LogFormatted(LogKit::Low,"  s-wave velocity                          : %10s\n",log_names[3].c_str());
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Shear sonic                              : %10s\n",log_names[3].c_str());
+//      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n",  log_names[2].c_str());
+//      if (model_settings->getFaciesLogGiven())
+//        LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",log_names[4].c_str());
+//      if (model_settings->getPorosityLogGiven())
+//        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  log_names[5].c_str());
+//    }
+//    else
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n","TWT");
+//      LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n","DT");
+//      LogKit::LogFormatted(LogKit::Low,"  Shear sonic                              : %10s\n","DTS");
+//      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10s\n","RHOB");
+//      LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n","FACIES");
+//    }
+//    LogKit::LogFormatted(LogKit::Low,"\nWell files:\n");
+//    for (int i = 0; i < model_settings->getNumberOfWells(); i++)
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : %s\n",i+1,input_files->getWellFile(i).c_str());
+//    }
+//    bool generate_background  = model_settings->getGenerateBackground();
+//    bool estimate_facies_prob = model_settings->getFaciesLogGiven();
+//    bool estimate_wavelet     = false;
+//    for (int i=0; i < model_settings->getNumberOfTimeLapses(); i++){
+//      std::vector<bool> estimate_wavelet_all_traces = model_settings->getEstimateWavelet(i);
+//      for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
+//        estimate_wavelet = estimate_wavelet || estimate_wavelet_all_traces[j];
+//    }
+//    if (generate_background || estimate_facies_prob || estimate_wavelet)
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nUse well in estimation of:                   ");
+//      if (generate_background)  LogKit::LogFormatted(LogKit::Low,"BackgroundTrend  ");
+//      if (estimate_wavelet)     LogKit::LogFormatted(LogKit::Low,"WaveletEstimation  ");
+//      if (estimate_facies_prob) LogKit::LogFormatted(LogKit::Low,"FaciesProbabilities");
+//      LogKit::LogFormatted(LogKit::Low,"\n");
+//      for (int i = 0; i < model_settings->getNumberOfWells(); i++)
+//      {
+//        LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : ",i+1);
+//        if (generate_background) {
+//          if (model_settings->getIndicatorBGTrend(i) == ModelSettings::YES)
+//            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");
+//          else if (model_settings->getIndicatorBGTrend(i) == ModelSettings::NO)
+//            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","no");
+//          else
+//            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");
+//        }
+//        if (estimate_wavelet) {
+//          if (model_settings->getIndicatorWavelet(i) == ModelSettings::YES)
+//            LogKit::LogFormatted(LogKit::Low,"    %-13s  ","yes");
+//          else if (model_settings->getIndicatorWavelet(i) == ModelSettings::NO)
+//            LogKit::LogFormatted(LogKit::Low,"    %-13s  ","no");
+//          else
+//            LogKit::LogFormatted(LogKit::Low,"    %-12s  ","if possible");
+//        }
+//        if (estimate_facies_prob) {
+//          if (model_settings->getIndicatorFacies(i) == ModelSettings::YES)
+//            LogKit::LogFormatted(LogKit::Low,"    %-12s","yes");
+//          else if (model_settings->getIndicatorFacies(i) == ModelSettings::NO)
+//            LogKit::LogFormatted(LogKit::Low,"    %-12s","no");
+//          else
+//            LogKit::LogFormatted(LogKit::Low,"    %-12s","if possible");
+//        }
+//        LogKit::LogFormatted(LogKit::Low,"\n");
+//      }
+//    }
+//    if ( model_settings->getOptimizeWellLocation() )
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nFor well, optimize position for            : Angle with Weight\n");
+//      for (int i = 0; i < model_settings->getNumberOfWells(); i++)
+//      {
+//        int n_move_angles = model_settings->getNumberOfWellAngles(i);
+//        if ( n_move_angles > 0 )
+//        {
+//          LogKit::LogFormatted(LogKit::Low," %2d %46.1f %10.1f\n",i+1,(model_settings->getWellMoveAngle(i,0)*180/M_PI),model_settings->getWellMoveWeight(i,0));
+//          for (int j=1; j < n_move_angles; j++)
+//            LogKit::LogFormatted(LogKit::Low," %49.1f %10.1f\n",(model_settings->getWellMoveAngle(i,j)*180/M_PI),model_settings->getWellMoveWeight(i,j));
+//        }
+//        LogKit::LogFormatted(LogKit::Low,"\n");
+//      }
+//    }
+//  }
+//
+//  //
+//  // AREA
+//  //
+//  std::string grid_file;
+//  int area_specification = model_settings->getAreaSpecification();
+//  if (model_settings->getForwardModeling()) {
+//    LogKit::LogFormatted(LogKit::Low,"\nSeismic area:\n");
+//    grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
+//  }
+//  else {
+//    LogKit::LogFormatted(LogKit::Low,"\nInversion area");
+//    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA ||
+//       area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
+//       area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
+//      grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
+//  }
+//  if (area_specification == ModelSettings::AREA_FROM_GRID_DATA) {
+//    const std::vector<int> & area_ILXL = model_settings->getAreaILXL();
+//    LogKit::LogFormatted(LogKit::Low," taken from grid\n");
+//    LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
+//    if (area_ILXL.size() > 0) {
+//      if (area_ILXL[0] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  In-line start                            : %10d\n", area_ILXL[0]);
+//      if (area_ILXL[1] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  In-line end                              : %10d\n", area_ILXL[1]);
+//      if (area_ILXL[4] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  In-line step                             : %10d\n", area_ILXL[4]);
+//      if (area_ILXL[2] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  Cross-line start                         : %10d\n", area_ILXL[2]);
+//      if (area_ILXL[3] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  Cross-line end                           : %10d\n", area_ILXL[3]);
+//      if (area_ILXL[5] != IMISSING)
+//        LogKit::LogFormatted(LogKit::Low,"  Cross-line step                          : %10d\n", area_ILXL[5]);
+//    }
+//  }
+//  else if (area_specification == ModelSettings::AREA_FROM_UTM ||
+//           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+//    LogKit::LogFormatted(LogKit::Low," given as UTM coordinates\n");
+//    const SegyGeometry * geometry = model_settings->getAreaParameters();
+//    LogKit::LogFormatted(LogKit::Low,"  Reference point x                        : %10.1f\n", geometry->GetX0());
+//    LogKit::LogFormatted(LogKit::Low,"  Reference point y                        : %10.1f\n", geometry->GetY0());
+//    LogKit::LogFormatted(LogKit::Low,"  Length x                                 : %10.1f\n", geometry->Getlx());
+//    LogKit::LogFormatted(LogKit::Low,"  Length y                                 : %10.1f\n", geometry->Getly());
+//    if (area_specification == ModelSettings::AREA_FROM_UTM) {
+//      LogKit::LogFormatted(LogKit::Low,"  Sample density x                         : %10.1f\n", geometry->GetDx());
+//      LogKit::LogFormatted(LogKit::Low,"  Sample density y                         : %10.1f\n", geometry->GetDy());
+//    }
+//    LogKit::LogFormatted(LogKit::Low,"  Rotation                                 : %10.4f\n", geometry->GetAngle()*(180.0/NRLib::Pi)*(-1));
+//    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+//      LogKit::LogFormatted(LogKit::Low,"and snapped to seismic data\n");
+//      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
+//    }
+//  }
+//  else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
+//    LogKit::LogFormatted(LogKit::Low," taken from surface\n");
+//    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getAreaSurfaceFile()+"\n");
+//    if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
+//      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
+//      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+grid_file+"\n");
+//    }
+//  }
+//
+//  //
+//  // SURFACES
+//  //
+//  LogKit::LogFormatted(LogKit::Low,"\nTime surfaces:\n");
+//  if (model_settings->getParallelTimeSurfaces())
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfFile(0)+"\n");
+//    LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
+//    LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
+//    LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
+//    LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n",   int(model_settings->getTimeLz()/model_settings->getTimeDz()+0.5));
+//  }
+//  else
+//  {
+//    const std::string & top_name  = input_files->getTimeSurfFile(0);
+//
+//    if (NRLib::IsNumber(top_name))
+//      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_name.c_str()));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Top surface                              : "+top_name+"\n");
+//
+//    if (model_settings->getIntervalNames().size() == 0) {
+//
+//      const std::string & base_name = input_files->getTimeSurfFile(1);
+//
+//      if (NRLib::IsNumber(base_name))
+//        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
+//      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
+//
+//    }
+//    else { //Multiple intervals
+//      std::vector<std::string> interval_names = model_settings->getIntervalNames();
+//
+//      for (size_t i = 0; i < interval_names.size(); i++) {
+//
+//        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+//        const std::string & base_name = input_files->getIntervalBaseTimeSurface(interval_names[i]);
+//
+//        if (NRLib::IsNumber(base_name))
+//          LogKit::LogFormatted(LogKit::Low,"    Stop time                              : %10.2f\n", atof(base_name.c_str()));
+//        else
+//          LogKit::LogFormatted(LogKit::Low,"    Base surface                           : "+base_name+"\n");
+//        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNzInterval(interval_names[i]));
+//
+//      }
+//    }
+//
+//    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
+//  }
+//  if (input_files->getCorrDirFile() != "")
+//    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirFile()+"\n");
+//
+//  if (model_settings->getDoDepthConversion())
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"\nDepth conversion:\n");
+//    if (input_files->getDepthSurfFile(0) != "")
+//      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : "+input_files->getDepthSurfFile(0)+"\n");
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : %s\n", "Made from base depth surface and velocity field");
+//    if (input_files->getDepthSurfFile(1) != "")
+//      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getDepthSurfFile(1)+"\n");
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : %s\n", "Made from top depth surface and velocity field");
+//    std::string velocityField = input_files->getVelocityField();
+//    if (model_settings->getVelocityFromInversion()) {
+//      velocityField = "Use Vp from inversion";
+//    }
+//     LogKit::LogFormatted(LogKit::Low,"  Velocity field                           : "+velocityField+"\n");
+//  }
+//
+//  const std::string & top_WEI  = input_files->getWaveletEstIntFileTop(0);
+//  const std::string & base_WEI = input_files->getWaveletEstIntFileBase(0);
+//
+//  if (top_WEI != "" || base_WEI != "") {
+//    LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
+//    if (NRLib::IsNumber(top_WEI))
+//      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_WEI.c_str()));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_WEI+"\n");
+//
+//    if (NRLib::IsNumber(base_WEI))
+//      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_WEI.c_str()));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_WEI+"\n");
+//  }
+//
+//  const std::string & top_FEI  = input_files->getFaciesEstIntFile(0);
+//  const std::string & base_FEI = input_files->getFaciesEstIntFile(1);
+//
+//  if (top_FEI != "" || base_FEI != "") {
+//    LogKit::LogFormatted(LogKit::Low,"\nFacies estimation interval:\n");
+//    if (NRLib::IsNumber(top_FEI))
+//      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_FEI.c_str()));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_FEI+"\n");
+//
+//    if (NRLib::IsNumber(base_FEI))
+//      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_FEI.c_str()));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_FEI+"\n");
+//  }
+//
+//  //
+//  // BACKGROUND
+//  //
+//  if (model_settings->getGenerateBackground())
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"\nBackground model (estimated):\n");
+//    if (input_files->getBackVelFile() != "")
+//      LogKit::LogFormatted(LogKit::Low,"  Trend for p-wave velocity                : "+input_files->getBackVelFile()+"\n");
+//    Vario       * vario  = model_settings->getBackgroundVario();
+//    GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
+//    LogKit::LogFormatted(LogKit::Low,"  Variogram\n");
+//    LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(vario->getType()).c_str());
+//    if (pVario != NULL)
+//    LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pVario->getPower());
+//    LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",vario->getRange());
+//    if (vario->getAnisotropic())
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",vario->getSubRange());
+//      LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
+//    }
+//    LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
+//    //if (model_settings->getMultizoneBackground() == true) {
+//    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
+//    //  std::vector<int> erosion               = model_settings->getErosionPriority();
+//    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
+//    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
+//    //  int nZones = static_cast<int>(surface_files.size()-1);
+//    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
+//    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
+//    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
+//    //  for (int i=0; i<nZones; i++) {
+//    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
+//    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
+//    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
+//    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
+//    //    if (structure[i+1] == ModelSettings::TOP)
+//    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
+//    //    else if (structure[i+1] == ModelSettings::BASE)
+//    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
+//    //    else if (structure[i+1] == ModelSettings::COMPACTION)
+//    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
+//    //  }
+//    //}
+//  }
+//  else
+//  {
+//    if (model_settings->getForwardModeling()==true)
+//      LogKit::LogFormatted(LogKit::Low,"\nEarth model:\n");
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"\nBackground model:\n");
+//
+//    if (model_settings->getUseAIBackground()) {
+//      if (model_settings->getConstBackValue(0) > 0)
+//        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance                       : %10.1f\n",model_settings->getConstBackValue(0));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance read from file        : "+input_files->getBackFile(0)+"\n");
+//    }
+//    else {
+//      if (model_settings->getConstBackValue(0) > 0)
+//        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",model_settings->getConstBackValue(0));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+input_files->getBackFile(0)+"\n");
+//    }
+//
+//    if (model_settings->getUseSIBackground()) {
+//      if (model_settings->getConstBackValue(1) > 0)
+//        LogKit::LogFormatted(LogKit::Low,"  Shear impedance                          : %10.1f\n",model_settings->getConstBackValue(1));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Shear impedance read from file           : "+input_files->getBackFile(1)+"\n");
+//    }
+//    else if (model_settings->getUseVpVsBackground()) {
+//      if (model_settings->getConstBackValue(1) > 0)
+//        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs                                    : %10.1f\n",model_settings->getConstBackValue(1));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs  read from file                    : "+input_files->getBackFile(1)+"\n");
+//    }
+//    else {
+//      if (model_settings->getConstBackValue(1) > 0)
+//        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",model_settings->getConstBackValue(1));
+//      else
+//        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+input_files->getBackFile(1)+"\n");
+//    }
+//
+//    if (model_settings->getConstBackValue(2) > 0)
+//      LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10.1f\n",model_settings->getConstBackValue(2));
+//    else
+//      LogKit::LogFormatted(LogKit::Low,"  Density read from file                   : "+input_files->getBackFile(2)+"\n");
+//  }
+//
+//  TraceHeaderFormat * thf_old = model_settings->getTraceHeaderFormat();
+//  if (thf_old != NULL)
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"\nAdditional SegY trace header format:\n");
+//    if (thf_old != NULL) {
+//      LogKit::LogFormatted(LogKit::Low,"  Format name                              : "+thf_old->GetFormatName()+"\n");
+//      if (thf_old->GetBypassCoordScaling())
+//        LogKit::LogFormatted(LogKit::Low,"  Bypass coordinate scaling                :        yes\n");
+//      if (!thf_old->GetStandardType())
+//      {
+//        LogKit::LogFormatted(LogKit::Low,"  Start pos coordinate scaling             : %10d\n",thf_old->GetScalCoLoc());
+//        LogKit::LogFormatted(LogKit::Low,"  Start pos trace x coordinate             : %10d\n",thf_old->GetUtmxLoc());
+//        LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
+//        LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
+//        LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
+//        LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
+//      }
+//    }
+//  }
+//
+//  if (model_settings->getForwardModeling())
+//  {
+//    //
+//    // SEISMIC
+//    //
+//    LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
+//    LogKit::LogFormatted(LogKit::Low,"  Generating seismic                       : %10s\n","yes");
+//    std::vector<float> angle = model_settings->getAngle(0);
+//    for (int i = 0; i < model_settings->getNumberOfAngles(0); i++) //Forward modeling can only be done for one time lapse
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",i+1);
+//      LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[i]*180/M_PI));
+//      LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+input_files->getWaveletFile(0,i)+"\n");
+//    }
+//  }
+//  else
+//  {
+//    //
+//    // PRIOR CORRELATION
+//    //
+//    Vario * corr = model_settings->getLateralCorr();
+//    if (corr != NULL) {
+//      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
+//      LogKit::LogFormatted(LogKit::Low,"\nPrior correlation (of residuals):\n");
+//      LogKit::LogFormatted(LogKit::Low,"  Range of allowed parameter values:\n");
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - min                         : %10.1e\n",model_settings->getVarAlphaMin());
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - max                         : %10.1e\n",model_settings->getVarAlphaMax());
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - min                         : %10.1e\n",model_settings->getVarBetaMin());
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - max                         : %10.1e\n",model_settings->getVarBetaMax());
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - min                         : %10.1e\n",model_settings->getVarRhoMin());
+//      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - max                         : %10.1e\n",model_settings->getVarRhoMax());
+//      LogKit::LogFormatted(LogKit::Low,"  Lateral correlation:\n");
+//      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
+//      if (pCorr != NULL)
+//        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
+//      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange());
+//      if (corr->getAnisotropic())
+//      {
+//        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange());
+//        LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - corr->getAngle()*(180/M_PI));
+//      }
+//    }
+//    //
+//    // PRIOR FACIES
+//    //
+//    if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE ||
+//        model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+//        // Can not be written when FACIES_FROM_WELLS as this information not is extracted yet
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
+//      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+//      {
+//        typedef std::map<std::string,float> mapType;
+//        mapType myMap = model_settings->getPriorFaciesProb();
+//
+//        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+//          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+//      }
+//      else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+//      {
+//        typedef std::map<std::string,std::string> mapType;
+//        mapType myMap = input_files->getPriorFaciesProbFile();
+//
+//        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+//          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10s\n",(i->first).c_str(),(i->second).c_str());
+//      }
+//    }
+//
+//    if (model_settings->getFaciesProbFromRockPhysics()) {
+//      LogKit::LogFormatted(LogKit::Low,"\nRock physics:\n");
+//      {
+//        const std::map<std::string, DistributionsRockStorage *>& rock_storage = model_settings->getRockStorage();
+//        std::map<std::string, DistributionsRockStorage *>::const_iterator it;
+//        for (it = rock_storage.begin() ; it != rock_storage.end() ; it++)
+//          LogKit::LogFormatted(LogKit::Low,"  Rock                                     : %10s\n",(it->first).c_str());
+//      }
+//      {
+//        const std::map<std::string, DistributionsDryRockStorage *>& dryrock_storage = model_settings->getDryRockStorage();
+//        std::map<std::string, DistributionsDryRockStorage *>::const_iterator it;
+//        for (it = dryrock_storage.begin() ; it != dryrock_storage.end() ; it++)
+//          LogKit::LogFormatted(LogKit::Low,"  Dry Rock                                 : %10s\n",(it->first).c_str());
+//      }
+//      {
+//        const std::map<std::string, DistributionsSolidStorage *>& solid_storage = model_settings->getSolidStorage();
+//        std::map<std::string, DistributionsSolidStorage *>::const_iterator it;
+//        for (it = solid_storage.begin() ; it != solid_storage.end() ; it++)
+//          LogKit::LogFormatted(LogKit::Low,"  Solid                                    : %10s\n",(it->first).c_str());
+//      }
+//      {
+//        const std::map<std::string, DistributionsFluidStorage *>& fluid_storage = model_settings->getFluidStorage();
+//        std::map<std::string, DistributionsFluidStorage *>::const_iterator it;
+//        for (it = fluid_storage.begin() ; it != fluid_storage.end() ; it++)
+//          LogKit::LogFormatted(LogKit::Low,"  Fluid                                    : %10s\n",(it->first).c_str());
+//      }
+//      {
+//        const std::map<std::string, std::vector<DistributionWithTrendStorage *> >& reservoir_storage = model_settings->getReservoirVariable();
+//        std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it;
+//        for (it = reservoir_storage.begin() ; it != reservoir_storage.end() ; it++)
+//          LogKit::LogFormatted(LogKit::Low,"  Reservoir variable                       : %10s\n",(it->first).c_str());
+//      }
+//      {
+//         std::vector<std::string> trend_param = model_settings->getTrendCubeParameters();
+//         std::vector<int>         cube_type   = model_settings->getTrendCubeType();
+//         if (trend_param.size() > 0) {
+//           LogKit::LogFormatted(LogKit::Low,"  \nTrend cubes:\n");
+//           for (size_t i=0; i<trend_param.size(); i++) {
+//             if (cube_type[i] == ModelSettings::CUBE_FROM_FILE)
+//               LogKit::LogFormatted(LogKit::Low,"   From file                               : %10s\n", (trend_param[i]).c_str());
+//             else if (cube_type[i] == ModelSettings::STRATIGRAPHIC_DEPTH)
+//               LogKit::LogFormatted(LogKit::Low,"   Stratigraphic                           : %10s\n", (trend_param[i]).c_str());
+//             else if (cube_type[i] == ModelSettings::TWT)
+//               LogKit::LogFormatted(LogKit::Low,"   TWT                                     : %10s\n", (trend_param[i]).c_str());
+//           }
+//         }
+//      }
+//    }
+//
+//    //
+//    // SEISMIC
+//    //
+//    if (model_settings->getNoSeismicNeeded()==false)
+//    {
+//      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
+//      LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",model_settings->getWNC());
+//      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",model_settings->getLowCut());
+//      LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",model_settings->getHighCut());
+//      LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",model_settings->getGuardZone());
+//      LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",model_settings->getSmoothLength());
+//      LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",model_settings->getEnergyThreshold());
+//
+//      if (model_settings->getDo4DInversion())
+//        LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
+//
+//      for (int i=0; i<model_settings->getNumberOfTimeLapses(); i++){
+//        if (model_settings->getDo4DInversion())
+//          LogKit::LogFormatted(LogKit::Low,"\nVintage:\n");
+//        if (model_settings->getVintageMonth(i)==IMISSING && model_settings->getVintageYear(i) != IMISSING)
+//          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d\n", i+1, model_settings->getVintageYear(i));
+//        else if (model_settings->getVintageDay(i)==IMISSING && model_settings->getVintageMonth(i) != IMISSING && model_settings->getVintageYear(i) != IMISSING)
+//          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i));
+//        else if (model_settings->getVintageDay(i)!=IMISSING && model_settings->getVintageMonth(i)!=IMISSING && model_settings->getVintageYear(i) != IMISSING)
+//          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d %4d\n", i+1, model_settings->getVintageYear(i), model_settings->getVintageMonth(i), model_settings->getVintageDay(i));
+//
+//      corr  = model_settings->getAngularCorr(i);
+//      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
+//      LogKit::LogFormatted(LogKit::Low,"  Angular correlation:\n");
+//      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
+//      if (pCorr != NULL)
+//        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
+//      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
+//      if (corr->getAnisotropic())
+//      {
+//        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
+//        LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
+//      }
+//      bool estimate_noise = false;
+//      for (int j = 0; j < model_settings->getNumberOfAngles(i); j++) {
+//        estimate_noise = estimate_noise || model_settings->getEstimateSNRatio(i,j);
+//      }
+//      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
+//      if (estimate_noise)
+//        LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",model_settings->getMaxWaveletShift());
+//      LogKit::LogFormatted(LogKit::High,  "  Minimum relative amplitude               : %10.3f\n",model_settings->getMinRelWaveletAmp());
+//      LogKit::LogFormatted(LogKit::High,  "  Wavelet tapering length                  : %10.1f\n",model_settings->getWaveletTaperingL());
+//      LogKit::LogFormatted(LogKit::High, "  Tuning factor for 3D wavelet estimation  : %10.1f\n", model_settings->getWavelet3DTuningFactor());
+//      LogKit::LogFormatted(LogKit::High, "  Smoothing range for gradient (3D wavelet): %10.1f\n", model_settings->getGradientSmoothingRange());
+//      LogKit::LogFormatted(LogKit::High, "  Estimate well gradient for seismic data  : %10s\n", (model_settings->getEstimateWellGradientFromSeismic() ? "yes" : "no"));
+//
+//      if (model_settings->getOptimizeWellLocation()) {
+//        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
+//        LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",model_settings->getMaxWellOffset());
+//        LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",model_settings->getMaxWellShift());
+//      }
+//        std::vector<float> angle            = model_settings->getAngle(i);
+//        std::vector<float> SN_ratio         = model_settings->getSNRatio(i);
+//        std::vector<bool>  estimate_wavelet = model_settings->getEstimateWavelet(i);
+//        std::vector<bool>  match_energies   = model_settings->getMatchEnergies(i);
+//
+//
+//
+//
+//        for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
+//        {
+//          LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",j+1);
+//          LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[j]*180/M_PI));
+//          LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",model_settings->getSegyOffset(i));
+//          TraceHeaderFormat * thf = model_settings->getTraceHeaderFormat(i,j);
+//          if (thf != NULL)
+//          {
+//            LogKit::LogFormatted(LogKit::Low,"  SegY trace header format:\n");
+//            LogKit::LogFormatted(LogKit::Low,"    Format name                            : "+thf->GetFormatName()+"\n");
+//            if (thf->GetBypassCoordScaling())
+//              LogKit::LogFormatted(LogKit::Low,"    Bypass coordinate scaling              :        yes\n");
+//            if (!thf->GetStandardType())
+//            {
+//              LogKit::LogFormatted(LogKit::Low,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
+//              LogKit::LogFormatted(LogKit::Low,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
+//              LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
+//              LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
+//              LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+//              LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+//            }
+//          }
+//          LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+input_files->getSeismicFile(i,j)+"\n");
+//          if (estimate_wavelet[j])
+//            LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
+//          else
+//            LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+input_files->getWaveletFile(i,j)+"\n");
+//          if (model_settings->getEstimateLocalShift(i,j))
+//           LogKit::LogFormatted(LogKit::Low,"  Estimate local shift map                 : %10s\n", "yes");
+//          else if (input_files->getShiftFile(i,j) != "")
+//            LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+input_files->getShiftFile(i,j)+"\n");
+//          if (model_settings->getEstimateLocalScale(i,j))
+//            LogKit::LogFormatted(LogKit::Low,"  Estimate local scale map                 : %10s\n", "yes");
+//          else if (input_files->getScaleFile(i,j) != "")
+//            LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+input_files->getScaleFile(i,j)+"\n");
+//          if (match_energies[j])
+//            LogKit::LogFormatted(LogKit::Low,"  Match empirical and theoretical energies : %10s\n", "yes");
+//          if (!estimate_wavelet[j] && !match_energies[j]){
+//            if (model_settings->getEstimateGlobalWaveletScale(i,j))
+//              LogKit::LogFormatted(LogKit::Low,"  Estimate global wavelet scale            : %10s\n","yes");
+//            else
+//              LogKit::LogFormatted(LogKit::Low,"  Global wavelet scale                     : %10.2f\n",model_settings->getWaveletScale(i,j));
+//          }
+//          if (model_settings->getEstimateSNRatio(i,j))
+//            LogKit::LogFormatted(LogKit::Low,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
+//          else
+//            LogKit::LogFormatted(LogKit::Low,"  Signal-to-noise ratio                    : %10.1f\n",SN_ratio[j]);
+//          if (model_settings->getEstimateLocalNoise(i,j)) {
+//            if (input_files->getLocalNoiseFile(i,j) == "")
+//              LogKit::LogFormatted(LogKit::Low,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
+//            else
+//              LogKit::LogFormatted(LogKit::Low,"  Local signal-to-noise ratio map          : "+input_files->getLocalNoiseFile(i,j)+"\n");
+//          }
+//          if (model_settings->getEstimateLocalNoise(i,j))
+//            LogKit::LogFormatted(LogKit::Low,"  Estimate local noise                     : %10s\n", "yes");
+//          if (input_files->getLocalNoiseFile(i,j) != "")
+//            LogKit::LogFormatted(LogKit::Low,"  Local noise                              : "+input_files->getLocalNoiseFile(i,j)+"\n");
+//        }
+//      }
+//    }
+//  }
+//}
 
 //void
 //ModelGeneral::getCorrGradIJ(float & corrGradI, float &corrGradJ) const

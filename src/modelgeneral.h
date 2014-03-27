@@ -320,8 +320,8 @@ private:
   int               SetPaddingSize(int    nx,
                                    double px);
 
-  void              PrintSettings(ModelSettings    * modelSettings,
-                                  const InputFiles * inputFiles);
+  //void              PrintSettings(ModelSettings    * modelSettings,
+  //                                const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
   NRLib::Vector      FindPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y

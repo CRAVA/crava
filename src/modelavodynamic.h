@@ -156,14 +156,14 @@ public:
   //                                          std::string                    & errText,
   //                                          bool                           & failed);
 private:
-  void             ProcessSeismic(FFTGrid         **& seisCube,
-                                  const Simbox      * timeSimbox,
-                                  const GridMapping * timeDepthMapping,
-                                  const GridMapping * timeCutMapping,
-                                  const ModelSettings * modelSettings,
-                                  const InputFiles  * inputFiles,
-                                  std::string       & errText,
-                                  bool              & failed);
+  //void             ProcessSeismic(FFTGrid         **& seisCube,
+  //                                const Simbox      * timeSimbox,
+  //                                const GridMapping * timeDepthMapping,
+  //                                const GridMapping * timeCutMapping,
+  //                                const ModelSettings * modelSettings,
+  //                                const InputFiles  * inputFiles,
+  //                                std::string       & errText,
+  //                                bool              & failed);
 
 
   //void             processReflectionMatrix(float               **& reflectionMatrix,
