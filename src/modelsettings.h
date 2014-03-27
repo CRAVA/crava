@@ -439,8 +439,8 @@ public:
 
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
 
-  void setCorrDirTopConform(bool topConformCorrelation)   { topConformCorrelation_   = topConformCorrelation     ;}
-  void setCorrDirBaseConform(bool baseConformCorrelation) { baseConformCorrelation_  = baseConformCorrelation    ;}
+  //void setCorrDirTopConform(bool topConformCorrelation)   { topConformCorrelation_   = topConformCorrelation     ;}
+  //void setCorrDirBaseConform(bool baseConformCorrelation) { baseConformCorrelation_  = baseConformCorrelation    ;}
   void setCorrDirIntervalTopConform(const std::string & interval_name, bool intervalTopConformCorrelation)   { intervalTopConformCorrelation_[interval_name]  = intervalTopConformCorrelation  ;}
   void setCorrDirIntervalBaseConform(const std::string & interval_name, bool intervalBaseConformCorrelation) { intervalBaseConformCorrelation_[interval_name] = intervalBaseConformCorrelation ;}
   void setCorrDirIntervalUsed(bool intervalCorrelationUsed) { intervalCorrelationUsed_ = intervalCorrelationUsed ;}

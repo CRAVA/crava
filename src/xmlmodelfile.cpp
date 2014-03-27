@@ -1742,7 +1742,8 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   bool corr_file_used = false;
   while(parseCurrentValue(root, corr_file, errTxt) == true) {
     if(corr_file != "") {
-      inputFiles_->setCorrDirFile(corr_file);
+      inputFiles_->setCorrDirIntervalFile("", corr_file);
+      //inputFiles_->setCorrDirFile(corr_file);
       corr_file_used = true;
     }
   }
@@ -1752,22 +1753,26 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
 
   std::string filename;
   if(parseFileName(root, "top-surface", filename, errTxt) == true) {
-    inputFiles_->setCorrDirTopSurfaceFile(filename);
+    //inputFiles_->setCorrDirTopSurfaceFile(filename);
+    inputFiles_->setCorrDirIntervalTopSurfaceFile("", filename);
     top_surface = true;
   }
 
   if(parseFileName(root, "base-surface", filename, errTxt) == true) {
-    inputFiles_->setCorrDirBaseSurfaceFile(filename);
+    //inputFiles_->setCorrDirBaseSurfaceFile(filename);
+    inputFiles_->setCorrDirIntervalBaseSurfaceFile("", filename);
     base_surface = true;
   }
 
   bool top_conform = false;
   if(parseBool(root, "top-conform", top_conform, errTxt) == true)
-    modelSettings_->setCorrDirTopConform(true);
+    modelSettings_->setCorrDirIntervalTopConform("", true);
+    //modelSettings_->setCorrDirTopConform(true);
 
   bool base_conform = false;
-  if(parseBool(root, "base-conform", top_conform, errTxt) == true)
-    modelSettings_->setCorrDirBaseConform(true);
+  if(parseBool(root, "base-conform", base_conform, errTxt) == true)
+    modelSettings_->setCorrDirIntervalBaseConform("", true);
+    //modelSettings_->setCorrDirBaseConform(true);
 
   if(top_surface == true && top_conform == true)
     errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
@@ -1793,9 +1798,9 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   }
 
   if(corr_file_used == true && interval_used == true)
-    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
+    errTxt += "You cannot use both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
   if(corr_file_used == true && (top_conform == true || base_conform == true || top_surface == true || base_surface == true))
-    errTxt += "You cannot use specify both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
+    errTxt += "You cannot use both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
                 + node->ValueStr() + ".\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
