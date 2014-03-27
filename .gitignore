@@ -1,6 +1,7 @@
 test_suite
 cravarun
 grammar
+compare
 
 *.o
 
