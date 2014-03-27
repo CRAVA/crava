@@ -1609,6 +1609,8 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
   errTxt += "Multizone background model combined with only one inversion interval is no longer supported. \n"
             "For more multiple intervals in the background model use <multiple-intervals> under <output-volume>.";
 
+  return(false);
+
   //std::vector<std::string> legalCommands;
   //legalCommands.push_back("top-surface-file");
   //legalCommands.push_back("top-surface-erosion-priority");

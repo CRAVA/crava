@@ -741,6 +741,8 @@ private:
   void PrintSettings(ModelSettings    * model_settings,
                      const InputFiles * input_files);
 
+  void SetDebugLevel(ModelSettings * model_settings);
+
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing

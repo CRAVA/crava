@@ -57,6 +57,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   estimation_simbox_()
 {
 
+  SetDebugLevel(model_settings);
   PrintSettings(model_settings, input_files);
 
   LogKit::WriteHeader("Common Data");
@@ -10056,4 +10057,38 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       }
     }
   }
+}
+
+void CommonData::SetDebugLevel(ModelSettings * model_settings)
+{
+  //Debug level from ModelGeneral
+  int debug_level = model_settings->getLogLevel();
+  if (model_settings->getDebugLevel() == 1)
+    debug_level = LogKit::L_DebugLow;
+  else if (model_settings->getDebugLevel() == 2)
+    debug_level = LogKit::L_DebugHigh;
+
+  LogKit::SetScreenLog(debug_level);
+
+  std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
+  LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
+
+  if (model_settings->getDebugFlag() > 0) {
+    std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
+    LogKit::SetFileLog(f_name, debug_level);
+  }
+
+  if (model_settings->getErrorFileFlag() == true) {
+    std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
+    LogKit::SetFileLog(f_name, LogKit::Error);
+  }
+  LogKit::EndBuffering();
+
+  if (model_settings->getNumberOfSimulations() == 0)
+    model_settings->setWritePrediction(true); //write predicted grids.
+
+  //Set output for all FFTGrids.
+  FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
+                          model_settings->getOutputGridDomain());
+
 }

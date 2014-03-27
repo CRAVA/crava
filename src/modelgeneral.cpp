@@ -260,43 +260,43 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
   velocity_from_inversion_ = false;
 
   {
-    int debug_level = model_settings->getLogLevel();
-    if (model_settings->getDebugLevel() == 1)
-      debug_level = LogKit::L_DebugLow;
-    else if (model_settings->getDebugLevel() == 2)
-      debug_level = LogKit::L_DebugHigh;
+    //int debug_level = model_settings->getLogLevel();
+    //if (model_settings->getDebugLevel() == 1)
+    //  debug_level = LogKit::L_DebugLow;
+    //else if (model_settings->getDebugLevel() == 2)
+    //  debug_level = LogKit::L_DebugHigh;
 
-    LogKit::SetScreenLog(debug_level);
+    //LogKit::SetScreenLog(debug_level);
 
-    std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
-    LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
+    //std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
+    //LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
 
-    if (model_settings->getDebugFlag() > 0) {
-      std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
-      LogKit::SetFileLog(f_name, debug_level);
-    }
+    //if (model_settings->getDebugFlag() > 0) {
+    //  std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
+    //  LogKit::SetFileLog(f_name, debug_level);
+    //}
 
-    if (model_settings->getErrorFileFlag() == true) {
-      std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
-      LogKit::SetFileLog(f_name, LogKit::Error);
-    }
-    LogKit::EndBuffering();
+    //if (model_settings->getErrorFileFlag() == true) {
+    //  std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
+    //  LogKit::SetFileLog(f_name, LogKit::Error);
+    //}
+    //LogKit::EndBuffering();
 
     if (input_files->getSeedFile() == "")
       random_gen_ = new RandomGen(model_settings->getSeed());
     else
       random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 
-    if (model_settings->getNumberOfSimulations() == 0)
-      model_settings->setWritePrediction(true); //write predicted grids.
+    //if (model_settings->getNumberOfSimulations() == 0)
+    //  model_settings->setWritePrediction(true); //write predicted grids.
 
     //PrintSettings(model_settings, input_files);
 
-    //Set output for all FFTGrids.
-    FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
-                            model_settings->getOutputGridDomain());
+    ////Set output for all FFTGrids.
+    //FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
+    //                        model_settings->getOutputGridDomain());
 
-    std::string errText("");
+    //std::string errText("");
 
     //LogKit::WriteHeader("Defining modelling grid");
 
