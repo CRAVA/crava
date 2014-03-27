@@ -93,6 +93,7 @@ private:
                               std::string                               & err_text,
                               bool                                      & failed) const;
 
+  /*
   void  SetupIntervalSimbox(ModelSettings                               * model_settings,
                             const Simbox                                * estimation_simbox,
                             Simbox                                      & interval_simboxes,
@@ -106,6 +107,7 @@ private:
                             double                                      & relative_grid_resolution,
                             std::string                                 & err_text,
                             bool                                        & failed) const;
+  */
 
   Surface * MakeSurfaceFromFileName(const std::string        & file_name,
                                     const Simbox             & estimation_simbox) const;

@@ -155,9 +155,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   //Set up a vector of simboxes, one per interval.
   if (!failed){
     try{
-      // if multiple-intervals keyword is used in model settings
-      if (multiple_interval_setting_){
-
         SetupIntervalSimboxes(model_settings,
                               estimation_simbox,
                               interval_names_,
@@ -173,24 +170,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               dz_rel_,
                               err_text,
                               failed);
-      }
-      // if multiple-intervals is NOT used in model settings
-      else{
-
-        SetupIntervalSimbox(model_settings,
-                            estimation_simbox,
-                            interval_simboxes_[0],
-                            eroded_surfaces, //H Added for testing
-                            input_files->getCorrDirFile(),
-                            input_files->getCorrDirTopFile(),
-                            input_files->getCorrDirBaseFile(),
-                            model_settings->getCorrDirTopConform(),
-                            model_settings->getCorrDirBaseConform(),
-                            desired_grid_resolution_[0],
-                            relative_grid_resolution_[0],
-                            err_text,
-                            failed);
-      }
     }
     catch(NRLib::Exception & e){
       failed = true;
@@ -225,6 +204,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const{
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+/*
 void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                               * model_settings,
                                              const Simbox                                * estimation_simbox,
                                              Simbox                                      & interval_simbox,
@@ -279,6 +259,7 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
   interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
   EstimateZPaddingSize(&interval_simbox, model_settings);
 }
+*/
 
 // ---------------------------------------------------------------------------------------------------------------
 void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                             * model_settings,

@@ -90,9 +90,9 @@ public:
   void setBackFile(int i, const std::string & backFile)                   { backFile_[i]          = backFile          ;}
   void setBackVelFile(const std::string & backVelFile)                    { backVelFile_          = backVelFile       ;}
   void setReflMatrFile(const std::string & reflMatrFile)                  { reflMatrFile_         = reflMatrFile      ;}
-  void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
-  void setCorrDirTopSurfaceFile(const std::string & corrDirFile)          { corrDirTopFile_       = corrDirFile       ;}
-  void setCorrDirBaseSurfaceFile(const std::string & corrDirFile)         { corrDirBaseFile_      = corrDirFile       ;}
+  //void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
+  //void setCorrDirTopSurfaceFile(const std::string & corrDirFile)          { corrDirTopFile_       = corrDirFile       ;}
+  //void setCorrDirBaseSurfaceFile(const std::string & corrDirFile)         { corrDirBaseFile_      = corrDirFile       ;}
   void setCorrDirIntervalFile(const std::string & interval_name, const std::string & file_name)            { interval_corrDirFiles_[interval_name]     = file_name ;}
   void setCorrDirIntervalTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { interval_corrDirTopFiles_[interval_name]  = file_name ;}
   void setCorrDirIntervalBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { interval_corrDirBaseFiles_[interval_name] = file_name ;}
