@@ -111,12 +111,12 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
     if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
       if (setup_trend_cubes_) {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
                                                           mapped_blocked_logs_, n_trend_cubes_, err_text);
       }
     }
     else {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
                                                           mapped_blocked_logs_, n_trend_cubes_, err_text);
     }
   }
@@ -135,12 +135,15 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_) {
     if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_,
+                                                       multiple_interval_grid_, background_parameters_, background_vs_vp_ratios_, err_text);
       else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_,
+                                                       multiple_interval_grid_, background_parameters_, background_vs_vp_ratios_, err_text);
     }
     else //Not estimation
-      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, err_text);
+      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_,
+                                                     multiple_interval_grid_, background_parameters_, background_vs_vp_ratios_, err_text);
   }
 
   // 13. Setup of prior correlation
@@ -148,7 +151,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     if(model_settings->getEstimateCorrelations() == true){
       if(read_wells_ && setup_multigrid_){
           setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
@@ -156,7 +159,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
     else{
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, err_text);
     }
   }
   else{
@@ -7078,12 +7081,14 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 }
 
 
-  bool CommonData::SetupBackgroundModel(ModelSettings                                              * model_settings,
-                                        InputFiles                                                 * input_files,
-                                        const std::vector<NRLib::Well>                             & wells,
-                                        std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
-                                        MultiIntervalGrid                                         *& multiple_interval_grid,
-                                        std::string                                                & err_text_common)
+bool CommonData::SetupBackgroundModel(ModelSettings                                              * model_settings,
+                                      InputFiles                                                 * input_files,
+                                      const std::vector<NRLib::Well>                             & wells,
+                                      std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                      const MultiIntervalGrid                                   *& multi_interval_grid,
+                                      std::vector<std::vector<NRLib::Grid<float> *> >            & background_paramters,
+                                      std::vector<double>                                        & background_vs_vp_ratios,
+                                      std::string                                                & err_text_common)
 {
   std::string err_text = "";
 
@@ -7100,126 +7105,120 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       model_settings->getEstimateBackground() == false && model_settings->getEstimateCorrelations() == false)
       return true;
 
+  int n_intervals = multi_interval_grid->GetNIntervals();
+  background_vs_vp_ratios.resize(n_intervals);
+
   if (model_settings->getGenerateBackground()) {
 
     if (model_settings->getGenerateBackgroundFromRockPhysics() == false) {
 
-        if (model_settings->getBackgroundVario() == NULL) {
-          err_text += "There is no variogram available for the background modelling.\n";
+      if (model_settings->getBackgroundVario() == NULL) {
+        err_text += "There is no variogram available for the background modelling.\n";
+      }
+
+      //std::vector<std::vector<NRLib::Grid<float> *> > & parameters = background_model->GetParameters(); //vector(intervals) vector(parameters)
+
+      for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
+
+        std::string interval_text = "";
+        if (n_intervals > 1) {
+          LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i_interval) + "\n");
+
+          interval_text = " for interval " + model_settings->getIntervalName(i_interval);
         }
 
-        std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //vector(intervals) vector(parameters)
+        const Simbox       * simbox                = multi_interval_grid->GetIntervalSimbox(i_interval);
+        std::string interval_name                  = multi_interval_grid->GetIntervalName(i_interval);
+        NRLib::Grid<float> * velocity              = new NRLib::Grid<float>();
+        Surface            * correlation_direction = NULL;
+        Simbox             * bg_simbox             = NULL;
+        BlockedLogsCommon  * bg_blocked_log        = NULL;
+        std::string back_vel_file                  = input_files->getBackVelFile();
 
-        for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
+        std::map<std::string, BlockedLogsCommon *> & blocked_logs = mapped_blocked_logs_intervals.find(i_interval)->second;
 
-          std::string interval_text = "";
-          if (multiple_interval_grid->GetNIntervals() > 1) {
-            LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multiple_interval_grid->GetIntervalName(i_interval) + "\n");
+        if (back_vel_file != "") {
+          bool dummy;
+          LoadVelocity(velocity,
+                       simbox,
+                       model_settings,
+                       back_vel_file,
+                       dummy,
+                       err_text);
+        }
 
-            interval_text = " for interval " + model_settings->getIntervalName(i_interval);
+        if (input_files->getCorrDirFile() != "") {
+
+          Surface tmpSurf(input_files->getCorrDirFile());
+          if (simbox->CheckSurface(tmpSurf) == true)
+            correlation_direction = new Surface(tmpSurf);
+          else
+            err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+
+          //Create a sepeate background simbox based on correlation_direction
+          //H SetupExtendedBackgroundSimbox writes background simboxes. Keep`writing? Need to change names based on interval
+          SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
+          std::string err_text_tmp = "";
+          int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
+          if (status != Simbox::BOXOK) {
+            err_text += "Could not make the grid for background model" + interval_text + ".\n";
+            err_text += err_text_tmp;
           }
+        }
+        else if (input_files->getCorrDirBaseFile() != "" || model_settings->getCorrDirBaseConform()) {
+          //H Create a backgroundsimbox based on the different options for correlation direction? top/base conform. CRA-619
+          //Similiar to MultiIntervalGrid::SetupIntervalSimbox
 
-          const Simbox       * simbox                = multiple_interval_grid->GetIntervalSimbox(i_interval);
-          std::string interval_name                  = multiple_interval_grid->GetIntervalName(i_interval);
-          NRLib::Grid<float> * velocity              = new NRLib::Grid<float>();
-          Surface            * correlation_direction = NULL;
-          Simbox             * bg_simbox             = NULL;
-          BlockedLogsCommon  * bg_blocked_log        = NULL;
-          std::string back_vel_file                  = input_files->getBackVelFile();
+          //SetupExtendedBackgroundSimbox(simbox, two correlations surfaces, bg_simbox);
 
-          std::map<std::string, BlockedLogsCommon *> & blocked_logs = mapped_blocked_logs_intervals.find(i_interval)->second;
+        }
 
-          if (back_vel_file != "") {
-            bool dummy;
-            LoadVelocity(velocity,
-                         simbox,
-                         model_settings,
-                         back_vel_file,
-                         dummy,
-                         err_text);
-          }
+        //Block logs to bg_simbox
+        std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
+        if (bg_simbox != NULL) {
+          for (size_t i = 0; i < wells.size(); i++) {
+            bg_blocked_log = NULL;
 
-          if (input_files->getCorrDirFile() != "") {
+            // Get all continuous and discrete logs
+            std::vector<std::string> cont_logs_to_be_blocked;
+            std::vector<std::string> disc_logs_to_be_blocked;
 
-            Surface tmpSurf(input_files->getCorrDirFile());
-            if (simbox->CheckSurface(tmpSurf) == true)
-              correlation_direction = new Surface(tmpSurf);
-            else
-              err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+            const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
+            const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
 
-            //Create a sepeate background simbox based on correlation_direction
-            //H SetupExtendedBackgroundSimbox writes background simboxes. Keep`writing? Need to change names based on interval
-            SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
-            std::string err_text_tmp = "";
-            int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
-            if (status != Simbox::BOXOK) {
-              err_text += "Could not make the grid for background model" + interval_text + ".\n";
-              err_text += err_text_tmp;
+            for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+              cont_logs_to_be_blocked.push_back(it->first);
             }
-          }
-          else if (input_files->getCorrDirBaseFile() != "" || model_settings->getCorrDirBaseConform()) {
-            //H Create a backgroundsimbox based on the different options for correlation direction? top/base conform. CRA-619
-            //Similiar to MultiIntervalGrid::SetupIntervalSimbox
-
-            //SetupExtendedBackgroundSimbox(simbox, two correlations surfaces, bg_simbox);
-
-          }
-
-          //Block logs to bg_simbox
-          std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
-          if (bg_simbox != NULL) {
-            for (size_t i = 0; i < wells.size(); i++) {
-              bg_blocked_log = NULL;
-
-              // Get all continuous and discrete logs
-              std::vector<std::string> cont_logs_to_be_blocked;
-              std::vector<std::string> disc_logs_to_be_blocked;
-
-              const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-              const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
-
-              for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-                cont_logs_to_be_blocked.push_back(it->first);
-              }
-              for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-                disc_logs_to_be_blocked.push_back(it->first);
-              }
-
-              bg_blocked_log = new BlockedLogsCommon(&wells[i],
-                                                      cont_logs_to_be_blocked,
-                                                      disc_logs_to_be_blocked,
-                                                      bg_simbox,
-                                                      false,
-                                                      err_text);
-
-              bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
+            for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+              disc_logs_to_be_blocked.push_back(it->first);
             }
+
+            bg_blocked_log = new BlockedLogsCommon(&wells[i],
+                                                    cont_logs_to_be_blocked,
+                                                    disc_logs_to_be_blocked,
+                                                    bg_simbox,
+                                                    false,
+                                                    err_text);
+
+            bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
           }
+        }
 
-          //Create background
-          Background(parameters[i_interval], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
+        //Create background
+        Background(background_parameters[i_interval], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
 
-          double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
-          multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
+        //double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
+        //background_vs_vp_ratios[i_interval] = vs_vp_ratio;
 
+        background_vs_vp_ratios[i_interval] = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
 
-        }  //i_interval
+        //multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
 
-        //Background changes
-        // 1 Remove multizone, give message to user to use multiinterval
-        // combine one interval with multiinterval and store all background models here.
-        //  i)  create an outer loop here and call standard background constructor for each interval
-        // Create background grids with interval_simbox(es) and not estimation_simbox.
-
-        // extended bg_simboxes for each interval
-        // velocity resampled for intervals
-
-        //H-TODO
-        // xmlreader and multizone background
+      }  //i_interval
     }
     else {
 
-      std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters();
+      //std::vector<std::vector<NRLib::Grid<float> *> > & parameters = background_model->GetParameters();
 
       for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
 
