@@ -102,17 +102,17 @@ public:
   bool           getIsConstantThick()            const { return constThick_              ;}
   std::string    GetIntervalName()               const { return interval_name_           ;}
   double         getMinRelThick()                const { return minRelThick_             ;} // Returns minimum relative thickness.
-  const NRLib::Surface<double>* GetTopErodedSurface()   const { return top_eroded_surface_      ;}
-  const NRLib::Surface<double>* GetBaseErodedSurface()  const { return base_eroded_surface_     ;}
+  const NRLib::Surface<double> & GetTopErodedSurface()   const { return *top_eroded_surface_      ;}
+  const NRLib::Surface<double> & GetBaseErodedSurface()  const { return *base_eroded_surface_     ;}
 
   double         getRelThick(int i, int j)       const;                                     // Local relative thickness.
   double         getRelThick(double x, double y) const;                                     // Local relative thickness.
   double         getAvgRelThick(void)            const;
   void           getMinMaxZ(double & minZ, double & maxZ) const;
-  double         GetErodedTopZMin()              const { return GetTopErodedSurface()->Min()  ;}
-  double         GetErodedTopZMax()              const { return GetTopErodedSurface()->Max()  ;}
-  double         GetErodedBotZMin()              const { return GetBaseErodedSurface()->Min() ;}
-  double         GetErodedBotZMax()              const { return GetBaseErodedSurface()->Max() ;}
+  double         GetErodedTopZMin()              const { return GetTopErodedSurface().Min()  ;}
+  double         GetErodedTopZMax()              const { return GetTopErodedSurface().Max()  ;}
+  double         GetErodedBotZMin()              const { return GetBaseErodedSurface().Min() ;}
+  double         GetErodedBotZMax()              const { return GetBaseErodedSurface().Max() ;}
   double         getTopZMin()                    const { return(GetTopZMin(nx_,ny_))          ;}
   double         getTopZMax()                    const { return(GetTopZMax(nx_,ny_))          ;}
   double         getBotZMin()                    const { return(GetBotZMin(nx_,ny_))          ;}
@@ -141,7 +141,7 @@ public:
   // SET functions ------------------------------------------------------
 
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
-  void           SetErodedSurfaces(const Surface & top_surf, const Surface & bot_surf);
+  void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);

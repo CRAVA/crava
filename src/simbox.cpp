@@ -103,6 +103,9 @@ Volume(*estimation_simbox){
   base_eroded_surface_ = NULL;
   grad_x_         = 0;
   grad_y_         = 0;
+  // Set Eroded surfaces in the simbox
+  SetErodedSurfaces(top_surface, base_surface);
+  // Set surfaces in the volume
   // This should set the status to BOXOK
   setDepth(top_surface, base_surface, n_layers);
   if(status_!=BOXOK){
@@ -134,6 +137,7 @@ Simbox::Simbox(const Simbox * simbox) :
   minRelThick_ = simbox->minRelThick_;
   topName_     = simbox->topName_;
   botName_     = simbox->botName_;
+  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface());
   grad_x_      = 0;
   grad_y_      = 0;
 }
@@ -433,8 +437,8 @@ Simbox::getZInterpolation(double x, double y, double z,
 }
 
 bool Simbox::IsPointBetweenOriginalSurfaces(double x, double y, double z) const{
-  const NRLib::Surface<double> * top_surf  = GetTopErodedSurface();
-  const NRLib::Surface<double> * base_surf = GetBaseErodedSurface();
+  const NRLib::Surface<double> * top_surf  = &GetTopErodedSurface();
+  const NRLib::Surface<double> * base_surf = &GetBaseErodedSurface();
   bool b = false;
   if(isInside(x, y)){
     if (top_surf->GetZ(x,y) <= z && base_surf->GetZ(x,y) > z)
@@ -612,14 +616,14 @@ Simbox::getBot(double x, double y) const
 double  Simbox::GetTopErodedSurface(int i, int j) const{
   double x, y;
   getXYCoord(i,j,x,y);
-  double z_top = GetTopErodedSurface()->GetZ(x,y);
-  if(GetTopErodedSurface()->IsMissing(z_top))
+  double z_top = GetTopErodedSurface().GetZ(x,y);
+  if(GetTopErodedSurface().IsMissing(z_top))
     z_top = RMISSING;
   return z_top;
 }
 
 double  Simbox::GetTopErodedSurface(double x, double y) const{
-  double z_top = GetTopErodedSurface()->GetZ(x, y);
+  double z_top = GetTopErodedSurface().GetZ(x, y);
   if(GetBotSurface().IsMissing(z_top))
     z_top = RMISSING;
   return(z_top);
@@ -628,14 +632,14 @@ double  Simbox::GetTopErodedSurface(double x, double y) const{
 double  Simbox::GetBotErodedSurface(int i, int j) const{
   double x, y;
   getXYCoord(i,j,x,y);
-  double z_base = GetBaseErodedSurface()->GetZ(x,y);
-  if(GetTopErodedSurface()->IsMissing(z_base))
+  double z_base = GetBaseErodedSurface().GetZ(x,y);
+  if(GetTopErodedSurface().IsMissing(z_base))
     z_base = RMISSING;
   return z_base;
 }
 
 double  Simbox::GetBotErodedSurface(double x, double y) const{
-  double z_bot = GetBaseErodedSurface()->GetZ(x, y);
+  double z_bot = GetBaseErodedSurface().GetZ(x, y);
   if(GetBotSurface().IsMissing(z_bot))
     z_bot = RMISSING;
   return(z_bot);
@@ -1047,8 +1051,8 @@ Surface * Simbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
   return(result);
 }
 
-void Simbox::SetErodedSurfaces(const Surface & top_surf,
-                               const Surface & bot_surf)
+void Simbox::SetErodedSurfaces(const NRLib::Surface<double> & top_surf,
+                               const NRLib::Surface<double> & bot_surf)
 {
   top_eroded_surface_  = top_surf.Clone();
   base_eroded_surface_ = bot_surf.Clone();
