@@ -10,6 +10,7 @@ class ModelGravityStatic;
 class ModelGravityDynamic;
 class ModelGeneral;
 class InputFiles;
+//class CommonData;
 class Simbox;
 class SeismicParametersHolder;
 

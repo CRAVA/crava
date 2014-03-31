@@ -227,7 +227,7 @@ int main(int argc, char** argv)
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
       //Forventningsgrid (fra multisonegrid)
-      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval),
+      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
                                                                 simbox->GetNXpad(),
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());

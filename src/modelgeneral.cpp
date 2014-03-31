@@ -244,7 +244,7 @@
 //    delete timeCutSimbox;
 //}
 
-ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple intervals
+ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
                            const InputFiles         * input_files,
                            SeismicParametersHolder  & seismic_parameters,
                            CommonData               * common_data,
@@ -252,7 +252,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
                            :do_4D_inversion_(model_settings->getDo4DInversion()),
                             do_4D_rock_physics_vnversion_(model_settings->getDo4DRockPhysicsInversion())
 {
-  simbox_                  = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval),
   random_gen_              = NULL;
   time_line_               = NULL;
   time_depth_mapping_      = NULL;
@@ -260,54 +259,18 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
   velocity_from_inversion_ = false;
 
   {
-    //int debug_level = model_settings->getLogLevel();
-    //if (model_settings->getDebugLevel() == 1)
-    //  debug_level = LogKit::L_DebugLow;
-    //else if (model_settings->getDebugLevel() == 2)
-    //  debug_level = LogKit::L_DebugHigh;
-
-    //LogKit::SetScreenLog(debug_level);
-
-    //std::string log_file_name = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
-    //LogKit::SetFileLog(log_file_name, model_settings->getLogLevel());
-
-    //if (model_settings->getDebugFlag() > 0) {
-    //  std::string f_name = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
-    //  LogKit::SetFileLog(f_name, debug_level);
-    //}
-
-    //if (model_settings->getErrorFileFlag() == true) {
-    //  std::string f_name = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
-    //  LogKit::SetFileLog(f_name, LogKit::Error);
-    //}
-    //LogKit::EndBuffering();
+    simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
     if (input_files->getSeedFile() == "")
       random_gen_ = new RandomGen(model_settings->getSeed());
     else
       random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 
-    //if (model_settings->getNumberOfSimulations() == 0)
-    //  model_settings->setWritePrediction(true); //write predicted grids.
-
-    //PrintSettings(model_settings, input_files);
-
-    ////Set output for all FFTGrids.
-    //FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
-    //                        model_settings->getOutputGridDomain());
-
-    //std::string errText("");
-
-    //LogKit::WriteHeader("Defining modelling grid");
-
-    MultiIntervalGrid * multiple_interval_grid = common_data->GetMultipleIntervalGrid();
-    //simbox_                                    = multiple_interval_grid->GetIntervalSimboxE(i_interval);
-
     //
     // FORWARD MODELLING
     //
     if (model_settings->getForwardModeling() == true) {
-//      checkAvailableMemory(simbox_, model_settings, input_files);
+    //
     }
     else {
       //
@@ -315,8 +278,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       //
       if (model_settings->getIntervalNames().size() > 0)
         multi_interval_ = true;
-
-      //checkAvailableMemory(simbox_, model_settings, input_files);
 
       //Facies-names
       facies_names_  = common_data->GetFaciesNames();
@@ -326,29 +287,24 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings, //Multiple
       if (common_data->GetPriorFacies().size() > 0) {
         prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
       }
-      if (multiple_interval_grid->GetPriorFaciesProbCubesInterval(i_interval).size() > 0) {
+      if (common_data->GetPriorFaciesProbCubesInterval(i_interval).size() > 0) {
         prior_facies_prob_cubes_.resize(3);
-        prior_facies_prob_cubes_[0] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 0), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
-        prior_facies_prob_cubes_[1] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 1), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
-        prior_facies_prob_cubes_[2] = new FFTGrid(multiple_interval_grid->GetPriorFaciesProbCube(i_interval, 2), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[0] = new FFTGrid(common_data->GetPriorFaciesProbCube(i_interval, 0), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[1] = new FFTGrid(common_data->GetPriorFaciesProbCube(i_interval, 1), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
+        prior_facies_prob_cubes_[2] = new FFTGrid(common_data->GetPriorFaciesProbCube(i_interval, 2), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
       }
-
-      //bool estimation_mode = model_settings->getEstimationMode();
 
       //TimeDepthMapping if intervals isn't used.
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() == 1 && model_settings->getDoDepthConversion()) {
         time_depth_mapping_      = common_data->GetTimeDepthMapping();
-        velocity_from_inversion_ = common_data->GetVelocityFromInversion(); //Needed?
+        velocity_from_inversion_ = common_data->GetVelocityFromInversion();
       }
-
-      //Replace wells with blocked_logs
-      //blocked_logs_ = common_data->GetBlockedLogs();
 
       //Wells blocked to this interval simbox
       blocked_logs_ = common_data->GetBlockedLogsInterval(i_interval);
 
-      if(multiple_interval_grid->GetTrendCubes().size() > 0)
-        trend_cubes_ = multiple_interval_grid->GetTrendCube(i_interval);
+      if (common_data->GetTrendCubes().size() > 0)
+        trend_cubes_ = common_data->GetTrendCube(i_interval);
 
       rock_distributions_  = common_data->GetDistributionsRock();
       reservoir_variables_ = common_data->GetReservoirVariables();
@@ -379,12 +335,6 @@ ModelGeneral::~ModelGeneral(void)
   if (time_depth_mapping_!=NULL)
     delete time_depth_mapping_;
 
-  //if (timeCutMapping_!=NULL)
-  //  delete timeCutMapping_;
-
-  //if (correlationDirection_ !=NULL)
-  //  delete correlationDirection_;
-
   for (std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     std::vector<DistributionsRock *> rock = it->second;
     for (size_t i=0; i<rock.size(); i++)
@@ -401,18 +351,6 @@ ModelGeneral::~ModelGeneral(void)
     delete time_line_;
 
   delete random_gen_;
-  //delete simbox_;
-  //delete timeSimboxConstThick_;
-
-  // if (!forwardModeling_)
-  //{
-  //  for (int i=0 ; i<numberOfWells_ ; i++)
-  //    if (wells_[i] != NULL)
-  //      delete wells_[i];
-  //}
-
-  // delete priorCorrXY_;
-
 }
 
 //void
@@ -701,13 +639,13 @@ ModelGeneral::~ModelGeneral(void)
 //  }
 //}
 
-int
-ModelGeneral::SetPaddingSize(int nx, double px)
-{
-  int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
-  int closestprod = FFTGrid::findClosestFactorableNumber(leastint);
-  return(closestprod);
-}
+//int
+//ModelGeneral::SetPaddingSize(int nx, double px)
+//{
+//  int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
+//  int closestprod = FFTGrid::findClosestFactorableNumber(leastint);
+//  return(closestprod);
+//}
 
 /*
 void
@@ -1114,143 +1052,143 @@ ModelGeneral::logIntervalInformation(const Simbox      * simbox,
                        simbox->getdz()*simbox->getMinRelThick());
 }
 */
-void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
-                                     const std::vector<std::string> & surfFile,
-                                     ModelSettings                  * model_settings,
-                                     std::string                    & errText,
-                                     bool                           & failed)
-{
-  const std::string & topName = surfFile[0];
-
-  bool   generateSeismic    = model_settings->getForwardModeling();
-  bool   estimationMode     = model_settings->getEstimationMode();
-  bool   generateBackground = model_settings->getGenerateBackground();
-  bool   parallelSurfaces   = model_settings->getParallelTimeSurfaces();
-  int    nz                 = model_settings->getTimeNz();
-  int    outputFormat       = model_settings->getOutputGridFormat();
-  int    outputDomain       = model_settings->getOutputGridDomain();
-  int    outputGridsElastic = model_settings->getOutputGridsElastic();
-  int    outputGridsOther   = model_settings->getOutputGridsOther();
-  int    outputGridsSeismic = model_settings->getOutputGridsSeismic();
-  double dTop               = model_settings->getTimeDTop();
-  double lz                 = model_settings->getTimeLz();
-  double dz                 = model_settings->getTimeDz();
-
-  Surface * z0Grid = NULL;
-  Surface * z1Grid = NULL;
-  try {
-    if (NRLib::IsNumber(topName)) {
-      // Find the smallest surface that covers the simbox. For simplicity
-      // we use only four nodes (nx=ny=2).
-      double xMin, xMax;
-      double yMin, yMax;
-      FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
-                                  simbox->getlx(), simbox->getly(),
-                                  simbox->getAngle(),
-                                  xMin,yMin,xMax,yMax);
-      z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
-    }
-    else {
-      Surface tmpSurf(topName);
-      z0Grid = new Surface(tmpSurf);
-    }
-  }
-  catch (NRLib::Exception & e) {
-    errText += e.what();
-    failed = true;
-  }
-
-  if (!failed) {
-    if (parallelSurfaces) { //Only one reference surface
-      simbox->setDepth(*z0Grid, dTop, lz, dz, model_settings->getRunFromPanel());
-    }
-    else {
-      const std::string & baseName = surfFile[1];
-      try {
-        if (NRLib::IsNumber(baseName)) {
-          // Find the smallest surface that covers the simbox. For simplicity
-          // we use only four nodes (nx=ny=2).
-          double xMin, xMax;
-          double yMin, yMax;
-          FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
-                                      simbox->getlx(), simbox->getly(),
-                                      simbox->getAngle(),
-                                      xMin,yMin,xMax,yMax);
-          z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
-        }
-        else {
-          Surface tmpSurf(baseName);
-          z1Grid = new Surface(tmpSurf);
-        }
-      }
-      catch (NRLib::Exception & e) {
-        errText += e.what();
-        failed = true;
-      }
-      if (!failed) {
-        try {
-          simbox->setDepth(*z0Grid, *z1Grid, nz, model_settings->getRunFromPanel());
-        }
-        catch (NRLib::Exception & e) {
-          errText += e.what();
-          std::string text("Seismic data");
-          WriteAreas(model_settings->getAreaParameters(),simbox,text);
-          failed = true;
-        }
-      }
-    }
-    if (!failed) {
-      if ((outputDomain & IO::TIMEDOMAIN) > 0) {
-        std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
-        std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
-        simbox->setTopBotName(topSurf,baseSurf,outputFormat);
-        if (generateSeismic) {
-          simbox->writeTopBotGrids(topSurf,
-                                   baseSurf,
-                                   IO::PathToSeismicData(),
-                                   outputFormat);
-        }
-        else if (!estimationMode){
-          if (outputGridsElastic > 0 || outputGridsOther > 0 || outputGridsSeismic > 0)
-            simbox->writeTopBotGrids(topSurf,
-                                     baseSurf,
-                                     IO::PathToInversionResults(),
-                                     outputFormat);
-        }
-        if ((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
-          if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
-              (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
-              (estimationMode && generateBackground)) {
-            simbox->writeTopBotGrids(topSurf,
-                                     baseSurf,
-                                     IO::PathToBackground(),
-                                     outputFormat);
-          }
-          if ((outputGridsOther & IO::CORRELATION) > 0) {
-            simbox->writeTopBotGrids(topSurf,
-                                     baseSurf,
-                                     IO::PathToCorrelations(),
-                                     outputFormat);
-          }
-          if ((outputGridsSeismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
-            simbox->writeTopBotGrids(topSurf,
-                                     baseSurf,
-                                     IO::PathToSeismicData(),
-                                     outputFormat);
-          }
-          if ((outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
-            simbox->writeTopBotGrids(topSurf,
-                                     baseSurf,
-                                     IO::PathToVelocity(),
-                                     outputFormat);
-          }
-        }
-      }
-    }
-  }
-  delete z0Grid;
-  delete z1Grid;
-}
+//void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
+//                                     const std::vector<std::string> & surfFile,
+//                                     ModelSettings                  * model_settings,
+//                                     std::string                    & errText,
+//                                     bool                           & failed)
+//{
+//  const std::string & topName = surfFile[0];
+//
+//  bool   generateSeismic    = model_settings->getForwardModeling();
+//  bool   estimationMode     = model_settings->getEstimationMode();
+//  bool   generateBackground = model_settings->getGenerateBackground();
+//  bool   parallelSurfaces   = model_settings->getParallelTimeSurfaces();
+//  int    nz                 = model_settings->getTimeNz();
+//  int    outputFormat       = model_settings->getOutputGridFormat();
+//  int    outputDomain       = model_settings->getOutputGridDomain();
+//  int    outputGridsElastic = model_settings->getOutputGridsElastic();
+//  int    outputGridsOther   = model_settings->getOutputGridsOther();
+//  int    outputGridsSeismic = model_settings->getOutputGridsSeismic();
+//  double dTop               = model_settings->getTimeDTop();
+//  double lz                 = model_settings->getTimeLz();
+//  double dz                 = model_settings->getTimeDz();
+//
+//  Surface * z0Grid = NULL;
+//  Surface * z1Grid = NULL;
+//  try {
+//    if (NRLib::IsNumber(topName)) {
+//      // Find the smallest surface that covers the simbox. For simplicity
+//      // we use only four nodes (nx=ny=2).
+//      double xMin, xMax;
+//      double yMin, yMax;
+//      FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+//                                  simbox->getlx(), simbox->getly(),
+//                                  simbox->getAngle(),
+//                                  xMin,yMin,xMax,yMax);
+//      z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
+//    }
+//    else {
+//      Surface tmpSurf(topName);
+//      z0Grid = new Surface(tmpSurf);
+//    }
+//  }
+//  catch (NRLib::Exception & e) {
+//    errText += e.what();
+//    failed = true;
+//  }
+//
+//  if (!failed) {
+//    if (parallelSurfaces) { //Only one reference surface
+//      simbox->setDepth(*z0Grid, dTop, lz, dz, model_settings->getRunFromPanel());
+//    }
+//    else {
+//      const std::string & baseName = surfFile[1];
+//      try {
+//        if (NRLib::IsNumber(baseName)) {
+//          // Find the smallest surface that covers the simbox. For simplicity
+//          // we use only four nodes (nx=ny=2).
+//          double xMin, xMax;
+//          double yMin, yMax;
+//          FindSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+//                                      simbox->getlx(), simbox->getly(),
+//                                      simbox->getAngle(),
+//                                      xMin,yMin,xMax,yMax);
+//          z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
+//        }
+//        else {
+//          Surface tmpSurf(baseName);
+//          z1Grid = new Surface(tmpSurf);
+//        }
+//      }
+//      catch (NRLib::Exception & e) {
+//        errText += e.what();
+//        failed = true;
+//      }
+//      if (!failed) {
+//        try {
+//          simbox->setDepth(*z0Grid, *z1Grid, nz, model_settings->getRunFromPanel());
+//        }
+//        catch (NRLib::Exception & e) {
+//          errText += e.what();
+//          std::string text("Seismic data");
+//          WriteAreas(model_settings->getAreaParameters(),simbox,text);
+//          failed = true;
+//        }
+//      }
+//    }
+//    if (!failed) {
+//      if ((outputDomain & IO::TIMEDOMAIN) > 0) {
+//        std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+//        std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+//        simbox->setTopBotName(topSurf,baseSurf,outputFormat);
+//        if (generateSeismic) {
+//          simbox->writeTopBotGrids(topSurf,
+//                                   baseSurf,
+//                                   IO::PathToSeismicData(),
+//                                   outputFormat);
+//        }
+//        else if (!estimationMode){
+//          if (outputGridsElastic > 0 || outputGridsOther > 0 || outputGridsSeismic > 0)
+//            simbox->writeTopBotGrids(topSurf,
+//                                     baseSurf,
+//                                     IO::PathToInversionResults(),
+//                                     outputFormat);
+//        }
+//        if ((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
+//          if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
+//              (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
+//              (estimationMode && generateBackground)) {
+//            simbox->writeTopBotGrids(topSurf,
+//                                     baseSurf,
+//                                     IO::PathToBackground(),
+//                                     outputFormat);
+//          }
+//          if ((outputGridsOther & IO::CORRELATION) > 0) {
+//            simbox->writeTopBotGrids(topSurf,
+//                                     baseSurf,
+//                                     IO::PathToCorrelations(),
+//                                     outputFormat);
+//          }
+//          if ((outputGridsSeismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+//            simbox->writeTopBotGrids(topSurf,
+//                                     baseSurf,
+//                                     IO::PathToSeismicData(),
+//                                     outputFormat);
+//          }
+//          if ((outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+//            simbox->writeTopBotGrids(topSurf,
+//                                     baseSurf,
+//                                     IO::PathToVelocity(),
+//                                     outputFormat);
+//          }
+//        }
+//      }
+//    }
+//  }
+//  delete z0Grid;
+//  delete z1Grid;
+//}
 
 //void
 //ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
@@ -1422,148 +1360,148 @@ void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
 //  }
 //}
 
-NRLib::Vector
-ModelGeneral::FindPlane(Surface * surf)
-{
-  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
-  NRLib::Vector b(3);
-  NRLib::Vector x(3);
-
-  b = 0;
-
-  int nData = 0;
-
-  for (int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
-    double x, y, z;
-    surf->GetXY(i, x, y);
-    z = (*surf)(i);
-    if (!surf->IsMissing(z)) {
-      nData++;
-      A(0,1) += x;
-      A(0,2) += y;
-      A(1,1) += x*x;
-      A(1,2) += x*y;
-      A(2,2) += y*y;
-      b(0)   += z;
-      b(1)   += x*z;
-      b(2)   += y*z;
-    }
-  }
-
-  A(0,0) = nData;
-
-  NRLib::CholeskySolve(A, b, x);
-
-  return x;
-}
-
-
-Surface *
-ModelGeneral::CreatePlaneSurface(const NRLib::Vector & planeParams,
-                                 Surface             * templateSurf)
-{
-  Surface * result = new Surface(*templateSurf);
-  for (int i=0;i<static_cast<int>(result->GetN());i++) {
-    double x,y;
-    result->GetXY(i,x,y);
-    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
-  }
-  return(result);
-}
+//NRLib::Vector
+//ModelGeneral::FindPlane(Surface * surf)
+//{
+//  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
+//  NRLib::Vector b(3);
+//  NRLib::Vector x(3);
+//
+//  b = 0;
+//
+//  int nData = 0;
+//
+//  for (int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+//    double x, y, z;
+//    surf->GetXY(i, x, y);
+//    z = (*surf)(i);
+//    if (!surf->IsMissing(z)) {
+//      nData++;
+//      A(0,1) += x;
+//      A(0,2) += y;
+//      A(1,1) += x*x;
+//      A(1,2) += x*y;
+//      A(2,2) += y*y;
+//      b(0)   += z;
+//      b(1)   += x*z;
+//      b(2)   += y*z;
+//    }
+//  }
+//
+//  A(0,0) = nData;
+//
+//  NRLib::CholeskySolve(A, b, x);
+//
+//  return x;
+//}
 
 
-void
-ModelGeneral::EstimateXYPaddingSizes(Simbox         * timeSimbox,
-                                     ModelSettings *& model_settings)
-{
-  double dx      = timeSimbox->getdx();
-  double dy      = timeSimbox->getdy();
-  double lx      = timeSimbox->getlx();
-  double ly      = timeSimbox->getly();
-  int    nx      = timeSimbox->getnx();
-  int    ny      = timeSimbox->getny();
-  int    nz      = timeSimbox->getnz();
+//Surface *
+//ModelGeneral::CreatePlaneSurface(const NRLib::Vector & planeParams,
+//                                 Surface             * templateSurf)
+//{
+//  Surface * result = new Surface(*templateSurf);
+//  for (int i=0;i<static_cast<int>(result->GetN());i++) {
+//    double x,y;
+//    result->GetXY(i,x,y);
+//    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
+//  }
+//  return(result);
+//}
 
-  double xPadFac = model_settings->getXPadFac();
-  double yPadFac = model_settings->getYPadFac();
-  double xPad    = xPadFac*lx;
-  double yPad    = yPadFac*ly;
 
-  if (model_settings->getEstimateXYPadding())
-  {
-    float  range1 = model_settings->getLateralCorr()->getRange();
-    float  range2 = model_settings->getLateralCorr()->getSubRange();
-    float  angle  = model_settings->getLateralCorr()->getAngle();
-    double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
-
-    xPad          = factor * std::max(fabs(range1*cos(angle)), fabs(range2*sin(angle)));
-    yPad          = factor * std::max(fabs(range1*sin(angle)), fabs(range2*cos(angle)));
-    xPad          = std::max(xPad, dx);     // Always require at least on grid cell
-    yPad          = std::max(yPad, dy);     // Always require at least one grid cell
-    xPadFac       = std::min(1.0, xPad/lx); // A padding of more than 100% is insensible
-    yPadFac       = std::min(1.0, yPad/ly);
-  }
-
-  int nxPad = SetPaddingSize(nx, xPadFac);
-  int nyPad = SetPaddingSize(ny, yPadFac);
-  int nzPad = timeSimbox->GetNZpad();
-
-  double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
-  double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
-  double true_zPadFac = model_settings->getZPadFac();
-  double true_xPad    = true_xPadFac*lx;
-  double true_yPad    = true_yPadFac*ly;
-  double true_zPad    = true_zPadFac*(timeSimbox->getlz()*timeSimbox->getMinRelThick());
-
-  timeSimbox->SetNXpad(nxPad);
-  timeSimbox->SetNYpad(nyPad);
-  timeSimbox->SetXPadFactor(true_xPadFac);
-  timeSimbox->SetYPadFactor(true_yPadFac);
-
-  std::string text1;
-  std::string text2;
-  int log_level = LogKit::Medium;
-  if (model_settings->getEstimateXYPadding()) {
-    text1 = " estimated from lateral correlation ranges in internal grid";
-    log_level = LogKit::Low;
-  }
-  if (model_settings->getEstimateZPadding()) {
-    text2 = " estimated from an assumed wavelet length";
-    log_level = LogKit::Low;
-  }
-
-  LogKit::LogFormatted(log_level,"\nPadding sizes"+text1+":\n");
-  LogKit::LogFormatted(log_level,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
-                       true_xPad, true_xPadFac, nx, nxPad);
-  LogKit::LogFormatted(log_level,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
-                       true_yPad, true_yPadFac, ny, nyPad);
-  LogKit::LogFormatted(log_level,"\nPadding sizes"+text2+":\n");
-  LogKit::LogFormatted(log_level,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
-                       true_zPad, true_zPadFac, nz, nzPad);
-}
-
-void
-ModelGeneral::EstimateZPaddingSize(Simbox         * timeSimbox,
-                                   ModelSettings *& model_settings)
-{
-  int    nz          = timeSimbox->getnz();
-  double minLz       = timeSimbox->getlz()*timeSimbox->getMinRelThick();
-  double zPadFac     = model_settings->getZPadFac();
-  double zPad        = zPadFac*minLz;
-
-  if (model_settings->getEstimateZPadding())
-  {
-    double wLength = static_cast<double>(model_settings->getDefaultWaveletLength());
-    double pfac    = 1.0;
-    zPad           = wLength/pfac;                             // Use half a wavelet as padding
-    zPadFac        = std::min(1.0, zPad/minLz);                // More than 100% padding is not sensible
-  }
-  int nzPad        = SetPaddingSize(nz, zPadFac);
-  zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
-
-  timeSimbox->SetNZpad(nzPad);
-  timeSimbox->SetZPadFactor(zPadFac);
-}
+//void
+//ModelGeneral::EstimateXYPaddingSizes(Simbox         * timeSimbox,
+//                                     ModelSettings *& model_settings)
+//{
+//  double dx      = timeSimbox->getdx();
+//  double dy      = timeSimbox->getdy();
+//  double lx      = timeSimbox->getlx();
+//  double ly      = timeSimbox->getly();
+//  int    nx      = timeSimbox->getnx();
+//  int    ny      = timeSimbox->getny();
+//  int    nz      = timeSimbox->getnz();
+//
+//  double xPadFac = model_settings->getXPadFac();
+//  double yPadFac = model_settings->getYPadFac();
+//  double xPad    = xPadFac*lx;
+//  double yPad    = yPadFac*ly;
+//
+//  if (model_settings->getEstimateXYPadding())
+//  {
+//    float  range1 = model_settings->getLateralCorr()->getRange();
+//    float  range2 = model_settings->getLateralCorr()->getSubRange();
+//    float  angle  = model_settings->getLateralCorr()->getAngle();
+//    double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
+//
+//    xPad          = factor * std::max(fabs(range1*cos(angle)), fabs(range2*sin(angle)));
+//    yPad          = factor * std::max(fabs(range1*sin(angle)), fabs(range2*cos(angle)));
+//    xPad          = std::max(xPad, dx);     // Always require at least on grid cell
+//    yPad          = std::max(yPad, dy);     // Always require at least one grid cell
+//    xPadFac       = std::min(1.0, xPad/lx); // A padding of more than 100% is insensible
+//    yPadFac       = std::min(1.0, yPad/ly);
+//  }
+//
+//  int nxPad = SetPaddingSize(nx, xPadFac);
+//  int nyPad = SetPaddingSize(ny, yPadFac);
+//  int nzPad = timeSimbox->GetNZpad();
+//
+//  double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
+//  double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
+//  double true_zPadFac = model_settings->getZPadFac();
+//  double true_xPad    = true_xPadFac*lx;
+//  double true_yPad    = true_yPadFac*ly;
+//  double true_zPad    = true_zPadFac*(timeSimbox->getlz()*timeSimbox->getMinRelThick());
+//
+//  timeSimbox->SetNXpad(nxPad);
+//  timeSimbox->SetNYpad(nyPad);
+//  timeSimbox->SetXPadFactor(true_xPadFac);
+//  timeSimbox->SetYPadFactor(true_yPadFac);
+//
+//  std::string text1;
+//  std::string text2;
+//  int log_level = LogKit::Medium;
+//  if (model_settings->getEstimateXYPadding()) {
+//    text1 = " estimated from lateral correlation ranges in internal grid";
+//    log_level = LogKit::Low;
+//  }
+//  if (model_settings->getEstimateZPadding()) {
+//    text2 = " estimated from an assumed wavelet length";
+//    log_level = LogKit::Low;
+//  }
+//
+//  LogKit::LogFormatted(log_level,"\nPadding sizes"+text1+":\n");
+//  LogKit::LogFormatted(log_level,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
+//                       true_xPad, true_xPadFac, nx, nxPad);
+//  LogKit::LogFormatted(log_level,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
+//                       true_yPad, true_yPadFac, ny, nyPad);
+//  LogKit::LogFormatted(log_level,"\nPadding sizes"+text2+":\n");
+//  LogKit::LogFormatted(log_level,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
+//                       true_zPad, true_zPadFac, nz, nzPad);
+//}
+//
+//void
+//ModelGeneral::EstimateZPaddingSize(Simbox         * timeSimbox,
+//                                   ModelSettings *& model_settings)
+//{
+//  int    nz          = timeSimbox->getnz();
+//  double minLz       = timeSimbox->getlz()*timeSimbox->getMinRelThick();
+//  double zPadFac     = model_settings->getZPadFac();
+//  double zPad        = zPadFac*minLz;
+//
+//  if (model_settings->getEstimateZPadding())
+//  {
+//    double wLength = static_cast<double>(model_settings->getDefaultWaveletLength());
+//    double pfac    = 1.0;
+//    zPad           = wLength/pfac;                             // Use half a wavelet as padding
+//    zPadFac        = std::min(1.0, zPad/minLz);                // More than 100% padding is not sensible
+//  }
+//  int nzPad        = SetPaddingSize(nz, zPadFac);
+//  zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
+//
+//  timeSimbox->SetNZpad(nzPad);
+//  timeSimbox->SetZPadFactor(zPadFac);
+//}
 
 //void
 //ModelGeneral::readGridFromFile(const std::string       & fileName,
@@ -2864,196 +2802,196 @@ ModelGeneral::EstimateZPaddingSize(Simbox         * timeSimbox,
 //  }
 //}
 
-void
-ModelGeneral::WriteAreas(const SegyGeometry * areaParams,
-                         Simbox             * timeSimbox,
-                         std::string        & text)
-{
-  double areaX0   = areaParams->GetX0();
-  double areaY0   = areaParams->GetY0();
-  double areaLx   = areaParams->Getlx();
-  double areaLy   = areaParams->Getly();
-  double areaDx   = areaParams->GetDx();
-  double areaDy   = areaParams->GetDy();
-  double areaRot  = areaParams->GetAngle();
-  double areaXmin = RMISSING;
-  double areaXmax = RMISSING;
-  double areaYmin = RMISSING;
-  double areaYmax = RMISSING;
+//void
+//ModelGeneral::WriteAreas(const SegyGeometry * areaParams,
+//                         Simbox             * timeSimbox,
+//                         std::string        & text)
+//{
+//  double areaX0   = areaParams->GetX0();
+//  double areaY0   = areaParams->GetY0();
+//  double areaLx   = areaParams->Getlx();
+//  double areaLy   = areaParams->Getly();
+//  double areaDx   = areaParams->GetDx();
+//  double areaDy   = areaParams->GetDy();
+//  double areaRot  = areaParams->GetAngle();
+//  double areaXmin = RMISSING;
+//  double areaXmax = RMISSING;
+//  double areaYmin = RMISSING;
+//  double areaYmax = RMISSING;
+//
+//  FindSmallestSurfaceGeometry(areaX0, areaY0, areaLx, areaLy, areaRot,
+//                              areaXmin, areaYmin, areaXmax, areaYmax);
+//
+//  LogKit::LogFormatted(LogKit::Low,"\nThe top and/or base time surfaces do not cover the area specified by the "+text);
+//  LogKit::LogFormatted(LogKit::Low,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
+//  LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx        ly     azimuth          dx      dy\n");
+//  LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+//  double azimuth = (-1)*areaRot*(180.0/M_PI);
+//  if (azimuth < 0)
+//    azimuth += 360.0;
+//  LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n",
+//                       areaX0, areaY0, areaLx, areaLy, azimuth, areaDx, areaDy);
+//
+//  LogKit::LogFormatted(LogKit::Low,"Area                    xmin         xmax           ymin        ymax\n");
+//  LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------\n");
+//  LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n",
+//                       text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
+//  const NRLib::Surface<double> & top  = timeSimbox->GetTopSurface();
+//  const NRLib::Surface<double> & base = timeSimbox->GetBotSurface();
+//  LogKit::LogFormatted(LogKit::Low,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n",
+//                       top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax());
+//  LogKit::LogFormatted(LogKit::Low,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n",
+//                       base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax());
+//}
 
-  FindSmallestSurfaceGeometry(areaX0, areaY0, areaLx, areaLy, areaRot,
-                              areaXmin, areaYmin, areaXmax, areaYmax);
+//void
+//ModelGeneral::FindSmallestSurfaceGeometry(const double   x0,
+//                                          const double   y0,
+//                                          const double   lx,
+//                                          const double   ly,
+//                                          const double   rot,
+//                                          double       & xMin,
+//                                          double       & yMin,
+//                                          double       & xMax,
+//                                          double       & yMax)
+//{
+//  xMin = x0 - ly*sin(rot);
+//  xMax = x0 + lx*cos(rot);
+//  yMin = y0;
+//  yMax = y0 + lx*sin(rot) + ly*cos(rot);
+//  if (rot < 0) {
+//    xMin = x0;
+//    xMax = x0 + lx*cos(rot) - ly*sin(rot);
+//    yMin = y0 + lx*sin(rot);
+//    yMax = y0 + ly*cos(rot);
+//  }
+//}
 
-  LogKit::LogFormatted(LogKit::Low,"\nThe top and/or base time surfaces do not cover the area specified by the "+text);
-  LogKit::LogFormatted(LogKit::Low,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
-  LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx        ly     azimuth          dx      dy\n");
-  LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-  double azimuth = (-1)*areaRot*(180.0/M_PI);
-  if (azimuth < 0)
-    azimuth += 360.0;
-  LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n",
-                       areaX0, areaY0, areaLx, areaLy, azimuth, areaDx, areaDy);
+//void
+//ModelGeneral::GetGeometryFromGridOnFile(const std::string         gridFile,
+//                                        const TraceHeaderFormat * thf,
+//                                        SegyGeometry           *& geometry,
+//                                        std::string             & errText)
+//{
+//  geometry = NULL;
+//
+//  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+//    int fileType = IO::findGridType(gridFile);
+//    if (fileType == IO::CRAVA) {
+//      geometry = GeometryFromCravaFile(gridFile);
+//    }
+//    else if (fileType == IO::SEGY) {
+//      try
+//      {
+//        geometry = SegY::FindGridGeometry(gridFile, thf);
+//      }
+//      catch (NRLib::Exception & e)
+//      {
+//        errText = e.what();
+//      }
+//    }
+//    else if (fileType == IO::STORM)
+//      geometry = GeometryFromStormFile(gridFile, errText);
+//    else if (fileType==IO::SGRI) {
+//      bool scale = true;
+//      geometry = GeometryFromStormFile(gridFile, errText, scale);
+//    }
+//    else {
+//      errText = "Trying to read grid dimensions from unknown file format.\n";
+//    }
+//  }
+//  else {
+//    errText = "Cannot get geometry from file. The file name is empty.\n";
+//  }
+//}
 
-  LogKit::LogFormatted(LogKit::Low,"Area                    xmin         xmax           ymin        ymax\n");
-  LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n",
-                       text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
-  const NRLib::Surface<double> & top  = timeSimbox->GetTopSurface();
-  const NRLib::Surface<double> & base = timeSimbox->GetBotSurface();
-  LogKit::LogFormatted(LogKit::Low,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n",
-                       top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax());
-  LogKit::LogFormatted(LogKit::Low,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n",
-                       base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax());
-}
+//SegyGeometry *
+//ModelGeneral::GeometryFromCravaFile(const std::string & fileName)
+//{
+//  std::ifstream binFile;
+//  NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
+//
+//  std::string fileType;
+//  getline(binFile,fileType);
+//
+//  double x0      = NRLib::ReadBinaryDouble(binFile);
+//  double y0      = NRLib::ReadBinaryDouble(binFile);
+//  double dx      = NRLib::ReadBinaryDouble(binFile);
+//  double dy      = NRLib::ReadBinaryDouble(binFile);
+//  int    nx      = NRLib::ReadBinaryInt(binFile);
+//  int    ny      = NRLib::ReadBinaryInt(binFile);
+//  double IL0     = NRLib::ReadBinaryDouble(binFile);
+//  double XL0     = NRLib::ReadBinaryDouble(binFile);
+//  double ilStepX = NRLib::ReadBinaryDouble(binFile);
+//  double ilStepY = NRLib::ReadBinaryDouble(binFile);
+//  double xlStepX = NRLib::ReadBinaryDouble(binFile);
+//  double xlStepY = NRLib::ReadBinaryDouble(binFile);
+//  double rot     = NRLib::ReadBinaryDouble(binFile);
+//
+//  binFile.close();
+//
+//  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
+//                                             IL0, XL0, ilStepX, ilStepY,
+//                                             xlStepX, xlStepY, rot);
+//  return(geometry);
+//}
 
-void
-ModelGeneral::FindSmallestSurfaceGeometry(const double   x0,
-                                          const double   y0,
-                                          const double   lx,
-                                          const double   ly,
-                                          const double   rot,
-                                          double       & xMin,
-                                          double       & yMin,
-                                          double       & xMax,
-                                          double       & yMax)
-{
-  xMin = x0 - ly*sin(rot);
-  xMax = x0 + lx*cos(rot);
-  yMin = y0;
-  yMax = y0 + lx*sin(rot) + ly*cos(rot);
-  if (rot < 0) {
-    xMin = x0;
-    xMax = x0 + lx*cos(rot) - ly*sin(rot);
-    yMin = y0 + lx*sin(rot);
-    yMax = y0 + ly*cos(rot);
-  }
-}
-
-void
-ModelGeneral::GetGeometryFromGridOnFile(const std::string         gridFile,
-                                        const TraceHeaderFormat * thf,
-                                        SegyGeometry           *& geometry,
-                                        std::string             & errText)
-{
-  geometry = NULL;
-
-  if (gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
-    int fileType = IO::findGridType(gridFile);
-    if (fileType == IO::CRAVA) {
-      geometry = GeometryFromCravaFile(gridFile);
-    }
-    else if (fileType == IO::SEGY) {
-      try
-      {
-        geometry = SegY::FindGridGeometry(gridFile, thf);
-      }
-      catch (NRLib::Exception & e)
-      {
-        errText = e.what();
-      }
-    }
-    else if (fileType == IO::STORM)
-      geometry = GeometryFromStormFile(gridFile, errText);
-    else if (fileType==IO::SGRI) {
-      bool scale = true;
-      geometry = GeometryFromStormFile(gridFile, errText, scale);
-    }
-    else {
-      errText = "Trying to read grid dimensions from unknown file format.\n";
-    }
-  }
-  else {
-    errText = "Cannot get geometry from file. The file name is empty.\n";
-  }
-}
-
-SegyGeometry *
-ModelGeneral::GeometryFromCravaFile(const std::string & fileName)
-{
-  std::ifstream binFile;
-  NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
-
-  std::string fileType;
-  getline(binFile,fileType);
-
-  double x0      = NRLib::ReadBinaryDouble(binFile);
-  double y0      = NRLib::ReadBinaryDouble(binFile);
-  double dx      = NRLib::ReadBinaryDouble(binFile);
-  double dy      = NRLib::ReadBinaryDouble(binFile);
-  int    nx      = NRLib::ReadBinaryInt(binFile);
-  int    ny      = NRLib::ReadBinaryInt(binFile);
-  double IL0     = NRLib::ReadBinaryDouble(binFile);
-  double XL0     = NRLib::ReadBinaryDouble(binFile);
-  double ilStepX = NRLib::ReadBinaryDouble(binFile);
-  double ilStepY = NRLib::ReadBinaryDouble(binFile);
-  double xlStepX = NRLib::ReadBinaryDouble(binFile);
-  double xlStepY = NRLib::ReadBinaryDouble(binFile);
-  double rot     = NRLib::ReadBinaryDouble(binFile);
-
-  binFile.close();
-
-  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-                                             IL0, XL0, ilStepX, ilStepY,
-                                             xlStepX, xlStepY, rot);
-  return(geometry);
-}
-
-SegyGeometry *
-ModelGeneral::GeometryFromStormFile(const std::string & fileName,
-                                    std::string       & errText,
-                                    bool scale)
-{
-  SegyGeometry  * geometry  = NULL;
-  StormContGrid * stormgrid = NULL;
-  std::string     tmpErrText;
-  float scalehor;
-  if (scale==false)
-  {
-    scalehor = 1.0;
-  }
-  else //from sgri file
-  {
-    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
-    scalehor  = 1000.0;
-  }
-  try
-  {
-    stormgrid = new StormContGrid(0,0,0);
-    stormgrid->ReadFromFile(fileName);
-    stormgrid->SetMissingCode(RMISSING);
-  }
-  catch (NRLib::Exception & e)
-  {
-    tmpErrText = e.what();
-  }
-
-  if (tmpErrText == "") {
-    double x0      = stormgrid->GetXMin()*scalehor;
-    double y0      = stormgrid->GetYMin()*scalehor;
-    double dx      = stormgrid->GetDX()*scalehor;
-    double dy      = stormgrid->GetDY()*scalehor;
-    int    nx      = static_cast<int>(stormgrid->GetNI());
-    int    ny      = static_cast<int>(stormgrid->GetNJ());
-    double rot     = stormgrid->GetAngle();
-    double IL0     = 0.0;  ///< Dummy value since information is not contained in format
-    double XL0     = 0.0;  ///< Dummy value since information is not contained in format
-    double ilStepX =   1;  ///< Dummy value since information is not contained in format
-    double ilStepY =   1;  ///< Dummy value since information is not contained in format
-    double xlStepX =   1;  ///< Dummy value since information is not contained in format
-    double xlStepY =   1;  ///< Dummy value since information is not contained in format
-    geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-                                IL0, XL0, ilStepX, ilStepY,
-                                xlStepX, xlStepY, rot);
-  }
-  else {
-    errText += tmpErrText;
-  }
-
-  if (stormgrid != NULL)
-    delete stormgrid;
-
-  return(geometry);
-}
+//SegyGeometry *
+//ModelGeneral::GeometryFromStormFile(const std::string & fileName,
+//                                    std::string       & errText,
+//                                    bool scale)
+//{
+//  SegyGeometry  * geometry  = NULL;
+//  StormContGrid * stormgrid = NULL;
+//  std::string     tmpErrText;
+//  float scalehor;
+//  if (scale==false)
+//  {
+//    scalehor = 1.0;
+//  }
+//  else //from sgri file
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+//    scalehor  = 1000.0;
+//  }
+//  try
+//  {
+//    stormgrid = new StormContGrid(0,0,0);
+//    stormgrid->ReadFromFile(fileName);
+//    stormgrid->SetMissingCode(RMISSING);
+//  }
+//  catch (NRLib::Exception & e)
+//  {
+//    tmpErrText = e.what();
+//  }
+//
+//  if (tmpErrText == "") {
+//    double x0      = stormgrid->GetXMin()*scalehor;
+//    double y0      = stormgrid->GetYMin()*scalehor;
+//    double dx      = stormgrid->GetDX()*scalehor;
+//    double dy      = stormgrid->GetDY()*scalehor;
+//    int    nx      = static_cast<int>(stormgrid->GetNI());
+//    int    ny      = static_cast<int>(stormgrid->GetNJ());
+//    double rot     = stormgrid->GetAngle();
+//    double IL0     = 0.0;  ///< Dummy value since information is not contained in format
+//    double XL0     = 0.0;  ///< Dummy value since information is not contained in format
+//    double ilStepX =   1;  ///< Dummy value since information is not contained in format
+//    double ilStepY =   1;  ///< Dummy value since information is not contained in format
+//    double xlStepX =   1;  ///< Dummy value since information is not contained in format
+//    double xlStepY =   1;  ///< Dummy value since information is not contained in format
+//    geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
+//                                IL0, XL0, ilStepX, ilStepY,
+//                                xlStepX, xlStepY, rot);
+//  }
+//  else {
+//    errText += tmpErrText;
+//  }
+//
+//  if (stormgrid != NULL)
+//    delete stormgrid;
+//
+//  return(geometry);
+//}
 
 std::map<std::string, DistributionsRock *>
 ModelGeneral::GetRockDistributionTime0() const
@@ -3082,39 +3020,39 @@ ModelGeneral::CreateFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, b
   return(fftGrid);
 }
 
-int
-ModelGeneral::ComputeTime(int year, int month, int day) const
-{
-  if (year == IMISSING)
-    return(0);
-
-  int deltaYear = year-1900; //Ok baseyear.
-  int time = 365*deltaYear+deltaYear/4; //Leap years.
-  if (month == IMISSING)
-    time += 182;
-  else {
-    std::vector<int> accDays(12,0);
-    accDays[1]  = accDays[0]  + 31;
-    accDays[2]  = accDays[1]  + 28;
-    accDays[3]  = accDays[2]  + 31;
-    accDays[4]  = accDays[3]  + 30;
-    accDays[5]  = accDays[4]  + 31;
-    accDays[6]  = accDays[5]  + 30;
-    accDays[7]  = accDays[6]  + 31;
-    accDays[8]  = accDays[7]  + 31;
-    accDays[9]  = accDays[8]  + 30;
-    accDays[10] = accDays[9]  + 31;
-    accDays[11] = accDays[10] + 30;
-
-    time += accDays[month];
-
-    if (day == IMISSING)
-      time += 15;
-    else
-      time += day;
-  }
-  return(time);
-}
+//int
+//ModelGeneral::ComputeTime(int year, int month, int day) const
+//{
+//  if (year == IMISSING)
+//    return(0);
+//
+//  int deltaYear = year-1900; //Ok baseyear.
+//  int time = 365*deltaYear+deltaYear/4; //Leap years.
+//  if (month == IMISSING)
+//    time += 182;
+//  else {
+//    std::vector<int> accDays(12,0);
+//    accDays[1]  = accDays[0]  + 31;
+//    accDays[2]  = accDays[1]  + 28;
+//    accDays[3]  = accDays[2]  + 31;
+//    accDays[4]  = accDays[3]  + 30;
+//    accDays[5]  = accDays[4]  + 31;
+//    accDays[6]  = accDays[5]  + 30;
+//    accDays[7]  = accDays[6]  + 31;
+//    accDays[8]  = accDays[7]  + 31;
+//    accDays[9]  = accDays[8]  + 30;
+//    accDays[10] = accDays[9]  + 31;
+//    accDays[11] = accDays[10] + 30;
+//
+//    time += accDays[month];
+//
+//    if (day == IMISSING)
+//      time += 15;
+//    else
+//      time += day;
+//  }
+//  return(time);
+//}
 
 //void
 //ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *>           & rock_distribution,
@@ -4970,51 +4908,51 @@ ModelGeneral::EstimateCorrXYFromSeismic(Surface *& corrXY,
   delete [] grid;
 }
 
-void ModelGeneral::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
-                                               const InputFiles   * input_files,
-                                               std::string        & tmpErrText) const
-{
-  int nFacies = static_cast<int>(facies_names_.size());
-
-  // Compare names in wells with names given in rock physics prior model
-  if (rock_distributions_.size() > 0) {
-    int nRocks  = static_cast<int>(rock_distributions_.size());
-    if (nRocks > nFacies)
-      tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
-    for (int i=0; i<nFacies; i++) {
-      if (rock_distributions_.find(facies_names_[i]) == rock_distributions_.end())
-        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
-    }
-  }
-
-  // Compare names in wells with names given in .xml-file
-  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
-  {
-    typedef std::map<std::string,float> mapType;
-    mapType myMap = model_settings->getPriorFaciesProb();
-
-    for (int i=0;i<nFacies;i++)
-    {
-      mapType::iterator iter = myMap.find(facies_names_[i]);
-      if (iter==myMap.end())
-        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
-    }
-  }
-
-  // Compare names in wells with names given as input in proability cubes
-  else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-  {
-    typedef std::map<std::string,std::string> mapType;
-    mapType myMap = input_files->getPriorFaciesProbFile();
-
-    for (int i=0;i<nFacies;i++)
-    {
-      mapType::iterator iter = myMap.find(facies_names_[i]);
-      if (iter==myMap.end())
-        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
-    }
-  }
-}
+//void ModelGeneral::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
+//                                               const InputFiles   * input_files,
+//                                               std::string        & tmpErrText) const
+//{
+//  int nFacies = static_cast<int>(facies_names_.size());
+//
+//  // Compare names in wells with names given in rock physics prior model
+//  if (rock_distributions_.size() > 0) {
+//    int nRocks  = static_cast<int>(rock_distributions_.size());
+//    if (nRocks > nFacies)
+//      tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
+//    for (int i=0; i<nFacies; i++) {
+//      if (rock_distributions_.find(facies_names_[i]) == rock_distributions_.end())
+//        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
+//    }
+//  }
+//
+//  // Compare names in wells with names given in .xml-file
+//  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+//  {
+//    typedef std::map<std::string,float> mapType;
+//    mapType myMap = model_settings->getPriorFaciesProb();
+//
+//    for (int i=0;i<nFacies;i++)
+//    {
+//      mapType::iterator iter = myMap.find(facies_names_[i]);
+//      if (iter==myMap.end())
+//        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+//    }
+//  }
+//
+//  // Compare names in wells with names given as input in proability cubes
+//  else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+//  {
+//    typedef std::map<std::string,std::string> mapType;
+//    mapType myMap = input_files->getPriorFaciesProbFile();
+//
+//    for (int i=0;i<nFacies;i++)
+//    {
+//      mapType::iterator iter = myMap.find(facies_names_[i]);
+//      if (iter==myMap.end())
+//        tmpErrText += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+//    }
+//  }
+//}
 
 //void
 //ModelGeneral::setFaciesNamesFromRockPhysics()

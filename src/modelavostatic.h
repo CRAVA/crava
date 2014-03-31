@@ -10,7 +10,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file.
+#include "src/background.h" //or move getAlpha & co to cpp-file. //H Why must this be included?
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
@@ -21,6 +21,7 @@ class Simbox;
 class FFTGrid;
 class GridMapping;
 class InputFiles;
+class CommonData; //H Why is this suddenly needed?
 class ModelAVOStatic
 {
 public:
@@ -34,10 +35,9 @@ public:
   //               std::vector<WellData *> wells);
 
   ModelAVOStatic(ModelSettings        *& model_settings,
-                 //ModelGeneral         *& model_general,
                  const InputFiles      * input_files,
                  CommonData            * common_data,
-                 const Simbox                * simbox,
+                 const Simbox          * simbox,
                  int                     i_intervals);
 
   ~ModelAVOStatic();

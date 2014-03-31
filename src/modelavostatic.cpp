@@ -137,9 +137,9 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 
     //Set up errCorr here
-    int nx  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
-    int ny  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
-    int nz  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
+    int nx  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
+    int ny  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
+    int nz  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
     int nxp = simbox->GetNXpad();
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
@@ -155,8 +155,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
     err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
-
-    //CheckAvailableMemory(simbox, model_settings, input_files);
 
   }
   else // forward modeling

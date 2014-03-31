@@ -173,18 +173,18 @@ private:
                          int             n_layers) const;
 
   // CLASS VARIABLES
-  size_t                                               n_intervals_;
-  bool                                                 multiple_interval_setting_;
-  std::vector<std::string>                             interval_names_;
-  std::vector<int>                                     erosion_priorities_;
-  std::vector<std::string>                             surface_files_;
+  size_t                      n_intervals_;
+  bool                        multiple_interval_setting_;
+  std::vector<std::string>    interval_names_;
+  std::vector<int>            erosion_priorities_;
+  std::vector<std::string>    surface_files_;
 
-  std::vector<Simbox>                                  interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
+  std::vector<Simbox>         interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
   //std::vector<std::vector<NRLib::Grid<float> *> >      parameters_;               // Must have same size as the simbox vector. Vector (intervals) vector (parameters)
 
-  std::vector<double>                                  desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
-  std::vector<double>                                  relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.
-  std::vector<double>                                  dz_rel_;                   // Actual grid resolution relative to simbox 0
+  std::vector<double>         desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
+  std::vector<double>         relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.
+  std::vector<double>         dz_rel_;                   // Actual grid resolution relative to simbox 0
 
 
 

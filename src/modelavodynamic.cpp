@@ -541,7 +541,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   bool segy_volumes_read = false;
   for (int i = 0; i < number_of_angles_ ; i++) {
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    if (seismic_type == 0) //(geometry[i] != NULL)
+    if (seismic_type == 0)
       segy_volumes_read = true;
   }
   if (segy_volumes_read) {
@@ -549,7 +549,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
     for (int i = 0; i < number_of_angles_; i++) {
       int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-      if (seismic_type == 0) { //(geometry[i] != NULL) {
+      if (seismic_type == 0) {
         double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
         if (geo_angle < 0)
           geo_angle += 360.0;
@@ -589,7 +589,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     vpvs = 1 / vsvp;
   }
   else {  //background
-    vsvp = common_data->GetMultipleIntervalGrid()->GetBackgroundVsVpRatioInterval(i_interval);
+    vsvp = common_data->GetBackgroundVsVpRatioInterval(i_interval);
     vpvs = 1 / vsvp;
   }
 
