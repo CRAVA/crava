@@ -15,6 +15,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      bool           & failed) {
 
   interval_names_                                                 = model_settings->getIntervalNames();
+
+  if (interval_names_.size() == 0)
+    interval_names_.push_back("");
+
   n_intervals_                                                    = static_cast<int>(interval_names_.size());
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
@@ -129,7 +133,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     // if multiple-intervals is NOT used in model settings
     else {
 
-      int nz = model_settings->getTimeNz();
+      //int nz = model_settings->getTimeNz();
+      int nz = model_settings->getTimeNzInterval("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfFile(0);
@@ -152,7 +157,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
-        if (model_settings->getTimeNz() == RMISSING) //Taken from simbox->SetDepth without nz
+        //if (model_settings->getTimeNz() == RMISSING) //Taken from simbox->SetDepth without nz
+        if (model_settings->getTimeNzInterval("") == RMISSING) //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
 
       }
@@ -312,13 +318,14 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 std::vector<double>                       & relative_grid_resolution,
                                                 std::vector<double>                       & dz_rel,
                                                 std::string                               & err_text,
-                                                bool                                      & failed) const{
-
+                                                bool                                      & failed) const
+{
   for (size_t i = 0; i< interval_names.size(); i++){
+
     bool                   corr_dir                               = false;
-    std::string            interval_name                          = interval_names[i];
     Surface                top_surface                            = eroded_surfaces[i];
     Surface                base_surface                           = eroded_surfaces[i+1];
+    std::string            interval_name                          = interval_names[i];
     int                    n_layers                               = model_settings->getTimeNzInterval(interval_name);
     std::map<std::string, std::string>::const_iterator it_single  = corr_dir_single_surfaces.find(interval_name);
     std::map<std::string, std::string>::const_iterator it_top     = corr_dir_top_surfaces.find(interval_name);

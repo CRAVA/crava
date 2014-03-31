@@ -4387,7 +4387,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   else
   {
     if (value>0)
-      modelSettings_->setTimeNz(value);
+      modelSettings_->setTimeNzInterval("", value); //H-Added
+      //modelSettings_->setTimeNz(value);
     else
       errTxt += "The number of layers needs to be larger than 0.\n";
   }

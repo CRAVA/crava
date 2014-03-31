@@ -147,7 +147,7 @@ public:
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
   double                           getTimeLz(void)                      const { return time_lz_                                   ;}
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
-  int                              getTimeNz(void)                      const { return time_nz_                                   ;}
+  //int                              getTimeNz(void)                      const { return time_nz_                                   ;}
   int                              getTimeNzInterval(std::string name)  const { return time_nz_interval_.find(name)->second       ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
