@@ -12,8 +12,9 @@
 #include "src/modelsettings.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/welldata.h"
-#include "src/background.h"
+//#include "src/welldata.h"
+//#include "src/background.h"
+#include "src/blockedlogscommon.h"
 #include "src/simbox.h"
 #include "src/io.h"
 

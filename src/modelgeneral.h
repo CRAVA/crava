@@ -11,7 +11,7 @@
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file.
+//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 #include "src/cravatrend.h"

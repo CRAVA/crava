@@ -10,9 +10,11 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file. //H Why must this be included?
+//#include "src/background.h" //or move getAlpha & co to cpp-file. //H Why must this be included?
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+
+#include "nrlib/well/well.hpp"
 
 struct irapgrid;
 class Wavelet;
@@ -21,7 +23,7 @@ class Simbox;
 class FFTGrid;
 class GridMapping;
 class InputFiles;
-class CommonData; //H Why is this suddenly needed?
+class CommonData;
 class ModelAVOStatic
 {
 public:

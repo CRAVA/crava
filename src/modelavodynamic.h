@@ -11,7 +11,7 @@
 
 #include "src/vario.h"
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file.
+//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
@@ -26,7 +26,7 @@ class InputFiles;
 class ModelAVOStatic;
 class ModelGeneral;
 class SeismicParametersHolder;
-//class CommonData;
+class CommonData;
 
 class ModelAVODynamic
 {

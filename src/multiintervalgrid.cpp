@@ -36,7 +36,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   // if the multiple interval keyword is used
 
   //H Combined the if(multinterval) below
-  //H Check n_intervals = 1 if 1 interval
   if (n_intervals_ > 1) {
     multiple_interval_setting_ = true;
     LogKit::WriteHeader("Setting up multiple interval grid");

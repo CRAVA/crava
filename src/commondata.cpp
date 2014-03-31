@@ -7122,7 +7122,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
   background_parameters.resize(n_intervals);
   for (int i = 0; i < n_intervals; i++) {
-    background_parameters.resize(3);
+    background_parameters[i].resize(3);
     for (int j = 0; j < 3; j++) {
       background_parameters[i][j] = new NRLib::Grid<float>(); //H Test Needed?
     }
