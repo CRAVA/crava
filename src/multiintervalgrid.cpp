@@ -15,13 +15,20 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      bool           & failed) {
 
   interval_names_                                                 = model_settings->getIntervalNames();
-
-  if (interval_names_.size() == 0)
-    interval_names_.push_back("");
-
-  n_intervals_                                                    = static_cast<int>(interval_names_.size());
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
+
+  //H Combined the if(multinterval) below
+  if (interval_names_.size() == 0) {
+    LogKit::WriteHeader("Setting up grid");
+    interval_names_.push_back("");
+    multiple_interval_setting_ = false;
+  }
+  else {
+    LogKit::WriteHeader("Setting up multiple interval grid");
+    multiple_interval_setting_ = true;
+  }
+  n_intervals_ = static_cast<int>(interval_names_.size());
 
   Surface               * top_surface = NULL;
   Surface               * base_surface = NULL;
@@ -31,19 +38,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   std::string             base_surface_file_name_temp("");
   std::vector<Surface>    surfaces;
   //std::vector<int>        erosion_priorities_;
-  //trend_cubes_.resize(n_intervals_);
-
-  // if the multiple interval keyword is used
-
-  //H Combined the if(multinterval) below
-  if (n_intervals_ > 1) {
-    multiple_interval_setting_ = true;
-    LogKit::WriteHeader("Setting up multiple interval grid");
-  }
-  else {
-    LogKit::WriteHeader("Setting up grid");
-    multiple_interval_setting_ = false;
-  }
 
   desired_grid_resolution_.resize(n_intervals_);
   relative_grid_resolution_.resize(n_intervals_);
@@ -211,7 +205,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
 }
 
-//Copy Constructor
+//Copy constructor
 MultiIntervalGrid::MultiIntervalGrid(const MultiIntervalGrid * multi_interval_grid)
 {
   n_intervals_               = multi_interval_grid->n_intervals_;

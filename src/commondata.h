@@ -455,6 +455,7 @@ private:
   bool SetupTrendCubes(ModelSettings                     * model_settings,
                        InputFiles                        * input_files,
                        MultiIntervalGrid                 * multiple_interval_grid,
+                       std::vector<CravaTrend>           & trend_cubes,
                        std::string                       & error_text);
 
   bool SetupRockPhysics(const ModelSettings                                 * model_settings,
@@ -462,7 +463,7 @@ private:
                         const MultiIntervalGrid                             * multiple_interval_grid,
                         const std::vector<CravaTrend>                       & trend_cubes,
                         const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
-                        int                                                   n_trend_cubes,
+                        //int                                                   n_trend_cubes,
                         std::string                                         & error_text);
 
   void PrintExpectationAndCovariance(const std::vector<double>   & expectation,
@@ -801,14 +802,13 @@ private:
 
   // Trend cubes and rock physics
   std::vector<CravaTrend>                                      trend_cubes_;              //Trend cubes per interval.
-  int                                                          n_trend_cubes_;
-
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
+  //int                                                          n_trend_cubes_; //H Removed since it was equal to number of intervals
 
   // prior facies
   std::vector<std::vector<NRLib::Grid<float> *> >              prior_facies_prob_cubes_;
-  std::vector<std::vector<float> >                             prior_facies_;                  ///< Prior facies probabilities
+  std::vector<std::vector<float> >                             prior_facies_;                  ///< Prior facies probabilities. vector (intervals) vector(parameters)
   std::vector<Surface *>                                       facies_estim_interval_;
 
   // background model

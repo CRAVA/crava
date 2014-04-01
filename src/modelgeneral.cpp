@@ -287,7 +287,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
       if (common_data->GetPriorFacies().size() > 0) {
         prior_facies_ = common_data->GetPriorFaciesInterval(i_interval);
       }
-      if (common_data->GetPriorFaciesProbCubesInterval(i_interval).size() > 0) {
+      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
+      //if (common_data->GetPriorFaciesProbCubesInterval(i_interval).size() > 0) {
         prior_facies_prob_cubes_.resize(3);
         prior_facies_prob_cubes_[0] = new FFTGrid(common_data->GetPriorFaciesProbCube(i_interval, 0), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());
         prior_facies_prob_cubes_[1] = new FFTGrid(common_data->GetPriorFaciesProbCube(i_interval, 1), simbox_->GetNXpad(), simbox_->GetNYpad(), simbox_->GetNZpad());

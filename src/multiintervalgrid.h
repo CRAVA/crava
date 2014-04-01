@@ -28,7 +28,6 @@ public:
   ~MultiIntervalGrid();
 
   // MIXED FUNCTIONS
-
   int                                                      WhichSimbox(double x, double y, double z) const;
   static int                                               FindPaddingSize(int nx, double px);
   static int                                               FindClosestFactorableNumber(int leastint);
@@ -39,9 +38,6 @@ public:
   std::vector<Simbox>                                    & GetIntervalSimboxes()                        { return interval_simboxes_           ;}
   const Simbox                                           * GetIntervalSimbox(int i)               const { return &interval_simboxes_[i]       ;}
   Simbox                                                 * GetIntervalSimbox(int i)                     { return &interval_simboxes_[i]       ;}
-  //const std::vector<NRLib::Grid<float> *>                & GetParametersInterval(int i)           const { return parameters_[i]               ;}
-  //std::vector<std::vector<NRLib::Grid<float> *> >        & GetParameters()                              { return parameters_                  ;}
-
   const std::string                                      & GetIntervalName(int i)                 const { return interval_names_[i]           ;}
   const std::vector<std::string>                         & GetIntervalNames()                     const { return interval_names_              ;}
   const std::vector<int>                                 & GetErosionPriorities()                 const { return erosion_priorities_          ;}
@@ -49,6 +45,12 @@ public:
   const std::vector<double>                              & GetRelativeGridResolution()            const { return relative_grid_resolution_    ;}
   const std::vector<double>                              & GetDesiredGridResolution()             const { return desired_grid_resolution_     ;}
   const std::vector<double>                              & GetDzRel()                             const { return dz_rel_                      ;}
+
+  // SET FUNCTIONS
+  void SetDzRel(std::vector<double> & dz_rel)                                                           { dz_rel_ = dz_rel                    ;}
+
+  //const std::vector<NRLib::Grid<float> *>                & GetParametersInterval(int i)           const { return parameters_[i]               ;}
+  //std::vector<std::vector<NRLib::Grid<float> *> >        & GetParameters()                              { return parameters_                  ;}
   //const std::vector<NRLib::Grid<float> *>                & GetBackgroundParametersInterval(int i) const { return background_parameters_[i]    ;}
   //std::vector<std::vector<NRLib::Grid<float> *> >        & GetBackgroundParameters()                    { return background_parameters_       ;}
   //const NRLib::Grid<float>                               * GetVpInterval(int i)                   const { return background_parameters_[i][0] ;}
@@ -87,7 +89,6 @@ public:
   //void AddTrendCubes(std::vector<CravaTrend> trend_cubes)                                        { trend_cubes_                               = trend_cubes  ;}
 
   //void SetPriorVar0(int i, NRLib::Matrix prior_var_0)                                            { prior_var_0_[i]                            = prior_var_0  ;}
-  void SetDzRel(std::vector<double> & dz_rel)                                                    { dz_rel_                                    = dz_rel       ;}
   //void SetBackgroundVsVpRatios(std::vector<double> vs_vp_ratios)                                 { background_vs_vp_ratios_                   = vs_vp_ratios ;}
   //void SetBackgroundVsVpRatio(int i_interval, double vs_vp_ratio)                                { background_vs_vp_ratios_[i_interval]       = vs_vp_ratio  ;}
 
@@ -180,7 +181,6 @@ private:
   std::vector<std::string>    surface_files_;
 
   std::vector<Simbox>         interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
-  //std::vector<std::vector<NRLib::Grid<float> *> >      parameters_;               // Must have same size as the simbox vector. Vector (intervals) vector (parameters)
 
   std::vector<double>         desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>         relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.
@@ -191,6 +191,7 @@ private:
 
 
   //Remove:
+  //std::vector<std::vector<NRLib::Grid<float> *> >      parameters_;               // Must have same size as the simbox vector. Vector (intervals) vector (parameters)
 
   //std::vector<std::vector<NRLib::Grid<float> *> >      background_parameters_;    // must have same size as the simbox vector. Vector (intervals) vector (parameters)
 
