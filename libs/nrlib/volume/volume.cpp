@@ -434,8 +434,9 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line, const std::string
     std::string path_file_name = NRLib::PrependDir(path, token);
     erosion_top_ = new RegularSurface<double>(path_file_name);
     toperofile = true;
-  }
+  }*/
   token = ReadNext<std::string>(file, line);
+  /*
   delete erosion_bot_;
   if (IsType<double>(token)) {
     erosion_bot_ = new ConstantSurface<double>(ParseType<double>(token));
