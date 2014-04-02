@@ -130,6 +130,7 @@ public:
                                   std::vector<std::string>                   facies_name,
                                   std::vector<int>                           facies_label);
 
+  static std::string ConvertInt(int number);
 
 
 private:
@@ -658,8 +659,9 @@ private:
   bool SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                              const InputFiles                                            * input_files,
                              const std::vector<NRLib::Well>                              & wells,
+                             double                                                        dz_min,
                              const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                             const std::vector<Simbox>                                   & interval_simboxes,
+                             std::vector<Simbox>                                         & interval_simboxes,
                              const std::vector<std::vector<float> >                      & prior_facies_prob,
                              const std::vector<std::string>                              & facies_names,
                              const std::vector<CravaTrend>                               & trend_cubes,

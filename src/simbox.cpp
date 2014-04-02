@@ -33,6 +33,7 @@ Simbox::Simbox(void)
   ilStepY_     = 1;
   grad_x_      = 0;
   grad_y_      = 0;
+  lz_eroded_   = 0;
 }
 
 Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
@@ -49,6 +50,7 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   Surface z1(z0);
   z1.Add(lz);
   SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
+  lz_eroded_   = lz;
 
   cosrot_      = cos(rot);
   sinrot_      = sin(rot);
@@ -137,7 +139,7 @@ Simbox::Simbox(const Simbox * simbox) :
   minRelThick_ = simbox->minRelThick_;
   topName_     = simbox->topName_;
   botName_     = simbox->botName_;
-  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface());
+  //SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface());
   grad_x_      = 0;
   grad_y_      = 0;
 }
@@ -974,6 +976,16 @@ Simbox::getRelThick(int i, int j) const
   return(getRelThick(x, y));
 }
 
+double Simbox::GetRelThickErodedInterval(double x, double y) const{
+  double rel_thick  = 1; //Default value to be used outside grid.
+  double z_top      = GetTopErodedSurface().GetZ(x, y);
+  double z_base     = GetBaseErodedSurface().GetZ(x, y);
+  if(GetTopSurface().IsMissing(z_top) == false &&
+     GetBotSurface().IsMissing(z_base) == false)
+    rel_thick = (z_base-z_top)/GetLZ();
+  return(rel_thick);
+}
+
 double
 Simbox::getRelThick(double x, double y) const
 {
@@ -1052,8 +1064,50 @@ Surface * Simbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
 }
 
 void Simbox::SetErodedSurfaces(const NRLib::Surface<double> & top_surf,
-                               const NRLib::Surface<double> & bot_surf)
+                               const NRLib::Surface<double> & bot_surf,
+                               bool  skip_check)
 {
+  delete top_eroded_surface_;
+  delete base_eroded_surface_;
   top_eroded_surface_  = top_surf.Clone();
   base_eroded_surface_ = bot_surf.Clone();
+
+  if (getlx() > 0 && getly() > 0 && skip_check == false)
+    CheckErodedSurfaces();
+
+  lz_eroded_ = RecalculateErodedLZ();
+}
+
+bool Simbox::CheckErodedSurfaces() const
+{
+  if (!CheckSurface(*top_eroded_surface_)) {
+    throw NRLib::Exception("The top surface does not cover the volume.");
+  }
+  if (!CheckSurface(*base_eroded_surface_)) {
+    throw NRLib::Exception("The bottom surface does not cover the volume.");
+  }
+  return true;
+}
+
+double Simbox::RecalculateErodedLZ()
+{
+  double lz = 0;
+  if (this->getlx() > 0.0 || this->getly() > 0.0) { //Only do if area is initialized.
+    // An arbitary grid resolution.
+    int nx = 100;
+    int ny = 100;
+
+    double dx = getlx() / nx;
+    double dy = getly() / ny;
+
+
+    for (int i = 0; i < nx; ++i) {
+      for (int j = 0; j < ny; ++j) {
+        double x, y;
+        LocalToGlobalCoord(dx * i, dy * j, x, y);
+        lz = std::max(lz_eroded_, base_eroded_surface_->GetZ(x, y) - top_eroded_surface_->GetZ(x, y));
+      }
+    }
+  }
+  return lz;
 }

@@ -68,10 +68,13 @@ public:
   const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
 
   const std::map<int, std::string>     & GetFaciesMap()        const   { return facies_map_                                                           ;}
+  const std::vector<int>               & GetSposVector()       const   { return s_pos_                                                                ;}
   const std::vector<int>               & GetIposVector()       const   { return i_pos_                                                                ;}
   const std::vector<int>               & GetJposVector()       const   { return j_pos_                                                                ;}
   const std::vector<int>               & GetKposVector()       const   { return k_pos_                                                                ;}
 
+  const std::vector<double>            & GetContLogBlocked(std::string s) const {return continuous_logs_blocked_.find(s)->second                      ;}
+  const std::vector<int>               & GetDiscLogBlocked(std::string s) const {return discrete_logs_blocked_.find(s)->second                        ;}
   const std::vector<double>            & GetVpBlocked(void)    const   { return continuous_logs_blocked_.find("Vp")->second                           ;}
         std::vector<double>            & GetVpBlocked(void)            { return continuous_logs_blocked_.find("Vp")->second                           ;}
   const std::vector<double>            & GetVsBlocked(void)    const   { return continuous_logs_blocked_.find("Vs")->second                           ;}
@@ -88,6 +91,7 @@ public:
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoSeismicResolution(void) const { return cont_logs_seismic_resolution_.find("Rho")->second               ;}
 
+  const std::vector<double>            & GetContLogHighCutBackground(std::string s) const {return cont_logs_highcut_background_.find(s)->second       ;}
   const std::vector<double>            & GetVpHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoHighCutBackground(void) const { return cont_logs_highcut_background_.find("Rho")->second               ;}
