@@ -139,7 +139,7 @@ public:
                                   std::vector<std::string>                   facies_name,
                                   std::vector<int>                           facies_label);
 
-
+  void ReleaseBackgroundGrids(int i_interval);
 
 private:
 
@@ -650,9 +650,9 @@ private:
 
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
-                                       NRLib::Grid<float>                     * vp,
-                                       NRLib::Grid<float>                     * vs,
-                                       NRLib::Grid<float>                     * rho,
+                                       NRLib::Grid<float>                    *& vp,
+                                       NRLib::Grid<float>                    *& vs,
+                                       NRLib::Grid<float>                    *& rho,
                                        const Simbox                           & simbox,
                                        const CravaTrend                       & trend_cube);
 

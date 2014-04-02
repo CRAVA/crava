@@ -231,6 +231,10 @@ int main(int argc, char** argv)
                                                                 simbox->GetNXpad(),
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());
+
+      //Realease background grids from common_data.
+      common_data->ReleaseBackgroundGrids(i_interval);
+
       //korrelasjonsgrid (2m)
       float corr_grad_I = 0.0f;
       float corr_grad_J = 0.0f;

@@ -206,6 +206,25 @@ CommonData::~CommonData() {
     }
   }
 
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
+    if (mapped_blocked_logs_.find(it->first)->second != NULL)
+      delete mapped_blocked_logs_.find(it->first)->second;
+  }
+
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_for_correlation_.begin(); it != mapped_blocked_logs_for_correlation_.end(); it++) {
+    if (mapped_blocked_logs_for_correlation_.find(it->first)->second != NULL)
+      delete mapped_blocked_logs_for_correlation_.find(it->first)->second;
+  }
+
+  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+    std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
+
+    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
+      if (blocked_logs_interval.find(it->first)->second != NULL)
+        delete blocked_logs_interval.find(it->first)->second;
+    }
+  }
+
   if (multiple_interval_grid_ != NULL) //H Error in test_case 1
     delete multiple_interval_grid_;
 
@@ -7133,9 +7152,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
   background_parameters.resize(n_intervals);
   for (int i = 0; i < n_intervals; i++) {
     background_parameters[i].resize(3);
-    for (int j = 0; j < 3; j++) {
-      background_parameters[i][j] = new NRLib::Grid<float>();
-    }
+    //for (int j = 0; j < 3; j++) {
+    //  background_parameters[i][j] = new NRLib::Grid<float>();
+    //}
   }
 
   if (model_settings->getGenerateBackground()) {
@@ -7230,6 +7249,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           }
         }
 
+        //for (int j = 0; j < 3; j++) {
+        //  background_parameters[i][j] = new NRLib::Grid<float>();
+        //}
+
         //Create background
         Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
 
@@ -7257,6 +7280,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           if (iter != rf_map.end())
             rock_distribution[j] = iter->second;
         }
+
+        //for (int j = 0; j < 3; j++) {
+        //  background_parameters[i][j] = new NRLib::Grid<float>();
+        //}
 
         GenerateRockPhysics3DBackground(rock_distribution,
                                         prior_probability,
@@ -7353,6 +7380,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           int nz = simbox->getnz();
 
           float log_value = log(const_back_value);
+
+          for (int k = 0; k < 3; k++) {
+            background_parameters[i][k] = new NRLib::Grid<float>();
+          }
+
           background_parameters[i][j]->Resize(nx, ny, nz, log_value);
 
           //H Store constant value instead of log value
@@ -7635,14 +7667,6 @@ CommonData::GetRockDistributionTime0() const
   //std::vector<std::map<std::string, DistributionsRock *> > rock_dist_t0;
   std::map<std::string, DistributionsRock *> rock_dist_t0;
 
-  //for (size_t i = 0; i < rock_distributions_.size(); i++){
-  //
-  //  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i].begin(); it != rock_distributions_[i].end(); it++) {
-  //    std::string name = it->first;
-  //    std::vector<DistributionsRock *> rock_dist = it->second;
-  //    rock_dist_t0[i][name] = rock_dist[0];
-  //  }
-  //}
   for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     std::string name = it->first;
     std::vector<DistributionsRock *> rock_dist = it->second;
@@ -7654,13 +7678,16 @@ CommonData::GetRockDistributionTime0() const
 
 void CommonData::GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                                  const std::vector<float>               & probability,
-                                                 NRLib::Grid<float>                     * vp,
-                                                 NRLib::Grid<float>                     * vs,
-                                                 NRLib::Grid<float>                     * rho,
+                                                 NRLib::Grid<float>                    *& vp,
+                                                 NRLib::Grid<float>                    *& vs,
+                                                 NRLib::Grid<float>                    *& rho,
                                                  const Simbox                           & simbox,
                                                  const CravaTrend                       & trend_cube)
 {
   // Set up of expectations grids
+  vp  = new NRLib::Grid<float>();
+  vs  = new NRLib::Grid<float>();
+  rho = new NRLib::Grid<float>();
 
   // Variables for looping through FFTGrids
   const int nz = simbox.getnz();
@@ -9036,17 +9063,17 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
     text1 = " estimated from lateral correlation ranges in internal grid";
     logLevel = LogKit::Low;
   }
-  if (model_settings->getEstimateZPadding()) {
-    text2 = " estimated from an assumed wavelet length";
-    logLevel = LogKit::Low;
-  }
+  //if (model_settings->getEstimateZPadding()) {
+  //  text2 = " estimated from an assumed wavelet length";
+  //  logLevel = LogKit::Low;
+  //}
 
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_xPad, true_x_pad_factor, nx, nx_pad);
   LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_yPad, true_y_pad_factor, ny, ny_pad);
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
+  //LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
   //LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
   //                     true_zPad, true_z_pad_factor, nz, nz_pad);
 }
@@ -10105,4 +10132,11 @@ void CommonData::SetDebugLevel(ModelSettings * model_settings)
   FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
                           model_settings->getOutputGridDomain());
 
+}
+
+void CommonData::ReleaseBackgroundGrids(int i_interval)
+{
+  for (int i = 0; i < 3; i++) {
+    delete background_parameters_[i_interval][i];
+  }
 }

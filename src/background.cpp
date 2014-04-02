@@ -57,6 +57,10 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
     nz = bg_simbox->getnz();
   }
 
+  parameters[0] = new NRLib::Grid<float>();
+  parameters[1] = new NRLib::Grid<float>();
+  parameters[2] = new NRLib::Grid<float>();
+
   for (int i=0 ; i<3 ; i++)
     parameters[i]->Resize(nx, ny, nz);
 
