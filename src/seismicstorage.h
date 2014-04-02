@@ -13,6 +13,7 @@
 #include "src/simbox.h"
 
 class FFTGrid;
+class Simbox;
 
 class SeismicStorage
 {
@@ -68,6 +69,11 @@ public:
   int GetNx() const;
   int GetNy() const;
   int GetNz() const;
+
+  void FindSimbox(const Simbox & full_inversion_simbox,
+                  double         lz_limit,
+                  Simbox       & seismic_simbox,
+                  std::string  & errTxt) const;
 
   //SET FUNCTIONS
   void            SetFileName(std::string file_name)      { file_name_    = file_name ; }

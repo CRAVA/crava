@@ -1028,9 +1028,6 @@
     <ClInclude Include="src\bWellPt.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\corr.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\correlatedrocksamples.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
@@ -1188,9 +1185,6 @@
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\system_error.hpp">
-      <Filter>Header Files\libs\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\boost</Filter>
     </ClInclude>
     <ClInclude Include="libs\boost\system\windows_error.hpp">
@@ -1696,6 +1690,9 @@
     </ClInclude>
     <ClInclude Include="src\avoinversion.h">
       <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

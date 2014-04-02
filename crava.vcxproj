@@ -1357,6 +1357,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h" />
     <ClInclude Include="libs\nrlib\well\rmswell.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
@@ -1377,7 +1378,6 @@
     <ClInclude Include="src\blockedlogsforzone.h" />
     <ClInclude Include="src\box.h" />
     <ClInclude Include="src\bWellPt.h" />
-    <ClInclude Include="src\corr.h" />
     <ClInclude Include="src\correlatedrocksamples.h" />
     <ClInclude Include="src\covgrid2d.h" />
     <ClInclude Include="src\covgridseparated.h" />
@@ -1432,7 +1432,6 @@
     <ClInclude Include="libs\boost\filesystem\operations.hpp" />
     <ClInclude Include="libs\boost\filesystem\path.hpp" />
     <ClInclude Include="libs\boost\system\system_error.hpp" />
-    <ClInclude Include="nrlib\tinyxml\tinyxml.h" />
     <ClInclude Include="libs\boost\system\windows_error.hpp" />
     <ClInclude Include="libs\nrlib\random\beta.hpp" />
     <ClInclude Include="libs\nrlib\random\chisquared.hpp" />

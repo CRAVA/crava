@@ -124,7 +124,8 @@ public:
                                                const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/) {return 1.0f;}
 
   // for noise estimation
-  virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
+  virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*estimation_simbox*/,
+                                                const Simbox          * /*inversion_simbox*/,
                                                 const std::vector<std::vector<double> >          & /*seis_logs*/,
                                                 const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                                 const ModelSettings   * /*modelSettings*/,

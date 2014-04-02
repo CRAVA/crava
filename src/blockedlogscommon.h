@@ -237,7 +237,6 @@ public:
                                                    const std::vector<int>         & facies_label);
 
   void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
-                                                                  int                     n_angles,
                                                                   std::vector<Wavelet *> & wavelet,
                                                                   int                     nz,
                                                                   int                     nzp,

@@ -695,11 +695,13 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
       if(ModelSettings::getDebugLevel() > 0)
       {
+        /* NBNB How to handle 
         std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
         std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
         seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
+        */
       }
 
       LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
@@ -707,11 +709,13 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
       if(ModelSettings::getDebugLevel() > 0)
       {
+        /*
         std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
         std::string fileName1 = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients()  + "Interpolated_With_Padding_" + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
         seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
+        */
       }
       seisData_[l]->endAccess();
   }
